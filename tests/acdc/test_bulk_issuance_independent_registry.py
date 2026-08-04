@@ -1226,7 +1226,7 @@ def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
                     stamp=OFFER_STAMP, kind=kind)
 
 
-def _verify_issuance(copy, *, regid, event, salt, proof, sealer, sn=1):
+def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
     """The Disclosee's proof-of-issuance check for an independent-registry ACDC.
 
     Spec L2869 lists five steps for the shared-registry variant: recompute the SAID,
@@ -1235,14 +1235,20 @@ def _verify_issuance(copy, *, regid, event, salt, proof, sealer, sn=1):
     aggregate, and the middle three collapse into two different ones -- unblind this
     registry's state, and prove this registry's event under the Issuer's batch root:
 
-      1. the credential names this registry, and the event belongs to it;
+      1. the credential's `rd` names this registry, this registry was incepted by the
+         credential's OWN issuer, and the event belongs to it. The middle clause is the
+         one it would be easy to skip: `rd` is a secure DISCOVERY mechanism (spec L2840),
+         so following it must end at a registry the credential's issuer controls, or a
+         holder could point a verifier at a registry someone else keeps 'issued';
       2. the event's blinded state unblinds, with THIS COPY's salt, to a state bound to
          THIS COPY's SAID (a wrong salt or a wrong SAID yields None);
       3. the event is a leaf under the root the Issuer sealed in its KEL.
 
     Returns the state string ('issued' / 'revoked') or None if any step fails.
     """
-    if copy.sad['rd'] != regid or event.sad['rd'] != regid:
+    if copy.sad['rd'] != reg.said or event.sad['rd'] != reg.said:
+        return None
+    if reg.sad['i'] != copy.sad['i']:      # the issuer controls the registry it names
         return None
     blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=SET_STATES,
                               salt=salt, sn=sn)
@@ -1334,7 +1340,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
                         prior=agreeMsg.said,
                         attributes=dict(
                             acdc=pres.sad, ageDisclosure=ageDisc,
-                            issuance=dict(rd=ageRegs[k].said, event=ageIssues[k].sad,
+                            issuance=dict(rip=ageRegs[k].sad, event=ageIssues[k].sad,
                                           salt=ageNonces.b(k),
                                           proof=tree.prove(ageIssues[k].said),
                                           root=sealer.crew.rd)),
@@ -1358,7 +1364,10 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert granted['e']['age']['n'] == ageCopies[k].said
     assert granted['e']['identity']['n'] == idCopies[k].said
     bundle = grant.sad['a']['issuance']
-    assert _verify_issuance(ageCopies[k], regid=bundle['rd'], event=ageIssues[k],
+    # The bundle discloses the registry INCEPTION, not merely its SAID, so the verifier
+    # can confirm the State incepted it rather than taking the holder's word for `rd`.
+    assert bundle['rip']['d'] == ageRegs[k].said and bundle['rip']['i'] == STATE
+    assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=ageIssues[k],
                             salt=bundle['salt'],
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) == 'issued'
@@ -1367,14 +1376,37 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # The disclosed bundle proves THIS copy and no other: another copy's registry, event
     # or salt fails the same check.
     other = (k + 1) % BULK_SIZE
-    assert _verify_issuance(ageCopies[k], regid=ageRegs[other].said, event=ageIssues[k],
+    assert _verify_issuance(ageCopies[k], reg=ageRegs[other], event=ageIssues[k],
                             salt=bundle['salt'],
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) is None
-    assert _verify_issuance(ageCopies[k], regid=bundle['rd'], event=ageIssues[k],
+    assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=ageIssues[k],
                             salt=ageNonces.b(other),
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) is None
+
+    # And the discovery check has teeth. A credential claiming State issuance whose `rd`
+    # points at a registry the HOLDER incepted -- where she can keep the state 'issued'
+    # forever -- fails, even though every SAID in the bundle is internally consistent and
+    # the event proves under a real batch root. Following `rd` must end at a registry the
+    # credential's own issuer controls.
+    rogueNonces = _BulkNonces(b'indregrogueslt00')
+    rogueReg = regcept(israid=ALICES[k], uuid=rogueNonces.r(k), stamp=REG_AGE_STAMP,
+                       kind=kind)
+    rogueCopy = acdcagg(israid=STATE, uuid=rogueNonces.u(k), regid=rogueReg.said,
+                        schema=ageCopies[k].sad['s'],
+                        aggregate=Aggor(ael=_age_ael(rogueNonces, k), makify=True,
+                                        kind=kind).ael,
+                        edge=ageCopies[k].sad['e'], kind=kind)
+    rogueIssue = _issue(rogueCopy, rogueNonces, k, regid=rogueReg.said,
+                        prior=rogueReg.said, stamp=ISSUE_AGE_STAMP, kind=kind)
+    rogueTree, rogueSealer = _anchor([rogueIssue.said], _herd_events(kind))
+    assert _verify_anchored(rogueIssue.said, rogueTree, rogueSealer)   # the event is real
+    assert rogueCopy.sad['rd'] == rogueReg.said                        # and self-consistent
+    assert _verify_issuance(rogueCopy, reg=rogueReg, event=rogueIssue,
+                            salt=rogueNonces.b(k),
+                            proof=rogueTree.prove(rogueIssue.said),
+                            sealer=rogueSealer) is None                # yet refused
 
     # --- Revocation, per copy. The State revokes the copy spent at the Alcove. ---
     revokedBlinder = Blinder.blind(acdc=ageCopies[k].said, state='revoked',
@@ -1388,7 +1420,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # mixed with the herd again.
     laterTree, laterSealer = _anchor([revoked.said], _herd_events(kind))
     assert _verify_anchored(revoked.said, laterTree, laterSealer)
-    assert _verify_issuance(ageCopies[k], regid=ageRegs[k].said, event=revoked,
+    assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
                             salt=ageNonces.b(k),
                             proof=laterTree.prove(revoked.said),
                             sealer=laterSealer, sn=2) == 'revoked'
@@ -1396,7 +1428,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # THE new capability: the dispensary's copy is untouched. Different registry,
     # different state. The shared-registry variant revokes all M or none.
     assert ageRegs[other].said != ageRegs[k].said
-    assert _verify_issuance(ageCopies[other], regid=ageRegs[other].said,
+    assert _verify_issuance(ageCopies[other], reg=ageRegs[other],
                             event=ageIssues[other], salt=ageNonces.b(other),
                             proof=tree.prove(ageIssues[other].said),
                             sealer=sealer) == 'issued'
@@ -1404,7 +1436,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # The graph still binds (edges are immutable), yet the Alcove's own status check now
     # returns 'revoked' where it returned 'issued', so a status-checking verifier refuses.
     assert _verify_presentation(pres, idCopies[k], ageCopies[k])   # graph still binds...
-    assert _verify_issuance(ageCopies[k], regid=ageRegs[k].said, event=revoked,
+    assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
                             salt=ageNonces.b(k),
                             proof=laterTree.prove(revoked.said),
                             sealer=laterSealer, sn=2) != 'issued'  # ...yet status forbids
@@ -1444,7 +1476,7 @@ def test_indreg_serialization_kinds(kind):
         assert _verify_identity_edge(ageCopies[k], idCopies[k])       # E1E on every kind
         for copy, regs, issues, nonces in ((idCopies[k], idRegs, idIssues, idNonces),
                                            (ageCopies[k], ageRegs, ageIssues, ageNonces)):
-            assert _verify_issuance(copy, regid=regs[k].said, event=issues[k],
+            assert _verify_issuance(copy, reg=regs[k], event=issues[k],
                                     salt=nonces.b(k),
                                     proof=tree.prove(issues[k].said),
                                     sealer=sealer) == 'issued'
