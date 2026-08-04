@@ -15,6 +15,7 @@ from ...common import Parsery, setupHby
 from ....app import serialize
 from ....core import SerderKERI
 from ....vdr import Regery
+from ....vdr.eventing import edgesOf
 
 
 logger = ogler.getLogger()
@@ -111,15 +112,7 @@ class ExportDoer(doing.DoDoer):
 
         if self.chains:
             chains = creder.edge if creder.edge is not None else {}
-            saids = []
-            for key, source in chains.items():
-                if key == 'd':
-                    continue
-
-                if not isinstance(source, dict):
-                    continue
-
-                saids.append(source['n'])
+            saids = [edge['n'] for _, edge in edgesOf(chains)]
 
             for said in saids:
                 self.outputCred(said)
