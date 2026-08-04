@@ -1186,9 +1186,234 @@ def test_indreg_partition_across_verifiers_JSON():
     assert len({_copy_index_for(v) for v in VERIFIERS}) == len(VERIFIERS)
 
 
+# ===========================================================================
+# Phase 6: disclosure gating (registry material post-agree) + per-copy revocation.
+# ===========================================================================
+# A published SEDI over-21 governance framework, referenced by SAID (public, shared by
+# the whole population -> non-correlating). PLACEHOLDER digest of a description string.
+GOVERNANCE_SAID = Diger(ser=b'SEDI over-21 governance framework v1').qb64
+APPLY_STAMP = "2026-07-22T21:15:00.000000+00:00"
+OFFER_STAMP = "2026-07-22T21:16:00.000000+00:00"
+AGREE_STAMP = "2026-07-22T21:17:00.000000+00:00"
+GRANT_STAMP = "2026-07-22T21:18:00.000000+00:00"
+REVOKE_STAMP = "2026-08-01T09:00:00.000000+00:00"
+
+
+def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
+    """Leak-proof pre-agree offer constructor (Sam, issue #1532: make the leak
+    UNREPRESENTABLE at the API rather than merely asserted-absent).
+
+    Its signature has NO parameter for source-credential SAIDs, for a registry SAID, for
+    a transaction event, or for a blinding salt, so the pre-agree offer STRUCTURALLY
+    cannot carry a stable holder correlator. It commits only the fresh, per-context
+    presentation SAID (safe because it is built with a per-presentation salt, so it is an
+    ephemeral, not a stable correlator) and a public governance ref.
+
+    Independent registries do NOT retire this discipline, and it is worth being clear why,
+    because the naive reading is that they do. What they retire is the registry SAID as a
+    SET-WIDE correlator: it no longer ties copy k to copies 0..M-1. It remains a perfectly
+    good PER-CONTEXT correlator -- disclose rd_k pre-agree to a verifier who then spurns
+    the exchange, and that verifier keeps a durable handle on this context forever. Spec
+    L2842-2848's three graduated-disclosure methods for `rd` therefore still apply.
+
+    Its query block carries an EMPTY disclosure-paths list, `dp: []`. Because this offer
+    is SOLICITED -- `prior` binds the apply it answers -- an empty `dp` means "the same
+    paths the apply asked for" (#1549).
+    """
+    return exchange(sender=sender, receiver=receiver, route="/ipex/offer", prior=prior,
+                    modifiers=dict(dp=[]),
+                    attributes=dict(acdc=presentationSaid, governance=governance),
+                    stamp=OFFER_STAMP, kind=kind)
+
+
+def _verify_issuance(copy, *, regid, event, salt, proof, sealer, sn=1):
+    """The Disclosee's proof-of-issuance check for an independent-registry ACDC.
+
+    Spec L2869 lists five steps for the shared-registry variant: recompute the SAID,
+    recompute b_k, find it in the disclosed [b_k] list, recompute B from the list, and
+    confirm the Issuer sealed B. With one ACDC per registry there is no list and no
+    aggregate, and the middle three collapse into two different ones -- unblind this
+    registry's state, and prove this registry's event under the Issuer's batch root:
+
+      1. the credential names this registry, and the event belongs to it;
+      2. the event's blinded state unblinds, with THIS COPY's salt, to a state bound to
+         THIS COPY's SAID (a wrong salt or a wrong SAID yields None);
+      3. the event is a leaf under the root the Issuer sealed in its KEL.
+
+    Returns the state string ('issued' / 'revoked') or None if any step fails.
+    """
+    if copy.sad['rd'] != regid or event.sad['rd'] != regid:
+        return None
+    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=SET_STATES,
+                              salt=salt, sn=sn)
+    if blinder is None:
+        return None
+    if not _BatchTree.verify(event.said, proof, sealer.crew.rd):
+        return None
+    return blinder.state
+
+
+def test_indreg_disclosure_gating_and_revocation_JSON():
+    """Phase 6: the registry material rides only in the grant; one copy revokes alone.
+
+    Two properties. First, disclosure gating: the pre-agree /ipex/offer commits only the
+    fresh presentation SAID and public governance, built with a constructor that cannot
+    carry the source SAIDs, the registry SAIDs, the transaction events or the blinding
+    salts (#1532's make-it-unrepresentable guidance). All of that appears ONLY in the
+    grant, after a valid signed agree, so a verifier who spurns walks away with no stable
+    correlator and no proof of issuance. Second, revocation, which this variant changes
+    qualitatively: the State revokes the copy spent at the Alcove and the copy spent at
+    the dispensary is untouched, because they live in different registries. The
+    shared-registry variant cannot express that -- one registry, one state, all M copies.
+    """
+    kind = Kinds.json
+    idNonces = _BulkNonces(BULK_SALT)
+    idRegs, idCopies, idIssues = _sedi_id_set(kind, idNonces)
+    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageRegs, ageCopies, ageAggors, ageIssues = _sedi_age_set(kind, idCopies, ageNonces)
+    presNonces = _BulkNonces(PRESENT_SALT)
+    tree, sealer = _anchor([i.said for i in idIssues], [i.said for i in ageIssues],
+                           _herd_events(kind))
+
+    verifier = ALCOVE
+    k = _copy_index_for(verifier)
+    pres = _presentation(kind, verifier, idCopies, ageCopies, presNonces)
+    presSchemaSaid = pres.sad['s']['$id']
+
+    # 1. apply (verifier -> holder): the challenge, as disclosure paths in the query
+    # block. The zeroth tuple names the ORIGIN node -- the presentation the holder will
+    # issue -- and asks for its issuer and its issuee; the second names the sedi-age
+    # schema and asks for the aggregate's issuee and the over-21 flag alone.
+    apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
+                     modifiers=dict(dp=[[presSchemaSaid, ["i", "a/i"]],
+                                        [ageCopies[k].sad['s']['$id'],
+                                         ["A/i", "A/over21"]]]),
+                     attributes=dict(m="Prove over-21.", g=GOVERNANCE_SAID),
+                     stamp=APPLY_STAMP, kind=kind)
+    assert apply.sad['r'] == "/ipex/apply"
+    assert apply.sad['q']['dp'] == [[presSchemaSaid, ["i", "a/i"]],
+                                    [ageCopies[k].sad['s']['$id'],
+                                     ["A/i", "A/over21"]]]
+    # The schema SAID is shared across the whole bulk set by design; the request names
+    # it, never a copy SAID and never a registry, so the apply introduces no correlator.
+    assert all(c.said.encode() not in apply.raw for c in idCopies + ageCopies)
+    assert all(r.said.encode() not in apply.raw for r in idRegs + ageRegs)
+
+    # 2. offer (holder -> verifier): via the leak-proof constructor. Nothing stable.
+    offer = _offer(kind, sender=ALICES[k], receiver=verifier, prior=apply.said,
+                   presentationSaid=pres.said, governance=GOVERNANCE_SAID)
+    assert offer.sad['p'] == apply.said
+    assert offer.sad['q']['dp'] == []                           # solicited: same paths
+    assert pres.said.encode() in offer.raw                      # fresh per-context: safe
+    assert idCopies[k].said.encode() not in offer.raw           # source SAID withheld
+    assert ageCopies[k].said.encode() not in offer.raw
+    assert idRegs[k].said.encode() not in offer.raw             # REGISTRY withheld
+    assert ageRegs[k].said.encode() not in offer.raw
+    assert idIssues[k].said.encode() not in offer.raw           # TEL event withheld
+    assert ageIssues[k].said.encode() not in offer.raw
+    assert ageNonces.b(k).encode() not in offer.raw             # blinding salt withheld
+    assert sealer.crew.rd.encode() not in offer.raw             # batch root withheld
+
+    # 3. agree (verifier -> holder): signed acceptance binding the offer.
+    agree = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/agree",
+                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert agree.sad['p'] == offer.said
+    vSigner = _SIGNERS[2 + k]                                   # the verifier's key
+    vSig = vSigner.sign(ser=agree.raw, index=0)
+    keyState = Verfer(qb64=vSigner.verfer.qb64)
+    assert keyState.verify(sig=vSig.raw, ser=agree.raw)
+
+    # 4. The gate: the holder discloses the whole issuance-proof bundle ONLY on a valid,
+    # offer-binding, signed agree.
+    def disclose(agreeMsg, sig):
+        if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
+                and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
+            return None
+        ageDisc, _ = ageAggors[k].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
+        return exchange(sender=ALICES[k], receiver=verifier, route="/ipex/grant",
+                        prior=agreeMsg.said,
+                        attributes=dict(
+                            acdc=pres.sad, ageDisclosure=ageDisc,
+                            issuance=dict(rd=ageRegs[k].said, event=ageIssues[k].sad,
+                                          salt=ageNonces.b(k),
+                                          proof=tree.prove(ageIssues[k].said),
+                                          root=sealer.crew.rd)),
+                        stamp=GRANT_STAMP, kind=kind)
+
+    # A forged signature unlocks nothing.
+    assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0)) is None
+    # A valid agree unlocks the grant; the registry material appears ONLY now.
+    grant = disclose(agree, vSig)
+    assert grant is not None and grant.sad['p'] == agree.said
+    assert ageRegs[k].said.encode() in grant.raw                # registry revealed...
+    assert ageIssues[k].said.encode() in grant.raw              # ...event revealed...
+    assert ageNonces.b(k).encode() in grant.raw                 # ...salt revealed...
+    assert idCopies[k].said.encode() in grant.raw               # ...source SAIDs revealed
+    assert ageCopies[k].said.encode() in grant.raw
+
+    # The verifier walks the chain from the grant: the presentation's edges name the
+    # sources, the source's registry proves 'issued' under the State's sealed batch root,
+    # and the aggregate discloses over-21.
+    granted = grant.sad['a']['acdc']
+    assert granted['e']['age']['n'] == ageCopies[k].said
+    assert granted['e']['identity']['n'] == idCopies[k].said
+    bundle = grant.sad['a']['issuance']
+    assert _verify_issuance(ageCopies[k], regid=bundle['rd'], event=ageIssues[k],
+                            salt=bundle['salt'],
+                            proof=[tuple(p) for p in bundle['proof']],
+                            sealer=sealer) == 'issued'
+    assert grant.sad['a']['ageDisclosure'][AGE_OVER21]['over21'] is True
+
+    # The disclosed bundle proves THIS copy and no other: another copy's registry, event
+    # or salt fails the same check.
+    other = (k + 1) % BULK_SIZE
+    assert _verify_issuance(ageCopies[k], regid=ageRegs[other].said, event=ageIssues[k],
+                            salt=bundle['salt'],
+                            proof=[tuple(p) for p in bundle['proof']],
+                            sealer=sealer) is None
+    assert _verify_issuance(ageCopies[k], regid=bundle['rd'], event=ageIssues[k],
+                            salt=ageNonces.b(other),
+                            proof=[tuple(p) for p in bundle['proof']],
+                            sealer=sealer) is None
+
+    # --- Revocation, per copy. The State revokes the copy spent at the Alcove. ---
+    revokedBlinder = Blinder.blind(acdc=ageCopies[k].said, state='revoked',
+                                   salt=ageNonces.b(k), sn=2)
+    revoked = blindate(regid=ageRegs[k].said, prior=ageIssues[k].said,
+                       blid=revokedBlinder.said, sn=2, stamp=REVOKE_STAMP, kind=kind)
+    assert revoked.sad['p'] == ageIssues[k].said                # chains onto issuance
+    assert b"revoked" not in revoked.raw                        # state word stays blinded
+
+    # The revocation is a transaction event like any other and lands in a LATER batch,
+    # mixed with the herd again.
+    laterTree, laterSealer = _anchor([revoked.said], _herd_events(kind))
+    assert _verify_anchored(revoked.said, laterTree, laterSealer)
+    assert _verify_issuance(ageCopies[k], regid=ageRegs[k].said, event=revoked,
+                            salt=ageNonces.b(k),
+                            proof=laterTree.prove(revoked.said),
+                            sealer=laterSealer, sn=2) == 'revoked'
+
+    # THE new capability: the dispensary's copy is untouched. Different registry,
+    # different state. The shared-registry variant revokes all M or none.
+    assert ageRegs[other].said != ageRegs[k].said
+    assert _verify_issuance(ageCopies[other], regid=ageRegs[other].said,
+                            event=ageIssues[other], salt=ageNonces.b(other),
+                            proof=tree.prove(ageIssues[other].said),
+                            sealer=sealer) == 'issued'
+
+    # The graph still binds (edges are immutable), yet the Alcove's own status check now
+    # returns 'revoked' where it returned 'issued', so a status-checking verifier refuses.
+    assert _verify_presentation(pres, idCopies[k], ageCopies[k])   # graph still binds...
+    assert _verify_issuance(ageCopies[k], regid=ageRegs[k].said, event=revoked,
+                            salt=ageNonces.b(k),
+                            proof=laterTree.prove(revoked.said),
+                            sealer=laterSealer, sn=2) != 'issued'  # ...yet status forbids
+
+
 if __name__ == "__main__":
     test_indreg_derivation_and_batch_JSON()
     test_indreg_sedi_id_set_JSON()
     test_indreg_batch_anchor_JSON()
     test_indreg_sedi_age_set_JSON()
     test_indreg_partition_across_verifiers_JSON()
+    test_indreg_disclosure_gating_and_revocation_JSON()
