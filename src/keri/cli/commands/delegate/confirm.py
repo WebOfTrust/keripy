@@ -17,7 +17,7 @@ from ....app import (GroupHab, HaberyDoer, MailboxDirector,
                      WitnessInquisitor, WitnessReceiptor,
                      Counselor, Multiplexor, Notifier,
                      Poster, grouping, delegating)
-from ....kering import Ilks, Kinds
+from ....kering import Ilks, Kinds, TraitDex
 
 from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex
 from ....help import helping
@@ -34,6 +34,9 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
 parser.add_argument("--interact", "-i", help="anchor the delegation approval in an interaction event.  "
                                              "Default is to use a rotation event.", action="store_true")
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
+parser.add_argument("--require-dnd", help="decline any delegated inception whose configuration traits do not "
+                                          "include DND, so the delegate cannot delegate onward",
+                    action="store_true")
 parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
                     action='store_true')
 parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
@@ -41,6 +44,32 @@ parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth 
 parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
 parser.add_argument('--version', default=None, required=False, type=parseVersion,
                     help='KERI protocol version for the delegation approval event, such as 1.0 or 2.0')
+
+
+def traitSummary(ked):
+    """Returns a printable summary of the configuration traits in an event.
+
+    Reads the event rather than the Kever because Kever.config keeps only EstOnly and DoNotDelegate
+    out of the `c` field and drops the rest, and a delegator approving a delegated inception needs
+    to see everything it is anchoring -- including traits this version does not interpret. DID is
+    the live example: it is defined in TraitCodex and read nowhere else in the source.
+
+    Parameters:
+        ked (dict): key event dict of the delegated event awaiting approval
+
+    Returns:
+        str: one line per recognized trait, plus a line naming any others
+
+    """
+    cnfg = ked.get("c") or []  # rotations have no `c` field at all; traits are inception only
+    known = (("Establishment Only", TraitDex.EstOnly),
+             ("Do Not Delegate", TraitDex.DoNotDelegate))
+
+    lines = [f"  {label}: {code in cnfg}" for label, code in known]
+    if others := [trait for trait in cnfg if trait not in [code for _, code in known]]:
+        lines.append(f"  Other traits: {', '.join(others)}")
+
+    return "\n".join(lines)
 
 
 def confirm(args):
@@ -60,9 +89,11 @@ def confirm(args):
     codes = args.code
     codeTime = args.code_time
     version = args.version
+    requireDnD = args.require_dnd
 
     confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto,
-                              authenticate=authenticate, codes=codes, codeTime=codeTime, version=version)
+                              authenticate=authenticate, codes=codes, codeTime=codeTime, version=version,
+                              requireDnD=requireDnD)
 
     doers = [confirmDoer]
     return doers
@@ -70,8 +101,9 @@ def confirm(args):
 
 class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
-                 codeTime=None, version=None):
+                 codeTime=None, version=None, requireDnD=False):
         self.version = version
+        self.requireDnD = requireDnD
         hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
@@ -160,10 +192,21 @@ class ConfirmDoer(doing.DoDoer):
                 if delpre in self.hby.prefixes:
                     hab = self.hby.habs[delpre]
 
+                    # Configuration traits are inception only, so a delegated rotation has none to
+                    # show and none to require.
+                    inceptive = ilk in (Ilks.dip,)
+
+                    if (inceptive and self.requireDnD
+                            and TraitDex.DoNotDelegate not in (eserder.sad.get("c") or [])):
+                        print(f"Declining delegation {typ} request from {eserder.pre}: --require-dnd "
+                              f"is set and the event does not carry {TraitDex.DoNotDelegate}.")
+                        continue
+
                     if self.auto:
                         approve = True
                     else:
-                        yn = input(f"Delegation {typ} request from {eserder.pre}.\nAccept [Y|n]? ")
+                        traits = f"Config traits:\n{traitSummary(eserder.sad)}\n" if inceptive else ""
+                        yn = input(f"Delegation {typ} request from {eserder.pre}.\n{traits}Accept [Y|n]? ")
                         approve = yn in ('', 'y', 'Y')
 
                     if not approve:
