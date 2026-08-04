@@ -19,7 +19,9 @@ from keri.db import dbing
 def test_anchorer(seeder):
     with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
-            habbing.openHby(name="del", salt=core.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
+            habbing.openHby(name="del",
+                            salt=core.Salter(raw=b'0123456789ghijkl').qb64,
+                            tocks={"anchorerEscrow": 0.0}) as delHby:
 
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
         witDoer = agenting.Receiptor(hby=palHby)

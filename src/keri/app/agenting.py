@@ -14,7 +14,7 @@ from hio.help import decking, Hict
 
 from socket import gaierror
 
-from . import httping, forwarding, tocking
+from . import httping, forwarding
 from .. import help
 from .. import kering
 from .. import core
@@ -45,10 +45,12 @@ class Receiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.hby = hby
         self.clienter = httping.Clienter()
 
-        doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
-        self.hby = hby
+        doers = [self.clienter,
+                 doing.doify(self.witDo, tock=hby.tocks["receiptor"]),
+                 doing.doify(self.gitDo, tock=hby.tocks["receiptor"])]
 
         super(Receiptor, self).__init__(doers=doers)
 
@@ -272,10 +274,13 @@ class WitnessReceiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.auths = auths if auths is not None else dict()
+        self.idleTock = hby.tocks["witnessReceiptorIdle"]
 
-        super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
+        super(WitnessReceiptor, self).__init__(
+            doers=[doing.doify(self.receiptDo,
+                               tock=hby.tocks["witnessReceiptor"])], **kwa)
 
-    def receiptDo(self, tymth=None, tock=None, **kwa):
+    def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that sends events to witnesses and propagates receipts.
 
 
@@ -287,8 +292,7 @@ class WitnessReceiptor(doing.DoDoer):
         Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.WitnessReceiptorTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.msgs:
@@ -334,13 +338,13 @@ class WitnessReceiptor(doing.DoDoer):
                                 witer.msgs.append(bytearray(fmsg))
 
                         witer.msgs.append(bytearray(msg))  # make a copy
-                        _ = (yield self.tock)
+                        _ = (yield tock)
 
                     while True: # wait for all receipts to arrive
                         wigs = hab.db.getWigs(dgkey)
                         if len(wigs) == len(wits):
                             break
-                        _ = yield self.tock
+                        _ = yield tock
 
                 # If we started with all our receipts, exit unless told to force resubmit of all receipts
                 if completed and not self.force:
@@ -378,13 +382,13 @@ class WitnessReceiptor(doing.DoDoer):
                     rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers))
 
                     witer.msgs.append(rctMsg)
-                    _ = (yield self.tock)
+                    _ = (yield tock)
 
                 while True:
                     done = True
                     for witer in witers:
                         if not witer.idle:
-                            yield 1.0
+                            yield self.idleTock
                             done = False
                             break
                     if done:
@@ -393,9 +397,9 @@ class WitnessReceiptor(doing.DoDoer):
                 self.remove(witers)
 
                 self.cues.push(evt)
-                yield self.tock
+                yield tock
 
-            yield self.tock
+            yield tock
 
 
 class WitnessInquisitor(doing.DoDoer):
@@ -426,9 +430,11 @@ class WitnessInquisitor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = decking.Deck()
 
-        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.msgDo)], **kwa)
+        super(WitnessInquisitor, self).__init__(
+            doers=[doing.doify(self.msgDo,
+                               tock=hby.tocks["witnessInquisitor"])], **kwa)
 
-    def msgDo(self, tymth=None, tock=None, **opts):
+    def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Doer loop that sends one query to one selected endpoint.
 
@@ -437,12 +443,11 @@ class WitnessInquisitor(doing.DoDoer):
         Pushes the raw sent message to self.sent to signal completion.
         """
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.WitnessInquisitorTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while not self.msgs:
-                yield self.tock
+                yield tock
 
             evt = self.msgs.popleft()
             pre = evt["pre"]
@@ -498,11 +503,11 @@ class WitnessInquisitor(doing.DoDoer):
             witer.msgs.append(bytearray(msg))
 
             while not witer.sent:
-                yield self.tock
+                yield tock
 
             self.sent.append(witer.sent.popleft())
 
-            yield self.tock
+            yield tock
 
     def query(self, pre, r="logs", sn='0', fn='0', src=None, hab=None, anchor=None, wits=None, **kwa):
         """Create, sign, and queue a `qry` KEL query request against the attester for the prefix for later sending.
@@ -556,16 +561,17 @@ class WitnessPublisher(doing.DoDoer):
         self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
+        super(WitnessPublisher, self).__init__(
+            doers=[doing.doify(self.sendDo,
+                               tock=hby.tocks["witnessPublisher"])], **kwa)
 
-    def sendDo(self, tymth=None, tock=None, **opts):
+    def sendDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that sends queued messages to each witness.
 
         Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.WitnessPublisherTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.msgs:
@@ -587,19 +593,19 @@ class WitnessPublisher(doing.DoDoer):
                     witer.msgs.append(bytearray(msg))  # make a copy so everyone munges their own
                     self.extend([witer])
 
-                    _ = (yield self.tock)
+                    _ = (yield tock)
 
                 while witers:
                     witer = witers.pop()
                     while not witer.idle:
-                        _ = (yield self.tock)
+                        _ = (yield tock)
 
                 self.remove(witers)
                 self.cues.push(evt)
 
-                yield self.tock
+                yield tock
 
-            yield self.tock
+            yield tock
 
     def sent(self, said):
         """ Check if message with given SAID was sent

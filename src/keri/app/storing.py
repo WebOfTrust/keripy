@@ -9,7 +9,7 @@ from hio.base import doing
 from hio.help import decking
 from ordered_set import OrderedSet as oset
 
-from . import forwarding, tocking
+from . import forwarding
 from .. import help
 from ..core import coring, serdering
 from ..core.coring import MtrDex
@@ -196,7 +196,9 @@ class Respondant(doing.DoDoer):
         self.mbx = mbx if mbx is not None else Mailboxer(name=self.hby.name)
         self.postman = forwarding.Poster(hby=self.hby, mbx=self.mbx)
 
-        doers = [self.postman, doing.doify(self.responseDo), doing.doify(self.cueDo)]
+        doers = [self.postman,
+                 doing.doify(self.responseDo, tock=hby.tocks["respondant"]),
+                 doing.doify(self.cueDo, tock=hby.tocks["respondant"])]
         super(Respondant, self).__init__(doers=doers, **kwa)
 
     def responseDo(self, tymth=None, tock=0.0, **kwa):
@@ -213,8 +215,7 @@ class Respondant(doing.DoDoer):
 
         # enter context
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.reps:
@@ -241,11 +242,11 @@ class Respondant(doing.DoDoer):
                 logger.debug("exn body=\n%s\n", exn.pretty())
                 self.postman.send(recipient, topic=topic, serder=exn, hab=forwardHab, attachment=eattach)
 
-                yield self.tock  # throttle just do one cue at a time
+                yield tock  # throttle just do one cue at a time
 
-            yield self.tock
+            yield tock
 
-    def cueDo(self, tymth=None, tock=None, **kwa):
+    def cueDo(self, tymth=None, tock=0.0, **kwa):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             Kevery and Tevery cues deque
@@ -255,12 +256,11 @@ class Respondant(doing.DoDoer):
         """
         # enter context
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.RespondantCueTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while not self.cues:
-                yield self.tock
+                yield tock
 
             cue = self.cues.pull() # self.cues.popleft()
             cueKin = cue["kin"]  # type or kind of cue
@@ -325,4 +325,4 @@ class Respondant(doing.DoDoer):
             else:
                 self.cues.push(cue)
 
-            yield self.tock
+            yield tock
