@@ -7,6 +7,7 @@ https://docs.pytest.org/en/latest/pythonpath.html
 """
 import os
 import shutil
+import socket
 import multicommand
 from contextlib import contextmanager
 
@@ -82,6 +83,48 @@ def mockCoringRandomNonce(monkeypatch):
 @pytest.fixture
 def seeder():
     return DbSeed
+
+
+def _unused_tcp_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+@pytest.fixture(scope="session")
+def unused_tcp_port_factory(tmp_path_factory):
+    """Return a callable that allocates currently free localhost TCP ports."""
+
+    produced = set()
+    base = tmp_path_factory.getbasetemp()
+    root = base.parent if os.environ.get("PYTEST_XDIST_WORKER") else base
+    reservationDir = root / "keripy-port-reservations"
+    reservationDir.mkdir(parents=True, exist_ok=True)
+
+    def make():
+        for _ in range(100):
+            port = _unused_tcp_port()
+            if port in produced:
+                continue
+
+            try:
+                fd = os.open(reservationDir / f"{port}.lock",
+                             os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                continue
+
+            os.close(fd)
+            produced.add(port)
+            return port
+
+        raise RuntimeError("unable to allocate an unused TCP port")
+
+    return make
+
+
+@pytest.fixture()
+def unused_tcp_port(unused_tcp_port_factory):
+    return unused_tcp_port_factory()
 
 
 class DbSeed:

@@ -23,7 +23,6 @@ def test_tocking_defaults_are_effective_runtime_defaults():
         "pollerConnect": 0.5,
         "reactorEscrow": 1.0,
         "reactantEscrow": 1.0,
-        "witnessReceiptorIdle": 1.0,
         "registrarEscrow": 0.5,
         "credentialerEscrow": 0.5,
         "counselorEscrow": 0.5,

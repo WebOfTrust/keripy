@@ -8,7 +8,7 @@ simple direct mode demo support classes
 import itertools
 from hio.base import doing
 
-from .. import help
+from .. import help, kering
 from ..core import eventing, routing
 from ..core import parsing
 from ..vdr.eventing import Tevery
@@ -305,77 +305,33 @@ class Reactor(doing.DoDoer):
 
 
 class Directant(doing.DoDoer):
-    """
-    Directant class with TCP Server.
-    Responds to initiated connections from a remote Director by creating and
-    running a Reactant per connection. Each Reactant has TCP remoter.
+    """Supervise inbound direct-mode TCP connections with Reactant per connection.
 
-    Directant Subclass of DoDoer with doers list from do generator methods:
+    Directant owns per-connection ``Remoter`` lifetimes and its one corresponding
+    ``Reactant``. A peer cutoff or local connection timeout is a request to close,
+    not a parsing completion signal for already accepted bytes from the socket.
+    When buffered input exists, ``serviceDo`` preserves or creates the Reactant
+    and waits for ``rxDrained`` or ``rxFailed`` before removing the connection.
+    A cutoff connection with no buffered input and no Reactant may close immediately.
+
+    Doer generator methods:
         .serviceDo
 
-    Enables continuous scheduling of doers (do generator instances or functions)
-
-    Implements Doist like functionality to allow nested scheduling of doers.
-    Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
-
-    Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
-
-    Inherited Attributes:
-        .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
-        .opts is dict of injected options for its generator .do
-        .doers is list of Doers or Doer like generator functions
-
     Attributes:
-        .hab is Habitat instance of local controller's context
-        .server is TCP client instance. Assumes operated by another doer.
-        .rants is dict of Reactants indexed by connection address
-
-    Inherited Properties:
-        .tyme is float relative cycle time of associated Tymist .tyme obtained
-            via injected .tymth function wrapper closure.
-        .tymth is function wrapper closure returned by Tymist .tymeth() method.
-            When .tymth is called it returns associated Tymist .tyme.
-            .tymth provides injected dependency on Tymist tyme base.
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
-        .__call__ makes instance callable
-            Appears as generator function that returns generator
-        .do is generator method that returns generator
-        .enter is enter context action method
-        .recur is recur context action method or generator method
-        .clean is clean context action method
-        .exit is exit context method
-        .close is close context method
-        .abort is abort context method
-
-    Methods:
-
-    Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+        hab: Local habitat whose database and routing context process messages.
+        server: TCP server containing active Remoters in ``server.ixes``.
+        rants: Reactants indexed by their Remoter connection addresses.
     """
 
     def __init__(self, hab, server, verifier=None, exchanger=None, doers=None, **kwa):
-        """
-        Initialize instance.
-
-        Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
+        """Initialize the supervisor for an existing TCP server.
 
         Parameters:
-            db is database instance of local controller's context
-            verifier (optional) is Verifier instance of local controller's TEL context
-            server is TCP Server instance
+            hab: Local habitat used to construct per-connection Reactants.
+            server: TCP server whose accepted Remoters are supervised.
+            verifier: Optional TEL verifier supplied to each Reactant.
+            exchanger: Optional EXN exchanger supplied to each Reactant.
+            doers: Additional doers to run alongside ``serviceDo``.
         """
         self.hab = hab
         self.verifier = verifier
@@ -389,143 +345,121 @@ class Directant(doing.DoDoer):
             self.server.wind(self.tymth)
 
     def wind(self, tymth):
-        """
-        Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
-        Updates winds .tymer .tymth
+        """Propagate a scheduler time base to this doer and its TCP server.
+
+        Parameters:
+            tymth: Callable returning the scheduler's current time.
         """
         super(Directant, self).wind(tymth)
         self.server.wind(tymth)
 
 
     def serviceDo(self, tymth=None, tock=0.0, **opts):
+        """For each TCP connection and Remoter pair from the HIO Server, create,
+        retain, and clean up corresponding per-connection Reactants.
+
+        Each recur inspects the server's active Remoters. Before turning
+        an expired connection into a close request, it services pending receives
+        once so new activity can refresh the timeout. A cutoff Remoter with
+        buffered bytes is assigned a Reactant even when cutoff was observed
+        before that Reactant could be created so received bytes may be parsed.
+
+        Cutoff connections remain scheduled until their Reactant reports either
+        a successful empty message boundary through ``rxDrained`` or terminal
+        incomplete input through ``rxFailed``.
+
+        Yields:
+            Once per connection-supervision recurrence.
         """
-        Returns doifiable Doist compatibile generator method (doer dog) to service
-            connections on .server. Creates remoter and rant (Reactant) for each
-            open connection and adds rant to running doers.
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        yield  # enter context
+        yield tock  # enter context
         while True:
             for ca, ix in list(self.server.ixes.items()):
-                if ix.cutoff:
-                    self.closeConnection(ca)
-                    continue
+                # final, opportunistic socket drain cleanup pass before enforcing inactivity timeout
+                # avoids discarding received bytes in the socket when shutting down the Directant
+                if (not ix.cutoff and
+                        ix.tymeout > 0.0 and
+                        ix.tymer.expired):
+                    # Capture bytes waiting in the socket before a local timeout turns this into
+                    # a close request.  Receive activity refreshes the timer, canceling close.
+                    ix.serviceReceives()
+                    if not ix.cutoff and ix.tymer.expired:
+                        ix.shutdownReceive()
+                        ix.cutoff = True
 
-                if ca not in self.rants:  # create Reactant and extend doers with it
+                if ca not in self.rants:  # create Reactant if Remoter not cutoff, then add to doers
+                    if ix.cutoff and not ix.rxbs:
+                        self.closeConnection(ca)
+                        continue
+
                     rant = Reactant(tymth=self.tymth, hab=self.hab, verifier=self.verifier,
                                     exchanger=self.exchanger, remoter=ix)
                     self.rants[ca] = rant
                     # add Reactant (rant) doer to running doers
                     self.extend(doers=[rant])  # open and run rant as doer
 
-                if ix.tymeout > 0.0 and ix.tymer.expired:
-                    self.closeConnection(ca)  # also removes rant
+                if ix.cutoff:
+                    rant = self.rants[ca]
+                    if rant.rxDrained or rant.rxFailed:
+                        self.closeConnection(ca)  # also removes rant
 
-            yield
+            yield tock
 
     def closeConnection(self, ca):
+        """Remove a terminal Remoter and its Reactant from the scheduler.
+
+        ``serviceDo`` calls this only when no buffered input requires a parser,
+        or after the Reactant has reported ``rxDrained`` or ``rxFailed``.
+
+        Parameters:
+            ca: Connection address used as the key in ``server.ixes`` and
+                ``rants``.
         """
-        Close and remove connection given by ca and remove associated rant at ca.
-        """
-        if ca in self.server.ixes:  # remoter still there
-            self.server.ixes[ca].serviceSends()  # send final bytes to socket
-        self.server.removeIx(ca)
+        if ca in self.server.ixes:
+            self.server.removeIx(ca)
         if ca in self.rants:  # remove rant (Reactant) if any
             self.remove([self.rants[ca]])  # close and remove rant from doers list
             del self.rants[ca]
 
 
 class Reactant(doing.DoDoer):
-    """
-    Reactant Subclass of DoDoer with doers list from do generator methods:
-        .msgDo, .cueDo, and .escrowDo.
-    Enables continuous scheduling of doers (do generator instances or functions)
+    """Process one accepted direct-mode TCP connection.
 
-    Implements Doist like functionality to allow nested scheduling of doers.
-    Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
+    Each Reactant binds a per-connection Parser to KEL, optional TEL, EXN, and
+    reply handlers. The Parser consumes the same mutable byte buffer exposed as both
+    ``remoter.rxbs`` and ``parser.ims``. ``msgDo`` dispatches inbound CESR
+    messages, ``cueDo`` queues protocol responses on the same Remoter, and
+    ``escrowDo`` advances deferred event processing. Directant owns the
+    Reactant's lifetime and removes it only after receiver drain or failure.
 
-    Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
+    ``msgInProgress`` distinguishes a true empty message boundary from a parser
+    that has consumed the available bytes but still needs attachments. Together
+    with ``rxError`` and the remaining ``parser.ims`` bytes, it defines the
+    ``rxDrained`` and ``rxFailed`` teardown contract.
 
     Attributes:
-        .hab is Habitat instance of local controller's context
-        .kevery is Kevery instance
-        .remoter is TCP Remoter instance for connection from remote TCP client.
-
-    Inherited Attributes:
-        .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
-        .opts is dict of injected options for its generator .do
-        .doers is list of Doers or Doer like generator functions
-
-
-    Inherited Properties:
-        .tyme is float relative cycle time of associated Tymist .tyme obtained
-            via injected .tymth function wrapper closure.
-        .tymth is function wrapper closure returned by Tymist .tymeth() method.
-            When .tymth is called it returns associated Tymist .tyme.
-            .tymth provides injected dependency on Tymist tyme base.
-        .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
-        .__call__ makes instance callable
-            Appears as generator function that returns generator
-        .do is generator method that returns generator
-        .enter is enter context action method
-        .recur is recur context action method or generator method
-        .clean is clean context action method
-        .exit is exit context method
-        .close is close context method
-        .abort is abort context method
-
-    Overidden Methods:
-
-    Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
-
+        hab: Local habitat providing the database and protocol context.
+        remoter: TCP connection used for both inbound and outbound bytes.
+        parser: Per-connection CESR parser backed by ``remoter.rxbs``.
+        msgInProgress: Whether one CESR message is awaiting completion.
+        rxError: Terminal error for an incomplete message observed at EOF.
     """
 
     def __init__(self, hab, remoter, verifier=None, exchanger=None, doers=None, **kwa):
-        """
-        Initialize instance.
-
-        Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
-            doers is list of doers (do generator instancs or functions)
+        """Initialize protocol handlers for one accepted TCP connection.
 
         Parameters:
-            hby is Habitat instance of local controller's context
-            verifier is Verifier instance of local controller's TEL context
-            remoter is TCP Remoter instance
-            doers is list of doers (do generator instances, functions or methods)
-
+            hab: Local habitat whose database receives parsed protocol state.
+            remoter: Accepted TCP Remoter supplying the shared receive buffer.
+            verifier: Optional TEL verifier used to construct a Tevery.
+            exchanger: Optional EXN exchanger registered with the Parser.
+            doers: Additional doers to run with message, cue, and escrow work.
         """
         self.hab = hab
         self.verifier = verifier
         self.exchanger = exchanger
         self.remoter = remoter  # use remoter for both rx and tx
+        self.msgInProgress = False
+        self.rxError = None
 
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo, tock=hab.tocks["reactantMsg"]),
@@ -561,61 +495,103 @@ class Reactant(doing.DoDoer):
             self.remoter.wind(self.tymth)
 
     def wind(self, tymth):
-        """
-        Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
-        Updates winds .tymer .tymth
+        """Propagate a scheduler time base to this doer and its Remoter.
+
+        Parameters:
+            tymth: Callable returning the scheduler's current time.
         """
         super(Reactant, self).wind(tymth)
         self.remoter.wind(tymth)
 
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            incoming message stream of .kevery
+        """Incrementally parse and dispatch complete inbound CESR messages.
 
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
+        Parsing starts only after the first byte arrives. A local ``onceParsator``
+        then continues until one complete message and its attachments have been
+        dispatched. Normal iterator completion marks a message boundary; a yielded
+        iterator is waiting for more bytes. ``msgInProgress`` remains true during
+        that wait, so an empty ``parser.ims`` alone cannot be mistaken for receiver drain.
 
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
+        While the connection is open, a shortage simply yields for more input.
+        After cutoff, no more input can arrive, so the same shortage becomes a
+        terminal ``ShortageError``: the unusable remainder is cleared and
+        ``rxFailed`` allows Directant to tear down the connection. Complete
+        buffered messages continue one at a time until ``rxDrained`` becomes
+        true.
 
-
-        Usage:
-            add result of doify on this method to doers list
+        Yields:
+            The configured ``tock`` while idle and after each parser step.
         """
         self.wind(tymth)
         _ = (yield tock)  # enter context
-        if self.parser.ims:
+        while True:
+            while not self.parser.ims:  # wait on initial message bytes
+                yield tock
+
             logger.info("Server %s: received:\n%s\n...\n", self.hab.name,
                         self.parser.ims[:1024])
-        done = yield from self.parser.parsator(local=True)  # process messages continuously
-        return done  # should nover get here except forced close
+            msgParser = self.parser.onceParsator(local=True)
+            self.msgInProgress = True
+            try:  # parse a single, complete message
+                while True:
+                    try:
+                        next(msgParser)
+                    except StopIteration:
+                        # One complete message parsed and dispatched.
+                        # This boundary is the receiver completion signal.
+                        break
+
+                    # onceParsator yields only when it needs more bytes.
+                    # Upon EOF occurring (cutoff), those bytes cannot arrive, so fail.
+                    if self.remoter.cutoff:
+                        remaining = len(self.parser.ims)
+                        self.rxError = kering.ShortageError(
+                            f"incomplete CESR message at EOF from "
+                            f"{self.remoter.ca}; {remaining} buffered bytes remain"
+                        )
+                        del self.parser.ims[:]
+                        logger.error(str(self.rxError))
+                        break
+
+                    # Preserve one parser step per scheduler recurrence.
+                    yield tock
+            finally:
+                msgParser.close()
+                self.msgInProgress = False
+
+            # One msg parser step per scheduler tick following terminal completion or failure.
+            yield tock
+
+    @property
+    def rxDrained(self):
+        """Whether parsing is at a successful empty message boundary.
+
+        True requires no receiver error, no message in progress, and no bytes
+        in ``parser.ims``. Directant treats this as terminal only after the
+        Remoter has reported cutoff; an open idle connection may receive more.
+        """
+        return (self.rxError is None and
+                not self.msgInProgress and
+                not self.parser.ims)
+
+    @property
+    def rxFailed(self):
+        """Whether EOF exposed a terminally incomplete CESR message."""
+        return self.rxError is not None
 
 
     def cueDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery.cues deque
+        """Generate and queue protocol responses from Kevery cues.
 
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
+        ``hab.processCuesIter`` converts each cue into response bytes. Fragment
+        lists are flattened before the response is queued on the connection,
+        and yielding after every response limits work to one cue per recurrence.
+        Queueing bytes on the Remoter does not prove transport delivery or peer
+        processing.
 
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
+        Yields:
+            The configured ``tock`` after each response and while no cues exist.
         """
         self.wind(tymth)
         _ = (yield tock)  # enter context
@@ -631,23 +607,13 @@ class Reactant(doing.DoDoer):
 
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .kevery escrows.
+        """Advance deferred KEL and optional TEL processing once per recurrence.
 
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
+        Escrow processing may unblock protocol validation, but it does not define
+        the receiver-drain boundary and does not control connection teardown.
 
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
+        Yields:
+            The configured ``tock`` after each escrow-processing pass.
         """
         self.wind(tymth)
         _ = (yield tock)  # enter context
@@ -659,8 +625,14 @@ class Reactant(doing.DoDoer):
         return False  # should never get here except forced close
 
     def sendMessage(self, msg, label=""):
-        """
-        Sends message msg and loggers label if any
+        """Queue response bytes on the Remoter and log the local operation.
+
+        Returning means only that the bytes were added to the local transport;
+        it is not acknowledgement of transport drain or peer processing.
+
+        Parameters:
+            msg: Bytes to queue on the connection.
+            label: Optional description included in the log entry.
         """
         self.remoter.tx(msg)  # send to remote
         logger.info("Server %s: sent %s:\n%d\n\n", self.hab.name,

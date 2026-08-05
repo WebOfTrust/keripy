@@ -234,6 +234,13 @@ class Serdery:
         else:
             smellage = smell(ims)
 
+        # back-porting main's 2025-05-14 fix to error on incomplete attachments or messages
+        if len(ims) - skip < smellage.size:
+            raise kering.ShortageError(
+                f"Need {smellage.size} bytes for serialized message, "
+                f"only {len(ims) - skip} available."
+            )
+
         if smellage.proto == Protocols.keri:
             return SerderKERI(raw=ims, strip=True, smellage=smellage,
                               genus=genus, gvrsn=gvrsn)

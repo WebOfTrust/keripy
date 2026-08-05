@@ -99,6 +99,8 @@ class UpdateDoer(doing.DoDoer):
         witer.msgs.append(bytearray(msg))
 
         while not witer.idle:
+            if witer.error is not None:
+                raise witer.error
             yield self.tock
 
         self.remove([witer])
