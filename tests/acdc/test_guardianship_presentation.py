@@ -631,6 +631,10 @@ REG_DGO_STAMP = "2026-01-05T12:00:00.000000+00:00"
 REG_ENDORSER_STAMP = "2026-01-06T12:00:00.000000+00:00"
 REG_GUARDIAN_STAMP = "2026-01-07T12:00:00.000000+00:00"
 
+# The ward's date of birth, named once so the tests can assert that a WHOLE-disclosed
+# authority credential never restates it. Cara is 14.
+WARD_DOB = "2012-04-10"
+
 # Fixed timestamps for the IPEX exn messages (kept stable so SAIDs are reproducible).
 APPLY_STAMP = "2026-07-20T15:15:00.000000+00:00"
 OFFER_STAMP = "2026-07-20T15:16:00.000000+00:00"
@@ -679,7 +683,7 @@ def _sedi_attr():
     return dict(d='', u=NONCES[N_SEDI_A],
                 photo=dict(d='', u=NONCES[N_SEDI_PHOTO],
                            photo="<state-endorsed-photo-bytes>"),
-                dob=dict(d='', u=NONCES[N_SEDI_DOB], dob="2012-04-10"),
+                dob=dict(d='', u=NONCES[N_SEDI_DOB], dob=WARD_DOB),
                 residence=dict(d='', u=NONCES[N_SEDI_RES],
                                residence="Provo UT"),
                 name=dict(d='', u=NONCES[N_SEDI_NAME], name="Cara Carver"))
@@ -816,6 +820,24 @@ def _guardian_attr():
     + validity together. basis = custodialParent (inherent parental right, no court);
     powers limited to digitalIdentity (managing/presenting the ward's digital identity);
     recognition names the inherent-parental authority type and Utah as appointing state.
+
+    DATE HYGIENE, and it is not cosmetic. Because this credential is disclosed WHOLE, every
+    date in it reaches the verifier, and a date about the guardianship can silently be a date
+    about the WARD. An earlier revision set effectiveDate to the date the parental right
+    arose, which for a custodial parent IS the ward's birthdate -- so the example handed the
+    service Cara's exact date of birth in the same exchange where it claims the service gets
+    only an over-13 predicate. effectiveDate is now the date the State recorded the
+    relationship, which is what a verifier actually needs (when this authority became
+    checkable) and is not derived from the ward at all.
+
+    The remaining leak is structural and is asserted rather than hidden. A minor
+    guardianship expires at majority, so expiryDate is Cara's 18th birthday and the service
+    can subtract 18 to recover her birth month and day. Nothing in the represented-
+    presentation shape fixes that: the date is load-bearing for the verifier (is this
+    authority still valid?) and derived from the ward. Mitigations are deployment-level --
+    coarsen to the month or year of majority, or move validity entirely into the registry so
+    no date ships at all. test_guardian_authority_credential_JSON asserts the residual is
+    present so it cannot regress into being forgotten.
     """
     return dict(d='', u=NONCES[N_G_A],
                 basis="custodialParent",
@@ -825,8 +847,8 @@ def _guardian_attr():
                 recognition=dict(authorityType="inherentParental",
                                  appointingState="US-UT",
                                  registrationStatus="native"),
-                effectiveDate="2012-04-10",
-                expiryDate="2030-04-10")       # majority (Cara's 18th birthday)
+                effectiveDate="2012-05-02",    # State recorded it, NOT Cara's birthdate
+                expiryDate="2030-04-10")       # majority; leaks her birth month/day, see above
 
 
 def _guardian_credential(kind, sedi=None, birthCert=None, reg=None):
@@ -978,7 +1000,7 @@ def test_guardian_authority_credential_JSON():
     # holder != subject: the credential's issuee is Bob, and the ward is Cara, named
     # only by edge. This is the load-bearing invariant, asserted structurally.
     assert guardian.iseaid != sedi.iseaid           # Bob is not the ward
-    assert guardian.said == "EEh0osPLf0Lr0SWjoPZkaiw9sTFSBRMooX0zJFHHD26a"
+    assert guardian.said == "ECDjaSnhHOg_rU3GwUfzfbF8UE2LvPQnjHbBcEstNC0d"
     assert guardian.sad['e']['subject']['n'] == sedi.said       # ward named by edge
     assert guardian.sad['e']['subject']['o'] == 'NI2I'          # reference, not delegation
     assert guardian.sad['e']['authorization']['n'] == birthCert.said   # authority grounded
@@ -989,6 +1011,19 @@ def test_guardian_authority_credential_JSON():
     assert guardian.sad['a']['basis'] == "custodialParent"
     assert guardian.sad['a']['powers'] == ["digitalIdentity"]
     assert guardian.sad['a']['recognition']['authorityType'] == "inherentParental"
+
+    # --- Date hygiene in a WHOLE-disclosed authority credential (see _guardian_attr). ---
+    # effectiveDate MUST NOT be the ward's birthdate: for a custodial parent the date the
+    # right arose is exactly her DOB, and this credential ships entire, so setting it that
+    # way would hand the service the birthdate the whole example exists to withhold.
+    assert guardian.sad['a']['effectiveDate'] != WARD_DOB
+    # The residual, asserted PRESENT rather than hidden: a minor guardianship expires at
+    # majority, so expiryDate is derived from the ward and leaks her birth month and day.
+    # Deployment-level mitigations only -- coarsen the date, or carry validity solely in
+    # the registry. This assertion exists so the leak cannot be quietly forgotten.
+    assert guardian.sad['a']['expiryDate'] == "2030-04-10"
+    assert guardian.sad['a']['expiryDate'][5:] == WARD_DOB[5:]      # month/day recoverable
+
     # The Rules section references the SEDI guardianship governance framework by SAID.
     assert guardian.sad['r'] == GUARDIAN_RULES_SAID
     schema = assert_acdc_schema_valid(guardian)
@@ -1129,7 +1164,7 @@ def test_represented_presentation_JSON():
     assert presentation.sad['a']['i'] == SERVICE  # the service is the Issuee (Disclosee)
     assert 'rd' not in presentation.sad           # one-time presentation, not logged
     assert presentation.sad['r'] == GUARDIAN_RULES_SAID   # governance by SAID
-    assert presentation.said == "EAEvUNpLabXbWc5KJY-Ar-eBsOec3eRSDv36Ys2maNxA"
+    assert presentation.said == "EE4QuS4EkZzUsRIu58TpsYxabpRtfn7DuCwzNU926ex1"
 
     # The full binding holds for the honest presentation.
     assert _verify_representation(presentation, guardian, sedi, age)
@@ -1237,7 +1272,7 @@ def test_represented_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "EB0BZhRwuXiIY56mZkgkU8ILK6i0JQ5bUmKRPisr9Iiy"
+    assert offer.said == "EIL_BAJhY2VMcGosTiUyM5D7iSJHENK0pGCfXTGls9VT"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2012-04-10" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1250,7 +1285,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=SERVICE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EK7vHz3Sfq8LrrsSxT4YxHgcEOOtMfKZypAvAaLRSOty"
+    assert agree.said == "EP75BtfA8laTeegRuFRFMiCZuYPiyIh5s5DFeR4HlBVb"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1282,7 +1317,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EMVbQBcGb3CsaGNkv5u7CYGGtJgRD-NgsgIuP5x_anaw"
+    assert grant.said == "EJMtsvKMi6x9ceBUmRLrl1OE1v2n2FH1koyBNxbq11a7"
     assert grant.sad['a']['wardAge'][AGE_OVER13]['over13'] is True     # over-13 disclosed
     assert grant.sad['a']['wardId']['i'] == CARA                       # ward bound (issuee)
     assert b"2012-04-10" not in grant.raw                             # birthdate withheld
@@ -1292,7 +1327,7 @@ def test_represented_presentation_JSON():
     admit = exchange(sender=SERVICE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "ENn1nw5b4xeutNDQws3dY3hHViHBP3Uw9PYAvyZCGuh8"
+    assert admit.said == "EFzad_txAB6VIPEOh6roQuhVQkPJuOLM6FGwxO243EQ8"
 
 
 # ---------------------------------------------------------------------------
@@ -1348,8 +1383,8 @@ def test_revocation_and_accountability_JSON():
     issued = blindate(regid=reg.said, prior=reg.said, blid=issuedBlinder.said,
                       sn=1, stamp="2026-01-07T12:05:00.000000+00:00", kind=kind)
     assert issued.ilk == Ilks.bup
-    assert issuedBlinder.said == "EMaPqY8xw3X8dAHk5dYwQU4zEQNsCJReSgYd_lPfQ8Qk"
-    assert issued.said == "EBjBNsaw8x5P_gxZons3fg0syec8g2FXkhyIPUnIHT6S"
+    assert issuedBlinder.said == "EHVdcs74WcacXzHKhv1HjkVyeMxu09Ne7CewphoUFWOA"
+    assert issued.said == "EHOB_YzqKFow9ZgtZPgh_DNfLGV7Aiu7KkGy9oTMN9Aa"
     assert issued.sad['b'] == issuedBlinder.said
     # Privacy: the state word and the guardian SAID never appear on the wire; only the
     # blinded SAID rides in the bup event.
@@ -1365,7 +1400,7 @@ def test_revocation_and_accountability_JSON():
                                    salt=GUARDIAN_SALT, sn=2)
     revoked = blindate(regid=reg.said, prior=issued.said, blid=revokedBlinder.said,
                        sn=2, stamp="2026-05-01T09:00:00.000000+00:00", kind=kind)
-    assert revoked.said == "EE_hgptMDgqvrXEUWAY9SJEkWzp1qx6NpLifiS6NKsou"
+    assert revoked.said == "EHGQR3BbgLyIPnhnIrCkqeyjYjTX08XAXWWqYHsn4Xcl"
     assert revoked.sad['p'] == issued.said          # chains onto the issuance update
     assert _guardian_status(revoked, guardian.said, sn=2) == 'revoked'
     # The credential graph still binds (edges are immutable), but a verifier that checks
