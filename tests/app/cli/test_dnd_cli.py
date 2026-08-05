@@ -119,6 +119,74 @@ def test_confirm_missing_config_field_is_not_an_error():
     assert "Do Not Delegate: False" in lines
 
 
+def _bareConfirmDoer(requireDnD=True):
+    """A ConfirmDoer with no Habery behind it.
+
+    ConfirmDoer.__init__ builds a Habery, a mailbox director and five other doers, none of
+    which the decline decision touches. Constructing it without them keeps this a test of
+    the decision rather than of the wiring.
+    """
+    doer = confirm_command.ConfirmDoer.__new__(confirm_command.ConfirmDoer)
+    doer.requireDnD = requireDnD
+    doer.declined = set()
+    return doer
+
+
+def test_confirm_declines_delegated_inception_without_dnd(capsys):
+    """--require-dnd refuses a delegate that would be free to delegate onward."""
+    doer = _bareConfirmDoer()
+    ked = dict(t=Ilks.dip, i="EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk", c=[])
+
+    assert doer.declineForDnD(ked, "EEaJrM-0HPs4hATSqSpvotRBAjKuJO6ri5Uh7KBoLYbV") is True
+    assert "require-dnd" in capsys.readouterr().out
+
+    ked["c"] = [TraitDex.DoNotDelegate]
+    assert doer.declineForDnD(ked, "EGyJ7y3TlewCW97dgBN-4pckhCqsni-zHNZ_G8zVerPG") is False
+    assert capsys.readouterr().out == ""
+
+
+def test_confirm_announces_each_decline_once(capsys):
+    """The refusal does not spin the console while the request sits in escrow.
+
+    confirmDo polls the delegation escrow on every tock, and declining leaves the entry
+    where it is, so announcing on each pass would print forever. The interactive path is
+    immune because it blocks on input(), and --auto is immune because it always approves;
+    --require-dnd is the only path that neither blocks nor resolves.
+    """
+    doer = _bareConfirmDoer()
+    ked = dict(t=Ilks.dip, i="EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk", c=[])
+    said = "EEaJrM-0HPs4hATSqSpvotRBAjKuJO6ri5Uh7KBoLYbV"
+
+    assert doer.declineForDnD(ked, said) is True
+    assert capsys.readouterr().out != ""
+
+    for _ in range(5):  # stands in for repeated polls of the same escrowed request
+        assert doer.declineForDnD(ked, said) is True
+    assert capsys.readouterr().out == ""
+
+    # A different request still gets announced.
+    assert doer.declineForDnD(ked, "EGyJ7y3TlewCW97dgBN-4pckhCqsni-zHNZ_G8zVerPG") is True
+    assert "require-dnd" in capsys.readouterr().out
+
+
+def test_confirm_does_not_require_dnd_of_a_rotation(capsys):
+    """Config traits are inception only, so a delegated rotation carries none to require."""
+    doer = _bareConfirmDoer()
+    ked = dict(t=Ilks.drt, i="EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk")
+
+    assert doer.declineForDnD(ked, "EEaJrM-0HPs4hATSqSpvotRBAjKuJO6ri5Uh7KBoLYbV") is False
+    assert capsys.readouterr().out == ""
+
+
+def test_confirm_without_require_dnd_declines_nothing(capsys):
+    """Absent the flag, a dip with no DND is left for the operator to judge."""
+    doer = _bareConfirmDoer(requireDnD=False)
+    ked = dict(t=Ilks.dip, i="EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk", c=[])
+
+    assert doer.declineForDnD(ked, "EEaJrM-0HPs4hATSqSpvotRBAjKuJO6ri5Uh7KBoLYbV") is False
+    assert capsys.readouterr().out == ""
+
+
 def test_confirm_require_dnd_flag_parses():
     """--require-dnd lets a delegator refuse an unbounded delegate without reading the prompt.
 

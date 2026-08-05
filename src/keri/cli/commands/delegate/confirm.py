@@ -104,6 +104,7 @@ class ConfirmDoer(doing.DoDoer):
                  codeTime=None, version=None, requireDnD=False):
         self.version = version
         self.requireDnD = requireDnD
+        self.declined = set()  # SAIDs already announced as declined; see .declineForDnD
         hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
@@ -132,6 +133,41 @@ class ConfirmDoer(doing.DoDoer):
         self.interact = interact
         self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
+
+    def declineForDnD(self, ked, said):
+        """Returns True if --require-dnd is set and this delegated inception lacks DND.
+
+        Announces the refusal once per event rather than on every pass. .confirmDo polls
+        the delegation escrow on each tock and declining leaves the entry where it is, so
+        announcing every time would spin the console for as long as the request sits
+        there. The interactive path avoids that by blocking on input() and --auto avoids
+        it by always approving; this is the only path that neither blocks nor resolves.
+
+        Parameters:
+            ked (dict): key event dict of the delegated event awaiting approval
+            said (str): qb64 digest of that event, used to announce only once
+
+        Returns:
+            bool: True means skip this request
+
+        """
+        if not self.requireDnD:
+            return False
+
+        # Config traits are inception only, so a delegated rotation has none to require.
+        if ked.get("t") not in (Ilks.dip,):
+            return False
+
+        if TraitDex.DoNotDelegate in (ked.get("c") or []):
+            return False
+
+        if said not in self.declined:
+            self.declined.add(said)
+            print(f"Declining delegation inception request from {ked.get('i')}: "
+                  f"--require-dnd is set and the event does not carry "
+                  f"{TraitDex.DoNotDelegate}.")
+
+        return True
 
     def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
         """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
@@ -196,10 +232,7 @@ class ConfirmDoer(doing.DoDoer):
                     # show and none to require.
                     inceptive = ilk in (Ilks.dip,)
 
-                    if (inceptive and self.requireDnD
-                            and TraitDex.DoNotDelegate not in (eserder.sad.get("c") or [])):
-                        print(f"Declining delegation {typ} request from {eserder.pre}: --require-dnd "
-                              f"is set and the event does not carry {TraitDex.DoNotDelegate}.")
+                    if self.declineForDnD(eserder.sad, edig):
                         continue
 
                     if self.auto:
