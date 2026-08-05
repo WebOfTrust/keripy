@@ -45,7 +45,7 @@ class SpecResource:
         """
         GET endpoint for OpenAPI spec
 
-        Args:
+        Parameters:
             _: falcon.Request HTTP request
             rep: falcon.Response HTTP response
 

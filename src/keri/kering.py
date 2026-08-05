@@ -141,7 +141,7 @@ def rematch(match):
 def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=None):
     """
     Returns:
-       vs (str): version string
+        vs (str): version string
 
     Parameters:
         proto (str): message protocol one of Protocols (KERI, ACDC etc)
@@ -192,7 +192,7 @@ def deversify(vs):
             gvrsn (Versionage): genus version (major, minor)
 
     Parameters:
-      vs (str | bytes): version string to extract from
+        vs (str | bytes): version string to extract from
 
     Uses regex match to extract:
         protocol type

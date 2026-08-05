@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.peer.exchanging module
-
 """
 import datetime
 import logging
@@ -28,8 +27,7 @@ logger = ogler.getLogger()
 
 class Exchanger:
     """
-     Peer to Peer KERI message Exchanger.
-    """
+     Peer to Peer KERI message Exchanger."""
 
     TimeoutPSE = 10  # seconds to timeout partially signed or delegated escrows
 
@@ -38,10 +36,9 @@ class Exchanger:
 
         Parameters:
             hby (Haberyu): database environment
-            handlers(list): list of Handlers capable of responding to exn messages
+            handlers (list): list of Handlers capable of responding to exn messages
             cues (Deck):  of Cues i.e. notices of requests needing response
-            delta (timedelta): message timeout window
-        """
+            delta (timedelta): message timeout window"""
 
         self.hby = hby
         self.kevers = self.hby.db.kevers
@@ -69,11 +66,11 @@ class Exchanger:
         Parameters:
             serder (Serder): instance of event to process
             tsgs (list): tuples (quadruples) of form
-                           (prefixer, seqner, diger, [sigers]) where:
-                           prefixer is pre of trans endorser
-                           seqner is sequence number of trans endorser's est evt for keys for sigs
-                           diger is digest of trans endorser's est evt for keys for sigs
-                           [sigers] is list of indexed sigs from trans endorser's keys from est evt
+                (prefixer, seqner, diger, [sigers]) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
             cigars (list): of Cigar instances of attached non-trans sigs
             ptds (list[bytes]): pathed Cesr Streams
             essrs (list[Texter]): ESSR streams as Texters
@@ -195,9 +192,7 @@ class Exchanger:
             logger.debug("Event=\n%s\n", serder.pretty())
 
     def processEscrow(self):
-        """ Process all escrows for `exn` messages
-
-        """
+        """ Process all escrows for `exn` messages"""
         self.processEscrowPartialSigned()
 
     def escrowPSEvent(self, serder, tsgs, pathed, nests=None):
@@ -224,7 +219,7 @@ class Exchanger:
         return self.hby.db.epse.put(keys=(dig,), val=serder)
 
     def processEscrowPartialSigned(self):
-        """ Process escrow of partially signed messages """
+        """ Process escrow of partially signed messages"""
         for (dig,), serder in self.hby.db.epse.getTopItemIter():
             try:
                 tsgs = []
@@ -332,9 +327,7 @@ class Exchanger:
             said (str): qb64 SAID of exchange message
 
         Returns:
-            bool: True means hab is the lead
-
-        """
+            bool: True means hab is the lead"""
         from ..app import GroupHab
 
         if not isinstance(hab, GroupHab):
@@ -354,12 +347,11 @@ class Exchanger:
     def complete(self, said):
         """
 
-        Args:
+        Parameters:
             said (str): qb64 said of exchange message to check status
 
         Returns:
-            bool: True means exchange message is has been saved
-        """
+            bool: True means exchange message is has been saved"""
         serder = self.hby.db.exns.get(keys=(said,))
         if not serder:
             return False
@@ -392,27 +384,25 @@ def exchangeOld(*,
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-                   if any
+            if any
         prior (str): qb64 of prior exchange event including 'xip" if any
         route (str):  '/' delimited path identifier of data flow handler
-                      (behavior) to processs the reply if any (equivalent of
-                      url path to resource)
+            (behavior) to processs the reply if any (equivalent of
+            url path to resource)
         modifiers (dict): modifiers field map (equvalent of http query string)
         attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data, default is now.
+            creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                if serder.gvrsn else serder.pvrsn
         kind (str): serialization for key event message
-                    one of Kinds ("json","cbor","mgpk","cesr")
+            one of Kinds ("json","cbor","mgpk","cesr")
         diger (Diger): qb64 digest of attributes section (payload)
-        embeds (dict): named embeded KERI event CESR stream with attachments
-
-    """
+        embeds (dict): named embeded KERI event CESR stream with attachments"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
@@ -518,36 +508,34 @@ def specialExchange(*,
     attachment as determined by the presence of diger or embeds parameters
     repectively
 
-    Parameters::
+    Parameters:
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-                   if any
+            if any
         prior (str): qb64 of prior exchange event including 'xip" if any
         route (str):  '/' delimited path identifier of data flow handler
-                      (behavior) to processs the reply if any (equivalent of
-                      url path to resource)
+            (behavior) to processs the reply if any (equivalent of
+            url path to resource)
         modifiers (dict): modifiers field map (equvalent of http query string)
         attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data, default is now.
+            creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                if serder.gvrsn else serder.pvrsn
         kind (str): serialization for key event message
-                    one of Kinds ("json","cbor","mgpk","cesr")
+            one of Kinds ("json","cbor","mgpk","cesr")
         diger (Diger): qb64 digest of attributes section (payload)
         embeds (dict): named embeded KERI event CESR stream with attachments
 
-    Returns::
+    Returns:
         embedded (SerderKeri, bytearray): of form (exchange, attachments) where
-            exchange is serder of exchange message and atc is serialized path
-            attachments of embeds
-
-    """
+        exchange: serder of exchange message and atc is serialized path
+            attachments of embeds"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
@@ -626,9 +614,7 @@ def cloneMessage(hby, said):
         said (str): qb64 SAID of message exn to load
 
     Returns:
-        tuple: (serder, list) of message exn and pathed signatures on embedded attachments
-
-    """
+        tuple: (serder, list) of message exn and pathed signatures on embedded attachments"""
     exn = hby.db.exns.get(keys=(said,))
     if exn is None:
         return None, None
@@ -654,11 +640,11 @@ def serializeMessage(hby, said, framed=False):
         hby (Habery): environment with db
         said (str): of message
         framed (bool): True means may assume each message plus its attachments
-                            is isolated as frame when parsing so do not need
-                            attachment group when messagizing
-                       False means may not assume eash message plus its attachments
-                            is isolated as frame when parsing so do need
-                            attachment group when messagizing
+            is isolated as frame when parsing so do not need
+            attachment group when messagizing
+        False means may not assume eash message plus its attachments
+            is isolated as frame when parsing so do need
+            attachment group when messagizing
 
     Returns:
         msg (bytearray):  message by said with attachments
@@ -713,8 +699,7 @@ def nesting(paths, acc, val):
     """Nesting Pather parts
 
     Parameters:
-        paths (list[list]): list of path parts
-    """
+        paths (list[list]): list of path parts"""
     if len(paths) == 0:
         return val
     else:
@@ -732,9 +717,7 @@ def verify(hby, serder):
         serder (Serder): exn serder to load and verify signatures for
 
     Returns:
-        bool: True means threshold satisfyig signatures were loaded and verified successfully
-
-    """
+        bool: True means threshold satisfyig signatures were loaded and verified successfully"""
     tsgs = []
     klases = (Prefixer, Seqner, Saider)
     args = ("qb64", "snh", "qb64")

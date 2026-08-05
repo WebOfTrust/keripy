@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.core.routing module
-
 """
 
 import datetime
@@ -23,9 +22,7 @@ class Router:
     """Reply message router
 
     Reply message router that accepts registration of route `r` handlers and dispatches
-    reply messages to the appropriate handler.
-
-    """
+    reply messages to the appropriate handler."""
 
     defaultResourceFunc = "processReply"
 
@@ -33,9 +30,7 @@ class Router:
         """Initialized instance with optiona list of existing routes
 
         Parameters:
-            routes (list): preregistered routes for this router
-
-        """
+            routes (list): preregistered routes for this router"""
         self.routes = routes if routes is not None else list()
 
     def addRoute(self, routeTemplate, resource, suffix=None):
@@ -45,11 +40,9 @@ class Router:
         Parameters:
             routeTemplate (str): a route template to use for the resource
             resource (object): the resource instance to associate with the route template
-            suffix(str, optional): Optional responder name suffix for this route. If a suffix is provided,
-              Router will map reply routes to processReply{suffix}().  In this way, multiple closely-related routes
-              can be mapped to the same resource.
-
-        """
+            suffix (str, optional): Optional responder name suffix for this route. If a suffix is provided,
+                Router will map reply routes to processReply{suffix}().  In this way, multiple closely-related routes
+                can be mapped to the same resource."""
 
         fields, regex = compile_uri_template(routeTemplate)
         self.routes.append(
@@ -63,11 +56,7 @@ class Router:
             serder:
             diger:
             cigars:
-            tsgs:
-
-        Returns:
-
-        """
+            tsgs:"""
         ked = serder.ked
         # Dispatch based on route
         r = ked["r"]
@@ -98,9 +87,7 @@ class Router:
 
         Returns:
             Route: the Route object with the resource that is registered to process this rpy message
-            re.Match:  the regular expression match that contains the grouping of matched parameters.
-
-        """
+            re.Match:  the regular expression match that contains the grouping of matched parameters."""
         for r in self.routes:
             if res := r.regex.search(route):
                 return r, res
@@ -116,11 +103,9 @@ class Router:
             serder (Serder): reply event message
             diger (Diger): instance from said of reply serder
             route (str): route ('r') of the event message
-            cigars (Optional(list)): list of non-transferable signature tuples
-            tsgs (Optional(list)): list of transferable signature tuples
-            **kwargs (dict) additional keyword args
-
-        """
+                cigars (Optional(list)): list of non-transferable signature tuples
+                tsgs (Optional(list)): list of transferable signature tuples
+                **kwargs (dict): additional keyword args"""
 
         raise ConfigurationError(
             f"Resource registered for route {route} in {Ilks.rpy}"
@@ -140,8 +125,7 @@ class Revery:
             db:
             cues:
             lax:
-            local:
-        """
+            local:"""
         self.db = db
         self.rtr = rtr if rtr is not None else Router()
         self.cues = cues if cues is not None else decking.Deck()
@@ -151,8 +135,7 @@ class Revery:
     @property
     def prefixes(self):
         """
-        Returns .db.prefixes
-        """
+        Returns .db.prefixes"""
         return self.db.prefixes
 
     def processReply(self, serder, cigars=None, tsgs=None, **kwa):
@@ -164,7 +147,7 @@ class Revery:
         Parameters:
             serder (Serder): instance of reply message
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -187,8 +170,7 @@ class Revery:
         If nontrans and partially signed then escrow.
 
         Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
-        """
+        i.e. route is address of buffer with route specific handler of escrow."""
         # verify said of reply via Serder (handles protocol/ilk-specific multi-SAID logic)
         if not serder.verify():
             raise ValidationError(f"Invalid said for reply msg={serder.ked}.")
@@ -211,7 +193,7 @@ class Revery:
             route (str): reply route
             aid (str): identifier prefix qb64 of authorizing attributable ID
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -242,9 +224,7 @@ class Revery:
         If nontrans and partially signed then escrow.
 
         Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
-
-        """
+        i.e. route is address of buffer with route specific handler of escrow."""
         # BADA logic.
         accepted = False  # flag to raise UnverifiedReplyError not accepted
         cigars = cigars if cigars is not None else []
@@ -471,13 +451,11 @@ class Revery:
             saider (Diger): instance from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             cigar (Cigar): instance that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             prefixer (Prefixer): is pre of trans endorser
             seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
             diger (Diger): is digest of trans endorser's est evt for keys for sigs
-            sigers (list): of indexed sigs from trans endorser's key from est evt
-
-        """
+            sigers (list): of indexed sigs from trans endorser's key from est evt"""
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
@@ -491,9 +469,7 @@ class Revery:
         """Remove Reply SAD artifacts given by saider.
 
         Parameters:
-            saider (Diger): instance from said in serder (SAD)
-
-        """
+            saider (Diger): instance from said in serder (SAD)"""
         if saider:
             keys = (saider.qb64,)
 
@@ -514,10 +490,8 @@ class Revery:
             route (str): reply route
             prefixer (Prefixer): is pre of trans endorser
             snumber (Number): is sequence number of trans endorser's est evt for keys for sigs
-            sdiger (Diger) is said of trans endorser's est evt for keys for sigs
-            sigers (list): is indexed sigs from trans endorser's key from est evt
-
-        """
+                sdiger (Diger) is said of trans endorser's est evt for keys for sigs
+            sigers (list): is indexed sigs from trans endorser's key from est evt"""
         if not sigers:
             return  # nothing to escrow
         keys = (saider.qb64,)
@@ -533,9 +507,7 @@ class Revery:
         Escrows are keyed by reply route and val is reply said
 
         triple (prefixer, seqner, diger)
-        quadruple (prefixer, seqner, diger, siger)
-
-        """
+        quadruple (prefixer, seqner, diger, siger)"""
         for (route,), diger in self.db.rpes.getTopItemIter():
             try:
                 tsgs = fetchTsgs(db=self.db.tsgs, diger=diger)
@@ -602,23 +574,19 @@ class Route:
     the properties are created by using the Falcon compile route utility method
 
     Properties:
-        .regex(re): compiled url template regex
-        .fields(set): field names for matches in regex
-        .resource(object): the handler for this route
-        .suffix(Optional(str)): a suffix to be applied to the handler method
-
-    """
+        .regex (re): compiled url template regex
+        .fields (set): field names for matches in regex
+        .resource (object): the handler for this route
+            .suffix(Optional(str)): a suffix to be applied to the handler method"""
 
     def __init__(self, regex, fields, resource, suffix=None):
         """Initialize instance of route
 
         Parameters:
-            regex(re): compiled url template regex
-            fields(set): field names for matches in regex
-            resource(object): the handler for this route
-            suffix(Optional(str)): a suffix to be applied to the handler method
-
-        """
+            regex (re): compiled url template regex
+            fields (set): field names for matches in regex
+            resource (object): the handler for this route
+                suffix(Optional(str)): a suffix to be applied to the handler method"""
         self.regex = regex
         self.fields = fields
         self.resource = resource
@@ -649,13 +617,12 @@ def compile_uri_template(template):
     Also, note that if the template contains a trailing slash character,
     it will be stripped in order to normalize the routing logic.
 
-    Args:
-        template(str): The template to compile. Note that field names are
+    Parameters:
+        template (str): The template to compile. Note that field names are
             restricted to ASCII a-z, A-Z, and the underscore character.
 
     Returns:
-        tuple: (template_field_names, template_regex)
-    """
+        tuple: (template_field_names, template_regex)"""
 
     if not isinstance(template, str):
         raise TypeError("uri_template is not a string")

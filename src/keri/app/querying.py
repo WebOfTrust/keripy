@@ -90,7 +90,8 @@ class LogQuerier(doing.DoDoer):
 
     def recur(self, tyme, deeds=None):
         """
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """
@@ -127,7 +128,8 @@ class SeqNoQuerier(doing.DoDoer):
 
     def recur(self, tyme, deeds=None):
         """
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """
@@ -162,7 +164,8 @@ class AnchorQuerier(doing.DoDoer):
 
     def recur(self, tyme, deeds=None):
         """
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """

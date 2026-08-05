@@ -81,7 +81,8 @@ class OobiDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method for loading oobis using
+        Returns:
+            doifiable Doist compatible generator method for loading oobis using
         the Oobiery
         """
         # enter context

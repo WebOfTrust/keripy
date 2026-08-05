@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.vc.handling module
-
 """
 import os
 from collections import namedtuple
@@ -40,9 +39,7 @@ def _event_kwa(hab, version=None, pvrsn=None, gvrsn=None):
 
 
 class IpexHandler:
-    """ Processor of `exn` IPEX messages.
-
-    """
+    """ Processor of `exn` IPEX messages."""
 
     def __init__(self, resource, hby, notifier):
         """ Initialize instance
@@ -50,9 +47,7 @@ class IpexHandler:
         Parameters:
             resource (str): route of messages for this handler
             hby (Habery): local identifier environment
-            notifier (Notifier): outbound notifications
-
-        """
+            notifier (Notifier): outbound notifications"""
         self.resource = resource
         self.hby = hby
         self.notifier = notifier
@@ -65,9 +60,7 @@ class IpexHandler:
             attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
 
         Returns:
-            bool: True means the exn passed behaviour specific verification for IPEX protocol messages
-
-        """
+            bool: True means the exn passed behaviour specific verification for IPEX protocol messages"""
 
         route = serder.ked['r']
         dig = serder.ked['p']
@@ -119,8 +112,7 @@ class IpexHandler:
             serder (Serder): IPEX exn message to check for a response
 
         Returns:
-
-        """
+            Serder | None: response exn message if one exists, otherwise None"""
         saider = self.hby.db.erpy.get(keys=(serder.said,))
         if saider:
             rserder, _ = cloneMessage(self.hby, saider.qb64)  # Clone previous so we reverify the sigs
@@ -133,9 +125,7 @@ class IpexHandler:
 
         Parameters:
             serder (Serder): Serder of the IPEX protocol exn message
-            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
-
-        """
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event"""
         attrs = serder.ked["a"]
 
         data = dict(
@@ -151,38 +141,34 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=None, pvrsn=None,
                       gvrsn=None, framed=True, nested=False, genusify=False):
     """ Apply for an ACDC
 
-    Parameters::
-        hab(Hab): identifier environment for issuer of credential
+    Parameters:
+        hab (Hab): identifier environment for issuer of credential
         recp (str): qb64 AID of recipient
-        message(str): Human readable message regarding the credential application
+        message (str): Human readable message regarding the credential application
         schema (any): schema or its SAID
         attrs (any): attribute field label list
         version (Versionage | None): explicit KERI protocol version override.
-                        When omitted, defaults to the habitat's established version.
+            When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
-    Returns::
+    Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
-
     """
     data = dict(
         m=message,
@@ -209,36 +195,32 @@ def ipexOfferExn(hab, message, acdc, apply=None,  version=None, pvrsn=None,
     """ Offer a metadata ACDC
 
     Parameters:
-        hab(Hab): identifier environment for issuer of credential
-        message(str): Human readable message regarding the credential offer
+        hab (Hab): identifier environment for issuer of credential
+        message (str): Human readable message regarding the credential offer
         acdc (any): metadata ACDC or its SAID
         apply (Serder): optional IPEX exn apply message that this offer is response to.
         version (Versionage | None): explicit KERI protocol version override.
-                        When omitted, defaults to the habitat's established version.
+            When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
     Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
-
     """
     data = dict(
         m=message
@@ -271,35 +253,31 @@ def ipexAgreeExn(hab, message, offer, version=None, pvrsn=None,
     """ Agree an offer
 
     Parameters:
-        hab(Hab): identifier environment for issuer of credential
-        message(str): Human readable message regarding the credential agreement
+        hab (Hab): identifier environment for issuer of credential
+        message (str): Human readable message regarding the credential agreement
         offer (Serder): IPEX exn offer message that this offer is response to.
         version (Versionage | None): explicit KERI protocol version override.
-                        When omitted, defaults to the habitat's established version.
+            When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
     Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
-
     """
     data = dict(
         m=message
@@ -325,40 +303,36 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None,
     """ Disclose an ACDC
 
     Parameters:
-        hab(Hab): identifier environment for issuer of credential
-        recp (str) qb64 AID of recipient of GRANT message
-        message(str): Human readable message regarding the credential disclosure
+        hab (Hab): identifier environment for issuer of credential
+            recp (str) qb64 AID of recipient of GRANT message
+        message (str): Human readable message regarding the credential disclosure
         acdc (bytes): CESR stream of serialized ACDC with attachments
         iss (bytes): serialized TEL issuance event
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
         agree (Serder): optional IPEX exn agree message that this grant is response to.
         dt (str): Iso8601 formatted date string to use for this request
         version (Versionage | None): explicit KERI protocol version override.
-                        When omitted, defaults to the habitat's established version.
+            When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
     Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
-
     """
     data = dict(
         m=message,
@@ -399,36 +373,32 @@ def ipexAdmitExn(hab, message, grant, dt=None, version=None, pvrsn=None,
     """ Admit a disclosure
 
     Parameters:
-        hab(Hab): identifier environment for issuer of credential
-        message(str): Human readable message regarding the admission
+        hab (Hab): identifier environment for issuer of credential
+        message (str): Human readable message regarding the admission
         grant (Serder): IPEX grant exn message serder
         dt (str): timestamp
         version (Versionage | None): explicit KERI protocol version override.
-                        When omitted, defaults to the habitat's established version.
+            When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
     Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
-
     """
     data = dict(
         m=message,
@@ -454,35 +424,31 @@ def ipexSpurnExn(hab, message, spurned, version=None, pvrsn=None,
     """ Reject an application, offer or agreement
 
     Parameters:
-        hab(Hab): identifier environment for issuer of credential
-        message(str): Human readable message regarding the admission
+        hab (Hab): identifier environment for issuer of credential
+        message (str): Human readable message regarding the admission
         spurned (Serder): apply, offer, agree or grant received
         version (Versionage | None): explicit KERI protocol version override.
-                        When omitted, defaults to the habitat's established version.
+            When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
     Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
-
     """
     data = dict(
         m=message
@@ -508,9 +474,7 @@ def loadHandlers(hby, exc, notifier):
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
-        notifier (Notifier): outbound notifications
-
-    """
+        notifier (Notifier): outbound notifications"""
     exc.addHandler(IpexHandler(resource="/ipex/apply", hby=hby, notifier=notifier))
     exc.addHandler(IpexHandler(resource="/ipex/offer", hby=hby, notifier=notifier))
     exc.addHandler(IpexHandler(resource="/ipex/agree", hby=hby, notifier=notifier))
