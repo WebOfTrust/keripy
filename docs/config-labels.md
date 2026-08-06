@@ -2,60 +2,98 @@
 
 ## Overview
 
-KERI habitats store configuration in a JSON (or HJSON, MsgPack, or CBOR) file
-managed by `src/keri/app/configing.py`.  This document describes the labels
-(keys) used in that configuration file.
+KERI configuration files are managed by `src/keri/app/configing.py`.
+A file may contain both Habery-level settings and sections for individual
+habitats:
 
-The labels below are drawn from the existing `Configer` docstring examples and
-the hab configuration logic in `src/keri/app/habbing.py`.
+- `Habery.reconfigure()` reads Habery-level settings from the top level.
+- `Hab.reconfigure()` reads habitat-specific settings from the object keyed
+  by that habitat's name.
 
-## Example configuration
+The habitat-name key is dynamic. Names such as `tam` and `nel` in existing
+examples are habitat names, not reserved configuration labels.
+
+## Configuration shape
 
 ```json
 {
-    "dt": "2021-01-01T00:00:00.000000+00:00",
-    "nel": {
-        "dt": "2021-01-01T00:00:00.000000+00:00",
-        "curls": [
-            "tcp://localhost:5621/"
-        ]
-    },
+    "dt": "2026-07-30T00:00:00.000000+00:00",
     "iurls": [
         "tcp://localhost:5620/?role=peer&name=tam"
     ],
     "durls": [
-        "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
-        "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi"
+        "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy"
     ],
     "wurls": [
         "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
-    ]
+    ],
+    "<hab-name>": {
+        "dt": "2026-07-30T00:00:00.000000+00:00",
+        "curls": [
+            "tcp://localhost:5621/"
+        ]
+    }
 }
 ```
 
-## Label reference
+Replace `<hab-name>` with the habitat's actual name. For example, a habitat
+named `tam` uses a top-level `"tam"` object. The literal key
+`"<hab-name>"` is only a placeholder in this documentation.
 
-| Label   | Meaning                          | Type / shape     | Example                                          | Notes |
-|---------|----------------------------------|------------------|--------------------------------------------------|-------|
-| `dt`    | Datetime                         | ISO 8601 string  | `"2021-01-01T00:00:00.000000+00:00"`            | Timestamp of the configuration file. Must be parseable by `fromIso8601`. |
-| `nel`   | Network endpoint list            | Object           | `{"dt": "...", "curls": ["tcp://..."]}`          | Contains the controller's own datetime and controller URLs. |
-| `curls` | Controller URLs                  | Array of strings | `["tcp://localhost:5621/"]`                      | TCP endpoints where this controller accepts connections. Used by witnesses and other peers to reach the controller. Nested inside `nel`. |
-| `iurls` | Introduction OOBI URLs           | Array of strings | `["tcp://localhost:5620/?role=peer&name=tam"]`   | Out-of-band introduction URLs. Written to `db.oobis` so the habitat can discover other identifiers. |
-| `durls` | Delegation OOBI URLs             | Array of strings | `["http://127.0.0.1:7723/oobi/EB..."]`           | Delegation OOBI URLs. Written to `db.oobis`. Used when the identifier has delegated authority relationships. |
-| `wurls` | Well-known (MFA) OOBI URLs       | Array of strings | `["http://127.0.0.1:5644/.well-known/keri/oobi/EB...?name=Root"]` | Well-known OOBI URLs for multi-factor authentication (MFA). Written to `db.woobi`. |
+## Habery-level labels
+
+`Habery.reconfigure()` reads these labels from the top level of the
+configuration object.
+
+| Label | Meaning | Type / shape | Notes |
+|---|---|---|---|
+| `dt` | Configuration datetime | ISO 8601 string | Parsed with `fromIso8601`. Habery-level OOBI processing occurs when this label is present. |
+| `iurls` | Introduction OOBI URLs | Array of strings | Written to `db.oobis` as `OobiRecord` entries. |
+| `durls` | Delegation OOBI URLs | Array of strings | Written to `db.oobis` as `OobiRecord` entries. |
+| `wurls` | Well-known OOBI URLs | Array of strings | Written to `db.woobi` as `OobiRecord` entries. |
+
+## Habitat-level sections
+
+Each habitat-specific section is keyed by the habitat's actual name.
+`Hab.reconfigure()` selects `conf[self.name]` and reads these labels from
+that object.
+
+| Label | Meaning | Type / shape | Notes |
+|---|---|---|---|
+| `dt` | Habitat configuration datetime | ISO 8601 string | Parsed with `fromIso8601`. Controller endpoint setup occurs when this label is present. |
+| `curls` | Controller URLs | Array of strings | Used to create the habitat's controller end-role authorization and location-scheme records. |
+
+A habitat section therefore has this shape:
+
+```json
+{
+    "<hab-name>": {
+        "dt": "2026-07-30T00:00:00.000000+00:00",
+        "curls": [
+            "tcp://localhost:5621/"
+        ]
+    }
+}
+```
 
 ## Usage notes
 
-- The configuration file location depends on the `Configer` tail directory
-  (`keri/cf/`, `keri/clean/cf/`, `.keri/cf/`, or `.keri/clean/cf/`).
-- File format is determined by extension: `.json` (HJSON), `.mgpk` (MsgPack),
-  or `.cbor` (CBOR).
-- Labels are processed in `src/keri/app/habbing.py` during habitat creation
-  and rotation.  Unrecognized labels are ignored.
+- The configuration file is read during initialization and is intended to
+  preload database state, not serve as a live runtime database.
+- The configuration file location depends on the `Configer` tail directory:
+  `keri/cf/`, `keri/clean/cf/`, `.keri/cf/`, or
+  `.keri/clean/cf/`.
+- File format is selected by extension: `.json` (HJSON when
+  `human=True`, strict JSON when `human=False`), `.mgpk` (MsgPack), or
+  `.cbor` (CBOR).
+- Unrecognized labels are not processed by the reconfiguration methods
+  described above.
 
 ## Related code
 
-- `src/keri/app/configing.py` — `Configer` class reads and writes the config
-  file.
-- `src/keri/app/habbing.py` — Habitat creation and rotation logic processes
-  `iurls`, `durls`, `wurls`, `curls`, and `dt`.
+- `src/keri/app/configing.py` — `Configer` reads and writes the
+  configuration file.
+- `src/keri/app/habbing.py` — `Habery.reconfigure()` and
+  `Hab.reconfigure()` consume the two configuration levels.
+- `tests/app/test_habbing_v1.py` — demonstrates habitat-name keys such as
+  `tam` and `nel`.
