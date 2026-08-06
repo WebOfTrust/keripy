@@ -24,7 +24,6 @@ Versionage = namedtuple("Versionage", "major minor")
 Version = Versionage(major=2, minor=0)  # Default KERI Protocol, CESR Genus Version
 Vrsn_1_0 = Versionage(major=1, minor=0)  # Protocol/Genus Version 1 Specific
 Vrsn_2_0 = Versionage(major=2, minor=0)  # Protocol/Genus Version 2 Specific
-Vrsn_2_1 = Versionage(major=2, minor=1)  # Protocol/Genus Version 2.1 Specific
 GVC_1_0 = '-_AAABAA'
 GVC_2_0 = '-_AAACAA'
 
