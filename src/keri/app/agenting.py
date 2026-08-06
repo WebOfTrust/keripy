@@ -52,7 +52,7 @@ class Receiptor(doing.DoDoer):
 
         super(Receiptor, self).__init__(doers=doers)
 
-    def receipt(self, pre, sn=None, auths=None):
+    def receipt(self, pre, sn=None, auths=None, tock=0.0):
         """Yield while witnessing an event and returning witness receipt couples.
 
         Sends the event to all witnesses, optionally catches new witnesses up,
@@ -84,7 +84,7 @@ class Receiptor(doing.DoDoer):
         if ser.ked['t'] in (coring.Ilks.rot, coring.Ilks.drt,):
             adds = ser.ked["ba"]
             for wit in adds:
-                yield from self.catchup(ser.pre, wit)
+                yield from self.catchup(ser.pre, wit, tock=tock)
 
         clients = dict()
         doers = []
@@ -105,7 +105,7 @@ class Receiptor(doing.DoDoer):
 
             httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="receipts", headers=headers)
             while not client.responses:
-                yield self.tock
+                yield tock
 
             rep = client.respond()
             if rep.status == 200:
@@ -144,13 +144,13 @@ class Receiptor(doing.DoDoer):
 
             sent = httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg))
             while len(client.responses) < sent:
-                yield self.tock
+                yield tock
 
         self.remove(doers)
 
         return rcts.keys()
 
-    def get(self, pre, sn=None):
+    def get(self, pre, sn=None, tock=0.0):
         """Yield while querying a witness for receipts of an event identified by pre and sn.
 
         Picks one witness and issues GET /receipts?pre=&sn=. Parses any
@@ -179,7 +179,7 @@ class Receiptor(doing.DoDoer):
 
         client = self.clienter.request("GET", url)
         while not client.responses:
-            yield self.tock
+            yield tock
 
         rep = client.respond()
         if rep.status == 200:
@@ -189,7 +189,7 @@ class Receiptor(doing.DoDoer):
         self.clienter.remove(client)
         return rep.status == 200
 
-    def catchup(self, pre, wit):
+    def catchup(self, pre, wit, tock=0.0):
         """
         Yield while replaying the full KEL for `pre` to the witness.
         When adding a new Witness, use this method to catch the witness up to the current state of the KEL
@@ -209,15 +209,14 @@ class Receiptor(doing.DoDoer):
         for fmsg in hab.db.clonePreIter(pre=pre):
             httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
             while not client.responses:
-                yield self.tock
+                yield tock
 
         self.remove([clientDoer])
 
     def witDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that drains `msgs` and runs witness receipt flow."""
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.msgs:
@@ -226,16 +225,15 @@ class Receiptor(doing.DoDoer):
                 sn = msg["sn"] if "sn" in msg else None
                 auths = msg["auths"] if "auths" in msg else None
 
-                yield from self.receipt(pre, sn, auths)
+                yield from self.receipt(pre, sn, auths, tock=tock)
                 self.cues.push(msg)
 
-            yield self.tock
+            yield tock
 
     def gitDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that drains `gets` and runs witness receipt queries."""
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.gets:
@@ -243,9 +241,9 @@ class Receiptor(doing.DoDoer):
                 pre = msg["pre"]
                 sn = msg["sn"] if "sn" in msg else None
 
-                yield from self.get(pre, sn)
+                yield from self.get(pre, sn, tock=tock)
 
-            yield self.tock
+            yield tock
 
 
 class WitnessReceiptor(doing.DoDoer):
@@ -652,8 +650,7 @@ class TCPMessenger(doing.DoDoer):
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that sends queued messages over TCP."""
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         up = urlparse(self.url)
         if up.scheme != kering.Schemes.tcp:
@@ -669,7 +666,7 @@ class TCPMessenger(doing.DoDoer):
 
         while True:
             while not self.msgs:
-                yield self.tock
+                yield tock
 
             msg = self.msgs.popleft()
             self.posted += 1
@@ -677,10 +674,10 @@ class TCPMessenger(doing.DoDoer):
             client.tx(msg)  # send to connected remote
 
             while client.txbs:
-                yield self.tock
+                yield tock
 
             self.sent.append(msg)
-            yield self.tock
+            yield tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that parses inbound TCP messages into the Kevery."""
@@ -725,8 +722,7 @@ class TCPStreamMessenger(doing.DoDoer):
         Pushes the original request to self.sent to signal completion
         """
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         up = urlparse(self.url)
         if up.scheme != kering.Schemes.tcp:
@@ -742,7 +738,7 @@ class TCPStreamMessenger(doing.DoDoer):
 
         while True:
             while not self.msgs:
-                yield self.tock
+                yield tock
 
             msg = self.msgs.popleft()
             self.posted += 1
@@ -750,10 +746,10 @@ class TCPStreamMessenger(doing.DoDoer):
             client.tx(msg)  # send to connected remote
 
             while client.txbs:
-                yield self.tock
+                yield tock
 
             self.sent.append(msg)
-            yield self.tock
+            yield tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that parses inbound TCP messages into the Kevery."""
@@ -802,12 +798,11 @@ class HTTPMessenger(doing.DoDoer):
     def msgDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that sends queued messages over HTTP."""
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while not self.msgs:
-                yield self.tock
+                yield tock
 
             msg = self.msgs.popleft()
             headers = dict()
@@ -816,15 +811,14 @@ class HTTPMessenger(doing.DoDoer):
 
             self.posted += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
-                yield self.tock
+                yield tock
 
-            yield self.tock
+            yield tock
 
     def responseDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that processes HTTP responses from the client and adds them into `sent` cues."""
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.client.responses:

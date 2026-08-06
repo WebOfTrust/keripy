@@ -144,12 +144,11 @@ class RegeryDoer(doing.Doer):
 
         """
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             self.rgy.processEscrows()
-            yield self.tock
+            yield tock
 
 
 class BaseRegistry:

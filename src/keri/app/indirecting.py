@@ -174,11 +174,10 @@ class WitnessStart(doing.DoDoer):
 
         """
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while not self.hab.inited:
-            yield self.tock
+            yield tock
 
         print("Witness", self.hab.name, ":", self.hab.pre)
 

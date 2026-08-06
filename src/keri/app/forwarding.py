@@ -35,8 +35,9 @@ class Poster(doing.DoDoer):
         self.mbx = mbx
         self.evts = evts if evts is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.deliverTock = 0.0
 
-        doers = [doing.doify(self.deliverDo)]
+        doers = [doing.doify(self.deliverDo, tock=self.deliverTock)]
         super(Poster, self).__init__(doers=doers, **kwa)
 
     def deliverDo(self, tymth=None, tock=0.0, **kwa):
@@ -52,8 +53,7 @@ class Poster(doing.DoDoer):
 
         # enter context
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.evts:
@@ -77,13 +77,17 @@ class Poster(doing.DoDoer):
                         for role in (Roles.controller, Roles.agent, Roles.mailbox):
                             if role in ends:
                                 if role == Roles.mailbox:
-                                    yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                                    yield from self.forward(hab, ends[role], recp=recp, serder=srdr,
+                                                            atc=atc, topic=tpc, tock=tock)
                                 else:
-                                    yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
+                                    yield from self.sendDirect(hab, ends[role], serder=srdr,
+                                                               atc=atc, tock=tock)
 
                     # otherwise send to one witness
                     elif Roles.witness in ends:
-                        yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                        yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp,
+                                                         serder=srdr, atc=atc, topic=tpc,
+                                                         tock=tock)
                     else:
                         logger.info(f"No end roles for {recp} to send evt={srdr.said}")
                         continue
@@ -94,9 +98,9 @@ class Poster(doing.DoDoer):
 
                 self.cues.append(dict(dest=recp, topic=tpc, said=srdr.said))
 
-                yield self.tock
+                yield tock
 
-            yield self.tock
+            yield tock
 
     def send(self, dest, topic, serder, src=None, hab=None, attachment=None):
         """
@@ -135,8 +139,9 @@ class Poster(doing.DoDoer):
 
         return False
 
-    def sendEventToDelegator(self, sender, hab, fn=0):
+    def sendEventToDelegator(self, sender, hab, fn=0, tock=None):
         """ Returns generator for sending event and waiting until send is complete """
+        tock = self.deliverTock if tock is None else tock
         # Send KEL event for processing
         icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
         ser = serdering.SerderKERI(raw=icp)
@@ -150,9 +155,10 @@ class Poster(doing.DoDoer):
                     break
                 else:
                     self.cues.append(cue)
-            yield self.tock
+            yield tock
 
-    def sendDirect(self, hab, ends, serder, atc):
+    def sendDirect(self, hab, ends, serder, atc, tock=None):
+        tock = self.deliverTock if tock is None else tock
         for ctrl, locs in ends.items():
             witer = agenting.messengerFrom(hab=hab, pre=ctrl, urls=locs)
 
@@ -164,11 +170,12 @@ class Poster(doing.DoDoer):
             self.extend([witer])
 
             while not witer.idle:
-                _ = (yield self.tock)
+                _ = (yield tock)
 
             self.remove([witer])
 
-    def forward(self, hab, ends, recp, serder, atc, topic):
+    def forward(self, hab, ends, recp, serder, atc, topic, tock=None):
+        tock = self.deliverTock if tock is None else tock
         # If we are one of the mailboxes, just store locally in mailbox
         owits = oset(ends.keys())
         if self.mbx and owits.intersection(hab.prefixes):
@@ -199,9 +206,10 @@ class Poster(doing.DoDoer):
         self.extend([witer])
 
         while not witer.idle:
-            _ = (yield self.tock)
+            _ = (yield tock)
 
-    def forwardToWitness(self, hab, ends, recp, serder, atc, topic):
+    def forwardToWitness(self, hab, ends, recp, serder, atc, topic, tock=None):
+        tock = self.deliverTock if tock is None else tock
         # If we are one of the mailboxes, just store locally in mailbox
         owits = oset(ends.keys())
         if self.mbx and owits.intersection(hab.prefixes):
@@ -232,7 +240,7 @@ class Poster(doing.DoDoer):
         self.extend([witer])
 
         while not witer.idle:
-            _ = (yield self.tock)
+            _ = (yield tock)
 
 
 class StreamPoster:

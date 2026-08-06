@@ -16,6 +16,36 @@ from keri.db import basing, dbing
 from keri.vdr import eventing, viring
 
 
+def test_receiptor_cadences_are_generator_local():
+    receiptor = agenting.Receiptor(hby=object())
+    seen = []
+
+    def receipt(pre, sn=None, auths=None, tock=0.0):
+        seen.append(("receipt", tock))
+        yield tock
+
+    def get(pre, sn=None, tock=0.0):
+        seen.append(("get", tock))
+        yield tock
+
+    receiptor.receipt = receipt
+    receiptor.get = get
+    receiptor.msgs.append({"pre": "witness"})
+    receiptor.gets.append({"pre": "query"})
+
+    witness = receiptor.witDo(tymth=lambda: 0.0, tock=0.011)
+    query = receiptor.gitDo(tymth=lambda: 0.0, tock=0.013)
+
+    assert next(witness) == 0.011
+    assert next(query) == 0.013
+    assert next(witness) == 0.011
+    assert next(query) == 0.013
+    assert seen == [("receipt", 0.011), ("get", 0.013)]
+
+    witness.close()
+    query.close()
+
+
 def test_witness_receiptor(seeder):
     with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
             habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
