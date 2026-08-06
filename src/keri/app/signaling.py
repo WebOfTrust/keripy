@@ -92,6 +92,10 @@ class Signaler(doing.DoDoer):
 
     The signals are just pings to reload data and not persistent messages that can be reread
 
+    The process-level scheduler owns this DoDoer. Consumers such as Notifier
+    and request handlers share the same Signaler instance but do not schedule
+    it independently.
+
     """
 
     SignalTimeout = datetime.timedelta(minutes=10)
@@ -142,8 +146,7 @@ class Signaler(doing.DoDoer):
 
         """
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:  # loop checking for expired messages
             now = helping.nowUTC()
@@ -151,12 +154,12 @@ class Signaler(doing.DoDoer):
             for sig in self.signals:
                 if now - helping.fromIso8601(sig.dt) > self.SignalTimeout:  # Expire messages that are too old
                     toRemove.append(sig)
-                yield self.tock
+                yield tock
 
             for sig in toRemove:
                 self.signals.remove(sig)
 
-            yield self.tock
+            yield tock
 
 
 def loadEnds(app, *, signals=None):

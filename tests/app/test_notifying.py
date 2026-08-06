@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from keri.app import notifying, habbing
+from keri.app import habbing, notifying, signaling
 from keri.app.notifying import Noter, KERINoterMapSizeKey
 from keri.core import coring
 from keri.db import dbing
@@ -225,6 +225,17 @@ def test_notifier(mockHelpingNowUTC):
 
     assert notifier.mar(note.rid) is False
     assert notifier.rem(note.rid) is True
+
+
+def test_notifier_exposes_caller_owned_signaler():
+    with habbing.openHby(name="notifier-signaler", temp=True) as hby:
+        signaler = signaling.Signaler()
+        notifier = notifying.Notifier(hby=hby, signaler=signaler)
+        try:
+            assert notifier.signaler is signaler
+        finally:
+            notifier.noter.close(clear=True)
+
 
 def test_noter_db_size_set_from_env_var():
     # Clear environment before test
