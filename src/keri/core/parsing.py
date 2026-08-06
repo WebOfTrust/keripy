@@ -16,7 +16,7 @@ from ..kering import (Colds, sniff, Vrsn_2_0, Ilks,
                       UnexpectedCountCodeError, MaterialError, ValidationError,
                       QueryNotFoundError, ExtractionError, ShortageError,
                       ColdStartError, InvalidVersionError,
-                      SizedGroupError, TopLevelStreamError)
+                      SizedGroupError, TopLevelStreamError, KeriError)
 
 from .coring import (Seqner, Cigar, Diger, Noncer, Labeler, Number, Verser,
                      Dater, Verfer, Prefixer, Saider, Texter)
@@ -68,6 +68,189 @@ class MsgParseDom:
         return iter(asdict(self))
 
 
+Dispositionage = namedtuple("Dispositionage", 'flush resume group')  # fault disposition
+Disps = Dispositionage(flush='flush', resume='resume', group='group')
+# flush means the rest of the stream was deleted to force a cold restart so
+#     whatever followed the fault was discarded unparsed
+# resume means the parser declined this msg and resumed with the next one in
+#     the stream. It does NOT mean the msg was rejected, see Fault
+# group means the enclosing sized group had already been preflushed (stripped)
+#     from the stream so parsing resumed after that group
+
+
+@dataclass(frozen=True)
+class Fault:
+    """Fault is a structured record of one error the Parser recovered from.
+    The Parser logs and swallows such errors so that its stream tolerance is
+    preserved. When a fault sink is provided it also appends a Fault, so an
+    embedder can discriminate causes without reading log prose or database
+    residue. See Parser .faults.
+
+    A Fault records what the parse loop did, not what became of the msg. This
+    distinction is the one an embedder is most likely to get wrong:
+
+    - It is NOT a validation verdict. Kevery escrows an event and then raises,
+      so OutOfOrderError, MissingWitnessSignatureError, MissingDelegationError
+      and LikelyDuplicitousError all yield a Fault for an event that a later
+      .processEscrows() may accept in full. Reading a Fault as "this msg was
+      rejected" turns ordinary out of order KEL traffic into a hard failure.
+    - It is NOT evidence. Duplicity is proven by placing two verifiable KELs
+      side by side, and the conflicting event is already preserved in the
+      duplicitous escrow. A Fault is one observer's local disposition, neither
+      nonrepudiable nor transferable, and 'Likely' in LikelyDuplicitousError is
+      deliberate.
+    - It is NOT a complete inventory of everything the stream lost. Errors
+      recovered inside a processor rather than by the parse loop do not appear,
+      .msgProcess recovers QueryNotFoundError this way, and Kevery drops msgs
+      by allow and deny list policy without raising at all. An empty sink does
+      not mean the whole stream was processed.
+
+    Attributes:
+        kind (str): class name of the most specific KeriError in the chain of
+            .ex, e.g. 'ShortageError', 'ColdStartError',
+            'MissingWitnessSignatureError'. Falls back to the class name of .ex
+            itself when the chain holds no KeriError. See faultKind.
+            This is keripy's internal exception taxonomy, not a normative
+            protocol one. It is not pinned across releases, the same condition
+            may surface under different names depending on where in the stream
+            it is met, and other KERI implementations do not share it. Branch
+            on it by all means, but treat an unrecognized kind as a fault to
+            handle rather than as no fault at all. .disp is the stable axis.
+        disp (str): stream disposition the Parser chose, from Disps, one of
+            'flush', 'resume', or 'group'.
+        offset (int|None): lower bound on the count of bytes this parse call
+            consumed from the stream before the fault was recovered. Exact for
+            a fixed stream handed to .parse or .parseOne, and there it locates
+            where the stream stopped making sense. For a live stream appended
+            to while parsing it undercounts, without bound, so it is a
+            diagnostic and not a position to resync from. None when the fault
+            was recovered below the level that owns the stream, which is the
+            case for post extraction faults, which carry .pre .sn and .said
+            instead.
+        pre (str|None): qb64 AID of the msg that faulted, when the msg had
+            already been extracted, otherwise None
+        sn (int|None): sequence number of the msg that faulted, when known
+        said (str|None): qb64 SAID of the msg that faulted, when known
+        ex (Exception|None): the exception as caught, with its chain intact, so
+            nothing is lost for a consumer that wants more. Its traceback is
+            cleared, since retaining one would pin the parser frames and with
+            them the whole parsed msg, for every fault a remote peer can
+            provoke. See _release"""
+    kind: str = ''
+    disp: str = ''
+    offset: int = None
+    pre: str = None
+    sn: int = None
+    said: str = None
+    ex: Exception = None
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+def _chain(ex):
+    """Yields ex and then each exception it was raised from, outermost first.
+
+    Follows __cause__ when the raise was explicit, `raise X from Y`, and
+    __context__ otherwise, since the parser chains both ways: groupParsator
+    uses `raise ExtractionError from ex` but all four SizedGroupError raise
+    sites are bare raises inside an except block, which set __context__ only.
+    A context suppressed by `from None` ends the walk, as the raiser intended.
+
+    Parameters:
+        ex (Exception|None): exception to walk from"""
+    seen = set()
+    while ex is not None and id(ex) not in seen:  # guard cyclic chains
+        seen.add(id(ex))
+        yield ex
+        if ex.__cause__ is not None:
+            ex = ex.__cause__
+        elif ex.__suppress_context__:
+            ex = None
+        else:
+            ex = ex.__context__
+
+
+def faultKind(ex):
+    """Returns str class name of the most specific KeriError in the chain of
+    exception ex, or the class name of ex itself when the chain holds no
+    KeriError.
+
+    The parser rewraps as it unwinds, most notably groupParsator's
+    `raise ExtractionError from ex`, so the class of the exception a handler
+    catches is often less specific than the class that named the actual fault.
+    Walking the chain recovers the specific one. Preferring the most derived
+    KeriError keeps a wrapped AttributeError from masking the ValidationError
+    raised from it, and on a tie the innermost wins, so a SizedGroupError
+    wrapping a ShortageError reports the shortage. What made the group fail is
+    the kind. That it was a group is the disposition, carried by .disp.
+
+    Parameters:
+        ex (Exception): exception to derive kind from"""
+    best = None
+    for cause in _chain(ex):
+        if isinstance(cause, KeriError):
+            if best is None or len(type(cause).__mro__) >= len(type(best).__mro__):
+                best = cause
+    return type(best if best is not None else ex).__name__
+
+
+def _release(ex):
+    """Clears the traceback from ex and every exception it was raised from, so
+    a retained Fault does not pin the parser frames the exception unwound
+    through, and with them the whole parsed msg. Returns ex.
+
+    The parser is discarding ex either way, and has already logged it, so the
+    frames are of no further use to it.
+
+    Parameters:
+        ex (Exception): exception to strip frames from"""
+    for cause in _chain(ex):
+        cause.__traceback__ = None
+    return ex
+
+
+def _peek(obj, name):
+    """Returns attribute name of obj or None when unavailable. Capturing a
+    fault must never itself raise, so every attribute read of a partially
+    parsed msg goes through here.
+
+    Parameters:
+        obj (object|None): object to read attribute from
+        name (str): attribute name"""
+    try:
+        return getattr(obj, name, None)
+    except Exception:
+        return None
+
+
+def _fault(faults, ex, disp, offset=None, serder=None):
+    """Appends a Fault built from ex to fault sink faults when faults is
+    provided. No-op when faults is None so an embedder that has not opted in
+    pays nothing.
+
+    Parameters:
+        faults (Deck|list|None): fault sink to append to. None means no sink
+        ex (Exception): exception as caught
+        disp (str): stream disposition from Disps
+        offset (int|None): count of bytes consumed from the stream when known
+        serder (Serder|None): msg that faulted when it was already extracted"""
+    if faults is None:
+        return
+    try:  # .append is embedder code running inside the parser's except arms,
+        # so a sink that raises must not escape and rob the arm of the flush
+        # or resume it was about to perform
+        faults.append(Fault(kind=faultKind(ex),
+                            disp=disp,
+                            offset=offset,
+                            pre=_peek(serder, 'pre'),
+                            sn=_peek(serder, 'sn'),
+                            said=_peek(serder, 'said'),
+                            ex=_release(ex)))
+    except Exception as rex:
+        logger.error("Parser could not record fault: %s", rex)
+
+
 
 class Parser:
     """Parser is stream parser that processes an incoming message stream.
@@ -95,6 +278,19 @@ class Parser:
         vry (``Verfifier``): credential verifier with wallet storage
         local (bool): True means event source is local (protected) for validation
             False means event source is remote (unprotected) for validation
+        faults (Deck|list|None): default fault sink. When not None the parser
+            appends a Fault to it, in addition to the logging it does either
+            way, for each error the parse loop recovers from. None, the
+            default, means collect nothing. Anything with an .append method
+            works, and one that raises is caught rather than allowed to escape
+            the parse arm it ran in. A sink given per call overrides this
+            default.
+            Bound the sink for anything long lived. A parsator serving a
+            remote peer faults as often as that peer sends malformed bytes, so
+            an unbounded list or Deck grows with attacker supplied input.
+            collections.deque(maxlen=n) is the safe default. Read the Fault
+            docstring before branching on what arrives, a Fault is not a
+            validation verdict.
 
     Properties:
         genus (str): genus portion of default CESR code table protocol genus code
@@ -185,7 +381,7 @@ class Parser:
 
     def __init__(self, ims=None, framed=True, piped=False, kvy=None,
                  tvy=None, exc=None, rvy=None, vry=None, local=False,
-                 version=Vrsn_2_0):
+                 version=Vrsn_2_0, faults=None):
         """
         Initialize instance:
 
@@ -203,7 +399,9 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                 False means event source is remote (unprotected) for validation
             version (Versionage): instance of version portion of genus version code
-                for default code table"""
+                for default code table
+            faults (Deck|list|None): default fault sink for recovered errors.
+                None means collect nothing"""
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
         self.piped = True if piped else False  # use pipeline processor
@@ -213,6 +411,7 @@ class Parser:
         self.rvy = rvy
         self.vry = vry
         self.local = True if local else False
+        self.faults = faults  # None means do not collect faults
 
         self._genus = GenDex.KERI  # only supports KERI
         self.version = version  # provided version may be earlier than supported version
@@ -355,7 +554,7 @@ class Parser:
 
     def parse(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
               exc=None, rvy=None, vry=None, local=None, version=None,
-              processive=True):
+              processive=True, faults=None):
         """Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
         Returns when ims is empty.
@@ -382,6 +581,8 @@ class Parser:
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
                     testing and debugging
+            faults (Deck|list|None): fault sink for errors recovered from while
+                parsing. None means use default .faults
 
             New Logic:
                 Attachments must all have counters so know if txt or bny format for
@@ -399,7 +600,8 @@ class Parser:
                                     vry=vry,
                                     local=local,
                                     version=version,
-                                    processive=processive)
+                                    processive=processive,
+                                    faults=faults)
 
         while True:
             try:
@@ -413,7 +615,7 @@ class Parser:
 
     def parseOne(self, ims=None, framed=True, piped=False, kvy=None, tvy=None,
                  exc=None, rvy=None, vry=None, local=None, version=None,
-                 processive=True):
+                 processive=True, faults=None):
         """Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
         Returns once one message is processed.
@@ -439,6 +641,8 @@ class Parser:
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
                     testing and debugging
+            faults (Deck|list|None): fault sink for errors recovered from while
+                parsing. None means use default .faults
 
 
             New Logic:
@@ -457,7 +661,8 @@ class Parser:
                                      vry=vry,
                                      local=local,
                                      version=version,
-                                     processive=processive)
+                                     processive=processive,
+                                     faults=faults)
         while True:
             try:
                 next(parsator)
@@ -470,7 +675,7 @@ class Parser:
 
     def allParsator(self, ims=None, framed=None, piped=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    version=None, processive=True):
+                    version=None, processive=True, faults=None):
         """Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
         Generator completes as soon as ims is empty.
@@ -497,6 +702,8 @@ class Parser:
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
                     testing and debugging
+            faults (Deck|list|None): fault sink for errors recovered from while
+                parsing. None means use default .faults
 
 
             New Logic:
@@ -517,9 +724,12 @@ class Parser:
         vry = vry if vry is not None else self.vry
         local = local if local is not None else self.local
         local = True if local else False
+        faults = faults if faults is not None else self.faults
 
         result = None
+        consumed = 0  # bytes consumed from ims so far, for fault offsets
         while ims:  # only process until ims empty (differs here from parsator)
+            extant = len(ims)  # stream size at start of pass, for fault offsets
             try:
                 result = yield from self.groupParsator(ims=ims,
                                                         framed=framed,
@@ -531,7 +741,8 @@ class Parser:
                                                         vry=vry,
                                                         local=local,
                                                         version=version,
-                                                        processive=processive)
+                                                        processive=processive,
+                                                        faults=faults)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -539,12 +750,16 @@ class Parser:
                     logger.exception("Parser sized group error: %s", ex)
                 else:
                     logger.error("Parser sized group error: %s", ex)
+                _fault(faults, ex, Disps.group,
+                       offset=consumed + max(0, extant - len(ims)))
 
             except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s", ex)
                 else:
                     logger.error("Parser msg extraction error: %s", ex)
+                _fault(faults, ex, Disps.flush,
+                       offset=consumed + max(0, extant - len(ims)))
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (ValidationError, Exception) as ex:  # non Extraction Error
@@ -554,6 +769,9 @@ class Parser:
                     logger.exception("Parser msg non-extraction error: %s", ex)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.error("Parser msg non-extraction error: %s", ex)
+                _fault(faults, ex, Disps.resume,
+                       offset=consumed + max(0, extant - len(ims)))
+            consumed += max(0, extant - len(ims))
             yield
 
         return result  # debug parsing when not processive
@@ -561,7 +779,7 @@ class Parser:
 
     def onceParsator(self, ims=None, framed=None, piped=None, kvy=None,
                      tvy=None, exc=None, rvy=None, vry=None, local=None,
-                     version=None, processive=True):
+                     version=None, processive=True, faults=None):
         """Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
 
@@ -586,6 +804,8 @@ class Parser:
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
                     testing and debugging
+            faults (Deck|list|None): fault sink for errors recovered from while
+                parsing. None means use default .faults
 
 
             New Logic:
@@ -606,15 +826,23 @@ class Parser:
         vry = vry if vry is not None else self.vry
         local = local if local is not None else self.local
         local = True if local else False
+        faults = faults if faults is not None else self.faults
 
         result = None
+        serder = None  # msg body once extracted, for fault locus
+        extracted = False  # True once a msg substream came out of the stream
+        consumed = 0  # bytes consumed from ims so far, for fault offsets
         while True:
+            extant = len(ims)  # stream size at start of pass, for fault offsets
+            extracted = False
             try:
                 exts = yield from self.msgParsator(ims=ims,
                                                       framed=framed,
                                                       piped=piped,
                                                       local=local,
                                                       version=version)
+                serder = exts.serder  # extracted so fault locus now available
+                extracted = True
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -622,14 +850,19 @@ class Parser:
                     logger.exception("Kevery sized group error: %s", ex)
                 else:
                     logger.error("Kevery sized group error: %s", ex)
+                _fault(faults, ex, Disps.group,
+                       offset=consumed + max(0, extant - len(ims)))
 
             except (ColdStartError, ExtractionError, Exception) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg extraction error: %s", ex)
                 else:
                     logger.error("Kevery msg extraction error: %s", ex)
+                _fault(faults, ex, Disps.flush,
+                       offset=consumed + max(0, extant - len(ims)))
                 del ims[:]  # delete rest of stream to force cold restart
 
+            consumed += max(0, extant - len(ims))
             if processive:
                 try:
                     result = self.msgProcess(exts=asdict(exts),
@@ -646,6 +879,10 @@ class Parser:
                         logger.exception("Kevery msg non-extraction error: %s", ex)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.error("Kevery msg non-extraction error: %s", ex)
+                    if extracted:  # when extraction already failed the arm above
+                        # flushed the stream and exts is unbound, so anything
+                        # raised here is an artifact of that, not a new fault
+                        _fault(faults, ex, Disps.resume, serder=serder)
                 finally:
                     result = True
                     break
@@ -658,7 +895,7 @@ class Parser:
 
     def parsator(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
                  exc=None, rvy=None, vry=None, local=None, version=None,
-                 processive=True):
+                 processive=True, faults=None):
         """Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply. Does not return.
         Useful for always running servers.
@@ -687,6 +924,8 @@ class Parser:
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
                     testing and debugging
+            faults (Deck|list|None): fault sink for errors recovered from while
+                parsing. None means use default .faults
 
 
             New Logic:
@@ -707,9 +946,12 @@ class Parser:
         vry = vry if vry is not None else self.vry
         local = local if local is not None else self.local
         local = True if local else False
+        faults = faults if faults is not None else self.faults
 
         result = None
+        consumed = 0  # bytes consumed from ims so far, for fault offsets
         while True:  # continuous stream processing (differs here from allParsator)
+            extant = len(ims)  # stream size at start of pass, for fault offsets
             try:
                 result = yield from self.groupParsator(ims=ims,
                                                    framed=framed,
@@ -721,7 +963,8 @@ class Parser:
                                                    vry=vry,
                                                    local=local,
                                                    version=version,
-                                                   processive=processive)
+                                                   processive=processive,
+                                                   faults=faults)
 
 
             except SizedGroupError as ex:  # error inside sized group
@@ -730,12 +973,16 @@ class Parser:
                     logger.exception("Parser sized group error: %s", ex)
                 else:
                     logger.error("Parser sized group error: %s", ex)
+                _fault(faults, ex, Disps.group,
+                       offset=consumed + max(0, extant - len(ims)))
 
             except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s", ex)
                 else:
                     logger.error("Parser msg extraction error: %s", ex)
+                _fault(faults, ex, Disps.flush,
+                       offset=consumed + max(0, extant - len(ims)))
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (ValidationError, Exception) as ex:  # non Extraction Error
@@ -745,6 +992,9 @@ class Parser:
                     logger.exception("Parser msg non-extraction error: %s", ex)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.error("Parser msg non-extraction error: %s", ex)
+                _fault(faults, ex, Disps.resume,
+                       offset=consumed + max(0, extant - len(ims)))
+            consumed += max(0, extant - len(ims))
             yield
 
         return result  # should never return
@@ -752,7 +1002,7 @@ class Parser:
 
     def groupParsator(self, ims=None, framed=True, piped=False, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    version=None, processive=True):
+                    version=None, processive=True, faults=None):
         """Returns generator to parse nested GenericGroups whose outermost nesting
         appears at the top-level of an incoming message stream.
 
@@ -778,12 +1028,15 @@ class Parser:
                 None means do not change default
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
-                    testing and debugging"""
+                    testing and debugging
+            faults (Deck|list|None): fault sink for errors recovered from while
+                parsing. None means use default .faults"""
         if ims is None:
             ims = self.ims
 
         local = local if local is not None else self.local
         local = True if local else False
+        faults = faults if faults is not None else self.faults
 
         self.version = version  # when not None which sets .methods .codes .mucodes .sucodes
 
@@ -885,6 +1138,8 @@ class Parser:
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.error("GroupParsator error post extraction of "
                                          "msg+atc : %s", ex)
+                        # msg body already extracted so the fault carries its locus
+                        _fault(faults, ex, Disps.resume, serder=exts.serder)
 
                         continue
                 else:
