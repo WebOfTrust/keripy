@@ -1313,11 +1313,489 @@ def test_age_identity_edge_E1E_JSON():
         _verify_identity_edge(age, sedi, "E" + "A" * 43)
 
 
+JOB_SEDI_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "SEDI Job-Application Identity Credential",
+    "description": "SEDI identity subset for employment screening, authored for "
+                   "graduated disclosure rather than proof-of-age.",
+    "credentialType": "SEDI_JobIdentity",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "rd", "s", "a"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acm"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
+        "i": {"description": "Issuer (State) AID", "type": "string"},
+        "rd": {"description": "Registry SAID", "type": "string"},
+        "s": _EMPTY_OR_SECTION,
+        "a": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object",
+                 "required": ["d", "u", "i", "legalName", "address", "phone",
+                              "biometric", "dob"],
+                 "properties": {
+                     "d": {"type": "string"},
+                     "u": {"type": "string"},
+                     "i": {"type": "string"},
+                     "legalName": _disclosable_block(
+                         "legalName",
+                         {"type": "string"},
+                         "LegalName"),
+                     "address": _disclosable_block(
+                         "address",
+                         {"type": "string"},
+                         "Address"),
+                     "phone": _disclosable_block(
+                         "phone",
+                         {"type": "string"},
+                         "Phone"),
+                     "biometric": _disclosable_block(
+                         "biometric",
+                         {"type": "string"},
+                         "Biometric"),
+                     "dob": _disclosable_block(
+                         "dob",
+                         {"type": "string", "format": "date"},
+                         "DOB"),
+                 },
+                 "additionalProperties": False},
+            ],
+        },
+        "e": _EMPTY_OR_SECTION,
+        "r": _EMPTY_OR_SECTION,
+    },
+    "additionalProperties": False,
+}
+
+FOOD_HANDLER_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Food Handler Permit Credential",
+    "description": "Food-handler entitlement credential linked back to a SEDI core "
+                   "identity via an E1E identity edge.",
+    "credentialType": "FoodHandlerPermit",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "rd", "s", "a", "e"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acm"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
+        "i": {"type": "string"},
+        "rd": {"type": "string"},
+        "s": _EMPTY_OR_SECTION,
+        "a": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object",
+                 "required": ["d", "u", "i", "permitId", "category", "status",
+                              "expires", "jurisdiction"],
+                 "properties": {
+                     "d": {"type": "string"},
+                     "u": {"type": "string"},
+                     "i": {"type": "string"},
+                     "permitId": {"type": "string"},
+                     "category": {"type": "string"},
+                     "status": {"type": "string"},
+                     "expires": {"type": "string", "format": "date"},
+                     "jurisdiction": {"type": "string"},
+                 },
+                 "additionalProperties": False},
+            ],
+        },
+        "e": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object",
+                 "required": ["d", "identity"],
+                 "properties": {"d": {"type": "string"},
+                                "u": {"type": "string"},
+                                "identity": _E1E_EDGE_SCHEMA},
+                 "additionalProperties": False},
+            ],
+        },
+        "r": _EMPTY_OR_SECTION,
+    },
+    "additionalProperties": False,
+}
+
+JOB_PRESENTATION_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Job Application Presentation ACDC",
+    "description": "Holder-issued job-application presentation binding the SEDI "
+                   "subset and the linked entitlement to one applicant.",
+    "credentialType": "JobApplicationPresentation",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "s", "a", "e"],
+    "properties": {
+        "v": {"type": "string"},
+        "t": {"const": "acm"},
+        "d": {"type": "string"},
+        "u": {"type": "string"},
+        "i": {"type": "string"},
+        "s": _EMPTY_OR_SECTION,
+        "a": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object",
+                 "required": ["d", "u", "i", "role", "employer", "submitted"],
+                 "properties": {
+                     "d": {"type": "string"},
+                     "u": {"type": "string"},
+                     "i": {"type": "string"},
+                     "role": {"type": "string"},
+                     "employer": {"type": "string"},
+                     "submitted": {"type": "string"},
+                 },
+                 "additionalProperties": False},
+            ],
+        },
+        "e": {
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object",
+                 "required": ["d", "identity", "entitlement"],
+                 "properties": {"d": {"type": "string"},
+                                "u": {"type": "string"},
+                                "identity": _I2I_EDGE_SCHEMA,
+                                "entitlement": _I2I_EDGE_SCHEMA},
+                 "additionalProperties": False},
+            ],
+        },
+        "r": _EMPTY_OR_SECTION,
+    },
+    "additionalProperties": False,
+}
+
+
+JOB_RAWS = [b'jobappdisclosur' + b'%0x' % (i,) for i in range(18)]
+JOB_NONCES = [Noncer(raw=raw).qb64 for raw in JOB_RAWS]
+J_SEDI_A, J_SEDI_NAME, J_SEDI_ADDRESS, J_SEDI_PHONE, J_SEDI_BIOMETRIC, J_SEDI_DOB, \
+    J_SEDI_ACDC, J_PERMIT_A, J_PERMIT_ACDC, J_PERMIT_E, J_PERMIT_E_ID, J_PRESENT_A, \
+    J_PRESENT_ACDC, J_PRESENT_E, J_PRESENT_E_ID, J_PRESENT_E_ENT, J_REG_STATE, \
+    J_REG_PERMIT = range(18)
+
+
+def test_job_application_entitlement_presentation_JSON():
+    """Job-application flow: SEDI subset plus linked food-handler entitlement.
+
+    This keeps the Daniel/Sam CLC exchange shape but swaps the second credential from
+    proof-of-age to an entitlement. The employer first applies for DAG-scoped
+    disclosure, the holder offers a holder-issued presentation that binds the two
+    source credentials, a signed agree opens the gate, and the grant carries both
+    artifacts: a graduated-disclosure SEDI subset and the linked entitlement.
+
+    Workflow/UX sketch, at the test level:
+      1. Employer asks for exactly the fields it needs for hiring.
+      2. Holder preview/offers the one-time presentation without leaking PII.
+      3. Holder releases the actual data only after the employer signs agree.
+
+    If the employer later needs a separate work-age proof, that should be a second
+    apply/offer/agree/grant flow keyed to an age-threshold credential rather than
+    broadening this entitlement flow.
+    """
+    kind = Kinds.json
+
+    # Build registries and self-addressed schemas for the two source credentials
+    # and the holder-issued presentation.
+    regState = regcept(israid=STATE, uuid=JOB_NONCES[J_REG_STATE],
+                       stamp="2026-03-10T12:00:00.000000+00:00", kind=kind)
+    regPermit = regcept(israid=ENDORSER, uuid=JOB_NONCES[J_REG_PERMIT],
+                        stamp="2026-03-11T12:00:00.000000+00:00", kind=kind)
+    _, jobSediSchema = _saidify_schema(dict(JOB_SEDI_SCHEMA_MAD), kind=kind)
+    _, permitSchema = _saidify_schema(dict(FOOD_HANDLER_SCHEMA_MAD), kind=kind)
+    _, presentationSchema = _saidify_schema(dict(JOB_PRESENTATION_SCHEMA_MAD),
+                                            kind=kind)
+
+    # Build the employment-oriented SEDI source credential. The nested blocks let
+    # the holder reveal name/address/phone/biometric later while withholding DOB.
+    sedi = acdcmap(
+        israid=STATE,
+        uuid=JOB_NONCES[J_SEDI_ACDC],
+        regid=regState.said,
+        schema=jobSediSchema,
+        attribute=dict(
+            d='',
+            u=JOB_NONCES[J_SEDI_A],
+            legalName=dict(d='', u=JOB_NONCES[J_SEDI_NAME],
+                           legalName="Alice Anders"),
+            address=dict(d='', u=JOB_NONCES[J_SEDI_ADDRESS],
+                         address="220 E 300 S, Salt Lake City UT 84111"),
+            phone=dict(d='', u=JOB_NONCES[J_SEDI_PHONE],
+                       phone="+1-801-555-0100"),
+            biometric=dict(d='', u=JOB_NONCES[J_SEDI_BIOMETRIC],
+                           biometric="face-template-sha256:4d0ff9ce-job-app"),
+            dob=dict(d='', u=JOB_NONCES[J_SEDI_DOB], dob="2000-03-15"),
+        ),
+        iseaid=ALICE,
+        kind=kind,
+    )
+    # Build the entitlement credential and chain it back to the SEDI credential
+    # with an E1E identity edge.
+    permit = acdcmap(
+        israid=ENDORSER,
+        uuid=JOB_NONCES[J_PERMIT_ACDC],
+        regid=regPermit.said,
+        schema=permitSchema,
+        attribute=dict(d='', u=JOB_NONCES[J_PERMIT_A], i=ALICE,
+                       permitId="UT-FH-2026-00917",
+                       category="food-handler",
+                       status="active",
+                       expires="2027-08-31",
+                       jurisdiction="Salt Lake County Health Department"),
+        edge=dict(d='', u=JOB_NONCES[J_PERMIT_E],
+                  identity=dict(d='', u=JOB_NONCES[J_PERMIT_E_ID], n=sedi.said,
+                                s=sedi.sad['s']['$id'], o='E1E')),
+        kind=kind,
+    )
+    # Build the expanded holder-issued presentation that binds both source
+    # credentials to this one job-application flow.
+    presentation = acdcmap(
+        israid=ALICE,
+        uuid=JOB_NONCES[J_PRESENT_ACDC],
+        schema=presentationSchema,
+        attribute=dict(d='', u=JOB_NONCES[J_PRESENT_A], i=CLUB,
+                       role="crew-member / food-handler",
+                       employer="Downtown Burger",
+                       submitted="2026-08-04"),
+        edge=dict(
+            d='',
+            u=JOB_NONCES[J_PRESENT_E],
+            identity=dict(d='', u=JOB_NONCES[J_PRESENT_E_ID], n=sedi.said,
+                          s=sedi.sad['s']['$id'], o='I2I'),
+            entitlement=dict(d='', u=JOB_NONCES[J_PRESENT_E_ENT], n=permit.said,
+                             s=permit.sad['s']['$id'], o='I2I'),
+        ),
+        kind=kind,
+    )
+    # Build the compact form of the same presentation so the grant can carry the
+    # smaller wire representation while keeping the same SAID.
+    presentationCompact = acdcmap(
+        israid=ALICE,
+        uuid=JOB_NONCES[J_PRESENT_ACDC],
+        schema=presentationSchema,
+        attribute=dict(d='', u=JOB_NONCES[J_PRESENT_A], i=CLUB,
+                       role="crew-member / food-handler",
+                       employer="Downtown Burger",
+                       submitted="2026-08-04"),
+        edge=dict(
+            d='',
+            u=JOB_NONCES[J_PRESENT_E],
+            identity=dict(d='', u=JOB_NONCES[J_PRESENT_E_ID], n=sedi.said,
+                          s=sedi.sad['s']['$id'], o='I2I'),
+            entitlement=dict(d='', u=JOB_NONCES[J_PRESENT_E_ENT], n=permit.said,
+                             s=permit.sad['s']['$id'], o='I2I'),
+        ),
+        kind=kind,
+        compactify=True,
+    )
+
+    # Validate every artifact and assert the presentation binds one holder to one
+    # identity credential and one entitlement credential.
+    assert_acdc_schema_valid(sedi)
+    assert_acdc_schema_valid(permit)
+    schema = assert_acdc_schema_valid(presentation)
+    assert_acdc_schema_valid(presentationCompact, schema=schema)
+    assert presentation.said == presentationCompact.said
+    assert presentation.sad['i'] == sedi.iseaid == permit.iseaid == ALICE
+    assert presentation.sad['e']['identity']['o'] == 'I2I'
+    assert presentation.sad['e']['entitlement']['o'] == 'I2I'
+    assert sedi.sad['rd'] and permit.sad['rd']
+    assert _verify_identity_edge(permit, sedi, sedi.sad['s']['$id'])
+
+    # Build the dp request in breadth-first order from the presentation DAG's
+    # origin node. Each entry is a compact triple:
+    #   [schema SAID, DAG-absolute path prefix, list of ACDC-relative paths]
+    # The _ component is the virtual DAG hop from an edge block to the far ACDC.
+    requestedDp = [
+        [presentation.sad['s']['$id'], "/", [
+            "i",
+            "a/i",
+            "a/role",
+            "a/employer",
+            "a/submitted",
+        ]],
+        [sedi.sad['s']['$id'], "/e/identity/_/", [
+            "i",
+            "a/i",
+            "a/legalName",
+            "a/address",
+            "a/phone",
+            "a/biometric",
+        ]],
+        [permit.sad['s']['$id'], "/e/entitlement/_/", [
+            "i",
+            "a/i",
+            "a/permitId",
+            "a/category",
+            "a/status",
+            "a/expires",
+            "e/identity/n",
+            "e/identity/s",
+        ]],
+    ]
+
+    # Build apply: the employer asks for the origin presentation plus the linked
+    # SEDI subset and entitlement using the normalized dp field.
+    apply = exchange(
+        sender=CLUB,
+        receiver=ALICE,
+        route="/ipex/apply",
+        attributes=dict(
+            m="Show the SEDI identity subset and the linked food-handler permit.",
+            dp=requestedDp,
+        ),
+        stamp="2026-08-04T15:00:00.000000+00:00",
+        kind=kind,
+    )
+    # Assert the apply carries the expected dp triples in BFS order:
+    # root presentation first, then SEDI, then the permit.
+    assert apply.sad['r'] == "/ipex/apply"
+    assert apply.sad['a']['dp'] == requestedDp
+    assert apply.sad['a']['dp'][0][0] == presentation.sad['s']['$id']
+    assert apply.sad['a']['dp'][0][1] == "/"
+    assert apply.sad['a']['dp'][1][1] == "/e/identity/_/"
+    assert apply.sad['a']['dp'][2][1] == "/e/entitlement/_/"
+
+    # Build offer: Alice commits to the one-time presentation. Because this
+    # offer is solicited and does not narrow or widen the request, an empty dp
+    # means "same disclosure plan as the apply".
+    offer = exchange(
+        sender=ALICE,
+        receiver=CLUB,
+        route="/ipex/offer",
+        prior=apply.said,
+        attributes=dict(acdc=presentation.said, dp=[]),
+        stamp="2026-08-04T15:01:00.000000+00:00",
+        kind=kind,
+    )
+    # Assert the offer binds the apply and still carries no disclosed identity data.
+    assert offer.sad['p'] == apply.said
+    assert offer.sad['a']['dp'] == []
+    assert b"Alice Anders" not in offer.raw
+    assert b"220 E 300 S" not in offer.raw
+    assert b"+1-801-555-0100" not in offer.raw
+    assert b"2000-03-15" not in offer.raw
+    assert sedi.said.encode() not in offer.raw
+    assert permit.said.encode() not in offer.raw
+
+    # Build agree and sign it with the employer's key. The holder will only
+    # disclose once this signed acceptance verifies against captured key state.
+    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+                     prior=offer.said, stamp="2026-08-04T15:02:00.000000+00:00",
+                     kind=kind)
+    employerSig = _SIGNERS[3].sign(ser=agree.raw, index=0)
+    signedAgree = messagize(agree, sigers=[employerSig])
+    capturedKeyState = Verfer(qb64=_SIGNERS[3].verfer.qb64)
+    # Assert the agree binds the offer and that the captured key state verifies it.
+    assert agree.sad['p'] == offer.said
+    assert bytes(agree.raw) in signedAgree
+    assert capturedKeyState.verify(sig=employerSig.raw, ser=agree.raw)
+
+    # Reject a signature over the otherwise-correct agree body made by the wrong
+    # signer. The bytes come from a real test key, but not the employer's key, so
+    # from the employer's perspective it is a forgery.
+    forged = _SIGNERS[0].sign(ser=agree.raw, index=0)
+    assert not capturedKeyState.verify(sig=forged.raw, ser=agree.raw)
+    # Build and verify a signed spurn to prove that a valid decline still does
+    # not count as agreement for unlocking the disclosure.
+    spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
+                     prior=offer.said, stamp="2026-08-04T15:02:00.000000+00:00",
+                     kind=kind)
+    spurnSig = _SIGNERS[3].sign(ser=spurn.raw, index=0)
+    assert spurn.sad['r'] != "/ipex/agree"
+    assert spurn.sad['p'] == offer.said
+    assert capturedKeyState.verify(sig=spurnSig.raw, ser=spurn.raw)
+
+    # Re-check the real agreement, then prepare the mixed SEDI disclosure: start
+    # from the fully compact form and expand only the employment fields.
+    assert agree.sad['r'] == "/ipex/agree"
+    assert agree.sad['p'] == offer.said
+    assert capturedKeyState.verify(sig=employerSig.raw, ser=agree.raw)
+    identityCompactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
+    identityCompactor.compact()
+    identityCompactor.expand(greedy=True)
+    identityDisclosure = dict(identityCompactor.partials[('',)].mad)
+    for field in ("legalName", "address", "phone", "biometric"):
+        identityDisclosure[field] = sedi.sad['a'][field]
+    # Build grant: carry the compact presentation, the partial SEDI disclosure,
+    # and the linked entitlement only after a valid agree has been established.
+    grant = exchange(
+        sender=ALICE,
+        receiver=CLUB,
+        route="/ipex/grant",
+        prior=agree.said,
+        attributes=dict(
+            acdc=presentationCompact.sad,
+            identity=identityDisclosure,
+            entitlement=dict(a=dict(permit.sad['a']), e=dict(permit.sad['e'])),
+        ),
+        stamp="2026-08-04T15:03:00.000000+00:00",
+        kind=kind,
+    )
+    # Assert the grant follows the agree and that only the intended identity
+    # subset appears on the wire.
+    assert grant is not None
+    assert grant.sad['r'] == "/ipex/grant"
+    assert grant.sad['p'] == agree.said
+    assert b"Alice Anders" in grant.raw
+    assert b"220 E 300 S" in grant.raw
+    assert b"+1-801-555-0100" in grant.raw
+    assert b"face-template-sha256:4d0ff9ce-job-app" in grant.raw
+    assert b"2000-03-15" not in grant.raw
+    assert b"over21" not in grant.raw and b"over16" not in grant.raw
+
+    # Assert the identity disclosure reveals the requested fields but leaves DOB
+    # compacted as a bare SAID, then recompute the section SAID to prove the
+    # mixed disclosure still belongs to the committed SEDI credential.
+    identityDisc = grant.sad['a']['identity']
+    assert identityDisc['i'] == ALICE
+    assert isinstance(identityDisc['legalName'], dict)
+    assert isinstance(identityDisc['address'], dict)
+    assert isinstance(identityDisc['phone'], dict)
+    assert isinstance(identityDisc['biometric'], dict)
+    assert isinstance(identityDisc['dob'], str)
+    check = Compactor(mad=dict(identityDisc, d=''), makify=True, kind=kind)
+    check.compact()
+    assert check.said == _committed_a_said(sedi, kind)
+
+    # Assert the entitlement disclosure carries the permit data plus the E1E edge
+    # that chains the entitlement back to the original SEDI credential.
+    entitlementDisc = grant.sad['a']['entitlement']
+    assert entitlementDisc['a']['i'] == ALICE
+    assert entitlementDisc['a']['permitId'] == "UT-FH-2026-00917"
+    assert entitlementDisc['a']['category'] == "food-handler"
+    assert entitlementDisc['a']['status'] == "active"
+    assert entitlementDisc['e']['identity']['o'] == 'E1E'
+    assert entitlementDisc['e']['identity']['n'] == sedi.said
+    assert entitlementDisc['e']['identity']['s'] == sedi.sad['s']['$id']
+
+    # Verify the compact presentation the employer received is the exact artifact
+    # it previously accepted in the offer/agree exchange.
+    assert _club_accepts_grant(grant.sad['a']['acdc'], presentation.said,
+                               presentation.sad['s'])
+
+    # Build admit to close the exchange after the employer has received the grant.
+    admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
+                     prior=grant.said, stamp="2026-08-04T15:04:00.000000+00:00",
+                     kind=kind)
+    assert admit.sad['r'] == "/ipex/admit"
+    assert admit.sad['p'] == grant.said
+
+
 if __name__ == "__main__":
     test_source_credentials_and_graduated_disclosure_JSON()
     test_age_identity_edge_E1E_JSON()
     test_bespoke_presentation_acdc_JSON()
     test_gated_ipex_exchange_JSON()
     test_accountability_and_terms_follow_data_JSON()
+    test_job_application_entitlement_presentation_JSON()
     for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
         test_clc_serialization_kinds(_kind)
