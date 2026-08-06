@@ -233,8 +233,13 @@ class Reactor(doing.DoDoer):
         _ = (yield self.tock)  # enter context
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.name, self.parser.ims[:1024])
-        done = yield from self.parser.parsator(local=True)  # process messages continuously
-        return done  # should nover get here except forced close
+        parser = self.parser.parsator(local=True)
+        while True:
+            try:
+                next(parser)
+            except StopIteration as ex:
+                return ex.value  # should never get here except forced close
+            yield self.tock
 
 
     def cueDo(self, tymth=None, tock=None, **opts):

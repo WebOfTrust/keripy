@@ -200,8 +200,13 @@ class WitnessStart(doing.DoDoer):
 
         if self.parser.ims:
             logger.debug("Client %s received:\n%s\n...\n", self.kvy, self.parser.ims[:1024])
-        done = yield from self.parser.parsator(local=True)  # process messages continuously
-        return done  # should nover get here except forced close
+        parser = self.parser.parsator(local=True)
+        while True:
+            try:
+                next(parser)
+            except StopIteration as ex:
+                return ex.value  # should never get here except forced close
+            yield self.tock
 
     def escrowDo(self, tymth=None, tock=None, **kwa):
         """
@@ -389,8 +394,13 @@ class Indirector(doing.DoDoer):
 
         if self.parser.ims:
             logger.debug("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
-        done = yield from self.parser.parsator(local=True)  # process messages continuously
-        return done  # should nover get here except forced close
+        parser = self.parser.parsator(local=True)
+        while True:
+            try:
+                next(parser)
+            except StopIteration as ex:
+                return ex.value  # should never get here except forced close
+            yield self.tock
 
     def cueDo(self, tymth=None, tock=None, **kwa):
         """
@@ -680,8 +690,13 @@ class MailboxDirector(doing.DoDoer):
         self.tock = tock if tock is not None else tocking.MailboxMsgTock
         _ = (yield self.tock)
 
-        done = yield from self.parser.parsator(local=True)  # process messages continuously
-        return done  # should nover get here except forced close
+        parser = self.parser.parsator(local=True)
+        while True:
+            try:
+                next(parser)
+            except StopIteration as ex:
+                return ex.value  # should never get here except forced close
+            yield self.tock
 
     def escrowDo(self, tymth=None, tock=None, **kwa):
         """
