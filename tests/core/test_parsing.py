@@ -4,6 +4,7 @@ tests.core.test_parsing module
 
 """
 import os
+from collections import deque
 from dataclasses import asdict
 
 import pytest
@@ -11,7 +12,9 @@ import pytest
 from hio.help import ogler
 
 
-from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
+from keri.kering import (ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds,
+                         ExtractionError, ShortageError, OutOfOrderError)
+from keri.core.parsing import Fault, Disps, faultKind
 
 from keri.core import (Counter, Diger, GenDex, Codens, Seqner, Dater, Texter, Pather,
                        Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser,
@@ -5130,6 +5133,390 @@ def test_parser_v2_substream():
         """Done Test"""
 
 
+def faultFixture():
+    """Returns (signers, serder, msg) for a well formed v1 inception plus its
+    attached controller signature. Shared setup for the fault sink tests below.
+
+    Returns:
+        signers (list[Signer]): transferable signers, [0] signs the inception
+        serder (SerderKERI): the inception event
+        msg (bytearray): serder.raw plus a ControllerIdxSigs group of one sig"""
+    signers = Salter(raw=b"ABCDEFGH01234567").signers(count=8, path='psr', temp=True)
+    serder = incept(keys=[signers[0].verfer.qb64],
+                    ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **V1_KWA)
+    msg = bytearray(serder.raw)
+    msg.extend(Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0).qb64b)
+    msg.extend(signers[0].sign(serder.raw, index=0).qb64b)
+    return signers, serder, msg
+
+
+def test_parser_fault_sink_default_off():
+    """Test that the fault sink is opt-in, so an embedder that does not ask for
+    one collects nothing and pays nothing"""
+    parser = Parser()
+    assert parser.faults is None  # off unless asked for
+
+    faults = []
+    parser = Parser(faults=faults)
+    assert parser.faults is faults  # sink is held, not copied
+
+
+def test_parser_fault_sink_silent_when_clean():
+    """Test that a well formed stream produces no faults and still parses"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        faults = []
+        parser.parse(ims=bytearray(msg), kvy=kvy, faults=faults)
+        assert not faults  # nothing went wrong so nothing was collected
+        assert serder.pre in kvy.kevers  # and the event was accepted
+
+    """Done Test"""
+
+
+def test_fault_kind():
+    """Test that faultKind names the most specific KeriError in the cause chain.
+
+    The parser rewraps as it unwinds so the class a handler catches is often
+    less specific than the class that named the fault"""
+    assert faultKind(ShortageError("need more")) == 'ShortageError'
+
+    try:  # what groupParsator does to an extraction error as it unwinds
+        try:
+            raise ShortageError("need more")
+        except ShortageError as ex:
+            raise ExtractionError from ex
+    except ExtractionError as ex:
+        assert faultKind(ex) == 'ShortageError'  # not the bare wrapper
+
+    try:  # what msgProcess does when it has no processor to dispatch to
+        try:
+            raise AttributeError("no kevery")
+        except AttributeError as ex:
+            raise ValidationError("no kevery to process") from ex
+    except ValidationError as ex:
+        assert faultKind(ex) == 'ValidationError'  # not the non-KeriError cause
+
+    assert faultKind(RuntimeError("not ours")) == 'RuntimeError'
+
+    """Done Test"""
+
+
+def test_parser_fault_truncated_stream():
+    """Test that a stream cut short surfaces as a flushed ShortageError"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        faults = []
+        # cut into the attached signature so the body and its counter extract
+        # but the signature itself runs short
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy, faults=faults)
+
+        assert serder.pre not in kvy.kevers  # nothing was established
+        assert len(faults) == 1
+        fault = faults[0]
+        assert isinstance(fault, Fault)
+        assert fault.kind == 'ShortageError'  # ran short, so more bytes may help
+        assert fault.disp == Disps.flush  # rest of stream discarded
+        assert fault.offset == len(serder.raw) + 4  # body plus its sig counter
+        assert fault.pre is None  # never got far enough to know whose msg it was
+        assert fault.sn is None
+        assert fault.said is None
+        assert isinstance(fault.ex, ExtractionError)
+
+    """Done Test"""
+
+
+def test_parser_fault_cold_start():
+    """Test that a desynced stream, one that starts on an attachment instead of
+    a message, surfaces as a flushed ColdStartError and not as a shortage"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    # attachments with no message body in front of them, as a receiver would
+    # see after resyncing mid stream
+    orphan = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
+                               version=Vrsn_2_0).qb64b)
+    orphan.extend(signers[0].sign(serder.raw, index=0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_2_0)
+
+        faults = []
+        parser.parse(ims=bytearray(orphan), kvy=kvy, faults=faults)
+
+        assert len(faults) == 1
+        fault = faults[0]
+        assert fault.kind == 'ColdStartError'  # desynced, more bytes will not help
+        assert fault.disp == Disps.flush
+        assert fault.offset == 0  # stream never made sense at all
+        assert fault.pre is None
+
+    """Done Test"""
+
+
+def test_parser_fault_post_extraction():
+    """Test that a msg which extracts but fails validation surfaces as a
+    resumed fault carrying the identity of the msg that failed"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    # the inception with an empty signature group, so it extracts cleanly and
+    # then fails validation for want of signatures
+    unsigned = bytearray(serder.raw)
+    unsigned.extend(Counter(Codens.ControllerIdxSigs, count=0,
+                            version=Vrsn_1_0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        faults = []
+        parser.parse(ims=bytearray(unsigned), kvy=kvy, faults=faults)
+
+        assert serder.pre not in kvy.kevers
+        assert len(faults) == 1
+        fault = faults[0]
+        assert fault.kind == 'ValidationError'
+        assert fault.disp == Disps.resume  # stream was not flushed
+        assert fault.offset is None  # locus is the msg, not a byte position
+        assert fault.pre == serder.pre  # extraction succeeded so identity is known
+        assert fault.sn == 0
+        assert fault.said == serder.said
+
+    """Done Test"""
+
+
+def test_parser_fault_discriminates_and_resumes():
+    """Test that an out of order event is distinguishable from a stream that
+    does not parse, and that the msgs after it still parse.
+
+    This is the discrimination an embedder cannot make today. Both conditions
+    establish less than the stream should, and .parse returns normally for
+    both"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    # an interaction event for an identifier whose inception has not been seen
+    ixn = interact(pre=serder.pre, dig=serder.said, sn=5, **V1_KWA)
+    msgs = bytearray(ixn.raw)
+    msgs.extend(Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0).qb64b)
+    msgs.extend(signers[0].sign(ixn.raw, index=0).qb64b)
+    msgs.extend(msg)  # the well formed inception follows it
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        faults = []
+        parser.parse(ims=bytearray(msgs), kvy=kvy, faults=faults)
+
+        assert len(faults) == 1
+        fault = faults[0]
+        assert fault.kind == 'OutOfOrderError'  # not merely 'ValidationError'
+        assert fault.disp == Disps.resume
+        assert fault.pre == ixn.pre
+        assert fault.sn == 5
+        assert fault.said == ixn.said
+        assert isinstance(fault.ex, OutOfOrderError)
+
+        # resumed, so the inception behind the bad event was still accepted
+        assert serder.pre in kvy.kevers
+
+    """Done Test"""
+
+
+def test_parser_fault_sized_group():
+    """Test that a fault inside a sized group is reported as such, since the
+    group was already stripped from the stream and only its contents are lost"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    # generic group contents are attachments with no message body in front of
+    # them, so extracting inside the group fails. All CESR so quadlet aligned
+    inner = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
+                              version=Vrsn_1_0).qb64b)
+    inner.extend(signers[0].sign(serder.raw, index=0).qb64b)
+    assert len(inner) % 4 == 0
+
+    msgs = bytearray(Counter(Codens.GenericGroup, count=len(inner) // 4,
+                             version=Vrsn_1_0).qb64b)
+    msgs.extend(inner)
+    msgs.extend(msg)  # the well formed inception follows the bad group
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        faults = []
+        parser.parse(ims=bytearray(msgs), kvy=kvy, faults=faults)
+
+        assert len(faults) == 1
+        fault = faults[0]
+        assert fault.kind == 'SizedGroupError'
+        assert fault.disp == Disps.group  # group lost, stream not flushed
+        assert fault.offset == len(msgs) - len(msg)  # end of the failed group
+
+        # only the group was lost, so the msg behind it was still accepted
+        assert serder.pre in kvy.kevers
+
+    """Done Test"""
+
+
+def test_parser_fault_sink_on_parse_one():
+    """Test that .parseOne reports faults the same way .parse does"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    unsigned = bytearray(serder.raw)
+    unsigned.extend(Counter(Codens.ControllerIdxSigs, count=0,
+                            version=Vrsn_1_0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        faults = []
+        parser.parseOne(ims=bytearray(unsigned), kvy=kvy, faults=faults)
+        assert len(faults) == 1
+        assert faults[0].kind == 'ValidationError'
+        assert faults[0].disp == Disps.resume
+        assert faults[0].pre == serder.pre
+        assert faults[0].said == serder.said
+
+        faults = []
+        parser.parseOne(ims=bytearray(msg)[:-20], kvy=kvy, faults=faults)
+        assert faults[0].kind == 'ShortageError'
+        assert faults[0].disp == Disps.flush
+        assert faults[0].offset == len(serder.raw) + 4
+        # note: .onceParsator falls through into .msgProcess after a failed
+        # extraction, where exts is unbound, so a spurious follow-on fault may
+        # trail this one. Deliberately not asserted either way here, since that
+        # is a parser bug this sink only makes visible
+
+    """Done Test"""
+
+
+def test_parser_fault_sink_never_raises():
+    """Test that collecting a fault cannot itself break parsing, whatever the
+    sink is handed"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        # a deque works as well as a list, since only .append is used
+        faults = deque()
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy, faults=faults)
+        assert len(faults) == 1
+        assert faults[0].kind == 'ShortageError'
+
+        # and a bounded one does not grow without limit on a long lived stream
+        faults = deque(maxlen=1)
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy, faults=faults)
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy, faults=faults)
+        assert len(faults) == 1
+
+    """Done Test"""
+
+
+def test_parser_fault_sink_on_live_stream():
+    """Test that the always running .parsator reports faults, since a server
+    parsing a live stream is the case an embedder most needs to diagnose"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    orphan = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
+                               version=Vrsn_2_0).qb64b)
+    orphan.extend(signers[0].sign(serder.raw, index=0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_2_0)
+
+        ims = bytearray()
+        faults = []
+        parsator = parser.parsator(ims=ims, kvy=kvy, faults=faults)
+        next(parsator)  # nothing in the stream yet
+        assert not faults
+
+        ims.extend(orphan)  # stream goes bad while the server is running
+        next(parsator)
+
+        assert len(faults) == 1
+        assert faults[0].kind == 'ColdStartError'
+        assert faults[0].disp == Disps.flush
+
+    """Done Test"""
+
+
+def test_parser_fault_unexpected_error():
+    """Test that an error which is neither an extraction failure nor a post
+    extraction validation failure still reaches the sink instead of vanishing.
+
+    A substream that declares a CESR major version the parser does not support
+    raises InvalidVersionError, which is a MaterialError, so it unwinds past
+    every handler that names a cause and lands in the blanket arm"""
+    logger.setLevel("ERROR")
+
+    # generic group whose contents declare an unsupported genus version
+    gvc = Counter(countB64=Counter.verToB64(major=3, minor=0),
+                  code=Codens.KERIACDCGenusVersion, version=Vrsn_2_0)
+    inner = bytearray(gvc.qb64b)
+    assert len(inner) % 4 == 0
+
+    msgs = bytearray(Counter(Codens.GenericGroup, count=len(inner) // 4,
+                             version=Vrsn_2_0).qb64b)
+    msgs.extend(inner)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_2_0)
+
+        faults = []
+        parser.parse(ims=bytearray(msgs), kvy=kvy, faults=faults)
+
+        assert len(faults) == 1
+        assert faults[0].kind == 'InvalidVersionError'
+        assert faults[0].disp == Disps.resume
+
+    """Done Test"""
+
+
+def test_parser_fault_sink_instance_default():
+    """Test that a sink given to the Parser is used by calls that do not
+    provide one of their own, and that a per call sink overrides it"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = faultFixture()
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        standing = []
+        parser = Parser(version=Vrsn_1_0, faults=standing)
+
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy)
+        assert len(standing) == 1
+        assert standing[0].kind == 'ShortageError'
+
+        oneoff = []
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy, faults=oneoff)
+        assert len(oneoff) == 1  # per call sink got it
+        assert len(standing) == 1  # and the standing sink did not
+
+    """Done Test"""
+
+
 if __name__ == "__main__":
     test_parser_v1_basic()
     test_parser_v1_version()
@@ -5144,3 +5531,16 @@ if __name__ == "__main__":
     test_group_parsator()
     test_parse_native_cesr_fixed_field()
     test_parser_v2_substream()
+    test_parser_fault_sink_default_off()
+    test_parser_fault_sink_silent_when_clean()
+    test_fault_kind()
+    test_parser_fault_truncated_stream()
+    test_parser_fault_cold_start()
+    test_parser_fault_post_extraction()
+    test_parser_fault_discriminates_and_resumes()
+    test_parser_fault_sized_group()
+    test_parser_fault_sink_on_parse_one()
+    test_parser_fault_sink_never_raises()
+    test_parser_fault_sink_on_live_stream()
+    test_parser_fault_unexpected_error()
+    test_parser_fault_sink_instance_default()
