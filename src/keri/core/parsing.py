@@ -72,8 +72,8 @@ Dispositionage = namedtuple("Dispositionage", 'flush resume group')  # fault dis
 Disps = Dispositionage(flush='flush', resume='resume', group='group')
 # flush means the rest of the stream was deleted to force a cold restart so
 #     whatever followed the fault was discarded unparsed
-# resume means only the faulted msg was dropped and parsing resumed with the
-#     next msg in the stream
+# resume means the parser declined this msg and resumed with the next one in
+#     the stream. It does NOT mean the msg was rejected, see Fault
 # group means the enclosing sized group had already been preflushed (stripped)
 #     from the stream so parsing resumed after that group
 
@@ -82,31 +82,60 @@ Disps = Dispositionage(flush='flush', resume='resume', group='group')
 class Fault:
     """Fault is a structured record of one error the Parser recovered from.
     The Parser logs and swallows such errors so that its stream tolerance is
-    preserved. When a fault sink is provided it also appends one Fault per
-    recovered error, so an embedder can discriminate causes without reading log
-    prose or database residue. See Parser .faults.
+    preserved. When a fault sink is provided it also appends a Fault, so an
+    embedder can discriminate causes without reading log prose or database
+    residue. See Parser .faults.
+
+    A Fault records what the parse loop did, not what became of the msg. This
+    distinction is the one an embedder is most likely to get wrong:
+
+    - It is NOT a validation verdict. Kevery escrows an event and then raises,
+      so OutOfOrderError, MissingWitnessSignatureError, MissingDelegationError
+      and LikelyDuplicitousError all yield a Fault for an event that a later
+      .processEscrows() may accept in full. Reading a Fault as "this msg was
+      rejected" turns ordinary out of order KEL traffic into a hard failure.
+    - It is NOT evidence. Duplicity is proven by placing two verifiable KELs
+      side by side, and the conflicting event is already preserved in the
+      duplicitous escrow. A Fault is one observer's local disposition, neither
+      nonrepudiable nor transferable, and 'Likely' in LikelyDuplicitousError is
+      deliberate.
+    - It is NOT a complete inventory of everything the stream lost. Errors
+      recovered inside a processor rather than by the parse loop do not appear,
+      .msgProcess recovers QueryNotFoundError this way, and Kevery drops msgs
+      by allow and deny list policy without raising at all. An empty sink does
+      not mean the whole stream was processed.
 
     Attributes:
-        kind (str): class name of the most specific KeriError in the cause
-            chain of .ex, e.g. 'ShortageError', 'ColdStartError',
+        kind (str): class name of the most specific KeriError in the chain of
+            .ex, e.g. 'ShortageError', 'ColdStartError',
             'MissingWitnessSignatureError'. Falls back to the class name of .ex
-            itself when no KeriError appears in the chain. Suitable for
-            branching and for serialization. See faultKind.
+            itself when the chain holds no KeriError. See faultKind.
+            This is keripy's internal exception taxonomy, not a normative
+            protocol one. It is not pinned across releases, the same condition
+            may surface under different names depending on where in the stream
+            it is met, and other KERI implementations do not share it. Branch
+            on it by all means, but treat an unrecognized kind as a fault to
+            handle rather than as no fault at all. .disp is the stable axis.
         disp (str): stream disposition the Parser chose, from Disps, one of
             'flush', 'resume', or 'group'.
-        offset (int|None): count of bytes consumed from the stream when the
-            fault was recovered, that is, how far into the stream parsing got.
-            Exact for a fixed stream parsed by .parse or .parseOne. A lower
-            bound for a live stream appended to while parsing. None when the
-            fault was recovered below the level that owns the stream, which is
-            the case for post extraction faults, which carry .pre .sn and
-            .said instead.
+        offset (int|None): lower bound on the count of bytes this parse call
+            consumed from the stream before the fault was recovered. Exact for
+            a fixed stream handed to .parse or .parseOne, and there it locates
+            where the stream stopped making sense. For a live stream appended
+            to while parsing it undercounts, without bound, so it is a
+            diagnostic and not a position to resync from. None when the fault
+            was recovered below the level that owns the stream, which is the
+            case for post extraction faults, which carry .pre .sn and .said
+            instead.
         pre (str|None): qb64 AID of the msg that faulted, when the msg had
             already been extracted, otherwise None
         sn (int|None): sequence number of the msg that faulted, when known
         said (str|None): qb64 SAID of the msg that faulted, when known
-        ex (Exception|None): the exception as caught, with its cause chain
-            intact, so nothing is lost for a consumer that wants more"""
+        ex (Exception|None): the exception as caught, with its chain intact, so
+            nothing is lost for a consumer that wants more. Its traceback is
+            cleared, since retaining one would pin the parser frames and with
+            them the whole parsed msg, for every fault a remote peer can
+            provoke. See _release"""
     kind: str = ''
     disp: str = ''
     offset: int = None
@@ -119,30 +148,66 @@ class Fault:
         return iter(asdict(self))
 
 
+def _chain(ex):
+    """Yields ex and then each exception it was raised from, outermost first.
+
+    Follows __cause__ when the raise was explicit, `raise X from Y`, and
+    __context__ otherwise, since the parser chains both ways: groupParsator
+    uses `raise ExtractionError from ex` but all four SizedGroupError raise
+    sites are bare raises inside an except block, which set __context__ only.
+    A context suppressed by `from None` ends the walk, as the raiser intended.
+
+    Parameters:
+        ex (Exception|None): exception to walk from"""
+    seen = set()
+    while ex is not None and id(ex) not in seen:  # guard cyclic chains
+        seen.add(id(ex))
+        yield ex
+        if ex.__cause__ is not None:
+            ex = ex.__cause__
+        elif ex.__suppress_context__:
+            ex = None
+        else:
+            ex = ex.__context__
+
+
 def faultKind(ex):
-    """Returns str class name of the most specific KeriError in the cause chain
-    of exception ex, or the class name of ex itself when the chain holds no
+    """Returns str class name of the most specific KeriError in the chain of
+    exception ex, or the class name of ex itself when the chain holds no
     KeriError.
 
     The parser rewraps as it unwinds, most notably groupParsator's
     `raise ExtractionError from ex`, so the class of the exception a handler
     catches is often less specific than the class that named the actual fault.
-    Following __cause__ recovers the specific one, and preferring the most
-    derived KeriError keeps a wrapped AttributeError from masking the
-    ValidationError raised from it.
+    Walking the chain recovers the specific one. Preferring the most derived
+    KeriError keeps a wrapped AttributeError from masking the ValidationError
+    raised from it, and on a tie the innermost wins, so a SizedGroupError
+    wrapping a ShortageError reports the shortage. What made the group fail is
+    the kind. That it was a group is the disposition, carried by .disp.
 
     Parameters:
         ex (Exception): exception to derive kind from"""
     best = None
-    seen = set()
-    cause = ex
-    while cause is not None and id(cause) not in seen:  # guard cyclic chains
-        seen.add(id(cause))
+    for cause in _chain(ex):
         if isinstance(cause, KeriError):
-            if best is None or len(type(cause).__mro__) > len(type(best).__mro__):
+            if best is None or len(type(cause).__mro__) >= len(type(best).__mro__):
                 best = cause
-        cause = cause.__cause__
     return type(best if best is not None else ex).__name__
+
+
+def _release(ex):
+    """Clears the traceback from ex and every exception it was raised from, so
+    a retained Fault does not pin the parser frames the exception unwound
+    through, and with them the whole parsed msg. Returns ex.
+
+    The parser is discarding ex either way, and has already logged it, so the
+    frames are of no further use to it.
+
+    Parameters:
+        ex (Exception): exception to strip frames from"""
+    for cause in _chain(ex):
+        cause.__traceback__ = None
+    return ex
 
 
 def _peek(obj, name):
@@ -172,13 +237,18 @@ def _fault(faults, ex, disp, offset=None, serder=None):
         serder (Serder|None): msg that faulted when it was already extracted"""
     if faults is None:
         return
-    faults.append(Fault(kind=faultKind(ex),
-                        disp=disp,
-                        offset=offset,
-                        pre=_peek(serder, 'pre'),
-                        sn=_peek(serder, 'sn'),
-                        said=_peek(serder, 'said'),
-                        ex=ex))
+    try:  # .append is embedder code running inside the parser's except arms,
+        # so a sink that raises must not escape and rob the arm of the flush
+        # or resume it was about to perform
+        faults.append(Fault(kind=faultKind(ex),
+                            disp=disp,
+                            offset=offset,
+                            pre=_peek(serder, 'pre'),
+                            sn=_peek(serder, 'sn'),
+                            said=_peek(serder, 'said'),
+                            ex=_release(ex)))
+    except Exception as rex:
+        logger.error("Parser could not record fault: %s", rex)
 
 
 
@@ -209,12 +279,18 @@ class Parser:
         local (bool): True means event source is local (protected) for validation
             False means event source is remote (unprotected) for validation
         faults (Deck|list|None): default fault sink. When not None the parser
-            appends one Fault to it, in addition to the logging it already
-            does, for each error it recovers from. None, the default, means
-            collect nothing, so behavior is unchanged for embedders that do
-            not opt in. Anything with an .append method works, such as a
-            hio.help.decking.Deck, a collections.deque, or a list. A sink
-            given per call overrides this default.
+            appends a Fault to it, in addition to the logging it does either
+            way, for each error the parse loop recovers from. None, the
+            default, means collect nothing. Anything with an .append method
+            works, and one that raises is caught rather than allowed to escape
+            the parse arm it ran in. A sink given per call overrides this
+            default.
+            Bound the sink for anything long lived. A parsator serving a
+            remote peer faults as often as that peer sends malformed bytes, so
+            an unbounded list or Deck grows with attacker supplied input.
+            collections.deque(maxlen=n) is the safe default. Read the Fault
+            docstring before branching on what arrives, a Fault is not a
+            validation verdict.
 
     Properties:
         genus (str): genus portion of default CESR code table protocol genus code
@@ -754,9 +830,11 @@ class Parser:
 
         result = None
         serder = None  # msg body once extracted, for fault locus
+        extracted = False  # True once a msg substream came out of the stream
         consumed = 0  # bytes consumed from ims so far, for fault offsets
         while True:
             extant = len(ims)  # stream size at start of pass, for fault offsets
+            extracted = False
             try:
                 exts = yield from self.msgParsator(ims=ims,
                                                       framed=framed,
@@ -764,6 +842,7 @@ class Parser:
                                                       local=local,
                                                       version=version)
                 serder = exts.serder  # extracted so fault locus now available
+                extracted = True
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -800,7 +879,10 @@ class Parser:
                         logger.exception("Kevery msg non-extraction error: %s", ex)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.error("Kevery msg non-extraction error: %s", ex)
-                    _fault(faults, ex, Disps.resume, serder=serder)
+                    if extracted:  # when extraction already failed the arm above
+                        # flushed the stream and exts is unbound, so anything
+                        # raised here is an artifact of that, not a new fault
+                        _fault(faults, ex, Disps.resume, serder=serder)
                 finally:
                     result = True
                     break
