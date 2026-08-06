@@ -684,7 +684,13 @@ class TCPMessenger(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that parses inbound TCP messages into the Kevery."""
-        yield from self.parser.parsator(local=True)  # process messages continuously
+        parser = self.parser.parsator(local=True)
+        while True:
+            try:
+                next(parser)
+            except StopIteration as ex:
+                return ex.value
+            yield tock
 
     @property
     def idle(self):
@@ -757,7 +763,13 @@ class TCPStreamMessenger(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that parses inbound TCP messages into the Kevery."""
-        yield from self.parser.parsator(local=True)  # process messages continuously
+        parser = self.parser.parsator(local=True)
+        while True:
+            try:
+                next(parser)
+            except StopIteration as ex:
+                return ex.value
+            yield tock
 
     @property
     def idle(self):
