@@ -2050,6 +2050,91 @@ def test_unverified_trans_receipt_escrow():
     """End Test"""
 
 
+def test_likely_duplicitous_escrow():
+    """
+    Test likely duplicitous escrow
+
+    Two validly signed events at one sn that neither supersedes the other must
+    be preserved rather than dropped: duplicity is proven by placing the
+    conflicting events side by side, so the second one is escrowed in .ldes
+    with its body in .evts and its signatures in .sigs, while the KEL keeps
+    the version it accepted first.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    psr = parsing.Parser(version=Vrsn_1_0)
+
+    # init event DB and keep DB
+    with openDB(name="edy", temp=True) as db, keeping.openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = Kevery(db=db)
+
+        verfers, digers = mgr.incept(icount=1, ncount=1, stem='wes', temp=True)
+
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
+
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        def signed(srdr):
+            """Serialize srdr with its controller signatures attached"""
+            sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+            msg = bytearray(srdr.raw)
+            msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0).qb64b)
+            for siger in sigers:
+                msg.extend(siger.qb64b)
+            return msg
+
+        psr.parse(ims=signed(srdr), kvy=kvy)
+        assert pre in kvy.kevers  # inception accepted
+        assert kvy.kevers[pre].sn == 0
+
+        # two interaction events at sn 1, both chaining from the inception and
+        # both validly signed by the keys the inception established. Neither
+        # supersedes the other, since superseding recovery is rot over ixn.
+        this = interact(pre=pre, dig=icpdig, sn=1, data=[dict(fork="this")],
+                        version=Vrsn_1_0, kind=Kinds.json)
+        that = interact(pre=pre, dig=icpdig, sn=1, data=[dict(fork="that")],
+                        version=Vrsn_1_0, kind=Kinds.json)
+        assert this.said != that.said
+
+        psr.parse(ims=signed(this), kvy=kvy)
+        assert kvy.kevers[pre].serder.said == this.said  # first one accepted
+
+        psr.parse(ims=signed(that), kvy=kvy)
+        assert kvy.kevers[pre].serder.said == this.said  # KEL unchanged
+
+        # the conflicting event is escrowed as likely duplicitous, with the
+        # evidence it consists of kept alongside it
+        escrows = db.ldes.get(keys=pre, on=1)
+        assert escrows == [that.said]
+        assert db.evts.get(keys=(pre, that.said)).said == that.said
+        assert len(db.sigs.get(keys=(pre, that.said))) == 1
+
+        # processing the escrow leaves it in place, since nothing has arrived
+        # that could resolve which version the controller stands behind
+        kvy.processEscrowDuplicitous()
+        assert db.ldes.get(keys=pre, on=1) == [that.said]
+        assert kvy.kevers[pre].serder.said == this.said
+
+        # an event already in the KEL is a duplicate rather than duplicitous,
+        # so replaying it adds no escrow entry
+        psr.parse(ims=signed(this), kvy=kvy)
+        assert db.ldes.get(keys=pre, on=1) == [that.said]
+
+    assert not os.path.exists(ks.path)
+    assert not os.path.exists(db.path)
+
+    """End Test"""
+
+
 if __name__ == "__main__":
     test_partial_signed_escrow()
     test_missing_delegator_escrow()
@@ -2062,3 +2147,4 @@ if __name__ == "__main__":
     test_ooes_missing_db_entries_escrow_cleanup()
     test_unverified_receipt_escrow()
     test_unverified_trans_receipt_escrow()
+    test_likely_duplicitous_escrow()

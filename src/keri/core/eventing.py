@@ -5811,7 +5811,7 @@ class Kevery:
         self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
-        self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
+        self.db.ldes.add(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log duplicitous
         logger.debug("Kevery process: escrowed likely duplicitous event=\n%s\n", serder.pretty())
 
