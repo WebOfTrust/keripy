@@ -603,7 +603,7 @@ def test_habery_signatory():
         assert len(hby.habs) == 0
         assert len(hby.prefixes) == 0
 
-def test_namespaced_habs():
+def test_namespaced_habs(tmp_path):
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test", version=Vrsn_2_0, kind=Kinds.cesr)
         assert hab.pre == "EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y"
@@ -642,7 +642,8 @@ def test_namespaced_habs():
 
     # Test Reload of Namespace habs
     name = "ns-test"
-    with openHby(name=name, base="test", temp=False, clear=True) as hby:
+    headDirPath = str(tmp_path)
+    with openHby(name=name, base="test", temp=False, clear=True, headDirPath=headDirPath) as hby:
         hab = hby.makeHab(name=name, icount=1, version=Vrsn_2_0, kind=Kinds.cesr)
         opre = hab.pre
         hab = hby.makeHab(name="test.1", icount=1, version=Vrsn_2_0, kind=Kinds.cesr)
@@ -654,7 +655,7 @@ def test_namespaced_habs():
         nshab = hby.makeHab(name="test", ns="controller", version=Vrsn_2_0, kind=Kinds.cesr)
         ctpre = nshab.pre
 
-    with openHby(name=name, base="test", temp=False) as hby:
+    with openHby(name=name, base="test", temp=False, headDirPath=headDirPath) as hby:
         for pre in [opre, o2pre, atpre, at2pre, ctpre]:
             assert pre in hby.db.kevers  # read through cache
             assert pre in hby.db.prefixes

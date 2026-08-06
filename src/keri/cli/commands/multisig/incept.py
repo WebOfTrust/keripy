@@ -14,13 +14,13 @@ import sys
 from hio.base import doing
 from hio.help import ogler
 
-from ....kering import ConfigurationError, Kinds, Versionage, Version
+from ....kering import ConfigurationError, Kinds, Version, Versionage, Vrsn_1_0
 from ....app import (Notifier, MailboxDirector, Multiplexor,
                      Counselor, HaberyDoer, Poster,
                      multisigInceptExn)
 from ....app.grouping import loadHandlers
 from ...common import Parsery, setupHby, printIdentifier, parseVersion
-from ....core import Prefixer, Number, Diger
+from ....core import Prefixer, Number, Diger, Parser
 from ....peer import Exchanger
 
 logger = ogler.getLogger()
@@ -171,8 +171,15 @@ class GroupMultisigIncept(doing.DoDoer):
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
                                          icp=icp,
-                                         version=self.inits.get("version"),
+                                         version=Vrsn_1_0,
                                          kind=self.inits.get("kind", Kinds.json))
+            local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                    framed=True,
+                                                    processive=False)[0]
+            self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                  tsgs=local.tsgs, cigars=local.cigars,
+                                  essrs=local.essrs)
+            self.mux.add(local.serder)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)

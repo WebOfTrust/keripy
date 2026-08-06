@@ -10,6 +10,7 @@ from .....app import (GroupHab, Notifier, MailboxDirector,
                       Poster, multisigRegistryInceptExn)
 from .....app.grouping import loadHandlers
 
+from .....kering import Vrsn_1_0
 from .....core import SerderKERI, SealEvent
 from .....peer import Exchanger
 from .....vdr import Regery, Registrar
@@ -163,7 +164,8 @@ class RegistryInceptor(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage)
+                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage,
+                                                     version=Vrsn_1_0)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

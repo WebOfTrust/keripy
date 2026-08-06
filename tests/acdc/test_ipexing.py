@@ -590,6 +590,126 @@ def test_ipex_v2_rejects_unsupported_nested_frame():
                       acdc=bad)
 
 
+def test_ipex_v2_rejects_offer_with_mismatched_nested_acdc():
+    with openHby(name="ipex-v2-bad-offer-nest",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        # Create one local AID that acts as both sender and receiver for the EXN
+        hab = hby.makeHab(name="test")
+        
+        # Set up recorder, exchanger and load IPEX Handlers
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Build a registry event so both candidate ACDCs have a realistic registry id
+        registry = regcept(israid=hab.pre)
+
+        good = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+
+        # This second ACDC is valid-looking but has a different SAID from the offered one.
+        bad = acdcmap(israid=hab.pre,
+                      regid=registry.said,
+                      attribute=dict(d="", LEI="000000BADNEST00000000"),
+                      iseaid=hab.pre)
+
+        # Build a normal offer first; the signed body now promises `good.said`
+        exn, _ = ipexOffer(hab=hab,
+                           recp=hab.pre,
+                           message="Here is the offered credential",
+                           acdc=good)
+
+        # Replace the nested stream with `bad`, while leaving the signed EXN body untouched
+        # The handler should compare the body SAID to the nested SAID and reject the mismatch
+        atc = bytearray(hab.endorse(serder=exn,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(bad)]))
+        # `endorse` returns body + attachments; strip the body so we can pair the original body
+        # with our deliberately wrong attachment stream.
+        del atc[:exn.size]
+
+        # Rebuild the tampered wire message: original signed body plus mismatched nested ACDC
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        # The parser consumed the whole stream even though the handler rejected the EXN
+        assert ims == bytearray()
+
+        # Rejected offers must not be persisted as accepted exchange messages
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+
+        # Rejected offers must also not create user-facing IPEX notifications
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
+    with openHby(name="ipex-v2-bad-grant-nest",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        # Set up recorder, exchanger and load IPEX Handlers
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Create the registry and ACDC referenced by the grant
+        registry = regcept(israid=hab.pre)
+        acdc = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+
+        # Create the TEL issuance event that the grant body says should accompany the ACDC
+        iss = update(regid=registry.said,
+                     prior=registry.said,
+                     acdc=acdc.said,
+                     state="issued")
+
+        # Create the anchoring KEL event that the grant body also says should be present
+        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+
+        # Build a correct grant body that references all three artifacts: acdc, iss, and anc
+        exn, _ = ipexGrant(hab=hab,
+                           recp=hab.pre,
+                           message="Here is the granted credential",
+                           acdc=acdc,
+                           iss=iss,
+                           anc=anc)
+
+        # Re-endorse the same body but omit `iss` from the nested streams
+        # This proves the handler rejects a body that promises an artifact it did not carry
+        atc = bytearray(hab.endorse(serder=exn,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(acdc), _nest(anc)]))
+
+        # Strip the body returned by `endorse`; we only want the tampered attachments
+        del atc[:exn.size]
+
+        # Rebuild the malformed wire message: valid grant body, incomplete nested artifacts
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+
+        # Parse through the exchanger/IPEX route 
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        # The parser should drain the input even though the IPEX handler rejects it
+        assert ims == bytearray()
+
+        # A rejected grant must not be saved as an accepted EXN
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+
+        # A rejected grant must not create a user-facing IPEX notification
+        assert recorder.items == []
+
+
 def test_ipex_v2_responders_set_receiver():
     """Responder verbs address the prior's sender; offer honors an explicit recp.
 

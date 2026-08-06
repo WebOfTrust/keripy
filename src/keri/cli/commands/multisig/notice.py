@@ -11,7 +11,7 @@ from hio.help import ogler
 
 from ...common import Parsery, setupHby
 
-from ....kering import Ilks
+from ....kering import Ilks, Vrsn_1_0
 from ....app import (HaberyDoer, Poster, multisigRotateExn,
                      multisigInceptExn, multisigInteractExn)
 
@@ -83,10 +83,11 @@ class NoticeDoer(doing.DoDoer):
         if hab.group:
             (smids, rmids) = hab.members()
             serder = hab.kever.serder
-            rot = hab.msgOwnEvent(sn=hab.kever.sn, framed=True,
+            msg = hab.msgOwnEvent(sn=hab.kever.sn, framed=True,
                                   gvrsn=serder.pvrsn)
-            eserder = SerderKERI(raw=rot)
-            del rot[:eserder.size]
+            eserder = SerderKERI(raw=msg)
+            atc = bytearray(msg)
+            del atc[:eserder.size]
 
             ilk = serder.ked['t']
             others = list(oset(smids + (rmids or [])))  # list(rec.smids)
@@ -94,28 +95,22 @@ class NoticeDoer(doing.DoDoer):
 
             if ilk in (Ilks.rot,):
                 print(f"Sending rot event to {len(others)} participants.")
-                exn, ims = multisigRotateExn(hab,
-                                                      aids=smids,
-                                                      smids=smids,
-                                                      rmids=rmids,
-                                                      ked=serder.ked)
+                exn, ims = multisigRotateExn(ghab=hab, smids=smids, rmids=rmids, rot=msg,
+                                             version=Vrsn_1_0)
             elif ilk in (Ilks.icp,):
                 print(f"Sending icp event to {len(others)} participants.")
-                exn, ims = multisigInceptExn(hab,
-                                                      aids=smids,
-                                                      ked=serder.ked)
+                exn, ims = multisigInceptExn(hab=hab.mhab, smids=smids, rmids=rmids, icp=msg,
+                                             version=Vrsn_1_0)
             elif ilk in (Ilks.ixn,):
                 print(f"Sending ixn event to {len(others)} participants.")
-                exn, ims = multisigInteractExn(hab,
-                                                        aids=smids,
-                                                        sn=serder.sn,
-                                                        data=serder.ked["a"])
+                exn, ims = multisigInteractExn(ghab=hab, aids=smids, ixn=msg,
+                                               version=Vrsn_1_0)
             else:
                 raise ValueError(f"unsupport event type={ilk}")
 
             for recpt in others:
                 self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig",
-                                  serder=eserder, attachment=rot)
+                                  serder=eserder, attachment=atc)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recpt,
                                   topic="multisig",

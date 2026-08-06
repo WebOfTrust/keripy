@@ -16,12 +16,13 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger,  specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
+from ..kering import (Version, Vrsn_1_0, Ilks, Kinds, Roles, Schemes,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
-                    Codens, MtrDex, TraitDex, messagize, exchange,)
+                    Codens, MtrDex, TraitDex,
+                    messagize, exchange,)
 from ..core import eventing
 from ..recording import HabitatRecord, OobiRecord
 
@@ -1587,7 +1588,8 @@ class BaseHab:
             genusify (bool): True means prepend genus version code from gvrsn
                 before serder to override default stream genus version
             False means do nothing
-            embeds (dict or None): embedded message serders if any.
+            embeds (dict or None): legacy V1 embedded message serders if any;
+                                   V2 exchange messages do not support embeds here.
             eid (str or None): qb64 of endpoint provider identifier if any.
             save (bool): True means process local copy into db after building.
 
@@ -1610,15 +1612,15 @@ class BaseHab:
                    kind=kind,)
 
         if embeds:
-            if version is Vrsn_1_0:
+            if pvrsn.major == Vrsn_1_0.major:
                 # specialExchange is the v1 embeds path; match attachment genus
                 # to version when gvrsn was omitted so body and attachments agree.
                 if gvrsn is None:
                     gvrsn = version
                     kwa["gvrsn"] = gvrsn
                 serder, end = specialExchange(embeds=embeds, **kwa)
-            elif version is Vrsn_2_0:
-                raise ValueError("Embeds not supported for v2 exchanges")
+            else:
+                raise ValueError(f"V2 embeds not supported in version {pvrsn.major} exchange")
         else:
             serder = exchange(**kwa)
             end = bytearray()
@@ -1628,12 +1630,13 @@ class BaseHab:
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, framed=framed, nested=nested,
-                               gvrsn=gvrsn,  genusify=genusify)
+                               gvrsn=gvrsn, genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
             msg = eventing.messagize(serder, cigars=cigars, framed=framed,
-                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
+                                     nested=nested, gvrsn=gvrsn,
+                                     genusify=genusify)
 
         msg.extend(end)
 
@@ -1644,7 +1647,7 @@ class BaseHab:
 
 
     def endorse(self, serder, last=False, framed=False, nested=False,
-                              gvrsn=Version, genusify=False):
+                              gvrsn=Version, genusify=False, nests=None):
         """Return msg with own endorsement of msg from serder with attached
         signature groups based on own pre transferable or non-transferable.
 
@@ -1671,41 +1674,37 @@ class BaseHab:
             genusify (bool): True means prepend genus version code from gvrsn
                 before serder to override default stream genus version. False
                 means do nothing.
+            nests (list | None): nested substreams passed through to messagize
 
         Returns:
             bytearray: endorsed message with attached signatures from messagize."""
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign to indicate to messagize which type sig group to use
-            sigers = self.sign(ser=serder.raw, indexed=True)
             kever = self.kever
+            sigers = self.sign(ser=serder.raw, indexed=True)
             if last:
-                #source = SealLast(i=kever.prefixer.qb64)
                 lsgs = [(kever.prefixer, sigers)]
                 msg = eventing.messagize(serder=serder, lsgs=lsgs,
                                          framed=framed, nested=nested,
-                                         gvrsn=gvrsn, genusify=genusify)
+                                         gvrsn=gvrsn, genusify=genusify,
+                                         nests=nests)
 
             else:
-                #source = SealEvent(i=kever.prefixer.qb64,
-                                          #s="{:x}".format(kever.lastEst.s),
-                                          #d=kever.lastEst.d)
                 tsgs =[(kever.prefixer,
                         Number(sn=kever.lastEst.s),
                         Diger(qb64=kever.lastEst.d),
                         sigers)]
                 msg = eventing.messagize(serder=serder, tsgs=tsgs,
                                          framed=framed, nested=nested,
-                                         gvrsn=gvrsn, genusify=genusify)
-
-            #msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
-                                     #framed=framed,nested=nested, gvrsn=gvrsn,
-                                     #genusify=genusify)
+                                         gvrsn=gvrsn, genusify=genusify,
+                                         nests=nests)
 
         else:
             cigars = self.sign(ser=serder.raw, indexed=False)
             msg = eventing.messagize(serder=serder, cigars=cigars, framed=framed,
-                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
+                                     nested=nested, gvrsn=gvrsn,
+                                     genusify=genusify, nests=nests)
 
         return msg
 
