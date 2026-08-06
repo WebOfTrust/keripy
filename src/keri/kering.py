@@ -691,6 +691,20 @@ class LikelyDuplicitousError(ValidationError):
     """
 
 
+class MisdigestError(ValidationError):
+    """
+    Error event's prior event digest does not match the digest of the event it
+    claims to follow, so the backward hash chain is broken at this event.
+
+    Distinct from OutOfOrderError, where the prior event is merely absent and
+    may still arrive: a mismatched prior digest is decided against events
+    already in hand, so no later arrival resolves it.
+
+    Usage:
+        raise MisdigestError("error message")
+    """
+
+
 class UnverifiedWitnessReceiptError(ValidationError):
     """
     Error witness receipt is unverfied  event not yet in database
