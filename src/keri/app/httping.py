@@ -271,8 +271,7 @@ class Clienter(doing.DoDoer):
 
         """
         self.wind(tymth)
-        self.tock = tock
-        yield self.tock
+        yield tock
 
         while True:
             toRemove = []
@@ -282,10 +281,9 @@ class Clienter(doing.DoDoer):
                     if (now - dt) > datetime.timedelta(seconds=self.TimeoutClient):
                         toRemove.append(client)
 
-                yield self.tock
+                yield tock
 
             for client in toRemove:
                 self.remove(client)
 
-            yield self.tock
-
+            yield tock
