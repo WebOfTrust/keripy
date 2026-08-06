@@ -160,9 +160,11 @@ def _disclosable_block(attr, attr_schema, desc):
         ],
     }
 
-# acm/acg are fixed-field formats: they always carry (possibly empty) e and r sections
-# even when unused, so the schema must admit them.
-_EMPTY_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
+# ACDC sections may appear either expanded as an object or compacted to the SAID
+# of that section. Schema sections use this directly; edge/rule sections reuse it
+# because acm/acg carry those fields even when they are compact.
+_SAID_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
+_EMPTY_OR_SECTION = _SAID_OR_SECTION
 
 # One E1E identity edge, pinned by schema (const "E1E"). This is the SEDI core-identity
 # <-> entitlement relationship (keripy discussion #1515): the near ACDC's issuee is the
@@ -1330,7 +1332,7 @@ JOB_SEDI_SCHEMA_MAD = {
         "u": {"description": "Message UUID", "type": "string"},
         "i": {"description": "Issuer (State) AID", "type": "string"},
         "rd": {"description": "Registry SAID", "type": "string"},
-        "s": _EMPTY_OR_SECTION,
+        "s": _SAID_OR_SECTION,
         "a": {
             "oneOf": [
                 {"type": "string"},
@@ -1388,7 +1390,7 @@ FOOD_HANDLER_SCHEMA_MAD = {
         "u": {"description": "Message UUID", "type": "string"},
         "i": {"type": "string"},
         "rd": {"type": "string"},
-        "s": _EMPTY_OR_SECTION,
+        "s": _SAID_OR_SECTION,
         "a": {
             "oneOf": [
                 {"type": "string"},
@@ -1440,7 +1442,7 @@ JOB_PRESENTATION_SCHEMA_MAD = {
         "d": {"type": "string"},
         "u": {"type": "string"},
         "i": {"type": "string"},
-        "s": _EMPTY_OR_SECTION,
+        "s": _SAID_OR_SECTION,
         "a": {
             "oneOf": [
                 {"type": "string"},
@@ -1601,8 +1603,8 @@ def test_job_application_entitlement_presentation_JSON():
     # identity credential and one entitlement credential.
     assert_acdc_schema_valid(sedi)
     assert_acdc_schema_valid(permit)
-    schema = assert_acdc_schema_valid(presentation)
-    assert_acdc_schema_valid(presentationCompact, schema=schema)
+    presentationSchemaExpanded = assert_acdc_schema_valid(presentation)
+    assert_acdc_schema_valid(presentationCompact, schema=presentationSchemaExpanded)
     assert presentation.said == presentationCompact.said
     assert presentation.sad['i'] == sedi.iseaid == permit.iseaid == ALICE
     assert presentation.sad['e']['identity']['o'] == 'I2I'
@@ -1693,17 +1695,17 @@ def test_job_application_entitlement_presentation_JSON():
                      kind=kind)
     employerSig = _SIGNERS[3].sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[employerSig])
-    capturedKeyState = Verfer(qb64=_SIGNERS[3].verfer.qb64)
+    capturedEmployerKeyState = Verfer(qb64=_SIGNERS[3].verfer.qb64)
     # Assert the agree binds the offer and that the captured key state verifies it.
     assert agree.sad['p'] == offer.said
     assert bytes(agree.raw) in signedAgree
-    assert capturedKeyState.verify(sig=employerSig.raw, ser=agree.raw)
+    assert capturedEmployerKeyState.verify(sig=employerSig.raw, ser=agree.raw)
 
     # Reject a signature over the otherwise-correct agree body made by the wrong
     # signer. The bytes come from a real test key, but not the employer's key, so
     # from the employer's perspective it is a forgery.
-    forged = _SIGNERS[0].sign(ser=agree.raw, index=0)
-    assert not capturedKeyState.verify(sig=forged.raw, ser=agree.raw)
+    wrongSignerSig = _SIGNERS[0].sign(ser=agree.raw, index=0)
+    assert not capturedEmployerKeyState.verify(sig=wrongSignerSig.raw, ser=agree.raw)
     # Build and verify a signed spurn to prove that a valid decline still does
     # not count as agreement for unlocking the disclosure.
     spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
@@ -1712,13 +1714,13 @@ def test_job_application_entitlement_presentation_JSON():
     spurnSig = _SIGNERS[3].sign(ser=spurn.raw, index=0)
     assert spurn.sad['r'] != "/ipex/agree"
     assert spurn.sad['p'] == offer.said
-    assert capturedKeyState.verify(sig=spurnSig.raw, ser=spurn.raw)
+    assert capturedEmployerKeyState.verify(sig=spurnSig.raw, ser=spurn.raw)
 
     # Re-check the real agreement, then prepare the mixed SEDI disclosure: start
     # from the fully compact form and expand only the employment fields.
     assert agree.sad['r'] == "/ipex/agree"
     assert agree.sad['p'] == offer.said
-    assert capturedKeyState.verify(sig=employerSig.raw, ser=agree.raw)
+    assert capturedEmployerKeyState.verify(sig=employerSig.raw, ser=agree.raw)
     identityCompactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
     identityCompactor.compact()
     identityCompactor.expand(greedy=True)
@@ -1762,9 +1764,9 @@ def test_job_application_entitlement_presentation_JSON():
     assert isinstance(identityDisc['phone'], dict)
     assert isinstance(identityDisc['biometric'], dict)
     assert isinstance(identityDisc['dob'], str)
-    check = Compactor(mad=dict(identityDisc, d=''), makify=True, kind=kind)
-    check.compact()
-    assert check.said == _committed_a_said(sedi, kind)
+    identityCheck = Compactor(mad=dict(identityDisc, d=''), makify=True, kind=kind)
+    identityCheck.compact()
+    assert identityCheck.said == _committed_a_said(sedi, kind)
 
     # Assert the entitlement disclosure carries the permit data plus the E1E edge
     # that chains the entitlement back to the original SEDI credential.
@@ -1780,7 +1782,7 @@ def test_job_application_entitlement_presentation_JSON():
     # Verify the compact presentation the employer received is the exact artifact
     # it previously accepted in the offer/agree exchange.
     assert _club_accepts_grant(grant.sad['a']['acdc'], presentation.said,
-                               presentation.sad['s'])
+                               presentationSchemaExpanded)
 
     # Build admit to close the exchange after the employer has received the grant.
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
