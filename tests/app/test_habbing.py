@@ -565,6 +565,61 @@ def test_habery_reinitialization():
     """End Test"""
 
 
+def test_habery_reinitialization_group_rmids():
+    """Test Reinitializing Habery preserves a group hab's rotation member roster
+
+    A group's rotation members (rmids) may be a superset of its current signing
+    members (smids), e.g. one current signer with a next-key commitment spread
+    across three members. loadHabs must pass the stored rmids through to
+    GroupHab, otherwise GroupHab.__init__ defaults rmids to smids and the
+    rotation roster silently collapses on every reinitialization.
+    """
+
+    # keri falls back to ~/.keri when /usr/local/var is not writable, so scrub both
+    for head in ('/usr/local/var/keri', os.path.expanduser('~/.keri')):
+        if os.path.exists(f'{head}/cf/test/grouprmids-test.json'):
+            os.remove(f'{head}/cf/test/grouprmids-test.json')
+        if os.path.exists(f'{head}/db/test/grouprmids-test'):
+            shutil.rmtree(f'{head}/db/test/grouprmids-test')
+        if os.path.exists(f'{head}/ks/test/grouprmids-test'):
+            shutil.rmtree(f'{head}/ks/test/grouprmids-test')
+
+    name = "grouprmids-test"
+
+    with habbing.openHby(name=name, base="test", temp=False, clear=True) as hby:
+        hab1 = hby.makeHab(name="mem1", icount=1)
+        hab2 = hby.makeHab(name="mem2", icount=1)
+        hab3 = hby.makeHab(name="mem3", icount=1)
+
+        smids = [hab1.pre]
+        rmids = [hab1.pre, hab2.pre, hab3.pre]
+        ghab = hby.makeGroupHab(group="the-group", mhab=hab1,
+                                smids=smids, rmids=rmids,
+                                isith='1', nsith='["1/2", "1/2", "1/2"]',
+                                toad=0, wits=[])
+        gpre = ghab.pre
+        assert ghab.smids == smids
+        assert ghab.rmids == rmids
+
+        habord = hby.db.habs.get(keys=(gpre,))
+        assert habord.smids == smids
+        assert habord.rmids == rmids  # roster stored correctly
+
+    with habbing.openHby(name=name, base="test", temp=False) as hby:
+        ghab = hby.habs[gpre]
+        assert isinstance(ghab, habbing.GroupHab)
+        assert ghab.smids == smids
+        assert ghab.rmids == rmids  # roster survives reload, not collapsed to smids
+
+    hby.close(clear=True)
+    hby.cf.close(clear=True)
+    assert not os.path.exists(hby.cf.path)
+    assert not os.path.exists(hby.db.path)
+    assert not os.path.exists(hby.ks.path)
+
+    """End Test"""
+
+
 def test_habery_signatory():
     with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
         signer = hby.signator
