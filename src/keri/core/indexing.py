@@ -233,7 +233,17 @@ class Indexer:
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0, ondex=None,
                  qb64b=None, qb64=None, qb2=None, strip=False, **kwa):
         """
-        Validate as fully qualified
+        Validate as fully qualified.
+
+        Initialize from either raw cryptographic material with a valid
+        derivation code, or from fully qualified material.
+
+        Needs either (raw and code) or qb64b or qb64 or qb2.
+        Otherwise raises EmptyMaterialError.
+        When raw and code are provided, index defaults to 0 and the code
+        is validated against the length of raw, then .raw is assigned.
+        When qb64b, qb64, or qb2 is provided, .raw, .code, .index, and
+        .ondex are extracted from the qualified material.
 
         Parameters:
             raw (bytes): unqualified crypto material usable for crypto operations
@@ -241,17 +251,10 @@ class Indexer:
             index (int): main index offset into list or length of material
             ondex (int | None): other index offset into list or length of material
             qb64b (bytes): fully qualified Base64 crypto material
-            qb64 (str | bytes):  fully qualified Base64 crypto material
+            qb64 (str | bytes): fully qualified Base64 crypto material
             qb2 (bytes): fully qualified binary crypto material
             strip (bool): True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
-
-        Needs either (raw and code and index) or qb64b or qb64 or qb2
-        Otherwise raises EmptyMaterialError
-        When raw and code provided then validate that code is correct
-        for length of raw  and assign .raw
-        Else when qb64b or qb64 or qb2 provided, extract and assign .raw,
-        .code, .index, and .ondex.
 
         """
         if raw is not None:  # raw provided

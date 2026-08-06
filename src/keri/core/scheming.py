@@ -283,7 +283,8 @@ class Schemer:
     Hidden Attributes:
         ._raw (bytes): of serialized schema only
         ._sed (JSON): schema dict
-        ._kind (schema): kind string value (see namedtuple coring.Serials). Supported kinds: 'JSONSchema'.
+        ._kind (str): serialization kind string value (see Kinds in keri.kering).
+            Supported kinds: 'JSON', 'MGPK', 'CBOR'.
         ._code (default): code for .saider
         ._saider (Saider): instance of digest of .raw
 
@@ -301,11 +302,12 @@ class Schemer:
         Parameters:
             raw (bytes): of serialized schema
             sed (dict): dict or None
-                  if None its deserialized from raw
-            typ (JSONSchema): type of schema
-            kind (serialization): kind string value or None (see namedtuple coring.Serials)
-                supported kinds are 'json', 'cbor', 'msgpack', 'binary';
-                if kind is None, then it is extracted from ked or raw
+                if None it is deserialized from raw
+            typ (JSONSchema): schema handler used for serialization and
+                deserialization
+            kind (str | None): serialization kind (see Kinds in keri.kering).
+                Supported: 'JSON', 'MGPK', 'CBOR'.
+                If None, serialization defaults to JSON.
             code (MtrDex): default digest code
             verify (bool): True means verify said(s) of given raw or sad.
                            Raises ValidationError if verification fails
