@@ -81,7 +81,7 @@ $ pip3 install -U cbor2
 * Setup dependencies: `pip install -r requirements.txt`
 
 ### Testing
-* Install pytest and xdist: `pip install pytest pytest-xdist`
+* Install the test dependencies: `python -m pip install -e ".[test]"`
 
 * Run the test suites:
 
