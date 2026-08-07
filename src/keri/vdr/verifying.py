@@ -590,13 +590,26 @@ class Verifier:
         if kever.delpre is None or kever.delpre != delpre:
             return False
 
-        # Approved as of *current* key state, not merely at inception: every establishment
-        # event of a delegated AID requires its own approval, so checking the latest one
-        # covers the dip and any subsequent delegated rotation. Keying on .lastEst rather
-        # than .serder.said matters -- logEvent excludes interaction events from .aess, so
-        # a delegate whose latest event is an ixn would otherwise look unapproved.
-        serder = self.hby.db.evts.get(keys=(pre, kever.lastEst.d))
-        if serder is None:  # last establishment event not retrievable
+        # The delegation is settled at inception and does not move afterwards. `di` appears
+        # in a `dip` and in no other event -- a `drt` has no such field -- so the delegator
+        # anchoring the `dip` is the whole of what makes `pre` a delegated AID of `delpre`,
+        # and no later event can change or renew it.
+        #
+        # An earlier version keyed on `kever.lastEst.d`, which asks whether the delegate's
+        # *current* establishment event is approved. That is a real question and it is the
+        # KEL layer's: `Kevery.validateDelegation` already refuses an unanchored `drt` for
+        # every validator outside its locallyOwned/locallyMembered/locallyWitnessed
+        # short-circuit. Asking it again here bought nothing and made a fixed edge unstable,
+        # because inside that exemption the rotation is accepted locally, `lastEst` advances,
+        # and credentials the delegate issued while approved began to be refused. A
+        # compromised delegate is answered by cooperative superseding recovery, not by an
+        # edge operator changing its verdict.
+        #
+        # A delegated AID's prefix is a digest of its own `dip` (enforced for `dip` and
+        # `drt` by the digestive-prefix requirement in serdering), so `i` equals `d` there
+        # and the `dip` is retrievable at (pre, pre).
+        serder = self.hby.db.evts.get(keys=(pre, pre))
+        if serder is None:  # delegated inception event not retrievable
             return False
 
         return kever.fetchDelegatingEvent(delpre=delpre, serder=serder,
