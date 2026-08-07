@@ -1761,6 +1761,79 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
     """End Test"""
 
 
+
+def test_verifier_di2i_survives_an_unapproved_delegated_rotation(seeder):
+    """The delegation relation is fixed at inception and does not move afterwards.
+
+    A `dip` carries `di`; a `drt` does not (core/serdering.py field domains, and KERI
+    spec-body.md's Delegated Rotation field order). So the question DI2I asks -- is the
+    near issuer a delegated AID of the far node's issuee -- is settled once, by the
+    delegator anchoring the `dip`, and no later event can change or renew it.
+
+    An earlier version of ._isApprovedDelegate keyed on ``kever.lastEst.d`` instead,
+    which asked a different question: is the delegate's *current* establishment event
+    approved. That is a real question, but it belongs to the KEL layer, which already
+    refuses an unanchored `drt` for every validator that is not exempted by the
+    locallyOwned/locallyMembered/locallyWitnessed short-circuit in
+    ``Kevery.validateDelegation``. Re-asking it here bought nothing and made a fixed edge
+    an unstable fact: at an exempted Habery the unapproved rotation is accepted locally,
+    ``lastEst`` advances, and every credential the delegate issued while approved flipped
+    to refused.
+
+    This pins the stability. The delegate's own Habery is the exemption used here because
+    ``locallyOwned`` is the one that admits the rotation outright; a witness escrows it
+    instead, so the divergence is not reachable that way.
+    """
+    with openHby(name="qvi", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as qviHby, \
+            openHby(name="sub", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as subHby:
+        seeder.seedSchema(db=qviHby.db)
+        seeder.seedSchema(db=subHby.db)
+
+        qvi = qviHby.makeHab(name="qvi", version=Vrsn_1_0, kind=Kinds.json)
+        sub = subHby.makeHab(name="sub", delpre=qvi.pre, version=Vrsn_1_0, kind=Kinds.json)
+
+        qvireg = Regery(hby=qviHby, name="qvi", temp=True)
+        qviiss = setupRegistry(qvi, qvireg, "qvi")
+        qviverfer = Verifier(hby=qviHby, reger=qvireg.reger)
+        far = makeCred(qvi, qviiss, issuee=qvi.pre, claim="qvi credential")
+        makeIssueAndSave(qviverfer, qvireg, qvi, qviiss)(far)
+        farSeqner = Seqner(sn=qvi.kever.sn)
+        farSaider = Diger(qb64=qvi.kever.serder.said)
+
+        anchorApproval(qvi, sub)  # qvi approves the dip, and never anchors anything else
+
+        subreg = Regery(hby=subHby, name="sub", temp=True)
+        subkvy = Kevery(db=subHby.db, lax=False, local=False)
+        subtvy = Tevery(reger=subreg.reger, db=subHby.db, local=False)
+        for msg in qviHby.db.clonePreIter(pre=qvi.pre, version=Vrsn_1_0):
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=subkvy, tvy=subtvy)
+        for msg in qvireg.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=qviiss.regk):
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=subkvy, tvy=subtvy)
+        for msg in qvireg.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=far.said):
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=subkvy, tvy=subtvy)
+
+        subverfer = Verifier(hby=subHby, reger=subreg.reger)
+        subverfer.processCredential(far, prefixer=qvi.kever.prefixer, seqner=farSeqner,
+                                    saider=farSaider)
+        assert subverfer.reger.saved.get(keys=far.saidb) is not None
+
+        assert subverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+        estBefore = subHby.kevers[sub.pre].lastEst.s
+
+        # A delegated rotation qvi never anchors. locallyOwned admits it here, so the
+        # delegate's current key state is now one the delegator has not approved.
+        sub.rotate()
+        assert subHby.kevers[sub.pre].lastEst.s != estBefore
+        assert subHby.db.aess.get(keys=(sub.pre, sub.kever.serder.said)) is None
+
+        # Still accepted. The `dip` qvi anchored is what the edge asks about, and the
+        # rotation did not touch it.
+        assert subverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+
+        # An interaction event on top changes nothing either.
+        sub.interact()
+        assert subverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+
 def test_verifier_escrow_pass_survives_argless_exception(seeder):
     """One poisoned escrow entry must not abort the whole escrow pass.
 
