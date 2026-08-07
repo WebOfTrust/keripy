@@ -4,6 +4,7 @@ keri.app.querying module
 
 """
 import logging
+from unittest import mock
 
 from hio.base import doing
 
@@ -179,3 +180,30 @@ def test_query_not_found_escrow():
 
         subHab.kvy.processQueryNotFound()
         assert subHab.db.qnfs.get(dgkey) == []
+
+
+def test_query_not_found_escrow_idempotency():
+    with habbing.openHby() as inqHby, \
+            habbing.openHby() as subHby, \
+            habbing.openHby() as tgtHby:
+        inqHab = inqHby.makeHab(name="inquisitor")
+        subHab = subHby.makeHab(name="subject")
+        tgtHab = tgtHby.makeHab(name="target")
+
+        psr = parsing.Parser()
+        psr.parseOne(ims=bytearray(inqHab.makeOwnInception()), kvy=subHab.kvy)
+        assert inqHab.pre in subHab.kevers
+        assert tgtHab.pre not in subHab.kevers
+
+        qry = inqHab.query(tgtHab.pre, route="ksn", src=inqHab.pre)
+        serder = serdering.SerderKERI(raw=qry)
+        qnfkey = (inqHab.pre, serder.said)
+
+        psr.parseOne(ims=bytearray(qry), kvy=subHab.kvy)
+        assert subHab.db.qnfs.get(keys=qnfkey)
+
+        with mock.patch.object(subHab.db, "putDts", wraps=subHab.db.putDts) as putDts:
+            for _ in range(3):
+                subHab.kvy.processQueryNotFound()
+        putDts.assert_not_called()
+        assert subHab.db.qnfs.get(keys=qnfkey)
