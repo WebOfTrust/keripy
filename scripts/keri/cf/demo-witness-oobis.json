@@ -4,5 +4,36 @@
     "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller",
     "http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller",
     "http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller"
-  ]
+  ],
+  "tocks": {
+    "witnessMsg": 0.0,
+    "witnessEscrow": 0.03125,
+    "witnessCue": 0.0,
+    "indirectorMsg": 0.0,
+    "indirectorCue": 0.0,
+    "indirectorEscrow": 0.03125,
+    "mailboxPoll": 0.0,
+    "mailboxMsg": 0.0,
+    "mailboxEscrow": 0.03125,
+    "pollerEvent": 0.0,
+    "pollerConnect": 0.03125,
+    "receiptIntercept": 0.0,
+    "reactorMsg": 0.0,
+    "reactorCue": 0.0,
+    "reactorEscrow": 0.03125,
+    "reactantMsg": 0.0,
+    "reactantCue": 0.0,
+    "reactantEscrow": 0.03125,
+    "respondant": 0.0,
+    "receiptor": 0.0,
+    "oobi": 0.0,
+    "witnessReceiptor": 0.0,
+    "witnessReceiptorIdle": 1.0,
+    "witnessInquisitor": 0.0,
+    "witnessPublisher": 0.0,
+    "registrarEscrow": 0.03125,
+    "credentialerEscrow": 0.03125,
+    "counselorEscrow": 0.03125,
+    "anchorerEscrow": 0.03125
+  }
 }

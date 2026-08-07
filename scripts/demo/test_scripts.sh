@@ -6,6 +6,19 @@ script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "${script_dir}"/demo-scripts.sh
 source "${script_dir}"/basic/script-utils.sh
 
+# Keep tocks at one Doist tick for the script suite, for speed.
+# These overrides supply tocks when later KLI processes
+# open/reopen Haberies without having an external config file.
+export KERI_WITNESS_ESCROW_TOCK=0.03125
+export KERI_INDIRECTOR_ESCROW_TOCK=0.03125
+export KERI_MAILBOX_ESCROW_TOCK=0.03125
+export KERI_POLLER_CONNECT_TOCK=0.03125
+export KERI_REACTOR_ESCROW_TOCK=0.03125
+export KERI_REACTANT_ESCROW_TOCK=0.03125
+export KERI_REGISTRAR_ESCROW_TOCK=0.03125
+export KERI_CREDENTIALER_ESCROW_TOCK=0.03125
+export KERI_COUNSELOR_ESCROW_TOCK=0.03125
+export KERI_ANCHORER_ESCROW_TOCK=0.03125
 # Launch witnesses in background
 kli witness demo &
 wits=$!

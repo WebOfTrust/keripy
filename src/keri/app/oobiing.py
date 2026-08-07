@@ -301,7 +301,8 @@ class Oobiery:
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()
-        self.doers = [self.clienter, doing.doify(self.scoobiDo)]
+        self.doers = [self.clienter,
+                      doing.doify(self.scoobiDo, tock=hby.tocks["oobi"])]
 
     def registerReplyRoutes(self, router):
         """ Register the routes for processing messages embedded in `rpy` event messages
@@ -647,7 +648,8 @@ class Authenticator:
         self.hby = hby
         self.clienter = clienter if clienter is not None else httping.Clienter()
         self.clients = dict()
-        self.doers = [self.clienter, doing.doify(self.authzDo)]
+        self.doers = [self.clienter,
+                      doing.doify(self.authzDo, tock=hby.tocks["oobi"])]
 
     def request(self, wurl, obr):
         client = self.clienter.request("GET", wurl)
