@@ -68,6 +68,66 @@ def assert_acdc_schema_valid(acdc, schema=None):
     return schema
 
 
+class Recorder:
+    def __init__(self):
+        self.items = []
+
+    def add(self, attrs):
+        self.items.append(attrs)
+
+
+def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
+            acdc, iss=None, anc=None):
+    """Round-trip one IPEX grant and its admit, returning the parsed grant."""
+    grant, grantAtc = ipexGrant(hab=sender, recp=receiver.pre, message=message,
+                                acdc=acdc, iss=iss, anc=anc)
+    grantIms = bytearray(grant.raw)
+    grantIms.extend(grantAtc)
+    grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False,
+                                                  processive=False)
+    assert grantIms == bytearray()
+    assert len(grantResults) == 1
+    grantResult = grantResults[0]
+    assert grantResult.serder.said == grant.said
+    assert grantResult.serder.ked['r'] == "/ipex/grant"
+    assert grantResult.serder.ked['p'] == ""
+    assert grantResult.serder.ked['i'] == sender.pre
+    assert grantResult.serder.ked['a']['i'] == receiver.pre
+    assert grantResult.serder.ked['a']['acdc'] == acdc.said
+    nestSaids = [acdc.said]
+    if iss is not None:
+        assert grantResult.serder.ked['a']['iss'] == iss.said
+        nestSaids.append(iss.said)
+    if anc is not None:
+        assert grantResult.serder.ked['a']['anc'] == anc.said
+        nestSaids.append(anc.said)
+    assert [nest.serder.said for nest in grantResult.nests] == nestSaids
+    wire = bytes(grant.raw) + bytes(grantAtc)
+
+    grantDispatch = bytearray(grant.raw)
+    grantDispatch.extend(grantAtc)
+    Parser(version=Vrsn_2_0).parse(ims=grantDispatch, framed=False, exc=exc)
+    assert grantDispatch == bytearray()
+    storedGrant = hby.db.exns.get(keys=(grant.said,))
+    assert storedGrant is not None
+    assert storedGrant.ked['a']['acdc'] == acdc.said
+    if iss is not None:
+        assert storedGrant.ked['a']['iss'] == iss.said
+    if anc is not None:
+        assert storedGrant.ked['a']['anc'] == anc.said
+
+    admit, admitAtc = ipexAdmit(hab=receiver, message=admitMessage, grant=grant)
+    admitIms = bytearray(admit.raw)
+    admitIms.extend(admitAtc)
+    Parser(version=Vrsn_2_0).parse(ims=admitIms, framed=False, exc=exc)
+    assert admitIms == bytearray()
+    storedAdmit = hby.db.exns.get(keys=(admit.said,))
+    assert storedAdmit is not None
+    assert storedAdmit.ked['p'] == grant.said
+
+    return grantResult, wire
+
+
 def test_schema_validation_harness_has_teeth():
     """The schema-validation harness must actually reject bad input.
 
@@ -190,6 +250,7 @@ def test_registry_issuance_lifecycle_JSON():
     assert 'ts' not in issued.sad and 'td' not in issued.sad
     assert b'issued' not in issued.raw
     assert acdcSaid.encode() not in issued.raw
+    assert salt.encode() not in issued.raw
 
     # --- Step 4: confirm the state by unblinding. ---
     # Unblinding = recompute the blinded state's SAID (the 'b'/blid value) over
@@ -224,6 +285,7 @@ def test_registry_issuance_lifecycle_JSON():
     assert revoked.sad['p'] == issued.said  # chains onto the issuance update
     assert revoked.sad['n'] == "2"
     assert revoked.said == "ENACMzpaiMMcdpQRBA4IbbqjUMcoJ_wBBsbhwpg_MYJM"
+    assert salt.encode() not in revoked.raw
 
     reunblinder = Blinder.unblind(said=revoked.sad['b'], acdc=acdcSaid,
                                   states=['issued', 'revoked'], salt=salt, sn=2)
@@ -252,13 +314,6 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
     A second bare grant later carries the revoked-state snapshot. Each bare
     grant is acknowledged by an IPEX admit.
     """
-
-    class Recorder:
-        def __init__(self):
-            self.items = []
-
-        def add(self, attrs):
-            self.items.append(attrs)
 
     with openHby(name="ipex-registry-lifecycle",
                  base="test",
@@ -296,62 +351,23 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
         # Bare grant 1: the issued-state snapshot. In today's builder shape the
         # lifecycle package is encoded as:
         #   acdc = credential, iss = current `bup`, anc = registry inception `rip`
-        issuedGrant, issuedGrantAtc = ipexGrant(
-            hab=amy,
-            recp=bob.pre,
+        issuedGrantResult, issuedGrantWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=amy,
+            receiver=bob,
             message="Issued registry snapshot",
+            admitMessage="Received issued snapshot",
             acdc=acdc,
             iss=issued,
             anc=ripper,
         )
-        issuedGrantIms = bytearray(issuedGrant.raw)
-        issuedGrantIms.extend(issuedGrantAtc)
-        issuedGrantResults = Parser(version=Vrsn_2_0).parse(ims=issuedGrantIms,
-                                                            framed=False,
-                                                            processive=False)
-        assert issuedGrantIms == bytearray()
-        assert len(issuedGrantResults) == 1
-        issuedGrantResult = issuedGrantResults[0]
-        assert issuedGrantResult.serder.said == issuedGrant.said
-        assert issuedGrantResult.serder.ked['r'] == "/ipex/grant"
-        assert issuedGrantResult.serder.ked['p'] == ""          # bare grant opens the flow
         assert issuedGrantResult.serder.ked['a']['i'] == bob.pre
-        assert issuedGrantResult.serder.ked['a']['acdc'] == acdc.said
-        assert issuedGrantResult.serder.ked['a']['iss'] == issued.said
-        assert issuedGrantResult.serder.ked['a']['anc'] == ripper.said
-        assert [nest.serder.said for nest in issuedGrantResult.nests] == [
-            acdc.said, issued.said, ripper.said
-        ]
-        issuedGrantWire = bytes(issuedGrant.raw) + bytes(issuedGrantAtc)
         # The disclosed credential is present on the wire, but the registry state
         # word itself remains hidden because the nested `bup` is blindable
         assert b'issued' not in issuedGrantWire
         assert b'revoked' not in issuedGrantWire
-
-        # Route the same message through the real IPEX handlers and persist it
-        issuedGrantDispatch = bytearray(issuedGrant.raw)
-        issuedGrantDispatch.extend(issuedGrantAtc)
-        Parser(version=Vrsn_2_0).parse(ims=issuedGrantDispatch, framed=False, exc=exc)
-        assert issuedGrantDispatch == bytearray()
-
-        # Assert that it was stored
-        storedIssuedGrant = hby.db.exns.get(keys=(issuedGrant.said,))
-        assert storedIssuedGrant is not None
-        assert storedIssuedGrant.ked['a']['iss'] == issued.said
-        assert storedIssuedGrant.ked['a']['anc'] == ripper.said
-
-        issuedAdmit, issuedAdmitAtc = ipexAdmit(
-            hab=bob,
-            message="Received issued snapshot",
-            grant=issuedGrant,
-        )
-        issuedAdmitIms = bytearray(issuedAdmit.raw)
-        issuedAdmitIms.extend(issuedAdmitAtc)
-        Parser(version=Vrsn_2_0).parse(ims=issuedAdmitIms, framed=False, exc=exc)
-        assert issuedAdmitIms == bytearray()
-        storedIssuedAdmit = hby.db.exns.get(keys=(issuedAdmit.said,))
-        assert storedIssuedAdmit is not None
-        assert storedIssuedAdmit.ked['p'] == issuedGrant.said
+        assert salt.encode() not in issuedGrantWire
 
         # The holder/verifier can now pull the carried `bup` out of the IPEX
         # grant and perform the same unblinding confirmation as in the base test
@@ -365,53 +381,20 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
 
         # Bare grant 2: later the issuer ships the revoked-state snapshot the
         # same way, again through the handler chain.
-        revokedGrant, revokedGrantAtc = ipexGrant(
-            hab=amy,
-            recp=bob.pre,
+        revokedGrantResult, revokedGrantWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=amy,
+            receiver=bob,
             message="Revoked registry snapshot",
+            admitMessage="Received revoked snapshot",
             acdc=acdc,
             iss=revoked,
             anc=ripper,
         )
-        revokedGrantIms = bytearray(revokedGrant.raw)
-        revokedGrantIms.extend(revokedGrantAtc)
-        revokedGrantResults = Parser(version=Vrsn_2_0).parse(ims=revokedGrantIms,
-                                                             framed=False,
-                                                             processive=False)
-        assert revokedGrantIms == bytearray()
-        assert len(revokedGrantResults) == 1
-        revokedGrantResult = revokedGrantResults[0]
-        assert revokedGrantResult.serder.ked['r'] == "/ipex/grant"
-        assert revokedGrantResult.serder.ked['p'] == ""
-        assert revokedGrantResult.serder.ked['a']['iss'] == revoked.said
-        assert revokedGrantResult.serder.ked['a']['anc'] == ripper.said
-        assert [nest.serder.said for nest in revokedGrantResult.nests] == [
-            acdc.said, revoked.said, ripper.said
-        ]
-        revokedGrantWire = bytes(revokedGrant.raw) + bytes(revokedGrantAtc)
         assert b'issued' not in revokedGrantWire
         assert b'revoked' not in revokedGrantWire
-
-        revokedGrantDispatch = bytearray(revokedGrant.raw)
-        revokedGrantDispatch.extend(revokedGrantAtc)
-        Parser(version=Vrsn_2_0).parse(ims=revokedGrantDispatch, framed=False, exc=exc)
-        assert revokedGrantDispatch == bytearray()
-        storedRevokedGrant = hby.db.exns.get(keys=(revokedGrant.said,))
-        assert storedRevokedGrant is not None
-        assert storedRevokedGrant.ked['a']['iss'] == revoked.said
-
-        revokedAdmit, revokedAdmitAtc = ipexAdmit(
-            hab=bob,
-            message="Received revoked snapshot",
-            grant=revokedGrant,
-        )
-        revokedAdmitIms = bytearray(revokedAdmit.raw)
-        revokedAdmitIms.extend(revokedAdmitAtc)
-        Parser(version=Vrsn_2_0).parse(ims=revokedAdmitIms, framed=False, exc=exc)
-        assert revokedAdmitIms == bytearray()
-        storedRevokedAdmit = hby.db.exns.get(keys=(revokedAdmit.said,))
-        assert storedRevokedAdmit is not None
-        assert storedRevokedAdmit.ked['p'] == revokedGrant.said
+        assert salt.encode() not in revokedGrantWire
 
         revokedNest = revokedGrantResult.nests[1].serder
         reunblinder = Blinder.unblind(said=revokedNest.sad['b'], acdc=acdc.said,
@@ -527,13 +510,6 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
     wire.
     """
 
-    class Recorder:
-        def __init__(self):
-            self.items = []
-
-        def add(self, attrs):
-            self.items.append(attrs)
-
     with openHby(name="ipex-selective-aggregate",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -594,27 +570,15 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
 
         # The holder (Bob) presents Amy's credential to the verifier (Vic). The
         # outer IPEX sender is Bob, while the nested ACDC issuer remains Amy.
-        grant, grantAtc = ipexGrant(
-            hab=bob,
-            recp=vic.pre,
+        grantResult, grantWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
             message="Selective aggregate disclosure",
+            admitMessage="Received selective aggregate disclosure",
             acdc=selective,
         )
-        grantIms = bytearray(grant.raw)
-        grantIms.extend(grantAtc)
-        grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
-                                                      framed=False,
-                                                      processive=False)
-        assert grantIms == bytearray()
-        assert len(grantResults) == 1
-        grantResult = grantResults[0]
-        assert grantResult.serder.said == grant.said
-        assert grantResult.serder.ked['r'] == "/ipex/grant"
-        assert grantResult.serder.ked['p'] == ""        # bare grant opens the flow
-        assert grantResult.serder.ked['i'] == bob.pre   # holder/discloser
-        assert grantResult.serder.ked['a']['i'] == vic.pre
-        assert grantResult.serder.ked['a']['acdc'] == selective.said
-        assert [nest.serder.said for nest in grantResult.nests] == [selective.said]
 
         carried = grantResult.nests[0].serder
         assert carried.said == acdc.said                # same credential commitment
@@ -626,10 +590,12 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         assert isinstance(carried.sad['A'][2], str)
         assert isinstance(carried.sad['A'][3], str)
 
-        grantWire = bytes(grant.raw) + bytes(grantAtc)
         # The carried selective disclosure reveals only the chosen element: the
-        # withheld name value never appears on the IPEX wire message.
+        # withheld name value and the withheld elements' own blinding nonces
+        # never appear on the IPEX wire message.
         assert b'Zoe Doe' not in grantWire
+        assert NONCES[1].encode() not in grantWire
+        assert NONCES[2].encode() not in grantWire
 
         # Verifier-side check: recomputing the AGID over the mixed disclosure
         # still verifies the selective presentation against the committed
@@ -640,27 +606,6 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
                     carried.sad['A'][2],
                     carried.sad['A'][3]]
         assert not Aggor.verifyDisclosure(tampered, kind=kind)
-
-        grantDispatch = bytearray(grant.raw)
-        grantDispatch.extend(grantAtc)
-        Parser(version=Vrsn_2_0).parse(ims=grantDispatch, framed=False, exc=exc)
-        assert grantDispatch == bytearray()
-        storedGrant = hby.db.exns.get(keys=(grant.said,))
-        assert storedGrant is not None
-        assert storedGrant.ked['a']['acdc'] == selective.said
-
-        admit, admitAtc = ipexAdmit(
-            hab=vic,
-            message="Received selective aggregate disclosure",
-            grant=grant,
-        )
-        admitIms = bytearray(admit.raw)
-        admitIms.extend(admitAtc)
-        Parser(version=Vrsn_2_0).parse(ims=admitIms, framed=False, exc=exc)
-        assert admitIms == bytearray()
-        storedAdmit = hby.db.exns.get(keys=(admit.said,))
-        assert storedAdmit is not None
-        assert storedAdmit.ked['p'] == grant.said
 
         assert [(item["r"], item["m"]) for item in recorder.items] == [
             ("/exn/ipex/grant", "Selective aggregate disclosure"),
@@ -820,13 +765,6 @@ def test_partial_disclosure_compaction_IPEX_JSON():
     wire.
     """
 
-    class Recorder:
-        def __init__(self):
-            self.items = []
-
-        def add(self, attrs):
-            self.items.append(attrs)
-
     with openHby(name="ipex-partial-compaction",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -841,53 +779,6 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-        def ipexExn(acdc, message, admitMessage):
-            grant, grantAtc = ipexGrant(
-                hab=bob,
-                recp=vic.pre,
-                message=message,
-                acdc=acdc,
-            )
-            grantIms = bytearray(grant.raw)
-            grantIms.extend(grantAtc)
-            grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
-                                                          framed=False,
-                                                          processive=False)
-            assert grantIms == bytearray()
-            assert len(grantResults) == 1
-            grantResult = grantResults[0]
-            assert grantResult.serder.said == grant.said
-            assert grantResult.serder.ked['r'] == "/ipex/grant"
-            assert grantResult.serder.ked['p'] == ""
-            assert grantResult.serder.ked['i'] == bob.pre
-            assert grantResult.serder.ked['a']['i'] == vic.pre
-            assert grantResult.serder.ked['a']['acdc'] == acdc.said
-            assert [nest.serder.said for nest in grantResult.nests] == [acdc.said]
-            wire = bytes(grant.raw) + bytes(grantAtc)
-
-            grantDispatch = bytearray(grant.raw)
-            grantDispatch.extend(grantAtc)
-            Parser(version=Vrsn_2_0).parse(ims=grantDispatch, framed=False, exc=exc)
-            assert grantDispatch == bytearray()
-            storedGrant = hby.db.exns.get(keys=(grant.said,))
-            assert storedGrant is not None
-            assert storedGrant.ked['a']['acdc'] == acdc.said
-
-            admit, admitAtc = ipexAdmit(
-                hab=vic,
-                message=admitMessage,
-                grant=grant,
-            )
-            admitIms = bytearray(admit.raw)
-            admitIms.extend(admitAtc)
-            Parser(version=Vrsn_2_0).parse(ims=admitIms, framed=False, exc=exc)
-            assert admitIms == bytearray()
-            storedAdmit = hby.db.exns.get(keys=(admit.said,))
-            assert storedAdmit is not None
-            assert storedAdmit.ked['p'] == grant.said
-
-            return grantResult, wire
 
         # Part A: disclose only the rule section while withholding attributes as
         # a bare SAID, then carry that partial ACDC through IPEX.
@@ -917,9 +808,13 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert isinstance(ruleOnly.sad['r'], dict)
 
         ruleGrantResult, ruleWire = ipexExn(
-            ruleOnly,
-            "Rule section disclosure",
-            "Received rule section disclosure",
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=ruleOnly,
+            message="Rule section disclosure",
+            admitMessage="Received rule section disclosure",
         )
         carriedRule = ruleGrantResult.nests[0].serder
         assert carriedRule.said == expanded.said
@@ -935,6 +830,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert b"gpa" not in carriedRule.raw
         assert ruleText.encode() in carriedRule.raw
         assert b"Bob Student" not in ruleWire
+        assert NONCES[7].encode() not in ruleWire
 
         # Part B: the same credential commitment can first withhold a nested
         # grades block, then later reveal it, without changing the ACDC SAID.
@@ -963,9 +859,13 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert_acdc_schema_valid(gradesRevealed, schema=gradesSchema)
 
         withheldGrantResult, withheldWire = ipexExn(
-            gradesWithheld,
-            "Grades withheld partial disclosure",
-            "Received grades-withheld partial disclosure",
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=gradesWithheld,
+            message="Grades withheld partial disclosure",
+            admitMessage="Received grades-withheld partial disclosure",
         )
         carriedWithheld = withheldGrantResult.nests[0].serder
         assert carriedWithheld.said == gradesBase.said
@@ -979,11 +879,16 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert withheldCheck.said == sectSaid
         assert b"math" not in carriedWithheld.raw
         assert b"math" not in withheldWire
+        assert NONCES[8].encode() not in withheldWire
 
         revealedGrantResult, revealedWire = ipexExn(
-            gradesRevealed,
-            "Grades revealed partial disclosure",
-            "Received grades-revealed partial disclosure",
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=gradesRevealed,
+            message="Grades revealed partial disclosure",
+            admitMessage="Received grades-revealed partial disclosure",
         )
         carriedRevealed = revealedGrantResult.nests[0].serder
         assert carriedRevealed.said == gradesBase.said
@@ -1021,9 +926,13 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert_acdc_schema_valid(mixedAcdc, schema=mixedSchema)
 
         mixedGrantResult, mixedWire = ipexExn(
-            mixedAcdc,
-            "Mixed nested partial disclosure",
-            "Received mixed nested partial disclosure",
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=mixedAcdc,
+            message="Mixed nested partial disclosure",
+            admitMessage="Received mixed nested partial disclosure",
         )
         carriedMixed = mixedGrantResult.nests[0].serder
         assert carriedMixed.said == mixedBase.said
@@ -1042,6 +951,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert b"90210" not in carriedMixed.raw
         assert b"Main" not in mixedWire
         assert b"90210" not in mixedWire
+        assert NONCES[9].encode() not in mixedWire
 
         assert [(item["r"], item["m"]) for item in recorder.items] == [
             ("/exn/ipex/grant", "Rule section disclosure"),
@@ -1180,13 +1090,6 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
     cleartext state word.
     """
 
-    class Recorder:
-        def __init__(self):
-            self.items = []
-
-        def add(self, attrs):
-            self.items.append(attrs)
-
     with openHby(name="ipex-correlation-minimizing",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -1220,75 +1123,27 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        def ipexExn(iss, message, admitMessage):
-            grant, grantAtc = ipexGrant(
-                hab=bob,
-                recp=vic.pre,
-                message=message,
-                acdc=acdc,
-                iss=iss,
-                anc=ripper,
-            )
-            grantIms = bytearray(grant.raw)
-            grantIms.extend(grantAtc)
-            grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
-                                                          framed=False,
-                                                          processive=False)
-            assert grantIms == bytearray()
-            assert len(grantResults) == 1
-            grantResult = grantResults[0]
-            assert grantResult.serder.said == grant.said
-            assert grantResult.serder.ked['r'] == "/ipex/grant"
-            assert grantResult.serder.ked['p'] == ""
-            assert grantResult.serder.ked['i'] == bob.pre
-            assert grantResult.serder.ked['a']['i'] == vic.pre
-            assert grantResult.serder.ked['a']['acdc'] == acdc.said
-            assert grantResult.serder.ked['a']['iss'] == iss.said
-            assert grantResult.serder.ked['a']['anc'] == ripper.said
-            assert [nest.serder.said for nest in grantResult.nests] == [
-                acdc.said, iss.said, ripper.said
-            ]
-            wire = bytes(grant.raw) + bytes(grantAtc)
-
-            grantDispatch = bytearray(grant.raw)
-            grantDispatch.extend(grantAtc)
-            Parser(version=Vrsn_2_0).parse(ims=grantDispatch, framed=False, exc=exc)
-            assert grantDispatch == bytearray()
-            storedGrant = hby.db.exns.get(keys=(grant.said,))
-            assert storedGrant is not None
-            assert storedGrant.ked['a']['acdc'] == acdc.said
-            assert storedGrant.ked['a']['iss'] == iss.said
-            assert storedGrant.ked['a']['anc'] == ripper.said
-
-            admit, admitAtc = ipexAdmit(
-                hab=vic,
-                message=admitMessage,
-                grant=grant,
-            )
-            admitIms = bytearray(admit.raw)
-            admitIms.extend(admitAtc)
-            Parser(version=Vrsn_2_0).parse(ims=admitIms, framed=False, exc=exc)
-            assert admitIms == bytearray()
-            storedAdmit = hby.db.exns.get(keys=(admit.said,))
-            assert storedAdmit is not None
-            assert storedAdmit.ked['p'] == grant.said
-
-            return grantResult, wire
-
         # Bob presents the issuance-state snapshot to Vic. The IPEX grant carries
         # the blinded registry update, but not the per-event nonce Vic needs to
         # interpret it; that nonce is modeled here as the separately-shared
         # issuedBlinder.uuid, just as in the JSON example.
         issuedGrantResult, issuedWire = ipexExn(
-            issued,
-            "Current registry snapshot",
-            "Received current registry snapshot",
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            message="Current registry snapshot",
+            admitMessage="Received current registry snapshot",
+            acdc=acdc,
+            iss=issued,
+            anc=ripper,
         )
         carriedIssued = issuedGrantResult.nests[1].serder
         assert carriedIssued.said == issued.said
         assert carriedIssued.sad['b'] == issuedBlinder.said
         assert b'issued' not in carriedIssued.raw
         assert b'revoked' not in carriedIssued.raw
+        assert salt.encode() not in issuedWire
         assert issuedBlinder.uuid.encode() not in issuedWire
         assert revokedBlinder.uuid.encode() not in issuedWire
 
@@ -1302,15 +1157,22 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
         # Later the holder sends a new blinded registry snapshot. A verifier that
         # remembers only the earlier nonce still cannot read this later event.
         revokedGrantResult, revokedWire = ipexExn(
-            revoked,
-            "Later registry snapshot",
-            "Received later registry snapshot",
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            message="Later registry snapshot",
+            admitMessage="Received later registry snapshot",
+            acdc=acdc,
+            iss=revoked,
+            anc=ripper,
         )
         carriedRevoked = revokedGrantResult.nests[1].serder
         assert carriedRevoked.said == revoked.said
         assert carriedRevoked.sad['b'] == revokedBlinder.said
         assert b'issued' not in carriedRevoked.raw
         assert b'revoked' not in carriedRevoked.raw
+        assert salt.encode() not in revokedWire
         assert issuedBlinder.uuid.encode() not in revokedWire
         assert revokedBlinder.uuid.encode() not in revokedWire
 
@@ -1370,6 +1232,7 @@ def test_examples_serialization_kinds(kind):
                       stamp='2025-08-01T18:06:10.988921+00:00', kind=kind)
     assert issued.ilk == Ilks.bup and issued.sad['b'] == blinder.said
     assert b'issued' not in issued.raw            # state stays blinded on every kind
+    assert salt.encode() not in issued.raw        # the shared salt never rides the wire
 
     unblinder = Blinder.unblind(said=blinder.said, acdc=acdc.said,
                                 states=['issued', 'revoked'], salt=salt, sn=1)
@@ -1412,8 +1275,12 @@ def test_examples_serialization_kinds(kind):
 
 if __name__ == "__main__":
     test_registry_issuance_lifecycle_JSON()
+    test_registry_issuance_lifecycle_IPEX_JSON()
     test_selective_disclosure_aggregate_JSON()
+    test_selective_disclosure_aggregate_IPEX_JSON()
     test_partial_disclosure_compaction_JSON()
+    test_partial_disclosure_compaction_IPEX_JSON()
     test_blindable_registry_correlation_minimizing_JSON()
+    test_blindable_registry_correlation_minimizing_IPEX_JSON()
     for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
         test_examples_serialization_kinds(_kind)
