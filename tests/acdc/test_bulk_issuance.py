@@ -5,7 +5,7 @@ tests.acdc.test_bulk_issuance module
 Worked, working example of *bulk-issued private ACDCs* (ACDC spec section 15.4,
 "Bulk-Issued Private ACDCs") used to defeat cross-verifier correlation for SEDI
 (Utah's State-Endorsed Digital Identity, Utah Code 63A-20). It is a sibling to
-tests/acdc/test_clc_disclosure.py (contractually-protected disclosure) and
+tests/acdc/test_cp_disclosure.py (contractually-protected disclosure) and
 tests/acdc/test_guardianship_presentation.py (represented presentation), and it
 adds the one axis neither shows: IDENTIFIER-level cross-verifier unlinkability.
 
@@ -286,7 +286,7 @@ def test_bulk_derivation_primitive_JSON():
 # Phase 2: the bulk sedi-id set + its shared blindable registry (keyed on B).
 # ===========================================================================
 # Schema helpers, ported verbatim in intent from the sibling SEDI examples
-# (test_clc_disclosure.py / test_guardianship_presentation.py).
+# (test_cp_disclosure.py / test_guardianship_presentation.py).
 def _saidify_schema(mad, kind=Kinds.json):
     """Compute a JSON Schema's SAID and return (said, schema-with-$id). Mirrors the
     sibling examples: a Mapper self-addresses the '$id' field (which must be first)."""
@@ -965,8 +965,14 @@ def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
     is built with a per-presentation salt, so it is an ephemeral, not a stable correlator)
     and a public governance ref. This is the 'correlation-budget doctrine' as
     policy-by-construction -- an EGF/implementation-guide requirement, not a schema change.
+
+    Its query block carries an EMPTY disclosure-paths list, `dp: []`. Because this offer
+    is SOLICITED -- `prior` binds the apply it answers -- an empty `dp` means "the same
+    paths the apply asked for" (#1549). Restating them would be redundant, and here it
+    would also be a second place for the two messages to drift.
     """
     return exchange(sender=sender, receiver=receiver, route="/ipex/offer", prior=prior,
+                    modifiers=dict(dp=[]),
                     attributes=dict(acdc=presentationSaid, governance=governance),
                     stamp=OFFER_STAMP, kind=kind)
 
@@ -996,13 +1002,48 @@ def test_disclosure_gating_and_revocation_JSON():
     pres = _presentation(kind, verifier, idCopies, ageCopies, presNonces)
 
     # 1. apply (verifier -> holder): the challenge (schema/fields + governance).
+    #
+    # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
+    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
+    # with ACDC-relative paths -- see the same construct in tests/acdc/
+    # test_cp_disclosure.py, and WebOfTrust/keripy discussion #1549 for the rules.
+    #
+    # Bulk issuance is exactly why the list form matters here. The verifier names a
+    # SCHEMA SAID, which is shared by all M copies in the set and is therefore the one
+    # identifier that is deliberately NOT partitioned across presentation contexts. Had
+    # `dp` stayed a dict keyed by schema SAID, a DAG carrying two copies drawn from the
+    # same bulk-issued set would collapse onto a single key -- the ordered list keeps
+    # each copy addressable while the copy SAIDs themselves stay per-context.
+    #
+    # The zeroth entry is the DAG's origin node (#1549): the self-presentation ALICE_k
+    # issues to this verifier. Its schema is the one part of the presentation the
+    # verifier knows in advance, because the EGF fixes the shape of the presentation it
+    # will accept (@SmithSamuelM, #1542) -- and, unlike the copy SAIDs, a schema SAID is
+    # shared across contexts, so naming it costs nothing in correlation. The verifier
+    # asks it only for issuer and issuee: who is presenting, and that the presentation
+    # is addressed to this verifier rather than replayed from another context.
+    #
+    # The identity copy is a node in this DAG but carries no entry, because nothing is
+    # requested from it -- the over-21 flag alone answers the challenge. Entries are
+    # therefore a breadth-first-ordered SUBSET of the DAG, and each one still names its
+    # own schema SAID, so a skipped node cannot shift the meaning of the entries below.
+    presSchemaSaid, _ = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
+                     modifiers=dict(dp=[[presSchemaSaid, ["i", "a/i"]],
+                                        [ageCopies[k].sad['s']['$id'],
+                                         ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21.",
-                                     disclose={ageCopies[k].sad['s']['$id']:
-                                               ["/A/i", "/A/over21"]},
                                      g=GOVERNANCE_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply"
+    dp = apply.sad['q']['dp']
+    assert dp == [[presSchemaSaid, ["i", "a/i"]],
+                  [ageCopies[k].sad['s']['$id'], ["A/i", "A/over21"]]]
+    assert presSchemaSaid == pres.sad['s']['$id']   # the origin the holder actually issues
+    # The schema SAID is shared across the whole bulk set by design; the request names
+    # it, never a copy SAID, so the apply itself introduces no cross-context correlator.
+    assert ageCopies[k].said.encode() not in apply.raw
+    assert idCopies[k].said.encode() not in apply.raw
 
     # 2. offer (holder -> verifier): via the leak-proof constructor. NO source SAIDs, NO v_k.
     offer = _offer(kind, sender=ALICES[k], receiver=verifier, prior=apply.said,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-tests.acdc.test_clc_disclosure module
+tests.acdc.test_cp_disclosure module
 
 Worked, working example of *contractually-protected disclosure* -- Chain-Link
 Confidentiality (CLC) realized as a credential rather than an out-of-band
@@ -77,8 +77,9 @@ from jsonschema.exceptions import ValidationError
 from keri import Kinds, Ilks
 from keri.core import (Salter, Noncer, Aggor, Compactor, Mapper, Diger, Verfer,
                        exchange, messagize, incept, rotate)
-from keri.core.coring import MtrDex
+from keri.core.coring import MtrDex, Pather
 from keri.core.serdering import SerderACDC
+from keri.help.helping import Repath
 from keri.acdc import regcept, acdcmap, acdcagg
 
 
@@ -976,34 +977,97 @@ def test_gated_ipex_exchange_JSON():
 
     # 1. apply (club -> Alice): the challenge. It narrows what the club will accept up
     # front: not merely which schemas, but which FIELDS must be disclosed from each --
-    # the photo and issuee from the attributive sedi-id (/a/photo, /a/i), and the over-21
-    # flag and issuee from the aggregative age credential (/A/over21, /A/i). The issuee
+    # the photo and issuee from the attributive sedi-id (a/photo, a/i), and the over-21
+    # flag and issuee from the aggregative age credential (A/over21, A/i). The issuee
     # is required from BOTH so the club can confirm the two creds name the same holder
-    # (the I2I binding). The request is keyed by schema SAID -- the applicant is not
-    # assumed to know the actual ACDC SAIDs -- with a list of attribute paths, following
-    # the graduated-disclosure path-list model. This is a static, one-shot narrowing of
-    # the request, NOT full back-and-forth negotiation; the exact placement (attribute
-    # vs. query block) and encoding are still being designed (WebOfTrust/keripy
-    # discussion #1512). No creds yet -- schemas, required paths, governance.
+    # (the I2I binding). The request names SCHEMA SAIDs, never ACDC SAIDs -- the
+    # applicant is not assumed to know which actual credentials it will be shown. This
+    # is a static, one-shot narrowing of the request, NOT full back-and-forth
+    # negotiation. No creds yet -- schemas, required paths, governance.
+    #
+    # The request rides the disclosure-paths `dp` field of the QUERY section, `q`
+    # (exchange(modifiers=...)), not the attribute section. An exn's query block is the
+    # http-query-string analogue and its attribute block is the body; a disclosure
+    # request is a query, so `dp` belongs in `q` (WebOfTrust/keripy discussion #1549).
+    #
+    # `dp` is an ORDERED LIST OF (schemaSAID, [paths]) PAIRS, not a dict keyed by schema
+    # SAID. A dict cannot express a DAG containing two credentials of the SAME schema --
+    # they collapse onto one key -- which is legitimate and common (presenting one's own
+    # identity alongside a spouse's, both under the same SEDI schema). The ordered list
+    # keeps them distinct, and it makes two equivalent requests serialize byte-for-byte
+    # identically. Ordering is a breadth-first walk of the DAG from its origin node.
+    # JSON has no tuple, so each pair serializes as a 2-element array.
+    #
+    # Paths are ACDC-RELATIVE and so do NOT lead with '/'. A leading '/' means
+    # DAG-ABSOLUTE, rooted at the origin node, and an absolute path that reaches a
+    # non-origin ACDC must cross the edge that links it. That hop is written as the
+    # virtual path component '_', which stands for the jump from the near-side edge
+    # block to the top level of the far-side ACDC (@SmithSamuelM, #1549). The same
+    # request in absolute form reads:
+    #     origin: /i, /a/i, /r/
+    #     sedi:   /e/identity/_/a/i, /e/identity/_/a/photo
+    #     age:    /e/age/_/A/i, /e/age/_/A/over21
+    # Omitting the '_' does not merely misroot such a path, it makes it meaningless:
+    # '/e/identity/a/i' names an 'a' field inside the near-side EDGE block, which has
+    # no such field. Relative form is used here because this DAG has no optional edges
+    # -- the bespoke schema requires both 'identity' and 'age' -- so the breadth-first
+    # ordering of `dp` is gapless and each entry's ACDC is unambiguous without
+    # restating the route to it. Absolute form is required only when optional edges
+    # could leave holes in that ordering.
+    #
+    # A TRAILING '/' means the whole node ("the hammer"): the origin's 'r/' asks for the
+    # rule section fully expanded, because the club must read the CLC terms it is being
+    # asked to agree to. Every other path is a leaf ("the scalpel"), closing over only
+    # what is needed to validate the SAIDs along its own branch.
+    #
+    # The ZEROTH entry is the DAG's origin node (#1549) -- Alice's bespoke presentation
+    # ACDC. The club can name its schema even though Alice issues it: the origin is
+    # presenter-issued, but its SHAPE is governance, not Alice's invention, and "in all
+    # of these applications the Applicant would know the schema of the origin node
+    # despite it being a presenter issued ACDC" (@SmithSamuelM, #1542). So the club asks
+    # the origin for its issuer, its issuee, and its rules -- who is disclosing, that the
+    # presentation is addressed to the club, and the terms the club must agree to before
+    # the grant. The rule section is what the offer at step 2 answers with; the issuer
+    # and issuee arrive with the presentation itself, in the grant.
+    bespokeSchemaSaid, _ = _saidify_schema(dict(BESPOKE_SCHEMA_MAD), kind=kind)
     sediSchemaSaid = sedi.sad['s']['$id']
     ageSchemaSaid = age.sad['s']['$id']
     apply = exchange(sender=CLUB, receiver=ALICE, route="/ipex/apply",
+                     modifiers=dict(dp=[[bespokeSchemaSaid, ["i", "a/i", "r/"]],
+                                        [sediSchemaSaid, ["a/i", "a/photo"]],
+                                        [ageSchemaSaid,  ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21 and show the state-endorsed photo.",
-                                     disclose={sediSchemaSaid: ["/a/i", "/a/photo"],
-                                               ageSchemaSaid:  ["/A/i", "/A/over21"]},
                                      g=GOV_PROVISION_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['t'] == Ilks.exn
     assert apply.sad['r'] == "/ipex/apply"
     assert apply.sad['i'] == CLUB and apply.sad['ri'] == ALICE
     # The field-level request: issuee + photo from the attributive cred, issuee + over-21
-    # flag from the aggregative cred, keyed by the schema SAID the club is asking for.
-    reqSedi = apply.sad['a']['disclose'][sediSchemaSaid]
-    reqAge = apply.sad['a']['disclose'][ageSchemaSaid]
-    assert reqSedi == ["/a/i", "/a/photo"]              # attributive: issuee + photo
-    assert reqAge == ["/A/i", "/A/over21"]              # aggregate: issuee + over-21 flag
-    assert "/a/i" in reqSedi and "/A/i" in reqAge       # the joining issuee, from both
-    assert apply.said == "EK0cONSlv5IO4feJcynRSrfR09udKpfQf4Y29QMWRrdH"
+    # flag from the aggregative cred, each under the schema SAID the club is asking for.
+    dp = apply.sad['q']['dp']
+    # Ordered, not keyed: the schema SAIDs are positions in a list, so a DAG with two
+    # same-schema credentials would carry two entries rather than losing one. The order
+    # is a breadth-first walk from the origin, which for this DAG is the bespoke
+    # presentation and then its two edges in section order, 'identity' and 'age'.
+    assert [entry[0] for entry in dp] == [bespokeSchemaSaid, sediSchemaSaid, ageSchemaSaid]
+    reqOrigin = dp[0][1]
+    reqSedi = dp[1][1]
+    reqAge = dp[2][1]
+    assert reqOrigin == ["i", "a/i", "r/"]              # origin: discloser, disclosee, terms
+    assert reqSedi == ["a/i", "a/photo"]                # attributive: issuee + photo
+    assert reqAge == ["A/i", "A/over21"]                # aggregate: issuee + over-21 flag
+    assert "a/i" in reqSedi and "A/i" in reqAge         # the joining issuee, from both
+    # ACDC-relative form throughout: no path leads with '/', which would root it at the
+    # DAG origin and, for a non-origin entry, would have to cross a '_' hop to get back
+    # to the credential the entry is already about.
+    assert all(not p.startswith("/") for _, paths in dp for p in paths)
+    # Node vs. leaf: only the origin's rule section is asked for whole.
+    assert [p for _, paths in dp for p in paths if p.endswith("/")] == ["r/"]
+    # The request lives in the query block, not the attribute block; the attribute
+    # block carries only the human message and the governance reference.
+    assert 'dp' not in apply.sad['a'] and 'disclose' not in apply.sad['a']
+    assert set(apply.sad['a']) == {'m', 'g'}
+    assert apply.said == "EPiL36dPzFMlL5K4ybK5MaxC2a3qIzntPjHvExkn0189"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Commits ONLY to Alice's own bespoke-presentation SAID, the CLC
@@ -1013,15 +1077,22 @@ def test_gated_ipex_exchange_JSON():
     # agrees would let the club spurn and walk away with stable holder correlators,
     # defeating the metadata-ACDC decorrelation (panel review, PRV-F2). They arrive
     # only post-agree, in the grant, reachable by expanding the delivered presentation.
+    # Its query block carries `dp` too, as an EMPTY list. For a SOLICITED offer -- one
+    # that answers an apply -- an empty `dp` means "the same disclosure paths the apply
+    # asked for", so Alice restates nothing and the two messages cannot drift (#1549).
+    # An unsolicited offer, or one that counter-offers different paths, MUST spell the
+    # list out instead; empty is only meaningful because `p` binds the apply it answers.
     offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
                      prior=apply.said,
+                     modifiers=dict(dp=[]),
                      attributes=dict(acdc=bespoke.said,
                                      governance=GOV_PROVISION_SAID,
                                      terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
+    assert offer.sad['q']['dp'] == []                   # solicited: "as per the apply"
     assert bespoke.said.encode() in offer.raw           # commits to Alice's own presentation
-    assert offer.said == "EIUqoqpXiU52iIp5q9M2RH_g0N0dbJnLFW8MprL3QOQN"
+    assert offer.said == "ENW6Q9TtdEyHtah7Tgg7ClV3XuD9CmAwAs8oEIZAu-KO"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -1036,7 +1107,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "EI30cUq5JGGSd-3cBoXx1nCtE6CBXXRgKPkZodJm-8da"
+    assert agree.said == "ELU6DF53tqV2Dd_2Tpyk1uBcP5JLUnJ0JJQlsw4H1EsC"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -1091,7 +1162,7 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EEIdc4wcI-9zB0eSZE4meZLWXfM8WuXZHMDhyBfIJJaD"
+    assert grant.said == "EKPweFTQmyr2ghr5tBDLxAZY-_AXkiztDWmwcl6h0XTS"
     # (property 4) PII crosses the wire only now, in the grant: the photo and the
     # over-21 flag.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
@@ -1123,7 +1194,65 @@ def test_gated_ipex_exchange_JSON():
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EDmW_7vE6Ivdwr3ldV-W9uLPOcJp97Sz9bqD5eNaKpks"
+    assert admit.said == "EG_v0NItF5AH5QeBBCRaaR1XffK1iivzW9DJgfyNoTZ_"
+
+
+def _pathable_labels(value):
+    """Every field label reachable by a disclosure path, from a SAD value.
+
+    Recurses field maps and arrays. The SCHEMA section is skipped: it is always
+    disclosed whole, so no path ever descends into it -- which is just as well, since
+    JSON Schema's own keys ('$id', '$schema') are not Base64 at all and could never be
+    a Pather part. See test_disclosure_path_label_conformance_JSON.
+    """
+    if isinstance(value, dict):
+        for label, sub in value.items():
+            yield label
+            if label != 's':
+                yield from _pathable_labels(sub)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            yield from _pathable_labels(item)
+
+
+def test_disclosure_path_label_conformance_JSON():
+    """Every field label in the worked example can be a disclosure-path component.
+
+    Two restrictions come with the `_` DAG-hop component settled in discussion #1549.
+    A label may not contain '-', because '-' is what the '/' delimiter becomes when a
+    path is CESR-serialized as compact Base64; and a label may not be exactly '_',
+    because a bare '_' is reserved for the hop from an edge to the far-side ACDC.
+
+    The '-' half is already keripy's behavior rather than a new rule: Pather's part
+    regex is PATHREX = rb'^[a-zA-Z0-9_]*$' (keri.help.helping), and a part that fails
+    it forces the whole path out of compact Base64 into the Bytes code -- or raises
+    outright when pathive. So this asserts against Repath itself instead of restating
+    the character class, and adds only the bare-'_' rule on top.
+
+    A guard, not a discovery: these labels are clean today. It exists so that adding a
+    hyphenated attribute to the example fails here, with the reason, rather than
+    silently making a path unrepresentable at the CESR layer.
+    """
+    kind = Kinds.json
+    sedi, age, _ = _source_credentials(kind)
+    bespoke = _bespoke_presentation(sedi, age, kind)
+    for acdc in (sedi, age, bespoke):
+        for label in _pathable_labels(acdc.sad):
+            assert Repath.match(label.encode()), \
+                f"label {label!r} cannot be a Pather path part"
+            assert label != '_', "'_' is reserved for the DAG-hop path component"
+    # The hop component round-trips through Pather today, compactly and with no code
+    # change, so adopting it costs the wire nothing. What it does NOT yet do is
+    # RESOLVE: no Pather method follows '_' across an edge into the far-side ACDC.
+    # That extension is the open work item on #1549.
+    hop = Pather(path="/e/identity/_/a/photo")
+    assert hop.parts == ['', 'e', 'identity', '_', 'a', 'photo']
+    # A StrB64 code (4A/5A/6A, by length mod 3), NOT a Bytes code (4B/5B/6B): the '_'
+    # part keeps the path in the compact Base64 domain. A '-' in any label is what
+    # would force it into Bytes, which is the whole reason for the restriction above.
+    assert hop.code in (MtrDex.StrB64_L0, MtrDex.StrB64_L1, MtrDex.StrB64_L2)
+    assert hop.qb64 == "6AAGAAA-e-identity-_-a-photo"
+    assert Pather(qb64=hop.qb64).path == "/e/identity/_/a/photo"
 
 
 def test_accountability_and_terms_follow_data_JSON():
@@ -1215,7 +1344,7 @@ def test_accountability_and_terms_follow_data_JSON():
 
 
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
-def test_clc_serialization_kinds(kind):
+def test_cpd_serialization_kinds(kind):
     """Phases 1-3 invariants hold across every serialization kind, not just JSON.
 
     The detailed phases above pin canonical JSON SAIDs for readability. This check
@@ -1305,12 +1434,12 @@ def test_age_identity_edge_E1E_JSON():
     # not read back from the far node -- that is what gives the s-constraint teeth.
     coreSchemaSaid, _ = _saidify_schema(dict(SEDI_SCHEMA_MAD), kind=kind)
     assert coreSchemaSaid == sedi.sad['s']['$id']
-    assert _verify_identity_edge(age, sedi, coreSchemaSaid)
     assert_acdc_schema_valid(age)
     with pytest.raises(AssertionError):                         # wrong subject (far = bespoke)
         _verify_identity_edge(age, _bespoke_presentation(sedi, age, kind), coreSchemaSaid)
     with pytest.raises(AssertionError):                         # right subject, wrong core schema
         _verify_identity_edge(age, sedi, "E" + "A" * 43)
+    assert _verify_identity_edge(age, sedi, coreSchemaSaid)
 
 
 if __name__ == "__main__":
@@ -1320,4 +1449,4 @@ if __name__ == "__main__":
     test_gated_ipex_exchange_JSON()
     test_accountability_and_terms_follow_data_JSON()
     for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
-        test_clc_serialization_kinds(_kind)
+        test_cpd_serialization_kinds(_kind)
