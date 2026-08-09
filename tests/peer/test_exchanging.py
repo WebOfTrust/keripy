@@ -3,6 +3,8 @@
 tests.peer.test_exchanging module
 
 """
+from contextlib import contextmanager
+
 import pysodium
 import pytest
 
@@ -14,6 +16,118 @@ from keri.app import habbing, forwarding, storing, signing
 
 from keri.peer import exchanging
 from keri.vdr.eventing import incept
+
+from tests.app import openMultiSig
+from tests.app import signifying
+
+
+def _logGroupSigs(exchanger, group, serder, sigers):
+    """Store group signatures through Exchanger's normal persistence path."""
+    exchanger.logEvent(
+        serder=serder,
+        tsgs=[
+            (
+                coring.Prefixer(qb64=group.pre),
+                coring.Seqner(sn=group.kever.sn),
+                coring.Saider(qb64=group.kever.serder.said),
+                sigers,
+            )
+        ],
+    )
+
+
+def _assertLeadElectionContract(exchanger, group, sign):
+    """Verify fallback, no-signature, elected, and superseded outcomes."""
+    lowerSigIdx = 0
+    localSigIdx = 1
+    higherSigIdx = 2
+
+    # A non-group habitat sends without participating in group election.
+    nonGroupExn, _ = exchanging.exchange(
+        route="/test/lead",
+        sender=group.mhab.pre,
+        payload={"case": "non-group"},
+    )
+    assert exchanger.lead(group.mhab, nonGroupExn.said) is True
+
+    # A group cannot elect a sender before indexed signatures are stored.
+    noSigExn, _ = exchanging.exchange(
+        route="/test/lead",
+        sender=group.pre,
+        payload={"case": "no-signatures"},
+    )
+    assert exchanger.lead(group, noSigExn.said) is False
+
+    regularGroupExn, _ = exchanging.exchange(
+        route="/test/lead",
+        sender=group.pre,
+        payload={"case": "group-election"},
+    )
+
+    # Both fixtures make index 1 local. Of indexes 2 and 1, local is lowest.
+    _logGroupSigs(
+        exchanger=exchanger,
+        group=group,
+        serder=regularGroupExn,
+        sigers=[
+            sign(signing_index=higherSigIdx, raw=regularGroupExn.raw),
+            sign(signing_index=localSigIdx, raw=regularGroupExn.raw),
+        ],
+    )
+    assert exchanger.lead(group, regularGroupExn.said) is True
+
+    # Adding index 0 supersedes local index 1, so the local member steps aside.
+    _logGroupSigs(
+        exchanger=exchanger,
+        group=group,
+        serder=regularGroupExn,
+        sigers=[sign(signing_index=lowerSigIdx, raw=regularGroupExn.raw)],
+    )
+    assert exchanger.lead(group, regularGroupExn.said) is False
+
+
+@contextmanager
+def _groupElection():
+    """Adapt a local GroupHab member at signing index 1 for election tests."""
+    # Index 1 leads when signatures 2 and 1 exist, then loses when 0 arrives.
+    with openMultiSig(prefix="exchange-lead") as (
+        (_, ghab1),
+        (hby2, ghab2),
+        (_, ghab3),
+    ):
+        localHby = hby2
+        localGhab = ghab2
+        signingGhabs = (ghab1, ghab2, ghab3)
+
+        def sign(signing_index: int, raw: bytes) -> core.Siger:
+            signingGhab = signingGhabs[signing_index]
+            sigers = signingGhab.sign(raw)
+            return sigers[0]
+
+        yield localHby, localGhab, sign
+
+
+@contextmanager
+def _signifyGroupElection():
+    """Adapt a local Signify member at signing index 1 for election tests."""
+    with signifying.openSignifyGroup(
+        name="signify-lead", mhabIdx=1
+    ) as signifyGroup:
+        yield signifyGroup.hby, signifyGroup.group, signifyGroup.sign
+
+
+@pytest.mark.parametrize(
+    "openElection",
+    (_groupElection, _signifyGroupElection),
+    ids=("group", "signify-group"),
+)
+def test_exchanger_lead_election(openElection):
+    """Real group habitats follow the same lowest-signature-index election, both GroupHab and SignifyGroupHab"""
+    with openElection() as (hby, group, sign):
+        exchanger = exchanging.Exchanger(hby=hby, handlers=[])
+        _assertLeadElectionContract(
+            exchanger=exchanger, group=group, sign=sign
+        )
 
 
 def test_nesting():

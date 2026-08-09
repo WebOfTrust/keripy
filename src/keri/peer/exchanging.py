@@ -303,7 +303,7 @@ class Exchanger:
             bool: True means hab is the lead
 
         """
-        if not isinstance(hab, habbing.GroupHab):
+        if not isinstance(hab, (habbing.GroupHab, habbing.SignifyGroupHab)):
             return True
 
         keys = [verfer.qb64 for verfer in hab.kever.verfers]
