@@ -4,8 +4,9 @@ KERI
 keri.app.agenting module
 
 """
+import json
 import random
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlencode, urlparse, urljoin
 
 from hio.base import doing
 from hio.core import http
@@ -177,7 +178,8 @@ class Receiptor(doing.DoDoer):
         base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
-        client = self.clienter.request("GET", url)
+        headers = Hict([(httping.CESR_DESTINATION_HEADER, wit)])
+        client = self.clienter.request("GET", url, headers=headers)
         while not client.responses:
             yield tock
 
@@ -185,6 +187,99 @@ class Receiptor(doing.DoDoer):
         if rep.status == 200:
             rct = bytearray(rep.body)
             hab.psr.parseOne(bytearray(rct))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+    def ksn(self, pre, wit, src, tock=0.0):
+        """Yield while querying a witness for the key state of an identifier.
+
+        Parameters:
+            pre (str): qb64 identifier whose key state is requested.
+            wit (str): qb64 witness identifier to query.
+            src (str): qb64 local identifier issuing the query.
+
+        Returns:
+            bool: True if the witness returned HTTP 200.
+        """
+        if src not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[src]
+        kever = hab.kevers[pre]
+
+        if wit not in kever.wits:
+            return
+
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or \
+            hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        url = urljoin(base, f"/ksn?pre={pre}&src={src}")
+        headers = Hict([(httping.CESR_DESTINATION_HEADER, wit)])
+
+        client = self.clienter.request("GET", url, headers=headers)
+        while not client.responses:
+            yield tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            hab.psr.parseOne(bytearray(rep.body))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+    def logs(self, pre, wit, src, sn=None, fn=None, anchor=None, tock=0.0):
+        """Yield while retrieving an identifier's event log from a witness.
+
+        Parameters:
+            pre (str): qb64 identifier whose event log is requested.
+            wit (str): qb64 witness identifier to query.
+            src (str): qb64 local identifier issuing the query.
+            sn (int | None): optional minimum witnessed sequence number.
+            fn (int | None): optional first ordinal for the cloned log.
+            anchor (dict | None): optional event seal with `i`, `s`, and `d` fields.
+
+        Returns:
+            bool: True if the witness returned HTTP 200.
+        """
+        if src not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[src]
+        kever = hab.kevers[pre]
+
+        if wit not in kever.wits:
+            return
+
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or \
+            hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        params = {"pre": pre}
+        if sn is not None:
+            params["s"] = f"{sn:X}"
+        if fn is not None:
+            params["fn"] = f"{fn:X}"
+        if anchor is not None:
+            params["a"] = json.dumps(anchor, separators=(",", ":"))
+
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        url = urljoin(base, f"/log?{urlencode(params)}")
+        headers = Hict([(httping.CESR_DESTINATION_HEADER, wit)])
+
+        client = self.clienter.request("GET", url, headers=headers)
+        while not client.responses:
+            yield tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            hab.psr.parse(bytearray(rep.body))
+        else:
+            logger.info(f"Failed to retrieve log from {wit}: {rep.status} {rep.body}")
 
         self.clienter.remove(client)
         return rep.status == 200
