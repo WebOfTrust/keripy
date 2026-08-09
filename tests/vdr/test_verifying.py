@@ -7,9 +7,9 @@ tests.vdr.verifying module
 import pytest
 
 from keri import kering
-from keri.app import habbing, signing
+from keri.app import habbing
 from keri.core import eventing as ceventing, scheming
-from keri.core import parsing, coring, indexing
+from keri.core import parsing, coring
 from keri.core.eventing import SealEvent
 from keri.help import helping
 from keri.vc import proving
@@ -544,6 +544,27 @@ def test_verifier_chained_credential(seeder):
 
         # Now that the credential has been issued, process escrows and it will find the TEL event
         ianverfer.processEscrows()
+
+        # Ensure untargeted ACDCs do not trigger a lookup error on kevers[isse]
+        sendMsgs = []
+
+        class MockStreamPoster:
+            def __init__(self, sendMsgs):
+                self.msgs = sendMsgs
+
+            def send(self, serder, attachment=None):
+                self.msgs.append(dict(serder=serder, attachment=attachment))
+        postman = MockStreamPoster(sendMsgs)
+        credentialing.sendArtifacts(hby=ianHby,
+                                    reger=ianreg.reger,
+                                    postman=postman,
+                                    creder=untargetedCreder,
+                                    recp=vic.pre)
+
+        msgPrefixes = {msgs["serder"].pre for msgs in sendMsgs}
+        assert ian.pre in msgPrefixes
+        assert ianiss.regk in msgPrefixes
+        assert untargetedCreder.said in msgPrefixes
 
         chainedSubject = dict(
             d="",
