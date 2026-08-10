@@ -167,13 +167,12 @@ def test_qrymailbox_iter():
 def test_qrymailbox_iter_v2():
     topics = {"/receipt": 0, "/challenge": 1, "/multisig": 0}
 
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == 'EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M'
-        icp = hab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)
+        icp = hab.msgOwnInception(framed=True)
         icpSrdr = SerderKERI(raw=icp)
         qry = hab.query(pre=hab.pre, src=hab.pre, route="mbx", query={"topics": topics},
-                        version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+                        kind=Kinds.json)
         srdr = SerderKERI(raw=qry)
         assert srdr.pvrsn == Vrsn_2_0
         assert srdr.gvrsn == Vrsn_2_0
@@ -198,7 +197,7 @@ def test_qrymailbox_iter_v2():
         hby.cf.put(cf)
         kvy = Kevery(db=hby.db, cf=hby.cf, enableKram=True, lax=False, local=False)
         assert kvy.kramer.enabled is True
-        Parser(version=Vrsn_2_0).parse(ims=bytearray(qry), kvy=kvy)
+        Parser().parse(ims=bytearray(qry), kvy=kvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, srdr.said))
         assert cache is not None
         assert cache.mdt == srdr.stamp
@@ -248,19 +247,19 @@ def test_qrymailbox_iter_v2():
 
 
 def test_wit_query_ends(seeder, witnessPorter):
-    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_1_0) as wesHby, \
-            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as palHby:
+    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
         witnessPorts, witnessUrls = witnessPorter("wes")
         wesDoers = setupWitness(alias="wes", hby=wesHby,
                                 tcpPort=witnessPorts["wes"]["tcp"],
-                                httpPort=witnessPorts["wes"]["http"], version=Vrsn_1_0, kind=Kinds.json)
+                                httpPort=witnessPorts["wes"]["http"])
         # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
         wesReger = next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer))
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
-                           protocols=[Schemes.http], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+                           protocols=[Schemes.http], witnessUrls=witnessUrls)
 
         app = falcon.App()
         query_endpoint = QueryEnd(wesHab, reger=wesReger)
@@ -302,9 +301,9 @@ class QueryTestDoer(doing.Doer):
         witDoer = self.options["witDoer"]
         wesClient = self.options["wesClient"]
 
-        palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True, version=Vrsn_1_0, kind=Kinds.json)
+        palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True)
 
-        assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
+        assert palHab.pre == "ECF_sIdpuhOhnEw9zV6cq6ZWLKGJbjH052_xiJT7Uh6z"
 
         witDoer.msgs.append(dict(pre=palHab.pre))
         while not witDoer.cues:

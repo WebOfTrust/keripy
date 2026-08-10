@@ -8,7 +8,6 @@ import os
 import lmdb
 
 from keri.app import Mailboxer, openKS
-from keri import Vrsn_1_0
 from keri.kering import Kinds
 from keri.core import Prefixer, SerderKERI, exchange
 from keri.db import OnSuber, openLMDB, openDB
@@ -62,10 +61,10 @@ def test_mailboxing():
         assert isinstance(mber, Mailboxer)
 
         msg = (
-            b'{"v":"KERI10JSON0000ac_","t":"exn","i":"EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I",'
-            b'"dt":"2021-07-15T13:01:37.624492+00:00","r":"/credential/issue","q":{"a":"b",'
-            b'"b":123}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
-            b'-AABAAMKEkKlqSYcAbOHfNXQ_D0Rbj9bQD5FqhFqckAlDnOFozRKOIPrCWaszRzSUN20UBj80tO5ozN35KrQp9m7Z1AA')
+            b'{"v":"KERICAACAAJSONAAD-.","t":"exn","d":"EK8rUMKMlBIKGBXWs7SCXxrYZ9TCqL2ATY-GHnTrC67k",'
+            b'"i":"EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I","ri":"","x":"","p":"",'
+            b'"dt":"2021-07-15T13:01:37.624492+00:00","r":"/credential/issue","q":{},'
+            b'"a":{"a":"b","b":123}}')
 
         dest = Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
         saved = mber.storeMsg(topic=dest.qb64b, msg=msg)
@@ -88,7 +87,7 @@ def test_mailboxing():
                               attributes=d,
                               stamp="2021-07-15T13:01:37.624492+00:00",
                               sender=dest.qb64,
-                              version=Vrsn_1_0, kind=Kinds.json)
+                              kind=Kinds.json)
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
 
         msgs = []

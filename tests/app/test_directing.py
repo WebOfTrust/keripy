@@ -11,7 +11,7 @@ from hio.base import doing
 from hio.help import ogler
 from hio.core.tcp import clienting, serving
 
-from keri import Vrsn_1_0, Kinds
+from keri import Version, Kinds
 from keri.core import Salter, Diger, MtrDex, incept
 from keri.app import Director, Directant, Reactor, openHby, runController
 from keri.demo import setupDemoController
@@ -19,16 +19,16 @@ from keri.demo import setupDemoController
 
 
 def test_directing_defaults_use_hab_version_and_kind():
-    with openHby(name="director-defaults", base="test", version=Vrsn_1_0) as hby:
-        hab = hby.makeHab(name="director-defaults", version=Vrsn_1_0, kind=Kinds.json)
+    with openHby(name="director-defaults", base="test") as hby:
+        hab = hby.makeHab(name="director-defaults", kind=Kinds.cesr)
         client = clienting.Client(host='127.0.0.1', port=5631)
 
         director = Director(hab=hab, client=client)
         reactor = Reactor(hab=hab, client=client)
 
-        assert director.version == Vrsn_1_0
-        assert director.kind == Kinds.json
-        assert reactor.parser.version == Vrsn_1_0
+        assert director.version == Version
+        assert director.kind == Kinds.cesr
+        assert reactor.parser.version == Version
 
 
 def test_directing_basic(unused_tcp_port_factory):
@@ -46,10 +46,10 @@ def test_directing_basic(unused_tcp_port_factory):
     # bob inception transferable (nxt digest not empty)
     bobSerder = incept(keys=[bobSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=bobSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
+                                code=MtrDex.Blake3_256, kind=Kinds.cesr)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
+    assert bob == 'EOzUwijAAd525ZSKOID4E-wEtOeJdzxcjfDBfyd3JiB1'
 
 
     #  create eve signers and secrecies
@@ -59,14 +59,14 @@ def test_directing_basic(unused_tcp_port_factory):
     # eve inception transferable (nxt digest not empty)
     eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
+                                code=MtrDex.Blake3_256, kind=Kinds.cesr)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
+    assert eve == 'EBHhT6J7lAlaMPL4IseuNbvTuDktQ5epySJNwXL1Je61'
 
 
-    with (openHby(name="eve", base="test", version=Vrsn_1_0) as eveHby,
-          openHby(name="bob", base="test", version=Vrsn_1_0) as bobHby):
+    with (openHby(name="eve", base="test") as eveHby,
+          openHby(name="bob", base="test") as bobHby):
 
         limit = 1.0
         tock = 0.03125
@@ -76,7 +76,7 @@ def test_directing_basic(unused_tcp_port_factory):
         evePort = unused_tcp_port_factory()
 
         # setup bob
-        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, version=Vrsn_1_0, kind=Kinds.json)
+        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, kind=Kinds.cesr)
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -106,7 +106,7 @@ def test_directing_basic(unused_tcp_port_factory):
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, version=Vrsn_1_0, kind=Kinds.json)
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, kind=Kinds.cesr)
         print(eveHab.iserder.pretty())
         print(eveSerder.pretty())
         assert eveHab.iserder.said == eveSerder.said
@@ -195,7 +195,7 @@ def test_runcontroller_demo(unused_tcp_port_factory):
                                 name=name,
                                 remotePort=remote,
                                 localPort=local,
-                                version=Vrsn_1_0, kind=Kinds.json)
+                                kind=Kinds.cesr)
 
     runController(doers=doers, expire=expire)
 
