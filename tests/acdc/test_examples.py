@@ -24,8 +24,12 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError, ValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
-from keri.core import Noncer, Blinder, GenDex, Aggor, Compactor, Diger, DigDex
-from keri.acdc import regcept, blindate, acdcmap, acdcagg
+from keri.core import (Noncer, Blinder, GenDex, Aggor, Compactor, Diger,
+                       DigDex, Parser)
+from keri.acdc import (regcept, blindate, acdcmap, acdcagg, loadHandlers,
+                       grant as ipexGrant, admit as ipexAdmit)
+from keri.app import openHby
+from keri.peer import Exchanger
 
 
 # Spec-aligned example fixtures (see test_acdc_examples_setup in the spec tests).
@@ -62,6 +66,66 @@ def assert_acdc_schema_valid(acdc, schema=None):
     Draft202012Validator.check_schema(schema)          # guarantee 1
     Draft202012Validator(schema).validate(acdc.sad)    # guarantee 2 (raises on failure)
     return schema
+
+
+class Recorder:
+    def __init__(self):
+        self.items = []
+
+    def add(self, attrs):
+        self.items.append(attrs)
+
+
+def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
+            acdc, iss=None, anc=None):
+    """Round-trip one IPEX grant and its admit, returning the parsed grant."""
+    grant, grantAtc = ipexGrant(hab=sender, recp=receiver.pre, message=message,
+                                acdc=acdc, iss=iss, anc=anc)
+    grantIms = bytearray(grant.raw)
+    grantIms.extend(grantAtc)
+    grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False,
+                                                  processive=False)
+    assert grantIms == bytearray()
+    assert len(grantResults) == 1
+    grantResult = grantResults[0]
+    assert grantResult.serder.said == grant.said
+    assert grantResult.serder.ked['r'] == "/ipex/grant"
+    assert grantResult.serder.ked['p'] == ""
+    assert grantResult.serder.ked['i'] == sender.pre
+    assert grantResult.serder.ked['a']['i'] == receiver.pre
+    assert grantResult.serder.ked['a']['acdc'] == acdc.said
+    nestSaids = [acdc.said]
+    if iss is not None:
+        assert grantResult.serder.ked['a']['iss'] == iss.said
+        nestSaids.append(iss.said)
+    if anc is not None:
+        assert grantResult.serder.ked['a']['anc'] == anc.said
+        nestSaids.append(anc.said)
+    assert [nest.serder.said for nest in grantResult.nests] == nestSaids
+    wire = bytes(grant.raw) + bytes(grantAtc)
+
+    grantDispatch = bytearray(grant.raw)
+    grantDispatch.extend(grantAtc)
+    Parser(version=Vrsn_2_0).parse(ims=grantDispatch, framed=False, exc=exc)
+    assert grantDispatch == bytearray()
+    storedGrant = hby.db.exns.get(keys=(grant.said,))
+    assert storedGrant is not None
+    assert storedGrant.ked['a']['acdc'] == acdc.said
+    if iss is not None:
+        assert storedGrant.ked['a']['iss'] == iss.said
+    if anc is not None:
+        assert storedGrant.ked['a']['anc'] == anc.said
+
+    admit, admitAtc = ipexAdmit(hab=receiver, message=admitMessage, grant=grant)
+    admitIms = bytearray(admit.raw)
+    admitIms.extend(admitAtc)
+    Parser(version=Vrsn_2_0).parse(ims=admitIms, framed=False, exc=exc)
+    assert admitIms == bytearray()
+    storedAdmit = hby.db.exns.get(keys=(admit.said,))
+    assert storedAdmit is not None
+    assert storedAdmit.ked['p'] == grant.said
+
+    return grantResult, wire
 
 
 def test_schema_validation_harness_has_teeth():
@@ -186,6 +250,7 @@ def test_registry_issuance_lifecycle_JSON():
     assert 'ts' not in issued.sad and 'td' not in issued.sad
     assert b'issued' not in issued.raw
     assert acdcSaid.encode() not in issued.raw
+    assert salt.encode() not in issued.raw
 
     # --- Step 4: confirm the state by unblinding. ---
     # Unblinding = recompute the blinded state's SAID (the 'b'/blid value) over
@@ -220,6 +285,7 @@ def test_registry_issuance_lifecycle_JSON():
     assert revoked.sad['p'] == issued.said  # chains onto the issuance update
     assert revoked.sad['n'] == "2"
     assert revoked.said == "ENACMzpaiMMcdpQRBA4IbbqjUMcoJ_wBBsbhwpg_MYJM"
+    assert salt.encode() not in revoked.raw
 
     reunblinder = Blinder.unblind(said=revoked.sad['b'], acdc=acdcSaid,
                                   states=['issued', 'revoked'], salt=salt, sn=2)
@@ -227,6 +293,123 @@ def test_registry_issuance_lifecycle_JSON():
     assert reunblinder.state == 'revoked'
     assert reunblinder.acdc == acdcSaid           # bound to this credential, not another
     assert reunblinder.crew == revokedBlinder.crew
+
+
+def test_registry_issuance_lifecycle_IPEX_JSON():
+    """Same lifecycle as the worked example, but transported through IPEX.
+
+    This stays distinct from test_clc_disclosure.py's gated exchange. The point
+    here is not pre-disclosure negotiation; it is to carry the foundational
+    registry artifacts inside the IPEX builders and route them through the real
+    IPEX handlers we have today.
+
+    The current ``ipexing.grant`` builder gives us three carried artifacts:
+    ``acdc`` (the credential), ``iss`` (the current registry update), and
+    ``anc`` (one ancillary artifact). For this registry lifecycle example we use
+    that ancillary slot for the registry inception (`rip`) itself, so one bare
+    grant snapshots the whole state package the holder needs:
+
+      credential + current `bup` state + originating registry `rip`
+
+    A second bare grant later carries the revoked-state snapshot. Each bare
+    grant is acknowledged by an IPEX admit.
+    """
+
+    with openHby(name="ipex-registry-lifecycle",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
+        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
+
+        # Rebuild the same artifact pattern as the JSON worked example, but with
+        # live Hab AIDs because the current IPEX builders sign through Hab.
+        regStamp = '2025-07-04T17:50:00.000000+00:00'
+        ripper = regcept(israid=amy.pre, uuid=NONCES[0], stamp=regStamp)
+        assert ripper.ilk == Ilks.rip
+        regid = ripper.said
+
+        attribute = dict(d='', u=NONCES[7], name="Sunspot College", level="gold")
+        acdc = acdcmap(israid=amy.pre, uuid=NONCES[10], regid=regid,
+                       attribute=attribute, iseaid=bob.pre)
+        assert acdc.ilk == Ilks.acm
+        assert acdc.sad['rd'] == regid
+        assert acdc.sad['a']['i'] == bob.pre
+        assert_acdc_schema_valid(acdc)
+
+        salt = NONCES[15]
+        issuedBlinder = Blinder.blind(acdc=acdc.said, state='issued', salt=salt, sn=1)
+        issued = blindate(regid=regid, prior=regid, blid=issuedBlinder.said,
+                          sn=1, stamp='2025-08-01T18:06:10.988921+00:00')
+        revokedBlinder = Blinder.blind(acdc=acdc.said, state='revoked', salt=salt, sn=2)
+        revoked = blindate(regid=regid, prior=issued.said, blid=revokedBlinder.said,
+                           sn=2, stamp='2025-09-01T18:06:10.988921+00:00')
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Bare grant 1: the issued-state snapshot. In today's builder shape the
+        # lifecycle package is encoded as:
+        #   acdc = credential, iss = current `bup`, anc = registry inception `rip`
+        issuedGrantResult, issuedGrantWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=amy,
+            receiver=bob,
+            message="Issued registry snapshot",
+            admitMessage="Received issued snapshot",
+            acdc=acdc,
+            iss=issued,
+            anc=ripper,
+        )
+        assert issuedGrantResult.serder.ked['a']['i'] == bob.pre
+        # The disclosed credential is present on the wire, but the registry state
+        # word itself remains hidden because the nested `bup` is blindable
+        assert b'issued' not in issuedGrantWire
+        assert b'revoked' not in issuedGrantWire
+        assert salt.encode() not in issuedGrantWire
+
+        # The holder/verifier can now pull the carried `bup` out of the IPEX
+        # grant and perform the same unblinding confirmation as in the base test
+        issuedNest = issuedGrantResult.nests[1].serder
+        unblinder = Blinder.unblind(said=issuedNest.sad['b'], acdc=acdc.said,
+                                    states=['issued', 'revoked'], salt=salt, sn=1)
+        assert unblinder is not None
+        assert unblinder.state == 'issued'
+        assert unblinder.acdc == acdc.said
+        assert unblinder.crew == issuedBlinder.crew
+
+        # Bare grant 2: later the issuer ships the revoked-state snapshot the
+        # same way, again through the handler chain.
+        revokedGrantResult, revokedGrantWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=amy,
+            receiver=bob,
+            message="Revoked registry snapshot",
+            admitMessage="Received revoked snapshot",
+            acdc=acdc,
+            iss=revoked,
+            anc=ripper,
+        )
+        assert b'issued' not in revokedGrantWire
+        assert b'revoked' not in revokedGrantWire
+        assert salt.encode() not in revokedGrantWire
+
+        revokedNest = revokedGrantResult.nests[1].serder
+        reunblinder = Blinder.unblind(said=revokedNest.sad['b'], acdc=acdc.said,
+                                      states=['issued', 'revoked'], salt=salt, sn=2)
+        assert reunblinder is not None
+        assert reunblinder.state == 'revoked'
+        assert reunblinder.acdc == acdc.said
+        assert reunblinder.crew == revokedBlinder.crew
+
+        assert [(item["r"], item["m"]) for item in recorder.items] == [
+            ("/exn/ipex/grant", "Issued registry snapshot"),
+            ("/exn/ipex/admit", "Received issued snapshot"),
+            ("/exn/ipex/grant", "Revoked registry snapshot"),
+            ("/exn/ipex/admit", "Received revoked snapshot"),
+        ]
 
 
 def test_selective_disclosure_aggregate_JSON():
@@ -314,6 +497,120 @@ def test_selective_disclosure_aggregate_JSON():
     # Tamper evidence: altering a disclosed value breaks AGID verification.
     tampered = [disclosed[0], dict(disclosed[1], i=AMY), disclosed[2], disclosed[3]]
     assert not Aggor.verifyDisclosure(tampered, kind=kind)
+
+
+def test_selective_disclosure_aggregate_IPEX_JSON():
+    """Selective aggregate disclosure carried through the real IPEX grant path.
+
+    The sibling JSON worked example proves the disclosure math directly on the
+    aggregate section. This companion test packages the selectively disclosed
+    *variant of that same ACDC* inside a real IPEX `grant`, routes it through the
+    v2 IPEX handlers, and shows that the verifier can still validate the carried
+    disclosure against the committed AGID while the withheld values stay off the
+    wire.
+    """
+
+    with openHby(name="ipex-selective-aggregate",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
+        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
+        vic = hby.makeHab(name="vic", version=Vrsn_2_0, kind=Kinds.json)
+
+        kind = Kinds.json
+        ripper = regcept(israid=amy.pre, uuid=NONCES[3],
+                         stamp='2025-07-04T17:50:00.000000+00:00')
+
+        # Issuer-side setup mirrors the original example, but with live Habs for
+        # the transport actors that will sign the outer IPEX messages.
+        iael = ["",
+                dict(d='', u=NONCES[0], i=bob.pre),
+                dict(d='', u=NONCES[1], score=96),
+                dict(d='', u=NONCES[2], name="Zoe Doe")]
+        aggor = Aggor(ael=iael, makify=True, kind=kind)
+        agid = aggor.agid
+
+        acdc = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+                       aggregate=aggor.ael, kind=kind)
+        compact = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+                          aggregate=agid, kind=kind)
+        schema = assert_acdc_schema_valid(acdc)
+        assert_acdc_schema_valid(compact, schema=schema)
+        assert acdc.said == compact.said
+        assert acdc.iseaid == bob.pre
+
+        # A fully collapsed disclosure variant still commits to the same top-level
+        # ACDC SAID: the holder can present only element SAIDs and preserve the
+        # commitment.
+        full, k = aggor.disclose()
+        assert k == kind
+        assert Aggor.verifyDisclosure(full, kind=kind)
+        collapsed = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+                            aggregate=full, kind=kind)
+        assert collapsed.said == acdc.said
+
+        # Holder-side selective disclosure: reveal only the issuee element and
+        # withhold the score/name elements as bare SAIDs.
+        disclosed, k = aggor.disclose(indices=[1])
+        assert k == kind
+        selective = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+                            aggregate=disclosed, kind=kind)
+        assert selective.said == acdc.said
+        assert_acdc_schema_valid(selective, schema=schema)
+        assert selective.sad['A'][0] == agid
+        assert isinstance(selective.sad['A'][1], dict)
+        assert selective.sad['A'][1]['i'] == bob.pre
+        assert isinstance(selective.sad['A'][2], str)
+        assert isinstance(selective.sad['A'][3], str)
+        assert 'Zoe Doe' not in json.dumps(selective.sad['A'])
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # The holder (Bob) presents Amy's credential to the verifier (Vic). The
+        # outer IPEX sender is Bob, while the nested ACDC issuer remains Amy.
+        grantResult, grantWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            message="Selective aggregate disclosure",
+            admitMessage="Received selective aggregate disclosure",
+            acdc=selective,
+        )
+
+        carried = grantResult.nests[0].serder
+        assert carried.said == acdc.said                # same credential commitment
+        assert carried.sad['i'] == amy.pre              # still Amy's credential
+        assert carried.iseaid == bob.pre                # held by Bob
+        assert carried.sad['A'][0] == agid
+        assert isinstance(carried.sad['A'][1], dict)
+        assert carried.sad['A'][1]['i'] == bob.pre
+        assert isinstance(carried.sad['A'][2], str)
+        assert isinstance(carried.sad['A'][3], str)
+
+        # The carried selective disclosure reveals only the chosen element: the
+        # withheld name value and the withheld elements' own blinding nonces
+        # never appear on the IPEX wire message.
+        assert b'Zoe Doe' not in grantWire
+        assert NONCES[1].encode() not in grantWire
+        assert NONCES[2].encode() not in grantWire
+
+        # Verifier-side check: recomputing the AGID over the mixed disclosure
+        # still verifies the selective presentation against the committed
+        # aggregate, and any tampering breaks that proof.
+        assert Aggor.verifyDisclosure(carried.sad['A'], kind=kind)
+        tampered = [carried.sad['A'][0],
+                    dict(carried.sad['A'][1], i=amy.pre),
+                    carried.sad['A'][2],
+                    carried.sad['A'][3]]
+        assert not Aggor.verifyDisclosure(tampered, kind=kind)
+
+        assert [(item["r"], item["m"]) for item in recorder.items] == [
+            ("/exn/ipex/grant", "Selective aggregate disclosure"),
+            ("/exn/ipex/admit", "Received selective aggregate disclosure"),
+        ]
 
 
 def test_partial_disclosure_compaction_JSON():
@@ -457,6 +754,217 @@ def test_partial_disclosure_compaction_JSON():
     assert mixed['grades']['math'] == 4                     # verifier sees the revealed block
 
 
+def test_partial_disclosure_compaction_IPEX_JSON():
+    """Graduated partial disclosures carried through the real IPEX grant path.
+
+    The sibling JSON worked example proves the compaction math directly on
+    private ACDCs and nested section blocks. This companion test packages those
+    same disclosure variants into real IPEX `grant` messages, routes them
+    through the v2 handlers, and shows that the carried artifacts preserve the
+    same top-level commitments while only the intended sections appear on the
+    wire.
+    """
+
+    with openHby(name="ipex-partial-compaction",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
+        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
+        vic = hby.makeHab(name="vic", version=Vrsn_2_0, kind=Kinds.json)
+
+        kind = Kinds.json
+        ripper = regcept(israid=amy.pre, uuid=NONCES[0],
+                         stamp='2025-07-04T17:50:00.000000+00:00')
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Part A: disclose only the rule section while withholding attributes as
+        # a bare SAID, then carry that partial ACDC through IPEX.
+        ruleText = "AS IS basis. MUST NOT be shared."
+        attrMad = dict(d='', u=NONCES[7], name="Bob Student", gpa=4)
+        ruleMad = dict(d='', l=ruleText)
+        expanded = acdcmap(israid=amy.pre, uuid=NONCES[13], regid=ripper.said,
+                           attribute=dict(attrMad), iseaid=bob.pre, rule=dict(ruleMad),
+                           compactify=False, kind=kind)
+        compact = acdcmap(israid=amy.pre, uuid=NONCES[13], regid=ripper.said,
+                          attribute=dict(attrMad), iseaid=bob.pre, rule=dict(ruleMad),
+                          compactify=True, kind=kind)
+        assert expanded.said == compact.said             # same commitment either way
+        schema = assert_acdc_schema_valid(expanded)
+        assert_acdc_schema_valid(compact, schema=schema)
+        
+        assert b"Bob Student" not in compact.raw
+        assert b"MUST NOT" not in compact.raw
+
+        # Build the rule section disclosure
+        ruleOnly = acdcmap(israid=amy.pre, uuid=NONCES[13], regid=ripper.said,
+                           schema=compact.sad['s'], attribute=compact.sad['a'],
+                           rule=expanded.sad['r'], kind=kind)
+        assert ruleOnly.said == compact.said == expanded.said
+        assert_acdc_schema_valid(ruleOnly, schema=schema)
+        assert isinstance(ruleOnly.sad['a'], str)
+        assert isinstance(ruleOnly.sad['r'], dict)
+
+        ruleGrantResult, ruleWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=ruleOnly,
+            message="Rule section disclosure",
+            admitMessage="Received rule section disclosure",
+        )
+        carriedRule = ruleGrantResult.nests[0].serder
+        assert carriedRule.said == expanded.said
+        assert carriedRule.sad['i'] == amy.pre
+        assert isinstance(carriedRule.sad['a'], str)
+        assert isinstance(carriedRule.sad['r'], dict)
+        recomputedRule = Compactor(mad=dict(carriedRule.sad['r'], d=''),
+                                   makify=True,
+                                   kind=kind)
+        assert recomputedRule.said == compact.sad['r']
+        assert carriedRule.sad['r']['l'] == ruleText
+        assert b"Bob Student" not in carriedRule.raw
+        assert b"gpa" not in carriedRule.raw
+        assert ruleText.encode() in carriedRule.raw
+        assert b"Bob Student" not in ruleWire
+        assert NONCES[7].encode() not in ruleWire
+
+        # Part B: the same credential commitment can first withhold a nested
+        # grades block, then later reveal it, without changing the ACDC SAID.
+        nested = dict(d='', u=NONCES[7], i=bob.pre, name="Bob Student",
+                      grades=dict(d='', u=NONCES[8], math=4, english=3))
+        compactor = Compactor(mad=nested, makify=True, kind=kind)
+        compactor.compact()
+        sectSaid = compactor.said
+        compactor.expand(greedy=True)
+        
+        withheld = compactor.partials[('', )]
+        revealed = compactor.partials[('.grades', )]
+
+        gradesBase = acdcmap(israid=amy.pre, uuid=NONCES[11], regid=ripper.said,
+                             attribute=nested, kind=kind)
+        gradesSchema = assert_acdc_schema_valid(gradesBase)
+        gradesWithheld = acdcmap(israid=amy.pre, uuid=NONCES[11], regid=ripper.said,
+                                 schema=gradesBase.sad['s'], attribute=withheld.mad,
+                                 kind=kind)
+        gradesRevealed = acdcmap(israid=amy.pre, uuid=NONCES[11], regid=ripper.said,
+                                 schema=gradesBase.sad['s'], attribute=revealed.mad,
+                                 kind=kind)
+        assert withheld.said == sectSaid and revealed.said == sectSaid
+        assert gradesWithheld.said == gradesRevealed.said == gradesBase.said
+        assert_acdc_schema_valid(gradesWithheld, schema=gradesSchema)
+        assert_acdc_schema_valid(gradesRevealed, schema=gradesSchema)
+
+        withheldGrantResult, withheldWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=gradesWithheld,
+            message="Grades withheld partial disclosure",
+            admitMessage="Received grades-withheld partial disclosure",
+        )
+        carriedWithheld = withheldGrantResult.nests[0].serder
+        assert carriedWithheld.said == gradesBase.said
+        assert carriedWithheld.sad['i'] == amy.pre
+        assert carriedWithheld.iseaid == bob.pre
+        assert isinstance(carriedWithheld.sad['a']['grades'], str)
+        withheldCheck = Compactor(mad=dict(carriedWithheld.sad['a'], d=''),
+                                  makify=True,
+                                  kind=kind)
+        withheldCheck.compact()
+        assert withheldCheck.said == sectSaid
+        assert b"math" not in carriedWithheld.raw
+        assert b"math" not in withheldWire
+        assert NONCES[8].encode() not in withheldWire
+
+        revealedGrantResult, revealedWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=gradesRevealed,
+            message="Grades revealed partial disclosure",
+            admitMessage="Received grades-revealed partial disclosure",
+        )
+        carriedRevealed = revealedGrantResult.nests[0].serder
+        assert carriedRevealed.said == gradesBase.said
+        assert carriedRevealed.sad['i'] == amy.pre
+        assert carriedRevealed.iseaid == bob.pre
+        assert isinstance(carriedRevealed.sad['a']['grades'], dict)
+        assert carriedRevealed.sad['a']['grades']['math'] == 4
+        revealedCheck = Compactor(mad=dict(carriedRevealed.sad['a'], d=''),
+                                  makify=True,
+                                  kind=kind)
+        revealedCheck.compact()
+        assert revealedCheck.said == sectSaid
+        assert b"math" in carriedRevealed.raw
+
+        # Part C: carry a mixed nested disclosure where grades are revealed but
+        # the address block stays compacted to its SAID.
+        multi = dict(d='', u=NONCES[7], i=bob.pre, name="Bob Student",
+                     grades=dict(d='', u=NONCES[8], math=4, english=3),
+                     address=dict(d='', u=NONCES[9], street="Main", number=5, zip="90210"))
+        mc = Compactor(mad=multi, makify=True, kind=kind)
+        mc.compact()
+        multiSaid = mc.said
+        mc.expand(greedy=True)
+        allCompact = mc.partials[('', )].mad
+        allExpanded = next(v.mad for k, v in mc.partials.items() if k != ('', ))
+        mixed = dict(allCompact)
+        mixed['grades'] = allExpanded['grades']
+
+        mixedBase = acdcmap(israid=amy.pre, uuid=NONCES[12], regid=ripper.said,
+                            attribute=multi, kind=kind)
+        mixedSchema = assert_acdc_schema_valid(mixedBase)
+        mixedAcdc = acdcmap(israid=amy.pre, uuid=NONCES[12], regid=ripper.said,
+                            schema=mixedBase.sad['s'], attribute=mixed, kind=kind)
+        assert mixedAcdc.said == mixedBase.said
+        assert_acdc_schema_valid(mixedAcdc, schema=mixedSchema)
+
+        mixedGrantResult, mixedWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            acdc=mixedAcdc,
+            message="Mixed nested partial disclosure",
+            admitMessage="Received mixed nested partial disclosure",
+        )
+        carriedMixed = mixedGrantResult.nests[0].serder
+        assert carriedMixed.said == mixedBase.said
+        assert carriedMixed.sad['i'] == amy.pre
+        assert carriedMixed.iseaid == bob.pre
+        assert isinstance(carriedMixed.sad['a']['grades'], dict)
+        assert carriedMixed.sad['a']['grades']['math'] == 4
+        assert isinstance(carriedMixed.sad['a']['address'], str)
+        mixedCheck = Compactor(mad=dict(carriedMixed.sad['a'], d=''),
+                               makify=True,
+                               kind=kind)
+        mixedCheck.compact()
+        assert mixedCheck.said == multiSaid
+        assert b"math" in carriedMixed.raw
+        assert b"Main" not in carriedMixed.raw
+        assert b"90210" not in carriedMixed.raw
+        assert b"Main" not in mixedWire
+        assert b"90210" not in mixedWire
+        assert NONCES[9].encode() not in mixedWire
+
+        assert [(item["r"], item["m"]) for item in recorder.items] == [
+            ("/exn/ipex/grant", "Rule section disclosure"),
+            ("/exn/ipex/admit", "Received rule section disclosure"),
+            ("/exn/ipex/grant", "Grades withheld partial disclosure"),
+            ("/exn/ipex/admit", "Received grades-withheld partial disclosure"),
+            ("/exn/ipex/grant", "Grades revealed partial disclosure"),
+            ("/exn/ipex/admit", "Received grades-revealed partial disclosure"),
+            ("/exn/ipex/grant", "Mixed nested partial disclosure"),
+            ("/exn/ipex/admit", "Received mixed nested partial disclosure"),
+        ]
+
+
 def test_blindable_registry_correlation_minimizing_JSON():
     """Example: correlation-minimizing state disclosure from a blindable registry.
 
@@ -570,6 +1078,129 @@ def test_blindable_registry_correlation_minimizing_JSON():
     assert holderAtRevocation.state == 'revoked'
 
 
+def test_blindable_registry_correlation_minimizing_IPEX_JSON():
+    """Per-event blind disclosure carried through the real IPEX grant path.
+
+    The sibling JSON worked example proves that a disclosed blind reads exactly
+    one blindable registry update and no others. This companion test packages
+    those blinded registry updates as nested `bup` artifacts inside real IPEX
+    `grant` messages, routes them through the v2 handlers, and shows that the
+    verifier can unblind only the event whose per-sn nonce the holder chooses to
+    disclose out of band. The IPEX wire itself never carries the salt or either
+    cleartext state word.
+    """
+
+    with openHby(name="ipex-correlation-minimizing",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
+        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
+        vic = hby.makeHab(name="vic", version=Vrsn_2_0, kind=Kinds.json)
+
+        kind = Kinds.json
+        states = ['issued', 'revoked']
+
+        ripper = regcept(israid=amy.pre, uuid=NONCES[0],
+                         stamp='2025-07-04T17:50:00.000000+00:00')
+        acdc = acdcmap(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+                       attribute=dict(d='', u=NONCES[7], name="Sunspot College",
+                                      level="gold"),
+                       iseaid=bob.pre, kind=kind)
+        assert_acdc_schema_valid(acdc)
+        salt = NONCES[15]
+
+        issuedBlinder = Blinder.blind(acdc=acdc.said, state='issued', salt=salt, sn=1)
+        revokedBlinder = Blinder.blind(acdc=acdc.said, state='revoked', salt=salt, sn=2)
+        assert issuedBlinder.said != revokedBlinder.said
+        assert issuedBlinder.uuid != revokedBlinder.uuid
+
+        issued = blindate(regid=ripper.said, prior=ripper.said, blid=issuedBlinder.said,
+                          sn=1, stamp='2025-08-01T18:06:10.988921+00:00')
+        revoked = blindate(regid=ripper.said, prior=issued.said, blid=revokedBlinder.said,
+                           sn=2, stamp='2025-09-01T18:06:10.988921+00:00')
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Bob presents the issuance-state snapshot to Vic. The IPEX grant carries
+        # the blinded registry update, but not the per-event nonce Vic needs to
+        # interpret it; that nonce is modeled here as the separately-shared
+        # issuedBlinder.uuid, just as in the JSON example.
+        issuedGrantResult, issuedWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            message="Current registry snapshot",
+            admitMessage="Received current registry snapshot",
+            acdc=acdc,
+            iss=issued,
+            anc=ripper,
+        )
+        carriedIssued = issuedGrantResult.nests[1].serder
+        assert carriedIssued.said == issued.said
+        assert carriedIssued.sad['b'] == issuedBlinder.said
+        assert b'issued' not in carriedIssued.raw
+        assert b'revoked' not in carriedIssued.raw
+        assert salt.encode() not in issuedWire
+        assert issuedBlinder.uuid.encode() not in issuedWire
+        assert revokedBlinder.uuid.encode() not in issuedWire
+
+        verifierAtIssuance = Blinder.unblind(said=carriedIssued.sad['b'],
+                                             uuid=issuedBlinder.uuid,
+                                             acdc=acdc.said, states=states)
+        assert verifierAtIssuance is not None
+        assert verifierAtIssuance.state == 'issued'
+        assert verifierAtIssuance.acdc == acdc.said
+
+        # Later the holder sends a new blinded registry snapshot. A verifier that
+        # remembers only the earlier nonce still cannot read this later event.
+        revokedGrantResult, revokedWire = ipexExn(
+            hby=hby,
+            exc=exc,
+            sender=bob,
+            receiver=vic,
+            message="Later registry snapshot",
+            admitMessage="Received later registry snapshot",
+            acdc=acdc,
+            iss=revoked,
+            anc=ripper,
+        )
+        carriedRevoked = revokedGrantResult.nests[1].serder
+        assert carriedRevoked.said == revoked.said
+        assert carriedRevoked.sad['b'] == revokedBlinder.said
+        assert b'issued' not in carriedRevoked.raw
+        assert b'revoked' not in carriedRevoked.raw
+        assert salt.encode() not in revokedWire
+        assert issuedBlinder.uuid.encode() not in revokedWire
+        assert revokedBlinder.uuid.encode() not in revokedWire
+
+        laterPeek = Blinder.unblind(said=carriedRevoked.sad['b'],
+                                    uuid=issuedBlinder.uuid,
+                                    acdc=acdc.said, states=states)
+        assert laterPeek is None
+
+        earlierPeek = Blinder.unblind(said=carriedIssued.sad['b'],
+                                      uuid=revokedBlinder.uuid,
+                                      acdc=acdc.said, states=states)
+        assert earlierPeek is None
+
+        holderAtRevocation = Blinder.unblind(said=carriedRevoked.sad['b'],
+                                             acdc=acdc.said,
+                                             states=states, salt=salt, sn=2)
+        assert holderAtRevocation is not None
+        assert holderAtRevocation.state == 'revoked'
+        assert holderAtRevocation.acdc == acdc.said
+
+        assert [(item["r"], item["m"]) for item in recorder.items] == [
+            ("/exn/ipex/grant", "Current registry snapshot"),
+            ("/exn/ipex/admit", "Received current registry snapshot"),
+            ("/exn/ipex/grant", "Later registry snapshot"),
+            ("/exn/ipex/admit", "Received later registry snapshot"),
+        ]
+
+
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
 def test_examples_serialization_kinds(kind):
     """The example flows hold across every serialization kind, not just JSON.
@@ -601,6 +1232,7 @@ def test_examples_serialization_kinds(kind):
                       stamp='2025-08-01T18:06:10.988921+00:00', kind=kind)
     assert issued.ilk == Ilks.bup and issued.sad['b'] == blinder.said
     assert b'issued' not in issued.raw            # state stays blinded on every kind
+    assert salt.encode() not in issued.raw        # the shared salt never rides the wire
 
     unblinder = Blinder.unblind(said=blinder.said, acdc=acdc.said,
                                 states=['issued', 'revoked'], salt=salt, sn=1)
@@ -643,8 +1275,12 @@ def test_examples_serialization_kinds(kind):
 
 if __name__ == "__main__":
     test_registry_issuance_lifecycle_JSON()
+    test_registry_issuance_lifecycle_IPEX_JSON()
     test_selective_disclosure_aggregate_JSON()
+    test_selective_disclosure_aggregate_IPEX_JSON()
     test_partial_disclosure_compaction_JSON()
+    test_partial_disclosure_compaction_IPEX_JSON()
     test_blindable_registry_correlation_minimizing_JSON()
+    test_blindable_registry_correlation_minimizing_IPEX_JSON()
     for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
         test_examples_serialization_kinds(_kind)
