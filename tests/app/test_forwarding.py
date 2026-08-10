@@ -42,8 +42,8 @@ def test_postman(seeder):
         rct = wesHab.receipt(serder)
 
         kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser().parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        parsing.Parser().parseOne(bytearray(rct), kvy=kvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(recpIcp), kvy=kvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
@@ -99,13 +99,13 @@ def test_essr_stream(seeder):
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser.parseOne(bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = eventing.Kevery(db=recpHab.db)
         icp = hab.makeOwnEvent(sn=0)
-        parsing.Parser.parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
@@ -206,21 +206,21 @@ def test_essr_mbx(seeder):
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        parsing.Parser().parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = serdering.SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
         kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(recpIcp), kvy=kvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = eventing.Kevery(db=recpHab.db)
         icp = hab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        parsing.Parser().parseOne(ims=bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
@@ -275,8 +275,7 @@ def test_essr_mbx(seeder):
         exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
         parser = parsing.Parser(framed=True,
                                 kvy=wesHby.kvy,
-                                exc=exchanger,
-                                version=Vrsn_1_0)
+                                exc=exchanger)
         parser.parse(ims=ims)
 
         texter = wesHby.db.essrs.get(essrSaidB)[0]
