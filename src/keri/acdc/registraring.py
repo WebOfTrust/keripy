@@ -75,8 +75,7 @@ class Regery:
         reg = Registry(hab=hab, store=self.store, name=name)
         reg.processEvent(serder)
         self.store.records.pin(keys=name,
-                               val=self.store.records.klas(registryKey=reg.regk,
-                                                           prefix=hab.pre))
+                               val=self.store.records.klas(registryKey=reg.regk))
         self.regs[reg.regk] = reg
         self.names[name] = reg
         return reg
@@ -85,13 +84,22 @@ class Regery:
         """Load persisted registry aliases into the in-memory manager maps.
 
         Raises:
-            ConfigurationError: if a persisted registry references a habitat
-                prefix that is not loaded in this Habery.
+            ConfigurationError: if a persisted registry is missing its stored
+                inception event, if that event is not a ``rip``, or if the
+                controlling habitat named by the stored inception issuer is not
+                loaded in this Habery.
         """
         for (name,), record in self.store.records.getTopItemIter():
-            hab = self.hby.habs.get(record.prefix)
+            rip = self.store.event(record.registryKey)
+            if rip is None:
+                raise ConfigurationError(f"missing registry inception event {record.registryKey} for registry {name}")
+            if rip.ilk != "rip":
+                raise ConfigurationError(f"registry {record.registryKey} for {name} has invalid inception type {rip.ilk}")
+
+            prefix = rip.sad["i"]
+            hab = self.hby.habs.get(prefix)
             if hab is None:
-                raise ConfigurationError(f"unknown prefix {record.prefix} for registry {name}")
+                raise ConfigurationError(f"unknown prefix {prefix} for registry {name}")
 
             reg = self.regs.get(record.registryKey)
             if reg is None:

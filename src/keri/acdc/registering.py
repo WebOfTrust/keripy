@@ -18,10 +18,9 @@ from .webregbasing import WebRegBaser
 
 @dataclass
 class RegistryRecord:
-    """Persisted local registry alias and controller metadata."""
+    """Persisted local registry data."""
 
     registryKey: str
-    prefix: str
 
 
 def openRegistry(*, web=False, reopen=True, **kwa):

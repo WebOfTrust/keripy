@@ -764,6 +764,60 @@ def test_regery_reloads_persisted_registry_records():
             reopened.baser.close(clear=True)
 
 
+def test_regery_reload_uses_stored_rip_issuer_for_reopened_issuance():
+    """Derive reopened registry ownership from the stored rip issuer."""
+    with openHby(name="acdc-registry-reload-rip-authority",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        other = hby.makeHab(name="other")
+        rgy = Regery(hby=hby,
+                     name="acdc-registry-reload-rip-authority-store",
+                     base="test",
+                     temp=False)
+        try:
+            # Create and anchor one registry under the first habitat
+            registry = Registrar(rgy=rgy).makeRegistry(name="reloadable",
+                                                       prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip)
+            regk = registry.regk
+        finally:
+            rgy.close()
+
+        # Reopen the store and ensure ownership still comes from the stored rip issuer
+        reopened = Regery(hby=hby,
+                          name="acdc-registry-reload-rip-authority-store",
+                          base="test",
+                          temp=False)
+        try:
+            reloaded = reopened.registryByName("reloadable")
+            assert reloaded is not None
+            assert reloaded.hab.pre == hab.pre
+
+            # The reopened registry should still issue from the original controller
+            acdc = acdcmap(israid=hab.pre,
+                           regid=regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+            _, upd = Registrar(rgy=reopened).issue(reloaded, acdc=acdc, state="issued")
+            assert reopened.store.headEvent(regk).said == rip.said
+            _anchor(hab, reloaded, upd)
+            assert reopened.store.headEvent(regk).said == upd.said
+
+            # A different loaded habitat should still be rejected as a foreign issuer
+            foreign = acdcmap(israid=other.pre,
+                              regid=regk,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              iseaid=hab.pre)
+            with pytest.raises(ConfigurationError):
+                Registrar(rgy=reopened).issue(reloaded, acdc=foreign, state="issued")
+
+            assert reopened.store.records.get(keys="reloadable").registryKey == regk
+        finally:
+            reopened.baser.close(clear=True)
+
+
 def test_regery_reload_normalizes_duplicate_registry_alias_records():
     """Collapse legacy duplicate alias records onto one in-memory Registry object on reopen."""
     with openHby(name="acdc-registry-duplicate-reload",
@@ -778,8 +832,7 @@ def test_regery_reload_normalizes_duplicate_registry_alias_records():
             registry = Registrar(rgy=rgy).makeRegistry(name="one",
                                                        prefix=hab.pre)
             rgy.store.records.pin(keys="two",
-                                  val=rgy.store.records.klas(registryKey=registry.regk,
-                                                              prefix=hab.pre))
+                                  val=rgy.store.records.klas(registryKey=registry.regk))
             regk = registry.regk
         finally:
             rgy.close()
