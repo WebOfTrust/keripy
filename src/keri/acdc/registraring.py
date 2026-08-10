@@ -241,6 +241,52 @@ class Registry:
 
         return False
 
+    def _validateEvent(self, serder):
+        """Validate registry-event structure and current-slot consistency.
+
+        Parameters:
+            serder (SerderACDC): candidate registry event to validate.
+
+        Returns:
+            tuple: ``(regk, sn, existing, prior)`` where ``regk`` is the
+                registry identifier, ``sn`` is the integer sequence number,
+                ``existing`` is any already accepted event at this slot, and
+                ``prior`` is the accepted predecessor when one exists.
+
+        Raises:
+            ValidationError: if the event type is unsupported, the event has an
+                invalid sequence shape, the ``rip`` issuer does not match the
+                controlling habitat, the event belongs to another bound
+                registry, the accepted slot is occupied by another SAID, or the
+                accepted prior does not match ``p``.
+        """
+        if serder.ilk not in ("rip", "upd", "bup"):
+            raise ValidationError(f"unsupported registry event type {serder.ilk}")
+
+        regk = serder.said if serder.ilk == "rip" else serder.regid
+        sn = int(serder.sad["n"], 16)
+        if serder.ilk == "rip" and sn != 0:
+            raise ValidationError(f"registry inception event {serder.said} has invalid sn {sn}")
+        if serder.ilk == "rip" and serder.sad["i"] != self.hab.pre:
+            raise ValidationError(f"registry inception event {serder.said} has invalid issuer {serder.sad['i']}")
+        if serder.ilk != "rip" and sn < 1:
+            raise ValidationError(f"registry event {serder.said} has invalid sn {sn}")
+
+        if self.regk is not None and regk != self.regk:
+            raise ValidationError(f"registry event {serder.said} does not belong to {self.regk}")
+
+        existing = self.store.seqEvent(regk, sn)
+        if existing is not None and existing.said != serder.said:
+            raise ValidationError(f"conflicting registry event at {regk}:{sn}")
+
+        prior = None
+        if serder.ilk != "rip":
+            prior = self.store.seqEvent(regk, sn - 1)
+            if prior is not None and prior.said != serder.sad["p"]:
+                raise ValidationError(f"registry event {serder.said} has invalid prior {serder.sad['p']}")
+
+        return regk, sn, existing, prior
+
     def _commit(self, serder):
         """Accept one verified registry event into the ordered registry log.
 
@@ -386,44 +432,21 @@ class Registry:
                 has an invalid inception sequence number, or names an invalid
                 prior event.
         """
-        # Only support registry inception, state update, and blindable state update events
-        if serder.ilk not in ("rip", "upd", "bup"):
-            raise ValidationError(f"unsupported registry event type {serder.ilk}")
+        # Validate the event shape and any accepted-slot/accepted-prior
+        # constraints before mutating in-memory or persisted state.
+        regk, sn, existing, prior = self._validateEvent(serder)
 
-        # Derive the registry identifier and sequence number before mutating
-        # any in-memory or persisted state.
-        regk = serder.said if serder.ilk == "rip" else serder.regid
-        sn = int(serder.sad["n"], 16)
-        if serder.ilk == "rip" and sn != 0:
-            raise ValidationError(f"registry inception event {serder.said} has invalid sn {sn}")
-        if serder.ilk == "rip" and serder.sad["i"] != self.hab.pre:
-            raise ValidationError(f"registry inception event {serder.said} has invalid issuer {serder.sad['i']}")
-        if serder.ilk != "rip" and sn < 1:
-            raise ValidationError(f"registry event {serder.said} has invalid sn {sn}")
-
-        # Retrieve the registry key from the event and verify it matches the current registry
-        # If this is the first event being processed for this registry,
-        # set the registry key to the one from the event
+        # If this is the first rip being processed for this Registry object,
+        # bind it to that registry key now that validation has succeeded.
         if self.regk is None and serder.ilk == "rip":
             self.regk = regk
             self.regd = serder.said
-        if self.regk is not None and regk != self.regk:
-            raise ValidationError(f"registry event {serder.said} does not belong to {self.regk}")
 
         # Check whether this registry slot has already been accepted.
-        existing = self.store.seqEvent(regk, sn)
         if existing is not None:
-            if existing.said != serder.said:
-                raise ValidationError(f"conflicting registry event at {regk}:{sn}")
             self.regk = regk
             self.regd = existing.said
             return True
-
-        prior = None
-        if serder.ilk != "rip":
-            prior = self.store.seqEvent(regk, sn - 1)
-            if prior is not None and prior.said != serder.sad["p"]:
-                raise ValidationError(f"registry event {serder.said} has invalid prior {serder.sad['p']}")
 
         # Store new events before escrowing so they can be replayed later once
         # their anchor or prior dependency arrives.
@@ -510,6 +533,11 @@ class Registry:
         regk = serder.said if serder.ilk == "rip" else serder.regid
         if self.regk is not None and regk != self.regk:
             raise ValidationError(f"registry event {said} does not belong to {self.regk}")
+
+        # Reuse the same event-shape and accepted-slot validation that
+        # processEvent() will enforce so a rejected event never leaves a stored
+        # anchor behind.
+        self._validateEvent(serder)
 
         if (number is None) != (diger is None):
             raise ValidationError("anchorMsg requires both number and diger or neither")

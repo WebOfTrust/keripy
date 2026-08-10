@@ -228,6 +228,43 @@ def test_registry_rejects_bad_prior_before_mutation():
             rgy.close()
 
 
+def test_registry_anchor_msg_rejects_bad_prior_without_storing_anchor():
+    """Reject an anchored bad-prior event without leaving a stored anchor behind."""
+    with openHby(name="acdc-registry-anchor-bad-prior",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="acdc-registry-anchor-bad-prior", temp=True)
+        try:
+            # Commit one real rip so sn=1 validation has an accepted predecessor to compare.
+            registry = Registry(hab=hab, store=rgy.store, name="anchor-bad-prior")
+            rip = registry.make()
+            _anchor(hab, registry, rip)
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+
+            # Seed a malformed update body directly into storage with the wrong prior SAID.
+            badupd = regupd(regid=registry.regk,
+                            prior=acdc.said,
+                            acdc=acdc.said,
+                            state="issued",
+                            sn=1)
+            rgy.store.putEvent(badupd)
+
+            # Even if the KEL seal is real, anchorMsg should reject it before storing the anchor.
+            seal = dict(i=registry.regk, s=badupd.sad["n"], d=badupd.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            with pytest.raises(ValidationError):
+                registry.anchorMsg(badupd.said)
+
+            assert rgy.store.anchor(badupd.said) is None
+            assert rgy.store.headEvent(registry.regk).said == rip.said
+        finally:
+            rgy.close()
+
+
 def test_registry_issue_requires_full_acdc_object():
     """Reject bare SAIDs and duck-typed stand-ins on both clear and blind issue paths."""
     with openHby(name="acdc-registry-full-acdc",
