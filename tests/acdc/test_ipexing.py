@@ -5,14 +5,14 @@ tests.acdc.test_ipexing module
 """
 import pytest
 from keri import Kinds, Vrsn_2_0
-from keri.acdc import (acdcmap, apply as ipexApply, admit as ipexAdmit,
+from keri.acdc import (Regery, Registrar, acdcmap, apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
                        spurn as ipexSpurn, update)
 from keri.app import openHby
 from keri.core import Codens, Counter, GenDex, Parser, Serdery, Texter
 from keri.kering import Colds, sniff
-from keri.peer import Exchanger
+from keri.peer import Exchanger, cloneMessage, serializeMessage
 
 # Patch it to a function to assert correct behavior
 class Recorder:
@@ -78,6 +78,14 @@ def _nest(stream):
     return Counter.enclose(qb64=nested,
                            code=Codens.BodyWithAttachmentGroup,
                            version=Vrsn_2_0)
+
+
+def _anchor(hab, registry, serder, *, framed=False):
+    """Create a KEL interaction event that seals one registry event."""
+    seal = dict(i=registry.regk, s=serder.sad["n"], d=serder.said)
+    anc = hab.interact(data=[seal], framed=framed, gvrsn=Vrsn_2_0)
+    assert registry.anchorMsg(serder.said) is True
+    return anc
 
 # Tests
 def test_ipex_v2_builders_parse_happypath():
@@ -795,3 +803,79 @@ def test_ipex_v2_responders_set_receiver():
                                    offer=offerExn,
                                    recp=holder.pre)
         assert overrideExn.ked["ri"] == holder.pre
+
+
+def test_ipex_v2_blindable_registry_roundtrip():
+    """Grant a blindable V2 registry update through IPEX and recover it."""
+    with openHby(name="ipex-v2-blindable",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="ipex-v2-blindable", temp=True)
+        try:
+            # Create and anchor a registry before issuing any credential state
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="blindable", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip, framed=True)
+
+            # Build one ACDC that explicitly declares this registry as its governing rd
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+
+            # Issue one blindable registry update and capture the anchoring KEL event for it
+            _, iss = registrar.issue(registry, acdc=acdc, state="issued", blind=True)
+            anc = _anchor(hab, registry, iss, framed=False)
+            ancSerder = _serder(anc)
+
+            # Wire an exchanger with IPEX handlers so the grant can be parsed end to end
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+            # Grant the blindable ACDC plus its registry artifacts through one IPEX message
+            grantExn, grantAtc = ipexGrant(hab=hab,
+                                           recp=hab.pre,
+                                           message="Blindable disclosure",
+                                           acdc=acdc,
+                                           iss=iss,
+                                           anc=anc)
+
+            # Parse the transmitted EXN stream and ensure the whole message is consumed
+            grantIms = bytearray(grantExn.raw)
+            grantIms.extend(grantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False, exc=exc)
+            assert grantIms == bytearray()
+
+            # Reload the stored EXN body and verify the V2 nested artifacts live in enst
+            stored, pathed = cloneMessage(hby, grantExn.said)
+            assert stored is not None
+            assert pathed == {}
+            nests = [bytearray(nest.encode("utf-8") if isinstance(nest, str) else nest)
+                     for nest in hby.db.enst.get(keys=(grantExn.said,))]
+            parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray().join(nests),
+                                                    framed=True,
+                                                    processive=False)
+            assert [nest.serder.said for nest in parsed] == [
+                acdc.said,
+                iss.said,
+                ancSerder.said,
+            ]
+
+            # Serializing the whole stored message should round-trip the same nested substreams
+            msg = serializeMessage(hby, grantExn.said, framed=True)
+            ims = bytearray(msg)
+            results = Parser(version=Vrsn_2_0).parse(ims=ims,
+                                                     framed=False,
+                                                     processive=False)
+            assert ims == bytearray()
+            assert len(results) == 1
+            assert [nest.serder.said for nest in results[0].nests] == [
+                acdc.said,
+                iss.said,
+                ancSerder.said,
+            ]
+        finally:
+            rgy.close()
