@@ -154,15 +154,15 @@ def test_querying():
 
 
 def test_querying_v2():
-    with openHby(version=Vrsn_2_0) as hby, \
-            openHby(version=Vrsn_2_0) as hby1:
-        inqHab = hby.makeHab(name="inquisitor", version=Vrsn_2_0, kind=Kinds.cesr)
-        subHab = hby1.makeHab(name="subject", version=Vrsn_2_0, kind=Kinds.cesr)
+    with openHby() as hby, \
+            openHby() as hby1:
+        inqHab = hby.makeHab(name="inquisitor", kind=Kinds.cesr)
+        subHab = hby1.makeHab(name="subject", kind=Kinds.cesr)
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre,
                           version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
 
-        icp = subHab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)
-        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
+        icp = subHab.msgOwnInception(framed=True)
+        Parser().parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
 
         assert qdoer is not None
 
@@ -208,7 +208,7 @@ def test_querying_v2():
         doist = doing.Doist(limit=limit, tock=tock, real=True)
 
         # rotate AID and submit as a new keyStateSave
-        rot = subHab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
+        rot = subHab.rotate(framed=True, kind=Kinds.cesr)
         ksr = subHab.kever.state()
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())
         hby.kvy.cues.append(cue)
@@ -227,7 +227,7 @@ def test_querying_v2():
         assert isinstance(logDoer, LogQuerier)
         assert len(hby.kvy.cues) == 0
 
-        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(rot), kvy=inqHab.kvy)
+        Parser().parseOne(ims=bytearray(rot), kvy=inqHab.kvy)
         doist.recur(deeds=deeds)
 
         assert qdoer.done is True
@@ -302,12 +302,12 @@ def test_querying_v2():
         assert len(adoer.witq.msgs) == 1
 
         # KRAM assertions for a v2 query parsed by the receiver
-        icp = inqHab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)
-        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(icp), kvy=hby1.kvy)
+        icp = inqHab.msgOwnInception(framed=True)
+        Parser().parseOne(ims=bytearray(icp), kvy=hby1.kvy)
         assert inqHab.pre in hby1.kevers
 
         qry = inqHab.query(subHab.pre, route="ksn", src=inqHab.pre,
-                           version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
+                           kind=Kinds.cesr)
         serder = SerderKERI(raw=qry)
         assert serder.pvrsn == Vrsn_2_0
         assert serder.gvrsn == Vrsn_2_0
@@ -327,7 +327,7 @@ def test_querying_v2():
         kvy = Kevery(db=hby1.db, cf=hby1.cf, enableKram=True, lax=False, local=False)
         assert kvy.kramer.enabled is True
 
-        Parser(version=Vrsn_2_0).parse(ims=bytearray(qry), kvy=kvy)
+        Parser().parse(ims=bytearray(qry), kvy=kvy)
         cache = hby1.db.kramMSGC.get(keys=(inqHab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp

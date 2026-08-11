@@ -124,8 +124,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
 
 
 def test_create_cesr_request_v2(mockHelpingNowUTC):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
@@ -148,7 +147,7 @@ def test_create_cesr_request_v2(mockHelpingNowUTC):
         verfer = Verifier(hby=hby, reger=regery.reger)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels", version=Vrsn_2_0, kind=Kinds.json)
+                           route="tels", kind=Kinds.json)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/tels")
@@ -174,7 +173,7 @@ def test_create_cesr_request_v2(mockHelpingNowUTC):
 
         ims = bytearray(args["body"])
         ims.extend(headers["CESR-ATTACHMENT"])
-        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy, tvy=tvy)
+        Parser().parse(ims=ims, kvy=kvy, tvy=tvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp
@@ -182,7 +181,7 @@ def test_create_cesr_request_v2(mockHelpingNowUTC):
 
         topics = {"/receipt": 0}
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query={"topics": topics},
-                        version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+                        kind=Kinds.json)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
@@ -208,7 +207,7 @@ def test_create_cesr_request_v2(mockHelpingNowUTC):
 
         ims = bytearray(args["body"])
         ims.extend(headers["CESR-ATTACHMENT"])
-        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+        Parser().parse(ims=ims, kvy=kvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp
@@ -300,8 +299,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
 
 
 def test_stream_cesr_request_v2(mockHelpingNowUTC):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
@@ -324,7 +322,7 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
         verfer = Verifier(hby=hby, reger=regery.reger)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels", version=Vrsn_2_0, kind=Kinds.json)
+                           route="tels", kind=Kinds.json)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
@@ -350,7 +348,7 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
 
         ims = bytearray(args["body"])
         ims.extend(headers["CESR-ATTACHMENT"])
-        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy, tvy=tvy)
+        Parser().parse(ims=ims, kvy=kvy, tvy=tvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp
@@ -358,7 +356,7 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
 
         topics = {"/receipt": 0}
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query={"topics": topics},
-                        version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+                        kind=Kinds.json)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
@@ -387,15 +385,15 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
 
         ims = bytearray(args["body"])
         ims.extend(headers["CESR-ATTACHMENT"])
-        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+        Parser().parse(ims=ims, kvy=kvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp
         assert cache.d == 1000
 
         msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0),
-                         version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
-        msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0))
+                         kind=Kinds.json)
+        msgs.extend(hab.msgOwnEvent(sn=0, framed=True))
 
         client = MockClient()
         streamCESRRequests(client, msgs, dest=wit)
@@ -441,7 +439,7 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
 
         ims = bytearray(args["body"])
         ims.extend(headers["CESR-ATTACHMENT"])
-        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+        Parser().parse(ims=ims, kvy=kvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp

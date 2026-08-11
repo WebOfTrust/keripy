@@ -5,14 +5,11 @@ Test utilities for app
 from contextlib import contextmanager
 
 from keri.app import habbing
-from keri import kering, core
 from keri.core import eventing, parsing
-from keri.kering import Vrsn_1_0, Kinds, Vrsn_2_0
 
 
 @contextmanager
 def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
-    version = kwa.get("version", Vrsn_2_0)
     with (habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp, **kwa) as (hby1, hab1),
           habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp, **kwa) as (hby2, hab2),
           habbing.openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp, **kwa) as (hby3, hab3)):
@@ -21,15 +18,15 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         kev2 = eventing.Kevery(db=hab2.db, lax=True, local=False)
         kev3 = eventing.Kevery(db=hab3.db, lax=True, local=False)
 
-        icp1 = hab1.msgOwnEvent(sn=0, framed=True, gvrsn=version)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev3)
-        icp2 = hab2.msgOwnEvent(sn=0, framed=True, gvrsn=version)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev3)
-        icp3 = hab3.msgOwnEvent(sn=0, framed=True, gvrsn=version)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev1)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev2)
+        icp1 = hab1.msgOwnEvent(sn=0, framed=True)
+        parsing.Parser().parse(ims=bytearray(icp1), kvy=kev2)
+        parsing.Parser().parse(ims=bytearray(icp1), kvy=kev3)
+        icp2 = hab2.msgOwnEvent(sn=0, framed=True)
+        parsing.Parser().parse(ims=bytearray(icp2), kvy=kev1)
+        parsing.Parser().parse(ims=bytearray(icp2), kvy=kev3)
+        icp3 = hab3.msgOwnEvent(sn=0, framed=True)
+        parsing.Parser().parse(ims=bytearray(icp3), kvy=kev1)
+        parsing.Parser().parse(ims=bytearray(icp3), kvy=kev2)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
         rmids = None  # may need to fix
@@ -50,19 +47,14 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
                                   smids=smids, rmids=rmids, **inits)
 
         eserder = hab1.db.evts.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8")))
-        eraw = eserder.raw if eserder else b''
-        sigers = bytearray()
+        sigers = []
         for hab in [hab1, hab2, hab3]:
-            for siger in hab.db.sigs.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))):
-                sigers.extend(siger.qb64b)
-        evt = bytearray(eraw)
-        evt.extend(core.Counter(code=core.Codens.ControllerIdxSigs,
-                                count=3, version=kering.Vrsn_1_0).qb64b)  # attach cnt
-        evt.extend(sigers)
+            sigers.extend(hab.db.sigs.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))))
+        evt = eventing.messagize(eserder, sigers=sigers, framed=True)
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev3, local=True)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev2, local=True)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)
+        parsing.Parser().parse(ims=bytearray(evt), kvy=kev3, local=True)
+        parsing.Parser().parse(ims=bytearray(evt), kvy=kev2, local=True)
+        parsing.Parser().parse(ims=bytearray(evt), kvy=kev1, local=True)
 
         assert ghab1.pre in kev1.kevers
         assert ghab1.pre in kev2.kevers
