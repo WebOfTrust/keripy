@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from keri import Vrsn_2_0
-from keri.acdc import Registry, Regery, Registrar, acdcmap, regcept, update as regupd
+from keri.acdc import Registry, Regery, Registrar, acdcmap, blindate as regbup, regcept
 from keri.app import openHby
 from keri.core import Blinder, Diger, Number, SerderACDC
 from keri.kering import ConfigurationError, ValidationError
@@ -29,7 +29,7 @@ def _anchor(hab, registry, serder):
 
 
 def test_registrar_blindable_registry_state_updates():
-    """Commit a rip, clear update, and blind update through the public registrar facade."""
+    """Commit a rip and two blind updates through the public registrar facade."""
     with openHby(name="acdc-registry-service",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -50,32 +50,32 @@ def test_registrar_blindable_registry_state_updates():
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
 
-            # Issue one cleartext update and anchor it into the accepted log
-            _, upd = registrar.issue(registry, acdc=acdc, state="issued")
-            _anchor(hab, registry, upd)
+            # Issue one blindable update via the default public path and anchor it
+            first_blinder, issued = registrar.issue(registry, acdc=acdc, state="issued")
+            _anchor(hab, registry, issued)
 
-            # Then issue one blindable update and anchor that too
+            # Then issue a second blindable update and anchor that too
             blinder, bup = registrar.issue(registry, acdc=acdc,
-                                           state="revoked",
-                                           blind=True)
+                                           state="revoked")
             _anchor(hab, registry, bup)
 
-            # The accepted TEL should now show a clean rip -> upd -> bup chain
+            # The accepted TEL should now show a clean rip -> bup -> bup chain
             assert rgy.store.headEvent(registry.regk).said == bup.said
             assert rgy.store.seqEvent(registry.regk, 0).ilk == "rip"
-            assert rgy.store.seqEvent(registry.regk, 1).said == upd.said
+            assert rgy.store.seqEvent(registry.regk, 1).said == issued.said
             assert rgy.store.seqEvent(registry.regk, 2).said == bup.said
 
-            # The blindable update should point back to the clear update and carry
-            # the generated blinded-state SAID
-            assert bup.sad["p"] == upd.said
+            # The second blindable update should point back to the first and
+            # carry the generated blinded-state SAID
+            assert issued.sad["b"] == first_blinder.said
+            assert bup.sad["p"] == issued.said
             assert bup.sad["b"] == blinder.said
         finally:
             rgy.close()
 
 
 def test_registry_create_and_issue_staged_without_real_seal():
-    """Stage a rip and update first, then prove they wait for later KEL anchoring."""
+    """Stage a rip and blind update first, then prove they wait for later KEL anchoring."""
     with openHby(name="acdc-registry-staged",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -92,24 +92,24 @@ def test_registry_create_and_issue_staged_without_real_seal():
             assert registry.head is None
             assert rgy.store.baser.maes.get(keys=registry.regk, on=0) == [(rip.said,)]
 
-            # Once the rip is anchored, the registry can accept later state updates
+            # Once the rip is anchored, the registry can accept later blind state updates
             _anchor(hab, registry, rip)
             acdc = acdcmap(israid=hab.pre,
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
 
-            # A new update should be stored immediately but remain in missing-anchor
+            # A new blind update should be stored immediately but remain in missing-anchor
             # escrow until its own KEL seal arrives
-            _, upd = registrar.issue(registry, acdc=acdc, state="issued")
-            assert rgy.store.event(upd.said).said == upd.said
+            _, bup = registrar.issue(registry, acdc=acdc, state="issued")
+            assert rgy.store.event(bup.said).said == bup.said
             assert rgy.store.headEvent(registry.regk).said == rip.said
-            assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == [(upd.said,)]
+            assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == [(bup.said,)]
 
             # Once the update is anchored, it should leave escrow and become the new head.
-            _anchor(hab, registry, upd)
-            assert rgy.store.headEvent(registry.regk).said == upd.said
-            assert rgy.store.seqEvent(registry.regk, 1).said == upd.said
+            _anchor(hab, registry, bup)
+            assert rgy.store.headEvent(registry.regk).said == bup.said
+            assert rgy.store.seqEvent(registry.regk, 1).said == bup.said
             assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == []
         finally:
             rgy.close()
@@ -195,7 +195,7 @@ def test_registry_anchor_msg_discovers_prior_sealing_event():
 
 
 def test_registry_rejects_bad_prior_before_mutation():
-    """Reject a clear update whose declared prior does not match the accepted head."""
+    """Reject a blind update whose declared prior does not match the accepted head."""
     with openHby(name="acdc-registry-bad-prior",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -212,10 +212,11 @@ def test_registry_rejects_bad_prior_before_mutation():
                            iseaid=hab.pre)
 
             # Point the update at the wrong prior SAID on purpose
-            badupd = regupd(regid=registry.regk,
+            badupd = regbup(regid=registry.regk,
                             prior=acdc.said,
-                            acdc=acdc.said,
-                            state="issued",
+                            blid=Blinder.blind(acdc=acdc.said,
+                                               state="issued",
+                                               sn=1).said,
                             sn=1)
 
             # The bad prior should fail before the event body or escrow state is written
@@ -245,11 +246,12 @@ def test_registry_anchor_msg_rejects_bad_prior_without_storing_anchor():
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
 
-            # Seed a malformed update body directly into storage with the wrong prior SAID.
-            badupd = regupd(regid=registry.regk,
+            # Seed a malformed blind update body directly into storage with the wrong prior SAID.
+            badupd = regbup(regid=registry.regk,
                             prior=acdc.said,
-                            acdc=acdc.said,
-                            state="issued",
+                            blid=Blinder.blind(acdc=acdc.said,
+                                               state="issued",
+                                               sn=1).said,
                             sn=1)
             rgy.store.putEvent(badupd)
 
@@ -266,7 +268,7 @@ def test_registry_anchor_msg_rejects_bad_prior_without_storing_anchor():
 
 
 def test_registry_issue_requires_full_acdc_object():
-    """Reject bare SAIDs and duck-typed stand-ins on both clear and blind issue paths."""
+    """Reject bare SAIDs and duck-typed stand-ins on the blind issuance path."""
     with openHby(name="acdc-registry-full-acdc",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -281,19 +283,13 @@ def test_registry_issue_requires_full_acdc_object():
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
 
-            # Bare SAID strings are no longer accepted on either clear or blind paths
-            with pytest.raises(ConfigurationError):
-                registry.update(acdc.said, state="issued")
-
+            # Bare SAID strings are no longer accepted on the blind path
             with pytest.raises(ConfigurationError):
                 registry.blind(acdc.said, state="issued")
 
             # Duck-typed objects with the right attributes should also be rejected
             fake = SimpleNamespace(said=acdc.said,
                                    sad=dict(rd=registry.regk, i=hab.pre))
-
-            with pytest.raises(ConfigurationError):
-                registry.update(fake, state="issued")
 
             with pytest.raises(ConfigurationError):
                 registry.blind(fake, state="issued")
@@ -321,10 +317,7 @@ def test_registry_issue_requires_valid_acdc_object():
             # Sanity-check the fixture so the later ConfigurationError is meaningful
             assert not acdc.verify()
 
-            # Both clear and blind issuance should reject an invalid serialized artifact
-            with pytest.raises(ConfigurationError):
-                registry.update(acdc, state="issued")
-
+            # Blind issuance should reject an invalid serialized artifact
             with pytest.raises(ConfigurationError):
                 registry.blind(acdc, state="issued")
         finally:
@@ -377,12 +370,9 @@ def test_registry_rejects_acdc_from_different_registry():
                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                               iseaid=hab.pre)
 
-            # The first registry should reject both clear and blind issuance for it.
+            # The first registry should reject blind issuance for it.
             with pytest.raises(ConfigurationError):
                 registrar.issue(first, acdc=foreign, state="issued")
-
-            with pytest.raises(ConfigurationError):
-                registrar.issue(first, acdc=foreign, state="issued", blind=True)
         finally:
             rgy.close()
 
@@ -415,32 +405,7 @@ def test_registry_anchor_msg_rejects_other_registry_without_mutation():
             rgy.close()
 
 
-def test_registry_rejects_clear_issue_from_foreign_issuer():
-    """Reject clear issuance for an ACDC whose issuer differs from the habitat."""
-    with openHby(name="acdc-registry-clear-foreign-issuer",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        other = hby.makeHab(name="other")
-        rgy = Regery(hby=hby, name="acdc-registry-clear-foreign-issuer", temp=True)
-        try:
-            # Anchor one registry, then hand it an ACDC with the right regid but wrong issuer
-            registrar = Registrar(rgy=rgy)
-            registry = registrar.makeRegistry(name="clear-foreign-issuer", prefix=hab.pre)
-            _anchor(hab, registry, rgy.store.event(registry.regk))
-            foreign = acdcmap(israid=other.pre,
-                              regid=registry.regk,
-                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                              iseaid=hab.pre)
-
-            # Clear issuance should reject the issuer mismatch
-            with pytest.raises(ConfigurationError):
-                registrar.issue(registry, acdc=foreign, state="issued")
-        finally:
-            rgy.close()
-
-
-def test_registry_rejects_blind_issue_from_foreign_issuer():
+def test_registry_rejects_issue_from_foreign_issuer():
     """Reject blind issuance for an ACDC whose issuer differs from the habitat."""
     with openHby(name="acdc-registry-blind-foreign-issuer",
                  base="test",
@@ -449,7 +414,6 @@ def test_registry_rejects_blind_issue_from_foreign_issuer():
         other = hby.makeHab(name="other")
         rgy = Regery(hby=hby, name="acdc-registry-blind-foreign-issuer", temp=True)
         try:
-            # Repeat the same issuer mismatch on the blind issuance path.
             registrar = Registrar(rgy=rgy)
             registry = registrar.makeRegistry(name="blind-foreign-issuer", prefix=hab.pre)
             _anchor(hab, registry, rgy.store.event(registry.regk))
@@ -458,9 +422,8 @@ def test_registry_rejects_blind_issue_from_foreign_issuer():
                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                               iseaid=hab.pre)
 
-            # Blind issuance should enforce the same ACDC issuer rule.
             with pytest.raises(ConfigurationError):
-                registrar.issue(registry, acdc=foreign, state="issued", blind=True)
+                registrar.issue(registry, acdc=foreign, state="issued")
         finally:
             rgy.close()
 
@@ -482,10 +445,11 @@ def test_registry_rejects_non_inception_sn_zero_before_mutation():
                            iseaid=hab.pre)
 
             # Force a non-rip event to reuse sn=0, which should never be valid
-            badupd = regupd(regid=rip.said,
+            badupd = regbup(regid=rip.said,
                             prior=rip.said,
-                            acdc=acdc.said,
-                            state="issued",
+                            blid=Blinder.blind(acdc=acdc.said,
+                                               state="issued",
+                                               sn=0).said,
                             sn=0)
 
             # The bad event should fail before overwriting the staged rip slot.
@@ -550,7 +514,7 @@ def test_registry_anchor_msg_accepts_complete_explicit_couple():
 
 
 def test_regery_process_escrows_replays_missing_anchors():
-    """Auto-discover and commit staged rip and upd events during escrow replay."""
+    """Auto-discover and commit staged rip and bup events during escrow replay."""
     with openHby(name="acdc-registry-escrows",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -568,20 +532,20 @@ def test_regery_process_escrows_replays_missing_anchors():
             rgy.processEscrows()
             assert rgy.store.headEvent(registry.regk).said == rip.said
 
-            # Stage one update the same way: body stored now, seal arrives separately
+            # Stage one blind update the same way: body stored now, seal arrives separately
             acdc = acdcmap(israid=hab.pre,
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
-            _, upd = registrar.issue(registry, acdc=acdc, state="issued")
+            _, bup = registrar.issue(registry, acdc=acdc, state="issued")
             assert rgy.store.headEvent(registry.regk).said == rip.said
 
-            seal = dict(i=registry.regk, s=upd.sad["n"], d=upd.said)
+            seal = dict(i=registry.regk, s=bup.sad["n"], d=bup.said)
             hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
 
             # The second escrow replay pass should discover and commit the update too
             rgy.processEscrows()
-            assert rgy.store.headEvent(registry.regk).said == upd.said
+            assert rgy.store.headEvent(registry.regk).said == bup.said
         finally:
             rgy.close()
 
@@ -604,10 +568,11 @@ def test_registry_purges_bad_queued_prior_when_prior_arrives():
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
-            badqueued = regupd(regid=registry.regk,
+            badqueued = regbup(regid=registry.regk,
                                prior=acdc.said,
-                               acdc=acdc.said,
-                               state="accepted",
+                               blid=Blinder.blind(acdc=acdc.said,
+                                                  state="accepted",
+                                                  sn=2).said,
                                sn=2)
 
             # With sn=1 still missing, the event should stage as out-of-order for now
@@ -620,11 +585,11 @@ def test_registry_purges_bad_queued_prior_when_prior_arrives():
             assert rgy.store.baser.ooes.get(keys=registry.regk, on=2) == [(badqueued.said,)]
 
             # Commit the real sn=1 update so queued replay can examine the bad sn=2 entry
-            _, upd = registrar.issue(registry, acdc=acdc, state="issued")
-            _anchor(hab, registry, upd)
+            _, bup = registrar.issue(registry, acdc=acdc, state="issued")
+            _anchor(hab, registry, bup)
 
             # The malformed queued entry should be purged instead of blocking progress
-            assert rgy.store.headEvent(registry.regk).said == upd.said
+            assert rgy.store.headEvent(registry.regk).said == bup.said
             assert rgy.store.baser.ooes.get(keys=registry.regk, on=2) == []
         finally:
             rgy.close()
@@ -643,15 +608,16 @@ def test_regery_process_escrows_clears_malformed_missing_anchor_entry():
             rip = rgy.store.event(registry.regk)
             _anchor(hab, registry, rip)
 
-            # Build a bad update whose prior points at the ACDC instead of the accepted rip
+            # Build a bad blind update whose prior points at the ACDC instead of the accepted rip
             acdc = acdcmap(israid=hab.pre,
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
-            badupd = regupd(regid=registry.regk,
+            badupd = regbup(regid=registry.regk,
                             prior=acdc.said,
-                            acdc=acdc.said,
-                            state="issued",
+                            blid=Blinder.blind(acdc=acdc.said,
+                                               state="issued",
+                                               sn=1).said,
                             sn=1)
 
             # Seed the malformed body directly into missing-anchor escrow like legacy junk data
@@ -680,16 +646,17 @@ def test_registry_clears_conflicting_missing_anchor_siblings():
             rip = rgy.store.event(registry.regk)
             _anchor(hab, registry, rip)
 
-            # Create one normal staged update and one competing sibling for the same slot
+            # Create one normal staged blind update and one competing sibling for the same slot
             acdc = acdcmap(israid=hab.pre,
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
             _, winner = registrar.issue(registry, acdc=acdc, state="issued")
-            loser = regupd(regid=registry.regk,
+            loser = regbup(regid=registry.regk,
                            prior=rip.said,
-                           acdc=acdc.said,
-                           state="revoked",
+                           blid=Blinder.blind(acdc=acdc.said,
+                                              state="revoked",
+                                              sn=1).said,
                            sn=1)
             assert registry.processEvent(loser) is False
             # Both siblings should sit in missing-anchor escrow until one is committed.
@@ -724,21 +691,23 @@ def test_registry_clears_conflicting_out_of_order_siblings():
             rip = rgy.store.event(registry.regk)
             _anchor(hab, registry, rip)
 
-            # Create one real sn=1 update plus two competing sn=2 successors
+            # Create one real sn=1 blind update plus two competing sn=2 successors
             acdc = acdcmap(israid=hab.pre,
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
-            _, upd = registrar.issue(registry, acdc=acdc, state="issued")
-            queued = regupd(regid=registry.regk,
-                            prior=upd.said,
-                            acdc=acdc.said,
-                            state="accepted",
+            _, bup = registrar.issue(registry, acdc=acdc, state="issued")
+            queued = regbup(regid=registry.regk,
+                            prior=bup.said,
+                            blid=Blinder.blind(acdc=acdc.said,
+                                               state="accepted",
+                                               sn=2).said,
                             sn=2)
-            sibling = regupd(regid=registry.regk,
-                             prior=upd.said,
-                             acdc=acdc.said,
-                             state="revoked",
+            sibling = regbup(regid=registry.regk,
+                             prior=bup.said,
+                             blid=Blinder.blind(acdc=acdc.said,
+                                                state="revoked",
+                                                sn=2).said,
                              sn=2)
 
             # Both successors should stage as out-of-order because sn=1 is not committed
@@ -758,7 +727,7 @@ def test_registry_clears_conflicting_out_of_order_siblings():
 
             # Committing the real sn=1 update should now choose the first anchored
             # sn=2 sibling deterministically and clear the later one.
-            _anchor(hab, registry, upd)
+            _anchor(hab, registry, bup)
             assert rgy.store.seqEvent(registry.regk, 2).said == queued.said
             assert rgy.store.baser.ooes.get(keys=registry.regk, on=2) == []
         finally:
@@ -837,10 +806,10 @@ def test_regery_reload_uses_stored_rip_issuer_for_reopened_issuance():
                            regid=regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
-            _, upd = Registrar(rgy=reopened).issue(reloaded, acdc=acdc, state="issued")
+            _, bup = Registrar(rgy=reopened).issue(reloaded, acdc=acdc, state="issued")
             assert reopened.store.headEvent(regk).said == rip.said
-            _anchor(hab, reloaded, upd)
-            assert reopened.store.headEvent(regk).said == upd.said
+            _anchor(hab, reloaded, bup)
+            assert reopened.store.headEvent(regk).said == bup.said
 
             # A different loaded habitat should still be rejected as a foreign issuer
             foreign = acdcmap(israid=other.pre,

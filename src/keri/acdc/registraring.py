@@ -260,7 +260,7 @@ class Registry:
                 registry, the accepted slot is occupied by another SAID, or the
                 accepted prior does not match ``p``.
         """
-        if serder.ilk not in ("rip", "upd", "bup"):
+        if serder.ilk not in ("rip", "bup"):
             raise ValidationError(f"unsupported registry event type {serder.ilk}")
 
         regk = serder.said if serder.ilk == "rip" else serder.regid
@@ -418,7 +418,7 @@ class Registry:
 
         Parameters:
             serder (SerderACDC): candidate registry event to process. Supported
-                ilks are ``rip``, ``upd``, and ``bup``.
+                ilks are ``rip`` and ``bup``.
 
         Returns:
             bool: True when the event is accepted immediately or was already
@@ -570,52 +570,6 @@ class Registry:
         self.processEvent(serder)
         return serder
 
-    def update(self, acdc, state, **kwa):
-        """Create and stage one cleartext registry state update event.
-
-        Parameters:
-            acdc (SerderACDC): valid transaction-state ACDC whose registry
-                identifier and issuer must match this registry and its
-                controlling habitat.
-            state (str): cleartext registry state label to record.
-            **kwa: keyword arguments forwarded to ``messaging.update``.
-
-        Returns:
-            SerderACDC: created ``upd`` event staged until a sealing KEL event
-                is later validated with ``anchorMsg``.
-
-        Raises:
-            ConfigurationError: if the registry has not yet committed an
-                accepted inception/head event, if ``acdc`` is not a valid
-                ``SerderACDC``, or if the ACDC does not belong to this
-                registry or controlling habitat.
-        """
-        if self.regk is None or self.store.headEvent(self.regk) is None:
-            raise ConfigurationError("registry must be anchored before updates")
-        if not isinstance(acdc, SerderACDC):
-            raise ConfigurationError("acdc must be a SerderACDC")
-        if not acdc.verify():
-            raise ConfigurationError(f"acdc {acdc.said} is invalid")
-        regid = getattr(acdc, "regid", None)
-        if regid is None:
-            regid = acdc.sad.get("rd")
-        if regid != self.regk:
-            raise ConfigurationError(f"acdc {acdc.said} does not belong to registry {self.regk}")
-        issuer = getattr(acdc, "israid", None)
-        if issuer is None:
-            issuer = acdc.sad.get("i")
-        if issuer != self.hab.pre:
-            raise ConfigurationError(f"acdc {acdc.said} has issuer {issuer} not {self.hab.pre}")
-
-        serder = messaging.update(regid=self.regk,
-                                  prior=self.store.headEvent(self.regk).said,
-                                  acdc=acdc.said,
-                                  state=state,
-                                  sn=self.sn + 1,
-                                  **kwa)
-        self.processEvent(serder)
-        return serder
-
     def blind(self, acdc, state, **kwa):
         """Create and stage one blindable registry state update event.
 
@@ -681,7 +635,7 @@ class Registry:
 
 
 class Registrar:
-    """Small facade for V2 registry inception and state updates."""
+    """Small facade for V2 registry inception and blindable state updates."""
 
     def __init__(self, rgy):
         """Create a caller-facing registry helper around a Regery.
@@ -731,26 +685,19 @@ class Registrar:
         """
         return self.rgy.makeRegistry(name=name, prefix=prefix, **kwa)
 
-    def issue(self, registry, acdc, state="issued", blind=False, **kwa):
-        """Create either a clear or blindable registry update through the facade.
+    def issue(self, registry, acdc, state="issued", **kwa):
+        """Create one blindable registry update through the facade.
 
         Parameters:
             registry (Registry | str): registry instance, key, or local alias.
             acdc (SerderACDC): transaction-state ACDC whose registry identifier
                 and issuer must match the target registry and its controller.
             state (str): target logical state for the update.
-            blind (bool): True means create a ``bup`` blindable update, False
-                means create a cleartext ``upd``.
-            **kwa: keyword arguments forwarded to ``Registry.update`` or
-                ``Registry.blind``.
+            **kwa: keyword arguments forwarded to ``Registry.blind``.
 
         Returns:
-            tuple: ``(blinder, serder)``. For cleartext updates ``blinder`` is
-                None and ``serder`` is the created ``upd`` event. For blindable
-                updates ``blinder`` is the created ``Blinder`` and ``serder``
-                is the created ``bup`` event.
+            tuple: ``(blinder, serder)`` where ``blinder`` is the created
+                ``Blinder`` and ``serder`` is the created ``bup`` event.
         """
         reg = self._registry(registry)
-        if blind:
-            return reg.blind(acdc=acdc, state=state, **kwa)
-        return None, reg.update(acdc=acdc, state=state, **kwa)
+        return reg.blind(acdc=acdc, state=state, **kwa)

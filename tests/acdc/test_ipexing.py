@@ -5,12 +5,12 @@ tests.acdc.test_ipexing module
 """
 import pytest
 from keri import Kinds, Vrsn_2_0
-from keri.acdc import (Regery, Registrar, acdcmap, apply as ipexApply, admit as ipexAdmit,
+from keri.acdc import (Regery, Registrar, acdcmap, blindate, apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
-                       spurn as ipexSpurn, update)
+                       spurn as ipexSpurn)
 from keri.app import openHby
-from keri.core import Codens, Counter, GenDex, Parser, Serdery, Texter
+from keri.core import Blinder, Codens, Counter, GenDex, Parser, Serdery, Texter
 from keri.kering import Colds, sniff
 from keri.peer import Exchanger, cloneMessage, serializeMessage
 
@@ -103,10 +103,10 @@ def test_ipex_v2_builders_parse_happypath():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         
         # Extract schema from acdc
@@ -297,10 +297,10 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         schema = acdc.sad["s"]["$id"]
 
@@ -506,10 +506,10 @@ def test_ipex_v2_nontransferable_nested_artifacts():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         ancSerder = _serder(anc)
         schema = acdc.sad["s"]["$id"]
@@ -675,10 +675,10 @@ def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
                        iseaid=hab.pre)
 
         # Create the TEL issuance event that the grant body says should accompany the ACDC
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
 
         # Create the anchoring KEL event that the grant body also says should be present
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
@@ -737,10 +737,11 @@ def test_ipex_v2_responders_set_receiver():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=holder.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+    
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = holder.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         schema = acdc.sad["s"]["$id"]
 
@@ -826,7 +827,7 @@ def test_ipex_v2_blindable_registry_roundtrip():
                            iseaid=hab.pre)
 
             # Issue one blindable registry update and capture the anchoring KEL event for it
-            _, iss = registrar.issue(registry, acdc=acdc, state="issued", blind=True)
+            _, iss = registrar.issue(registry, acdc=acdc, state="issued")
             anc = _anchor(hab, registry, iss, framed=False)
             ancSerder = _serder(anc)
 
@@ -881,118 +882,6 @@ def test_ipex_v2_blindable_registry_roundtrip():
             rgy.close()
 
 
-def test_ipex_v2_clear_registry_update_roundtrip():
-    """Grant a clear ``upd`` registry update through a full linear V2 IPEX exchange."""
-    with openHby(name="ipex-v2-clear-registry",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        rgy = Regery(hby=hby, name="ipex-v2-clear-registry", temp=True)
-        try:
-            # Create and anchor a real registry so the clear update can be accepted into the TEL
-            registrar = Registrar(rgy=rgy)
-            registry = registrar.makeRegistry(name="clear", prefix=hab.pre)
-            rip = rgy.store.event(registry.regk)
-            _anchor(hab, registry, rip, framed=True)
-
-            # Build one ACDC whose rd points at the new registry
-            acdc = acdcmap(israid=hab.pre,
-                           regid=registry.regk,
-                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                           iseaid=hab.pre)
-            schema = acdc.sad["s"]["$id"]
-
-            # Commit one clear registry update and capture the KEL event that sealed it
-            _, upd = registrar.issue(registry, acdc=acdc, state="issued")
-            updAnc = _anchor(hab, registry, upd, framed=False)
-            updAncSerder = _serder(updAnc)
-
-            # The accepted TEL should now contain the registry inception followed by the clear update
-            assert rgy.store.seqEvent(registry.regk, 0).said == rip.said
-            assert rgy.store.seqEvent(registry.regk, 1).said == upd.said
-            assert rgy.store.headEvent(registry.regk).said == upd.said
-            assert upd.ilk == "upd"
-            assert upd.sad["rd"] == registry.regk
-            assert upd.sad["p"] == rip.said
-            assert upd.sad["td"] == acdc.said
-            assert upd.sad["ts"] == "issued"
-
-            # Wire an exchanger with the V2 IPEX handlers and build one full apply -> offer -> agree -> grant -> admit chain
-            recorder = Recorder()
-            exc = Exchanger(hby=hby, handlers=[])
-            loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-            applyExn, applyAtc = ipexApply(hab=hab,
-                                           recp=hab.pre,
-                                           message="Please issue the clear credential",
-                                           schema=schema,
-                                           attrs=dict(flow="clear"))
-            offerExn, offerAtc = ipexOffer(hab=hab,
-                                           message="Here is the clear credential",
-                                           acdc=acdc,
-                                           apply=applyExn)
-            agreeExn, agreeAtc = ipexAgree(hab=hab,
-                                           message="I agree to the clear credential",
-                                           offer=offerExn)
-            grantExn, grantAtc = ipexGrant(hab=hab,
-                                           recp=hab.pre,
-                                           message="Here is the clear registry disclosure",
-                                           acdc=acdc,
-                                           iss=upd,
-                                           anc=updAnc,
-                                           agree=agreeExn)
-            admitExn, admitAtc = ipexAdmit(hab=hab,
-                                           message="Thanks for the clear credential",
-                                           grant=grantExn)
-
-            # Parse and dispatch the full exchange in order so the accepted IPEX chain is stored
-            for exn, atc in ((applyExn, applyAtc),
-                             (offerExn, offerAtc),
-                             (agreeExn, agreeAtc),
-                             (grantExn, grantAtc),
-                             (admitExn, admitAtc)):
-                ims = bytearray(exn.raw)
-                ims.extend(atc)
-                Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-                assert ims == bytearray()
-
-            # All accepted EXNs should now exist in the exchange database
-            for serder in (applyExn, offerExn, agreeExn, grantExn, admitExn):
-                assert hby.db.exns.get(keys=(serder.said,)) is not None
-
-            # The grant body should name the exact artifacts it transported
-            storedGrant = hby.db.exns.get(keys=(grantExn.said,))
-            assert storedGrant.ked["p"] == agreeExn.said
-            assert storedGrant.ked["a"]["acdc"] == acdc.said
-            assert storedGrant.ked["a"]["iss"] == upd.said
-            assert storedGrant.ked["a"]["anc"] == updAncSerder.said
-
-            # The stored message should round-trip with the same nested ACDC, clear update, and anchoring KEL event
-            msg = serializeMessage(hby, grantExn.said, framed=True)
-            ims = bytearray(msg)
-            results = Parser(version=Vrsn_2_0).parse(ims=ims,
-                                                     framed=False,
-                                                     processive=False)
-            assert ims == bytearray()
-            assert len(results) == 1
-            assert [nest.serder.said for nest in results[0].nests] == [
-                acdc.said,
-                upd.said,
-                updAncSerder.said,
-            ]
-
-            # The notifier should report the accepted linear IPEX exchange in send order
-            assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please issue the clear credential"),
-                ("/exn/ipex/offer", "Here is the clear credential"),
-                ("/exn/ipex/agree", "I agree to the clear credential"),
-                ("/exn/ipex/grant", "Here is the clear registry disclosure"),
-                ("/exn/ipex/admit", "Thanks for the clear credential"),
-            ]
-        finally:
-            rgy.close()
-
-
 def test_ipex_v2_blind_registry_update_roundtrip():
     """Grant a blind ``bup`` registry update through a full linear V2 IPEX exchange."""
     with openHby(name="ipex-v2-blind-registry",
@@ -1015,7 +904,7 @@ def test_ipex_v2_blind_registry_update_roundtrip():
             schema = acdc.sad["s"]["$id"]
 
             # Commit one blindable registry update and capture both the blinder and the KEL event that sealed it
-            blinder, bup = registrar.issue(registry, acdc=acdc, state="revoked", blind=True)
+            blinder, bup = registrar.issue(registry, acdc=acdc, state="revoked")
             bupAnc = _anchor(hab, registry, bup, framed=False)
             bupAncSerder = _serder(bupAnc)
 
