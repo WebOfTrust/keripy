@@ -731,18 +731,6 @@ class Registrar:
         """
         return self.rgy.makeRegistry(name=name, prefix=prefix, **kwa)
 
-    def incept(self, registry, **kwa):
-        """Create one registry inception event through the facade.
-
-        Parameters:
-            registry (Registry | str): registry instance, key, or local alias.
-            **kwa: keyword arguments forwarded to ``Registry.make``.
-
-        Returns:
-            SerderACDC: created ``rip`` event.
-        """
-        return self._registry(registry).make(**kwa)
-
     def issue(self, registry, acdc, state="issued", blind=False, **kwa):
         """Create either a clear or blindable registry update through the facade.
 
