@@ -5,7 +5,6 @@ tests.app.habbing remote module
 """
 import pytest
 
-from keri import Vrsn_1_0
 from keri.kering import KeriError, Ilks, Kinds
 
 from keri.core import Salter, Diger, Tiers, MtrDex, incept, rotate
@@ -20,8 +19,8 @@ def test_remote_salty_hab():
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = Salter(raw=raw, tier=tier)
 
-    with openHby(name="remoteSalty", version=Vrsn_1_0) as remote, \
-            openHby(name="local", salt=salter.qb64, temp=True, tier=tier, version=Vrsn_1_0) as local:
+    with openHby(name="remoteSalty") as remote, \
+            openHby(name="local", salt=salter.qb64, temp=True, tier=tier) as local:
         # create a single Local Hab and compare the results with the Signify Hab
 
         creator = SaltyCreator(salt=salter.qb64, stem="test", tier=tier)
@@ -29,8 +28,8 @@ def test_remote_salty_hab():
         ridx = 0
         kidx = 0
 
-        lhab = local.makeHab(name=name, version=Vrsn_1_0, kind=Kinds.json)
-        assert lhab.pre == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
+        lhab = local.makeHab(name=name)
+        assert lhab.pre == "EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi"
 
         # create current key
         sith = 1  # one signer
@@ -57,11 +56,12 @@ def test_remote_salty_hab():
 
         toad = 0  # no witnesses
 
-        icp = incept(keys, isith=sith, ndigs=nxt, toad=toad, code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
+        icp = incept(keys, isith=sith, ndigs=nxt, toad=toad, code=MtrDex.Blake3_256,
+                     kind=Kinds.json)
         assert icp.raw == lhab.kever.serder.raw
         tsig0 = skp0.sign(icp.raw, index=0)
-        assert tsig0.qb64b == (b'AAB0ewd_rP91-GX9d943r48qWXThuHpHbqMwJT92jFJWbbynC-QGXVRPaSX5DGAI4Bqyviw4zsz-'
-                               b'uEAxo9HwEucF')
+        assert tsig0.qb64b == (b'AACXScoPrHhORzgowfiTZ2qrDrvy0wjavZg0QgPk1bxc1ifdREd5RSEtk9RCXIDm25Mj5J7hs32E'
+                               b'ddCg5kSj3igC')
 
         hab = remote.makeSignifyHab(name, serder=icp, sigers=[tsig0],
                                     stem="test", pidx=pidx, tier=tier, temp=True)
@@ -76,10 +76,10 @@ def test_remote_salty_hab():
         assert [diger.qb64 for diger in kever.ndigers] == nxt
 
         habord = remote.db.habs.get(hab.pre)
-        assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
-        assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
+        assert habord.hid == "EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi"
+        assert habord.sid == "EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi"
 
-        lhab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        lhab.rotate(framed=True)
 
         ridx = ridx + 1
         kidx = kidx + 1
@@ -94,21 +94,21 @@ def test_remote_salty_hab():
         assert nxt1 == ['EKNg5bhKpDTv_DixBKYfOHHl1omtvQ06UD3Nf40JUsQ-']
 
         rot = rotate(pre=hab.pre, keys=keys1, dig=icp.said, sn=1, isith=sith, ndigs=nxt1, toad=toad,
-                     version=Vrsn_1_0, kind=Kinds.json)
+                     kind=Kinds.json)
         assert rot.raw == lhab.kever.serder.raw
 
         tsig1 = skp1.sign(rot.raw, index=0)
-        assert tsig1.qb64b == (b'AAAGWYaw6N_4Wk2IBVOaPGb-rnuj1ys5xSHjfYnAzTRdBN8VzT9GVkBE8CLxLp0iSQ_SCRNpKQEV'
-                               b'6BIwPVyJS0cA')
+        assert tsig1.qb64b == (b'AADb9p1d3jhNhm_UQhgiZx5zxrIfj5h4QVo0S6D0F4NhjcZ_Z_5r1Fi7l7r1iHHZQQoxx4Ov6MFg'
+                               b'uSwk1R8zAPYN')
 
-        msg = hab.rotate(serder=rot, sigers=[tsig1], framed=True, gvrsn=Vrsn_1_0)
-        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EEZTwrSQdE6QXDNHGMVDf8Zc'
-                       b'fA-us9tavFORrBaorrtf","i":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiy'
-                       b'ZCcDH7N","s":"1","p":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH'
-                       b'7N","kt":"1","k":["DN8nxDNnlY-qCNdb294nZQs29PXDsmbphujYJGQCLL0Y"'
-                       b'],"nt":"1","n":["EKNg5bhKpDTv_DixBKYfOHHl1omtvQ06UD3Nf40JUsQ-"],'
-                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAAAGWYaw6N_4Wk2IBVOaPGb-rnuj'
-                       b'1ys5xSHjfYnAzTRdBN8VzT9GVkBE8CLxLp0iSQ_SCRNpKQEV6BIwPVyJS0cA')
+        msg = hab.rotate(serder=rot, sigers=[tsig1], framed=True)
+        assert msg == (b'{"v":"KERICAACAAJSONAAFp.","t":"rot","d":"ENljpHtLsIT8EVSKWkTKJUl_xkK-'
+                       b'-Q0c4jgfeCzuA8X4","i":"EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi",'
+                       b'"s":"1","p":"EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi","kt":"1","'
+                       b'k":["DN8nxDNnlY-qCNdb294nZQs29PXDsmbphujYJGQCLL0Y"],"nt":"1","n":["EK'
+                       b'Ng5bhKpDTv_DixBKYfOHHl1omtvQ06UD3Nf40JUsQ-"],"bt":"0","br":[],"ba":['
+                       b'],"c":[],"a":[]}-KAWAADb9p1d3jhNhm_UQhgiZx5zxrIfj5h4QVo0S6D0F4NhjcZ_'
+                       b'Z_5r1Fi7l7r1iHHZQQoxx4Ov6MFguSwk1R8zAPYN')
 
         kever = hab.kever
         assert kever.prefixer.qb64 == lhab.pre
@@ -119,8 +119,8 @@ def test_remote_salty_hab():
         assert [diger.qb64 for diger in kever.ndigers] == nxt1
 
         habord = remote.db.habs.get(hab.pre)
-        assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
-        assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
+        assert habord.hid == "EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi"
+        assert habord.sid == "EG9OKSeOlbwwjcOp6U5eYtHeF4lsCcM_Oia-idKlnYQi"
 
         with pytest.raises(KeriError):
             hab.sign(ser=rot.raw)

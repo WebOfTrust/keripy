@@ -267,11 +267,11 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
 
 def test_v2_reply_to_oobi_replay_without_explicit_gvrsn():
     """replyToOobi with omitted gvrsn keeps library default (``Version``) attachments."""
-    v2kwa = dict(version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
-    with openHby(name="oobi-src-v2-replay", version=Vrsn_2_0) as src, \
-            openHby(name="oobi-dst-v2-replay", version=Vrsn_2_0) as dst:
+    v2kwa = dict(kind=Kinds.cesr)
+    with openHby(name="oobi-src-v2-replay") as src, \
+            openHby(name="oobi-dst-v2-replay") as dst:
         hab = src.makeHab(name="wit", isith="1", icount=1,
-                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+                          transferable=False, kind=Kinds.cesr)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
@@ -292,7 +292,7 @@ def test_v2_reply_to_oobi_replay_without_explicit_gvrsn():
         rvy = Revery(db=dst.db, rtr=rtr)
         kvy = Kevery(db=dst.db, lax=False, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        Parser(version=Vrsn_2_0, kvy=kvy, rvy=rvy).parse(ims=bytearray(oobi))
+        Parser(kvy=kvy, rvy=rvy).parse(ims=bytearray(oobi))
 
         assert hab.pre in kvy.kevers
         ender = dst.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre))
@@ -341,19 +341,19 @@ def test_loaded_v2_oobi_endpoint_replies_bypass_kram(mockHelpingNowUTC):
         }
     }
 
-    with openHby(name="oobi-src-v2", version=Vrsn_2_0) as src, \
-            openHby(name="oobi-dst-v2", version=Vrsn_2_0) as dst:
+    with openHby(name="oobi-src-v2") as src, \
+            openHby(name="oobi-dst-v2") as dst:
         hab = src.makeHab(name="wit", isith="1", icount=1,
-                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+                          transferable=False, kind=Kinds.cesr)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(),
-                                    version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0))
+                                    kind=Kinds.cesr))
         msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(),
-                                      version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0))
+                                      kind=Kinds.cesr))
         hab.psr.parse(ims=msgs)
 
         dst.cf.put(config)
@@ -362,7 +362,7 @@ def test_loaded_v2_oobi_endpoint_replies_bypass_kram(mockHelpingNowUTC):
         kvy = Kevery(db=dst.db, cf=dst.cf, enableKram=True,
                      lax=False, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        prs = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_2_0)
+        prs = Parser(framed=True, kvy=kvy, rvy=rvy)
 
         # Assert Kramer is enabled
         assert kvy.kramer is not None
@@ -424,23 +424,19 @@ def test_v2_oobi_get_controller_stream_bypasses_kram(mockHelpingNowUTC):
         }
     }
 
-    with openHby(name="oobi-src-v2-http", version=Vrsn_2_0) as src, \
-            openHby(name="oobi-dst-v2-http", version=Vrsn_2_0) as dst:
+    with openHby(name="oobi-src-v2-http") as src, \
+            openHby(name="oobi-dst-v2-http") as dst:
         hab = src.makeHab(name="oobi", isith="1", icount=1,
-                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+                          transferable=False, kind=Kinds.cesr)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(),
-                                    version=Vrsn_2_0, 
-                                    kind=Kinds.cesr, 
-                                    gvrsn=Vrsn_2_0))
+                                    kind=Kinds.cesr))
         msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(),
-                                      version=Vrsn_2_0, 
-                                      kind=Kinds.cesr, 
-                                      gvrsn=Vrsn_2_0))
+                                      kind=Kinds.cesr))
         hab.psr.parse(ims=msgs)
 
         app = falcon.App()
@@ -457,7 +453,7 @@ def test_v2_oobi_get_controller_stream_bypasses_kram(mockHelpingNowUTC):
         kvy = Kevery(db=dst.db, cf=dst.cf, enableKram=True,
                      lax=False, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        prs = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_2_0)
+        prs = Parser(framed=True, kvy=kvy, rvy=rvy)
 
         calls = []
         seen = []
