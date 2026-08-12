@@ -992,30 +992,39 @@ def test_gated_ipex_exchange_JSON():
     # http-query-string analogue and its attribute block is the body; a disclosure
     # request is a query, so `dp` belongs in `q` (WebOfTrust/keripy discussion #1549).
     #
-    # `dp` is an ORDERED LIST OF (schemaSAID, [paths]) PAIRS, not a dict keyed by schema
-    # SAID. A dict cannot express a DAG containing two credentials of the SAME schema --
-    # they collapse onto one key -- which is legitimate and common (presenting one's own
-    # identity alongside a spouse's, both under the same SEDI schema). The ordered list
-    # keeps them distinct, and it makes two equivalent requests serialize byte-for-byte
-    # identically. Ordering is a breadth-first walk of the DAG from its origin node.
-    # JSON has no tuple, so each pair serializes as a 2-element array.
+    # `dp` is an ORDERED LIST OF (schemaSAID, prefix, [paths]) TRIPLES, not a dict keyed
+    # by schema SAID. A dict cannot express a DAG containing two credentials of the SAME
+    # schema -- they collapse onto one key -- which is legitimate and common (presenting
+    # one's own identity alongside a spouse's, both under the same SEDI schema). The
+    # ordered list keeps them distinct, and it makes two equivalent requests serialize
+    # byte-for-byte identically. Ordering is a breadth-first walk of the DAG from its
+    # origin node. JSON has no tuple, so each triple serializes as a 3-element array.
     #
-    # Paths are ACDC-RELATIVE and so do NOT lead with '/'. A leading '/' means
-    # DAG-ABSOLUTE, rooted at the origin node, and an absolute path that reaches a
-    # non-origin ACDC must cross the edge that links it. That hop is written as the
-    # virtual path component '_', which stands for the jump from the near-side edge
-    # block to the top level of the far-side ACDC (@SmithSamuelM, #1549). The same
-    # request in absolute form reads:
-    #     origin: /i, /a/i, /r/
-    #     sedi:   /e/identity/_/a/i, /e/identity/_/a/photo
-    #     age:    /e/age/_/A/i, /e/age/_/A/over21
-    # Omitting the '_' does not merely misroot such a path, it makes it meaningless:
+    # The middle element is a PATH PREFIX: the DAG-absolute route to the ACDC that the
+    # entry's schema SAID names (@SmithSamuelM, #1549). It is either the empty string,
+    # or a path that both BEGINS and ENDS with '/', of which '/' alone is the origin
+    # node's. The effective path is prefix + entry with nothing inserted between them,
+    # which is why an entry in the path list never leads with '/'.
+    #
+    # Every prefix here is EMPTY. That is the ACDC-RELATIVE form: nothing precedes the
+    # entries, so what says which ACDC a triple is about is its POSITION in the
+    # breadth-first order. It reads cleanly for this DAG because the DAG has no optional
+    # edges -- the bespoke schema requires both 'identity' and 'age' -- so the ordering
+    # is gapless and no entry needs the route to its credential restated.
+    #
+    # A non-empty prefix is DAG-ABSOLUTE, rooted at the origin node, and a route that
+    # reaches a non-origin ACDC must cross the edge that links it. That hop is written
+    # as the virtual path component '_', which stands for the jump from the near-side
+    # edge block to the top level of the far-side ACDC (@SmithSamuelM, #1549). The same
+    # request with absolute prefixes reads:
+    #     origin: /              + i, a/i, r/
+    #     sedi:   /e/identity/_/ + a/i, a/photo
+    #     age:    /e/age/_/      + A/i, A/over21
+    # Omitting the '_' does not merely misroot such a route, it makes it meaningless:
     # '/e/identity/a/i' names an 'a' field inside the near-side EDGE block, which has
-    # no such field. Relative form is used here because this DAG has no optional edges
-    # -- the bespoke schema requires both 'identity' and 'age' -- so the breadth-first
-    # ordering of `dp` is gapless and each entry's ACDC is unambiguous without
-    # restating the route to it. Absolute form is required only when optional edges
-    # could leave holes in that ordering.
+    # no such field. Prefixes earn their keep when optional edges could leave holes in
+    # the breadth-first ordering. They do not excuse it: the ordering is REQUIRED even
+    # where a prefix would make it technically unnecessary (@SmithSamuelM, #1549).
     #
     # A TRAILING '/' means the whole node ("the hammer"): the origin's 'r/' asks for the
     # rule section fully expanded, because the club must read the CLC terms it is being
@@ -1035,9 +1044,9 @@ def test_gated_ipex_exchange_JSON():
     sediSchemaSaid = sedi.sad['s']['$id']
     ageSchemaSaid = age.sad['s']['$id']
     apply = exchange(sender=CLUB, receiver=ALICE, route="/ipex/apply",
-                     modifiers=dict(dp=[[bespokeSchemaSaid, ["i", "a/i", "r/"]],
-                                        [sediSchemaSaid, ["a/i", "a/photo"]],
-                                        [ageSchemaSaid,  ["A/i", "A/over21"]]]),
+                     modifiers=dict(dp=[[bespokeSchemaSaid, "", ["i", "a/i", "r/"]],
+                                        [sediSchemaSaid, "", ["a/i", "a/photo"]],
+                                        [ageSchemaSaid,  "", ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21 and show the state-endorsed photo.",
                                      g=GOV_PROVISION_SAID),
                      stamp=APPLY_STAMP, kind=kind)
@@ -1052,24 +1061,30 @@ def test_gated_ipex_exchange_JSON():
     # is a breadth-first walk from the origin, which for this DAG is the bespoke
     # presentation and then its two edges in section order, 'identity' and 'age'.
     assert [entry[0] for entry in dp] == [bespokeSchemaSaid, sediSchemaSaid, ageSchemaSaid]
-    reqOrigin = dp[0][1]
-    reqSedi = dp[1][1]
-    reqAge = dp[2][1]
+    # Every entry is a triple, and every prefix is empty -- the relative form, where the
+    # position of an entry is what identifies its ACDC. A club that preferred to spell
+    # the routes out would put '/', '/e/identity/_/' and '/e/age/_/' here instead, and
+    # would still have to keep the entries in breadth-first order.
+    assert all(len(entry) == 3 for entry in dp)
+    assert [entry[1] for entry in dp] == ["", "", ""]
+    reqOrigin = dp[0][2]
+    reqSedi = dp[1][2]
+    reqAge = dp[2][2]
     assert reqOrigin == ["i", "a/i", "r/"]              # origin: discloser, disclosee, terms
     assert reqSedi == ["a/i", "a/photo"]                # attributive: issuee + photo
     assert reqAge == ["A/i", "A/over21"]                # aggregate: issuee + over-21 flag
     assert "a/i" in reqSedi and "A/i" in reqAge         # the joining issuee, from both
-    # ACDC-relative form throughout: no path leads with '/', which would root it at the
-    # DAG origin and, for a non-origin entry, would have to cross a '_' hop to get back
-    # to the credential the entry is already about.
-    assert all(not p.startswith("/") for _, paths in dp for p in paths)
+    # No entry leads with '/'. That holds under any prefix, since the effective path is
+    # prefix + entry with nothing inserted; here the empty prefix leaves each entry
+    # relative to the credential it is already about.
+    assert all(not p.startswith("/") for _, _, paths in dp for p in paths)
     # Node vs. leaf: only the origin's rule section is asked for whole.
-    assert [p for _, paths in dp for p in paths if p.endswith("/")] == ["r/"]
+    assert [p for _, _, paths in dp for p in paths if p.endswith("/")] == ["r/"]
     # The request lives in the query block, not the attribute block; the attribute
     # block carries only the human message and the governance reference.
     assert 'dp' not in apply.sad['a'] and 'disclose' not in apply.sad['a']
     assert set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EPiL36dPzFMlL5K4ybK5MaxC2a3qIzntPjHvExkn0189"
+    assert apply.said == "EKxV278jQmXGzz3gEy7S-czxn-Rpsads_gegfqXsYhcg"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Commits ONLY to Alice's own bespoke-presentation SAID, the CLC
@@ -1094,7 +1109,7 @@ def test_gated_ipex_exchange_JSON():
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert offer.sad['q']['dp'] == []                   # solicited: "as per the apply"
     assert bespoke.said.encode() in offer.raw           # commits to Alice's own presentation
-    assert offer.said == "ENW6Q9TtdEyHtah7Tgg7ClV3XuD9CmAwAs8oEIZAu-KO"
+    assert offer.said == "ECGik4N-PMofYwkU-y0Rwc1UA-ey3gZdR8c2UMCovftP"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -1109,7 +1124,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "ELU6DF53tqV2Dd_2Tpyk1uBcP5JLUnJ0JJQlsw4H1EsC"
+    assert agree.said == "ELLb6trSGPXRJURUXsLdhIh4xKIsr1yDWOUfve3PJgOu"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -1164,7 +1179,7 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EKPweFTQmyr2ghr5tBDLxAZY-_AXkiztDWmwcl6h0XTS"
+    assert grant.said == "ELZZ2ZWspcAomsT6lHyezSUQ_BMMrVh3P50oADXtvvjx"
     # (property 4) PII crosses the wire only now, in the grant: the photo and the
     # over-21 flag.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
@@ -1196,7 +1211,7 @@ def test_gated_ipex_exchange_JSON():
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EG_v0NItF5AH5QeBBCRaaR1XffK1iivzW9DJgfyNoTZ_"
+    assert admit.said == "EO8FlFo9eB4nN9tyjY4ZmDlwBkFAvWlQQn_LWfEZ1340"
 
 
 def _pathable_labels(value):

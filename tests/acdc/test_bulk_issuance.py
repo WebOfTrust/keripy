@@ -1004,9 +1004,16 @@ def test_disclosure_gating_and_revocation_JSON():
     # 1. apply (verifier -> holder): the challenge (schema/fields + governance).
     #
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
-    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
-    # with ACDC-relative paths -- see the same construct in tests/acdc/
-    # test_cp_disclosure.py, and WebOfTrust/keripy discussion #1549 for the rules.
+    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, prefix, [paths])
+    # triples -- see the same construct in tests/acdc/test_cp_disclosure.py, and
+    # WebOfTrust/keripy discussion #1549 for the rules.
+    #
+    # The middle element is a path prefix: the DAG-absolute route to the ACDC the
+    # entry's schema SAID names, either empty or a route that both begins and ends with
+    # '/'. It is EMPTY on both entries here, which makes the paths ACDC-relative and
+    # leaves the breadth-first POSITION of each triple to say which ACDC it is about
+    # (@SmithSamuelM, #1549). The effective path is prefix + entry, concatenated with
+    # nothing between them, so an entry never leads with '/'.
     #
     # Bulk issuance is exactly why the list form matters here. The verifier names a
     # SCHEMA SAID, which is shared by all M copies in the set and is therefore the one
@@ -1027,18 +1034,26 @@ def test_disclosure_gating_and_revocation_JSON():
     # requested from it -- the over-21 flag alone answers the challenge. Entries are
     # therefore a breadth-first-ordered SUBSET of the DAG, and each one still names its
     # own schema SAID, so a skipped node cannot shift the meaning of the entries below.
+    # A hole in that ordering is the case a non-empty prefix exists for. The prefix
+    # stays empty here because the two entries carry distinct schema SAIDs and the
+    # zeroth is still the origin, so the skip cannot be misread -- a DAG whose holes
+    # were ambiguous would have to spell the routes out instead.
     presSchemaSaid, _ = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
-                     modifiers=dict(dp=[[presSchemaSaid, ["i", "a/i"]],
-                                        [ageCopies[k].sad['s']['$id'],
+                     modifiers=dict(dp=[[presSchemaSaid, "", ["i", "a/i"]],
+                                        [ageCopies[k].sad['s']['$id'], "",
                                          ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21.",
                                      g=GOVERNANCE_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply"
     dp = apply.sad['q']['dp']
-    assert dp == [[presSchemaSaid, ["i", "a/i"]],
-                  [ageCopies[k].sad['s']['$id'], ["A/i", "A/over21"]]]
+    assert dp == [[presSchemaSaid, "", ["i", "a/i"]],
+                  [ageCopies[k].sad['s']['$id'], "", ["A/i", "A/over21"]]]
+    # Empty prefix on both entries, so the paths are relative to the ACDC each entry's
+    # position names, and none of them leads with '/'.
+    assert [entry[1] for entry in dp] == ["", ""]
+    assert all(not p.startswith("/") for _, _, paths in dp for p in paths)
     assert presSchemaSaid == pres.sad['s']['$id']   # the origin the holder actually issues
     # The schema SAID is shared across the whole bulk set by design; the request names
     # it, never a copy SAID, so the apply itself introduces no cross-context correlator.
