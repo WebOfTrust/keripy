@@ -15,6 +15,40 @@ from keri.vdr import credentialing, verifying
 from keri.app import habbing, notifying
 
 
+def test_ipex_notifications_only_for_remote_senders():
+    with habbing.openHab(name="local", base="test", salt=b"0123456789abcdef") as (hby, hab), \
+            habbing.openHab(name="remote", base="test", salt=b"abcdef0123456789") as (_, remote):
+        notifier = notifying.Notifier(hby=hby)
+        handler = protocoling.IpexHandler(resource="/ipex/apply", hby=hby, notifier=notifier)
+
+        local, _ = protocoling.ipexApplyExn(
+            hab=hab,
+            recp=remote.pre,
+            message="locally initiated",
+            schema="schema",
+            attrs={},
+        )
+        handler.handle(serder=local)
+        assert notifier.getNotes() == []
+
+        incoming, _ = protocoling.ipexApplyExn(
+            hab=remote,
+            recp=hab.pre,
+            message="received remotely",
+            schema="schema",
+            attrs={},
+        )
+        handler.handle(serder=incoming)
+
+        notes = notifier.getNotes()
+        assert len(notes) == 1
+        assert notes[0].attrs == {
+            "r": "/exn/ipex/apply",
+            "d": incoming.said,
+            "m": "received remotely",
+        }
+
+
 def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
     """ Test IPEX exchange protocol """
 
