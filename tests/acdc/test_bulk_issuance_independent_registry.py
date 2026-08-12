@@ -1342,19 +1342,37 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     presSchemaSaid = pres.sad['s']['$id']
 
     # 1. apply (verifier -> holder): the challenge, as disclosure paths in the query
-    # block. The zeroth tuple names the ORIGIN node -- the presentation the holder will
-    # issue -- and asks for its issuer and its issuee; the second names the sedi-age
-    # schema and asks for the aggregate's issuee and the over-21 flag alone.
+    # block. Each entry is a TRIPLE, (schemaSAID, prefix, [paths]) (@SmithSamuelM,
+    # #1549). The middle element is the DAG-absolute route to the ACDC the entry names,
+    # either empty or a route that both begins and ends with '/'; the effective path is
+    # prefix + entry with nothing inserted between them, so an entry never leads with
+    # '/'. Every prefix is empty here, which leaves the paths ACDC-relative and lets the
+    # breadth-first POSITION of each entry say which ACDC it is about -- an ordering
+    # required even where a prefix would make it unnecessary.
+    #
+    # All three nodes get an entry, in the order the presentation's edge block names
+    # them: the presentation itself, then sedi-id, then sedi-age. With empty prefixes a
+    # skipped node would leave an entry sitting at an index that belongs to another ACDC.
+    # The zeroth asks the origin for its issuer and issuee; sedi-id for its issuee alone,
+    # which both edge operators are checked against -- I2I wants the presentation's
+    # issuer to be the issuee of each source, E1E wants sedi-age and sedi-id to share
+    # one -- and sedi-age for the aggregate's issuee and the over-21 flag.
     apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
-                     modifiers=dict(dp=[[presSchemaSaid, ["i", "a/i"]],
-                                        [ageCopies[k].sad['s']['$id'],
+                     modifiers=dict(dp=[[presSchemaSaid, "", ["i", "a/i"]],
+                                        [idCopies[k].sad['s']['$id'], "", ["a/i"]],
+                                        [ageCopies[k].sad['s']['$id'], "",
                                          ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21.", g=GOVERNANCE_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply"
-    assert apply.sad['q']['dp'] == [[presSchemaSaid, ["i", "a/i"]],
-                                    [ageCopies[k].sad['s']['$id'],
+    assert apply.sad['q']['dp'] == [[presSchemaSaid, "", ["i", "a/i"]],
+                                    [idCopies[k].sad['s']['$id'], "", ["a/i"]],
+                                    [ageCopies[k].sad['s']['$id'], "",
                                      ["A/i", "A/over21"]]]
+    dp = apply.sad['q']['dp']
+    assert all(len(entry) == 3 for entry in dp)                 # (ssaid, prefix, paths)
+    assert [entry[1] for entry in dp] == ["", "", ""]           # relative: position names
+    assert all(not p.startswith("/") for _, _, paths in dp for p in paths)
     # The schema SAID is shared across the whole bulk set by design; the request names
     # it, never a copy SAID and never a registry, so the apply introduces no correlator.
     assert all(c.said.encode() not in apply.raw for c in idCopies + ageCopies)
