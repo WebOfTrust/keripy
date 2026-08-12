@@ -1030,17 +1030,24 @@ def test_disclosure_gating_and_revocation_JSON():
     # asks it only for issuer and issuee: who is presenting, and that the presentation
     # is addressed to this verifier rather than replayed from another context.
     #
-    # The identity copy is a node in this DAG but carries no entry, because nothing is
-    # requested from it -- the over-21 flag alone answers the challenge. Entries are
-    # therefore a breadth-first-ordered SUBSET of the DAG, and each one still names its
-    # own schema SAID, so a skipped node cannot shift the meaning of the entries below.
-    # A hole in that ordering is the case a non-empty prefix exists for. The prefix
-    # stays empty here because the two entries carry distinct schema SAIDs and the
-    # zeroth is still the origin, so the skip cannot be misread -- a DAG whose holes
-    # were ambiguous would have to spell the routes out instead.
+    # All THREE nodes of the DAG get an entry, in breadth-first order: the presentation,
+    # then sedi-id and sedi-age, which the presentation's edge block names in that order.
+    # With empty prefixes it is POSITION that says which ACDC an entry is about, so the
+    # list cannot skip a node -- an entry for sedi-age at index 1 would sit where sedi-id
+    # belongs, and its schema SAID would contradict its position.
+    #
+    # sedi-id is asked for its issuee alone, and that is not a courtesy: BOTH edge
+    # operators in this DAG are checked against it. I2I holds only when the presentation's
+    # issuer is the issuee of each source, and E1E holds only when sedi-age and sedi-id
+    # share an issuee (see _verify_presentation and _verify_identity_edge). The edge blocks
+    # carry the far node's SAID and schema, never its issuee, so a verifier that never sees
+    # sedi-id's 'a/i' has to take the whole identity relation on faith. It costs nothing in
+    # correlation: that issuee is ALICE_k, which the age credential's 'A/i' already
+    # discloses, and the two matching is exactly what the operators assert.
     presSchemaSaid, _ = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
                      modifiers=dict(dp=[[presSchemaSaid, "", ["i", "a/i"]],
+                                        [idCopies[k].sad['s']['$id'], "", ["a/i"]],
                                         [ageCopies[k].sad['s']['$id'], "",
                                          ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21.",
@@ -1049,10 +1056,13 @@ def test_disclosure_gating_and_revocation_JSON():
     assert apply.sad['r'] == "/ipex/apply"
     dp = apply.sad['q']['dp']
     assert dp == [[presSchemaSaid, "", ["i", "a/i"]],
+                  [idCopies[k].sad['s']['$id'], "", ["a/i"]],
                   [ageCopies[k].sad['s']['$id'], "", ["A/i", "A/over21"]]]
-    # Empty prefix on both entries, so the paths are relative to the ACDC each entry's
+    # One entry per DAG node, breadth-first, so position and schema SAID agree.
+    assert len(dp) == 3
+    # Empty prefix on every entry, so the paths are relative to the ACDC each entry's
     # position names, and none of them leads with '/'.
-    assert [entry[1] for entry in dp] == ["", ""]
+    assert [entry[1] for entry in dp] == ["", "", ""]
     assert all(not p.startswith("/") for _, _, paths in dp for p in paths)
     assert presSchemaSaid == pres.sad['s']['$id']   # the origin the holder actually issues
     # The schema SAID is shared across the whole bulk set by design; the request names
