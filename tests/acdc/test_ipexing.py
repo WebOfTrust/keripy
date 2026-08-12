@@ -1035,7 +1035,8 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
             issuedApplyExn, issuedApplyAtc = ipexApply(hab=hab,
                                                        recp=hab.pre,
                                                        message="Please issue the issued blind credential",
-                                                       schema=schema)
+                                                       schema=schema,
+                                                       attrs=None)
             issuedOfferExn, issuedOfferAtc = ipexOffer(hab=hab,
                                                        message="Here is the issued blind credential",
                                                        acdc=acdc,
