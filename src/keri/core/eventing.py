@@ -5160,11 +5160,15 @@ class Kevery:
             cigars (list): of non-transferable receipts
         """
         cigars = cigars if cigars is not None else []
+        qnfkey = (prefixer.qb64, serder.said)
+        if self.db.qnfs.get(keys=qnfkey):
+            return
+
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
         self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
-        self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
+        self.db.qnfs.add(keys=qnfkey, val=serder.saidb)
 
         for cigar in cigars:
             self.db.addRct(key=dgkey, val=cigar.verfer.qb64b + cigar.qb64b)
