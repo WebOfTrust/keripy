@@ -1789,14 +1789,17 @@ def test_job_application_entitlement_presentation_JSON():
     ]
 
     # Build apply: the employer asks for the origin presentation plus the linked
-    # SEDI subset and entitlement using the normalized dp field.
+    # SEDI subset and entitlement using the normalized dp field. `dp` rides the
+    # QUERY section, `q`, not the attribute section: an exn models a ReST request,
+    # and naming which parts of which ACDCs are wanted is a query, not a body
+    # (@SmithSamuelM, #1549).
     apply = exchange(
         sender=CLUB,
         receiver=ALICE,
         route="/ipex/apply",
+        modifiers=dict(dp=requestedDp),
         attributes=dict(
             m="Show the SEDI identity subset and the linked food-handler permit.",
-            dp=requestedDp,
         ),
         stamp="2026-08-04T15:00:00.000000+00:00",
         kind=kind,
@@ -1804,11 +1807,12 @@ def test_job_application_entitlement_presentation_JSON():
     # Assert the apply carries the expected dp triples in BFS order:
     # root presentation first, then SEDI, then the permit.
     assert apply.sad['r'] == "/ipex/apply"
-    assert apply.sad['a']['dp'] == requestedDp
-    assert apply.sad['a']['dp'][0][0] == presentation.sad['s']['$id']
-    assert apply.sad['a']['dp'][0][1] == "/"
-    assert apply.sad['a']['dp'][1][1] == "/e/identity/_/"
-    assert apply.sad['a']['dp'][2][1] == "/e/entitlement/_/"
+    assert apply.sad['q']['dp'] == requestedDp
+    assert apply.sad['q']['dp'][0][0] == presentation.sad['s']['$id']
+    assert apply.sad['q']['dp'][0][1] == "/"
+    assert apply.sad['q']['dp'][1][1] == "/e/identity/_/"
+    assert apply.sad['q']['dp'][2][1] == "/e/entitlement/_/"
+    assert 'dp' not in apply.sad['a']
 
     # Build offer: Alice commits to the one-time presentation. Because this
     # offer is solicited and does not narrow or widen the request, an empty dp
@@ -1818,13 +1822,15 @@ def test_job_application_entitlement_presentation_JSON():
         receiver=CLUB,
         route="/ipex/offer",
         prior=apply.said,
-        attributes=dict(acdc=presentation.said, dp=[]),
+        modifiers=dict(dp=[]),
+        attributes=dict(acdc=presentation.said),
         stamp="2026-08-04T15:01:00.000000+00:00",
         kind=kind,
     )
     # Assert the offer binds the apply and still carries no disclosed identity data.
     assert offer.sad['p'] == apply.said
-    assert offer.sad['a']['dp'] == []
+    assert offer.sad['q']['dp'] == []
+    assert 'dp' not in offer.sad['a']
     assert b"Alice Anders" not in offer.raw
     assert b"220 E 300 S" not in offer.raw
     assert b"+1-801-555-0100" not in offer.raw
