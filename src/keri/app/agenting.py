@@ -4,8 +4,9 @@ KERI
 keri.app.agenting module
 
 """
+import json
 import random
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlencode, urlparse, urljoin
 
 from hio.base import doing
 from hio.core import http
@@ -14,7 +15,7 @@ from hio.help import decking, Hict
 
 from socket import gaierror
 
-from . import httping, forwarding, tocking
+from . import httping, forwarding
 from .. import help
 from .. import kering
 from .. import core
@@ -45,10 +46,12 @@ class Receiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.hby = hby
         self.clienter = httping.Clienter()
 
-        doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
-        self.hby = hby
+        doers = [self.clienter,
+                 doing.doify(self.witDo, tock=hby.tocks["receiptor"]),
+                 doing.doify(self.gitDo, tock=hby.tocks["receiptor"])]
 
         super(Receiptor, self).__init__(doers=doers)
 
@@ -177,7 +180,8 @@ class Receiptor(doing.DoDoer):
         base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
-        client = self.clienter.request("GET", url)
+        headers = Hict([(httping.CESR_DESTINATION_HEADER, wit)])
+        client = self.clienter.request("GET", url, headers=headers)
         while not client.responses:
             yield tock
 
@@ -185,6 +189,99 @@ class Receiptor(doing.DoDoer):
         if rep.status == 200:
             rct = bytearray(rep.body)
             hab.psr.parseOne(bytearray(rct))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+    def ksn(self, pre, wit, src, tock=0.0):
+        """Yield while querying a witness for the key state of an identifier.
+
+        Parameters:
+            pre (str): qb64 identifier whose key state is requested.
+            wit (str): qb64 witness identifier to query.
+            src (str): qb64 local identifier issuing the query.
+
+        Returns:
+            bool: True if the witness returned HTTP 200.
+        """
+        if src not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[src]
+        kever = hab.kevers[pre]
+
+        if wit not in kever.wits:
+            return
+
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or \
+            hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        url = urljoin(base, f"/ksn?pre={pre}&src={src}")
+        headers = Hict([(httping.CESR_DESTINATION_HEADER, wit)])
+
+        client = self.clienter.request("GET", url, headers=headers)
+        while not client.responses:
+            yield tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            hab.psr.parseOne(bytearray(rep.body))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+    def logs(self, pre, wit, src, sn=None, fn=None, anchor=None, tock=0.0):
+        """Yield while retrieving an identifier's event log from a witness.
+
+        Parameters:
+            pre (str): qb64 identifier whose event log is requested.
+            wit (str): qb64 witness identifier to query.
+            src (str): qb64 local identifier issuing the query.
+            sn (int | None): optional minimum witnessed sequence number.
+            fn (int | None): optional first ordinal for the cloned log.
+            anchor (dict | None): optional event seal with `i`, `s`, and `d` fields.
+
+        Returns:
+            bool: True if the witness returned HTTP 200.
+        """
+        if src not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[src]
+        kever = hab.kevers[pre]
+
+        if wit not in kever.wits:
+            return
+
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or \
+            hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        params = {"pre": pre}
+        if sn is not None:
+            params["s"] = f"{sn:X}"
+        if fn is not None:
+            params["fn"] = f"{fn:X}"
+        if anchor is not None:
+            params["a"] = json.dumps(anchor, separators=(",", ":"))
+
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        url = urljoin(base, f"/log?{urlencode(params)}")
+        headers = Hict([(httping.CESR_DESTINATION_HEADER, wit)])
+
+        client = self.clienter.request("GET", url, headers=headers)
+        while not client.responses:
+            yield tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            hab.psr.parse(bytearray(rep.body))
+        else:
+            logger.info(f"Failed to retrieve log from {wit}: {rep.status} {rep.body}")
 
         self.clienter.remove(client)
         return rep.status == 200
@@ -272,10 +369,13 @@ class WitnessReceiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.auths = auths if auths is not None else dict()
+        self.idleTock = hby.tocks["witnessReceiptorIdle"]
 
-        super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
+        super(WitnessReceiptor, self).__init__(
+            doers=[doing.doify(self.receiptDo,
+                               tock=hby.tocks["witnessReceiptor"])], **kwa)
 
-    def receiptDo(self, tymth=None, tock=None, **kwa):
+    def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that sends events to witnesses and propagates receipts.
 
 
@@ -287,8 +387,7 @@ class WitnessReceiptor(doing.DoDoer):
         Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.WitnessReceiptorTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.msgs:
@@ -334,13 +433,13 @@ class WitnessReceiptor(doing.DoDoer):
                                 witer.msgs.append(bytearray(fmsg))
 
                         witer.msgs.append(bytearray(msg))  # make a copy
-                        _ = (yield self.tock)
+                        _ = (yield tock)
 
                     while True: # wait for all receipts to arrive
                         wigs = hab.db.getWigs(dgkey)
                         if len(wigs) == len(wits):
                             break
-                        _ = yield self.tock
+                        _ = yield tock
 
                 # If we started with all our receipts, exit unless told to force resubmit of all receipts
                 if completed and not self.force:
@@ -378,13 +477,13 @@ class WitnessReceiptor(doing.DoDoer):
                     rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers))
 
                     witer.msgs.append(rctMsg)
-                    _ = (yield self.tock)
+                    _ = (yield tock)
 
                 while True:
                     done = True
                     for witer in witers:
                         if not witer.idle:
-                            yield 1.0
+                            yield self.idleTock
                             done = False
                             break
                     if done:
@@ -393,9 +492,9 @@ class WitnessReceiptor(doing.DoDoer):
                 self.remove(witers)
 
                 self.cues.push(evt)
-                yield self.tock
+                yield tock
 
-            yield self.tock
+            yield tock
 
 
 class WitnessInquisitor(doing.DoDoer):
@@ -426,9 +525,11 @@ class WitnessInquisitor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = decking.Deck()
 
-        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.msgDo)], **kwa)
+        super(WitnessInquisitor, self).__init__(
+            doers=[doing.doify(self.msgDo,
+                               tock=hby.tocks["witnessInquisitor"])], **kwa)
 
-    def msgDo(self, tymth=None, tock=None, **opts):
+    def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Doer loop that sends one query to one selected endpoint.
 
@@ -437,12 +538,11 @@ class WitnessInquisitor(doing.DoDoer):
         Pushes the raw sent message to self.sent to signal completion.
         """
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.WitnessInquisitorTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while not self.msgs:
-                yield self.tock
+                yield tock
 
             evt = self.msgs.popleft()
             pre = evt["pre"]
@@ -498,11 +598,11 @@ class WitnessInquisitor(doing.DoDoer):
             witer.msgs.append(bytearray(msg))
 
             while not witer.sent:
-                yield self.tock
+                yield tock
 
             self.sent.append(witer.sent.popleft())
 
-            yield self.tock
+            yield tock
 
     def query(self, pre, r="logs", sn='0', fn='0', src=None, hab=None, anchor=None, wits=None, **kwa):
         """Create, sign, and queue a `qry` KEL query request against the attester for the prefix for later sending.
@@ -556,16 +656,17 @@ class WitnessPublisher(doing.DoDoer):
         self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
+        super(WitnessPublisher, self).__init__(
+            doers=[doing.doify(self.sendDo,
+                               tock=hby.tocks["witnessPublisher"])], **kwa)
 
-    def sendDo(self, tymth=None, tock=None, **opts):
+    def sendDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that sends queued messages to each witness.
 
         Pushes the original request to self.cues to signal completion
         """
         self.wind(tymth)
-        self.tock = tock if tock is not None else tocking.WitnessPublisherTock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             while self.msgs:
@@ -587,19 +688,19 @@ class WitnessPublisher(doing.DoDoer):
                     witer.msgs.append(bytearray(msg))  # make a copy so everyone munges their own
                     self.extend([witer])
 
-                    _ = (yield self.tock)
+                    _ = (yield tock)
 
                 while witers:
                     witer = witers.pop()
                     while not witer.idle:
-                        _ = (yield self.tock)
+                        _ = (yield tock)
 
                 self.remove(witers)
                 self.cues.push(evt)
 
-                yield self.tock
+                yield tock
 
-            yield self.tock
+            yield tock
 
     def sent(self, said):
         """ Check if message with given SAID was sent

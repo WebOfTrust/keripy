@@ -213,6 +213,48 @@ def test_essrs():
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
+def test_essr_survives_escrow_and_exchanger_restart():
+    with habbing.openHab(name="essr-sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
+            habbing.openHab(name="essr-rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+        msg = "This encrypted payload must survive escrow"
+        pubkey = pysodium.crypto_sign_pk_to_box_pk(recHab.kever.verfers[0].raw)
+        raw = pysodium.crypto_box_seal(msg.encode("utf-8"), pubkey)
+        texter = coring.Texter(raw=raw)
+        diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
+        essr, _ = exchanging.exchange(
+            route="/essr/req",
+            sender=hab.pre,
+            diger=diger,
+            modifiers=dict(src=hab.pre, dest=recHab.pre),
+        )
+        ims = hab.endorse(serder=essr, pipelined=False)
+        ims.extend(core.Counter(core.Codens.ESSRPayloadGroup, count=1,
+                                gvrsn=kering.Vrsn_1_0).qb64b)
+        ims.extend(texter.qb64b)
+
+        exc = exchanging.Exchanger(hby=recHby, handlers=[])
+        parsing.Parser().parse(ims=ims, kvy=recHby.kvy, exc=exc,
+                               gvrsn=kering.Vrsn_1_0)
+
+        assert recHby.db.epse.get(keys=(essr.said,)) is not None
+        escrowed = recHby.db.essrs.get(keys=(essr.said,))
+        assert len(escrowed) == 1
+        assert escrowed[0].raw == texter.raw
+
+        # A replacement Exchanger, such as after a process restart, must reconstruct
+        # and complete the ESSR escrow from DB state only, and not rely on original
+        # Exchanger instance-local state.
+        restarted = exchanging.Exchanger(hby=recHby, handlers=[])
+        parsing.Parser().parse(ims=hab.makeOwnInception(), kvy=recHby.kvy)
+        restarted.processEscrowPartialSigned()
+
+        assert recHby.db.epse.get(keys=(essr.said,)) is None
+        assert recHby.db.exns.get(keys=(essr.said,)) is not None
+        saved = recHby.db.essrs.get(keys=(essr.said,))
+        assert len(saved) == 1
+        assert recHab.decrypt(ser=saved[0].raw).decode("utf-8") == msg
+
+
 def test_exchanger():
     with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
             habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):

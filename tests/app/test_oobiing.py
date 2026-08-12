@@ -141,6 +141,8 @@ def test_introduce(mockHelpingNowUTC):
         watHab = watHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
         assert not watHab.kever.prefixer.transferable
         assert watHab.pre == "BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom"
+        endHab = watHby.makeHab(name='web', isith="1", icount=1, transferable=False)
+        assert endHab.pre != watHab.pre
         watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
         watPsr = parsing.Parser(kvy=watKvy)
 
@@ -156,37 +158,36 @@ def test_introduce(mockHelpingNowUTC):
         witPsr = parsing.Parser(kvy=witKvy, rvy=rvy)
         assert witHby.db.oobis.cntAll() == 0
 
-        oobi = f"https://localhost:8989/oobi/{watHab.pre}/controller"
+        oobi = f"https://localhost:8989/oobi/{endHab.pre}/controller"
         data = dict(
             cid=watHab.pre,
+            eid=endHab.pre,
             oobi=oobi
         )
 
         msg = watHab.reply(route="/introduce", data=data)
-        assert msg == (b'{"v":"KERI10JSON000127_","t":"rpy","d":"EPEU3V7e2d2mhMWVFDS-oC9z'
-                       b'Q8DX8t6ELkhINIaYGFNZ","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                       b'":"/introduce","a":{"cid":"BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfX'
-                       b'GNrFRom","oobi":"https://localhost:8989/oobi/BBVDlgWic_rAf-m_v7v'
-                       b'z_VvIYAUPErvZgLTfXGNrFRom/controller"}}-VAi-CABBBVDlgWic_rAf-m_v'
-                       b'7vz_VvIYAUPErvZgLTfXGNrFRom0BBqF8yHDeXpzDUNIOsDBGezNBdgHafmOYbQ7'
-                       b'qw0R5t89FbLA26RwaA3NF9-dU0JpbNuJs7jiEBYbSGeDkbBDDEM')
+        rpy = serdering.SerderKERI(raw=msg)
+        assert rpy.ked["a"] == data
 
         witPsr.parseOne(ims=msg)
         assert witHby.db.oobis.cntAll() == 1
         obr = witHby.db.oobis.get(keys=(oobi,))
+        assert obr.cid == endHab.pre
+
+        # Legacy kli introduce messages omit eid, so fall back to the authorizing cid.
+        legacy_oobi = f"https://localhost:8989/oobi/{watHab.pre}/controller"
+        data = dict(cid=watHab.pre, oobi=legacy_oobi)
+        msg = watHab.reply(route="/introduce", data=data)
+        witPsr.parseOne(ims=msg)
+        assert witHby.db.oobis.cntAll() == 2
+        obr = witHby.db.oobis.get(keys=(legacy_oobi,))
         assert obr.cid == watHab.pre
 
-        # Send one missing fields
-        data = dict(cid=watHab.pre)
-        msg = watHab.reply(route="/introduce", data=data)
-        witPsr.parseOne(ims=msg)
-        assert witHby.db.oobis.cntAll() == 1  # Still one because of the missing 'oobi' field
-
         # Send one bad scheme
-        data = dict(cid=watHab.pre, oobi="ftp://localhost")
+        data = dict(cid=watHab.pre, eid=endHab.pre, oobi="ftp://localhost")
         msg = watHab.reply(route="/introduce", data=data)
         witPsr.parseOne(ims=msg)
-        assert witHby.db.oobis.cntAll() == 1  # Still one because of the missing 'oobi' field
+        assert witHby.db.oobis.cntAll() == 2
 
 
 

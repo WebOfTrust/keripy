@@ -1800,6 +1800,29 @@ def test_state(mockHelpingNowUTC):
     """Done Test"""
 
 
+def test_untrusted_key_state_notice_reports_subject(mockHelpingNowUTC):
+    subject = "DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN"
+    source = "DMrwi0a-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y"
+    ksr = basing.KeyStateRecord(
+        vn=[1, 0],
+        i=subject,
+        dt=helping.nowIso8601(),
+    )
+    rpy = eventing.reply(route=f"/ksn/{subject}", data=ksr._asdict())
+
+    with openDB(name="ksn-report") as db:
+        kvy = Kevery(db=db, lax=False)
+        with pytest.raises(kering.UntrustedKeyStateSource) as ex:
+            kvy.processReplyKeyStateNotice(
+                serder=rpy,
+                saider=coring.Saider(qb64=rpy.said),
+                route=rpy.ked["r"],
+                aid=source,
+            )
+
+    assert subject in str(ex.value)
+
+
 def test_messagize():
     """
     Test messagize utility function

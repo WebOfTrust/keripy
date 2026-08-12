@@ -301,7 +301,8 @@ class Oobiery:
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()
-        self.doers = [self.clienter, doing.doify(self.scoobiDo)]
+        self.doers = [self.clienter,
+                      doing.doify(self.scoobiDo, tock=hby.tocks["oobi"])]
 
     def registerReplyRoutes(self, router):
         """ Register the routes for processing messages embedded in `rpy` event messages
@@ -368,6 +369,10 @@ class Oobiery:
         cid = cider.qb64  # controller authorizing eid at role
         aid = cid  # authorizing attribution id
 
+        # Defaults to controller ID (cid) if eid not present.
+        eider = coring.Prefixer(qb64=data.get("eid", cid))  # raises error if unsupported code
+        eid = eider.qb64  # endpoint eid at role
+
         oobi = data["oobi"]
         url = urlparse(oobi)
         if url.scheme not in ("http", "https"):
@@ -383,7 +388,7 @@ class Oobiery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
-        obr = basing.OobiRecord(cid=cid, date=dt)
+        obr = basing.OobiRecord(cid=eid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
@@ -647,7 +652,8 @@ class Authenticator:
         self.hby = hby
         self.clienter = clienter if clienter is not None else httping.Clienter()
         self.clients = dict()
-        self.doers = [self.clienter, doing.doify(self.authzDo)]
+        self.doers = [self.clienter,
+                      doing.doify(self.authzDo, tock=hby.tocks["oobi"])]
 
     def request(self, wurl, obr):
         client = self.clienter.request("GET", wurl)

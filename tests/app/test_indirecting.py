@@ -199,6 +199,8 @@ def test_wit_query_ends(seeder):
         app = falcon.App()
         query_endpoint = indirecting.QueryEnd(wesHab, reger=wesReger)
         app.add_route("/query", query_endpoint)
+        app.add_route("/ksn", indirecting.KeyStateEnd(wesHab))
+        app.add_route("/log", indirecting.KeyLogEnd(wesHab))
         
         wesClient = testing.TestClient(app)
 
@@ -206,7 +208,8 @@ def test_wit_query_ends(seeder):
             wesHab=wesHab,
             palHby=palHby,
             witDoer=witDoer,
-            wesClient=wesClient
+            wesClient=wesClient,
+            done=decking.Deck(),
         )
 
         doers = wesDoers + [witDoer, doing.doify(wit_querier_test_do, **opts)]
@@ -218,11 +221,11 @@ def test_wit_query_ends(seeder):
 
         tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
 
-        while not tymer.expired:
+        while not opts["done"] and not tymer.expired:
             doist.recur()
             time.sleep(doist.tock)
-        # doist.do(doers=doers)
 
+        assert opts["done"]
         assert doist.limit == limit
 
         doist.exit()
@@ -246,6 +249,36 @@ def wit_querier_test_do(tymth=None, tock=0.0, **opts):
 
     witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
+
+    # Exercise the routes registered by setupWitness through the Receiptor API.
+    assert (yield from witDoer.get(pre=palHab.pre, tock=tock)) is True
+    assert (yield from witDoer.ksn(pre=palHab.pre, wit=wesHab.pre,
+                                  src=palHab.pre, tock=tock)) is True
+    assert (yield from witDoer.logs(pre=palHab.pre, wit=wesHab.pre,
+                                   src=palHab.pre, tock=tock)) is True
+
+    # Test a fully witnessed key state notice.
+    res = wesClient.simulate_get("/ksn", params={"pre": palHab.pre})
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/cesr"
+    ksn = core.serdering.SerderKERI(raw=res.content)
+    assert ksn.ked["r"] == f"/ksn/{wesHab.pre}"
+    assert ksn.ked["a"]["i"] == palHab.pre
+
+    res = wesClient.simulate_get("/ksn", params={"pre": "unknown"})
+    assert res.status_code == 404
+
+    # Test full-log retrieval and sequence-number availability checks.
+    res = wesClient.simulate_get("/log", params={"pre": palHab.pre})
+    assert res.status_code == 200
+    assert res.headers["Content-Type"] == "application/cesr"
+    assert bytearray(res.content) == bytearray(msg)
+
+    res = wesClient.simulate_get("/log", params={"pre": palHab.pre, "s": "1"})
+    assert res.status_code == 404
+
+    res = wesClient.simulate_get("/log", params={"pre": "unknown"})
+    assert res.status_code == 404
 
     # Test valid KEL query with 'pre'
     res = wesClient.simulate_get("/query", params={"typ": "kel", "pre": palHab.pre})
@@ -291,6 +324,33 @@ def wit_querier_test_do(tymth=None, tock=0.0, **opts):
     assert res.status_code == 400
     assert res.headers['Content-Type'] == "application/json"
     assert "unkown query type" in res.text
+
+    # Anchor queries require a JSON-encoded SealEvent and a fully witnessed sealing event.
+    anchor = dict(i=palHab.pre, s=f"{palHab.kever.sn:x}", d=palHab.kever.serder.said)
+    palHab.interact(data=[anchor])
+    witDoer.msgs.append(dict(pre=palHab.pre))
+    while not witDoer.cues:
+        yield tock
+    witDoer.cues.popleft()
+
+    assert (yield from witDoer.logs(pre=palHab.pre, wit=wesHab.pre,
+                                   src=palHab.pre, anchor=anchor, tock=tock)) is True
+
+    res = wesClient.simulate_get("/log", params={"pre": palHab.pre, "a": json.dumps(anchor)})
+    assert res.status_code == 200
+
+    res = wesClient.simulate_get("/log", params={"pre": palHab.pre, "a": "not-json"})
+    assert res.status_code == 400
+
+    invalid = dict(i=palHab.pre, s="0")
+    res = wesClient.simulate_get("/log", params={"pre": palHab.pre, "a": json.dumps(invalid)})
+    assert res.status_code == 400
+
+    invalid = dict(i="invalid", s="0", d=palHab.kever.serder.said)
+    res = wesClient.simulate_get("/log", params={"pre": palHab.pre, "a": json.dumps(invalid)})
+    assert res.status_code == 400
+
+    opts["done"].append(True)
 
 def test_wit_allowlist(seeder):
     with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \

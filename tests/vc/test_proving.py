@@ -135,6 +135,8 @@ def test_credentialer():
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
+    assert creder.issuee is None
+    assert creder.issueeb is None
     assert creder.sad == d
     assert creder.size == 211
     assert creder.size == len(creder.raw)
@@ -210,6 +212,25 @@ def test_credentialer():
     assert creder.size == 182
     assert creder.size == len(creder.raw)
     assert creder.sad == d3
+
+    issuee = "EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2"
+    targeted = dict(d)
+    targeted["d"] = ""
+    targeted["a"] = dict(sub, i=issuee)
+    _, targeted = coring.Saider.saidify(sad=targeted)
+
+    creder = serdering.SerderACDC(sad=targeted)
+    assert creder.issuee == issuee
+    assert creder.issueeb == issuee.encode("utf-8")
+
+    compact = dict(d)
+    compact["d"] = ""
+    compact["a"] = creder.said
+    _, compact = coring.Saider.saidify(sad=compact)
+
+    creder = serdering.SerderACDC(sad=compact)
+    assert creder.issuee is None
+    assert creder.issueeb is None
 
     """End Test"""
 

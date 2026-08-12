@@ -2060,7 +2060,7 @@ class SerderACDC(Serder):
            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
         """
         try:
-            return self.attrib.get['i']
+            return self.attrib.get('i')
         except:
             return None
 

@@ -460,7 +460,7 @@ def test_matter_class():
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
         '1AAD': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
-        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=56, ls=0),
+        '1AAE': Sizage(hs=4, ss=0, xs=0, fs=156, ls=0),
         '1AAF': Sizage(hs=4, ss=4, xs=0, fs=8, ls=0),
         '1AAG': Sizage(hs=4, ss=0, xs=0, fs=36, ls=0),
         '1AAH': Sizage(hs=4, ss=0, xs=0, fs=100, ls=0),
@@ -514,6 +514,14 @@ def test_matter_class():
     assert Matter.Sizes['A'].xs == 0  # xtra size
     assert Matter.Sizes['A'].fs == 44  # full size
     assert Matter.Sizes['A'].ls == 0  # lead size
+
+    raw = bytes(range(114))
+    matter = Matter(raw=raw, code=MtrDex.Ed448_Sig)
+    assert len(matter.qb64) == 156
+
+    matter = Matter(qb64=matter.qb64)
+    assert matter.code == MtrDex.Ed448_Sig
+    assert matter.raw == raw
 
 
     #  verify all Codes
