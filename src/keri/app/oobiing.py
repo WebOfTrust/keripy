@@ -369,6 +369,10 @@ class Oobiery:
         cid = cider.qb64  # controller authorizing eid at role
         aid = cid  # authorizing attribution id
 
+        # Defaults to controller ID (cid) if eid not present.
+        eider = coring.Prefixer(qb64=data.get("eid", cid))  # raises error if unsupported code
+        eid = eider.qb64  # endpoint eid at role
+
         oobi = data["oobi"]
         url = urlparse(oobi)
         if url.scheme not in ("http", "https"):
@@ -384,7 +388,7 @@ class Oobiery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
-        obr = basing.OobiRecord(cid=cid, date=dt)
+        obr = basing.OobiRecord(cid=eid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
