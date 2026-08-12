@@ -1202,24 +1202,34 @@ def test_represented_presentation_JSON():
     # governance framework the service will honor (guardian acceptance in scope).
     #
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
-    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
-    # with ACDC-relative paths -- the construct settled in WebOfTrust/keripy discussion
-    # #1549, shared with tests/acdc/test_clc_disclosure.py and
-    # test_bulk_issuance_shared_registry.py.
+    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, prefix, [paths])
+    # triples -- the construct settled in WebOfTrust/keripy discussion #1549, shared with
+    # tests/acdc/test_clc_disclosure.py and test_bulk_issuance_shared_registry.py.
     # A dict keyed by schema SAID cannot express a DAG holding two credentials of the
     # same schema.
     #
-    # A leading '/' would make the path DAG-ABSOLUTE, rooted at the origin node, and an
-    # absolute path reaching a non-origin ACDC must cross the edge that links it -- the
-    # virtual '_' component, standing for the jump from the near-side edge block to the
-    # top level of the far-side ACDC (@SmithSamuelM, #1549). The same request in
-    # absolute form reads:
-    #     origin:   /i, /a/i
-    #     guardian: /e/authority/_/a/i, /e/authority/_/a/powers
-    #     ward age: /e/wardAge/_/A/i, /e/wardAge/_/A/over13
-    # Relative form is used because this DAG has no optional edges, so the breadth-first
-    # ordering of `dp` is gapless and each entry's ACDC is unambiguous without restating
+    # The middle element is a path PREFIX: the DAG-absolute route to the ACDC that the
+    # entry's schema SAID names. It is either the empty string or a route that both
+    # begins and ends with '/', and the effective path is prefix + entry concatenated
+    # with no delimiter inserted, so an entry in the path list never begins with '/'
+    # (@SmithSamuelM, #1549).
+    #
+    # Every prefix here is EMPTY, which leaves the entry paths ACDC-RELATIVE: with no
+    # prefix naming it, an entry's ACDC is identified by the entry's POSITION, so the
+    # list runs breadth-first from the origin node and the zeroth entry is the origin.
+    # That breadth-first ordering is required even where a non-empty prefix would make
+    # it technically unnecessary (@SmithSamuelM, #1549). This DAG has no optional edges,
+    # so the ordering is gapless and each entry's ACDC is unambiguous without restating
     # the route to it.
+    #
+    # A '/'-rooted prefix would make the effective paths DAG-ABSOLUTE, rooted at the
+    # origin node, and an absolute path reaching a non-origin ACDC must cross the edge
+    # that links it -- the virtual '_' component, standing for the jump from the
+    # near-side edge block to the top level of the far-side ACDC (@SmithSamuelM, #1549).
+    # The same request written with non-empty prefixes reads:
+    #     origin:   "/"                 ["i", "a/i"]
+    #     guardian: "/e/authority/_/"   ["a/i", "a/powers"]
+    #     ward age: "/e/wardAge/_/"     ["A/i", "A/over13"]
     #
     # A represented presentation is the case that makes the joining paths load-bearing:
     # the service asks for the issuee from BOTH the guardian credential (a/i -- who is
@@ -1236,9 +1246,9 @@ def test_represented_presentation_JSON():
     # the origin's issuer is Bob, and the ward never appears in it at all.
     presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=SERVICE, receiver=BOB, route="/ipex/apply",
-                     modifiers=dict(dp=[[presentSchemaSaid, ["i", "a/i"]],
-                                        [guardian.sad['s']['$id'], ["a/i", "a/powers"]],
-                                        [age.sad['s']['$id'], ["A/i", "A/over13"]]]),
+                     modifiers=dict(dp=[[presentSchemaSaid, "", ["i", "a/i"]],
+                                        [guardian.sad['s']['$id'], "", ["a/i", "a/powers"]],
+                                        [age.sad['s']['$id'], "", ["A/i", "A/over13"]]]),
                      attributes=dict(m="Prove an authorized guardian and that the ward "
                                        "is over 13.",
                                      g=GUARDIAN_RULES_SAID),
@@ -1247,13 +1257,15 @@ def test_represented_presentation_JSON():
     dp = apply.sad['q']['dp']
     assert [entry[0] for entry in dp] == [presentSchemaSaid,
                                           guardian.sad['s']['$id'], age.sad['s']['$id']]
-    assert dp[0][1] == ["i", "a/i"]             # origin: who presents, and to whom
-    assert dp[1][1] == ["a/i", "a/powers"]      # attributive guardian cred: who acts, and how far
-    assert dp[2][1] == ["A/i", "A/over13"]      # aggregative ward age cred: whose, and the flag
+    assert all(len(entry) == 3 for entry in dp)             # (schemaSAID, prefix, [paths])
+    assert [entry[1] for entry in dp] == ["", "", ""]       # no prefixes: paths stay relative
+    assert dp[0][2] == ["i", "a/i"]             # origin: who presents, and to whom
+    assert dp[1][2] == ["a/i", "a/powers"]      # attributive guardian cred: who acts, and how far
+    assert dp[2][2] == ["A/i", "A/over13"]      # aggregative ward age cred: whose, and the flag
     assert all(not p.startswith("/") and not p.endswith("/")
-               for _, paths in dp for p in paths)
+               for _, _, paths in dp for p in paths)
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EEKQQp1cDZ3n5fhNj-ArYis4lb8zPuls0MuFcNzHsA7J"
+    assert apply.said == "EJlKMazpDk8umBXD1QblktMRQ1F9vk6w31ndbLZSMCSP"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
     # and the governance ref, and binds the apply. It deliberately does NOT enumerate the
@@ -1272,7 +1284,7 @@ def test_represented_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "EIL_BAJhY2VMcGosTiUyM5D7iSJHENK0pGCfXTGls9VT"
+    assert offer.said == "EPAqpr8-s7PFobYLM0PyXxJ8YYoTsA3xgASRigAhqpAv"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2012-04-10" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1285,7 +1297,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=SERVICE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EP75BtfA8laTeegRuFRFMiCZuYPiyIh5s5DFeR4HlBVb"
+    assert agree.said == "EHlgXxKSOf16Ue_eFnC2JHnT4rBIqJ5ik-eCdbBYoZaK"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1317,7 +1329,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EJMtsvKMi6x9ceBUmRLrl1OE1v2n2FH1koyBNxbq11a7"
+    assert grant.said == "EL77me9xxWilDTLMIYcK2fLGQGPOBCEs-2nqu9QyWSM8"
     assert grant.sad['a']['wardAge'][AGE_OVER13]['over13'] is True     # over-13 disclosed
     assert grant.sad['a']['wardId']['i'] == CARA                       # ward bound (issuee)
     assert b"2012-04-10" not in grant.raw                             # birthdate withheld
@@ -1327,7 +1339,7 @@ def test_represented_presentation_JSON():
     admit = exchange(sender=SERVICE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EFzad_txAB6VIPEOh6roQuhVQkPJuOLM6FGwxO243EQ8"
+    assert admit.said == "EH8lAJ7KPd-iNAF7E2RhFv63kB7TfnpNd5dQFfeiFC_V"
 
 
 # ---------------------------------------------------------------------------
