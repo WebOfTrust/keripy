@@ -30,7 +30,9 @@ class Counselor(doing.DoDoer):
         self.witDoer = agenting.Receiptor(hby=self.hby)
         self.witq = agenting.WitnessInquisitor(hby=hby)
 
-        doers = [self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
+        doers = [self.swain, self.witq, self.witDoer,
+                 doing.doify(self.escrowDo,
+                             tock=hby.tocks["counselorEscrow"])]
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
@@ -72,7 +74,7 @@ class Counselor(doing.DoDoer):
 
         return True
 
-    def escrowDo(self, tymth, tock=1.0, **kwa):
+    def escrowDo(self, tymth, tock=0.5, **kwa):
         """ Process escrows of group multisig identifiers waiting to be compeleted.
 
         Steps involve:
@@ -91,12 +93,11 @@ class Counselor(doing.DoDoer):
         """
         # enter context
         self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield tock)
 
         while True:
             self.processEscrows()
-            yield 0.5
+            yield tock
 
     def processEscrows(self):
         self.processPartialSignedEscrow()

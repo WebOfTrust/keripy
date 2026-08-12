@@ -13,7 +13,7 @@ from hio.base import doing
 from hio.help import hicting
 
 from keri.peer import exchanging
-from . import keeping, configing
+from . import keeping, configing, tocking
 from .. import help
 from .. import kering
 from .. import core
@@ -147,7 +147,8 @@ class Habery:
     """
 
     def __init__(self, *, name='test', base="", temp=False,
-                 ks=None, db=None, cf=None, clear=False, headDirPath=None, **kwa):
+                 ks=None, db=None, cf=None, tocks=None, clear=False,
+                 headDirPath=None, **kwa):
         """
         Initialize instance.
 
@@ -164,6 +165,7 @@ class Habery:
             ks (Keeper):  keystore lmdb subclass instance
             db (Baser): database lmdb subclass instance
             cf (Configer): config file instance
+            tocks (dict): scheduler configuration; simplifies per-Habery tuning and testing
             clear (bool): True means remove resource directory upon close when
                             reopening
                           False means do not remove directory upon close when
@@ -220,7 +222,6 @@ class Habery:
                                                                temp=self.temp,
                                                                reopen=True,
                                                                clear=clear)
-
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.rtr = routing.Router()
         self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
@@ -237,6 +238,7 @@ class Habery:
         # init setup elseqhere after databases are opened if not below
         self._inits = kwa
         self._inits['temp'] = temp  # add temp for seed from bran tier override
+        self.tocks = tocks  # allow preconfigured tocks
 
         if self.db.opened and self.ks.opened:
             self.setup(**self._inits)  # finish setup later
@@ -334,7 +336,7 @@ class Habery:
 
             # create Hab instance and inject dependencies
             if habord.mid and not habord.sid:
-                hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, tocks=self.tocks, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                name=habord.name, pre=pre, temp=self.temp, smids=habord.smids)
                 groups.append(habord)
@@ -348,7 +350,7 @@ class Habery:
                                       name=habord.name, pre=pre)
                 groups.append(habord)
             else:
-                hab = Hab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                hab = Hab(ks=self.ks, db=self.db, cf=self.cf, tocks=self.tocks, mgr=self.mgr,
                           rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                           name=habord.name, pre=pre, temp=self.temp)
 
@@ -393,7 +395,7 @@ class Habery:
             raise kering.ConfigurationError("Hab namespace names are not allowed to contain the '.' character")
 
         cf = cf if cf is not None else self.cf
-        hab = Hab(ks=self.ks, db=self.db, cf=cf, mgr=self.mgr,
+        hab = Hab(ks=self.ks, db=self.db, cf=cf, tocks=self.tocks, mgr=self.mgr,
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                   name=name, ns=ns, temp=self.temp)
 
@@ -465,7 +467,7 @@ class Habery:
         kwa["migers"] = migers
 
         # create group Hab in this Habery
-        hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+        hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, tocks=self.tocks, mgr=self.mgr,
                        rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
@@ -512,7 +514,7 @@ class Habery:
                                                     f" next members ={rmids}")
 
         # create group Hab in this Habery
-        hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+        hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, tocks=self.tocks, mgr=self.mgr,
                        rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
@@ -767,6 +769,13 @@ class Habery:
 
         """
         conf = self.cf.get()
+        cfTocks = None
+        if self.tocks is not None:
+            cfTocks = self.tocks  # allow preconfigured tocks; for testing
+        elif "tocks" in conf:
+            cfTocks = conf["tocks"]
+        self.tocks = tocking.resolveTocks(cfTocks=cfTocks)
+
         if "dt" in conf:  # datetime of config file
             dt = help.fromIso8601(conf["dt"])  # raises error if not convert
             if "iurls" in conf:  # process OOBI URLs
@@ -951,7 +960,7 @@ class BaseHab:
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
-                 name='test', ns=None, pre=None, temp=False):
+                 name='test', ns=None, pre=None, temp=False, tocks=None):
         """
         Initialize instance.
 
@@ -977,6 +986,7 @@ class BaseHab:
         self.db = db  # injected
         self.ks = ks  # injected
         self.cf = cf  # injected
+        self.tocks = tocks  # injected
         self.mgr = mgr  # injected
         self.rtr = rtr  # injected
         self.rvy = rvy  # injected
