@@ -749,6 +749,188 @@ def test_missing_delegator_escrow():
     """End Test"""
 
 
+def test_witness_anchor_escrow():
+    """
+    Test pending witness delegation anchor escrow (pwde).
+
+    bob is the delegator
+    del is the delegate
+    wit is the delegate's witness
+
+    When a witness accepts a delegated inception event, validateDelegation
+    short-circuits (returns (None, None)) for locallyWitnessed events to
+    avoid a deadlock: the delegate needs witness receipts, but a strict
+    witness would need the delegation anchor first. Instead, logEvent
+    tracks the un-anchored delegated event in db.pwde.
+
+    Once the delegator's KEL arrives (containing the anchoring ixn with a
+    SealEvent for the delegate's dip), processEscrowWitnessAnchors finds
+    the seal via fetchLastSealingEventByEventSeal and stores the AES.
+    """
+
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
+    witSalt = core.Salter(raw=b'wxyzabcdefghijkl').qb64
+
+    psr = parsing.Parser()
+
+    with (basing.openDB(name="bob") as bobDB,
+          keeping.openKS(name="bob") as bobKS,
+          basing.openDB(name="del") as delDB,
+          keeping.openKS(name="del") as delKS,
+          basing.openDB(name="wit") as witDB,
+          keeping.openKS(name="wit") as witKS):
+
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
+        witMgr = keeping.Manager(ks=witKS, salt=witSalt)
+
+        bobKvy = eventing.Kevery(db=bobDB)
+        delKvy = eventing.Kevery(db=delDB)
+        witKvy = eventing.Kevery(db=witDB)
+
+        # --- Setup Wit as a non-transferable identifier (required for witnesses) ---
+        verfers, digers = witMgr.incept(stem='wit', ncount=0,
+                                        transferable=False, temp=True)
+        witSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers])
+
+        witPre = witSrdr.pre
+        witMgr.move(old=verfers[0].qb64, new=witPre)
+        witDB.prefixes.add(witPre)
+        assert witPre in witDB.prefixes
+
+        sigers = witMgr.sign(ser=witSrdr.raw, verfers=verfers)
+        msg = bytearray(witSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                                 count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        witIcpMsg = msg
+
+        psr.parse(ims=bytearray(witIcpMsg), kvy=witKvy, local=True)
+        witK = witKvy.kevers[witPre]
+        assert witK.prefixer.qb64 == witPre
+        assert witK.serder.said == witSrdr.said
+
+        # --- Setup Bob (delegator) with own inception event ---
+        verfers, digers = bobMgr.incept(stem='bob', temp=True)
+        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                  ndigs=[diger.qb64 for diger in digers],
+                                  code=coring.MtrDex.Blake3_256)
+
+        bobPre = bobSrdr.pre
+        bobMgr.move(old=verfers[0].qb64, new=bobPre)
+        bobDB.prefixes.add(bobPre)
+        assert bobPre in bobDB.prefixes
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
+        msg = bytearray(bobSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                                 count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        bobIcpMsg = msg
+
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=bobKvy, local=True)
+        bobK = bobKvy.kevers[bobPre]
+        assert bobK.prefixer.qb64 == bobPre
+        assert bobK.serder.said == bobSrdr.said
+        assert bobK.sn == 0
+
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
+        assert bobPre in delKvy.kevers
+
+        # --- Create Del's delegated inception event ---
+        verfers, digers = delMgr.incept(stem='del', temp=True)
+        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                   delpre=bobPre,
+                                   ndigs=[diger.qb64 for diger in digers],
+                                   wits=[witPre],
+                                   toad=1)
+
+        delPre = delSrdr.pre
+        delMgr.move(old=verfers[0].qb64, new=delPre)
+
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+        msg = bytearray(delSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                                 count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        delIcpMsg = msg
+
+        # --- Witness receives dip (no anchor exists yet) ---
+        psr.parse(ims=bytearray(delIcpMsg), kvy=witKvy, local=True)
+
+        assert delPre in witKvy.kevers
+        witDelK = witKvy.kevers[delPre]
+        assert witDelK.delegated
+        assert witDelK.serder.said == delSrdr.said
+
+        # AES not set — witness accepted without delegation anchor
+        assert witKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said)) is None
+
+        # Event tracked in pwde escrow
+        escrows = witKvy.db.pwde.getOn(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said
+
+        # --- Escrow processing: delegator KEL unknown, nothing resolves ---
+        witKvy.processEscrowWitnessAnchors()
+        assert witKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said)) is None
+        assert len(witKvy.db.pwde.getOn(keys=delPre, on=delSrdr.sn)) == 1
+
+        # --- Delegator creates ixn with seal (after witness accepted dip) ---
+        seal = eventing.SealEvent(i=delPre,
+                                  s=delSrdr.ked["s"],
+                                  d=delSrdr.said)
+        bobIxnSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+                                       dig=bobK.serder.said,
+                                       sn=bobK.sn + 1,
+                                       data=[seal._asdict()])
+
+        sigers = bobMgr.sign(ser=bobIxnSrdr.raw, verfers=bobK.verfers)
+        msg = bytearray(bobIxnSrdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                                 count=len(sigers), gvrsn=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        bobIxnMsg = msg
+
+        psr.parse(ims=bytearray(bobIxnMsg), kvy=bobKvy, local=True)
+        assert bobK.sn == 1
+
+        # --- Deliver Bob's full KEL (icp + ixn) to witness ---
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=witKvy, local=False)
+        assert bobPre in witKvy.kevers
+
+        psr.parse(ims=bytearray(bobIxnMsg), kvy=witKvy, local=False)
+        assert witKvy.kevers[bobPre].sn == 1
+
+        # --- processEscrowWitnessAnchors resolves the AES ---
+        witKvy.processEscrowWitnessAnchors()
+
+        seqner = coring.Seqner(sn=bobIxnSrdr.sn)
+        couple = witKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
+        assert couple == seqner.qb64b + bobIxnSrdr.saidb
+
+        # pwde escrow cleared
+        assert len(witKvy.db.pwde.getOn(keys=delPre, on=delSrdr.sn)) == 0
+
+    assert not os.path.exists(witKS.path)
+    assert not os.path.exists(witDB.path)
+    assert not os.path.exists(delKS.path)
+    assert not os.path.exists(delDB.path)
+    assert not os.path.exists(bobKS.path)
+    assert not os.path.exists(bobDB.path)
+
+    """End Test"""
+
+
 def test_misfit_escrow():
     """
     Test misfit escrow
