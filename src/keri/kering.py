@@ -811,6 +811,104 @@ class MissingDelegableApprovalError(ValidationError):
     """
 
 
+class MissequenceError(ValidationError):
+    """
+    Error registry (TEL) event's sequence number breaks the strict chain rule:
+    a rip whose n is not 0, or an update whose n is not exactly prior + 1.
+    A gapped chain is decided malformed on the evidence in hand, so it is a
+    permanent refusal, never an escrow candidate.
+
+    Usage:
+        raise MissequenceError("error message")
+    """
+
+
+class MisregistryError(ValidationError):
+    """
+    Error registry (TEL) update event's registry SAID, rd field, does not
+    match the SAID of the registry inception (rip) event it is presented
+    with, so the update belongs to some other registry. Permanent refusal.
+
+    Usage:
+        raise MisregistryError("error message")
+    """
+
+
+class MisanchorError(ValidationError):
+    """
+    Error registry (TEL) event's anchoring seal was found, but in a KEL whose
+    controller AID is not the registry's issuer. A seal in a stranger's KEL
+    is merely a nonrepudiable endorsement, not a duplicity-evident commitment
+    by the issuer. Permanent refusal, distinct from MissingAnchorError where
+    no seal has been found anywhere and one may yet arrive.
+
+    Usage:
+        raise MisanchorError("error message")
+    """
+
+
+class RootSealError(ValidationError):
+    """
+    Error the KEL event claimed to anchor a registry (TEL) event carries seal
+    digest(s) that match no event in the presented TEL: an aggregate seal in
+    the style of a Merkle/SMT root over many transaction events. Verifying
+    such an anchor requires an inclusion proof, which is not supported, so
+    this is its own named refusal, distinct from an anchor that is merely
+    missing (MissingAnchorError).
+
+    Usage:
+        raise RootSealError("error message")
+    """
+
+
+class MisbindingError(ValidationError):
+    """
+    Error the binding equalities between a presented ACDC and its registry
+    (TEL) evidence fail: the registry state's transaction ACDC SAID (td) does
+    not equal the ACDC's SAID, or the ACDC's registry SAID (rd) does not
+    equal the registry inception (rip) event's SAID. Each artifact may verify
+    alone; the substitution lives in the binding between them. Permanent
+    refusal.
+
+    Usage:
+        raise MisbindingError("error message")
+    """
+
+
+class DuplicitousRegistryError(ValidationError):
+    """
+    Error registry (TEL) duplicity: two distinct registry events at the same
+    sequence number both chain-verify and are both anchored in the issuer's
+    KEL. No ordering of the evidence may hide this. Permanent refusal.
+
+    Usage:
+        raise DuplicitousRegistryError("error message")
+    """
+
+
+class ConflictingRegistriesError(ValidationError):
+    """
+    Error parallel-registry equivocation: two registries (TELs) controlled by
+    the same issuer both commit to the same ACDC SAID with disagreeing
+    states. This is registry duplicity one level up. Permanent refusal.
+
+    Usage:
+        raise ConflictingRegistriesError("error message")
+    """
+
+
+class UnverifiedBlindError(ValidationError):
+    """
+    Error a disclosed blinded state attribute block does not reproduce the
+    BLID (blinded state SAID) anchored by the blindable update (bup) event it
+    is disclosed against, so the disclosure proves nothing about the
+    registry's state.
+
+    Usage:
+        raise UnverifiedBlindError("error message")
+    """
+
+
 # Stream Parsing and Extraction Errors
 class ExtractionError(KeriError):
     """
