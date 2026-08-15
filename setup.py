@@ -57,7 +57,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.14',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
         # 'Programming Language :: Python :: Implementation :: PyPy',
@@ -74,7 +74,7 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.12.2',
+    python_requires='>=3.14.0',
     install_requires=[
                         'lmdb>=1.4.1',
                         'pysodium>=0.7.17',
@@ -83,7 +83,7 @@ setup(
                         'cbor2>=5.6.2',
                         'multidict>=6.0.5',
                         'ordered-set>=4.1.0',
-                        'hio>=0.6.14',
+                        'hio>=0.7.19',
                         'multicommand==1.0.0',
                         'jsonschema>=4.21.1',
                         'falcon>=3.1.3',
