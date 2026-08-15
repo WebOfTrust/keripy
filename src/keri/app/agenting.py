@@ -1030,8 +1030,9 @@ class HTTPMessenger(doing.DoDoer):
         """Preserve terminal responses and detect cutoff with pending work.
 
         Received HIO responses move unchanged to ``sent``; their transport and
-        status fields remain available to consumers. When no response exists,
-        cutoff is terminal if HIO still has queued, active, or unsent work.
+        status fields remain available to consumers. Cutoff while HIO is
+        waiting on an active response is deferred for its response-finalization
+        pass. Otherwise cutoff is terminal when queued or unsent work remains.
         """
         self.wind(tymth)
         _ = (yield tock)
@@ -1042,11 +1043,11 @@ class HTTPMessenger(doing.DoDoer):
                 self.sent.append(rep)
                 yield tock
 
-            # report error only on connection cutoff and pending request/response/bytes exist
+            # report cutoff only after active-response finalization
             if (self.error is None and
                     self.client.connector.cutoff and
+                    not self.client.waited and
                     (self.client.requests or
-                     self.client.waited or
                      self.client.connector.txbs)):
                 self.error = kering.ClosedError(
                     f"HTTP connection to {self.wit} closed before all "
@@ -1120,12 +1121,20 @@ class HTTPStreamMessenger(doing.DoDoer):
         super(HTTPStreamMessenger, self).__init__(doers=doers, **kwa)
 
     def recur(self, tyme, deeds=None):
-        """Store the response or terminate on cutoff before one arrives."""
+        """Store the response or terminate on cutoff before one arrives.
+
+        HIO observes TCP cutoff one service pass before it finalizes a response
+        whose body is delimited by connection close. An active request therefore
+        gets that final pass before cutoff is classified as failure.
+        """
         if self.client.responses:
             self.rep = self.client.respond()
             return True
 
         if self.error is None and self.client.connector.cutoff:
+            if self.client.waited:
+                return super(HTTPStreamMessenger, self).recur(tyme, deeds)
+
             self.error = kering.ClosedError(
                 f"HTTP connection to {self.wit} closed before its response "
                 f"arrived"

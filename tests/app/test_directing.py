@@ -44,6 +44,21 @@ def make_remoter(ims=b"", *, cutoff=False, cs=None, tymeout=None):
     return remoter
 
 
+def drain_socket(sock):
+    """Return all currently readable bytes without blocking."""
+    sock.setblocking(False)
+    received = bytearray()
+    while True:
+        try:
+            data = sock.recv(4096)
+        except (BlockingIOError, OSError):
+            break
+        if not data:
+            break
+        received.extend(data)
+    return bytes(received)
+
+
 def test_directing_basic():
     """
     Test directing
@@ -290,7 +305,9 @@ def test_reactant_close_resets_message_in_progress(direct_habs):
 def test_directant_retains_buffered_input_after_cutoff(direct_habs):
     alice, bob = direct_habs
 
-    remoter = make_remoter(alice.makeOwnEvent(sn=0), cutoff=True)
+    remoterSocket, peerSocket = socket.socketpair()
+    remoter = make_remoter(alice.makeOwnEvent(sn=0), cutoff=True,
+                           cs=remoterSocket)
     ca = remoter.ca
 
     server = serving.Server()
@@ -324,6 +341,7 @@ def test_directant_retains_buffered_input_after_cutoff(direct_habs):
     finally:
         doist.exit()
         server.close()
+        peerSocket.close()
 
 
 def test_directant_closes_cutoff_without_buffered_input(direct_habs):
@@ -349,35 +367,117 @@ def test_directant_closes_cutoff_without_buffered_input(direct_habs):
     server.close()
 
 
-def test_directant_timeout_preserves_buffered_input_for_drain(direct_habs):
+def test_directant_timeout_delivers_receipt_for_buffered_input(direct_habs):
     alice, bob = direct_habs
 
-    # peerSocket keeps the far end of the socket open so cutoff comes from timeout instead of EOF
+    # keep the peer open so the close request comes from local timeout
     remoterSocket, peerSocket = socket.socketpair()
     remoter = make_remoter(alice.makeOwnEvent(sn=0),
-                           cs=remoterSocket, tymeout=1.0)
+                           cs=remoterSocket, tymeout=0.03125)
     ca = remoter.ca
-    now = [0.0]
 
     server = serving.Server()
     server.ixes[ca] = remoter
     directant = directing.Directant(hab=bob, server=server)
-    directant.wind(lambda: now[0])
-    # expire the timeout while received bytes still need parsing
-    now[0] = 2.0
-    dog = directant.serviceDo(tymth=lambda: now[0], tock=0.0)
+    doist = doing.Doist(tock=0.03125, limit=1.0, doers=[directant])
+    doist.enter()
+    received = bytearray()
 
-    next(dog)
-    next(dog)
-    # timeout becomes cutoff but does not bypass buffered-input drain
-    assert remoter.cutoff
-    assert ca in server.ixes
-    assert ca in directant.rants
-    assert not directant.rants[ca].rxDrained
+    def closed():
+        received.extend(drain_socket(peerSocket))
+        return ca not in server.ixes and ca not in directant.rants
 
-    dog.close()
-    server.close()
+    try:
+        # timeout retains the Reactant until its input and response both drain
+        doist.recur()
+        assert ca in directant.rants
+        rant = directant.rants[ca]
+
+        recurUntil(doist, condition=closed,
+                   message="timed-out connection did not finish draining")
+        received.extend(drain_socket(peerSocket))
+
+        # parsing the final event produces a receipt before teardown
+        assert alice.pre in rant.kevery.kevers
+        assert rant.rxDrained
+        assert rant.txDrained
+        assert b'"t":"rct"' in received
+    finally:
+        doist.exit()
+        server.close()
+        peerSocket.close()
+
+
+def test_directant_delivers_receipt_after_peer_half_close(
+        direct_habs, unused_tcp_port):
+    alice, bob = direct_habs
+
+    # run the production Directant and ServerDoer against a real TCP peer
+    server = serving.Server(host="127.0.0.1", port=unused_tcp_port)
+    directant = directing.Directant(hab=bob, server=server)
+    serverDoer = serving.ServerDoer(server=server)
+    doist = doing.Doist(tock=0.03125, limit=2.0,
+                        doers=[directant, serverDoer])
+    doist.enter()
+
+    peer = socket.create_connection(("127.0.0.1", unused_tcp_port))
+    peer.sendall(alice.makeOwnEvent(sn=0))
+    peer.shutdown(socket.SHUT_WR)
+    received = bytearray()
+    seen = []
+
+    def closed():
+        received.extend(drain_socket(peer))
+        seen.extend(ca for ca in server.ixes if ca not in seen)
+        return bool(seen) and not server.ixes and not directant.rants
+
+    try:
+        # receive EOF still leaves the TCP send side available for the receipt
+        recurUntil(doist, condition=closed,
+                   message="half-closed connection did not finish draining")
+        received.extend(drain_socket(peer))
+
+        assert alice.pre in bob.kevers
+        assert b'"t":"rct"' in received
+    finally:
+        doist.exit()
+        peer.close()
+
+
+def test_directant_closes_after_terminal_send_failure(direct_habs):
+    alice, bob = direct_habs
+
+    remoterSocket, peerSocket = socket.socketpair()
     peerSocket.close()
+    message = alice.makeOwnEvent(sn=0)
+    remoter = make_remoter(message[:10], cutoff=True, cs=remoterSocket)
+    remoter.tx(b"unsendable response")
+    ca = remoter.ca
+
+    server = serving.Server()
+    server.ixes[ca] = remoter
+    directant = directing.Directant(hab=bob, server=server)
+    doist = doing.Doist(tock=0.03125, limit=1.0, doers=[directant])
+    doist.enter()
+
+    try:
+        # a broken send side is terminal but does not bypass receiver cleanup
+        doist.recur()
+        assert ca in directant.txFailed
+        rant = directant.rants[ca]
+
+        recurUntil(
+            doist,
+            condition=lambda: (ca not in server.ixes and
+                               ca not in directant.rants),
+            message="terminal send failure did not close the connection",
+        )
+
+        assert rant.rxFailed
+        assert remoter.txbs
+    finally:
+        doist.exit()
+        server.close()
 
 
 def test_runcontroller_demo():

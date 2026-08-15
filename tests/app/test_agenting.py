@@ -170,6 +170,50 @@ TERMINAL_RESPONSES = (
     make_hio_response(status=None, errored=True, error="connection reset"),
 )
 
+HTTP_CLOSE_FRAMED_RESPONSE = (b"HTTP/1.1 200 OK\r\n"
+                              b"Content-Type: application/json\r\n"
+                              b"Connection: close\r\n"
+                              b"\r\n"
+                              b"{}")
+
+
+def has_complete_http_request(ims):
+    """Whether ims contains one complete Content-Length-framed request."""
+    if b"\r\n\r\n" not in ims:
+        return False
+
+    head, _, body = bytes(ims).partition(b"\r\n\r\n")
+    length = 0
+    for line in head.split(b"\r\n")[1:]:
+        name, _, value = line.partition(b":")
+        if name.strip().lower() == b"content-length":
+            length = int(value.strip())
+            break
+    return len(body) >= length
+
+
+def close_framed_response_do(server):
+    """Create a doer that returns one HTTP response delimited by TCP FIN."""
+    @doing.doize(tock=0.03125)
+    def respond(tymth=None, tock=0.0, **kwa):
+        yield tock
+
+        while not server.ixes:
+            yield tock
+        remoter = next(iter(server.ixes.values()))
+
+        while not has_complete_http_request(remoter.rxbs):
+            yield tock
+
+        remoter.tx(HTTP_CLOSE_FRAMED_RESPONSE)
+        while remoter.txbs:
+            yield tock
+
+        remoter.shutdownSend()
+        return True
+
+    return respond
+
 
 @pytest.fixture()
 def messenger_hab():
@@ -389,25 +433,84 @@ def test_http_messenger_preserves_terminal_responses(
         assert messenger.error is None
 
 
+def test_http_messenger_finalizes_close_framed_response(
+        messenger_hab, unused_tcp_port):
+    # serve a real response whose body boundary is the peer's TCP FIN
+    server = serving.Server(host="127.0.0.1", port=unused_tcp_port)
+    serverDoer = serving.ServerDoer(server=server)
+    responder = close_framed_response_do(server)
+    messenger = agenting.HTTPMessenger(
+        hab=messenger_hab,
+        wit=messenger_hab.pre,
+        url=f"http://127.0.0.1:{unused_tcp_port}",
+    )
+    doist = doing.Doist(tock=0.03125, limit=1.0,
+                        doers=[serverDoer, responder, messenger])
+    doist.enter()
+
+    try:
+        messenger.msgs.append(bytearray(messenger_hab.makeOwnInception()))
+
+        # cutoff must finalize the active response before error classification
+        recurUntil(
+            doist,
+            condition=lambda: bool(messenger.sent) or messenger.error is not None,
+            message="close-framed response did not reach a terminal outcome",
+        )
+
+        assert messenger.error is None
+        assert messenger.sent[0].status == 200
+        assert messenger.idle
+    finally:
+        doist.exit()
+
+
+def test_http_stream_messenger_finalizes_close_framed_response(
+        messenger_hab, unused_tcp_port):
+    # exercise the one-shot messenger against the same real FIN boundary
+    server = serving.Server(host="127.0.0.1", port=unused_tcp_port)
+    serverDoer = serving.ServerDoer(server=server)
+    responder = close_framed_response_do(server)
+    messenger = agenting.HTTPStreamMessenger(
+        hab=messenger_hab,
+        wit=messenger_hab.pre,
+        url=f"http://127.0.0.1:{unused_tcp_port}",
+        msg=messenger_hab.makeOwnInception(),
+    )
+    doist = doing.Doist(tock=0.03125, limit=1.0,
+                        doers=[serverDoer, responder, messenger])
+    doist.enter()
+
+    try:
+        # an active response gets its HIO finalization pass before cutoff wins
+        recurUntil(doist,
+                   condition=lambda: messenger.done,
+                   message="HTTP stream messenger did not complete")
+
+        assert messenger.error is None
+        assert messenger.rep is not None
+        assert messenger.rep.status == 200
+    finally:
+        doist.exit()
+
+
 @pytest.mark.parametrize(
-    ("request_queued", "request_active", "unsent", "expected_error"),
+    ("request_queued", "unsent", "expected_error"),
     [
-        (False, False, b"", False),
-        (True, False, b"", True),
-        (False, True, b"", True),
-        (False, False, b"pending", True),
+        (False, b"", False),
+        (True, b"", True),
+        (False, b"pending", True),
     ],
-    ids=("no-pending-work", "queued-request", "active-request", "unsent-bytes"),
+    ids=("no-pending-work", "queued-request", "unsent-bytes"),
 )
 def test_http_messenger_cutoff_depends_on_pending_work(
-        request_queued, request_active, unsent, expected_error,
+        request_queued, unsent, expected_error,
         running_http_messenger):
     messenger, doist = running_http_messenger
     connector = messenger.client.connector
 
     if request_queued:
         messenger.client.request(method="GET", path="/")
-    messenger.client.waited = request_active
     connector.txbs.extend(unsent)
     connector.cutoff = True
 
