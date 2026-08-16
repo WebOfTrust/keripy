@@ -318,7 +318,7 @@ def test_tcp_messenger_records_cutoff_with_unsent_bytes(
         wit="witness",
         url=f"tcp://127.0.0.1:{unused_tcp_port}",
     )
-    doist = doing.Doist(tock=0.03125, limit=1.0,
+    doist = doing.Doist(real=True, tock=0.03125, limit=1.0,
                         doers=[serverDoer, messenger])
     doist.enter()
 
@@ -444,7 +444,7 @@ def test_http_messenger_finalizes_close_framed_response(
         wit=messenger_hab.pre,
         url=f"http://127.0.0.1:{unused_tcp_port}",
     )
-    doist = doing.Doist(tock=0.03125, limit=1.0,
+    doist = doing.Doist(real=True, tock=0.03125, limit=1.0,
                         doers=[serverDoer, responder, messenger])
     doist.enter()
 
@@ -477,7 +477,7 @@ def test_http_stream_messenger_finalizes_close_framed_response(
         url=f"http://127.0.0.1:{unused_tcp_port}",
         msg=messenger_hab.makeOwnInception(),
     )
-    doist = doing.Doist(tock=0.03125, limit=1.0,
+    doist = doing.Doist(real=True, tock=0.03125, limit=1.0,
                         doers=[serverDoer, responder, messenger])
     doist.enter()
 

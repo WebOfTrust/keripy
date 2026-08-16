@@ -3,6 +3,7 @@
 Test utilities for app
 """
 from contextlib import contextmanager
+import time
 
 from hio.base import tyming
 
@@ -13,7 +14,7 @@ from keri.db import dbing
 
 
 def recurUntil(doist, condition, message):
-    """Recur a bounded Doist until condition is true or its limit expires."""
+    """Recur a bounded Doist, honoring real-time pacing when enabled."""
     if doist.limit is None or doist.limit <= 0.0:
         raise ValueError("recurUntil requires a positive Doist limit")
     if doist.tock <= 0.0:
@@ -24,6 +25,8 @@ def recurUntil(doist, condition, message):
         if tymer.expired:
             raise AssertionError(message)
         doist.recur()
+        if doist.real:
+            time.sleep(doist.tock)  # sleep since recurUntil bypasses do(); normally Doist.do sleeps
 
 
 @contextmanager

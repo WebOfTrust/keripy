@@ -416,7 +416,7 @@ def test_directant_delivers_receipt_after_peer_half_close(
     server = serving.Server(host="127.0.0.1", port=unused_tcp_port)
     directant = directing.Directant(hab=bob, server=server)
     serverDoer = serving.ServerDoer(server=server)
-    doist = doing.Doist(tock=0.03125, limit=2.0,
+    doist = doing.Doist(real=True, tock=0.03125, limit=2.0,
                         doers=[directant, serverDoer])
     doist.enter()
 
