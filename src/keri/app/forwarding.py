@@ -171,6 +171,8 @@ class Poster(doing.DoDoer):
             self.extend([witer])
 
             while not witer.idle:
+                if witer.error is not None:
+                    raise witer.error
                 _ = (yield tock)
 
             self.remove([witer])
@@ -207,6 +209,8 @@ class Poster(doing.DoDoer):
         self.extend([witer])
 
         while not witer.idle:
+            if witer.error is not None:
+                raise witer.error
             _ = (yield tock)
 
     def forwardToWitness(self, hab, ends, recp, serder, atc, topic, tock=None):
@@ -241,6 +245,8 @@ class Poster(doing.DoDoer):
         self.extend([witer])
 
         while not witer.idle:
+            if witer.error is not None:
+                raise witer.error
             _ = (yield tock)
 
 

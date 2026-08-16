@@ -2580,6 +2580,11 @@ def test_serdery():
 
     serdery = Serdery()
 
+    partial = bytearray(serderKeri.raw[:-1])
+    with pytest.raises(kering.ShortageError):
+        serdery.reap(partial)
+    assert partial == serderKeri.raw[:-1]
+
     serder = serdery.reap(ims)
     assert isinstance(serder, SerderKERI)
     assert serder.raw == serderKeri.raw

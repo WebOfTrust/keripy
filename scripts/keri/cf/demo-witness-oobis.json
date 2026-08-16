@@ -28,7 +28,7 @@
     "receiptor": 0.0,
     "oobi": 0.0,
     "witnessReceiptor": 0.0,
-    "witnessReceiptorIdle": 1.0,
+    "witnessReceiptorIdle": 0.0,
     "witnessInquisitor": 0.0,
     "witnessPublisher": 0.0,
     "registrarEscrow": 0.03125,
