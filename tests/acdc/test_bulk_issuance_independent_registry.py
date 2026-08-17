@@ -75,7 +75,12 @@ interop-blocking and belong in the spec, not here.
 
 WHERE THE L-NUMBERS POINT. Every "spec L####" in this module is a line number in
 spec/spec-body.md of trustoverip/kswg-acdc-specification at commit f96ef54 (2026-07-27),
-which is `main` with PR #200 merged. The pin is stated because these numbers drift: an
+"Sync Working ACDC Examples with the keripy reference implementation (#198)". An earlier
+revision of this note called f96ef54 "`main` with PR #200 merged", which is wrong on both
+counts -- #200 ("Pin the bulk-issuance derivation-path index to lowercase hex") merged at
+9d80942, and f96ef54 is #198. The +2 offset described below is real and was re-verified
+against upstream/main; only the provenance sentence was wrong. The pin is stated because
+these numbers drift: an
 earlier revision of this module was written against a checkout that predated #200 and
 every citation in this region ran two lines low, which is invisible until someone follows
 one. If you are checking these against a different commit and they miss by a small
