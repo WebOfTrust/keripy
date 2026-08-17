@@ -895,8 +895,23 @@ def _age_ael(nonces, k):
 
     Element 0 is the AGID placeholder; element 1 is the issuee block (i = ALICE_k), where
     SerderACDC.iseaid resolves the aggregate issuee; elements 2.. are one blinded boolean
-    block per threshold (over<n> = ALICE_AGE >= n). All thresholds present, so disclosing
-    one flag reveals nothing about the others. Per-copy blinding nonces at paths "k/j".
+    block per threshold (over<n> = ALICE_AGE >= n). Per-copy blinding nonces at paths "k/j".
+
+    WHAT SELECTIVE DISCLOSURE HIDES HERE, STATED CORRECTLY. The aggregate hides the field
+    LABELS and the block SAIDs of the undisclosed elements -- so a verifier shown over-21
+    learns nothing about over-65, and cannot even tell which other thresholds exist. What
+    it does not hide is a logical consequence, and this vector has plenty: the thresholds
+    are ordered, so the flags are a MONOTONE predicate over one underlying age. Disclosing
+    the highest TRUE threshold entails every lower one. Alice showing over-21 leaks nothing
+    upward, but a 66-year-old showing over-65 for a senior discount has disclosed the whole
+    vector, because over-65 implies over-55, over-21, over-18, over-16 and over-13.
+
+    This is a property of the predicate set, not of the Aggregate section: an aggregate of
+    INDEPENDENT attributes leaks nothing in either direction. It is called out because the
+    downward case reads as though it generalizes, and it does not. An application that
+    needs the upward direction hidden wants disjoint bands (13-15, 16-17, ...) rather than
+    cumulative thresholds, and pays for it in the number of blocks a verifier must be
+    shown to evaluate a range.
     """
     els = ['', dict(d='', u=nonces.u(k, 1), i=ALICES[k])]
     for offset, n in enumerate(AGE_THRESHOLDS):
