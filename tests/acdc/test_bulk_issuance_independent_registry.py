@@ -1280,7 +1280,7 @@ def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
                     stamp=OFFER_STAMP, kind=kind)
 
 
-def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
+def _verify_issuance(copy, *, reg, event, blind, proof, sealer):
     """The Disclosee's proof-of-issuance check for an independent-registry ACDC.
 
     Spec L2871 lists five steps for the shared-registry variant: recompute the SAID,
@@ -1295,9 +1295,31 @@ def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
          so following it must end at a registry the credential's issuer controls. Skip
          it and a holder can point the verifier at a registry SHE incepted and keeps
          'issued' forever;
-      2. the event's blinded state unblinds, with THIS COPY's salt, to a state bound to
-         THIS COPY's SAID (a wrong salt or a wrong SAID yields None);
+      2. the event's blinded state unblinds, with the blind disclosed FOR THIS ONE EVENT,
+         to a state bound to THIS COPY's SAID (a wrong blind or a wrong SAID yields None);
       3. the event is a leaf under the root the Issuer sealed in its KEL.
+
+    TAKES THE BLIND, NOT THE SALT, AND THE DIFFERENCE IS THE WHOLE PROPERTY. An earlier
+    revision of this example passed `salt=` here and disclosed the per-copy blinding salt
+    in the grant. That is more authority than the disclosure needs and more than the spec
+    contemplates: `Blinder.makeUUID` derives the blind as Salter(salt).stretch(path=hex(sn))
+    (src/keri/core/structing.py:1421-1436), so the sequence number is the ENTIRE derivation
+    path and there is no per-event secret. A Disclosee holding the salt can therefore
+    unblind every event in the registry, past and future, without ever interacting again.
+
+    That defeats the remedy spec L2131 describes -- "the Discloser may then request that
+    the Issuer update the state with a new blinding factor… The Disclosee cannot then
+    observe the current state of the TEL without yet another disclosure interaction" --
+    and it contradicts spec L2133, which reserves the salt to the Issuer and Discloser
+    alone: "Only the Issuer and Discloser have a copy of the secret salt, so only they can
+    independently derive the current blind from the sequence number."
+
+    So the Discloser computes Blinder.makeUUID(salt=..., sn=n) for the one event being
+    disclosed and sends THAT. `Blinder.unblind` accepts it directly and skips derivation
+    (structing.py:1483, :1518-1521). Each later state change then requires a fresh
+    disclosure, which is what makes the re-blinding remedy real. Note this is the minimum
+    correction, not a finished disclosure protocol: event binding, replay, freshness and
+    substitution resistance are out of scope here.
 
     Returns the state string ('issued' / 'revoked') or None if any step fails.
     """
@@ -1306,7 +1328,7 @@ def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
     if reg.sad['i'] != copy.sad['i']:      # the issuer controls the registry it names
         return None
     blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=SET_STATES,
-                              salt=salt, sn=sn)
+                              uuid=blind)
     if blinder is None:
         return None
     if not _BatchTree.verify(event.said, proof, sealer.crew.rd):
@@ -1319,10 +1341,13 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
 
     Two properties. First, disclosure gating: the pre-agree /ipex/offer commits only the
     fresh presentation SAID and public governance, built with a constructor that cannot
-    carry the source SAIDs, the registry SAIDs, the transaction events or the blinding
-    salts (#1532's make-it-unrepresentable guidance). All of that appears ONLY in the
+    carry the source SAIDs, the registry SAIDs, the transaction events or any blinding
+    material (#1532's make-it-unrepresentable guidance). All of that appears ONLY in the
     grant, after a valid signed agree, so a verifier who spurns walks away with no stable
-    correlator and no proof of issuance. Second, revocation, which this variant changes
+    correlator and no proof of issuance. Note what the grant does and does not carry: the
+    blind for the ONE event being proved, never the per-copy blinding salt that would
+    derive every other event's blind too (see _verify_issuance). Second, revocation, which
+    this variant changes
     qualitatively: the State revokes the copy spent at the Alcove and the copy spent at
     the dispensary is untouched, because they live in different registries. The
     shared-registry variant cannot express that -- one registry, one state, all M copies.
@@ -1414,7 +1439,8 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
                         attributes=dict(
                             acdc=pres.sad, ageDisclosure=ageDisc,
                             issuance=dict(rip=ageRegs[k].sad, event=ageIssues[k].sad,
-                                          salt=ageNonces.b(k),
+                                          blind=Blinder.makeUUID(
+                                              salt=ageNonces.b(k), sn=1),
                                           proof=tree.prove(ageIssues[k].said),
                                           root=sealer.crew.rd)),
                         stamp=GRANT_STAMP, kind=kind)
@@ -1426,7 +1452,9 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert grant is not None and grant.sad['p'] == agree.said
     assert ageRegs[k].said.encode() in grant.raw                # registry revealed...
     assert ageIssues[k].said.encode() in grant.raw              # ...event revealed...
-    assert ageNonces.b(k).encode() in grant.raw                 # ...salt revealed...
+    assert ageNonces.b(k).encode() not in grant.raw             # ...salt STILL withheld...
+    assert Blinder.makeUUID(salt=ageNonces.b(k),
+                            sn=1).encode() in grant.raw         # ...one event's blind only
     assert idCopies[k].said.encode() in grant.raw               # ...source SAIDs revealed
     assert ageCopies[k].said.encode() in grant.raw
 
@@ -1441,7 +1469,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # can confirm the State incepted it rather than taking the holder's word for `rd`.
     assert bundle['rip']['d'] == ageRegs[k].said and bundle['rip']['i'] == STATE
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=ageIssues[k],
-                            salt=bundle['salt'],
+                            blind=bundle['blind'],
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) == 'issued'
     assert grant.sad['a']['ageDisclosure'][AGE_OVER21]['over21'] is True
@@ -1450,11 +1478,11 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # or salt fails the same check.
     other = (k + 1) % BULK_SIZE
     assert _verify_issuance(ageCopies[k], reg=ageRegs[other], event=ageIssues[k],
-                            salt=bundle['salt'],
+                            blind=bundle['blind'],
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) is None
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=ageIssues[k],
-                            salt=ageNonces.b(other),
+                            blind=Blinder.makeUUID(salt=ageNonces.b(other), sn=1),
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) is None
 
@@ -1477,7 +1505,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert _verify_anchored(rogueIssue.said, rogueTree, rogueSealer)   # the event is real
     assert rogueCopy.sad['rd'] == rogueReg.said                        # and self-consistent
     assert _verify_issuance(rogueCopy, reg=rogueReg, event=rogueIssue,
-                            salt=rogueNonces.b(k),
+                            blind=Blinder.makeUUID(salt=rogueNonces.b(k), sn=1),
                             proof=rogueTree.prove(rogueIssue.said),
                             sealer=rogueSealer) is None                # yet refused
 
@@ -1493,16 +1521,24 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # mixed with the herd again.
     laterTree, laterSealer = _anchor([revoked.said], _herd_events(kind))
     assert _verify_anchored(revoked.said, laterTree, laterSealer)
+    # The verifier cannot follow the registry on its own: the blind it was given covers
+    # sn=1 only, so reading sn=2 needs a FRESH disclosure from the holder. That is spec
+    # L2131's remedy, and it works only because the grant sent a blind and not the salt.
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
-                            salt=ageNonces.b(k),
+                            blind=Blinder.makeUUID(salt=ageNonces.b(k), sn=1),
                             proof=laterTree.prove(revoked.said),
-                            sealer=laterSealer, sn=2) == 'revoked'
+                            sealer=laterSealer) is None            # sn=1 blind is useless
+    assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
+                            blind=Blinder.makeUUID(salt=ageNonces.b(k), sn=2),
+                            proof=laterTree.prove(revoked.said),
+                            sealer=laterSealer) == 'revoked'       # re-disclosed
 
     # THE new capability: the dispensary's copy is untouched. Different registry,
     # different state. The shared-registry variant revokes all M or none.
     assert ageRegs[other].said != ageRegs[k].said
     assert _verify_issuance(ageCopies[other], reg=ageRegs[other],
-                            event=ageIssues[other], salt=ageNonces.b(other),
+                            event=ageIssues[other],
+                            blind=Blinder.makeUUID(salt=ageNonces.b(other), sn=1),
                             proof=tree.prove(ageIssues[other].said),
                             sealer=sealer) == 'issued'
 
@@ -1510,9 +1546,9 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # returns 'revoked' where it returned 'issued', so a status-checking verifier refuses.
     assert _verify_presentation(pres, idCopies[k], ageCopies[k])   # graph still binds...
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
-                            salt=ageNonces.b(k),
+                            blind=Blinder.makeUUID(salt=ageNonces.b(k), sn=2),
                             proof=laterTree.prove(revoked.said),
-                            sealer=laterSealer, sn=2) != 'issued'  # ...yet status forbids
+                            sealer=laterSealer) != 'issued'        # ...yet status forbids
 
 
 # ===========================================================================
@@ -1550,7 +1586,7 @@ def test_indreg_serialization_kinds(kind):
         for copy, regs, issues, nonces in ((idCopies[k], idRegs, idIssues, idNonces),
                                            (ageCopies[k], ageRegs, ageIssues, ageNonces)):
             assert _verify_issuance(copy, reg=regs[k], event=issues[k],
-                                    salt=nonces.b(k),
+                                    blind=Blinder.makeUUID(salt=nonces.b(k), sn=1),
                                     proof=tree.prove(issues[k].said),
                                     sealer=sealer) == 'issued'
 
