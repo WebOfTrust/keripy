@@ -124,7 +124,7 @@ class WebRegBaser(WebDBer):
         self.env = self.db.env
 
         _before = set(self.__dict__)
-        
+
         self.evts = SerderSuber(db=self, subkey='evts.', klas=SerderACDC)
         self.ancs = CatCesrSuber(db=self, subkey='ancs.',
                                 klas=(Number, Diger))

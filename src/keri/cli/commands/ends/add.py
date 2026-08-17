@@ -11,7 +11,7 @@ from hio.help import ogler
 
 from ...common import setupHby, Parsery, parseVersion
 
-from ....kering import ConfigurationError, Kinds, Version
+from ....kering import ConfigurationError, Kinds, Version, Vrsn_1_0
 from ....app import (GroupHab, Multiplexor, MailboxDirector,
                      Poster, WitnessPublisher, Notifier,
                      multisigRpyExn)
@@ -67,6 +67,7 @@ class RoleDoer(doing.DoDoer):
         self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
+        self.mux = mux
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
@@ -112,7 +113,14 @@ class RoleDoer(doing.DoDoer):
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg,
-                                          version=self.version, kind=Kinds.json)
+                                          version=Vrsn_1_0, kind=Kinds.json)
+                local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + atc),
+                                                        framed=True,
+                                                        processive=False)[0]
+                self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                      tsgs=local.tsgs, cigars=local.cigars,
+                                      essrs=local.essrs)
+                self.mux.add(local.serder)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

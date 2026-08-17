@@ -8,7 +8,7 @@ from hio.help import ogler
 from ...common import existing
 from ...common.parsing import Parsery
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Vrsn_1_0
 
 from ....app import (MailboxDirector, HaberyDoer, GroupHab, Counselor,
                      Multiplexor, Organizer, Poster, Notifier,
@@ -252,7 +252,8 @@ class CredentialIssuer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                exn, atc = multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc,
+                                            version=Vrsn_1_0)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

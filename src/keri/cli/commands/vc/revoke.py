@@ -9,7 +9,7 @@ from hio.base import doing
 
 from ...common import Parsery, setupHby
 
-from ....kering import ValidationError, Ilks
+from ....kering import ValidationError, Ilks, Vrsn_1_0
 from ....app import (MailboxDirector, HaberyDoer, Counselor,
                      Multiplexor, Poster, Organizer, Notifier,
                      GroupHab, multisigRevokeExn)
@@ -127,7 +127,8 @@ class RevokeDoer(doing.DoDoer):
                 smids.remove(self.hab.mhab.pre)
 
                 for recp in smids:  # this goes to other participants only as a signaling mechanism
-                    exn, atc = multisigRevokeExn(ghab=self.hab, said=creder.said, rev=rserder.raw, anc=anc)
+                    exn, atc = multisigRevokeExn(ghab=self.hab, said=creder.said, rev=rserder.raw, anc=anc,
+                                                 version=Vrsn_1_0)
                     self.postman.send(src=self.hab.mhab.pre,
                                       dest=recp,
                                       topic="multisig",

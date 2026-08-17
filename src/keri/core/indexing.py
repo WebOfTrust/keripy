@@ -235,24 +235,26 @@ class Indexer:
         """
         Validate as fully qualified.
 
+        Initialize from either raw cryptographic material with a valid
+        derivation code, or from fully qualified material.
+
+        Needs either (raw and code) or qb64b or qb64 or qb2.
+        Otherwise raises EmptyMaterialError.
+        When raw and code are provided, index defaults to 0 and the code
+        is validated against the length of raw, then .raw is assigned.
+        When qb64b, qb64, or qb2 is provided, .raw, .code, .index, and
+        .ondex are extracted from the qualified material.
+
         Parameters:
             raw (bytes): unqualified crypto material usable for crypto operations
             code (str): stable (hard) part of derivation code
             index (int): main index offset into list or length of material
             ondex (int | None): other index offset into list or length of material
             qb64b (bytes): fully qualified Base64 crypto material
-            qb64 (str | bytes):  fully qualified Base64 crypto material
+            qb64 (str | bytes): fully qualified Base64 crypto material
             qb2 (bytes): fully qualified binary crypto material
             strip (bool): True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
-
-        Notes:
-            Needs either (raw and code and index) or qb64b or qb64 or qb2.
-            Otherwise raises EmptyMaterialError.
-            When raw and code provided then validate that code is correct for
-            length of raw and assign .raw.
-            Else when qb64b or qb64 or qb2 provided extract and assign .raw,
-            .code, .index, .ondex.
 
         """
         if raw is not None:  # raw provided

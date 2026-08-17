@@ -13,13 +13,13 @@ from hio.help import ogler
 from ...common import (Parsery, config, addRotationArgs,
                        setupHby, printIdentifier, parseVersion)
 
-from ....kering import ConfigurationError, Kinds
+from ....kering import ConfigurationError, Kinds, Vrsn_1_0
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
                      multisigRotateExn)
 from ....app.grouping import loadHandlers
 
-from ....core import Prefixer, Number, Diger, SerderKERI
+from ....core import Prefixer, Number, Diger, SerderKERI, Parser
 from ....db import dgKey
 from ....peer import Exchanger
 
@@ -219,8 +219,15 @@ class GroupMultisigRotate(doing.DoDoer):
                                      smids=smids,
                                      rmids=rmids,
                                      rot=bytearray(rot),
-                                     version=self.version,
+                                     version=Vrsn_1_0,
                                      kind=Kinds.json)
+        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                framed=True,
+                                                processive=False)[0]
+        self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                              tsgs=local.tsgs, cigars=local.cigars,
+                              essrs=local.essrs)
+        self.mux.add(local.serder)
         others = list(oset(smids + (rmids or [])))
 
         others.remove(ghab.mhab.pre)

@@ -17,7 +17,7 @@ import pytest
 from hio.base import doing
 
 from keri import help, Schemes, Roles
-from keri.kering import Vrsn_1_0, Kinds
+from keri.kering import Vrsn_1_0, Version, Kinds
 from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.help import helping
 from keri.recording import EndpointRecord, LocationRecord
@@ -230,7 +230,7 @@ def witnessPorter(unused_tcp_port_factory):
 
 class DbSeed:
     @staticmethod
-    def seedWitEnds(db, witHabs, protocols=None, version=Vrsn_1_0, kind=Kinds.json, witnessUrls=None):
+    def seedWitEnds(db, witHabs, protocols=None, version=Version, kind=Kinds.json, witnessUrls=None):
         """ Add endpoint and location records for well known test witnesses
 
         Args:
