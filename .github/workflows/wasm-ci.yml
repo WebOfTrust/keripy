@@ -45,7 +45,7 @@ jobs:
             --no-deps \
             --only-binary=:all: \
             --require-hashes \
-            -r tests/wasm/requirements.txt
+            -r tests/wasm/wheel-requirements.txt
       - name: Prepare test directory
         run: |
           cp src/keri/db/webdbing.py ./webdbing.py
