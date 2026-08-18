@@ -15,8 +15,10 @@ jobs:
         include:
           - runtime: chrome
             runner: playwright
+            playwright_browser: chromium
           - runtime: firefox
             runner: playwright
+            playwright_browser: firefox
           - runtime: node
             runner: selenium
     steps:
@@ -24,12 +26,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: pyodide/pyodide-actions/install-browser@v2
-        if: matrix.runner == 'playwright'
-        with:
-          runner: playwright
-          browser: ${{ matrix.runtime }}
-          playwright-version: 1.61.0
       - uses: pyodide/pyodide-actions/download-pyodide@v2
         with:
           version: 0.27.2
@@ -38,7 +34,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install \
-            playwright==1.61.0 \
             pytest-pyodide==0.59.2
           python -m pip download \
             --dest wheels \
@@ -46,6 +41,15 @@ jobs:
             --only-binary=:all: \
             --require-hashes \
             -r tests/wasm/wheel-requirements.txt
+      - name: Install Playwright browser
+        if: matrix.runner == 'playwright'
+        run: |
+          python -m pip install playwright==1.61.0
+          if [ "${{ matrix.playwright_browser }}" = "chromium" ]; then
+            python -m playwright install --with-deps --only-shell chromium
+          else
+            python -m playwright install --with-deps ${{ matrix.playwright_browser }}
+          fi
       - name: Prepare test directory
         run: |
           cp src/keri/db/webdbing.py ./webdbing.py
