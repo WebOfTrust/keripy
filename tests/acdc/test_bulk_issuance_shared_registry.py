@@ -18,9 +18,14 @@ are the foundation everything else builds on. But it is NOT what the State of Ut
 intends to deploy. Sam Smith, on ACDC spec PR trustoverip/kswg-acdc-specification#200
 (2026-07-23): "From a SEDI perspective they want to do Independent registry bulk
 issuance which does not use B." That fancier variant -- one registry PER COPY, no
-aggregate, and a single Merkle-root batch seal providing herd privacy -- is the
-sibling module tests/acdc/test_bulk_issuance_independent_registry.py. Read this one
-for the mechanics; read that one for the deployment target. The honest RESIDUAL this
+aggregate, and a single Merkle-root batch seal providing herd privacy -- comes in two
+arrangements, each with its own sibling module:
+tests/acdc/test_bulk_issuance_cocreated_registry.py, where each copy's registry is
+incepted with the set and derived from the shared salt, and
+tests/acdc/test_bulk_issuance_precreated_registry.py, where registries are incepted in
+quantity ahead of time and assigned later, which is the SEDI deployment target. Read
+this one for the mechanics; read the pre-created one for what Utah plans to run. The
+honest RESIDUAL this
 module asserts rather than hides (the shared registry SAID and 'B' recurring in every
 context, see test_partition_across_verifiers_JSON) is exactly what that module closes.
 
@@ -85,9 +90,10 @@ PRV-F3); (b) even with per-context AID strings, a real deployment that witnesses
 M holder AIDs on a shared witness pool / endpoint / mailbox re-links them via KEL
 discovery metadata (spec L2891; panel PRV-F2). The independent-AID variant IS applied
 here (per-copy ALICE_k, below); the independent-REGISTRY and herd-anchoring variants
-(spec 15.4) raise the technical bar further and live in the sibling module
-tests/acdc/test_bulk_issuance_independent_registry.py, which closes residual (a)
-outright -- it has no [b_k] list to disclose because it has no aggregate at all.
+(spec 15.4) raise the technical bar further and live in the two sibling modules
+tests/acdc/test_bulk_issuance_cocreated_registry.py and
+tests/acdc/test_bulk_issuance_precreated_registry.py, both of which close residual (a)
+outright -- neither has a [b_k] list to disclose because neither has an aggregate at all.
 
 A note on altitude. Like the sibling examples, this one models the credential graph,
 the bulk derivation, the blinded aggregate, and the registry state at the
@@ -936,8 +942,8 @@ def test_partition_across_verifiers_JSON():
     which is the dominant correlator basic bulk issuance would have left. The one residual
     is the SHARED registry (and the aggregate B) keyed per set -- a contract-gated
     2nd-party correlator that full 3rd-party decorrelation (independent registries under a
-    single Merkle-root batch seal) would remove -- the variant Utah intends, worked in
-    tests/acdc/test_bulk_issuance_independent_registry.py. It is asserted PRESENT here, not
+    single Merkle-root batch seal) would remove -- the arrangement Utah intends, worked in
+    tests/acdc/test_bulk_issuance_precreated_registry.py. It is asserted PRESENT here, not
     hidden. Public issuer/schema identifiers are shared by the whole population and single
     out no one.
     """
@@ -989,7 +995,7 @@ def test_partition_across_verifiers_JSON():
     assert pres1.said != pres2.said                       # presentation SAID partitioned
 
     # --- RESIDUAL: the shared registry (and B) recur in BOTH contexts -- the honest gap
-    # that independent registries close (see the independent-registry sibling module).
+    # that independent registries close (see the two independent-registry sibling modules).
     assert idCopies[k1].sad['rd'] == idCopies[k2].sad['rd'] == idReg.said   # shared id registry
     assert ageCopies[k1].sad['rd'] == ageCopies[k2].sad['rd'] == ageReg.said  # shared age registry
     assert Bid and Bage                                   # the aggregates are per-set, shared
