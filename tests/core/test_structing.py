@@ -2003,6 +2003,42 @@ def test_blinder_class():
     """Done Test"""
 
 
+def test_blinder_unblind_leaves_caller_lists_alone():
+    """test Blinder.unblind does not mutate the states or bounds it is given"""
+
+    salt = '0ABdM7EmNFAlGe05ng6s1ljh'
+    acdc = 'EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ'
+
+    # unblind adds the empty placeholder state to the states it tries. That addition
+    # must not reach the caller's list, which may be a shared constant reused across
+    # calls and iterated over elsewhere as "the states this issuer uses".
+    states = ['issued', 'revoked']
+    blinder = Blinder.blind(acdc=acdc, state='issued', salt=salt, sn=1)
+    unblinder = Blinder.unblind(said=blinder.said, acdc=acdc, states=states,
+                                salt=salt, sn=1)
+    assert unblinder.crew == blinder.crew
+    assert states == ['issued', 'revoked']          # not ['issued', 'revoked', '']
+
+    # the placeholder trial still works, and still leaves the list alone
+    placeholder = Blinder.blind(salt=salt, sn=1)
+    unblinder = Blinder.unblind(said=placeholder.said, acdc=acdc, states=states,
+                                salt=salt, sn=1)
+    assert unblinder.crew.td == '' and unblinder.crew.ts == ''
+    assert states == ['issued', 'revoked']
+
+    # same for the bound state's (bsn, bd) pairs
+    bounds = [(3, 'EFI7RD_-DnUD7WQFmU9wOgxNIufMICypEIhEsjuq6Ce4')]
+    bound = Blinder.blind(acdc=acdc, state='issued', salt=salt, sn=1, bound=True,
+                          bsn=bounds[0][0], bd=bounds[0][1])
+    unblinder = Blinder.unblind(said=bound.said, acdc=acdc, states=states, salt=salt,
+                                sn=1, bound=True, bounds=bounds)
+    assert unblinder.crew == bound.crew
+    assert bounds == [(3, 'EFI7RD_-DnUD7WQFmU9wOgxNIufMICypEIhEsjuq6Ce4')]
+    assert states == ['issued', 'revoked']
+
+    """Done Test"""
+
+
 def test_blinder():
     """test blinder instance"""
 

@@ -1522,12 +1522,12 @@ class Blinder(Structor):
         acdcs = [acdc]
         if "" not in acdcs:
             acdcs.append('')
-        states = states if states is not None else []
+        states = list(states) if states is not None else []
         if "" not in states:
             states.append("")
 
         if bound:
-            bounds = bounds if bounds is not None else [(0, '')]
+            bounds = list(bounds) if bounds is not None else [(0, '')]
             if (0, '') not in bounds:
                 bounds.append((0, ''))
 
