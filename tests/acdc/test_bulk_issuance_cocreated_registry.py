@@ -1,13 +1,50 @@
 # -*- coding: utf-8 -*-
 """
-tests.acdc.test_bulk_issuance_independent_registry module
+tests.acdc.test_bulk_issuance_cocreated_registry module
 
-Worked, working example of INDEPENDENT-REGISTRY bulk-issued private ACDCs (ACDC spec
-section 15.4, "Independent Registry Bulk-Issued ACDCs" and "Independent Registry
-Transaction Event Seals Using Merkle Tree Roots") -- the variant the State of Utah
-intends to deploy for SEDI (State-Endorsed Digital Identity, Utah Code 63A-20).
+Worked, working example of CO-CREATED INDEPENDENT-REGISTRY bulk-issued private ACDCs
+(ACDC spec section 15.4, "Independent Registry Bulk-Issued ACDCs" and "Independent
+Registry Transaction Event Seals Using Merkle Tree Roots") -- one of the TWO ways
+independent registries can be organized, and the one Utah is NOT deploying.
 
-WHY A SECOND BULK-ISSUANCE EXAMPLE. The sibling module
+THIS IS NOT THE SEDI PATH. READ THIS FIRST. Independent registries admit two
+arrangements, and they make opposite tradeoffs. In the CO-CREATED arrangement, worked
+here, each copy's registry is incepted in the same moment as the bulk-issued set, and
+that registry's `rip` unique entropy is derived from the same shared secret salt as
+the ACDCs, so the Issuee regenerates its registry SAIDs along with everything else and
+nothing but the salt and the templates has to be stored. In the PRE-CREATED
+arrangement, the Issuer incepts registries in quantity ahead of time, unassociated with
+any ACDC, and assigns them to copies later. Sam Smith, keripy#1576 (2026-08-05): "for
+SEDI the use case the State has confirmed they want is the decorrelatable registries
+which means that their identifiers cannot be HDKey derived but must be provided in an
+indexed list to the citizen at bulk issuance time and the citizen wallet must hang onto
+that list." The pre-created arrangement, with all of its anticorrelation measures
+active, is worked in the sibling module
+
+    tests/acdc/test_bulk_issuance_precreated_registry.py
+
+which is the one to read for the deployment target. This module is retained because
+the co-created arrangement is a legitimate construction that the spec describes, and
+because reading the two side by side is what makes the cost of co-creation legible.
+(Maintainers' call, 2026-08-18: keep this example, add the SEDI one beside it, and say
+plainly here which is which.)
+
+WHAT CO-CREATION LEAVES ON THE TABLE. Everything below decorrelates copy k from copies
+0..M-1 for a 2nd-party Verifier, and that much this module delivers in full. What it
+does not deliver is decorrelation against a 3RD party watching the Issuer's KEL and
+the registry database. A registry incepted in the same moment as the set it serves has
+a creation time that is a function of the moment of issuance, which is also what the
+ACDCs' own datetimes carry; worse, regenerating `rd` from the salt requires that every
+non-derived `rip` field be identical across the set, the Issuer's datetime `dt` in
+particular (see REG_ID_STAMP below, one stamp for all M). That single shared datetime
+is exactly what makes the M registries recognizable as one set to anyone who can see
+them. The two properties are not separable: the fact that makes `rd` regenerable is the
+fact that correlates the set. Pre-created registries give up regenerability -- the
+Issuer must convey an indexed list of registry SAIDs, and the wallet must keep it --
+and get in exchange a registry whose creation and update history is a function of
+nothing in any ACDC.
+
+WHY A SECOND BULK-ISSUANCE EXAMPLE AT ALL. The sibling module
 tests/acdc/test_bulk_issuance_shared_registry.py works the BASIC form: M copies of a
 credential share ONE registry, and a blinded aggregate 'B' = H(C(b_k)) commits the
 whole set in a single issuance event. That module closes the correlators #1515 raised
@@ -16,8 +53,9 @@ residual it asserts rather than hides: the shared registry SAID recurs in every
 presentation context, and so does 'B'. Sam Smith, on ACDC spec PR
 trustoverip/kswg-acdc-specification#200 (2026-07-23): "From a SEDI perspective they
 want to do Independent registry bulk issuance which does not use B." This module is
-that variant. Read the sibling first for the derivation mechanics; read this one for
-the deployment target.
+the first half of that answer -- independent registries, no B -- and the pre-created
+module is the second half. Read the shared-registry sibling first for the derivation
+mechanics.
 
 WHAT CHANGES, AND WHY 'B' DISAPPEARS RATHER THAN SHRINKS. Give every copy its own
 registry and the aggregate has nothing left to aggregate. 'B' existed for one reason:
@@ -59,19 +97,25 @@ what _BatchTree below implements. A production Registrar SHOULD use an SMT for t
 incremental-update and non-inclusion properties described at spec L2918-2926; nothing
 in this example's proofs would change shape.
 
-SPEC GAPS THIS EXAMPLE HAD TO PIN (candidates for a follow-on spec PR, the way the
-sibling produced #200). Spec 15.4 pins the derivation paths "k" (top-level uuid),
-"k/j" (nested block uuid) and "k." (the blinding factor v_k, pinned by #200). It pins
-nothing for the two values independent-registry bulk issuance needs per copy. This
-module extends the same dot-suffix convention: "k.r" derives copy k's REGISTRY
-inception uuid, and "k.b" derives copy k's registry BLINDING salt. Nor does the spec
-pin the tree's leaf definition or its hashing: this module takes the leaf to be the
-transaction event's SAID (spec L2922 describes the tree as holding "all the event SAIDs
-from all transaction events across the Issuer's Registries") and uses RFC-6962 domain
-separation (0x00 leaf, 0x01 interior) over qb64 TEXT concatenation with Blake3-256 --
-the same concatenation domain #200 pinned for b_k. Two implementations that chose
-differently would compute different roots and fail to cross-verify, so these are
-interop-blocking and belong in the spec, not here.
+SPEC GAPS THIS EXAMPLE SURFACED, AND WHERE THEY LANDED. Spec 15.4 as published pins
+the derivation paths "k" (top-level uuid), "k/j" (nested block uuid) and "k." (the
+blinding factor v_k, pinned by #200), and pins nothing for the two values an
+independent-registry copy needs. This module proposed the dot-suffix extension for
+both, and trustoverip/kswg-acdc-specification#204 now carries it: "k.r" derives copy
+k's REGISTRY inception uuid, and it does so ONLY in the co-created arrangement, since
+there is no such derivation to make when a registry predates its ACDC; "k.s" derives
+copy k's registry BLINDING salt, in BOTH arrangements, because a per-copy blinding
+salt is what bounds a Disclosee's reach either way. An earlier revision of this module
+used "k.b"; #204 moved it to "k.s" so that no suffix is a hex digit, which keeps a
+numeric sub-index after the period admissible later. Nor did the spec pin the tree's
+leaf definition or its hashing: this module takes the leaf to be the transaction
+event's SAID (spec L2922 describes the tree as holding "all the event SAIDs from all
+transaction events across the Issuer's Registries") and uses RFC-6962 domain separation
+(0x00 leaf, 0x01 interior) over qb64 TEXT concatenation with Blake3-256 -- the same
+concatenation domain #200 pinned for b_k, and what #204 now pins for the batch tree.
+Two implementations that chose differently would compute different roots and fail to
+cross-verify, so these are interop-blocking and belong in the spec, not here. This
+module and #204 should therefore land together.
 
 WHERE THE L-NUMBERS POINT. Every "spec L####" in this module is a line number in
 spec/spec-body.md of trustoverip/kswg-acdc-specification at commit f96ef54 (2026-07-27),
@@ -192,26 +236,32 @@ class _BulkNonces:
 
         path "k"    -> copy k's top-level ACDC uuid  u_k       (spec)
         path "k/j"  -> copy k's nested block j uuid            (spec)
-        path "k.r"  -> copy k's REGISTRY inception uuid        (proposed, see below)
-        path "k.b"  -> copy k's REGISTRY blinding salt         (proposed, see below)
+        path "k.r"  -> copy k's REGISTRY inception uuid        (#204, co-created only)
+        path "k.s"  -> copy k's REGISTRY blinding salt         (#204, both arrangements)
 
-    SPEC GAP / PROPOSED EXTENSION. Spec 15.4 pins "k" and "k/j", and PR #200 pinned "k."
-    for the blinding factor v_k that the SHARED-registry variant needs. Independent
-    registry bulk issuance does not use v_k at all -- there is no aggregate to blind
-    into -- but it needs two values the spec never names: where each copy's registry
-    inception uuid comes from, and where each copy's registry blinding salt comes from.
-    Both must derive from the shared salt for the same reason the ACDC uuids do: so the
-    Issuee stores only (salt, template) and regenerates the rest on demand. This module
-    extends the dot-suffix convention #200 established, reserving "k." (v_k, unused
-    here) and adding "k.r" and "k.b". An implementation that chose other paths would
-    compute different registry SAIDs and could not unblind this one's TEL state, so the
-    paths are interop-blocking and belong in the spec.
+    WHERE THESE PATHS COME FROM. Spec 15.4 as published pins "k" and "k/j", and PR #200
+    pinned "k." for the blinding factor v_k that the SHARED-registry variant needs.
+    Independent registry bulk issuance does not use v_k at all -- there is no aggregate
+    to blind into -- but it needs two values the published text never names, and
+    trustoverip/kswg-acdc-specification#204 now pins both by extending the same
+    dot-suffix convention. "k.r" yields the registry inception uuid, and applies HERE and
+    not in the pre-created sibling, where the registry exists before there is an index to
+    derive it at. "k.s" yields the registry blinding salt, and applies in BOTH
+    arrangements, so that an Issuer conveys one secret rather than M.
+
+    A CO-CREATED REGISTRY SAID IS STILL NOT A PURE FUNCTION OF THE SALT. Deriving "k.r"
+    gives the `rip` event's uuid, not its SAID, which digests the whole event including
+    the Issuer's datetime `dt`. Regenerating `rd` therefore requires a `rip` TEMPLATE
+    whose non-derived fields are identical across the set (#204), which is what
+    REG_ID_STAMP is below -- and that one shared datetime is precisely what identifies
+    the M registries as one set to a 3rd party. See the module docstring: the property
+    that makes `rd` regenerable is the property that correlates the set.
 
     PRIVACY NOTE on the per-copy blinding salt. Deriving it per copy is not bookkeeping
     tidiness -- it is what keeps a verifier's disclosure scoped. A verifier handed copy
     k's blinding salt can unblind copy k's registry state and NOTHING else; the sibling
     module's single set-wide registry salt would let that same verifier follow every
-    state update the whole set ever makes. test_indreg_derivation_and_batch_JSON asserts
+    state update the whole set ever makes. test_cocreg_derivation_and_batch_JSON asserts
     the negative case directly.
 
     temp=True selects the fast (test-only) argon2 parameters, matching how the sibling
@@ -233,13 +283,13 @@ class _BulkNonces:
         """Copy k's own registry inception uuid, derived at the path "k.r"."""
         return self._nonce(f"{_hx(k)}.r")
 
-    def b(self, k):
-        """Copy k's own registry blinding salt, derived at the path "k.b".
+    def s(self, k):
+        """Copy k's own registry blinding salt, derived at the path "k.s".
 
         A 128-bit qb64 salt, which is what Blinder.makeUUID consumes; the other nonces
         here are 256-bit uuids. Only this copy's salt is ever disclosed to a verifier.
         """
-        return Noncer(raw=self._salter.stretch(size=16, path=f"{_hx(k)}.b",
+        return Noncer(raw=self._salter.stretch(size=16, path=f"{_hx(k)}.s",
                                               temp=True)).qb64
 
 
@@ -339,13 +389,13 @@ def _batch(*eventSaidGroups):
     return sorted(said for group in eventSaidGroups for said in group)
 
 
-def test_indreg_derivation_and_batch_JSON():
+def test_cocreg_derivation_and_batch_JSON():
     """Phase 1: the per-copy derivation paths and the batch Merkle tree.
 
     Two primitives, neither of which the shared-registry variant needs. First, the
     derivation: one shared salt yields, per copy k, the ACDC uuid ("k"), the nested block
     uuids ("k/j"), the copy's own registry inception uuid ("k.r") and the copy's own
-    registry blinding salt ("k.b") -- four disjoint spaces, all regenerable by Issuer and
+    registry blinding salt ("k.s") -- four disjoint spaces, all regenerable by Issuer and
     Issuee from the salt alone, with nothing stored per copy. Second, the batch tree: a
     domain-separated Merkle tree over transaction-event SAIDs whose single root is what
     the Issuer seals, and which proves one leaf without disclosing any other.
@@ -363,14 +413,14 @@ def test_indreg_derivation_and_batch_JSON():
     us = [nonces.u(k) for k in range(M)]
     nested = [nonces.u(k, 0) for k in range(M)]
     rs = [nonces.r(k) for k in range(M)]
-    bs = [nonces.b(k) for k in range(M)]
+    bs = [nonces.s(k) for k in range(M)]
 
     # Determinism: same salt + index regenerates every nonce (Issuer and Issuee each
     # regenerate independently -- neither stores per-copy material).
     fresh = _BulkNonces(BULK_SALT)
     assert [fresh.u(k) for k in range(M)] == us
     assert [fresh.r(k) for k in range(M)] == rs
-    assert [fresh.b(k) for k in range(M)] == bs
+    assert [fresh.s(k) for k in range(M)] == bs
 
     # The path index rendering is LOWERCASE HEX, no leading zeros -- pinned by assertion
     # rather than left to the coincidence that indices 0-9 render identically in both
@@ -404,9 +454,9 @@ def test_indreg_derivation_and_batch_JSON():
     blinders = [Blinder.blind(acdc=saids[k], state='issued', salt=bs[k], sn=1)
                 for k in range(M)]
     assert Blinder.unblind(said=blinders[0].said, acdc=saids[0],
-                           states=SET_STATES, salt=bs[0], sn=1).state == 'issued'
+                           states=list(SET_STATES), salt=bs[0], sn=1).state == 'issued'
     assert Blinder.unblind(said=blinders[0].said, acdc=saids[0],
-                           states=SET_STATES, salt=bs[1], sn=1) is None
+                           states=list(SET_STATES), salt=bs[1], sn=1) is None
 
     # The batch tree over those (stand-in) transaction-event SAIDs.
     events = [Diger(ser=f"bup{k}".encode()).qb64 for k in range(7)]   # odd count on purpose
@@ -583,7 +633,7 @@ def _issue(copy, nonces, k, *, regid, prior, stamp, kind):
     disappear together. The blinding salt is copy k's own, so unblinding this event
     conveys no ability to unblind any other copy's registry.
     """
-    blinder = Blinder.blind(acdc=copy.said, state='issued', salt=nonces.b(k), sn=1)
+    blinder = Blinder.blind(acdc=copy.said, state='issued', salt=nonces.s(k), sn=1)
     return blindate(regid=regid, prior=prior, blid=blinder.said, sn=1,
                     stamp=stamp, kind=kind)
 
@@ -611,7 +661,7 @@ def _sedi_id_set(kind, nonces=None):
     return regs, copies, issues
 
 
-def test_indreg_sedi_id_set_JSON():
+def test_cocreg_sedi_id_set_JSON():
     """Phase 2: the State bulk-issues Alice's sedi-id as M copies in M registries.
 
     Each copy is the SAME sedi-id (same attributes) with a UNIQUE SAID, issued to its
@@ -665,16 +715,16 @@ def test_indreg_sedi_id_set_JSON():
         assert b"issued" not in issued.raw            # state word stays blinded...
         assert copies[k].said.encode() not in issued.raw   # ...and so does the SAID
         unblinded = Blinder.unblind(said=issued.sad['b'], acdc=copies[k].said,
-                                    states=SET_STATES, salt=nonces.b(k), sn=1)
+                                    states=list(SET_STATES), salt=nonces.s(k), sn=1)
         assert unblinded.state == 'issued'
 
     # The binding is exact in both directions: another copy's SAID does not unblind this
     # registry's state, and another copy's salt does not either.
     other = (0 + 1) % BULK_SIZE
     assert Blinder.unblind(said=issues[0].sad['b'], acdc=copies[other].said,
-                           states=SET_STATES, salt=nonces.b(0), sn=1) is None
+                           states=list(SET_STATES), salt=nonces.s(0), sn=1) is None
     assert Blinder.unblind(said=issues[0].sad['b'], acdc=copies[0].said,
-                           states=SET_STATES, salt=nonces.b(other), sn=1) is None
+                           states=list(SET_STATES), salt=nonces.s(other), sn=1) is None
 
 
 # ===========================================================================
@@ -710,13 +760,13 @@ def _herd_events(kind, nonces=None):
             tag = f"{_hx(r)}/{_hx(k)}"
             reg = regcept(israid=STATE, uuid=nonces.r(tag), stamp=HERD_STAMP, kind=kind)
             acdc = Diger(ser=f"resident{r}-copy{k}".encode()).qb64
-            blinder = Blinder.blind(acdc=acdc, state='issued', salt=nonces.b(tag), sn=1)
+            blinder = Blinder.blind(acdc=acdc, state='issued', salt=nonces.s(tag), sn=1)
             saids.append(blindate(regid=reg.said, prior=reg.said, blid=blinder.said,
                                   sn=1, stamp=HERD_STAMP, kind=kind).said)
     for d in range(DECOY_UPDATES):
         tag = f"decoy{d}"
         reg = regcept(israid=STATE, uuid=nonces.r(tag), stamp=HERD_STAMP, kind=kind)
-        blinder = Blinder.blind(acdc='', state='', salt=nonces.b(tag), sn=1)
+        blinder = Blinder.blind(acdc='', state='', salt=nonces.s(tag), sn=1)
         saids.append(blindate(regid=reg.said, prior=reg.said, blid=blinder.said, sn=1,
                               stamp=DECOY_STAMP, kind=kind).said)
     return saids
@@ -742,7 +792,7 @@ def _verify_anchored(said, tree, sealer):
     return _BatchTree.verify(said, tree.prove(said), sealer.crew.rd)
 
 
-def test_indreg_batch_anchor_JSON():
+def test_cocreg_batch_anchor_JSON():
     """Phase 3: M registries, ONE seal, and a herd that makes the batch mean nothing.
 
     The State anchors a single Merkle-root seal covering every transaction event it
@@ -802,7 +852,7 @@ def test_indreg_batch_anchor_JSON():
     assert any(right - left > 1 for left, right in zip(positions, positions[1:]))
 
     # Pinned reproducible value: the batch root the State would seal.
-    assert tree.root == "EOdrbhMmEtYQXYMy9TZso2k6FtHL7K4Q8Ic9S3FcJggz"
+    assert tree.root == "EGR6rD_syL1KYm-I2_v5lPbgdgEiEU6Ai0PgYGjwm6or"
 
 
 # ===========================================================================
@@ -973,7 +1023,7 @@ def _sedi_age_set(kind, idCopies, nonces=None):
     return regs, copies, aggors, issues
 
 
-def test_indreg_sedi_age_set_JSON():
+def test_cocreg_sedi_age_set_JSON():
     """Phase 4: the bulk sedi-age set, index-aligned to sedi-id by an E1E edge.
 
     The State bulk-issues Alice's sedi-age as M copies, each to the SAME per-context
@@ -1030,7 +1080,7 @@ def test_indreg_sedi_age_set_JSON():
     assert len({r.said for r in ageRegs}) == BULK_SIZE
     for k, issued in enumerate(ageIssues):
         assert Blinder.unblind(said=issued.sad['b'], acdc=ageCopies[k].said,
-                               states=SET_STATES, salt=ageNonces.b(k),
+                               states=list(SET_STATES), salt=ageNonces.s(k),
                                sn=1).state == 'issued'
 
     # Pinned reproducible values (derived, not pasted).
@@ -1170,7 +1220,7 @@ def _context_correlators(k, idCopies, idIssues, ageCopies, ageAggors, ageIssues,
             idIssues[k].said, ageIssues[k].said}
 
 
-def test_indreg_partition_across_verifiers_JSON():
+def test_cocreg_partition_across_verifiers_JSON():
     """Phase 5: two disparate verifiers get disjoint identifier sets -- and this time
     the residual column is empty of anything holder-specific.
 
@@ -1347,7 +1397,7 @@ def _verify_issuance(copy, *, reg, event, blind, proof, sealer):
         return None
     if reg.sad['i'] != copy.sad['i']:      # the issuer controls the registry it names
         return None
-    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=SET_STATES,
+    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=list(SET_STATES),
                               uuid=blind)
     if blinder is None:
         return None
@@ -1356,7 +1406,7 @@ def _verify_issuance(copy, *, reg, event, blind, proof, sealer):
     return blinder.state
 
 
-def test_indreg_disclosure_gating_and_revocation_JSON():
+def test_cocreg_disclosure_gating_and_revocation_JSON():
     """Phase 6: the registry material rides only in the grant; one copy revokes alone.
 
     Two properties. First, disclosure gating: the pre-agree /ipex/offer commits only the
@@ -1435,7 +1485,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert ageRegs[k].said.encode() not in offer.raw
     assert idIssues[k].said.encode() not in offer.raw           # TEL event withheld
     assert ageIssues[k].said.encode() not in offer.raw
-    assert ageNonces.b(k).encode() not in offer.raw             # blinding salt withheld
+    assert ageNonces.s(k).encode() not in offer.raw             # blinding salt withheld
     assert sealer.crew.rd.encode() not in offer.raw             # batch root withheld
 
     # 3. agree (verifier -> holder): signed acceptance binding the offer.
@@ -1460,7 +1510,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
                             acdc=pres.sad, ageDisclosure=ageDisc,
                             issuance=dict(rip=ageRegs[k].sad, event=ageIssues[k].sad,
                                           blind=Blinder.makeUUID(
-                                              salt=ageNonces.b(k), sn=1),
+                                              salt=ageNonces.s(k), sn=1),
                                           proof=tree.prove(ageIssues[k].said),
                                           root=sealer.crew.rd)),
                         stamp=GRANT_STAMP, kind=kind)
@@ -1472,8 +1522,8 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert grant is not None and grant.sad['p'] == agree.said
     assert ageRegs[k].said.encode() in grant.raw                # registry revealed...
     assert ageIssues[k].said.encode() in grant.raw              # ...event revealed...
-    assert ageNonces.b(k).encode() not in grant.raw             # ...salt STILL withheld...
-    assert Blinder.makeUUID(salt=ageNonces.b(k),
+    assert ageNonces.s(k).encode() not in grant.raw             # ...salt STILL withheld...
+    assert Blinder.makeUUID(salt=ageNonces.s(k),
                             sn=1).encode() in grant.raw         # ...one event's blind only
     assert idCopies[k].said.encode() in grant.raw               # ...source SAIDs revealed
     assert ageCopies[k].said.encode() in grant.raw
@@ -1502,7 +1552,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) is None
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=ageIssues[k],
-                            blind=Blinder.makeUUID(salt=ageNonces.b(other), sn=1),
+                            blind=Blinder.makeUUID(salt=ageNonces.s(other), sn=1),
                             proof=[tuple(p) for p in bundle['proof']],
                             sealer=sealer) is None
 
@@ -1525,13 +1575,13 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert _verify_anchored(rogueIssue.said, rogueTree, rogueSealer)   # the event is real
     assert rogueCopy.sad['rd'] == rogueReg.said                        # and self-consistent
     assert _verify_issuance(rogueCopy, reg=rogueReg, event=rogueIssue,
-                            blind=Blinder.makeUUID(salt=rogueNonces.b(k), sn=1),
+                            blind=Blinder.makeUUID(salt=rogueNonces.s(k), sn=1),
                             proof=rogueTree.prove(rogueIssue.said),
                             sealer=rogueSealer) is None                # yet refused
 
     # --- Revocation, per copy. The State revokes the copy spent at the Alcove. ---
     revokedBlinder = Blinder.blind(acdc=ageCopies[k].said, state='revoked',
-                                   salt=ageNonces.b(k), sn=2)
+                                   salt=ageNonces.s(k), sn=2)
     revoked = blindate(regid=ageRegs[k].said, prior=ageIssues[k].said,
                        blid=revokedBlinder.said, sn=2, stamp=REVOKE_STAMP, kind=kind)
     assert revoked.sad['p'] == ageIssues[k].said                # chains onto issuance
@@ -1545,11 +1595,11 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # sn=1 only, so reading sn=2 needs a FRESH disclosure from the holder. That is spec
     # L2131's remedy, and it works only because the grant sent a blind and not the salt.
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
-                            blind=Blinder.makeUUID(salt=ageNonces.b(k), sn=1),
+                            blind=Blinder.makeUUID(salt=ageNonces.s(k), sn=1),
                             proof=laterTree.prove(revoked.said),
                             sealer=laterSealer) is None            # sn=1 blind is useless
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
-                            blind=Blinder.makeUUID(salt=ageNonces.b(k), sn=2),
+                            blind=Blinder.makeUUID(salt=ageNonces.s(k), sn=2),
                             proof=laterTree.prove(revoked.said),
                             sealer=laterSealer) == 'revoked'       # re-disclosed
 
@@ -1558,7 +1608,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     assert ageRegs[other].said != ageRegs[k].said
     assert _verify_issuance(ageCopies[other], reg=ageRegs[other],
                             event=ageIssues[other],
-                            blind=Blinder.makeUUID(salt=ageNonces.b(other), sn=1),
+                            blind=Blinder.makeUUID(salt=ageNonces.s(other), sn=1),
                             proof=tree.prove(ageIssues[other].said),
                             sealer=sealer) == 'issued'
 
@@ -1566,7 +1616,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
     # returns 'revoked' where it returned 'issued', so a status-checking verifier refuses.
     assert _verify_presentation(pres, idCopies[k], ageCopies[k])   # graph still binds...
     assert _verify_issuance(ageCopies[k], reg=ageRegs[k], event=revoked,
-                            blind=Blinder.makeUUID(salt=ageNonces.b(k), sn=2),
+                            blind=Blinder.makeUUID(salt=ageNonces.s(k), sn=2),
                             proof=laterTree.prove(revoked.said),
                             sealer=laterSealer) != 'issued'        # ...yet status forbids
 
@@ -1575,7 +1625,7 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
 # Phase 7: the invariants hold across every serialization kind.
 # ===========================================================================
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
-def test_indreg_serialization_kinds(kind):
+def test_cocreg_serialization_kinds(kind):
     """Phases 2-6 invariants hold across every serialization kind, not just JSON.
 
     Exercises the same flows -- both bulk sets issued to per-context holder AIDs in
@@ -1606,7 +1656,7 @@ def test_indreg_serialization_kinds(kind):
         for copy, regs, issues, nonces in ((idCopies[k], idRegs, idIssues, idNonces),
                                            (ageCopies[k], ageRegs, ageIssues, ageNonces)):
             assert _verify_issuance(copy, reg=regs[k], event=issues[k],
-                                    blind=Blinder.makeUUID(salt=nonces.b(k), sn=1),
+                                    blind=Blinder.makeUUID(salt=nonces.s(k), sn=1),
                                     proof=tree.prove(issues[k].said),
                                     sealer=sealer) == 'issued'
 
@@ -1641,11 +1691,11 @@ def test_indreg_serialization_kinds(kind):
 
 
 if __name__ == "__main__":
-    test_indreg_derivation_and_batch_JSON()
-    test_indreg_sedi_id_set_JSON()
-    test_indreg_batch_anchor_JSON()
-    test_indreg_sedi_age_set_JSON()
-    test_indreg_partition_across_verifiers_JSON()
-    test_indreg_disclosure_gating_and_revocation_JSON()
+    test_cocreg_derivation_and_batch_JSON()
+    test_cocreg_sedi_id_set_JSON()
+    test_cocreg_batch_anchor_JSON()
+    test_cocreg_sedi_age_set_JSON()
+    test_cocreg_partition_across_verifiers_JSON()
+    test_cocreg_disclosure_gating_and_revocation_JSON()
     for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
-        test_indreg_serialization_kinds(_kind)
+        test_cocreg_serialization_kinds(_kind)
