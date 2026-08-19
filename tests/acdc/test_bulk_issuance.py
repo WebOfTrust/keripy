@@ -1010,7 +1010,7 @@ def test_disclosure_gating_and_revocation_JSON():
     #
     # The middle element is a path prefix: the DAG-absolute route to the ACDC the
     # entry's schema SAID names, either empty or a route that both begins and ends with
-    # '/'. It is EMPTY on both entries here, which makes the paths ACDC-relative and
+    # '/'. It is EMPTY on all three entries here, which makes the paths ACDC-relative and
     # leaves the breadth-first POSITION of each triple to say which ACDC it is about
     # (@SmithSamuelM, #1549). The effective path is prefix + entry, concatenated with
     # nothing between them, so an entry never leads with '/'.
