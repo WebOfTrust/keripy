@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.app.cli.commands.contacts.test_contacts module
+tests.cli.commands.contacts.test_contacts module
 
 Tests for KLI contacts commands: get, add, rename, delete
 """
