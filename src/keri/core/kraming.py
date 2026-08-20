@@ -1413,6 +1413,8 @@ class Kramer:
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
                                 xdts = cacheRecord.xdt
+                            elif route in ("/ipex/apply", "/ipex/offer", "/ipex/grant") and not msg.ked.get('p'):
+                                xdts = mdts
                             else:
                                 # No existing cache entry found, drop the event and exit
                                 return None
@@ -1500,6 +1502,8 @@ class Kramer:
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
                                 xdts = cacheRecord.xdt
+                            elif route in ("/ipex/apply", "/ipex/offer", "/ipex/grant") and not msg.ked.get('p'):
+                                xdts = mdts
                             else:
                                 return None  # no existing cache, drop
                         case _:

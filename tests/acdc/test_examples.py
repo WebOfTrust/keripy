@@ -77,10 +77,10 @@ class Recorder:
 
 
 def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
-            acdc, iss=None, anc=None):
+            origin, artifacts=None):
     """Round-trip one IPEX grant and its admit, returning the parsed grant."""
     grant, grantAtc = ipexGrant(hab=sender, recp=receiver.pre, message=message,
-                                acdc=acdc, iss=iss, anc=anc)
+                                origin=origin, artifacts=artifacts)
     grantIms = bytearray(grant.raw)
     grantIms.extend(grantAtc)
     grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False,
@@ -92,15 +92,11 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert grantResult.serder.ked['r'] == "/ipex/grant"
     assert grantResult.serder.ked['p'] == ""
     assert grantResult.serder.ked['i'] == sender.pre
-    assert grantResult.serder.ked['a']['i'] == receiver.pre
-    assert grantResult.serder.ked['a']['acdc'] == acdc.said
-    nestSaids = [acdc.said]
-    if iss is not None:
-        assert grantResult.serder.ked['a']['iss'] == iss.said
-        nestSaids.append(iss.said)
-    if anc is not None:
-        assert grantResult.serder.ked['a']['anc'] == anc.said
-        nestSaids.append(anc.said)
+    assert grantResult.serder.ked['ri'] == receiver.pre
+    assert grantResult.serder.ked['a']['o'] == origin.said
+    nestSaids = [origin.said]
+    if artifacts:
+        nestSaids.extend(artifact.said for artifact in artifacts)
     assert [nest.serder.said for nest in grantResult.nests] == nestSaids
     wire = bytes(grant.raw) + bytes(grantAtc)
 
@@ -110,11 +106,9 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert grantDispatch == bytearray()
     storedGrant = hby.db.exns.get(keys=(grant.said,))
     assert storedGrant is not None
-    assert storedGrant.ked['a']['acdc'] == acdc.said
-    if iss is not None:
-        assert storedGrant.ked['a']['iss'] == iss.said
-    if anc is not None:
-        assert storedGrant.ked['a']['anc'] == anc.said
+    assert storedGrant.ked['a']['o'] == origin.said
+    assert "iss" not in storedGrant.ked['a']
+    assert "anc" not in storedGrant.ked['a']
 
     admit, admitAtc = ipexAdmit(hab=receiver, message=admitMessage, grant=grant)
     admitIms = bytearray(admit.raw)
@@ -348,9 +342,9 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        # Bare grant 1: the issued-state snapshot. In today's builder shape the
-        # lifecycle package is encoded as:
-        #   acdc = credential, iss = current `bup`, anc = registry inception `rip`
+        # Bare grant 1: the issued-state snapshot. The grant carries the
+        # credential as the origin plus the current `bup` and registry
+        # inception as attached artifacts.
         issuedGrantResult, issuedGrantWire = ipexExn(
             hby=hby,
             exc=exc,
@@ -358,11 +352,10 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             receiver=bob,
             message="Issued registry snapshot",
             admitMessage="Received issued snapshot",
-            acdc=acdc,
-            iss=issued,
-            anc=ripper,
+            origin=acdc,
+            artifacts=[issued, ripper],
         )
-        assert issuedGrantResult.serder.ked['a']['i'] == bob.pre
+        assert issuedGrantResult.serder.ked['ri'] == bob.pre
         # The disclosed credential is present on the wire, but the registry state
         # word itself remains hidden because the nested `bup` is blindable
         assert b'issued' not in issuedGrantWire
@@ -388,9 +381,8 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             receiver=bob,
             message="Revoked registry snapshot",
             admitMessage="Received revoked snapshot",
-            acdc=acdc,
-            iss=revoked,
-            anc=ripper,
+            origin=acdc,
+            artifacts=[revoked, ripper],
         )
         assert b'issued' not in revokedGrantWire
         assert b'revoked' not in revokedGrantWire
@@ -577,7 +569,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
             receiver=vic,
             message="Selective aggregate disclosure",
             admitMessage="Received selective aggregate disclosure",
-            acdc=selective,
+            origin=selective,
         )
 
         carried = grantResult.nests[0].serder
@@ -812,7 +804,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            acdc=ruleOnly,
+            origin=ruleOnly,
             message="Rule section disclosure",
             admitMessage="Received rule section disclosure",
         )
@@ -863,7 +855,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            acdc=gradesWithheld,
+            origin=gradesWithheld,
             message="Grades withheld partial disclosure",
             admitMessage="Received grades-withheld partial disclosure",
         )
@@ -886,7 +878,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            acdc=gradesRevealed,
+            origin=gradesRevealed,
             message="Grades revealed partial disclosure",
             admitMessage="Received grades-revealed partial disclosure",
         )
@@ -930,7 +922,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            acdc=mixedAcdc,
+            origin=mixedAcdc,
             message="Mixed nested partial disclosure",
             admitMessage="Received mixed nested partial disclosure",
         )
@@ -1134,9 +1126,8 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             receiver=vic,
             message="Current registry snapshot",
             admitMessage="Received current registry snapshot",
-            acdc=acdc,
-            iss=issued,
-            anc=ripper,
+            origin=acdc,
+            artifacts=[issued, ripper],
         )
         carriedIssued = issuedGrantResult.nests[1].serder
         assert carriedIssued.said == issued.said
@@ -1163,9 +1154,8 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             receiver=vic,
             message="Later registry snapshot",
             admitMessage="Received later registry snapshot",
-            acdc=acdc,
-            iss=revoked,
-            anc=ripper,
+            origin=acdc,
+            artifacts=[revoked, ripper],
         )
         carriedRevoked = revokedGrantResult.nests[1].serder
         assert carriedRevoked.said == revoked.said
