@@ -5,14 +5,14 @@ tests.acdc.test_ipexing module
 """
 import pytest
 from keri import Kinds, Vrsn_2_0
-from keri.acdc import (acdcmap, apply as ipexApply, admit as ipexAdmit,
+from keri.acdc import (Regery, Registrar, acdcmap, blindate, apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
-                       spurn as ipexSpurn, update)
+                       spurn as ipexSpurn)
 from keri.app import openHby
-from keri.core import Codens, Counter, GenDex, Parser, Serdery, Texter
+from keri.core import Blinder, Codens, Counter, GenDex, Parser, Serdery, Texter
 from keri.kering import Colds, sniff
-from keri.peer import Exchanger
+from keri.peer import Exchanger, cloneMessage, serializeMessage
 
 # Patch it to a function to assert correct behavior
 class Recorder:
@@ -79,6 +79,14 @@ def _nest(stream):
                            code=Codens.BodyWithAttachmentGroup,
                            version=Vrsn_2_0)
 
+
+def _anchor(hab, registry, serder, *, framed=False):
+    """Create a KEL interaction event that seals one registry event."""
+    seal = dict(i=registry.regk, s=serder.sad["n"], d=serder.said)
+    anc = hab.interact(data=[seal], framed=framed, gvrsn=Vrsn_2_0)
+    assert registry.anchorMsg(serder.said) is True
+    return anc
+
 # Tests
 def test_ipex_v2_builders_parse_happypath():
     """Build each V2 IPEX verb and prove the resulting streams parse cleanly."""
@@ -95,10 +103,10 @@ def test_ipex_v2_builders_parse_happypath():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         
         # Extract schema from acdc
@@ -289,10 +297,10 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         schema = acdc.sad["s"]["$id"]
 
@@ -498,10 +506,10 @@ def test_ipex_v2_nontransferable_nested_artifacts():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         ancSerder = _serder(anc)
         schema = acdc.sad["s"]["$id"]
@@ -667,10 +675,10 @@ def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
                        iseaid=hab.pre)
 
         # Create the TEL issuance event that the grant body says should accompany the ACDC
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
 
         # Create the anchoring KEL event that the grant body also says should be present
         anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
@@ -729,10 +737,11 @@ def test_ipex_v2_responders_set_receiver():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=holder.pre)
-        iss = update(regid=registry.said,
-                     prior=registry.said,
-                     acdc=acdc.said,
-                     state="issued")
+    
+        blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=blinder)
         anc = holder.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
         schema = acdc.sad["s"]["$id"]
 
@@ -795,3 +804,390 @@ def test_ipex_v2_responders_set_receiver():
                                    offer=offerExn,
                                    recp=holder.pre)
         assert overrideExn.ked["ri"] == holder.pre
+
+
+def test_ipex_v2_blindable_registry_roundtrip():
+    """Grant a blindable V2 registry update through IPEX and recover it."""
+    with openHby(name="ipex-v2-blindable",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="ipex-v2-blindable", temp=True)
+        try:
+            # Create and anchor a registry before issuing any credential state
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="blindable", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip, framed=True)
+
+            # Build one ACDC that explicitly declares this registry as its governing rd
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+
+            # Issue one blindable registry update and capture the anchoring KEL event for it
+            _, iss = registrar.issue(registry, acdc=acdc, state="issued")
+            anc = _anchor(hab, registry, iss, framed=False)
+            ancSerder = _serder(anc)
+
+            # Wire an exchanger with IPEX handlers so the grant can be parsed end to end
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+            # Grant the blindable ACDC plus its registry artifacts through one IPEX message
+            grantExn, grantAtc = ipexGrant(hab=hab,
+                                           recp=hab.pre,
+                                           message="Blindable disclosure",
+                                           acdc=acdc,
+                                           iss=iss,
+                                           anc=anc)
+
+            # Parse the transmitted EXN stream and ensure the whole message is consumed
+            grantIms = bytearray(grantExn.raw)
+            grantIms.extend(grantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False, exc=exc)
+            assert grantIms == bytearray()
+
+            # Reload the stored EXN body and verify the V2 nested artifacts live in enst
+            stored, pathed = cloneMessage(hby, grantExn.said)
+            assert stored is not None
+            assert pathed == {}
+            nests = [bytearray(nest.encode("utf-8") if isinstance(nest, str) else nest)
+                     for nest in hby.db.enst.get(keys=(grantExn.said,))]
+            parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray().join(nests),
+                                                    framed=True,
+                                                    processive=False)
+            assert [nest.serder.said for nest in parsed] == [
+                acdc.said,
+                iss.said,
+                ancSerder.said,
+            ]
+
+            # Serializing the whole stored message should round-trip the same nested substreams
+            msg = serializeMessage(hby, grantExn.said, framed=True)
+            ims = bytearray(msg)
+            results = Parser(version=Vrsn_2_0).parse(ims=ims,
+                                                     framed=False,
+                                                     processive=False)
+            assert ims == bytearray()
+            assert len(results) == 1
+            assert [nest.serder.said for nest in results[0].nests] == [
+                acdc.said,
+                iss.said,
+                ancSerder.said,
+            ]
+        finally:
+            rgy.close()
+
+
+def test_ipex_v2_blind_registry_update_roundtrip():
+    """Grant a blind ``bup`` registry update through a full linear V2 IPEX exchange."""
+    with openHby(name="ipex-v2-blind-registry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="ipex-v2-blind-registry", temp=True)
+        try:
+            # Create and anchor a real registry so the blind update can be accepted into the TEL
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="blind", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip, framed=True)
+
+            # Build one ACDC whose rd points at the new registry
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+            schema = acdc.sad["s"]["$id"]
+
+            # Commit one blindable registry update and capture both the blinder and the KEL event that sealed it
+            blinder, bup = registrar.issue(registry, acdc=acdc, state="revoked")
+            bupAnc = _anchor(hab, registry, bup, framed=False)
+            bupAncSerder = _serder(bupAnc)
+
+            # The accepted TEL should now contain the registry inception followed by the blindable update
+            assert rgy.store.seqEvent(registry.regk, 0).said == rip.said
+            assert rgy.store.seqEvent(registry.regk, 1).said == bup.said
+            assert rgy.store.headEvent(registry.regk).said == bup.said
+            assert bup.ilk == "bup"
+            assert bup.sad["rd"] == registry.regk
+            assert bup.sad["p"] == rip.said
+            assert bup.sad["b"] == blinder.said
+            assert "td" not in bup.sad
+            assert "ts" not in bup.sad
+
+            # Wire an exchanger with the V2 IPEX handlers and build one full apply -> offer -> agree -> grant -> admit chain
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+            applyExn, applyAtc = ipexApply(hab=hab,
+                                           recp=hab.pre,
+                                           message="Please issue the blind credential",
+                                           schema=schema,
+                                           attrs=dict(flow="blind"))
+            offerExn, offerAtc = ipexOffer(hab=hab,
+                                           message="Here is the blind credential",
+                                           acdc=acdc,
+                                           apply=applyExn)
+            agreeExn, agreeAtc = ipexAgree(hab=hab,
+                                           message="I agree to the blind credential",
+                                           offer=offerExn)
+            grantExn, grantAtc = ipexGrant(hab=hab,
+                                           recp=hab.pre,
+                                           message="Here is the blind registry disclosure",
+                                           acdc=acdc,
+                                           iss=bup,
+                                           anc=bupAnc,
+                                           agree=agreeExn)
+            admitExn, admitAtc = ipexAdmit(hab=hab,
+                                           message="Thanks for the blind credential",
+                                           grant=grantExn)
+
+            # Parse and dispatch the full exchange in order so the accepted IPEX chain is stored
+            for exn, atc in ((applyExn, applyAtc),
+                             (offerExn, offerAtc),
+                             (agreeExn, agreeAtc),
+                             (grantExn, grantAtc),
+                             (admitExn, admitAtc)):
+                ims = bytearray(exn.raw)
+                ims.extend(atc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+                assert ims == bytearray()
+
+            # All accepted EXNs should now exist in the exchange database
+            for serder in (applyExn, offerExn, agreeExn, grantExn, admitExn):
+                assert hby.db.exns.get(keys=(serder.said,)) is not None
+
+            # The grant body should name the exact artifacts it transported
+            storedGrant = hby.db.exns.get(keys=(grantExn.said,))
+            assert storedGrant.ked["p"] == agreeExn.said
+            assert storedGrant.ked["a"]["acdc"] == acdc.said
+            assert storedGrant.ked["a"]["iss"] == bup.said
+            assert storedGrant.ked["a"]["anc"] == bupAncSerder.said
+
+            # The stored message should round-trip with the same nested ACDC, blind update, and anchoring KEL event
+            msg = serializeMessage(hby, grantExn.said, framed=True)
+            ims = bytearray(msg)
+            results = Parser(version=Vrsn_2_0).parse(ims=ims,
+                                                     framed=False,
+                                                     processive=False)
+            assert ims == bytearray()
+            assert len(results) == 1
+            assert [nest.serder.said for nest in results[0].nests] == [
+                acdc.said,
+                bup.said,
+                bupAncSerder.said,
+            ]
+
+            # The notifier should report the accepted linear IPEX exchange in send order
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/exn/ipex/apply", "Please issue the blind credential"),
+                ("/exn/ipex/offer", "Here is the blind credential"),
+                ("/exn/ipex/agree", "I agree to the blind credential"),
+                ("/exn/ipex/grant", "Here is the blind registry disclosure"),
+                ("/exn/ipex/admit", "Thanks for the blind credential"),
+            ]
+        finally:
+            rgy.close()
+
+
+def test_ipex_v2_successive_blind_registry_updates_roundtrip():
+    """Grant both successive blind ``bup`` registry updates through full linear V2 IPEX exchanges."""
+    with openHby(name="ipex-v2-successive-blind-registry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="ipex-v2-successive-blind-registry", temp=True)
+        try:
+            # Create and anchor one real registry before issuing any blind state updates
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="successive-blind", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip, framed=True)
+
+            # Build one ACDC whose rd points at this registry for both successive disclosures
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+            schema = acdc.sad["s"]["$id"]
+
+            # Commit an issued blind update first and anchor it before any later lifecycle state exists
+            issuedBlinder, issued = registrar.issue(registry, acdc=acdc, state="issued")
+            issuedAnc = _anchor(hab, registry, issued, framed=False)
+            issuedAncSerder = _serder(issuedAnc)
+
+            assert rgy.store.seqEvent(registry.regk, 0).said == rip.said
+            assert rgy.store.seqEvent(registry.regk, 1).said == issued.said
+            assert rgy.store.headEvent(registry.regk).said == issued.said
+            assert issued.sad["b"] == issuedBlinder.said
+
+            # Wire one exchanger with the V2 IPEX handlers, then disclose the issued update first
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+            # First disclose the issued-state credential through one full linear IPEX exchange
+            issuedApplyExn, issuedApplyAtc = ipexApply(hab=hab,
+                                                       recp=hab.pre,
+                                                       message="Please issue the issued blind credential",
+                                                       schema=schema,
+                                                       attrs=None)
+            issuedOfferExn, issuedOfferAtc = ipexOffer(hab=hab,
+                                                       message="Here is the issued blind credential",
+                                                       acdc=acdc,
+                                                       apply=issuedApplyExn)
+            issuedAgreeExn, issuedAgreeAtc = ipexAgree(hab=hab,
+                                                       message="I agree to the issued blind credential",
+                                                       offer=issuedOfferExn)
+            issuedGrantExn, issuedGrantAtc = ipexGrant(hab=hab,
+                                                       recp=hab.pre,
+                                                       message="Here is the issued blind registry disclosure",
+                                                       acdc=acdc,
+                                                       iss=issued,
+                                                       anc=issuedAnc,
+                                                       agree=issuedAgreeExn)
+            issuedAdmitExn, issuedAdmitAtc = ipexAdmit(hab=hab,
+                                                       message="Thanks for the issued blind credential",
+                                                       grant=issuedGrantExn)
+
+            for exn, atc in ((issuedApplyExn, issuedApplyAtc),
+                             (issuedOfferExn, issuedOfferAtc),
+                             (issuedAgreeExn, issuedAgreeAtc),
+                             (issuedGrantExn, issuedGrantAtc),
+                             (issuedAdmitExn, issuedAdmitAtc)):
+                ims = bytearray(exn.raw)
+                ims.extend(atc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+                assert ims == bytearray()
+
+            for serder in (issuedApplyExn, issuedOfferExn, issuedAgreeExn, issuedGrantExn, issuedAdmitExn):
+                assert hby.db.exns.get(keys=(serder.said,)) is not None
+
+            issuedStoredGrant = hby.db.exns.get(keys=(issuedGrantExn.said,))
+            assert issuedStoredGrant.ked["p"] == issuedAgreeExn.said
+            assert issuedStoredGrant.ked["a"]["acdc"] == acdc.said
+            assert issuedStoredGrant.ked["a"]["iss"] == issued.said
+            assert issuedStoredGrant.ked["a"]["anc"] == issuedAncSerder.said
+
+            issuedMsg = serializeMessage(hby, issuedGrantExn.said, framed=True)
+            issuedIms = bytearray(issuedMsg)
+            issuedResults = Parser(version=Vrsn_2_0).parse(ims=issuedIms,
+                                                           framed=False,
+                                                           processive=False)
+            assert issuedIms == bytearray()
+            assert len(issuedResults) == 1
+            assert [nest.serder.said for nest in issuedResults[0].nests] == [
+                acdc.said,
+                issued.said,
+                issuedAncSerder.said,
+            ]
+
+            issuedCarriedBup = issuedResults[0].nests[1].serder
+            issuedUnblinder = Blinder.unblind(said=issuedCarriedBup.sad["b"],
+                                              uuid=issuedBlinder.uuid,
+                                              acdc=acdc.said,
+                                              states=["issued", "revoked"])
+            assert issuedUnblinder is not None
+            assert issuedUnblinder.state == "issued"
+            assert issuedUnblinder.acdc == acdc.said
+            assert issuedUnblinder.crew == issuedBlinder.crew
+
+            # Commit a revoked blind update that follows the issued state
+            revokedBlinder, revoked = registrar.issue(registry, acdc=acdc, state="revoked")
+            revokedAnc = _anchor(hab, registry, revoked, framed=False)
+            revokedAncSerder = _serder(revokedAnc)
+
+            # The accepted TEL should now show the full rip -> bup -> bup lifecycle
+            assert rgy.store.seqEvent(registry.regk, 0).said == rip.said
+            assert rgy.store.seqEvent(registry.regk, 1).said == issued.said
+            assert rgy.store.seqEvent(registry.regk, 2).said == revoked.said
+            assert rgy.store.headEvent(registry.regk).said == revoked.said
+            assert revoked.sad["p"] == issued.said
+            assert revoked.sad["b"] == revokedBlinder.said
+
+            # Then disclose the later revoked-state snapshot through its own full linear IPEX exchange
+            revokedApplyExn, revokedApplyAtc = ipexApply(hab=hab,
+                                                         recp=hab.pre,
+                                                         message="Please issue the revoked blind credential",
+                                                         schema=schema,
+                                                         attrs=dict(flow="revoked"))
+            revokedOfferExn, revokedOfferAtc = ipexOffer(hab=hab,
+                                                         message="Here is the revoked blind credential",
+                                                         acdc=acdc,
+                                                         apply=revokedApplyExn)
+            revokedAgreeExn, revokedAgreeAtc = ipexAgree(hab=hab,
+                                                         message="I agree to the revoked blind credential",
+                                                         offer=revokedOfferExn)
+            revokedGrantExn, revokedGrantAtc = ipexGrant(hab=hab,
+                                                         recp=hab.pre,
+                                                         message="Here is the revoked blind registry disclosure",
+                                                         acdc=acdc,
+                                                         iss=revoked,
+                                                         anc=revokedAnc,
+                                                         agree=revokedAgreeExn)
+            revokedAdmitExn, revokedAdmitAtc = ipexAdmit(hab=hab,
+                                                         message="Thanks for the revoked blind credential",
+                                                         grant=revokedGrantExn)
+
+            for exn, atc in ((revokedApplyExn, revokedApplyAtc),
+                             (revokedOfferExn, revokedOfferAtc),
+                             (revokedAgreeExn, revokedAgreeAtc),
+                             (revokedGrantExn, revokedGrantAtc),
+                             (revokedAdmitExn, revokedAdmitAtc)):
+                ims = bytearray(exn.raw)
+                ims.extend(atc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+                assert ims == bytearray()
+
+            for serder in (revokedApplyExn, revokedOfferExn, revokedAgreeExn, revokedGrantExn, revokedAdmitExn):
+                assert hby.db.exns.get(keys=(serder.said,)) is not None
+
+            revokedStoredGrant = hby.db.exns.get(keys=(revokedGrantExn.said,))
+            assert revokedStoredGrant.ked["p"] == revokedAgreeExn.said
+            assert revokedStoredGrant.ked["a"]["acdc"] == acdc.said
+            assert revokedStoredGrant.ked["a"]["iss"] == revoked.said
+            assert revokedStoredGrant.ked["a"]["anc"] == revokedAncSerder.said
+
+            revokedMsg = serializeMessage(hby, revokedGrantExn.said, framed=True)
+            revokedIms = bytearray(revokedMsg)
+            revokedResults = Parser(version=Vrsn_2_0).parse(ims=revokedIms,
+                                                             framed=False,
+                                                             processive=False)
+            assert revokedIms == bytearray()
+            assert len(revokedResults) == 1
+            assert [nest.serder.said for nest in revokedResults[0].nests] == [
+                acdc.said,
+                revoked.said,
+                revokedAncSerder.said,
+            ]
+
+            revokedCarriedBup = revokedResults[0].nests[1].serder
+            revokedUnblinder = Blinder.unblind(said=revokedCarriedBup.sad["b"],
+                                               uuid=revokedBlinder.uuid,
+                                               acdc=acdc.said,
+                                               states=["issued", "revoked"])
+            assert revokedUnblinder is not None
+            assert revokedUnblinder.state == "revoked"
+            assert revokedUnblinder.acdc == acdc.said
+            assert revokedUnblinder.crew == revokedBlinder.crew
+
+            # The notifier should reflect both full disclosures in the order they were sent
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/exn/ipex/apply", "Please issue the issued blind credential"),
+                ("/exn/ipex/offer", "Here is the issued blind credential"),
+                ("/exn/ipex/agree", "I agree to the issued blind credential"),
+                ("/exn/ipex/grant", "Here is the issued blind registry disclosure"),
+                ("/exn/ipex/admit", "Thanks for the issued blind credential"),
+                ("/exn/ipex/apply", "Please issue the revoked blind credential"),
+                ("/exn/ipex/offer", "Here is the revoked blind credential"),
+                ("/exn/ipex/agree", "I agree to the revoked blind credential"),
+                ("/exn/ipex/grant", "Here is the revoked blind registry disclosure"),
+                ("/exn/ipex/admit", "Thanks for the revoked blind credential"),
+            ]
+        finally:
+            rgy.close()
