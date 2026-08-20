@@ -115,6 +115,53 @@ def test_registry_create_and_issue_staged_without_real_seal():
             rgy.close()
 
 
+def test_registry_issue_pipelines_from_staged_tip_before_anchor():
+    """Build a local sn=1 -> sn=2 chain before either update is anchored."""
+    with openHby(name="acdc-registry-pipelined",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="acdc-registry-pipelined", temp=True)
+        try:
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="pipelined", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip)
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+
+            # The second blind issuance should extend the first staged update
+            # instead of creating a competing sibling at sn=1.
+            _, issued = registrar.issue(registry, acdc=acdc, state="issued")
+            _, revoked = registrar.issue(registry, acdc=acdc, state="revoked")
+
+            assert issued.sad["n"] == "1"
+            assert issued.sad["p"] == rip.said
+            assert revoked.sad["n"] == "2"
+            assert revoked.sad["p"] == issued.said
+            assert rgy.store.headEvent(registry.regk).said == rip.said
+            assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == [(issued.said,)]
+            assert rgy.store.baser.maes.get(keys=registry.regk, on=2) == [(revoked.said,)]
+
+            # If the later event is anchored first it should wait in the
+            # out-of-order queue until the earlier state commits.
+            seal = dict(i=registry.regk, s=revoked.sad["n"], d=revoked.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            assert registry.anchorMsg(revoked.said) is False
+            assert rgy.store.baser.ooes.get(keys=registry.regk, on=2) == [(revoked.said,)]
+
+            # Anchoring the first staged update should then commit both slots
+            # into the accepted TEL in sequence.
+            _anchor(hab, registry, issued)
+            assert rgy.store.seqEvent(registry.regk, 1).said == issued.said
+            assert rgy.store.seqEvent(registry.regk, 2).said == revoked.said
+            assert rgy.store.headEvent(registry.regk).said == revoked.said
+        finally:
+            rgy.close()
+
+
 def test_registry_rejects_malformed_inception_before_mutation():
     """Reject a rip with an impossible sequence number before mutating store state."""
     with openHby(name="acdc-registry-bad-rip",
@@ -634,7 +681,7 @@ def test_regery_process_escrows_clears_malformed_missing_anchor_entry():
 
 
 def test_registry_clears_conflicting_missing_anchor_siblings():
-    """Commit one missing-anchor sibling and clear competing staged entries for that slot."""
+    """When missing-anchor siblings race, the earliest anchored sibling wins."""
     with openHby(name="acdc-registry-sibling-maes",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -646,32 +693,37 @@ def test_registry_clears_conflicting_missing_anchor_siblings():
             rip = rgy.store.event(registry.regk)
             _anchor(hab, registry, rip)
 
-            # Create one normal staged blind update and one competing sibling for the same slot
+            # Stage one sibling first, then a competing sibling second for the same slot.
             acdc = acdcmap(israid=hab.pre,
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
-            _, winner = registrar.issue(registry, acdc=acdc, state="issued")
-            loser = regbup(regid=registry.regk,
-                           prior=rip.said,
-                           blid=Blinder.blind(acdc=acdc.said,
-                                              state="revoked",
-                                              sn=1).said,
-                           sn=1)
-            assert registry.processEvent(loser) is False
+            _, stagedFirst = registrar.issue(registry, acdc=acdc, state="issued")
+            anchoredFirst = regbup(regid=registry.regk,
+                                   prior=rip.said,
+                                   blid=Blinder.blind(acdc=acdc.said,
+                                                      state="revoked",
+                                                      sn=1).said,
+                                   sn=1)
+            assert registry.processEvent(anchoredFirst) is False
+
             # Both siblings should sit in missing-anchor escrow until one is committed.
             assert sorted(said for (said,) in rgy.store.baser.maes.get(keys=registry.regk, on=1)) == \
-                   sorted([winner.said, loser.said])
+                   sorted([stagedFirst.said, anchoredFirst.said])
 
-            # Note that currently the policy is to deterministically choose the first anchored sibling 
-            # and purge the rest.
-            # Anchoring the winner should commit that slot and clear the losing sibling too
-            _anchor(hab, registry, winner)
-            assert rgy.store.seqEvent(registry.regk, 1).said == winner.said
+            # Create real KEL seals without calling anchorMsg so replay must discover
+            # both anchors from local KEL and choose by earliest seal, not stage order.
+            seal = dict(i=registry.regk, s=anchoredFirst.sad["n"], d=anchoredFirst.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            seal = dict(i=registry.regk, s=stagedFirst.sad["n"], d=stagedFirst.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+
+            rgy.processEscrows()
+            assert rgy.store.seqEvent(registry.regk, 1).said == anchoredFirst.said
             assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == []
 
-            # Reintroducing the stale loser should let replay purge it defensively as junk
-            rgy.store.escrowMissingAnchor(registry.regk, 1, loser.said)
+            # Reintroducing the stale sibling should let replay purge it defensively as junk.
+            rgy.store.escrowMissingAnchor(registry.regk, 1, stagedFirst.said)
             rgy.processEscrows()
             assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == []
         finally:
@@ -679,7 +731,7 @@ def test_registry_clears_conflicting_missing_anchor_siblings():
 
 
 def test_registry_clears_conflicting_out_of_order_siblings():
-    """Commit one queued successor and clear competing out-of-order siblings for that slot."""
+    """When queued siblings race, the earliest anchored sibling wins."""
     with openHby(name="acdc-registry-sibling-ooes",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -697,38 +749,107 @@ def test_registry_clears_conflicting_out_of_order_siblings():
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=hab.pre)
             _, bup = registrar.issue(registry, acdc=acdc, state="issued")
-            queued = regbup(regid=registry.regk,
-                            prior=bup.said,
-                            blid=Blinder.blind(acdc=acdc.said,
-                                               state="accepted",
-                                               sn=2).said,
-                            sn=2)
-            sibling = regbup(regid=registry.regk,
-                             prior=bup.said,
-                             blid=Blinder.blind(acdc=acdc.said,
-                                                state="revoked",
-                                                sn=2).said,
-                             sn=2)
+            stagedFirst = regbup(regid=registry.regk,
+                                 prior=bup.said,
+                                 blid=Blinder.blind(acdc=acdc.said,
+                                                    state="accepted",
+                                                    sn=2).said,
+                                 sn=2)
+            anchoredFirst = regbup(regid=registry.regk,
+                                   prior=bup.said,
+                                   blid=Blinder.blind(acdc=acdc.said,
+                                                      state="revoked",
+                                                      sn=2).said,
+                                   sn=2)
 
             # Both successors should stage as out-of-order because sn=1 is not committed
-            assert registry.processEvent(queued) is False
-            assert registry.processEvent(sibling) is False
+            assert registry.processEvent(stagedFirst) is False
+            assert registry.processEvent(anchoredFirst) is False
 
-            # After each successor gets its own seal, both should still remain queued at sn=2
-            seal = dict(i=registry.regk, s=queued.sad["n"], d=queued.said)
+            # Anchor the second-staged sibling first, then the first-staged sibling.
+            seal = dict(i=registry.regk, s=anchoredFirst.sad["n"], d=anchoredFirst.said)
             hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
-            assert registry.anchorMsg(queued.said) is False
+            assert registry.anchorMsg(anchoredFirst.said) is False
 
-            seal = dict(i=registry.regk, s=sibling.sad["n"], d=sibling.said)
+            seal = dict(i=registry.regk, s=stagedFirst.sad["n"], d=stagedFirst.said)
             hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
-            assert registry.anchorMsg(sibling.said) is False
+            assert registry.anchorMsg(stagedFirst.said) is False
             assert sorted(said for (said,) in rgy.store.baser.ooes.get(keys=registry.regk, on=2)) == \
-                   sorted([queued.said, sibling.said])
+                   sorted([stagedFirst.said, anchoredFirst.said])
 
-            # Committing the real sn=1 update should now choose the first anchored
-            # sn=2 sibling deterministically and clear the later one.
+            # Committing the real sn=1 update should now choose the earliest anchored
+            # sn=2 sibling, regardless of which one was staged first.
             _anchor(hab, registry, bup)
-            assert rgy.store.seqEvent(registry.regk, 2).said == queued.said
+            assert rgy.store.seqEvent(registry.regk, 2).said == anchoredFirst.said
+            assert rgy.store.baser.ooes.get(keys=registry.regk, on=2) == []
+        finally:
+            rgy.close()
+
+
+def test_registry_preserves_first_verified_anchor_across_reseal():
+    """A later re-seal must not overwrite the first verified anchor for sibling ordering."""
+    with openHby(name="acdc-registry-first-anchor-wins",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="acdc-registry-first-anchor-wins", temp=True)
+        try:
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="first-anchor-wins", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip)
+
+            # Stage one real sn=1 update plus two competing sn=2 siblings.
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+            _, bup = registrar.issue(registry, acdc=acdc, state="issued")
+            firstAnchored = regbup(regid=registry.regk,
+                                   prior=bup.said,
+                                   blid=Blinder.blind(acdc=acdc.said,
+                                                      state="accepted",
+                                                      sn=2).said,
+                                   sn=2)
+            secondAnchored = regbup(regid=registry.regk,
+                                    prior=bup.said,
+                                    blid=Blinder.blind(acdc=acdc.said,
+                                                       state="revoked",
+                                                       sn=2).said,
+                                    sn=2)
+
+            # Both siblings queue behind the still-uncommitted sn=1 update.
+            assert registry.processEvent(firstAnchored) is False
+            assert registry.processEvent(secondAnchored) is False
+
+            # The first sibling seals first and should keep that earlier anchor forever.
+            seal = dict(i=registry.regk, s=firstAnchored.sad["n"], d=firstAnchored.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            first_number = Number(num=hab.kever.sn)
+            first_diger = Diger(qb64=hab.kever.serder.said)
+            assert registry.anchorMsg(firstAnchored.said, number=first_number, diger=first_diger) is False
+
+            # A later sibling seal should not change who currently wins the slot.
+            seal = dict(i=registry.regk, s=secondAnchored.sad["n"], d=secondAnchored.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            assert registry.anchorMsg(secondAnchored.said) is False
+
+            # Re-sealing the already-winning first sibling later used to overwrite its stored anchor.
+            seal = dict(i=registry.regk, s=firstAnchored.sad["n"], d=firstAnchored.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            later_number = Number(num=hab.kever.sn)
+            later_diger = Diger(qb64=hab.kever.serder.said)
+            assert registry.anchorMsg(firstAnchored.said, number=later_number, diger=later_diger) is False
+
+            # The earliest verified anchor should still be the one kept on record.
+            stored_number, stored_diger = rgy.store.anchor(firstAnchored.said)
+            assert stored_number.sn < later_number.sn
+            assert stored_number.sn == first_number.sn
+            assert stored_diger.qb64 != later_diger.qb64
+
+            # Once sn=1 commits, sibling resolution should still pick the event anchored first.
+            _anchor(hab, registry, bup)
+            assert rgy.store.seqEvent(registry.regk, 2).said == firstAnchored.said
             assert rgy.store.baser.ooes.get(keys=registry.regk, on=2) == []
         finally:
             rgy.close()
@@ -820,6 +941,66 @@ def test_regery_reload_uses_stored_rip_issuer_for_reopened_issuance():
                 Registrar(rgy=reopened).issue(reloaded, acdc=foreign, state="issued")
 
             assert reopened.store.records.get(keys="reloadable").registryKey == regk
+        finally:
+            reopened.baser.close(clear=True)
+
+
+def test_regery_reload_retains_staged_tip_for_follow_on_issuance():
+    """Continue a staged local chain after reopening the same durable registry store."""
+    with openHby(name="acdc-registry-reload-staged-tip",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby,
+                     name="acdc-registry-reload-staged-tip-store",
+                     base="test",
+                     temp=False)
+        try:
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="reloadable", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip)
+
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+            _, issued = registrar.issue(registry, acdc=acdc, state="issued")
+            regk = registry.regk
+        finally:
+            rgy.close()
+
+        reopened = Regery(hby=hby,
+                          name="acdc-registry-reload-staged-tip-store",
+                          base="test",
+                          temp=False)
+        try:
+            reloaded = reopened.registryByName("reloadable")
+            assert reloaded is not None
+            assert reloaded.regk == regk
+            assert reopened.store.event(issued.said).said == issued.said
+            assert reopened.store.baser.maes.get(keys=regk, on=1) == [(issued.said,)]
+
+            acdc = acdcmap(israid=hab.pre,
+                           regid=regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+            _, revoked = Registrar(rgy=reopened).issue(reloaded, acdc=acdc, state="revoked")
+
+            assert revoked.sad["n"] == "2"
+            assert revoked.sad["p"] == issued.said
+            assert reopened.store.headEvent(regk).said == rip.said
+
+            # Reopened stores should still be able to anchor the later event
+            # first and let it queue behind the persisted staged predecessor.
+            seal = dict(i=regk, s=revoked.sad["n"], d=revoked.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            assert reloaded.anchorMsg(revoked.said) is False
+
+            _anchor(hab, reloaded, issued)
+            assert reopened.store.seqEvent(regk, 1).said == issued.said
+            assert reopened.store.seqEvent(regk, 2).said == revoked.said
+            assert reopened.store.headEvent(regk).said == revoked.said
         finally:
             reopened.baser.close(clear=True)
 
