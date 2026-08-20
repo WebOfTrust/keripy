@@ -648,6 +648,8 @@ def spurn(hab, message, spurned, recp=None, dt=None, kind=None, gvrsn=None):
     """
     if not spurned.ked.get("ri", ""):
         raise ValueError("prior exchange has no explicit receiver")
+    if spurned.ked["r"] == "/ipex/grant" and spurned.ked.get("p", ""):
+        raise ValueError("only flow-starting grants may be spurned")
     if hab.pre != spurned.ked["ri"]:
         raise ValueError("sender does not match prior exchange receiver")
     if recp is not None and recp != spurned.ked["i"]:

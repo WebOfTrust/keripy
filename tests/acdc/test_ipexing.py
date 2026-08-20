@@ -469,16 +469,11 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Assert it was not accepted 
         assert hby.db.exns.get(keys=(dupSpurn.said,)) is None
 
-        # Build a spurn against the normal agree-backed grant; verifier should reject it
-        grantSpurn, grantSpurnAtc = ipexSpurn(hab=hab,
-                                              message="This follow-on grant cannot be spurned",
-                                              spurned=grant0)
-
-        grantSpurnIms = bytearray(grantSpurn.raw)
-        grantSpurnIms.extend(grantSpurnAtc)
-        Parser(version=Vrsn_2_0).parse(ims=grantSpurnIms, framed=False, exc=exc)
-        assert grantSpurnIms == bytearray()
-        assert hby.db.exns.get(keys=(grantSpurn.said,)) is None
+        # Agree-backed grants are not spurnable, so callers now fail fast.
+        with pytest.raises(ValueError):
+            ipexSpurn(hab=hab,
+                      message="This follow-on grant cannot be spurned",
+                      spurned=grant0)
 
         # Build a bare grant
         grant1, grant1Atc = ipexGrant(hab=hab,
