@@ -1349,9 +1349,9 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
         },
     }
 
-    # Drive all "receive time" checks from one mutable clock so we can hold the
-    # accept path steady, then deliberately push one mid-flow message outside the
-    # lower timeliness bound before retrying it.
+    # Drive all message timestamps and receive-time checks from one mutable
+    # clock so the test can create one stale delivery and then recover by
+    # retrying from the advanced current time.
     clock = fakeHelpingClock
     assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
 
@@ -1414,70 +1414,17 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                              exc=exc)
                 assert kvy.kramer.enabled is True
 
-                # Freeze one receiver-side "now" and choose message datetimes that
-                # intentionally land at different points inside the allowed window.
-                receiveDt = helping.fromIso8601(helping.nowIso8601())
-                receiveMs = receiveDt.timestamp() * 1000
-                applyStamp = helping.toIso8601(receiveDt - timedelta(milliseconds=4500))
-                offerRetryStamp = helping.toIso8601(receiveDt - timedelta(milliseconds=2000))
-                agreeStamp = helping.toIso8601(receiveDt)
-                grantStamp = helping.toIso8601(receiveDt + timedelta(milliseconds=500))
-                admitStamp = helping.toIso8601(receiveDt + timedelta(milliseconds=d))
-
-                # Build a real two-party IPEX thread. The recipient applies for
-                # the credential, the issuer answers with the offer and grant,
-                # and the recipient closes the thread with agree and admit.
-                # The offer is handled in two passes below: first stale and
-                # denied, then resent with an in-window timestamp and accepted.
+                # Drive each message timestamp from the fake clock directly. The
+                # clock starts at the apply, advances to create one stale offer,
+                # then continues forward as each accepted message is built.
+                applyStamp = helping.nowIso8601()
                 applyExn, applyAtc = ipexApply(hab=recipient,
                                                recp=hab.pre,
                                                message="Please issue the blind credential",
                                                attrs={},
                                                modifiers=dict(dp=[[schema, "/", []]]),
                                                dt=applyStamp)
-                staleOfferStamp = helping.toIso8601(
-                    receiveDt - timedelta(milliseconds=d + sl + 1))
-                staleOfferExn, staleOfferAtc = ipexOffer(hab=hab,
-                                                         message="Here is the blind credential",
-                                                         apply=applyExn,
-                                                         dt=staleOfferStamp)
-                offerExn, offerAtc = ipexOffer(hab=hab,
-                                               message="Here is the blind credential",
-                                               apply=applyExn,
-                                               dt=offerRetryStamp)
-                agreeExn, agreeAtc = ipexAgree(hab=recipient,
-                                               message="I agree to the blind credential",
-                                               offer=offerExn,
-                                               dt=agreeStamp)
-                grantExn, grantAtc = ipexGrant(hab=hab,
-                                               recp=recipient.pre,
-                                               message="Here is the blind registry disclosure",
-                                               origin=acdc,
-                                               artifacts=[issued, issuedAnc],
-                                               agree=agreeExn,
-                                               dt=grantStamp)
-                admitExn, admitAtc = ipexAdmit(hab=recipient,
-                                               message="Thanks for the blind credential",
-                                               grant=grantExn,
-                                               dt=admitStamp)
-
-                # The stale offer still points at the same transaction, but its
-                # message timestamp is just outside the lower timeliness bound.
-                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
-                staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
-                assert staleOfferMs < (receiveMs - d - sl)
-
-                # The recovered offer and every later accepted exn all point back
-                # to the apply opener so KRAM classifies them under one transaction.
-                accepted = (
-                    (applyExn, applyAtc, applyStamp),
-                    (offerExn, offerAtc, offerRetryStamp),
-                    (agreeExn, agreeAtc, agreeStamp),
-                    (grantExn, grantAtc, grantStamp),
-                    (admitExn, admitAtc, admitStamp),
-                )
-                for serder, _, stamp in accepted:
-                    assert serder.ked["x"] == applyExn.ked["x"]
+                applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
                 # Deliver apply first so the later offer retry can legally answer
                 # it in the IPEX handler chain.
@@ -1499,8 +1446,25 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 applyMdtMs = helping.fromIso8601(applyCache.mdt).timestamp() * 1000
                 applyXdtMs = helping.fromIso8601(applyCache.xdt).timestamp() * 1000
-                assert (receiveMs - d - sl) <= applyMdtMs <= (receiveMs + d)
+                assert (applyReceiveMs - d - sl) <= applyMdtMs <= (applyReceiveMs + d)
                 assert applyXdtMs <= applyMdtMs <= (applyXdtMs + xl)
+
+                # Move forward a hair, build the stale offer, then advance past
+                # the lower timeliness bound before attempting delivery.
+                clock.advance(milliseconds=1)
+                staleOfferStamp = helping.nowIso8601()
+                staleOfferExn, staleOfferAtc = ipexOffer(hab=hab,
+                                                         message="Here is the blind credential",
+                                                         apply=applyExn,
+                                                         dt=staleOfferStamp)
+                clock.advance(milliseconds=d + sl + 1)
+                staleOfferReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                # The stale offer still points at the same transaction, but its
+                # message timestamp is just outside the lower timeliness bound.
+                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
+                staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
+                assert staleOfferMs < (staleOfferReceiveMs - d - sl)
 
                 # Send the first offer attempt with the stale timestamp. It must
                 # be dropped by KRAM before the exchanger records it as a response
@@ -1518,38 +1482,125 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                     ("/exn/ipex/apply", "Please issue the blind credential"),
                 ]
 
-                # Resend the same logical offer with a fresh, in-window timestamp.
-                # Because the stale one never got recorded, this retry should be
-                # accepted and the exchange can continue from it.
-                for exn, atc, stamp in accepted[1:]:    # don't count the apply
-                    ims = bytearray(exn.raw)
-                    ims.extend(atc)
-                    Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
-                    assert ims == bytearray()
+                # Resend the same logical offer from the current fake-clock time.
+                clock.advance(milliseconds=1)
+                offerRetryStamp = helping.nowIso8601()
+                offerExn, offerAtc = ipexOffer(hab=hab,
+                                               message="Here is the blind credential",
+                                               apply=applyExn,
+                                               dt=offerRetryStamp)
+                offerReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
-                    # Once KRAM accepts the message, the IPEX exchanger should
-                    # persist the exn body and preserve the exchange id.
-                    stored = hby.db.exns.get(keys=(exn.said,))
-                    assert stored is not None
-                    assert stored.ked["x"] == applyExn.ked["x"]
+                offerIms = bytearray(offerExn.raw)
+                offerIms.extend(offerAtc)
+                Parser(version=Vrsn_2_0).parse(ims=offerIms, kvy=kvy)
+                assert offerIms == bytearray()
 
-                    # KRAM should also record one transaction-cache row that keeps
-                    # the message's own mdt and the original apply xdt.
-                    cache = hby.db.kramTMSC.get(
-                        keys=(exn.ked["i"], applyExn.ked["x"], exn.said))
-                    assert cache is not None
-                    assert cache.mdt == stamp
-                    assert cache.xdt == applyStamp
-                    assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                offerStored = hby.db.exns.get(keys=(offerExn.said,))
+                assert offerStored is not None
+                assert offerStored.ked["x"] == applyExn.ked["x"]
 
-                    mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
-                    xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
+                offerCache = hby.db.kramTMSC.get(
+                    keys=(hab.pre, applyExn.ked["x"], offerExn.said))
+                assert offerCache is not None
+                assert offerCache.mdt == offerRetryStamp
+                assert offerCache.xdt == applyStamp
+                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
 
-                    # Each accepted exn must satisfy both KRAM checks:
-                    # 1. message time is timely relative to receiver now
-                    # 2. message time still lies within the exchange lifetime
-                    assert (receiveMs - d - sl) <= mdtMs <= (receiveMs + d)
-                    assert xdtMs <= mdtMs <= (xdtMs + xl)
+                offerMdtMs = helping.fromIso8601(offerCache.mdt).timestamp() * 1000
+                offerXdtMs = helping.fromIso8601(offerCache.xdt).timestamp() * 1000
+                assert (offerReceiveMs - d - sl) <= offerMdtMs <= (offerReceiveMs + d)
+                assert offerXdtMs <= offerMdtMs <= (offerXdtMs + xl)
+
+                clock.advance(milliseconds=1)
+                agreeStamp = helping.nowIso8601()
+                agreeExn, agreeAtc = ipexAgree(hab=recipient,
+                                               message="I agree to the blind credential",
+                                               offer=offerExn,
+                                               dt=agreeStamp)
+                agreeReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                agreeIms = bytearray(agreeExn.raw)
+                agreeIms.extend(agreeAtc)
+                Parser(version=Vrsn_2_0).parse(ims=agreeIms, kvy=kvy)
+                assert agreeIms == bytearray()
+
+                agreeStored = hby.db.exns.get(keys=(agreeExn.said,))
+                assert agreeStored is not None
+                assert agreeStored.ked["x"] == applyExn.ked["x"]
+
+                agreeCache = hby.db.kramTMSC.get(
+                    keys=(recipient.pre, applyExn.ked["x"], agreeExn.said))
+                assert agreeCache is not None
+                assert agreeCache.mdt == agreeStamp
+                assert agreeCache.xdt == applyStamp
+                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                agreeMdtMs = helping.fromIso8601(agreeCache.mdt).timestamp() * 1000
+                agreeXdtMs = helping.fromIso8601(agreeCache.xdt).timestamp() * 1000
+                assert (agreeReceiveMs - d - sl) <= agreeMdtMs <= (agreeReceiveMs + d)
+                assert agreeXdtMs <= agreeMdtMs <= (agreeXdtMs + xl)
+
+                clock.advance(milliseconds=500)
+                grantStamp = helping.nowIso8601()
+                grantExn, grantAtc = ipexGrant(hab=hab,
+                                               recp=recipient.pre,
+                                               message="Here is the blind registry disclosure",
+                                               origin=acdc,
+                                               artifacts=[issued, issuedAnc],
+                                               agree=agreeExn,
+                                               dt=grantStamp)
+                grantReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                grantIms = bytearray(grantExn.raw)
+                grantIms.extend(grantAtc)
+                Parser(version=Vrsn_2_0).parse(ims=grantIms, kvy=kvy)
+                assert grantIms == bytearray()
+
+                grantStored = hby.db.exns.get(keys=(grantExn.said,))
+                assert grantStored is not None
+                assert grantStored.ked["x"] == applyExn.ked["x"]
+
+                grantCache = hby.db.kramTMSC.get(
+                    keys=(hab.pre, applyExn.ked["x"], grantExn.said))
+                assert grantCache is not None
+                assert grantCache.mdt == grantStamp
+                assert grantCache.xdt == applyStamp
+                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                grantMdtMs = helping.fromIso8601(grantCache.mdt).timestamp() * 1000
+                grantXdtMs = helping.fromIso8601(grantCache.xdt).timestamp() * 1000
+                assert (grantReceiveMs - d - sl) <= grantMdtMs <= (grantReceiveMs + d)
+                assert grantXdtMs <= grantMdtMs <= (grantXdtMs + xl)
+
+                clock.advance(milliseconds=d)
+                admitStamp = helping.nowIso8601()
+                admitExn, admitAtc = ipexAdmit(hab=recipient,
+                                               message="Thanks for the blind credential",
+                                               grant=grantExn,
+                                               dt=admitStamp)
+                admitReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                admitIms = bytearray(admitExn.raw)
+                admitIms.extend(admitAtc)
+                Parser(version=Vrsn_2_0).parse(ims=admitIms, kvy=kvy)
+                assert admitIms == bytearray()
+
+                admitStored = hby.db.exns.get(keys=(admitExn.said,))
+                assert admitStored is not None
+                assert admitStored.ked["x"] == applyExn.ked["x"]
+
+                admitCache = hby.db.kramTMSC.get(
+                    keys=(recipient.pre, applyExn.ked["x"], admitExn.said))
+                assert admitCache is not None
+                assert admitCache.mdt == admitStamp
+                assert admitCache.xdt == applyStamp
+                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                admitMdtMs = helping.fromIso8601(admitCache.mdt).timestamp() * 1000
+                admitXdtMs = helping.fromIso8601(admitCache.xdt).timestamp() * 1000
+                assert (admitReceiveMs - d - sl) <= admitMdtMs <= (admitReceiveMs + d)
+                assert admitXdtMs <= admitMdtMs <= (admitXdtMs + xl)
 
                 # Re-serialize the stored grant and confirm the exact nested ACDC,
                 # blind update, and anchor survive the KRAM + exchanger path.
@@ -1588,18 +1639,15 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                     ("/exn/ipex/admit", "Thanks for the blind credential"),
                 ]
 
-                # The clock never had to move for the retry itself. Recovery here
-                # means that a stale message can be resent with a fresh mdt and
-                # the rest of the transaction still proceeds from that new offer.
-                assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
-
                 # The stale offer is never persisted, while the retry is, proving
                 # the exchange recovered by accepting the second transmission.
                 assert hby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert hby.db.exns.get(keys=(offerExn.said,)) is not None
 
-                # No clock advance was required for the recovered path, so keep
-                # the fake clock parked at the original receive instant.
+                # The fake clock now sits at the admit timestamp because each
+                # message took its own dt from the current "now" just before build.
+                assert helping.nowIso8601() == admitStamp
+
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
                     ("/exn/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/offer", "Here is the blind credential"),
@@ -1607,6 +1655,418 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                     ("/exn/ipex/grant", "Here is the blind registry disclosure"),
                     ("/exn/ipex/admit", "Thanks for the blind credential"),
                 ]
+        finally:
+            rgy.close()
+
+
+def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeHelpingClock):
+    """Route the blind-registry IPEX flow through KRAM with distinct Haberys."""
+    clock = fakeHelpingClock
+
+    # Keep the KRAM cache timings local to this test so every timeliness and
+    # exchange-lifetime assertion below reads against one explicit policy.
+    kramConfig = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+            },
+        },
+    }
+    # Start the fake clock at one known instant before the flow begins.
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    # Unpack the windows used by the KRAM assertions:
+    # d  = allowed clock drift
+    # sl = short-lag timeliness window for single-key / current-est auth
+    # xl = total exchange lifetime measured from xdt
+    d = kramConfig["kram"]["caches"]["~"][0]
+    sl = kramConfig["kram"]["caches"]["~"][1]
+    xl = kramConfig["kram"]["caches"]["~"][3]
+
+    with (openHby(name="ipex-v2-blind-registry-kram-issuer",
+                  base="test",
+                  version=Vrsn_2_0) as issuerHby,
+          openHby(name="ipex-v2-blind-registry-kram-recipient",
+                  base="test",
+                  version=Vrsn_2_0) as recipientHby):
+        issuerHab = issuerHby.makeHab(name="issuer")
+        recipientHab = recipientHby.makeHab(name="recipient")
+        rgy = Regery(hby=issuerHby, name="ipex-v2-blind-registry-kram-two-haberies", temp=True)
+        try:
+            # Build the issuer-owned registry inside the issuer's Habery.
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="blind-kram", prefix=issuerHab.pre)
+            rip = rgy.store.event(registry.regk)
+            ripAnc = _anchor(issuerHab, registry, rip, framed=True)
+
+            # Issue one credential from the issuer to the recipient so the later
+            # grant can disclose a real ACDC plus real registry artifacts.
+            acdc = acdcmap(israid=issuerHab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=recipientHab.pre)
+            schema = acdc.sad["s"]["$id"]
+
+            # Commit one blindable issuance-state update and capture the KEL
+            # event that anchors it so the grant can carry the full package.
+            issuedBlinder, issued = registrar.issue(registry, acdc=acdc, state="issued")
+            issuedAnc = _anchor(issuerHab, registry, issued, framed=False)
+            issuedAncSerder = _serder(issuedAnc)
+
+            # Rotate after the TEL anchors so the later IPEX exchanges sign
+            # against a fresh establishment event KRAM can authenticate.
+            issuerRot = issuerHab.rotate(framed=True,
+                                         version=Vrsn_2_0,
+                                         kind=issuerHab.kever.serder.kind,
+                                         gvrsn=Vrsn_2_0)
+
+
+            recipientRemoteKvy = Kevery(db=recipientHby.db, lax=False, local=False)
+            issuerRemoteKvy = Kevery(db=issuerHby.db, lax=False, local=False)
+
+            # Feed the recipient's inception into the issuer's local db so the
+            # issuer can authenticate the opener that arrives from the recipient.
+            recipientIcp = recipientHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(recipientIcp), kvy=issuerRemoteKvy)
+
+            # Feed the issuer's KEL and TEL anchor material into the recipient's
+            # local db so the recipient can authenticate the issuer's replies and
+            # verify the registry artifacts nested inside the later grant.
+            issuerIcp = issuerHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerIcp), kvy=recipientRemoteKvy)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(ripAnc), kvy=recipientRemoteKvy)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(issuedAnc),
+                                           framed=False,
+                                           kvy=recipientRemoteKvy)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerRot), kvy=recipientRemoteKvy)
+
+            # Give each Habery its own IPEX exchanger and recorder so the test
+            # can prove which side actually received which messages.
+            issuerRecorder = Recorder()
+            issuerExc = Exchanger(hby=issuerHby, handlers=[])
+            loadHandlers(hby=issuerHby, exc=issuerExc, notifier=issuerRecorder)
+
+            recipientRecorder = Recorder()
+            recipientExc = Exchanger(hby=recipientHby, handlers=[])
+            loadHandlers(hby=recipientHby, exc=recipientExc, notifier=recipientRecorder)
+
+            with (openCF(name="ipex-v2-kram-two-haberies-issuer", base="test", temp=True) as issuerCf,
+                  openCF(name="ipex-v2-kram-two-haberies-recipient", base="test", temp=True) as recipientCf):
+                issuerCf.put(kramConfig)
+                recipientCf.put(kramConfig)
+                # These "self" exchangers let each sender parse a local copy of
+                # its own outbound message first. That seeds local prior-message
+                # state and xdt tracking so a later counterparty reply can be
+                # verified inside a separate Habery.
+                issuerSelfExc = Exchanger(hby=issuerHby, handlers=[])
+                recipientSelfExc = Exchanger(hby=recipientHby, handlers=[])
+                issuerSelfKvy = Kevery(db=issuerHby.db,
+                                       lax=False,
+                                       local=False,
+                                       kramer=Kramer(db=issuerHby.db, cf=issuerCf),
+                                       exc=issuerSelfExc)
+                recipientSelfKvy = Kevery(db=recipientHby.db,
+                                          lax=False,
+                                          local=False,
+                                          kramer=Kramer(db=recipientHby.db, cf=recipientCf),
+                                          exc=recipientSelfExc)
+                issuerKvy = Kevery(db=issuerHby.db,
+                                   lax=False,
+                                   local=False,
+                                   kramer=Kramer(db=issuerHby.db, cf=issuerCf),
+                                   exc=issuerExc)
+                recipientKvy = Kevery(db=recipientHby.db,
+                                      lax=False,
+                                      local=False,
+                                      kramer=Kramer(db=recipientHby.db, cf=recipientCf),
+                                      exc=recipientExc)
+                assert issuerKvy.kramer.enabled is True
+                assert recipientKvy.kramer.enabled is True
+
+                # Drive each message timestamp from the fake clock directly. The
+                # clock starts at the apply, advances to create one stale offer,
+                # then continues forward as each accepted message is built.
+                applyStamp = helping.nowIso8601()
+                applyExn, applyAtc = ipexApply(hab=recipientHab,
+                                               recp=issuerHab.pre,
+                                               message="Please issue the blind credential",
+                                               attrs={},
+                                               modifiers=dict(dp=[[schema, "/", []]]),
+                                               dt=applyStamp)
+                applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                # Parse the apply locally on the sender side first so the
+                # recipient Habery records its own opener before any reply comes
+                # back from the issuer.
+                applyMsg = bytearray(applyExn.raw)
+                applyMsg.extend(applyAtc)
+
+                ims = bytearray(applyMsg)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientSelfKvy)
+
+                # Deliver the apply to the issuer side. This is the first real
+                # cross-Habery inbound step in the exchange.
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerKvy)
+
+                assert ims == bytearray()
+
+                # The issuer must persist the inbound apply and keep the opener's
+                # xid intact because later replies will inherit this xdt.
+                applyStored, _ = cloneMessage(issuerHby, applyExn.said)
+                assert applyStored is not None
+                assert applyStored.ked["x"] == applyExn.ked["x"]
+
+                # On the receiver side of the apply, KRAM should store both the
+                # per-message cache row and the thread-wide opener time.
+                applyCache = issuerHby.db.kramTMSC.get(
+                    keys=(recipientHab.pre, applyExn.ked["x"], applyExn.said))
+                assert applyCache is not None
+                assert applyCache.mdt == applyStamp
+                assert applyCache.xdt == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                # The sender-side self-parse should also have seeded the same xid
+                # opener time locally for future inbound replies.
+                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                # Confirm the accepted apply sits inside both the receiver's
+                # timeliness window and the thread's exchange-lifetime window.
+                applyMdtMs = helping.fromIso8601(applyCache.mdt).timestamp() * 1000
+                applyXdtMs = helping.fromIso8601(applyCache.xdt).timestamp() * 1000
+                assert (applyReceiveMs - d - sl) <= applyMdtMs <= (applyReceiveMs + d)
+                assert applyXdtMs <= applyMdtMs <= (applyXdtMs + xl)
+
+                # Move forward, build the stale offer, then advance past
+                # the lower timeliness bound before attempting delivery.
+                clock.advance(milliseconds=1)
+                staleOfferStamp = helping.nowIso8601()
+                staleOfferExn, staleOfferAtc = ipexOffer(hab=issuerHab,
+                                                         message="Here is the blind credential",
+                                                         apply=applyExn,
+                                                         dt=staleOfferStamp)
+                clock.advance(milliseconds=d + sl + 1)
+                staleOfferReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                # The stale offer must still target the same transaction, but its
+                # mdt should sit just below the lower timeliness bound.
+                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
+                staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
+                assert staleOfferMs < (staleOfferReceiveMs - d - sl)
+
+                # Now deliver the stale offer to the recipient. KRAM should drop
+                # it before the exchanger records or dispatches it.
+                staleOfferMsg = bytearray(staleOfferExn.raw)
+                staleOfferMsg.extend(staleOfferAtc)
+                ims = bytearray(staleOfferMsg)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
+
+                assert ims == bytearray()
+                assert recipientHby.db.kramTMSC.get(
+                    keys=(issuerHab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
+                assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
+                assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
+                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                ]
+                assert recipientRecorder.items == []
+
+                # Resend the same logical offer from the current fake-clock time.
+                clock.advance(milliseconds=1)
+                offerRetryStamp = helping.nowIso8601()
+                offerExn, offerAtc = ipexOffer(hab=issuerHab,
+                                               message="Here is the blind credential",
+                                               apply=applyExn,
+                                               dt=offerRetryStamp)
+                offerReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                # Parse the fresh offer locally on the issuer side so the issuer
+                # Habery retains its own sent message as prior state.
+                offerMsg = bytearray(offerExn.raw)
+                offerMsg.extend(offerAtc)
+
+                ims = bytearray(offerMsg)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerSelfKvy)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
+                assert ims == bytearray()
+
+                # The recipient must store the accepted offer because the later
+                # agree builder replies to this local prior message.
+                storedOffer, _ = cloneMessage(recipientHby, offerExn.said)
+                assert storedOffer is not None
+                assert storedOffer.ked["x"] == applyExn.ked["x"]
+
+                # Even though this is not the opener, KRAM must keep the offer's
+                # own mdt while still inheriting the original apply xdt.
+                offerCache = recipientHby.db.kramTMSC.get(
+                    keys=(issuerHab.pre, applyExn.ked["x"], offerExn.said))
+                assert offerCache is not None
+                assert offerCache.mdt == offerRetryStamp
+                assert offerCache.xdt == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                # The recovered offer should now satisfy the same two KRAM
+                # windows the stale one missed.
+                offerMdtMs = helping.fromIso8601(offerCache.mdt).timestamp() * 1000
+                offerXdtMs = helping.fromIso8601(offerCache.xdt).timestamp() * 1000
+                assert (offerReceiveMs - d - sl) <= offerMdtMs <= (offerReceiveMs + d)
+                assert offerXdtMs <= offerMdtMs <= (offerXdtMs + xl)
+
+                # The recipient answers the accepted offer with an agree.
+                clock.advance(milliseconds=1)
+                agreeStamp = helping.nowIso8601()
+                agreeExn, agreeAtc = ipexAgree(hab=recipientHab,
+                                               message="I agree to the blind credential",
+                                               offer=storedOffer,
+                                               dt=agreeStamp)
+                agreeReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+                # Self-parse again so the sender Habery can later verify inbound
+                # replies against its own locally stored prior message.
+                agreeMsg = bytearray(agreeExn.raw)
+                agreeMsg.extend(agreeAtc)
+
+                ims = bytearray(agreeMsg)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientSelfKvy)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerKvy)
+                assert ims == bytearray()
+
+                storedAgree, _ = cloneMessage(issuerHby, agreeExn.said)
+                assert storedAgree is not None
+                assert storedAgree.ked["x"] == applyExn.ked["x"]
+
+                # The reply keeps the same opener xdt even though its own mdt is
+                # later in the exchange.
+                agreeCache = issuerHby.db.kramTMSC.get(
+                    keys=(recipientHab.pre, applyExn.ked["x"], agreeExn.said))
+                assert agreeCache is not None
+                assert agreeCache.mdt == agreeStamp
+                assert agreeCache.xdt == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                agreeMdtMs = helping.fromIso8601(agreeCache.mdt).timestamp() * 1000
+                agreeXdtMs = helping.fromIso8601(agreeCache.xdt).timestamp() * 1000
+                assert (agreeReceiveMs - d - sl) <= agreeMdtMs <= (agreeReceiveMs + d)
+                assert agreeXdtMs <= agreeMdtMs <= (agreeXdtMs + xl)
+
+                # The issuer now grants the actual disclosure package, including
+                # the credential plus the blindable registry artifacts.
+                clock.advance(milliseconds=500)
+                grantStamp = helping.nowIso8601()
+                grantExn, grantAtc = ipexGrant(hab=issuerHab,
+                                               recp=recipientHab.pre,
+                                               message="Here is the blind registry disclosure",
+                                               origin=acdc,
+                                               artifacts=[issued, issuedAnc],
+                                               agree=storedAgree,
+                                               dt=grantStamp)
+                grantReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+                # Persist the outbound grant locally on the issuer side before
+                # sending it across so the issuer still has its own prior chain.
+                grantExnMsg = bytearray(grantExn.raw)
+                grantExnMsg.extend(grantAtc)
+
+                ims = bytearray(grantExnMsg)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerSelfKvy)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
+                assert ims == bytearray()
+
+                # The recipient stores this grant locally so the final admit can
+                # be built as a real reply to the accepted inbound message.
+                storedGrant, _ = cloneMessage(recipientHby, grantExn.said)
+                assert storedGrant is not None
+                assert storedGrant.ked["x"] == applyExn.ked["x"]
+
+                grantCache = recipientHby.db.kramTMSC.get(
+                    keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said))
+                assert grantCache is not None
+                assert grantCache.mdt == grantStamp
+                assert grantCache.xdt == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                grantMdtMs = helping.fromIso8601(grantCache.mdt).timestamp() * 1000
+                grantXdtMs = helping.fromIso8601(grantCache.xdt).timestamp() * 1000
+                assert (grantReceiveMs - d - sl) <= grantMdtMs <= (grantReceiveMs + d)
+                assert grantXdtMs <= grantMdtMs <= (grantXdtMs + xl)
+
+                # Close the thread with the recipient's admit.
+                clock.advance(milliseconds=d)
+                admitStamp = helping.nowIso8601()
+                admitExn, admitAtc = ipexAdmit(hab=recipientHab,
+                                               message="Thanks for the blind credential",
+                                               grant=storedGrant,
+                                               dt=admitStamp)
+                admitReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+                admitMsg = bytearray(admitExn.raw)
+                admitMsg.extend(admitAtc)
+                ims = bytearray(admitMsg)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerKvy)
+                assert ims == bytearray()
+
+                # The issuer must store the inbound admit and keep the xid
+                # consistent with the opener that started the transaction.
+                storedAdmit, _ = cloneMessage(issuerHby, admitExn.said)
+                assert storedAdmit is not None
+                assert storedAdmit.ked["x"] == applyExn.ked["x"]
+
+                admitCache = issuerHby.db.kramTMSC.get(
+                    keys=(recipientHab.pre, applyExn.ked["x"], admitExn.said))
+                assert admitCache is not None
+                assert admitCache.mdt == admitStamp
+                assert admitCache.xdt == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+
+                admitMdtMs = helping.fromIso8601(admitCache.mdt).timestamp() * 1000
+                admitXdtMs = helping.fromIso8601(admitCache.xdt).timestamp() * 1000
+                assert (admitReceiveMs - d - sl) <= admitMdtMs <= (admitReceiveMs + d)
+                assert admitXdtMs <= admitMdtMs <= (admitXdtMs + xl)
+
+                # Re-serialize the stored grant from the recipient side to prove
+                # the nested ACDC, blind update, and anchor all survived the
+                # full cross-Habery KRAM plus exchanger path unchanged.
+                grantMsg = serializeMessage(recipientHby, grantExn.said, framed=True)
+                grantWire = bytearray(grantMsg)
+                grantResults = Parser(version=Vrsn_2_0).parse(ims=grantWire,
+                                                              framed=False,
+                                                              processive=False)
+                assert grantWire == bytearray()
+                assert len(grantResults) == 1
+                assert [nest.serder.said for nest in grantResults[0].nests] == [
+                    acdc.said,
+                    issued.said,
+                    issuedAncSerder.said,
+                ]
+
+                # Pull the carried blindable update back out of the stored grant
+                # and prove it still unblinds to the expected issued state.
+                carriedBup = grantResults[0].nests[1].serder
+                unblinder = Blinder.unblind(said=carriedBup.sad["b"],
+                                            uuid=issuedBlinder.uuid,
+                                            acdc=acdc.said,
+                                            states=["issued", "revoked"])
+                assert unblinder is not None
+                assert unblinder.state == "issued"
+                assert unblinder.acdc == acdc.said
+                assert unblinder.crew == issuedBlinder.crew
+
+                # Recorder contents should show the issuer only saw the
+                # recipient-originated messages, and the recipient only saw the
+                # issuer-originated ones.
+                assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
+                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/exn/ipex/agree", "I agree to the blind credential"),
+                    ("/exn/ipex/admit", "Thanks for the blind credential"),
+                ]
+                assert [(item["r"], item["m"]) for item in recipientRecorder.items] == [
+                    ("/exn/ipex/offer", "Here is the blind credential"),
+                    ("/exn/ipex/grant", "Here is the blind registry disclosure"),
+                ]
+
+                # Recovery here means the stale offer never landed, the retry did
+                # land, and the fake clock advanced cleanly from apply to admit.
+                assert helping.nowIso8601() == admitStamp
+                assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
+                assert recipientHby.db.exns.get(keys=(offerExn.said,)) is not None
         finally:
             rgy.close()
 
