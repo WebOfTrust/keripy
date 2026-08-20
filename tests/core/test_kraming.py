@@ -1429,8 +1429,9 @@ def test_asr(mockHelpingNowUTC):
 def test_transactioned(mockHelpingNowUTC):
     """Test processMsg with transactioned messages (xip/exn, kramTMSC cache).
 
-    Covers: seed xip via kramit directly, exn via processMsg, missing xip
-    cache, exchange window test, multi-key accumulation in transactioned path.
+    Covers: seed xip via kramit directly, exn via processMsg, bare
+    transactioned exn openers, cross-sender replies that recover xdt by xid,
+    exchange window test, and multi-key accumulation in transactioned path.
     """
 
     # Step 1: Setup
@@ -1474,6 +1475,7 @@ def test_transactioned(mockHelpingNowUTC):
             stamp = helping.nowIso8601()
             skPrefixer = Prefixer(qb64=skHab.pre)
             mkPrefixer = Prefixer(qb64=mkHab.pre)
+            receiverPrefixer = Prefixer(qb64=receiverHab.pre)
 
 
             # Step 2: Test with seeded xip via kramit directly
@@ -1498,6 +1500,8 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # xip's xdt == its own dt
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(xip.said,)).dts == stamp
 
 
             # Step 3: exn with exchange ID via processMsg
@@ -1525,9 +1529,11 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # inherited from xip's xdt
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(xip.said,)).dts == stamp
 
 
-            # Step 4: Missing xip cache
+            # Step 4: Bare v2 transactional exn opener (no prior) seeds its own xdt
 
             fakeXid = "E" + "B" * 43  # fabricated xip SAID with no kramTMSC entry
             msg3 = exchange(sender=skHab.pre,
@@ -1543,16 +1549,44 @@ def test_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(lsgs=[(skPrefixer, sigers)])
 
-            # kramit can't find xip's xdt, returns None, processMsg returns
-            kwa["serder"] = msg3
-            kvy.processMsg(kwa)
-
-            # Assert no kramTMSC entry for the exn
+            result = kramer.kramit(msg3, kwa)
+            assert result is not None
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, fakeXid, msg3.said))
-            assert cache is None
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.xdt == stamp
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(fakeXid,)).dts == stamp
 
 
-            # Step 5: Exchange window test
+            # Step 5: Another sender can answer the same thread by xid alone
+            msg4 = exchange(sender=receiverHab.pre,
+                            receiver=skHab.pre,
+                            xid=fakeXid,
+                            prior=msg3.said,
+                            route="/test/exchange",
+                            attributes=dict(n='5e'),
+                            stamp=stamp,
+                            version=V2, 
+                            kind=Kinds.json)
+
+            sigers = receiverHab.mgr.sign(ser=msg4.raw,
+                                          verfers=receiverHab.kever.verfers,
+                                          indexed=True)
+            kwa = dict(lsgs=[(receiverPrefixer, sigers)])
+
+            result = kramer.kramit(msg4, kwa)
+            assert result is not None
+            cache = receiverHby.db.kramTMSC.get(
+                keys=(receiverHab.pre, fakeXid, msg4.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.xdt == stamp
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(fakeXid,)).dts == stamp
+
+
+            # Step 6: Exchange window test
 
             # Seed a kramTMSC entry with an old xdt directly in the database
             # so the exn's mdt (now) is outside the exchange window
@@ -1564,32 +1598,33 @@ def test_transactioned(mockHelpingNowUTC):
                 xl=300000, pxl=300000)
             receiverHby.db.kramTMSC.pin(keys=(skHab.pre, oldXipSaid, oldXipSaid),
                                     val=seedRecord)
+            receiverHby.db.kramXDT.pin(keys=(oldXipSaid,), val=Dater(dts=oldXdt))
 
-            msg4 = exchange(sender=skHab.pre,
+            msg5 = exchange(sender=skHab.pre,
                             receiver=receiverHab.pre,
                             xid=oldXipSaid,
                             route="/test/exchange",
-                            attributes=dict(n='5e'),
+                            attributes=dict(n='5f'),
                             stamp=stamp,
                             **EXN_KWA)
 
-            sigers = skHab.mgr.sign(ser=msg4.raw,
+            sigers = skHab.mgr.sign(ser=msg5.raw,
                                     verfers=skHab.kever.verfers,
                                     indexed=True)
             kwa = dict(lsgs=[(skPrefixer, sigers)])
 
             # mdt passes standard timeliness, but
             # xdt=10min ago, mdt=now: xdt + xl = 5min ago < now -> fails
-            kwa["serder"] = msg4
+            kwa["serder"] = msg5
             kvy.processMsg(kwa)
 
             # Assert no kramTMSC entry (exchange window failed)
             cache = receiverHby.db.kramTMSC.get(
-                keys=(skHab.pre, oldXipSaid, msg4.said))
+                keys=(skHab.pre, oldXipSaid, msg5.said))
             assert cache is None
 
 
-            # Step 6: Seed xip for multi-key sender
+            # Step 7: Seed xip for multi-key sender
 
             mkXip = exchept(sender=mkHab.pre,
                             receiver=receiverHab.pre,
@@ -1608,7 +1643,7 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
 
 
-            # Step 7: Multi-key accumulation in transactioned path
+            # Step 8: Multi-key accumulation in transactioned path
 
             mkExn = exchange(sender=mkHab.pre,
                              receiver=receiverHab.pre,

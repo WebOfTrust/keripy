@@ -1908,7 +1908,7 @@ def test_clean_baser():
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
         assert state.f == '6'
-        assert natHab.db.env.stat()['entries'] <= 101 #68
+        assert natHab.db.env.stat()['entries'] <= 102 #68
 
         # test reopenDB with reuse  (because temp)
         with reopenDB(db=natHab.db, reuse=True):
@@ -1918,7 +1918,7 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
-            assert natHab.db.env.stat()['entries'] <= 101 #68
+            assert natHab.db.env.stat()['entries'] <= 102 #68
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)
