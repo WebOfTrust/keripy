@@ -1424,13 +1424,12 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 grantStamp = helping.toIso8601(receiveDt + timedelta(milliseconds=500))
                 admitStamp = helping.toIso8601(receiveDt + timedelta(milliseconds=d))
 
-                # KRAM keys transaction cache rows by sender AID, so this test keeps
-                # the IPEX thread self-addressed under one signer and uses
-                # `recipient` only as the issued credential's subject.
-                # Build the opening apply inside the timeliness window first. The
-                # offer is handled in two passes below: first stale and denied,
-                # then resent with an in-window timestamp and accepted.
-                applyExn, applyAtc = ipexApply(hab=hab,
+                # Build a real two-party IPEX thread. The recipient applies for
+                # the credential, the issuer answers with the offer and grant,
+                # and the recipient closes the thread with agree and admit.
+                # The offer is handled in two passes below: first stale and
+                # denied, then resent with an in-window timestamp and accepted.
+                applyExn, applyAtc = ipexApply(hab=recipient,
                                                recp=hab.pre,
                                                message="Please issue the blind credential",
                                                attrs={},
@@ -1446,18 +1445,18 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                                                message="Here is the blind credential",
                                                apply=applyExn,
                                                dt=offerRetryStamp)
-                agreeExn, agreeAtc = ipexAgree(hab=hab,
+                agreeExn, agreeAtc = ipexAgree(hab=recipient,
                                                message="I agree to the blind credential",
                                                offer=offerExn,
                                                dt=agreeStamp)
                 grantExn, grantAtc = ipexGrant(hab=hab,
-                                               recp=hab.pre,
+                                               recp=recipient.pre,
                                                message="Here is the blind registry disclosure",
                                                origin=acdc,
                                                artifacts=[issued, issuedAnc],
                                                agree=agreeExn,
                                                dt=grantStamp)
-                admitExn, admitAtc = ipexAdmit(hab=hab,
+                admitExn, admitAtc = ipexAdmit(hab=recipient,
                                                message="Thanks for the blind credential",
                                                grant=grantExn,
                                                dt=admitStamp)
@@ -1491,10 +1490,12 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 assert applyStored is not None
                 assert applyStored.ked["x"] == applyExn.ked["x"]
 
-                applyCache = hby.db.kramTMSC.get(keys=(hab.pre, applyExn.ked["x"], applyExn.said))
+                applyCache = hby.db.kramTMSC.get(
+                    keys=(recipient.pre, applyExn.ked["x"], applyExn.said))
                 assert applyCache is not None
                 assert applyCache.mdt == applyStamp
                 assert applyCache.xdt == applyStamp
+                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
 
                 applyMdtMs = helping.fromIso8601(applyCache.mdt).timestamp() * 1000
                 applyXdtMs = helping.fromIso8601(applyCache.xdt).timestamp() * 1000
@@ -1510,7 +1511,8 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 Parser(version=Vrsn_2_0).parse(ims=staleOfferIms, kvy=kvy)
 
                 assert staleOfferIms == bytearray()
-                assert hby.db.kramTMSC.get(keys=(hab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
+                assert hby.db.kramTMSC.get(
+                    keys=(hab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
                 assert hby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
                     ("/exn/ipex/apply", "Please issue the blind credential"),
@@ -1533,10 +1535,12 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original apply xdt.
-                    cache = hby.db.kramTMSC.get(keys=(hab.pre, applyExn.ked["x"], exn.said))
+                    cache = hby.db.kramTMSC.get(
+                        keys=(exn.ked["i"], applyExn.ked["x"], exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == applyStamp
+                    assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
@@ -1686,27 +1690,25 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 grantStamp = helping.toIso8601(receiveDt + timedelta(milliseconds=500))
                 admitStamp = helping.toIso8601(receiveDt + timedelta(milliseconds=d))
 
-                # KRAM keys transaction cache rows by sender AID, so this test keeps
-                # the IPEX thread self-addressed under one signer and uses
-                # `recipient` only as the issued credential's subject.
-                # Start the flow with an offer that generates its own xid instead
-                # of inheriting it from an apply.
+                # Start a real two-party offer-first flow. The issuer opens the
+                # thread with the offer, the recipient agrees, the issuer grants,
+                # and the recipient admits receipt.
                 offerExn, offerAtc = ipexOffer(hab=hab,
                                                message="Offer starts the blind credential flow",
-                                               recp=hab.pre,
+                                               recp=recipient.pre,
                                                dt=offerStamp)
-                agreeExn, agreeAtc = ipexAgree(hab=hab,
+                agreeExn, agreeAtc = ipexAgree(hab=recipient,
                                                message="I agree to the offer-first credential",
                                                offer=offerExn,
                                                dt=agreeStamp)
                 grantExn, grantAtc = ipexGrant(hab=hab,
-                                               recp=hab.pre,
+                                               recp=recipient.pre,
                                                message="Here is the offer-first blind registry disclosure",
                                                origin=acdc,
                                                artifacts=[issued, issuedAnc],
                                                agree=agreeExn,
                                                dt=grantStamp)
-                admitExn, admitAtc = ipexAdmit(hab=hab,
+                admitExn, admitAtc = ipexAdmit(hab=recipient,
                                                message="Thanks for the offer-first blind credential",
                                                grant=grantExn,
                                                dt=admitStamp)
@@ -1739,10 +1741,12 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original offer xdt.
-                    cache = hby.db.kramTMSC.get(keys=(hab.pre, offerExn.ked["x"], exn.said))
+                    cache = hby.db.kramTMSC.get(
+                        keys=(exn.ked["i"], offerExn.ked["x"], exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == offerStamp
+                    assert hby.db.kramXDT.get(keys=(offerExn.ked["x"],)).dts == offerStamp
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
@@ -1863,18 +1867,15 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 grantStamp = helping.toIso8601(receiveDt - timedelta(milliseconds=2000))
                 admitStamp = helping.toIso8601(receiveDt)
 
-                # KRAM keys transaction cache rows by sender AID, so this test keeps
-                # the IPEX thread self-addressed under one signer and uses
-                # `recipient` only as the issued credential's subject.
-                # Start the flow with a grant that generates its own xid instead
-                # of inheriting it from an agree.
+                # Start a real two-party grant-first flow. The issuer opens the
+                # thread with the grant and the recipient answers with admit.
                 grantExn, grantAtc = ipexGrant(hab=hab,
-                                               recp=hab.pre,
+                                               recp=recipient.pre,
                                                message="Grant starts the blind credential flow",
                                                origin=acdc,
                                                artifacts=[issued, issuedAnc],
                                                dt=grantStamp)
-                admitExn, admitAtc = ipexAdmit(hab=hab,
+                admitExn, admitAtc = ipexAdmit(hab=recipient,
                                                message="Thanks for the grant-first blind credential",
                                                grant=grantExn,
                                                dt=admitStamp)
@@ -1905,10 +1906,12 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original grant xdt.
-                    cache = hby.db.kramTMSC.get(keys=(hab.pre, grantExn.ked["x"], exn.said))
+                    cache = hby.db.kramTMSC.get(
+                        keys=(exn.ked["i"], grantExn.ked["x"], exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == grantStamp
+                    assert hby.db.kramXDT.get(keys=(grantExn.ked["x"],)).dts == grantStamp
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
