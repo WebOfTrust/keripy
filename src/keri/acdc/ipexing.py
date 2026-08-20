@@ -248,7 +248,7 @@ class IpexHandler:
             if nests:
                 return False
         elif verb == Ipex.offer:
-            if nests or "dp" not in q or not isinstance(q["dp"], list):
+            if "o" not in attrs or nests or "dp" not in q or not isinstance(q["dp"], list):
                 return False
 
         elif verb == Ipex.grant:
@@ -400,13 +400,15 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
     return serder, atc
 
 
-def offer(hab, message, apply=None, recp=None, dt=None, kind=None, gvrsn=None,
+def offer(hab, message, origin, apply=None, recp=None, dt=None, kind=None, gvrsn=None,
           modifiers=None, attrs=None):
     """Create a signed V2 IPEX ``offer`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable offer message.
+        origin (Serder | bytes | bytearray): Origin presentation or credential
+            artifact identified in ``a.o``.
         apply (Serder | None): Optional prior ``apply`` exchange.
         recp (str | None): Recipient AID. Defaults to the prior ``apply``
             sender; must be supplied directly for an offer-first exchange
@@ -446,6 +448,7 @@ def offer(hab, message, apply=None, recp=None, dt=None, kind=None, gvrsn=None,
             xid = ""
     data = dict(attrs) if attrs is not None else {}
     data["m"] = message
+    data["o"] = _streamSerder(origin).said
     mods = dict(modifiers) if modifiers else {}
     mods.setdefault("dp", [])
 

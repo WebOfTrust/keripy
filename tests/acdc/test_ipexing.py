@@ -128,8 +128,9 @@ def test_ipex_v2_builders_parse_happypath():
 
         # Build Offer message chained to apply 
         offerExn, offerAtc = ipexOffer(hab=hab,
-                                          message="Here is the offered credential",
-                                          apply=applyExn)
+                                       message="Here is the offered credential",
+                                       origin=acdc,
+                                       apply=applyExn)
 
         # Build an agree chained to the offer
         agreeExn, agreeAtc = ipexAgree(hab=hab,
@@ -166,6 +167,7 @@ def test_ipex_v2_builders_parse_happypath():
         assert applyExn.ked["q"]["dp"] == [[schema, "/", ["a/role"]]]
 
         assert offerExn.ked["a"]["m"] == "Here is the offered credential"
+        assert offerExn.ked["a"]["o"] == acdc.said
         assert offerExn.ked["p"] == applyExn.said       # prior
         assert offerExn.ked["q"]["dp"] == []
 
@@ -372,8 +374,9 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                                         attrs=dict(role="member"),
                                         modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
         offer0, offer0Atc = ipexOffer(hab=hab,
-                                        message="Here is the offered credential",
-                                        apply=apply0)
+                                      message="Here is the offered credential",
+                                      origin=acdc,
+                                      apply=apply0)
         agree0, agree0Atc = ipexAgree(hab=hab,
                                         message="I agree to the offer",
                                         offer=offer0)
@@ -436,6 +439,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
 
         storedOffer = hby.db.exns.get(keys=(offer0.said,))
         assert storedOffer.ked["a"]["m"] == "Here is the offered credential"
+        assert storedOffer.ked["a"]["o"] == acdc.said
         assert "acdc" not in storedOffer.ked["a"]
         assert storedOffer.ked["q"]["dp"] == []
         assert storedOffer.ked["p"] == apply0.said
@@ -503,12 +507,14 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         assert hby.db.exns.get(keys=(spurn1.said,)) is not None
 
         with pytest.raises(ValueError):
-            ipexOffer(hab=hab, message="Bare offer without receiver")
+            ipexOffer(hab=hab, message="Bare offer without receiver", origin=acdc)
 
-        # Build a bare offer with an explicit receiver; the starter generates
-        # its own xid and still supports a valid spurn against it.
+        # Build a bare offer with the committed origin and explicit receiver;
+        # the starter generates its own xid and still supports a valid spurn
+        # against it.
         offer1, offer1Atc = ipexOffer(hab=hab,
                                       message="Bare offer for spurn path",
+                                      origin=acdc,
                                       recp=hab.pre)
         assert offer1.ked["x"] != ""
         spurn2, spurn2Atc = ipexSpurn(hab=hab,
@@ -588,6 +594,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
                                        modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
         offerExn, offerAtc = ipexOffer(hab=hab,
                                        message="Here is the offered credential",
+                                       origin=acdc,
                                        apply=applyExn)
         agreeExn, agreeAtc = ipexAgree(hab=hab,
                                        message="I agree to the offer",
@@ -675,10 +682,17 @@ def test_ipex_v2_rejects_offer_without_dp():
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
+        registry = regcept(israid=hab.pre)
+        acdc = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+
         # Build a normal offer first, then remove q.dp to prove the V2 handler
         # fails closed on the required disclosure-plan field.
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
+                           origin=acdc,
                            message="Here is the offered credential")
         sad = dict(exn.ked)
         sad["q"] = {}
@@ -702,6 +716,46 @@ def test_ipex_v2_rejects_offer_without_dp():
         assert hby.db.exns.get(keys=(badOffer.said,)) is None
 
         # Rejected offers must also not create user-facing IPEX notifications
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_offer_with_missing_origin_attr_without_throwing():
+    with openHby(name="ipex-v2-bad-offer-origin",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        registry = regcept(israid=hab.pre)
+        acdc = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+
+        exn, _ = ipexOffer(hab=hab,
+                           recp=hab.pre,
+                           origin=acdc,
+                           message="Here is the offered credential")
+        sad = dict(exn.ked)
+        sad["a"] = dict(exn.ked["a"])
+        sad["a"].pop("o")
+        badOffer = SerderKERI(sad=sad, makify=True, verify=False)
+
+        atc = bytearray(hab.endorse(serder=badOffer,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0))
+        del atc[:badOffer.size]
+
+        ims = bytearray(badOffer.raw)
+        ims.extend(atc)
+
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(badOffer.said,)) is None
         assert recorder.items == []
 
 
@@ -860,6 +914,7 @@ def test_ipex_v2_responders_set_receiver():
         # holder offers, addressing the applicant (apply's sender) by derivation
         offerExn, _ = ipexOffer(hab=holder,
                                 message="Here are the terms",
+                                origin=acdc,
                                 apply=applyExn)
         assert offerExn.ked["i"] == holder.pre
         assert offerExn.ked["ri"] == verifier.pre
@@ -891,10 +946,11 @@ def test_ipex_v2_responders_set_receiver():
                                 spurned=applyExn)
         assert spurnExn.ked["ri"] == verifier.pre
 
-        # offer-first bootstrap: no prior apply, so explicit recp opens the
-        # thread and the builder generates xid when omitted.
+        # offer-first bootstrap: no prior apply, so the caller supplies the
+        # committed origin plus explicit recp, and the builder generates xid.
         bootExn, _ = ipexOffer(hab=holder,
                                message="Opening offer",
+                               origin=acdc,
                                recp=verifier.pre)
         assert bootExn.ked["p"] == ""
         assert bootExn.ked["ri"] == verifier.pre
@@ -936,6 +992,7 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         # Continue with the valid holder response that derives its receiver and xid from the apply.
         offerExn, _ = ipexOffer(hab=holder,
                                 message="Here are the terms",
+                                origin=acdc,
                                 apply=applyExn)
         # Continue with the valid verifier response back to the holder.
         agreeExn, _ = ipexAgree(hab=verifier,
@@ -951,7 +1008,7 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         # Set 1: an unrelated third party cannot consume any response slot in the thread.
         # Mallory cannot answer someone else's apply as if it were the holder.
         with pytest.raises(ValueError):
-            ipexOffer(hab=mallory, message="Bad sender", apply=applyExn)
+            ipexOffer(hab=mallory, message="Bad sender", origin=acdc, apply=applyExn)
         # Mallory cannot answer the offer as if it were the verifier.
         with pytest.raises(ValueError):
             ipexAgree(hab=mallory, message="Bad sender", offer=offerExn)
@@ -972,7 +1029,11 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         # Set 2: honest participants still cannot redirect replies to an unrelated receiver.
         # The real holder cannot override the derived receiver with a different target.
         with pytest.raises(ValueError):
-            ipexOffer(hab=holder, message="Bad receiver", apply=applyExn, recp=mallory.pre)
+            ipexOffer(hab=holder,
+                      message="Bad receiver",
+                      origin=acdc,
+                      apply=applyExn,
+                      recp=mallory.pre)
         # The verifier cannot redirect the agree to someone other than the prior sender.
         with pytest.raises(ValueError):
             ipexAgree(hab=verifier, message="Bad receiver", offer=offerExn, recp=mallory.pre)
@@ -993,7 +1054,7 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         # Set 3: callers can no longer override xid on any builder because the
         # builder API owns thread identity completely.
         with pytest.raises(TypeError):
-            ipexOffer(hab=holder, message="Bad xid", apply=applyExn, xid="F" * 44)
+            ipexOffer(hab=holder, message="Bad xid", origin=acdc, apply=applyExn, xid="F" * 44)
         with pytest.raises(TypeError):
             ipexAgree(hab=verifier, message="Bad xid", offer=offerExn, xid="F" * 44)
         with pytest.raises(TypeError):
@@ -1019,15 +1080,20 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         # xid internally without accepting one from the caller.
         # Offer-first flows reject a starter with no recipient.
         with pytest.raises(ValueError):
-            ipexOffer(hab=holder, message="Bare offer")
-        # Supplying only the recipient is now enough for an offer-first opener.
-        bareOffer, _ = ipexOffer(hab=holder, message="Bare offer", recp=verifier.pre)
+            ipexOffer(hab=holder, message="Bare offer", origin=acdc)
+        # Supplying the origin plus recipient is enough for an offer-first opener.
+        bareOffer, _ = ipexOffer(hab=holder, message="Bare offer", origin=acdc, recp=verifier.pre)
         assert bareOffer.ked["p"] == ""
         assert bareOffer.ked["ri"] == verifier.pre
         assert bareOffer.ked["x"] != ""
+        assert bareOffer.ked["a"]["o"] == acdc.said
         # Supplying xid directly is no longer supported at all.
         with pytest.raises(TypeError):
-            ipexOffer(hab=holder, message="Bare offer", recp=verifier.pre, xid="E" * 44)
+            ipexOffer(hab=holder,
+                      message="Bare offer",
+                      origin=acdc,
+                      recp=verifier.pre,
+                      xid="E" * 44)
         # Grant-first flows follow the same auto-generated-xid rule.
         bareGrant, _ = ipexGrant(hab=holder,
                                  recp=verifier.pre,
@@ -1095,6 +1161,7 @@ def test_ipex_v2_rejects_third_party_prior_response_without_throwing():
                                        modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        message="Here are the terms",
+                                       origin=acdc,
                                        apply=applyExn)
 
         for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
@@ -1268,6 +1335,7 @@ def test_ipex_v2_blind_registry_update_roundtrip():
                                            modifiers=dict(dp=[[schema, "/", []]]))
             offerExn, offerAtc = ipexOffer(hab=hab,
                                            message="Here is the blind credential",
+                                           origin=acdc,
                                            apply=applyExn)
             agreeExn, agreeAtc = ipexAgree(hab=hab,
                                            message="I agree to the blind credential",
@@ -1455,6 +1523,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 staleOfferStamp = helping.nowIso8601()
                 staleOfferExn, staleOfferAtc = ipexOffer(hab=hab,
                                                          message="Here is the blind credential",
+                                                         origin=acdc,
                                                          apply=applyExn,
                                                          dt=staleOfferStamp)
                 clock.advance(milliseconds=d + sl + 1)
@@ -1487,6 +1556,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 offerRetryStamp = helping.nowIso8601()
                 offerExn, offerAtc = ipexOffer(hab=hab,
                                                message="Here is the blind credential",
+                                               origin=acdc,
                                                apply=applyExn,
                                                dt=offerRetryStamp)
                 offerReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
@@ -1805,9 +1875,11 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 ims = bytearray(applyMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientSelfKvy)
+                assert ims == bytearray()
 
                 # Deliver the apply to the issuer side. This is the first real
                 # cross-Habery inbound step in the exchange.
+                ims = bytearray(applyMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerKvy)
 
                 assert ims == bytearray()
@@ -1844,6 +1916,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 staleOfferStamp = helping.nowIso8601()
                 staleOfferExn, staleOfferAtc = ipexOffer(hab=issuerHab,
                                                          message="Here is the blind credential",
+                                                         origin=acdc,
                                                          apply=applyExn,
                                                          dt=staleOfferStamp)
                 clock.advance(milliseconds=d + sl + 1)
@@ -1876,6 +1949,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 offerRetryStamp = helping.nowIso8601()
                 offerExn, offerAtc = ipexOffer(hab=issuerHab,
                                                message="Here is the blind credential",
+                                               origin=acdc,
                                                apply=applyExn,
                                                dt=offerRetryStamp)
                 offerReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
@@ -1887,6 +1961,8 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 ims = bytearray(offerMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerSelfKvy)
+                assert ims == bytearray()
+                ims = bytearray(offerMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
                 assert ims == bytearray()
 
@@ -1928,6 +2004,8 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 ims = bytearray(agreeMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientSelfKvy)
+                assert ims == bytearray()
+                ims = bytearray(agreeMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerKvy)
                 assert ims == bytearray()
 
@@ -1968,6 +2046,8 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 ims = bytearray(grantExnMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerSelfKvy)
+                assert ims == bytearray()
+                ims = bytearray(grantExnMsg)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
                 assert ims == bytearray()
 
@@ -2155,6 +2235,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 # and the recipient admits receipt.
                 offerExn, offerAtc = ipexOffer(hab=hab,
                                                message="Offer starts the blind credential flow",
+                                               origin=acdc,
                                                recp=recipient.pre,
                                                dt=offerStamp)
                 agreeExn, agreeAtc = ipexAgree(hab=recipient,
@@ -2462,6 +2543,7 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
                                                        modifiers=dict(dp=[[schema, "/", []]]))
             issuedOfferExn, issuedOfferAtc = ipexOffer(hab=hab,
                                                        message="Here is the issued blind credential",
+                                                       origin=acdc,
                                                        apply=issuedApplyExn)
             issuedAgreeExn, issuedAgreeAtc = ipexAgree(hab=hab,
                                                        message="I agree to the issued blind credential",
@@ -2539,6 +2621,7 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
                                                          modifiers=dict(dp=[[schema, "/", []]]))
             revokedOfferExn, revokedOfferAtc = ipexOffer(hab=hab,
                                                          message="Here is the revoked blind credential",
+                                                         origin=acdc,
                                                          apply=revokedApplyExn)
             revokedAgreeExn, revokedAgreeAtc = ipexAgree(hab=hab,
                                                          message="I agree to the revoked blind credential",
