@@ -462,7 +462,7 @@ def test_missing_delegator_escrow():
         # apply msg to del's Kevery so he knows about the AID
         psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
         assert bobK.prefixer.qb64 in delKvy.kevers
-        delBobK = bobKvy.kevers[bobPre]  # bobs kever in dels kevery
+        delBobK = delKvy.kevers[bobPre]  # bobs kever in dels kevery
         assert delBobK.sn == 0
 
         # Setup Del's inception event assuming that Bob's next event will be
@@ -501,6 +501,11 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(bobIxnMsg1), kvy=bobKvy, local=True)
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
         assert bobK.sn == 1
+
+        # apply msg to del's Kevery so he knows about the delegating event
+        psr.parse(ims=bytearray(bobIxnMsg1), kvy=delKvy, local=True)
+        assert delBobK.serder.said == bobSrdr.said
+        assert delBobK.sn == 1
 
         # now create Del's delegated inception event msg
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
@@ -1579,9 +1584,9 @@ def test_unverified_receipt_escrow():
         kvy.processEscrowUnverNonTrans()
         assert pre not in kvy.kevers  # key state not updated
         # check escrows removed
-        kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 0
 
         # Now reset timeout so not zero and resend receipts to reload escrow
         kvy.TimeoutURE = 3600
@@ -1595,9 +1600,9 @@ def test_unverified_receipt_escrow():
         # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
         # assert Ure escrows are back
-        kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 2
 
         # apply inception msg to Kevery to process
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
