@@ -7,118 +7,69 @@ fact ABOUT a ward to a verifier, under Utah's State-Endorsed Digital Identity la
 Utah Code 63A-20). Sibling to tests/acdc/test_cp_disclosure.py and test_examples.py, it
 adds the one thing neither shows: a presentation whose HOLDER IS NOT THE SUBJECT.
 
-WHICH GUARDIANSHIP THIS IS, AND WHICH IT IS NOT. Guardianship covers two situations that
-look alike on a diagram and are not alike at all, and Utah Code 63A-20-302(3)(a) draws the
-line where this example needs it drawn -- at whether the ward can act: "If an individual is
-unable to apply for a state-endorsed digital identity due to the individual's youth or
-incapacitation, the application may be made on behalf of that individual by the
-individual's digital guardian."
+TWO REGIMES, TWO MODULES, split where Utah Code 63A-20-302(3)(a) splits them: a ward
+"unable to apply ... due to the individual's youth or incapacitation" has a guardian who
+acts on her behalf. That ward is THIS module's -- seven-year-old Mia, whose father custodies
+her keys -- so the invariant is holder != subject, and collapsing the two is the
+impersonation failure the prior art warns against (Sovrin "Guardianship in SSI V2"; Aries
+RFC 0103). A ward who CAN act is the sibling's -- 17-year-old Cara, in
+tests/acdc/test_ward_authz_presentation.py (PR #1577), bounded by an authorization she
+presents herself. Bob Carver is the custodial parent in both, and the four bases the schema
+below pins are the four in 63A-20-201(3)(b).
 
-  * The ward CANNOT ACT -- an infant or young child, or an adult who has lost capacity.
-    The guardian custodies the keys controlling the ward's AID, so anything she is required
-    to present must be presented for her. THIS module. The invariant is holder != subject:
-    a verifier can always tell that a guardian, not the ward, is acting, and collapsing the
-    two is the impersonation failure the prior art warns against (Sovrin "Guardianship in
-    SSI V2"; Aries RFC 0103).
-  * The ward CAN ACT, within a scope -- old enough to operate a device and sign, with a
-    parent who modulates her access rather than exercising it. That is the sibling,
-    tests/acdc/test_ward_authz_presentation.py (PR #1577), where the WARD presents an
-    authorization her guardian issued her; its invariant is attenuation.
+Scenario, under Utah's App Store Accountability Act (13-76). Mia holds two SEDI credentials
+under her own AID -- an attributive identity credential, and an aggregative age credential
+(boolean flags for 13, 16, 18, 21, 55, 65) chained to it by an E1E identity edge -- and can
+present neither. Before an app store may let a minor download an app it must obtain
+verifiable parental consent (13-76-201(1)(b)) and verify her AGE CATEGORY, the lowest being
+"child", under 13 (13-76-101(2)(a)), which the developer uses to set safety defaults at
+their most restrictive (13-76-202(3)(a)). Those two facts are all it gets: not Mia's
+birthdate, not a standing correlator. Bob presents them, a relying party being required to
+accept a presentation by a digital guardian (63A-20-601(1)(e); also 501(1)(e), 401(1)(h)).
 
-The same split runs through the chapter: a minor may apply for a SEDI only with her digital
-guardian's consent (63A-20-302(2)), and the four bases the schema below pins are the four
-in 63A-20-201(3)(b). The two modules share a family so the line stays visible: Bob Carver
-is the custodial parent in both, his 17-year-old Cara presents her own authorization in the
-sibling, and his 7-year-old Mia is the ward here.
+NOT CLAIMED: the statutory consent entire. 13-76-101(21) wants an affirmative choice by
+someone the store "has verified is an adult", after a parental consent disclosure. The chain
+proves more than adulthood -- a recognized guardian over THIS ward -- and the presentation is
+the affirmative grant, but the disclosure is only gestured at, the apply carrying a
+governance SAID where 13-76-101(18) wants the app's age rating and data practices.
 
-Scenario, under Utah's App Store Accountability Act (Utah Code 13-76). Mia is 7. The State
-issued her two SEDI credentials under her own holder AID -- an attributive identity
-credential (name, date of birth, photo, residence) and an aggregative age credential
-(boolean flags for the thresholds 13, 16, 18, 21, 55, 65) chained to it by an E1E identity
-edge -- but Bob custodies the keys, so she can present neither. He holds a SEDI
-digital-guardian credential naming her as ward. Before an app store may let a minor
-download an app, it must place her account under a parent account and obtain verifiable
-parental consent from that parent (13-76-201(1)(b)); it must also verify her AGE CATEGORY,
-of which the lowest is "child", meaning under 13 (13-76-101(2)(a)), and pass that category
-to the developer, who sets safety defaults at the lowest category indicated
-(13-76-202(3)(a)). So the store needs exactly two facts and is entitled to neither Mia's
-birthdate nor a standing correlator: which age category she falls in, and that an
-accountable guardian consents. BOB presents both -- a relying party MUST accept a
-presentation by a digital guardian (63A-20-601(1)(e); verifiers likewise at 501(1)(e), and
-wallet providers must allow one at 401(1)(h)) -- by issuing an ACDC that proves his
-authority (I2I to his own guardian credential), references Mia's credentials (NI2I -- he is
-NOT their subject), and discloses only her over-13 flag, which is False.
+Three edges, three operators, each PINNED by a schema const so a mislabel fails wire
+validation. Each is argued where it is built; in brief:
 
-The statute's consent definition is where this example is honest about its reach.
-13-76-101(21) requires that consent be given by someone the store "has verified is an
-adult", after a parental consent disclosure, as an affirmative choice to grant or decline.
-The chain here proves something stronger than adulthood for the first element -- a
-state-recognized guardian over THIS ward -- and the presentation ACDC is the affirmative
-grant. The disclosure element is only gestured at: the store's apply carries a governance
-SAID where a deployment would carry the age rating, content description and data practices
-13-76-101(18) enumerates.
+  presentation -> guardian cred  I2I   issuer(near) == issuee(far): Bob holds the authority.
+  presentation -> ward's creds   NI2I  Bob is NOT Mia; I2I here would be impersonation.
+  ward age -> ward identity      E1E   same subject, different issuers -- an identity
+                                       relation, not a delegation (#1515, operator in #1527).
 
-WHERE THE INVARIANT IS ACTUALLY ENFORCED, since this was the panel review's dominant
-finding. The schema PINS the ward-data edge operators, making the impersonation SHAPE
-unrepresentable at wire validation. But NI2I is relationally inert, and verifyChain does no
-presenter-vs-ward binding for an NI2I edge, so the guarantee comes from the binding LOGIC
-(_verify_representation, below): an implementer ports that, not merely the edge labels.
-
-Three edge operators, one per relationship, and getting them right is a security property:
-
-  * I2I (authority): presentation -> Bob's guardian credential. It holds when the
-    presentation's issuer (Bob) is the issuee of the far node (Bob), which is what proves
-    the presenter holds this authority.
-  * NI2I (ward data): presentation -> Mia's identity and age credentials. Bob is NOT Mia,
-    so these MUST NOT be I2I, which would require presenter == subject: impersonation.
-  * E1E (identity): Mia's age credential -> her identity credential. Same subject (issuee),
-    different issuers, so it is an IDENTITY relation and not a delegation; I2I would
-    misapply (disc #1515; operator added in PR #1527). It is what lets a guardian disclose
-    an age flag while proving the flag is the ward's own.
-
-E1E CAVEAT: it is not yet in the ACDC spec's closed operator set {I2I, NI2I, DI2I, NOT}. A
-spec-default or pre-#1527 verifier does not cleanly reject an unknown operator, it COERCES
-it -- to I2I for a targeted far node, wrongly REJECTING this same-subject/different-issuer
-edge, or to NI2I for an untargeted one, wrongly ACCEPTING it unchecked. So this graph
-validates only against a #1527+ verifier until E1E is ratified (disc #1515), and it is
-never INFERRED either: the schema const-pin on 'o' is what makes it explicit.
+WHERE THE INVARIANT IS ACTUALLY ENFORCED, the panel review's dominant finding: not by NI2I,
+which is relationally inert and which verifyChain never uses to bind presenter against ward.
+The pins make only the impersonation SHAPE unrepresentable; the guarantee is the binding
+logic at _verify_representation, which an implementer must port rather than copy. E1E
+carries the sibling's caveat too: not yet in the spec's closed operator set, so a verifier
+coercing an unknown operator either rejects this edge or accepts it unchecked (#1515).
 
 WHAT THE DISCLOSURE HIDES. The store learns "an authorized guardian consents, and this user
-is under 13" and nothing else -- not Mia's birthdate, not her exact age, not her name. The
-aggregate hides the field LABELS and the block SAIDs of every withheld threshold; what it
-cannot hide is the monotone entailment between cumulative thresholds, spelled out at
-_age_ael. IDENTIFIER-level unlinkability is NOT achieved and is not claimed (panel
-review): the disclosure hands over the ward's stable AID and the source-credential SAIDs,
-which two colluding stores could join on, and the GUARDIAN's AID is a correlator the same
-way. Removing that residual is deployment-layer work -- per-facet AIDs, or bulk-issued
-source instances partitioning the identifier space across verifiers -- worked out by the
-test_bulk_issuance_*.py siblings on branch feat-indep-registry-bulk-issuance.
+is under 13" and nothing else -- not the birthdate, the exact age or the name -- since the
+aggregate hides the LABELS and block SAIDs of every withheld threshold. What it cannot hide
+is the monotone entailment between cumulative thresholds, at _age_ael. IDENTIFIER-level
+unlinkability is NOT achieved and is not claimed: the ward's stable AID and the source SAIDs
+cross, and the GUARDIAN's AID correlates the same way. That residual is deployment work,
+worked out by the test_bulk_issuance_*.py siblings on branch
+feat-indep-registry-bulk-issuance. Phase 4 adds what no date can give: a BLINDABLE registry,
+so termination is checked at presentation.
 
-Dynamic status and provable accountability are Phase 4: the guardianship binds to a
-BLINDABLE registry, so termination (majority, restored capacity, court order) is checked at
-presentation rather than trusted from a date, and the verifier can prove afterward that a
-GUARDIAN acted. That chain is what no mDL / EU-ARF style credential expresses.
+TWO DELIBERATE OMISSIONS. No 'scope' edge to a companion delegated-authority credential --
+Utah does not want guardianship to depend on one, so the edge section is CLOSED at subject +
+authorization, at the cost that 'powers' cannot say which platforms or hours; a guardianship
+needing that carries it inline, which is the sibling's subject. And no contractually-
+protected disclosure, which is test_cp_disclosure.py's; accountability rests instead on the
+governance framework the Rules section names by SAID, itself a PLACEHOLDER digest.
 
-THREE DELIBERATE OMISSIONS. (a) No 'scope' edge to a companion delegated-authority
-credential: Utah does not want guardianship to depend on a separate credential, so the edge
-section is CLOSED at subject + authorization. The cost is that 'powers' is the whole scope
-vocabulary, coarse enough to say a guardian holds authority over the ward's digital
-identity but not which platforms or hours; a guardianship needing that carries it inline,
-which is Sam's 'AuthZ' field and the EVAC sketch in #1550, worked out by the sibling. (b) No
-contractually-protected disclosure -- that is test_cp_disclosure.py's point. Accountability
-rests on the governance framework the Rules section references by SAID, and that reference
-is a PLACEHOLDER digest rather than a SAID-committed rules SAD. (c) Two checks a COMPLETE
-verifier performs, both listed at _verify_representation: grounding the guardian
-credential's ISSUER as competent for the basis, and enforcing each edge's 's' far-node
-schema constraint.
-
-A note on altitude. Like the siblings, this models the credential graph, the edge bindings
-and the registry state at the data-structure level, built from the real v2 primitives in
-keri.acdc.messaging and keri.core (acdcmap/acdcagg, Aggor, Compactor, Blinder, exchange).
-It does not stand up a Habery/keystore or route through keri.vdr.verifying.verifyChain,
-which needs a live Reger/Tevery; PR #1527 unit-tests its real E1E branch. Every ACDC
-validates against a purpose-authored JSON Schema, and actor AIDs derive from a fixed salt,
-so the example is reproducible.
+Altitude, as in the siblings: the credential graph, the edge bindings and the registry state
+at the data-structure level on real v2 primitives (acdcmap/acdcagg, Aggor, Compactor,
+Blinder, exchange), with no Habery/keystore and no verifyChain, which needs a live
+Reger/Tevery. Every ACDC validates against a purpose-authored schema; AIDs derive from a
+fixed salt.
 """
 
 import json
