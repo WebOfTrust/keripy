@@ -2,140 +2,100 @@
 """
 tests.acdc.test_ward_authz_presentation module
 
-Worked, working example of a DELEGATED AUTHORIZATION that the ward presents herself:
-a guardian issues his ward an ACDC carrying an attenuated slice of his own authority,
-and the ward -- not the guardian -- shows it to the service that gates the act. It is
-the shape @SmithSamuelM drew in WebOfTrust/keripy discussion #1550, in the diagram
-titled "Ward with Single Guardian Issues Authorization: Ward to Access Social", and it
-is the sibling of tests/acdc/test_guardianship_presentation.py, which models the
-OPPOSITE direction.
+Worked, working example of a DELEGATED AUTHORIZATION that the ward presents herself: a
+guardian issues his ward an ACDC carrying an attenuated slice of his own authority, and the
+ward -- not the guardian -- shows it to the service that gates the act. It is the shape
+@SmithSamuelM drew in WebOfTrust/keripy discussion #1550, in the diagram "Ward with Single
+Guardian Issues Authorization: Ward to Access Social".
 
-Scenario. Utah's social-media law conditions a minor's use of a social platform on
-verified parental authorization. Cara is 14. She controls her own keys -- she operates
-a phone, she can sign -- but she cannot self-assert entitlement to a service her
-parent gates. Bob, her custodial parent and state-recognized digital guardian, does
-NOT log in for her and does not present on her behalf. He issues her an ACDC that says
-which routes on the platform she may exercise and with which capabilities, drawn from
-(and no larger than) the authority the State recognized in him. Cara then walks up to
-the platform holding her own credential and presents it.
+TWO REGIMES, TWO MODULES. #1550 separates them by what the ward can physically do. Before a
+child can operate a device, "any use case where the child is required to present something
+or have something presented on their behalf it must be done by the parents", because the
+parent custodies her keys; the guardian presents ABOUT the ward, and the invariant is
+holder != subject, so a verifier can always tell that a guardian and not the ward is acting.
+That is the sibling, tests/acdc/test_guardianship_presentation.py (PR #1530), whose ward is
+a six-year-old. Once the child can act -- "Its only when the child becomes old enough to
+operate a computer by themselves ... In that case, the Parent would delegate to their child
+attenuated capabilities" -- she holds her own keys and acts as herself, bounded by the
+authorization she carries. That is THIS module, and #1550 assigns Utah's social-media case
+to it explicitly: "the parents' further ability to restrict social media access even for the
+ages 13-18 requires delegated authorization to the child from their parents(s) (guardians)".
+Bob Carver is the custodial parent in both modules -- his six-year-old Mia is the sibling's
+ward, his 14-year-old Cara is this one's.
 
-Two shapes, two regimes, both real. The guardian-presents shape (this module's sibling,
-PR #1530) fits the regime where the parent holds the ward's keys -- an infant, or an
-incapacitated adult -- and the guardian must speak for a subject who cannot act at all;
-there the load-bearing invariant is holder != subject, so a verifier can always tell
-that a guardian, not the ward, is acting. The ward-presents shape modeled HERE fits the
-regime where the ward controls her own keys and can act, but only within a scope her
-guardian sets; there the load-bearing invariant is attenuation -- the ward acts as
-herself, and what bounds her is the delegated authorization she carries, not a stand-in
-who acts for her. Sam's own text draws the same line ("at birth ... the parents could be
-the custodians of the child's digital identity", as against a ward old enough to operate
-a device), and the split into two modules matches the progression-of-examples approach he
-asked for in #1515.
+Scenario. Utah's social-media law conditions a minor's use of a platform on verified
+parental authorization. Cara operates a phone and can sign, but cannot self-assert
+entitlement to a service her parent gates. So Bob, rather than logging in for her, issues
+her an ACDC saying which routes she may exercise and with which capabilities -- drawn from,
+and no larger than, the authority the State recognized in him -- and she presents it.
 
 Four credentials, all v2 ACDCs, all registry-bound, each validated against a
 purpose-authored JSON Schema (Draft 2020-12):
 
-  1. Guardian as Citizen  -- State -> Bob.  Bob's own SEDI identity credential.
-  2. Guardian as Guardian -- State -> Bob.  The recognized guardianship. Its attribute
-     block carries BOTH the guardian's issuee AID and the WARD's AID (see the recorded
-     divergence below). One edge, to (1).
-  3. Ward as Citizen Ward -- State -> Cara. Cara's own SEDI identity credential, which
-     by its edge to (2) DECLARES ITSELF ENCUMBERED: the ward's own credential says that
-     a guardianship stands over it, so a verifier reading only Cara's credential learns
-     that her identity is not unencumbered.
-  4. Ward AuthZ Social    -- Bob -> Cara, in BOB's OWN registry (not the State's). The
-     payload: the resource routes and capabilities Cara may exercise. Two edges, to (2)
-     and to (3).
+  1. Guardian as Citizen  -- State -> Bob.  His own SEDI identity credential.
+  2. Guardian as Guardian -- State -> Bob.  The recognized guardianship, whose attribute
+     block carries the WARD's AID as well as Bob's (see the divergence below). Edge to (1).
+  3. Ward as Citizen Ward -- State -> Cara. Her own SEDI identity credential, which by its
+     edge to (2) DECLARES ITSELF ENCUMBERED, so a verifier reading only her credential
+     learns that her identity is not unencumbered.
+  4. Ward AuthZ Social    -- Bob -> Cara, in BOB's OWN registry (not the State's), carrying
+     the routes and capabilities she may exercise. Edges to (2) and (3).
 
-Four edges, four different operators, and getting each right is the security content of
-this example. Every one is PINNED by a schema const, so a mislabeled operator fails at
-wire validation rather than at the verifier's discretion:
+Four edges, four different operators, and getting each right is the security content here.
+Every one is PINNED by a schema const, so a mislabeled operator fails at wire validation:
 
-  * (4) -> (2), authority, I2I. The near ACDC's issuer is Bob and the far node's issuee
-    is Bob, which is exactly I2I's same-holder constraint. This edge is what proves Bob
-    HELD the authority he is delegating; without it the AuthZ credential is a stranger
-    asserting permissions over someone else's child.
-  * (4) -> (3), subject, E1E. The near ACDC's ISSUEE is Cara and the far node's issuee
-    is Cara -- same subject -- but the issuers differ (Bob issues (4), the State issues
-    (3)). I2I would demand issuer(near) == issuee(far), i.e. Bob == Cara, and would
-    therefore FALSELY REJECT a perfectly sound identity relation. E1E, the identity
-    operator added in PR #1527 out of discussion #1515, constrains the issuee only and
-    says nothing about the issuer, which is why it holds here. This is the SECOND
-    independent use case for E1E, and unlike the first (an age credential chaining to an
-    identity credential) it comes from Sam's own diagram rather than from the PR that
-    proposed the operator.
-  * (2) -> (1), citizen, E1E again. Same subject (Bob is the issuee of both), same
-    issuer (the State issues both). Same-issuer is not what makes it an identity
-    relation -- E1E is right because the relation binds two credentials of ONE subject,
-    and I2I would again demand issuer == issuee, i.e. State == Bob.
-  * (3) -> (2), guardian, NI2I. The near issuee is Cara and the far issuee is Bob:
-    DIFFERENT subjects, so neither I2I nor E1E applies. NI2I is the untargeted
-    reference -- it nullifies I2I's same-holder requirement and asserts nothing in its
-    place -- which is the correct operator for "my credential points at somebody else's
-    credential", here the encumbrance marker.
+  * (4) -> (2) authority, I2I: near issuer Bob == far issuee Bob, which proves Bob HELD
+    what he delegates. Without it the AuthZ credential is a stranger's assertion of
+    permissions over someone else's child.
+  * (4) -> (3) subject, E1E: same subject (Cara), different issuers (Bob vs the State).
+    I2I would demand Bob == Cara and would FALSELY REJECT a sound identity relation, where
+    E1E (PR #1527) constrains the issuee only. This is the second independent use case for
+    the operator, and unlike the first it comes from Sam's diagram rather than from the PR
+    that proposed it.
+  * (2) -> (1) citizen, E1E again: same subject, and here the same issuer too -- which is
+    not what makes it identity. I2I would demand State == Bob.
+  * (3) -> (2) guardian, NI2I: different subjects, so neither targeted operator applies.
+    The untargeted reference is right for "my credential points at somebody else's" --
+    here, the encumbrance marker.
 
-E1E carries the same caveat it carries in the sibling module: it is not yet in the ACDC
-spec's closed operator set {I2I, NI2I, DI2I, NOT}. A spec-default or pre-#1527 verifier
-does not reject an unknown operator, it COERCES it -- to I2I for a targeted far node,
-which then wrongly rejects both E1E edges here, or to NI2I for an untargeted one, which
-wrongly accepts unchecked. So this graph validates only against a #1527-or-later
-verifier, and rides that dependency until E1E is ratified (disc #1515).
+E1E carries the same caveat as in the sibling: it is not yet in the spec's closed operator
+set {I2I, NI2I, DI2I, NOT}, and a spec-default or pre-#1527 verifier COERCES an unknown
+operator rather than rejecting it -- to I2I for a targeted far node, wrongly rejecting both
+E1E edges here. So this graph needs a #1527-or-later verifier until E1E is ratified (#1515).
 
-Recorded divergence: where the ward AID lives. Sam's diagram puts the ward's AID in the
-ATTRIBUTE block of (2), next to the guardian's issuee AID; the sibling #1530 names the
-ward only by an EDGE. Both preserve holder != subject on the guardianship credential, so
-this is a DISCLOSURE choice rather than an impersonation one. The edge form is the better
-one on Sam's own argument from #1515 -- "an edge can also be blinded, which means that
-disclosure of the edge itself can be held back until the verifier (disclosee) has agreed
-not to exploit its correlatability" -- and an authority credential that both models agree
-is disclosed WHOLE cannot withhold an attribute the way it can withhold an edge, so the
-attribute placement hands every verifier the ward's AID before any contract terms are
-agreed. This module models SAM's placement, because it is his diagram; the question is
-open on #1550, so this is recorded as a divergence, not settled as a verdict. Phase 4
-shows the same argument arriving as an actual leak rather than a principle: the
-guardianship's expiry date is the ward's 18th birthday, and because the credential is
-disclosed whole it cannot be withheld, so the platform learns her birth month and day
-from a credential that is not hers.
+RECORDED DIVERGENCE: where the ward AID lives. Sam's diagram puts it in the ATTRIBUTE block
+of (2); the sibling names the ward only by an EDGE. Both preserve holder != subject, so this
+is a DISCLOSURE choice, and the edge form is better on Sam's own argument from #1515 that an
+edge "can also be blinded, which means that disclosure of the edge itself can be held back
+until the verifier (disclosee) has agreed not to exploit its correlatability" -- where an
+attribute in a WHOLE-disclosed credential cannot be held back at all. This module models
+SAM's placement because it is his diagram, and the question is open on #1550; Phase 4 shows
+the argument arriving as an actual leak, since the guardianship's expiry is Cara's 18th
+birthday and cannot be withheld.
 
-The AuthZ payload is ILLUSTRATIVE and its syntax is UNSETTLED. Sam says only that the
-field "contains the specifics of the authorization. The syntax TBD", and points at EVAC
-(Edge Verifiable Agent Control), whose sketch at the end of #1550 is a resource-
-capabilities map 'rc' of the form {resourceRoute: [capability, ...]}. That is what is
-modeled here, plus a time window, and it is marked illustrative in the schema
-description as well as here. The example's assertions deliberately do NOT reach into the
-block: every capability check goes through _authz_capabilities, so a later syntax change
-is one function, not a rewrite of the suite.
+The AuthZ payload is ILLUSTRATIVE and its syntax UNSETTLED. Sam says only that the field
+"contains the specifics of the authorization. The syntax TBD", and points at EVAC (Edge
+Verifiable Agent Control), sketched at the end of #1550 as a resource-capabilities map 'rc'
+of the form {resourceRoute: [capability, ...]}. That is modeled here, plus a time window,
+and no assertion reaches into it (the seam is _authz_capabilities, so a later syntax change
+is one function rather than a rewrite). One constraint on that syntax is not a matter of
+taste, and this example measured it by serializing rather than by arguing: a route written
+as a map LABEL falls under CESR's strict field-label grammar, so "social/feed" cannot be
+serialized in native CESR at all. The measurement, and the recommendation it produces for
+#1550 -- carry the route as a VALUE -- are at AUTHZ_BLOCK_SCHEMA.
 
-One constraint on that unsettled syntax is not a matter of taste, and this example
-measured it by serializing the block rather than by arguing about it. Making the
-resource route a map LABEL puts it under CESR's strict field-label grammar,
-^[a-zA-Z_][a-zA-Z0-9_]*$ (ATREX in src/keri/help/helping.py), which Labeler enforces on
-every native-CESR field map -- and an ACDC attribute section is always compacted through
-a strict Compactor, so there is no opting out. The obvious spelling of a route,
-"social/feed", therefore cannot be serialized in native CESR at all: it raises
-SerializeError. Routes here use '_' as the separator, the schema PINS them to that
-grammar with propertyNames so a JSON-only author cannot write a route the wire will not
-carry, and the finding is recorded for #1550: a syntax that wants real slash-separated
-routes has to carry the route as a VALUE, with 'rc' a list of {route, caps} objects,
-rather than as a label.
+The negative that earns its place: a guardian cannot delegate more than he holds, so (4)'s
+capability tokens must be a SUBSET of (2)'s 'powers'. Over-reach is a binding property
+rather than a shape property, so the greedy credential is schema-valid and the binding, not
+the schema, refuses it (Phase 3). Naming divergence from the sibling while reading 'powers':
+there it is the coarse statutory scope enum, carried here as 'scope'.
 
-The negative that earns its place: a guardian cannot delegate more than he holds. The
-capability tokens appearing anywhere in (4)'s AuthZ block must be a SUBSET of the
-'powers' the State recognized in (2). An AuthZ credential that reaches beyond them is
-still schema-valid -- over-reach is a binding property, not a shape property -- and is
-refused by _verify_authz_chain. Note a naming divergence from the sibling module while
-reading 'powers': there it is the coarse statutory scope enum (Utah prefers LIMITED
-guardianship), which here is carried separately as 'scope'; 'powers' in THIS module is
-the delegable capability set, because it is the thing the subset check is about.
-
-A note on altitude, the same one the siblings carry. This models the credential graph,
-the edge bindings and the registry binding at the data-structure level, built from the
-real v2 primitives in keri.acdc.messaging and keri.core (acdcmap, Compactor, Mapper,
-exchange). It does not stand up a Habery/keystore or route through
-keri.vdr.verifying.verifyChain: that v1 runtime needs a live Reger/Tevery, and PR #1527
-already unit-tests its real E1E branch there. Actor AIDs and every blinding nonce derive
-from fixed salts, so the module is reproducible; each actor AID is a self-addressing
-('E') transferable AID.
+A note on altitude, the same one the siblings carry. This models the credential graph, the
+edge bindings and the registry binding at the data-structure level, built from the real v2
+primitives in keri.acdc.messaging and keri.core (acdcmap, Compactor, Mapper, exchange). It
+does not stand up a Habery/keystore or route through keri.vdr.verifying.verifyChain, which
+needs a live Reger/Tevery; PR #1527 unit-tests its real E1E branch. Actor AIDs and nonces
+derive from fixed salts, so the module is reproducible.
 """
 
 import json
@@ -621,8 +581,10 @@ N_WC_ACDC, N_WC_E, N_WC_E_GUARD = 16, 17, 18
 # (4) ward AuthZ social: attribute uuid, acdc uuid, edge-section uuid, two edge uuids.
 N_AZ_A, N_AZ_ACDC, N_AZ_E, N_AZ_E_AUTH, N_AZ_E_SUBJ = 19, 20, 21, 22, 23
 
-# Cara's age at presentation (DOB 2012-04-10, presentation 2026-08-03). The 13-to-18
-# band is exactly the band Utah's social-media law regulates.
+# Cara's age at presentation (DOB 2012-04-10, presentation 2026-08-03). The 13-to-18 band
+# is exactly the band Utah's social-media law regulates, and the band in which a ward
+# operates her own device -- which is why the ward presents here and the guardian presents
+# in the sibling, whose ward is six (tests/acdc/test_guardianship_presentation.py).
 CARA_AGE = 14
 
 
@@ -1270,8 +1232,9 @@ def test_wardauthz_presentation_JSON():
 
     Cara walks up to the platform holding a credential issued TO her, and presents it
     herself. Bob is not in the exchange at all: he is a node in the DAG, not a party to
-    the conversation. That is the whole difference from the sibling module, where the
-    guardian is the discloser and the ward never speaks.
+    the conversation. That is the whole difference from
+    tests/acdc/test_guardianship_presentation.py, where the ward is too young to hold her
+    own keys, so the guardian is the discloser and the ward never speaks.
 
     The exchange is gated: apply, offer, agree, grant, admit, with the ward's citizen
     attributes crossing the wire only after the platform has signed an agree, and even
@@ -1289,7 +1252,7 @@ def test_wardauthz_presentation_JSON():
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
     # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
     # with ACDC-relative paths -- the construct settled in WebOfTrust/keripy discussion
-    # #1549, shared with tests/acdc/test_cp_disclosure.py,
+    # #1549, shared with tests/acdc/test_clc_disclosure.py,
     # test_bulk_issuance_shared_registry.py and test_guardianship_presentation.py.
     # A dict keyed by schema SAID cannot express a DAG holding two credentials of the
     # same schema, which is why the construct is a list.
