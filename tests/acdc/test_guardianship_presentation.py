@@ -4,7 +4,7 @@ tests.acdc.test_guardianship_presentation module
 
 Worked, working example of a REPRESENTED PRESENTATION -- a digital guardian presenting a
 fact ABOUT a ward to a verifier, under Utah's State-Endorsed Digital Identity law (SEDI,
-Utah Code 63A-20). Sibling to tests/acdc/test_clc_disclosure.py and test_examples.py, it
+Utah Code 63A-20). Sibling to tests/acdc/test_cp_disclosure.py and test_examples.py, it
 adds the one thing neither shows: a presentation whose HOLDER IS NOT THE SUBJECT.
 
 WHICH GUARDIANSHIP THIS IS, AND WHICH IT IS NOT. Guardianship covers two situations that
@@ -78,7 +78,7 @@ review): the disclosure hands over the ward's stable AID and the source-credenti
 which two colluding services could join on, and the GUARDIAN's AID is a correlator in the
 same way. Removing that residual is deployment-layer work -- per-facet AIDs, or bulk-issued
 source instances partitioning the identifier space across verifiers -- worked out by the
-two test_bulk_issuance_*.py siblings on branch feat-indep-registry-bulk-issuance.
+test_bulk_issuance_*.py siblings on branch feat-indep-registry-bulk-issuance.
 Accountability survives the partitioning, because it runs to the issuing authority, which
 holds the derivation.
 
@@ -92,8 +92,8 @@ credential: Utah does not want guardianship to depend on a separate credential, 
 section is CLOSED at subject + authorization. The cost is that 'powers' is the whole scope
 vocabulary, coarse enough to say a guardian holds authority over the ward's digital
 identity but not which platforms or hours; a guardianship needing that carries it inline,
-which is Sam's 'AuthZ' field and the EVAC sketch in #1550, worked out by the sibling. (b)
-No contractually-protected disclosure -- that is the CLC sibling's point. Accountability
+which is Sam's 'AuthZ' field and the EVAC sketch in #1550, worked out by the sibling. (b) No
+contractually-protected disclosure -- that is test_cp_disclosure.py's point. Accountability
 rests on the governance framework the Rules section references by SAID, and that reference
 is a PLACEHOLDER digest rather than a SAID-committed rules SAD. (c) Two checks a COMPLETE
 verifier performs: grounding the guardian credential's ISSUER as competent for the basis
@@ -736,8 +736,8 @@ def _ward_id_disclosure(sedi, kind):
     identity attributes, so nothing but the issuee is revealed -- the minimal disclosure.
     sedi-id is attributive, so disclosure is by compaction: each nested block collapses
     to a SAID and the mix recomputes to the same committed section SAID. (A richer flow
-    could reveal a chosen block in full -- the CLC sibling reveals the photo that way --
-    but a guardian binding a ward discloses nothing beyond the issuee.)
+    could reveal a chosen block in full -- test_cp_disclosure.py reveals the photo that
+    way -- but a guardian binding a ward discloses nothing beyond the issuee.)
     """
     compactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
     compactor.compact()
@@ -1183,7 +1183,7 @@ def test_represented_presentation_JSON():
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
     # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, prefix, [paths])
     # triples -- the construct settled in WebOfTrust/keripy discussion #1549, shared with
-    # tests/acdc/test_clc_disclosure.py and test_bulk_issuance_shared_registry.py.
+    # tests/acdc/test_cp_disclosure.py and test_bulk_issuance_shared_registry.py.
     # A dict keyed by schema SAID cannot express a DAG holding two credentials of the
     # same schema.
     #
