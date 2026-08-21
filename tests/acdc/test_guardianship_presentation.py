@@ -8,41 +8,55 @@ Utah Code 63A-20). Sibling to tests/acdc/test_cp_disclosure.py and test_examples
 adds the one thing neither shows: a presentation whose HOLDER IS NOT THE SUBJECT.
 
 WHICH GUARDIANSHIP THIS IS, AND WHICH IT IS NOT. Guardianship covers two situations that
-look alike on a diagram and are not alike at all. @SmithSamuelM separates them in the
-#1550 discussion text by what the ward can physically do:
+look alike on a diagram and are not alike at all, and Utah Code 63A-20-302(3)(a) draws the
+line where this example needs it drawn -- at whether the ward can act: "If an individual is
+unable to apply for a state-endorsed digital identity due to the individual's youth or
+incapacitation, the application may be made on behalf of that individual by the
+individual's digital guardian."
 
   * The ward CANNOT ACT -- an infant or young child, or an adult who has lost capacity.
-    The guardian custodies the keys controlling the ward's AID, so "any use case where the
-    child is required to present something or have something presented on their behalf it
-    must be done by the parents" (#1550). THIS module. The invariant is holder != subject:
-    a verifier can always tell that a guardian, not the ward, is acting, and collapsing
-    the two is the impersonation failure the prior art warns against (Sovrin "Guardianship
-    in SSI V2"; Aries RFC 0103).
+    The guardian custodies the keys controlling the ward's AID, so anything she is required
+    to present must be presented for her. THIS module. The invariant is holder != subject:
+    a verifier can always tell that a guardian, not the ward, is acting, and collapsing the
+    two is the impersonation failure the prior art warns against (Sovrin "Guardianship in
+    SSI V2"; Aries RFC 0103).
   * The ward CAN ACT, within a scope -- old enough to operate a device and sign, with a
-    parent who modulates her access rather than exercising it. "In that case, the Parent
-    would delegate to their child attenuated capabilities" (#1550). That is the sibling,
+    parent who modulates her access rather than exercising it. That is the sibling,
     tests/acdc/test_ward_authz_presentation.py (PR #1577), where the WARD presents an
     authorization her guardian issued her; its invariant is attenuation.
 
-The 13-to-18 band Utah's social-media law regulates therefore belongs to the SIBLING: a
-14-year-old holds her own keys, and having her parent present for her models the wrong
-regime. The two modules share a family so the line stays visible -- Bob Carver is the
-custodial parent in both, his 14-year-old Cara presents her own authorization there, and
-his 6-year-old Mia is the ward here. Her age sits inside a question #1550 leaves open ("at
-what age does it make sense for an infant to first have a SEDI").
+The same split runs through the chapter: a minor may apply for a SEDI only with her digital
+guardian's consent (63A-20-302(2)), and the four bases the schema below pins are the four
+in 63A-20-201(3)(b). The two modules share a family so the line stays visible: Bob Carver
+is the custodial parent in both, his 17-year-old Cara presents her own authorization in the
+sibling, and his 7-year-old Mia is the ward here.
 
-Scenario. Mia is 6. The State issued her two SEDI credentials under her own holder AID --
-an attributive identity credential (name, date of birth, photo, residence) and an
-aggregative age credential (boolean flags for the thresholds 13, 16, 18, 21, 55, 65)
-chained to it by an E1E identity edge -- but Bob holds the keys, so she can present
-neither. Bob holds a SEDI digital-guardian credential naming her as ward. A children's
-online service must establish two things before opening an account: that this user is a
-child under 13, so the parental-consent regime applies, and that an accountable guardian
-stands behind it. It is entitled to neither Mia's birthdate nor a standing correlator. So
-BOB presents -- every SEDI verifier MUST accept a guardian's presentation on the same terms
-as the holder's (Utah Code 63A-20 Parts 4-6) -- issuing an ACDC that proves his authority
-(I2I to his own guardian credential), references Mia's credentials (NI2I -- he is NOT their
-subject), and discloses only her under-13 flag.
+Scenario, under Utah's App Store Accountability Act (Utah Code 13-76). Mia is 7. The State
+issued her two SEDI credentials under her own holder AID -- an attributive identity
+credential (name, date of birth, photo, residence) and an aggregative age credential
+(boolean flags for the thresholds 13, 16, 18, 21, 55, 65) chained to it by an E1E identity
+edge -- but Bob custodies the keys, so she can present neither. He holds a SEDI
+digital-guardian credential naming her as ward. Before an app store may let a minor
+download an app, it must place her account under a parent account and obtain verifiable
+parental consent from that parent (13-76-201(1)(b)); it must also verify her AGE CATEGORY,
+of which the lowest is "child", meaning under 13 (13-76-101(2)(a)), and pass that category
+to the developer, who sets safety defaults at the lowest category indicated
+(13-76-202(3)(a)). So the store needs exactly two facts and is entitled to neither Mia's
+birthdate nor a standing correlator: which age category she falls in, and that an
+accountable guardian consents. BOB presents both -- a relying party MUST accept a
+presentation by a digital guardian (63A-20-601(1)(e); verifiers likewise at 501(1)(e), and
+wallet providers must allow one at 401(1)(h)) -- by issuing an ACDC that proves his
+authority (I2I to his own guardian credential), references Mia's credentials (NI2I -- he is
+NOT their subject), and discloses only her over-13 flag, which is False.
+
+The statute's consent definition is where this example is honest about its reach.
+13-76-101(21) requires that consent be given by someone the store "has verified is an
+adult", after a parental consent disclosure, as an affirmative choice to grant or decline.
+The chain here proves something stronger than adulthood for the first element -- a
+state-recognized guardian over THIS ward -- and the presentation ACDC is the affirmative
+grant. The disclosure element is only gestured at: the store's apply carries a governance
+SAID where a deployment would carry the age rating, content description and data practices
+13-76-101(18) enumerates.
 
 WHERE THE INVARIANT IS ACTUALLY ENFORCED, since this was the panel review's dominant
 finding. The schema PINS the ward-data edge operators, making the impersonation SHAPE
@@ -69,18 +83,16 @@ edge, or to NI2I for an untargeted one, wrongly ACCEPTING it unchecked. So this 
 validates only against a #1527+ verifier until E1E is ratified (disc #1515), and it is
 never INFERRED either: the schema const-pin on 'o' is what makes it explicit.
 
-WHAT THE DISCLOSURE HIDES. The service learns "an authorized guardian vouches this user is
-under 13" and nothing else -- not Mia's birthdate, not her exact age, not her name. The
+WHAT THE DISCLOSURE HIDES. The store learns "an authorized guardian consents, and this user
+is under 13" and nothing else -- not Mia's birthdate, not her exact age, not her name. The
 aggregate hides the field LABELS and the block SAIDs of every withheld threshold; what it
 cannot hide is the monotone entailment between cumulative thresholds, spelled out at
 _age_ael. IDENTIFIER-level unlinkability is NOT achieved and is not claimed (panel
 review): the disclosure hands over the ward's stable AID and the source-credential SAIDs,
-which two colluding services could join on, and the GUARDIAN's AID is a correlator in the
-same way. Removing that residual is deployment-layer work -- per-facet AIDs, or bulk-issued
+which two colluding stores could join on, and the GUARDIAN's AID is a correlator the same
+way. Removing that residual is deployment-layer work -- per-facet AIDs, or bulk-issued
 source instances partitioning the identifier space across verifiers -- worked out by the
 test_bulk_issuance_*.py siblings on branch feat-indep-registry-bulk-issuance.
-Accountability survives the partitioning, because it runs to the issuing authority, which
-holds the derivation.
 
 Dynamic status and provable accountability are Phase 4: the guardianship binds to a
 BLINDABLE registry, so termination (majority, restored capacity, court order) is checked at
@@ -96,17 +108,17 @@ which is Sam's 'AuthZ' field and the EVAC sketch in #1550, worked out by the sib
 contractually-protected disclosure -- that is test_cp_disclosure.py's point. Accountability
 rests on the governance framework the Rules section references by SAID, and that reference
 is a PLACEHOLDER digest rather than a SAID-committed rules SAD. (c) Two checks a COMPLETE
-verifier performs: grounding the guardian credential's ISSUER as competent for the basis
-(so a self-issued guardian credential passes the edge check here), and enforcing each
-edge's 's' far-node schema constraint, which verifyChain also omits.
+verifier performs, both listed at _verify_representation: grounding the guardian
+credential's ISSUER as competent for the basis, and enforcing each edge's 's' far-node
+schema constraint.
 
 A note on altitude. Like the siblings, this models the credential graph, the edge bindings
 and the registry state at the data-structure level, built from the real v2 primitives in
 keri.acdc.messaging and keri.core (acdcmap/acdcagg, Aggor, Compactor, Blinder, exchange).
-It does not stand up a Habery/keystore or route through keri.vdr.verifying.verifyChain:
-that v1 runtime needs a live Reger/Tevery, and PR #1527 already unit-tests its real E1E
-branch. Every ACDC validates against a purpose-authored JSON Schema (Draft 2020-12). Actor
-AIDs derive from a fixed salt, so the example is reproducible; each is self-addressing.
+It does not stand up a Habery/keystore or route through keri.vdr.verifying.verifyChain,
+which needs a live Reger/Tevery; PR #1527 unit-tests its real E1E branch. Every ACDC
+validates against a purpose-authored JSON Schema, and actor AIDs derive from a fixed salt,
+so the example is reproducible.
 """
 
 import json
@@ -143,10 +155,10 @@ def _actor_aid(cur, nxt):
 
 # DGO = Utah's digital-government office (the State endorser/issuer); ENDORSER issues
 # the derived age credential; BOB is the custodial parent (guardian); MIA is his
-# six-year-old ward, whose keys he custodies; SERVICE is the children's online service
-# (the verifier/relying party). Bob's other child, the 14-year-old who presents for
-# herself, is the sibling module's cast.
-DGO, ENDORSER, BOB, MIA, SERVICE = (
+# seven-year-old ward, whose keys he custodies; STORE is the app store provider (the
+# relying party). Bob's other child, the 17-year-old who presents for herself, is the
+# sibling module's cast.
+DGO, ENDORSER, BOB, MIA, STORE = (
     _actor_aid(_SIGNERS[i], _SIGNERS[i + 5]) for i in range(5))
 
 # Per-example blinding nonces, derived (not pasted) from a distinct raw prefix so this
@@ -592,11 +604,11 @@ REG_GUARDIAN_STAMP = "2026-01-07T12:00:00.000000+00:00"
 WARD_DOB = "2020-03-15"
 
 # Fixed timestamps for the IPEX exn messages (kept stable so SAIDs are reproducible).
-APPLY_STAMP = "2026-07-20T15:15:00.000000+00:00"
-OFFER_STAMP = "2026-07-20T15:16:00.000000+00:00"
-AGREE_STAMP = "2026-07-20T15:17:00.000000+00:00"
-GRANT_STAMP = "2026-07-20T15:18:00.000000+00:00"
-ADMIT_STAMP = "2026-07-20T15:19:00.000000+00:00"
+APPLY_STAMP = "2027-06-15T15:15:00.000000+00:00"
+OFFER_STAMP = "2027-06-15T15:16:00.000000+00:00"
+AGREE_STAMP = "2027-06-15T15:17:00.000000+00:00"
+GRANT_STAMP = "2027-06-15T15:18:00.000000+00:00"
+ADMIT_STAMP = "2027-06-15T15:19:00.000000+00:00"
 
 
 # --- Blinding-nonce / uuid slot allocation: each NONCES[i] used at most once. ---
@@ -618,10 +630,11 @@ AGE_ISSUEE = 1
 AGE_FLAG0 = 2
 AGE_OVER13 = AGE_FLAG0 + AGE_THRESHOLDS.index(13)   # array index of the over-13 flag
 
-# Mia's age at the presentation date (DOB 2020-03-15, presentation 2026-07-20). She is
-# under every threshold, and the one the children's service asks for is the lowest:
-# over13 is False, which is what puts the account under the parental-consent regime.
-WARD_AGE = 6
+# Mia's age at the presentation date (DOB 2020-03-15, presentation 2027-06-15). She is
+# under every threshold, and the one the store asks for is the lowest: over13 is False,
+# which places her in 13-76's "child" age category (13-76-101(2)(a)) and so sets the
+# developer's safety defaults at their most restrictive (13-76-202(3)(a)).
+WARD_AGE = 7
 
 # The guardianship registry's blinding salt -- shared ONLY between the DGO (issuer) and
 # Bob (the guardian/holder), never handed to the service. Used to blind the per-event
@@ -750,8 +763,8 @@ def _age_disclosure(ageAggor):
     """Mia's selective disclosure of the age credential: reveal the issuee + the
     over-13 flag (False), withhold every other threshold as a bare SAID.
 
-    The service learns she is under 13, which is the fact that puts the account under the
-    parental-consent regime, and learns neither her birthdate nor her exact age. It does
+    The store learns she is under 13, which is the fact that fixes her 13-76 age category,
+    and learns neither her birthdate nor her exact age. It does
     NOT learn which other thresholds this credential carries, though it can infer their
     values by monotonicity -- see _age_ael. The disclosure verifies against the committed
     AGID.
@@ -892,7 +905,7 @@ def test_ward_credentials_and_graduated_disclosure_JSON():
     assert age.iseaid == MIA
     assert age.said == "ECXgaqGNlsllMnqOTSdis9ZE9a9lhRHGzY8cCq07eTeN"
     # Mia is 6, so every flag is False -- the disclosed over-13 flag is the one the
-    # children's service asks for, and by monotonicity it settles all the others.
+    # store asks for, and by monotonicity it settles all the others.
     assert age.sad['A'][AGE_OVER13]['over13'] is False                   # under 13
     assert not any(el[f"over{n}"] for n, el
                    in zip(AGE_THRESHOLDS, age.sad['A'][AGE_FLAG0:]))
@@ -1028,7 +1041,7 @@ def test_guardian_authority_credential_JSON():
         Draft202012Validator(schema).validate(extraEdge)
 
 
-PRESENT_STAMP = "2026-07-20T15:18:00.000000+00:00"
+PRESENT_STAMP = "2027-06-15T15:18:00.000000+00:00"
 
 
 def _represented_presentation(kind, guardian, sedi, age, compactify=False):
@@ -1044,9 +1057,9 @@ def _represented_presentation(kind, guardian, sedi, age, compactify=False):
     The Rules section references the guardianship governance framework by SAID.
     """
     _, schema = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
-    attribute = dict(d='', u=NONCES[N_P_A], i=SERVICE,
-                     purpose="Open a children's-service account for a ward under 13 "
-                             "with verifiable guardian consent.",
+    attribute = dict(d='', u=NONCES[N_P_A], i=STORE,
+                     purpose="Consent to an app download for a ward in the child age "
+                             "category, per Utah Code 13-76-201(1)(b).",
                      occurredAt=PRESENT_STAMP)
     edge = dict(d='', u=NONCES[N_P_E],
                 authority=dict(d='', u=NONCES[N_P_E_AUTH], n=guardian.said,
@@ -1140,10 +1153,10 @@ def test_represented_presentation_JSON():
 
     assert presentation.ilk == Ilks.acm
     assert presentation.sad['i'] == BOB           # Bob is the Issuer (guardian/Discloser)
-    assert presentation.sad['a']['i'] == SERVICE  # the service is the Issuee (Disclosee)
+    assert presentation.sad['a']['i'] == STORE    # the store is the Issuee (Disclosee)
     assert 'rd' not in presentation.sad           # one-time presentation, not logged
     assert presentation.sad['r'] == GUARDIAN_RULES_SAID   # governance by SAID
-    assert presentation.said == "EH9Rzi__y_-_DWkT5syI8Vkr3--eRmqlXNR5xe7QdsNd"
+    assert presentation.said == "EB7jIBYAnAECi8B8dHsJmAPNkE2JdYpkca3ZgnBLOBCt"
 
     # The full binding holds for the honest presentation.
     assert _verify_representation(presentation, guardian, sedi, age)
@@ -1172,7 +1185,7 @@ def test_represented_presentation_JSON():
     otherSediMad = dict(SEDI_SCHEMA_MAD)
     _, otherSchema = _saidify_schema(otherSediMad, kind=kind)
     otherWard = acdcmap(israid=DGO, uuid=NONCES[N_SEDI_ACDC], regid=_guardian_registry(kind).said,
-                        schema=otherSchema, attribute=_sedi_attr(), iseaid=SERVICE, kind=kind)
+                        schema=otherSchema, attribute=_sedi_attr(), iseaid=STORE, kind=kind)
     with pytest.raises(AssertionError):
         _verify_representation(presentation, guardian, otherWard, age)
 
@@ -1224,15 +1237,15 @@ def test_represented_presentation_JSON():
     # represented presentation is the first place the holder != subject split shows:
     # the origin's issuer is Bob, and the ward never appears in it at all.
     presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
-    apply = exchange(sender=SERVICE, receiver=BOB, route="/ipex/apply",
+    apply = exchange(sender=STORE, receiver=BOB, route="/ipex/apply",
                      modifiers=dict(dp=[[presentSchemaSaid, "", ["i", "a/i"]],
                                         [guardian.sad['s']['$id'], "", ["a/i", "a/powers"]],
                                         [age.sad['s']['$id'], "", ["A/i", "A/over13"]]]),
-                     attributes=dict(m="Prove an authorized guardian and that the ward "
-                                       "is under 13.",
+                     attributes=dict(m="Prove a consenting digital guardian and the "
+                                       "ward's age category.",
                                      g=GUARDIAN_RULES_SAID),
                      stamp=APPLY_STAMP, kind=kind)
-    assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == SERVICE
+    assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == STORE
     dp = apply.sad['q']['dp']
     assert [entry[0] for entry in dp] == [presentSchemaSaid,
                                           guardian.sad['s']['$id'], age.sad['s']['$id']]
@@ -1244,7 +1257,7 @@ def test_represented_presentation_JSON():
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, _, paths in dp for p in paths)
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EGOICgCYMQLiV2BQnLP0XRgb3aa7cqHmBOY2VX60Rj-o"
+    assert apply.said == "EFaBnG2TiUGd4ZzDq9sYN-CUpCYCHZbRda5iDdQJHo87"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
     # and the governance ref, and binds the apply. It deliberately does NOT enumerate the
@@ -1256,14 +1269,14 @@ def test_represented_presentation_JSON():
     # Its query block carries `dp` as an EMPTY list: the offer is SOLICITED (its `p`
     # binds the apply), and an empty `dp` means "the same paths the apply asked for"
     # (#1549), so Bob restates nothing and the two messages cannot drift.
-    offer = exchange(sender=BOB, receiver=SERVICE, route="/ipex/offer", prior=apply.said,
+    offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
                      attributes=dict(acdc=presentation.said,
                                      governance=GUARDIAN_RULES_SAID),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "EIvw3jUdSdpE2cNFHUSCGjDJKYDX5EQevL6G9-LT8iQ2"
+    assert offer.said == "EJiU9YeFBuYyBnpiVVp9FYb3Z7nhffpfi265WfPt-yYx"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1273,10 +1286,10 @@ def test_represented_presentation_JSON():
 
     # 3. agree (service -> Bob): acceptance, binding the offer SAID and signed by the
     # service (via messagize -- the blessed genus-aware attachment path).
-    agree = exchange(sender=SERVICE, receiver=BOB, route="/ipex/agree", prior=offer.said,
+    agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EAeLJZGZE2TFNUinYqQCQI2KqynLupq7BH1ieqja2vXi"
+    assert agree.said == "ECoRxYTOdzvKcHMAxGU5ZiiuG6egoL6Pbmb1CP6ayGj6"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1291,7 +1304,7 @@ def test_represented_presentation_JSON():
             return None
         presentationCompact = _represented_presentation(kind, guardian, sedi, age,
                                                         compactify=True)
-        return exchange(sender=BOB, receiver=SERVICE, route="/ipex/grant",
+        return exchange(sender=BOB, receiver=STORE, route="/ipex/grant",
                         prior=agreeMsg.said,
                         attributes=dict(acdc=presentationCompact.sad,
                                         wardId=_ward_id_disclosure(sedi, kind),
@@ -1300,7 +1313,7 @@ def test_represented_presentation_JSON():
 
     # A forged signature or a spurn (decline) unlocks nothing.
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0), capturedKeyState) is None
-    spurn = exchange(sender=SERVICE, receiver=BOB, route="/ipex/spurn", prior=offer.said,
+    spurn = exchange(sender=STORE, receiver=BOB, route="/ipex/spurn", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, svcSigner.sign(ser=spurn.raw, index=0), capturedKeyState) is None
 
@@ -1308,17 +1321,17 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EOuqGP8kkcw-vMlOQgybBrfJ4BuQPGZFwfdKEqIp5oaU"
+    assert grant.said == "EBta5rbHHFv4L0XQ2nZEn62dmlDZIngRMGEcKUT-2iYM"
     assert grant.sad['a']['wardAge'][AGE_OVER13]['over13'] is False    # under-13 disclosed
     assert grant.sad['a']['wardId']['i'] == MIA                       # ward bound (issuee)
     assert b"2020-03-15" not in grant.raw                             # birthdate withheld
     assert b"over18" not in grant.raw and b"over21" not in grant.raw   # thresholds withheld
 
     # 5. admit (service -> Bob): closes the exchange.
-    admit = exchange(sender=SERVICE, receiver=BOB, route="/ipex/admit", prior=grant.said,
+    admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EK84WCNy-VFpXjKI2fsAJQ0Wo3MiukX6y1z7udnUQCMy"
+    assert admit.said == "EE6Dv2q1QFmVj_VaxkitIKiB9SHHaOaqG4cQah6Of99w"
 
 
 # ---------------------------------------------------------------------------
