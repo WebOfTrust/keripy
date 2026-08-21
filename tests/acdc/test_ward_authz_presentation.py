@@ -2,112 +2,67 @@
 """
 tests.acdc.test_ward_authz_presentation module
 
-Worked, working example of a DELEGATED AUTHORIZATION that the ward presents herself: a
-guardian issues his ward an ACDC carrying an attenuated slice of his own authority, and the
-ward -- not the guardian -- shows it to the service that gates the act. It is the shape
-@SmithSamuelM drew in WebOfTrust/keripy discussion #1550, in the diagram "Ward with Single
-Guardian Issues Authorization: Ward to Access Social".
+Worked, working example of a DELEGATED AUTHORIZATION the ward presents herself: a guardian
+issues his ward an ACDC carrying an attenuated slice of his own authority, and the ward --
+not the guardian -- shows it to the service that gates the act. It is the shape
+@SmithSamuelM drew in #1550, "Ward with Single Guardian Issues Authorization: Ward to
+Access Social".
 
-TWO REGIMES, TWO MODULES, and the split is statutory. Utah Code 63A-20-302(3)(a): "If an
-individual is unable to apply for a state-endorsed digital identity due to the individual's
-youth or incapacitation, the application may be made on behalf of that individual by the
-individual's digital guardian." A ward who cannot act -- an infant, or an adult who has lost
-capacity -- has a guardian who custodies her keys and presents ABOUT her, and there the
-invariant is holder != subject, so a verifier can always tell that a guardian and not the
-ward is acting. That is the sibling, tests/acdc/test_guardianship_presentation.py (PR
-#1530), whose ward is a seven-year-old. A ward who CAN act holds her own keys and acts as
-herself, bounded by what her guardian has authorized. That is THIS module, and the
-invariant here is attenuation rather than holder != subject. Bob Carver is the custodial
-parent in both -- his seven-year-old Mia is the sibling's ward, his 17-year-old Cara is
-this one's.
+TWO REGIMES, TWO MODULES, split where Utah Code 63A-20-302(3)(a) splits them: a ward
+"unable to apply ... due to the individual's youth or incapacitation" has a guardian who
+acts on her behalf. That ward is the sibling's -- seven-year-old Mia, in
+tests/acdc/test_guardianship_presentation.py (PR #1530), whose guardian custodies her keys,
+where the invariant is holder != subject. A ward who CAN act is this module's --
+17-year-old Cara, bounded by the authorization she carries, where the invariant is
+attenuation. Bob Carver is the custodial parent in both.
 
-Scenario, under Utah's Minor Protection in Social Media Act (Utah Code 13-71). Cara is 17,
-so she is a "minor" (13-71-101(8): under 18, unemancipated, unmarried), and a social media
-company must run an age assurance system that identifies her as one (13-71-201). Being a
-minor does NOT gate her account: it forces maximum-privacy defaults, limiting visibility,
-sharing and direct messaging to connected accounts (13-71-202). Two platform duties then
-turn on her parent's authority. She may not change those defaults without verifiable
-parental consent (13-71-204(1)), and the supervisory tools she may activate are configured
-by "an individual selected by the Utah minor account holder", who sets daily time limits
-and mandatory breaks (13-71-203). Both are authority Bob holds and Cara exercises, so he
-issues her an ACDC naming the routes, capabilities and daily window she may use -- drawn
-from, and no larger than, what the State recognized in him -- and SHE presents it.
+Scenario, under Utah's Minor Protection in Social Media Act. Being a minor does not gate
+Cara's account; it forces maximum-privacy defaults on it (13-71-202). Two duties then turn
+on her parent: she cannot change those defaults without verifiable parental consent
+(13-71-204(1)), and the supervisory tools she activates are configured by an individual she
+selects, who sets daily time limits (13-71-203). Both are authority Bob holds and Cara
+exercises, so he issues her an ACDC naming the routes, capabilities and daily window she may
+use, and SHE presents it. NOT claimed: that the ACDC is statutory consent. 13-71-101(18)
+defines that as a notice ritual running toward the parent, and this runs the other way, so
+it models the parental AUTHORITY those duties rely on rather than the ceremony.
 
-WHAT THIS EXAMPLE DOES NOT CLAIM. 13-71-101(18) defines "verifiable parental consent" as a
-notice ritual running toward the parent: the service gives the parent advance notice of its
-information practices, and receives confirmation that the parent received it. An AuthZ
-credential runs the other way -- a parent-issued, cryptographically verifiable grant the
-ward carries -- so it models the parental AUTHORITY that 13-71-204(1) and 13-71-203 make
-load-bearing, not the statutory consent ceremony. A deployment wanting both would pair
-them; nothing here substitutes for the notice.
-
-Four credentials, all v2 ACDCs, all registry-bound, each validated against a
-purpose-authored JSON Schema (Draft 2020-12):
+Four credentials, registry-bound, each validated against a purpose-authored JSON Schema:
 
   1. Guardian as Citizen  -- State -> Bob.  His own SEDI identity credential.
-  2. Guardian as Guardian -- State -> Bob.  The recognized guardianship, whose attribute
-     block carries the WARD's AID as well as Bob's (see the divergence below). Edge to (1).
-  3. Ward as Citizen Ward -- State -> Cara. Her own SEDI identity credential, which by its
-     edge to (2) DECLARES ITSELF ENCUMBERED, so a verifier reading only her credential
-     learns that her identity is not unencumbered.
-  4. Ward AuthZ Social    -- Bob -> Cara, in BOB's OWN registry (not the State's), carrying
-     the routes and capabilities she may exercise. Edges to (2) and (3).
+  2. Guardian as Guardian -- State -> Bob.  The guardianship, carrying the WARD's AID in its
+     attribute block (see the divergence below). Edge to (1).
+  3. Ward as Citizen Ward -- State -> Cara. Her identity credential, DECLARING ITSELF
+     ENCUMBERED by its edge to (2).
+  4. Ward AuthZ Social    -- Bob -> Cara, in BOB's OWN registry. Edges to (2) and (3).
 
-Four edges, four different operators, and getting each right is the security content here.
-Every one is PINNED by a schema const, so a mislabeled operator fails at wire validation:
+Four edges, four operators, each PINNED by a schema const so a mislabel fails wire
+validation. Each is argued where it is built; in brief:
 
-  * (4) -> (2) authority, I2I: near issuer Bob == far issuee Bob, which proves Bob HELD
-    what he delegates. Without it the AuthZ credential is a stranger's assertion of
-    permissions over someone else's child.
-  * (4) -> (3) subject, E1E: same subject (Cara), different issuers (Bob vs the State).
-    I2I would demand Bob == Cara and would FALSELY REJECT a sound identity relation, where
-    E1E (PR #1527) constrains the issuee only. This is the second independent use case for
-    the operator, and unlike the first it comes from Sam's diagram rather than from the PR
-    that proposed it.
-  * (2) -> (1) citizen, E1E again: same subject, and here the same issuer too -- which is
-    not what makes it identity. I2I would demand State == Bob.
-  * (3) -> (2) guardian, NI2I: different subjects, so neither targeted operator applies.
-    The untargeted reference is right for "my credential points at somebody else's" --
-    here, the encumbrance marker.
+  (4)->(2) authority  I2I   near issuer Bob == far issuee Bob: Bob held what he delegates.
+  (4)->(3) subject    E1E   same subject, different issuers; I2I would demand Bob == Cara.
+  (2)->(1) citizen    E1E   same subject again; I2I would demand State == Bob.
+  (3)->(2) guardian   NI2I  different subjects, so only the untargeted operator applies.
 
-E1E carries the same caveat as in the sibling: it is not yet in the spec's closed operator
-set {I2I, NI2I, DI2I, NOT}, and a spec-default or pre-#1527 verifier COERCES an unknown
-operator rather than rejecting it -- to I2I for a targeted far node, wrongly rejecting both
-E1E edges here. So this graph needs a #1527-or-later verifier until E1E is ratified (#1515).
+The two E1E edges are why this graph is more than a diagram: E1E (PR #1527, disc #1515) is
+not yet in the spec's closed operator set, so a verifier that coerces an unknown operator to
+I2I rejects both outright rather than merely under-specifying them.
 
-RECORDED DIVERGENCE: where the ward AID lives. Sam's diagram puts it in the ATTRIBUTE block
-of (2); the sibling names the ward only by an EDGE. Both preserve holder != subject, so this
-is a DISCLOSURE choice, and the edge form is better on Sam's own argument from #1515 that an
-edge "can also be blinded, which means that disclosure of the edge itself can be held back
-until the verifier (disclosee) has agreed not to exploit its correlatability" -- where a
-whole-disclosed attribute cannot be held back at all. This module models SAM's placement
-because it is his diagram, and the question is open on #1550; Phase 4 shows the argument
-arriving as an actual leak, since the guardianship's expiry is Cara's 18th birthday.
+RECORDED DIVERGENCE: where the ward AID lives. Sam's diagram puts it in (2)'s ATTRIBUTE
+block, the sibling names the ward by EDGE, and both preserve holder != subject -- so it is a
+DISCLOSURE choice, and the edge is better on Sam's own #1515 argument that an edge "can also
+be blinded" until the disclosee accepts terms, where a whole-disclosed attribute cannot be
+withheld at all. This module follows SAM because it is his diagram; Phase 4 shows the cost,
+the guardianship's expiry being Cara's 18th birthday.
 
-The AuthZ payload is ILLUSTRATIVE and its syntax UNSETTLED. Sam says only that the field
-"contains the specifics of the authorization. The syntax TBD", and points at EVAC (Edge
-Verifiable Agent Control), sketched at the end of #1550 as a resource-capabilities map 'rc'
-of the form {resourceRoute: [capability, ...]}. That is modeled here, plus the time window
-13-71-203 makes relevant, and no assertion reaches into it (the seam is
-_authz_capabilities, so a syntax change is one function rather than a rewrite). One
-constraint on that syntax is not taste, and this example measured it by serializing rather
-than arguing: a route written as a map LABEL falls under CESR's strict field-label grammar,
-so "social/feed" cannot be serialized in native CESR at all. The measurement, and the
-recommendation it produces for #1550 -- carry the route as a VALUE -- are at
-AUTHZ_BLOCK_SCHEMA.
-
-The negative that earns its place: a guardian cannot delegate more than he holds, so (4)'s
-capability tokens must be a SUBSET of (2)'s 'powers'. Over-reach is a binding property
-rather than a shape property, so the greedy credential is schema-valid and the binding, not
-the schema, refuses it (Phase 3). Naming divergence from the sibling while reading 'powers':
-there it is the coarse statutory scope enum, carried here as 'scope'.
-
-A note on altitude, the same one the siblings carry. This models the credential graph, the
-edge bindings and the registry binding at the data-structure level, built from the real v2
-primitives in keri.acdc.messaging and keri.core (acdcmap, Compactor, Mapper, exchange). It
-does not stand up a Habery/keystore or route through keri.vdr.verifying.verifyChain, which
-needs a live Reger/Tevery; PR #1527 unit-tests its real E1E branch. Actor AIDs and nonces
-derive from fixed salts, so the module is reproducible.
+Three things stated once and detailed at the code. The AuthZ payload is ILLUSTRATIVE and its
+syntax UNSETTLED ("The syntax TBD", #1550), modeled on EVAC's 'rc' map and insulated behind
+_authz_capabilities; the constraint the build measured -- a route cannot be a map LABEL in
+native CESR -- is at AUTHZ_BLOCK_SCHEMA. Over-reach is relational rather than structural, so
+an AuthZ credential exceeding (2)'s 'powers' is schema-valid and only the binding refuses it
+(Phase 3); note 'powers' here is the delegable capability set, where the sibling's statutory
+scope enum is 'scope'. And the altitude is the siblings': the credential graph, edge
+bindings and registry binding at the data-structure level on real v2 primitives, with no
+Habery/keystore and no verifyChain, which needs a live Reger/Tevery.
 """
 
 import json
