@@ -1250,24 +1250,28 @@ def test_wardauthz_presentation_JSON():
     # governance framework the platform will honor.
     #
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
-    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
-    # with ACDC-relative paths -- the construct settled in WebOfTrust/keripy discussion
-    # #1549, shared with tests/acdc/test_clc_disclosure.py,
-    # test_bulk_issuance_shared_registry.py and test_guardianship_presentation.py.
-    # A dict keyed by schema SAID cannot express a DAG holding two credentials of the
-    # same schema, which is why the construct is a list.
+    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, prefix, [paths])
+    # triples -- the construct settled in WebOfTrust/keripy discussion #1549, shared with
+    # tests/acdc/test_cp_disclosure.py, test_bulk_issuance_shared_registry.py and
+    # test_guardianship_presentation.py. A dict keyed by schema SAID cannot express a DAG
+    # holding two credentials of the same schema, which is why the construct is a list.
     #
-    # A leading '/' would make the path DAG-ABSOLUTE, rooted at the origin node, and an
-    # absolute path reaching a non-origin ACDC must cross the edge that links it -- the
-    # virtual '_' component, standing for the jump from the near-side edge block to the
-    # top level of the far-side ACDC (@SmithSamuelM, #1549). The same request in
-    # absolute form reads:
-    #     origin:       /i, /a/i, /a/authz
-    #     guardianship: /e/authority/_/a/i, /e/authority/_/a/ward, /e/authority/_/a/powers
-    #     ward citizen: /e/subject/_/a/i
-    # Relative form is used because this DAG has no optional edges, so the breadth-first
-    # ordering of `dp` is gapless and each entry's ACDC is unambiguous without restating
-    # the route to it.
+    # The middle element is a path PREFIX: the DAG-absolute route to the ACDC that the
+    # entry's schema SAID names. It is either the empty string or a route that both
+    # begins and ends with '/', and the effective path is prefix + entry concatenated
+    # with no delimiter inserted, so an entry in the path list never begins with '/'
+    # (@SmithSamuelM, #1549).
+    #
+    # Every prefix here is EMPTY, which leaves the entry paths ACDC-RELATIVE: with no
+    # prefix naming it, an entry's ACDC is identified by the entry's POSITION, so the
+    # list runs breadth-first from the origin node and the zeroth entry is the origin.
+    # A '/'-rooted prefix would make the effective paths DAG-ABSOLUTE, and an absolute
+    # path reaching a non-origin ACDC must cross the edge that links it -- the virtual
+    # '_' component, standing for the jump from the near-side edge block to the top level
+    # of the far-side ACDC (#1549). The same request written with non-empty prefixes:
+    #     origin:       "/"                ["i", "a/i", "a/authz"]
+    #     guardianship: "/e/authority/_/"  ["a/i", "a/ward", "a/powers"]
+    #     ward citizen: "/e/subject/_/"    ["a/i"]
     #
     # The zeroth entry is the DAG's origin node (#1549). Here the origin is the AuthZ
     # credential itself -- Cara presents a credential she HOLDS, so unlike the sibling
@@ -1289,10 +1293,11 @@ def test_wardauthz_presentation_JSON():
     # meaning of the entries below it.
     authzSchemaSaid, _ = _saidify_schema(dict(AUTHZ_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/apply",
-                     modifiers=dict(dp=[[authzSchemaSaid, ["i", "a/i", "a/authz"]],
-                                        [guardian.sad['s']['$id'],
+                     modifiers=dict(dp=[[authzSchemaSaid, "",
+                                         ["i", "a/i", "a/authz"]],
+                                        [guardian.sad['s']['$id'], "",
                                          ["a/i", "a/ward", "a/powers"]],
-                                        [wardCitizen.sad['s']['$id'], ["a/i"]]]),
+                                        [wardCitizen.sad['s']['$id'], "", ["a/i"]]]),
                      attributes=dict(m="Prove a guardian authorized this minor to use "
                                        "this service, and show the scope.",
                                      g=AUTHZ_RULES_SAID),
@@ -1301,17 +1306,19 @@ def test_wardauthz_presentation_JSON():
     dp = apply.sad['q']['dp']
     assert [entry[0] for entry in dp] == [authzSchemaSaid, guardian.sad['s']['$id'],
                                           wardCitizen.sad['s']['$id']]
-    assert dp[0][1] == ["i", "a/i", "a/authz"]        # origin: who granted, to whom, what
-    assert dp[1][1] == ["a/i", "a/ward", "a/powers"]  # guardianship: whose, over whom, how far
-    assert dp[2][1] == ["a/i"]                        # ward citizen: the binding, nothing more
+    assert all(len(entry) == 3 for entry in dp)       # (schemaSAID, prefix, [paths])
+    assert [entry[1] for entry in dp] == ["", "", ""] # no prefixes: paths stay relative
+    assert dp[0][2] == ["i", "a/i", "a/authz"]        # origin: who granted, to whom, what
+    assert dp[1][2] == ["a/i", "a/ward", "a/powers"]  # guardianship: whose, over whom, how far
+    assert dp[2][2] == ["a/i"]                        # ward citizen: the binding, nothing more
     assert all(not p.startswith("/") and not p.endswith("/")
-               for _, paths in dp for p in paths)
+               for _, _, paths in dp for p in paths)
     assert authzSchemaSaid == wardAuthz.sad['s']['$id']   # the origin Cara actually holds
     # The guardian's own citizen credential is a node in the DAG and is asked for
     # nothing: the platform gating a minor has no business learning the parent's name.
     assert guardianCitizen.sad['s']['$id'] not in [entry[0] for entry in dp]
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EOXY2-SPW0zUrFhP5nNbTevRqA3BSLOd5hE1kMj5jrTO"
+    assert apply.said == "EOdPg07RtIzlFeSkwX8l5YAatqJLLInpRn-9Ww97Zihn"
 
     # 2. offer (Cara -> platform): commits ONLY to the SAID of the credential she is
     # offering and to the governance ref, and binds the apply. It deliberately does NOT
@@ -1328,7 +1335,7 @@ def test_wardauthz_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                  # solicited: "as per the apply"
-    assert offer.said == "EDHveeZBrH4RY5IYf9otXqG-K7XPYpS8HUoH9cGfui_5"
+    assert offer.said == "EL0_DqqsSGKW-t4pjerj-27YHOPnwzOjqmc_eLHsyzKR"
     assert wardAuthz.said.encode() in offer.raw        # the discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2012-04-10" not in offer.raw
     assert guardian.said.encode() not in offer.raw     # issuer commitments withheld...
@@ -1340,7 +1347,7 @@ def test_wardauthz_presentation_JSON():
     agree = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "ELUE4Z69F9ANJxBIGQey8-bPxs-ZSnP__WIVVQKtsj2R"
+    assert agree.said == "EK2dHqxhGQ7apRiYBMgEDtSw9KtjVji2PMIFwOVXP5w0"
     svcSigner = _SIGNERS[3]                            # the platform's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1375,7 +1382,7 @@ def test_wardauthz_presentation_JSON():
     # The valid agree unlocks the grant.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EDhaDoGbAVOpoQOBXrmxBzSuM6lqhbXjiT3pTOrUc3kR"
+    assert grant.said == "EAOQ4viuiQX3R5bQ_7oU-hdfWc8vpKpDVhjwUigWaq98"
 
     # What the platform receives is exactly what it asked for and no more: the
     # authorization payload, the guardianship's scope, and a binding to Cara.
@@ -1409,7 +1416,7 @@ def test_wardauthz_presentation_JSON():
     admit = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EKl5NR5YbevNiqowBr2uKQtVU9wNKFsR2J30LTch63eF"
+    assert admit.said == "EC5styk29zfJWRUIg4Ku1vIY_8U2nVxIgpxPU7rAnah2"
 
 
 # ---------------------------------------------------------------------------
