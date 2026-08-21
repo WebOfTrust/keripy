@@ -4,7 +4,7 @@ Test utilities for vdr
 """
 
 from keri.core import Salter
-from keri.kering import Vrsn_1_0, Kinds
+from keri.kering import Version
 
 from keri.app import habbing
 
@@ -16,7 +16,7 @@ def buildHab(db, ks, name="test", **kwa):
     """
 
     raw = b"raw salt to test"
-    version = kwa.get("version", Vrsn_1_0)
+    version = kwa.get("version", Version)
 
     #  create secrecies
     secrecies = [[signer.qb64] for signer in

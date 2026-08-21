@@ -42,15 +42,14 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_verifier_query_v2(mockHelpingNowUTC, mockCoringRandomNonce):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
 
         verfer = Verifier(hby=hby, reger=regery.reger)
         qry = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels", version=Vrsn_2_0, kind=Kinds.json)
+                           route="tels")
         serder = SerderKERI(raw=qry)
         assert serder.pvrsn == Vrsn_2_0
         assert serder.gvrsn == Vrsn_2_0
@@ -77,7 +76,7 @@ def test_verifier_query_v2(mockHelpingNowUTC, mockCoringRandomNonce):
         tvy = Tevery(db=hby.db, reger=regery.reger, local=False)
         assert kvy.kramer.enabled is True
 
-        Parser(version=Vrsn_2_0).parse(ims=bytearray(qry), kvy=kvy, tvy=tvy)
+        Parser().parse(ims=bytearray(qry), kvy=kvy, tvy=tvy)
         cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
         assert cache is not None
         assert cache.mdt == serder.stamp
@@ -85,16 +84,16 @@ def test_verifier_query_v2(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_verifier(seeder):
-    with (openHab(name="sid", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab),
-          openHab(name="recp", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recpHby, recp)):
+    with (openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
+          openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
-        assert hab.pre == "EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o"
+        assert hab.pre == "ELiB9P2peJvXDQbfYoFPf2gxdN7lmiC-dQB0NG_9qiqz"
 
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -109,7 +108,7 @@ def test_verifier(seeder):
             d="",
             i=recp.pre,
             dt=helping.nowIso8601(),
-            LEI="254900OPPU84GM83MG36",
+            LEI="254900OPPU84GM83MG36"
         )
         _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
@@ -134,7 +133,7 @@ def test_verifier(seeder):
         assert q["ri"] == issuer.regk
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -176,31 +175,32 @@ def test_verifier(seeder):
 
 
 
-def test_verifier_chained_credential(seeder):
+def test_verifier_chained_credential(seeder,
+                                version=Vrsn_1_0, kind=Kinds.json):
     qviSchema = "EFgnk_c08WmZGgv9_mpldibRuqFMTQN-rAgtD-TCOwbs"
     vLeiSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="ron", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (ronHby, ron), \
-            openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han), \
-            openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (vicHby, vic):
+    with openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
+            openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han), \
+            openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef') as (vicHby, vic):
         seeder.seedSchema(db=ronHby.db)
         seeder.seedSchema(db=ianHby.db)
         seeder.seedSchema(db=hanHby.db)
         seeder.seedSchema(db=vicHby.db)
 
-        assert ron.pre == "EOp2vZP2BrlH3DX9H3w-ghvr3c9kkDv0gS5ELFyutxwk"
-        assert ian.pre == "EN6Ta5X_B7DrYR1HVGw25YgFVep4zGb5TMIoyCBaKb7R"
-        assert han.pre == "EBwEKSIMG_3tp7kVCLWJ9c-tPdwtDXIeLlfdm5-IMTZv"
-        assert vic.pre == "EGPhh6seaUvJy-nXFkiEdsfwekEhSm3lCVrP-tcoeL0H"
+        assert ron.pre == "EDNb9PybX153PD16lCzLyUKP5UcwE76L6dl7yHCMFOR7"
+        assert ian.pre == "EL9l4NeHxSU9Vwli7DcTLEh3PLqXHeBiCBbUFxOb2Pi8"
+        assert han.pre == "EDxTM7r1XcSxKeL2bnsw5CNKtGnbhWl9ZSckT2GpN0rc"
+        assert vic.pre == "EAZ3IS7tF873ViRM9PHT0XchaOuWWQnXOUqU-i5_3Eza"
 
         ronreg = Regery(hby=ronHby, name="ron", temp=True)
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         vicreg = Regery(hby=vicHby, name="vic", temp=True)
         roniss = ronreg.makeRegistry(prefix=ron.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(roniss.regk, "0", roniss.regd)._asdict()
-        ron.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ron.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=roniss.regk,
@@ -215,7 +215,7 @@ def test_verifier_chained_credential(seeder):
             d="",
             i=ian.pre,
             dt=helping.nowIso8601(),
-            LEI="5493001KJTIIGC8Y1R12",
+            LEI="5493001KJTIIGC8Y1R12"
         )
         _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
@@ -241,7 +241,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = roniss.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ron.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ron.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=iss.pre,
@@ -270,7 +270,7 @@ def test_verifier_chained_credential(seeder):
 
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=ianiss.regk,
@@ -285,15 +285,15 @@ def test_verifier_chained_credential(seeder):
             d="",
             i=han.pre,
             dt=helping.nowIso8601(),
-            LEI="254900OPPU84GM83MG36",
+            LEI="254900OPPU84GM83MG36"
         )
         _, d = Saider.saidify(sad=leiCredSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         chain = dict(
             d=creder.said,
             qualifiedvLEIIssuervLEICredential=dict(
-                n=creder.said,
-            ),
+                n=creder.said
+            )
         )
 
         vLeiCreder = credential(issuer=ian.pre,
@@ -322,7 +322,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=vLeiCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -351,7 +351,7 @@ def test_verifier_chained_credential(seeder):
 
         # Now process all the events that Ron's issuer has generated so far
         for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            Parser().parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=creder.said):
@@ -376,15 +376,15 @@ def test_verifier_chained_credential(seeder):
         untargetedSubject = dict(
             d="",
             dt=helping.nowIso8601(),
-            claim="An outrageous claim.",
+            claim="An outrageous claim."
         )
         _, d = Saider.saidify(sad=untargetedSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         chainSad = dict(
             d='',
             targetedEdge=dict(
-                n=vLeiCreder.said,
-            ),
+                n=vLeiCreder.said
+            )
         )
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
@@ -411,7 +411,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=untargetedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -426,7 +426,7 @@ def test_verifier_chained_credential(seeder):
         chainedSubject = dict(
             d="",
             dt=helping.nowIso8601(),
-            claim="An outrageous claim.",
+            claim="An outrageous claim."
         )
         _, d = Saider.saidify(sad=chainedSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
@@ -435,7 +435,7 @@ def test_verifier_chained_credential(seeder):
             untargetedButI2I=dict(
                 n=untargetedCreder.said,
                 o="I2I"
-            ),
+            )
         )
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
@@ -462,7 +462,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=chainedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -484,7 +484,7 @@ def test_verifier_chained_credential(seeder):
         vicverfer = Verifier(hby=vicHby, reger=vicreg.reger)
 
         for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=creder.said):
@@ -500,7 +500,7 @@ def test_verifier_chained_credential(seeder):
         # Vic should be able to verify Han's credential
         # Get Ian's icp into Vic's db
         for msg in ian.db.clonePreIter(pre=ian.pre, version=ian.kever.serder.pvrsn):
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=ianiss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=vLeiCreder.said):
@@ -520,7 +520,7 @@ def test_verifier_chained_credential(seeder):
         rev = roniss.revoke(said=creder.said)
         rseq = Seqner(sn=rev.sn)
         rseal = SealEvent(rev.pre, rseq.snh, rev.said)._asdict()
-        ron.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        ron.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=rev.pre,
@@ -530,7 +530,7 @@ def test_verifier_chained_credential(seeder):
         ronreg.processEscrows()
 
         for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser().parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=creder.said):
@@ -568,10 +568,8 @@ def test_verifier_e1e_identity_edge(seeder):
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
-                    version=Vrsn_1_0, kind=Kinds.json) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') \
             as (hanHby, han):
         seeder.seedSchema(db=ianHby.db)
 
@@ -579,8 +577,7 @@ def test_verifier_e1e_identity_edge(seeder):
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian",
                                      version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -598,8 +595,7 @@ def test_verifier_e1e_identity_edge(seeder):
                 pass  # expected: the TEL issuance event is anchored just below
             iss = ianiss.issue(said=creder.said)
             rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                         gvrsn=Vrsn_1_0)
+            ian.interact(data=[rseal], framed=True)
             ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                              seqner=Seqner(sn=ian.kever.sn),
                              saider=Diger(qb64=ian.kever.serder.said))
@@ -685,7 +681,7 @@ def _aggregate_far_node(ian, ianiss, ianreg, issueeAid):
     is None and ``.iseaid`` is the only way to resolve the issuee -- exactly the
     case that the attributive-only paths in verifying.py mishandle.
     """
-    raws = [b'2lb6aggverifchn' + b'%0x' % (i,) for i in range(3)]
+    raws = [b'2lb6aggverifchn' + b'%0x' % (i) for i in range(3)]
     nonces = [Noncer(raw=r).qb64 for r in raws]
     # element 0 is the AGID placeholder; element 1 carries the issuee (i).
     ael = ['', dict(d='', u=nonces[0], i=issueeAid),
@@ -698,8 +694,7 @@ def _aggregate_far_node(ian, ianiss, ianreg, issueeAid):
     # anchor a TEL issuance event for the aggregate SAID so it is "issued".
     iss = ianiss.issue(said=agg.said)
     rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-    ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                 gvrsn=Vrsn_1_0)
+    ian.interact(data=[rseal], framed=True)
     ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                      seqner=Seqner(sn=ian.kever.sn),
                      saider=Diger(qb64=ian.kever.serder.said))
@@ -707,7 +702,8 @@ def _aggregate_far_node(ian, ianiss, ianreg, issueeAid):
     return agg
 
 
-def test_verifier_saves_aggregate_credential(seeder):
+def test_verifier_saves_aggregate_credential(seeder,
+                                version=Vrsn_1_0, kind=Kinds.json):
     """saveCredential indexes an aggregate ('acg') credential's subject via .iseaid.
 
     Regression for tick 2lb6: saveCredential guarded subject indexing on
@@ -717,17 +713,14 @@ def test_verifier_saves_aggregate_credential(seeder):
     subject-indexed at all. It must instead resolve the issuee via ``.iseaid``,
     identically to an attributive credential.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
-                    version=Vrsn_1_0, kind=Kinds.json) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') \
             as (hanHby, han):
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian",
                                      version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -762,17 +755,14 @@ def test_verifier_aggregate_far_node_chain(seeder):
     verifier must resolve targeted-ness and the issuee via ``.iseaid`` so an edge
     to an aggregate far node behaves identically to an attributive one.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
-                    version=Vrsn_1_0, kind=Kinds.json) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') \
             as (hanHby, han):
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian",
                                      version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -831,17 +821,14 @@ def test_verifier_e1e_aggregate_far_node(seeder):
     based; this locks in that it works for an aggregate far node through the real
     verifier, not just a bespoke example verifier.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef',
-                 version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
-                    version=Vrsn_1_0, kind=Kinds.json) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') \
             as (hanHby, han):
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian",
                                      version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -907,13 +894,13 @@ def test_verifier_edge_schema_constraint(seeder):
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         seeder.seedSchema(db=hby.db)
 
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=diger)
@@ -961,7 +948,7 @@ def test_verifier_edge_schema_constraint(seeder):
             """Issue creder's SAID into the registry TEL and process escrows."""
             iss = issuer.issue(said=creder.said)
             rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-            hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+            hab.interact(data=[rseal], framed=True)
             sq = Seqner(sn=hab.kever.sn)
             dg = Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=sq, saider=dg)
@@ -1048,8 +1035,7 @@ def setupOperatorFixture(ian, ianHby, ianreg, ianiss):
             pass  # expected: the TEL issuance event is anchored just below
         iss = ianiss.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1077,18 +1063,15 @@ def test_verifier_list_valued_operator(seeder):
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
-                 kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
-                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han):
         seeder.seedSchema(db=ianHby.db)
 
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
                                      kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1156,7 +1139,7 @@ def test_verifier_list_valued_operator(seeder):
         assert verfer.reger.saved.get(keys=near.saidb) is not None
 
         # A tuple is accepted as a sequence too, not just a list.
-        near = nearWithOp(("NI2I",), "tuple form")
+        near = nearWithOp(("NI2I"), "tuple form")
         assert verfer.reger.saved.get(keys=near.saidb) is not None
 
         # E1E alone imposes no issuer constraint, and reaching it via a list must not
@@ -1179,8 +1162,7 @@ def test_verifier_list_valued_operator(seeder):
                               version=Vrsn_1_0, kind=Kinds.json)
         iss = ianiss.issue(said=listDi2i.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1204,8 +1186,7 @@ def test_verifier_list_valued_operator(seeder):
                              version=Vrsn_1_0, kind=Kinds.json)
         iss = ianiss.issue(said=notCred.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1234,18 +1215,15 @@ def test_verifier_nonconflicting_operators_compose(seeder):
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
-                 kind=Kinds.json) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
-                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han):
         seeder.seedSchema(db=ianHby.db)
 
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
                                      kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1322,16 +1300,14 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
 
     # Single party: every credential here is issued by ian to ian, so no second hab is
     # needed to exercise the operator's failure mode.
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
-                 kind=Kinds.json) as (ianHby, ian):
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian):
         seeder.seedSchema(db=ianHby.db)
 
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
                                      kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1359,8 +1335,7 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
         # than bailing out earlier on a missing registry.
         iss = ianiss.issue(said=near.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -1400,16 +1375,14 @@ def test_verifier_escrow_pass_survives_argless_exception(seeder):
     Pinned independently of DI2I: any argless exception from any credential reaches
     the same handler, so fixing only the DI2I raise would leave the trap armed.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
-                 kind=Kinds.json) as (ianHby, ian):
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian):
         seeder.seedSchema(db=ianHby.db)
 
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
                                      kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
+        ian.interact(data=[rseal], framed=True)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))

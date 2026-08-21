@@ -34,7 +34,7 @@ def _serder(stream):
         ctr = Counter(qb64b=ims, version=Vrsn_2_0, strip=True)
         if ctr.name in (
             Codens.NonNativeBodyGroup,
-            Codens.BigNonNativeBodyGroup,
+            Codens.BigNonNativeBodyGroup
         ):
             return Serdery(version=Vrsn_2_0).reap(ims=Texter(qb64b=ims, strip=True).raw,
                                                   genus=GenDex.KERI,
@@ -43,7 +43,7 @@ def _serder(stream):
             ctr = Counter(qb64b=ims, version=Vrsn_2_0, strip=True)
             if ctr.name in (
                 Codens.NonNativeBodyGroup,
-                Codens.BigNonNativeBodyGroup,
+                Codens.BigNonNativeBodyGroup
             ):
                 return Serdery(version=Vrsn_2_0).reap(ims=Texter(qb64b=ims, strip=True).raw,
                                                       genus=GenDex.KERI,
@@ -91,8 +91,7 @@ def _anchor(hab, registry, serder, *, framed=False):
 def test_ipex_v2_builders_parse_happypath():
     """Build each V2 IPEX verb and prove the resulting streams parse cleanly."""
     with openHby(name="ipex-v2-builders",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
 
         # Create hab
         hab = hby.makeHab(name="test")
@@ -107,7 +106,7 @@ def test_ipex_v2_builders_parse_happypath():
         iss = blindate(regid=registry.said,
                        prior=registry.said,
                        blid=blinder)
-        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        anc = hab.msgOwnEvent(sn=0, framed=False)
         
         # Extract schema from acdc
         schema = acdc.sad["s"]["$id"]
@@ -189,7 +188,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Apply
         applyIms = bytearray(applyExn.raw)
         applyIms.extend(applyAtc)
-        applyResults = Parser(version=Vrsn_2_0).parse(ims=applyIms,
+        applyResults = Parser().parse(ims=applyIms,
                                                       framed=False,
                                                       processive=False)
         assert applyIms == bytearray()
@@ -204,7 +203,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Offer
         offerIms = bytearray(offerExn.raw)
         offerIms.extend(offerAtc)
-        offerResults = Parser(version=Vrsn_2_0).parse(ims=offerIms,
+        offerResults = Parser().parse(ims=offerIms,
                                                       framed=False,
                                                       processive=False)
         assert offerIms == bytearray()
@@ -220,7 +219,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Agree
         agreeIms = bytearray(agreeExn.raw)
         agreeIms.extend(agreeAtc)
-        agreeResults = Parser(version=Vrsn_2_0).parse(ims=agreeIms,
+        agreeResults = Parser().parse(ims=agreeIms,
                                                       framed=False,
                                                       processive=False)
         assert agreeIms == bytearray()
@@ -236,7 +235,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Grant
         grantIms = bytearray(grantExn.raw)
         grantIms.extend(grantAtc)
-        grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
+        grantResults = Parser().parse(ims=grantIms,
                                                       framed=False,
                                                       processive=False)
         assert grantIms == bytearray()
@@ -256,7 +255,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Admit
         admitIms = bytearray(admitExn.raw)
         admitIms.extend(admitAtc)
-        admitResults = Parser(version=Vrsn_2_0).parse(ims=admitIms,
+        admitResults = Parser().parse(ims=admitIms,
                                                       framed=False,
                                                       processive=False)
         assert admitIms == bytearray()
@@ -272,7 +271,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Spurn
         spurnIms = bytearray(spurnExn.raw)
         spurnIms.extend(spurnAtc)
-        spurnResults = Parser(version=Vrsn_2_0).parse(ims=spurnIms,
+        spurnResults = Parser().parse(ims=spurnIms,
                                                       framed=False,
                                                       processive=False)
         assert spurnIms == bytearray()
@@ -289,8 +288,7 @@ def test_ipex_v2_builders_parse_happypath():
 def test_ipex_v2_dispatch_linear_and_spurn():
     """Exercise linear routing, rejection, and spurn handling through Exchanger."""
     with openHby(name="ipex-v2-dispatch",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
         hab = hby.makeHab(name="test")
         registry = regcept(israid=hab.pre)
         acdc = acdcmap(israid=hab.pre,
@@ -301,7 +299,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         iss = blindate(regid=registry.said,
                        prior=registry.said,
                        blid=blinder)
-        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        anc = hab.msgOwnEvent(sn=0, framed=False)
         schema = acdc.sad["s"]["$id"]
 
         # Create recorder
@@ -336,7 +334,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Try to parse the offer before apply
         offer0Ims = bytearray(offer0.raw)
         offer0Ims.extend(offer0Atc)
-        Parser(version=Vrsn_2_0).parse(ims=offer0Ims, framed=False, exc=exc)
+        Parser().parse(ims=offer0Ims, framed=False, exc=exc)
         assert offer0Ims == bytearray()
         
         # Assert it was rejected and not stored in db since its prior was not accepted yet
@@ -345,7 +343,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Parse the apply first 
         apply0Ims = bytearray(apply0.raw)
         apply0Ims.extend(apply0Atc)
-        Parser(version=Vrsn_2_0).parse(ims=apply0Ims, framed=False, exc=exc)
+        Parser().parse(ims=apply0Ims, framed=False, exc=exc)
         assert apply0Ims == bytearray()
 
         # Assert that the apply was accepted and stored
@@ -358,22 +356,22 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Parse the rest of the chain
         offer0Ims = bytearray(offer0.raw)
         offer0Ims.extend(offer0Atc)
-        Parser(version=Vrsn_2_0).parse(ims=offer0Ims, framed=False, exc=exc)
+        Parser().parse(ims=offer0Ims, framed=False, exc=exc)
         assert offer0Ims == bytearray()
 
         agree0Ims = bytearray(agree0.raw)
         agree0Ims.extend(agree0Atc)
-        Parser(version=Vrsn_2_0).parse(ims=agree0Ims, framed=False, exc=exc)
+        Parser().parse(ims=agree0Ims, framed=False, exc=exc)
         assert agree0Ims == bytearray()
 
         grant0Ims = bytearray(grant0.raw)
         grant0Ims.extend(grant0Atc)
-        Parser(version=Vrsn_2_0).parse(ims=grant0Ims, framed=False, exc=exc)
+        Parser().parse(ims=grant0Ims, framed=False, exc=exc)
         assert grant0Ims == bytearray()
 
         admit0Ims = bytearray(admit0.raw)
         admit0Ims.extend(admit0Atc)
-        Parser(version=Vrsn_2_0).parse(ims=admit0Ims, framed=False, exc=exc)
+        Parser().parse(ims=admit0Ims, framed=False, exc=exc)
         assert admit0Ims == bytearray()
 
         # Assert that they were accepted and stored
@@ -409,7 +407,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Parse it
         dupSpurnIms = bytearray(dupSpurn.raw)
         dupSpurnIms.extend(dupSpurnAtc)
-        Parser(version=Vrsn_2_0).parse(ims=dupSpurnIms, framed=False, exc=exc)
+        Parser().parse(ims=dupSpurnIms, framed=False, exc=exc)
         assert dupSpurnIms == bytearray()
 
         # Assert it was not accepted 
@@ -430,12 +428,12 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Parse both
         grant1Ims = bytearray(grant1.raw)
         grant1Ims.extend(grant1Atc)
-        Parser(version=Vrsn_2_0).parse(ims=grant1Ims, framed=False, exc=exc)
+        Parser().parse(ims=grant1Ims, framed=False, exc=exc)
         assert grant1Ims == bytearray()
 
         spurn1Ims = bytearray(spurn1.raw)
         spurn1Ims.extend(spurn1Atc)
-        Parser(version=Vrsn_2_0).parse(ims=spurn1Ims, framed=False, exc=exc)
+        Parser().parse(ims=spurn1Ims, framed=False, exc=exc)
         assert spurn1Ims == bytearray()
 
         # Assert that bare grant is valid but spurn against grant is not
@@ -452,12 +450,12 @@ def test_ipex_v2_dispatch_linear_and_spurn():
 
         offer1Ims = bytearray(offer1.raw)
         offer1Ims.extend(offer1Atc)
-        Parser(version=Vrsn_2_0).parse(ims=offer1Ims, framed=False, exc=exc)
+        Parser().parse(ims=offer1Ims, framed=False, exc=exc)
         assert offer1Ims == bytearray()
 
         spurn2Ims = bytearray(spurn2.raw)
         spurn2Ims.extend(spurn2Atc)
-        Parser(version=Vrsn_2_0).parse(ims=spurn2Ims, framed=False, exc=exc)
+        Parser().parse(ims=spurn2Ims, framed=False, exc=exc)
         assert spurn2Ims == bytearray()
 
         assert hby.db.exns.get(keys=(offer1.said,)) is not None
@@ -490,8 +488,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
     
     # Set up non-transferable hab, recorder, exchanger and load IPEX handlers
     with openHby(name="ipex-v2-nontrans",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
         hab = hby.makeHab(name="test", transferable=False)
         assert not hab.kever.prefixer.transferable
         recorder = Recorder()
@@ -510,7 +507,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
         iss = blindate(regid=registry.said,
                        prior=registry.said,
                        blid=blinder)
-        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        anc = hab.msgOwnEvent(sn=0, framed=False)
         ancSerder = _serder(anc)
         schema = acdc.sad["s"]["$id"]
 
@@ -538,7 +535,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
         # Parse Offer for assertions
         offerIms = bytearray(offerExn.raw)
         offerIms.extend(offerAtc)
-        offerResults = Parser(version=Vrsn_2_0).parse(ims=offerIms,
+        offerResults = Parser().parse(ims=offerIms,
                                                       framed=False,
                                                       processive=False)
         assert offerIms == bytearray()
@@ -549,7 +546,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
         # Parse Grant for assertions
         grantIms = bytearray(grantExn.raw)
         grantIms.extend(grantAtc)
-        grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
+        grantResults = Parser().parse(ims=grantIms,
                                                       framed=False,
                                                       processive=False)
         assert grantIms == bytearray()
@@ -566,7 +563,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
                          (grantExn, grantAtc)):
             ims = bytearray(exn.raw)
             ims.extend(atc)
-            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            Parser().parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
 
         # Assert they were all processed and stored
@@ -585,8 +582,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
 def test_ipex_v2_rejects_unsupported_nested_frame():
     """Reject a carried artifact that starts with an unsupported CESR frame."""
     with openHby(name="ipex-v2-bad-frame",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
         hab = hby.makeHab(name="test")
         bad = Counter.enclose(qb64=b'',
                               code=Codens.AttachmentGroup,
@@ -600,8 +596,7 @@ def test_ipex_v2_rejects_unsupported_nested_frame():
 
 def test_ipex_v2_rejects_offer_with_mismatched_nested_acdc():
     with openHby(name="ipex-v2-bad-offer-nest",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
         # Create one local AID that acts as both sender and receiver for the EXN
         hab = hby.makeHab(name="test")
         
@@ -634,7 +629,6 @@ def test_ipex_v2_rejects_offer_with_mismatched_nested_acdc():
         # The handler should compare the body SAID to the nested SAID and reject the mismatch
         atc = bytearray(hab.endorse(serder=exn,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0,
                                     nests=[_nest(bad)]))
         # `endorse` returns body + attachments; strip the body so we can pair the original body
         # with our deliberately wrong attachment stream.
@@ -644,7 +638,7 @@ def test_ipex_v2_rejects_offer_with_mismatched_nested_acdc():
         ims = bytearray(exn.raw)
         ims.extend(atc)
 
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        Parser().parse(ims=ims, framed=False, exc=exc)
 
         # The parser consumed the whole stream even though the handler rejected the EXN
         assert ims == bytearray()
@@ -658,8 +652,7 @@ def test_ipex_v2_rejects_offer_with_mismatched_nested_acdc():
 
 def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
     with openHby(name="ipex-v2-bad-grant-nest",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
         hab = hby.makeHab(name="test")
 
         # Set up recorder, exchanger and load IPEX Handlers
@@ -681,7 +674,7 @@ def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
                        blid=blinder)
 
         # Create the anchoring KEL event that the grant body also says should be present
-        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        anc = hab.msgOwnEvent(sn=0, framed=False)
 
         # Build a correct grant body that references all three artifacts: acdc, iss, and anc
         exn, _ = ipexGrant(hab=hab,
@@ -695,7 +688,6 @@ def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
         # This proves the handler rejects a body that promises an artifact it did not carry
         atc = bytearray(hab.endorse(serder=exn,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0,
                                     nests=[_nest(acdc), _nest(anc)]))
 
         # Strip the body returned by `endorse`; we only want the tampered attachments
@@ -706,7 +698,7 @@ def test_ipex_v2_rejects_grant_with_missing_nested_artifact():
         ims.extend(atc)
 
         # Parse through the exchanger/IPEX route 
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        Parser().parse(ims=ims, framed=False, exc=exc)
 
         # The parser should drain the input even though the IPEX handler rejects it
         assert ims == bytearray()
@@ -727,8 +719,7 @@ def test_ipex_v2_responders_set_receiver():
     prior (the offer-first bootstrap) takes an explicit ``recp`` instead.
     """
     with openHby(name="ipex-v2-receiver",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
+                 base="test") as hby:
         holder = hby.makeHab(name="holder")
         verifier = hby.makeHab(name="verifier")
 
@@ -737,12 +728,11 @@ def test_ipex_v2_responders_set_receiver():
                        regid=registry.said,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=holder.pre)
-    
         blinder = Blinder.blind(acdc=acdc.said, state="issued", sn=1).said
         iss = blindate(regid=registry.said,
                        prior=registry.said,
                        blid=blinder)
-        anc = holder.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        anc = holder.msgOwnEvent(sn=0, framed=False)
         schema = acdc.sad["s"]["$id"]
 
         # verifier applies to holder
