@@ -8,26 +8,38 @@ ward -- not the guardian -- shows it to the service that gates the act. It is th
 @SmithSamuelM drew in WebOfTrust/keripy discussion #1550, in the diagram "Ward with Single
 Guardian Issues Authorization: Ward to Access Social".
 
-TWO REGIMES, TWO MODULES. #1550 separates them by what the ward can physically do. Before a
-child can operate a device, "any use case where the child is required to present something
-or have something presented on their behalf it must be done by the parents", because the
-parent custodies her keys; the guardian presents ABOUT the ward, and the invariant is
-holder != subject, so a verifier can always tell that a guardian and not the ward is acting.
-That is the sibling, tests/acdc/test_guardianship_presentation.py (PR #1530), whose ward is
-a six-year-old. Once the child can act -- "Its only when the child becomes old enough to
-operate a computer by themselves ... In that case, the Parent would delegate to their child
-attenuated capabilities" -- she holds her own keys and acts as herself, bounded by the
-authorization she carries. That is THIS module, and #1550 assigns Utah's social-media case
-to it explicitly: "the parents' further ability to restrict social media access even for the
-ages 13-18 requires delegated authorization to the child from their parents(s) (guardians)".
-Bob Carver is the custodial parent in both modules -- his six-year-old Mia is the sibling's
-ward, his 14-year-old Cara is this one's.
+TWO REGIMES, TWO MODULES, and the split is statutory. Utah Code 63A-20-302(3)(a): "If an
+individual is unable to apply for a state-endorsed digital identity due to the individual's
+youth or incapacitation, the application may be made on behalf of that individual by the
+individual's digital guardian." A ward who cannot act -- an infant, or an adult who has lost
+capacity -- has a guardian who custodies her keys and presents ABOUT her, and there the
+invariant is holder != subject, so a verifier can always tell that a guardian and not the
+ward is acting. That is the sibling, tests/acdc/test_guardianship_presentation.py (PR
+#1530), whose ward is a seven-year-old. A ward who CAN act holds her own keys and acts as
+herself, bounded by what her guardian has authorized. That is THIS module, and the
+invariant here is attenuation rather than holder != subject. Bob Carver is the custodial
+parent in both -- his seven-year-old Mia is the sibling's ward, his 17-year-old Cara is
+this one's.
 
-Scenario. Utah's social-media law conditions a minor's use of a platform on verified
-parental authorization. Cara operates a phone and can sign, but cannot self-assert
-entitlement to a service her parent gates. So Bob, rather than logging in for her, issues
-her an ACDC saying which routes she may exercise and with which capabilities -- drawn from,
-and no larger than, the authority the State recognized in him -- and she presents it.
+Scenario, under Utah's Minor Protection in Social Media Act (Utah Code 13-71). Cara is 17,
+so she is a "minor" (13-71-101(8): under 18, unemancipated, unmarried), and a social media
+company must run an age assurance system that identifies her as one (13-71-201). Being a
+minor does NOT gate her account: it forces maximum-privacy defaults, limiting visibility,
+sharing and direct messaging to connected accounts (13-71-202). Two platform duties then
+turn on her parent's authority. She may not change those defaults without verifiable
+parental consent (13-71-204(1)), and the supervisory tools she may activate are configured
+by "an individual selected by the Utah minor account holder", who sets daily time limits
+and mandatory breaks (13-71-203). Both are authority Bob holds and Cara exercises, so he
+issues her an ACDC naming the routes, capabilities and daily window she may use -- drawn
+from, and no larger than, what the State recognized in him -- and SHE presents it.
+
+WHAT THIS EXAMPLE DOES NOT CLAIM. 13-71-101(18) defines "verifiable parental consent" as a
+notice ritual running toward the parent: the service gives the parent advance notice of its
+information practices, and receives confirmation that the parent received it. An AuthZ
+credential runs the other way -- a parent-issued, cryptographically verifiable grant the
+ward carries -- so it models the parental AUTHORITY that 13-71-204(1) and 13-71-203 make
+load-bearing, not the statutory consent ceremony. A deployment wanting both would pair
+them; nothing here substitutes for the notice.
 
 Four credentials, all v2 ACDCs, all registry-bound, each validated against a
 purpose-authored JSON Schema (Draft 2020-12):
@@ -67,22 +79,22 @@ RECORDED DIVERGENCE: where the ward AID lives. Sam's diagram puts it in the ATTR
 of (2); the sibling names the ward only by an EDGE. Both preserve holder != subject, so this
 is a DISCLOSURE choice, and the edge form is better on Sam's own argument from #1515 that an
 edge "can also be blinded, which means that disclosure of the edge itself can be held back
-until the verifier (disclosee) has agreed not to exploit its correlatability" -- where an
-attribute in a WHOLE-disclosed credential cannot be held back at all. This module models
-SAM's placement because it is his diagram, and the question is open on #1550; Phase 4 shows
-the argument arriving as an actual leak, since the guardianship's expiry is Cara's 18th
-birthday and cannot be withheld.
+until the verifier (disclosee) has agreed not to exploit its correlatability" -- where a
+whole-disclosed attribute cannot be held back at all. This module models SAM's placement
+because it is his diagram, and the question is open on #1550; Phase 4 shows the argument
+arriving as an actual leak, since the guardianship's expiry is Cara's 18th birthday.
 
 The AuthZ payload is ILLUSTRATIVE and its syntax UNSETTLED. Sam says only that the field
 "contains the specifics of the authorization. The syntax TBD", and points at EVAC (Edge
 Verifiable Agent Control), sketched at the end of #1550 as a resource-capabilities map 'rc'
-of the form {resourceRoute: [capability, ...]}. That is modeled here, plus a time window,
-and no assertion reaches into it (the seam is _authz_capabilities, so a later syntax change
-is one function rather than a rewrite). One constraint on that syntax is not a matter of
-taste, and this example measured it by serializing rather than by arguing: a route written
-as a map LABEL falls under CESR's strict field-label grammar, so "social/feed" cannot be
-serialized in native CESR at all. The measurement, and the recommendation it produces for
-#1550 -- carry the route as a VALUE -- are at AUTHZ_BLOCK_SCHEMA.
+of the form {resourceRoute: [capability, ...]}. That is modeled here, plus the time window
+13-71-203 makes relevant, and no assertion reaches into it (the seam is
+_authz_capabilities, so a syntax change is one function rather than a rewrite). One
+constraint on that syntax is not taste, and this example measured it by serializing rather
+than arguing: a route written as a map LABEL falls under CESR's strict field-label grammar,
+so "social/feed" cannot be serialized in native CESR at all. The measurement, and the
+recommendation it produces for #1550 -- carry the route as a VALUE -- are at
+AUTHZ_BLOCK_SCHEMA.
 
 The negative that earns its place: a guardian cannot delegate more than he holds, so (4)'s
 capability tokens must be a SUBSET of (2)'s 'powers'. Over-reach is a binding property
@@ -131,8 +143,9 @@ def _actor_aid(cur, nxt):
 
 
 # STATE = the Utah state agency that endorses citizens and recognizes guardianships;
-# BOB = the custodial parent (guardian); CARA = the 14-year-old ward; SOCIAL = the
-# social-media platform that must gate a minor's access on parental authorization.
+# BOB = the custodial parent (guardian); CARA = the 17-year-old ward, who holds her own
+# keys; SOCIAL = the social media company, which under 13-71 must identify her as a minor
+# and hold her account to maximum-privacy defaults she cannot change on her own.
 STATE, BOB, CARA, SOCIAL = (_actor_aid(_SIGNERS[i], _SIGNERS[i + 4]) for i in range(4))
 
 # Per-example blinding nonces, derived (not pasted) from a distinct raw prefix so this
@@ -581,11 +594,12 @@ N_WC_ACDC, N_WC_E, N_WC_E_GUARD = 16, 17, 18
 # (4) ward AuthZ social: attribute uuid, acdc uuid, edge-section uuid, two edge uuids.
 N_AZ_A, N_AZ_ACDC, N_AZ_E, N_AZ_E_AUTH, N_AZ_E_SUBJ = 19, 20, 21, 22, 23
 
-# Cara's age at presentation (DOB 2012-04-10, presentation 2026-08-03). The 13-to-18 band
-# is exactly the band Utah's social-media law regulates, and the band in which a ward
-# operates her own device -- which is why the ward presents here and the guardian presents
-# in the sibling, whose ward is six (tests/acdc/test_guardianship_presentation.py).
-CARA_AGE = 14
+# Cara's age at presentation (DOB 2009-04-10, presentation 2026-08-03). 13-71 grades no
+# finer than "minor" (under 18), so her exact age is legally immaterial; what matters is
+# that she operates her own device and holds her own keys, which is why the ward presents
+# here and the guardian presents in the sibling, whose ward is seven
+# (tests/acdc/test_guardianship_presentation.py).
+CARA_AGE = 17
 
 
 def _citizen_registry(kind):
@@ -632,7 +646,7 @@ def _ward_citizen_attr():
     attributes."""
     return dict(d='', u=NONCES[N_WC_A],
                 name=dict(d='', u=NONCES[N_WC_NAME], name="Cara Carver"),
-                dob=dict(d='', u=NONCES[N_WC_DOB], dob="2012-04-10"),
+                dob=dict(d='', u=NONCES[N_WC_DOB], dob="2009-04-10"),
                 residence=dict(d='', u=NONCES[N_WC_RES], residence="Provo UT"))
 
 
@@ -658,19 +672,19 @@ def _guardian_attr(powers=None):
                 # not the date the parental right arose. For a custodial parent the
                 # latter is the ward's birth date, and an authority credential that both
                 # models agree is disclosed WHOLE cannot withhold an attribute -- so an
-                # effectiveDate of 2012-04-10 would hand every verifier Cara's exact
+                # effectiveDate of 2009-04-10 would hand every verifier Cara's exact
                 # birthdate while her own citizen credential was carefully withholding
                 # it. That is the docstring's disclosure argument arriving as a concrete
                 # leak rather than a principle, and it is dodged here rather than
                 # asserted, since a real deployment records the recognition date anyway.
                 effectiveDate="2026-01-06",
                 # Majority: Cara's 18th birthday. This DOES leak her birth month and day
-                # (2030-04-10 minus 18 years), and is left in as an honest residual --
+                # (2027-04-10 minus 18 years), and is left in as an honest residual --
                 # a termination date is load-bearing for a verifier in a way an
                 # effective date is not, so the fix is a coarser expiry (a quarter, a
                 # year) rather than dropping the field, and that is a schema decision
                 # for a deployment rather than something this example should invent.
-                expiryDate="2030-04-10")
+                expiryDate="2027-04-10")
 
 
 def _authz_block():
@@ -750,8 +764,8 @@ def _ward_citizen(kind, guardian=None, reg=None):
     credential, operator NI2I: the near issuee is Cara and the far issuee is Bob, so the
     subjects differ and the edge is a plain reference. The edge is what makes the ward's
     OWN credential declare that it is encumbered -- a verifier reading only Cara's
-    credential learns a guardianship stands over her identity, which is exactly what a
-    service gating a minor needs to know before it looks for an authorization.
+    credential learns a guardianship stands over her identity, which is what tells a
+    platform to look for an authorization before it honors a settings change.
     """
     if guardian is None:
         guardian = _guardian_credential(kind)
@@ -1004,7 +1018,7 @@ def test_wardauthz_credentials_JSON():
     assert guardian.sad['r'] == GUARDIAN_RULES_SAID
     assert guardian.sad['e']['citizen']['n'] == guardianCitizen.said
     assert guardian.sad['e']['citizen']['o'] == 'E1E'
-    assert guardian.said == "ENEm2GEIE0XFi4GqMsHFmCtPracHA5xDn0IRrTXnWjr9"
+    assert guardian.said == "EEFqTgzTDdysCOKfIqRtIzTWYhKkHov16QKXmI0R0BbM"
     assert_acdc_schema_valid(guardian)
 
     # (3) Ward as Citizen Ward: State -> Cara, and its edge is what declares that this
@@ -1016,7 +1030,7 @@ def test_wardauthz_credentials_JSON():
     assert wardCitizen.sad['r'] == WARD_RULES_SAID
     assert wardCitizen.sad['e']['guardian']['n'] == guardian.said
     assert wardCitizen.sad['e']['guardian']['o'] == 'NI2I'
-    assert wardCitizen.said == "EExThcF5yAjSgBXb6QCxWFKsT8PUZliRX64vRRn-mD46"
+    assert wardCitizen.said == "EI8xD7zuclwId0GunRi2e9q92K1oXuGfSo-HwaXaQOAQ"
     assert_acdc_schema_valid(wardCitizen)
 
     # (4) Ward AuthZ Social: BOB -> Cara, in BOB's own registry, two edges.
@@ -1029,7 +1043,7 @@ def test_wardauthz_credentials_JSON():
     assert wardAuthz.sad['e']['authority']['o'] == 'I2I'
     assert wardAuthz.sad['e']['subject']['n'] == wardCitizen.said
     assert wardAuthz.sad['e']['subject']['o'] == 'E1E'
-    assert wardAuthz.said == "EBzcl80p5eNMjk4cg-L-XI-cOrm3oZibqd84bypZloTB"
+    assert wardAuthz.said == "EDccew0We_pDxhtHrEOQcP4DIIBeteqZhaokGb7kXtNi"
     authzSchema = assert_acdc_schema_valid(wardAuthz)
 
     # The payload rides in the attribute block, reached only through the seam so the
@@ -1298,8 +1312,8 @@ def test_wardauthz_presentation_JSON():
                                         [guardian.sad['s']['$id'], "",
                                          ["a/i", "a/ward", "a/powers"]],
                                         [wardCitizen.sad['s']['$id'], "", ["a/i"]]]),
-                     attributes=dict(m="Prove a guardian authorized this minor to use "
-                                       "this service, and show the scope.",
+                     attributes=dict(m="Prove a guardian authorized this minor account "
+                                       "holder's settings, and show the scope.",
                                      g=AUTHZ_RULES_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == SOCIAL
@@ -1315,10 +1329,10 @@ def test_wardauthz_presentation_JSON():
                for _, _, paths in dp for p in paths)
     assert authzSchemaSaid == wardAuthz.sad['s']['$id']   # the origin Cara actually holds
     # The guardian's own citizen credential is a node in the DAG and is asked for
-    # nothing: the platform gating a minor has no business learning the parent's name.
+    # nothing: the platform has no business learning the parent's name or residence.
     assert guardianCitizen.sad['s']['$id'] not in [entry[0] for entry in dp]
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EOdPg07RtIzlFeSkwX8l5YAatqJLLInpRn-9Ww97Zihn"
+    assert apply.said == "EMeUXBWGbmhe5MvD0DTPD1ckI5MyscpSC92qVzcOJFxk"
 
     # 2. offer (Cara -> platform): commits ONLY to the SAID of the credential she is
     # offering and to the governance ref, and binds the apply. It deliberately does NOT
@@ -1335,9 +1349,9 @@ def test_wardauthz_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                  # solicited: "as per the apply"
-    assert offer.said == "EL0_DqqsSGKW-t4pjerj-27YHOPnwzOjqmc_eLHsyzKR"
+    assert offer.said == "EHwBEyvCRbsccjyS_UFNHBYbT7tRq8Z_s4jKD9eSc3LQ"
     assert wardAuthz.said.encode() in offer.raw        # the discloser's own commitment
-    assert b"Cara Carver" not in offer.raw and b"2012-04-10" not in offer.raw
+    assert b"Cara Carver" not in offer.raw and b"2009-04-10" not in offer.raw
     assert guardian.said.encode() not in offer.raw     # issuer commitments withheld...
     assert wardCitizen.said.encode() not in offer.raw
     assert guardianCitizen.said.encode() not in offer.raw
@@ -1347,7 +1361,7 @@ def test_wardauthz_presentation_JSON():
     agree = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EK2dHqxhGQ7apRiYBMgEDtSw9KtjVji2PMIFwOVXP5w0"
+    assert agree.said == "EIcfwLEL6zJ_4TegWOY30qOYAwq8jCYKlxhaLzXfH6Ea"
     svcSigner = _SIGNERS[3]                            # the platform's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1382,7 +1396,7 @@ def test_wardauthz_presentation_JSON():
     # The valid agree unlocks the grant.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EAOQ4viuiQX3R5bQ_7oU-hdfWc8vpKpDVhjwUigWaq98"
+    assert grant.said == "ECPr0RSNH4H__JNu5Bex2TSaMH_bnlb2P3-4C_Pk41wd"
 
     # What the platform receives is exactly what it asked for and no more: the
     # authorization payload, the guardianship's scope, and a binding to Cara.
@@ -1394,14 +1408,14 @@ def test_wardauthz_presentation_JSON():
     assert isinstance(granted['subject']['name'], str)  # ...with every attribute withheld
     assert isinstance(granted['subject']['dob'], str)
     assert b"Cara Carver" not in grant.raw             # name never on the wire
-    assert b"2012-04-10" not in grant.raw              # birthdate never on the wire
+    assert b"2009-04-10" not in grant.raw              # birthdate never on the wire
     assert b"Bob Carver" not in grant.raw              # nor the parent's identity
     # Honest residual, asserted present rather than quietly avoided: the guardianship
     # credential is disclosed WHOLE, so its expiry -- Cara's 18th birthday -- crosses the
     # wire and hands the platform her birth month and day. An attribute in a
     # whole-disclosed authority credential cannot be withheld the way an edge can, which
     # is the disclosure argument of the module docstring showing up as an actual leak.
-    assert b"2030-04-10" in grant.raw
+    assert b"2027-04-10" in grant.raw
     # The withheld blocks still recompute to the section SAID the credential commits to,
     # so the platform can prove the disclosure belongs to Cara's citizen credential.
     check = Compactor(mad=dict(granted['subject'], d=''), makify=True, kind=kind)
@@ -1416,7 +1430,7 @@ def test_wardauthz_presentation_JSON():
     admit = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EC5styk29zfJWRUIg4Ku1vIY_8U2nVxIgpxPU7rAnah2"
+    assert admit.said == "EIHZtaug8QZLED1659uJMKchvzttEnE7UmarnwiUOo5y"
 
 
 # ---------------------------------------------------------------------------
