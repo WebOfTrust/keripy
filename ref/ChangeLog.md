@@ -1,5 +1,20 @@
 # Change Log for keripy
 
+## 2.1.0-dev0
+
+*** This branch is meant to allow more accelerated development of the new features
+in the v1.0 and v1.1 of the KERI Suite of protocols. Backwards compatibility with
+the v0.X and v1.0 of the protocols will be added as needed.
+Note the code version and protocol versions are off by one.
+The release version of the code was set to v1 but this predated the specifications.
+So the v1.0 code is v0.X of the specs. Likewise the v1.0 of the specs if for the
+v2.X of the code. But as we are implementing the v1.0 of the specs in v2.0 of the code
+we discovered new desireable features for v1.1 of the specs and v2.1 of the code.
+The intermediate 2.0.0 branch largely
+provides that backwards compatibility but does not fully implement all the new
+features.
+
+
 ## 2.0.0-dev6
 
 *** kli witness start now logs startup/runtime failures at CRITICAL (with traceback) so
