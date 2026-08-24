@@ -1139,7 +1139,7 @@ def test_verifier_list_valued_operator(seeder):
         assert verfer.reger.saved.get(keys=near.saidb) is not None
 
         # A tuple is accepted as a sequence too, not just a list.
-        near = nearWithOp(("NI2I"), "tuple form")
+        near = nearWithOp(("NI2I",), "tuple form")
         assert verfer.reger.saved.get(keys=near.saidb) is not None
 
         # E1E alone imposes no issuer constraint, and reaching it via a list must not
