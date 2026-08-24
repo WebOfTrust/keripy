@@ -18,7 +18,7 @@ from tests.vdr import buildHab
 
 def test_v1_registry_version_across_lifecycle_with_v2_identifier():
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_2_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         for registry_type in ("standard", "signify"):
             rgy = Regery(hby=hby, name=registry_type, temp=True)
             try:
@@ -99,7 +99,7 @@ def test_tpwe():
     vcdig = "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
 
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
         registrar = Registrar(hby=hby, rgy=rgy, counselor=None)
 
@@ -117,7 +117,7 @@ def test_tpwe():
         # issue: anchor vcp so iss is valid, inject into tpwe
         reg_iss = rgy.makeRegistry(name="tpwe_iss", prefix=hab.pre, noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(i=reg_iss.vcp.pre, s=reg_iss.vcp.ked["s"], d=reg_iss.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
                              seqner=Number(num=rotser.sn),
@@ -131,14 +131,14 @@ def test_tpwe():
         # revoke: anchor vcp+iss, inject rev into tpwe, verify number value
         reg_rev = rgy.makeRegistry(name="tpwe_rev", prefix=hab.pre, noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
                              seqner=Number(num=rotser.sn),
@@ -173,7 +173,7 @@ def test_tmse():
 
     # tmse is populated correctly (inject and verify entries)
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         prefixer = hab.kever.prefixer
@@ -190,7 +190,7 @@ def test_tmse():
         # issue
         reg_iss = rgy.makeRegistry(name="tmse_iss", prefix=hab.pre, noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(i=reg_iss.vcp.pre, s=reg_iss.vcp.ked["s"], d=reg_iss.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
                              seqner=Number(num=rotser.sn),
@@ -204,14 +204,14 @@ def test_tmse():
         # revoke
         reg_rev = rgy.makeRegistry(name="tmse_rev", prefix=hab.pre, noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
                              seqner=Number(num=rotser.sn),
@@ -224,7 +224,7 @@ def test_tmse():
 
     # processMultisigEscrow is a no-op when counselor.complete is False
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         class _NeverComplete:
@@ -245,7 +245,7 @@ def test_tmse():
 
     # processMultisigEscrow drains tmse and seeds tede when complete
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         registrar = Registrar(
@@ -268,7 +268,7 @@ def test_tmse():
 
     # processMultisigEscrow drops entry on ValidationError
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         class _RaisesValidation:
@@ -289,7 +289,7 @@ def test_tmse():
 
 def test_tede():
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         registrar = Registrar(
@@ -342,7 +342,7 @@ def test_tede():
         # anchor reg_drain so tels has a digest at sn=0
         reg_drain = rgy.makeRegistry(name="diss_drain", prefix=hab.pre, noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(i=reg_drain.vcp.pre, s=reg_drain.vcp.ked["s"], d=reg_drain.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_drain.vcp,
                              seqner=Number(num=rotser.sn),
@@ -361,7 +361,7 @@ def test_escrow_suber_klas():
     SN = 42
 
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
-        hby, hab = buildHab(db, kpr, version=Vrsn_1_0, kind=Kinds.json)
+        hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         prefixer = hab.kever.prefixer
