@@ -83,7 +83,7 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
                                 origin=origin, artifacts=artifacts)
     grantIms = bytearray(grant.raw)
     grantIms.extend(grantAtc)
-    grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False,
+    grantResults = Parser().parse(ims=grantIms, framed=False,
                                                   processive=False)
     assert grantIms == bytearray()
     assert len(grantResults) == 1
@@ -102,7 +102,7 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
 
     grantDispatch = bytearray(grant.raw)
     grantDispatch.extend(grantAtc)
-    Parser(version=Vrsn_2_0).parse(ims=grantDispatch, framed=False, exc=exc)
+    Parser().parse(ims=grantDispatch, framed=False, exc=exc)
     assert grantDispatch == bytearray()
     storedGrant = hby.db.exns.get(keys=(grant.said,))
     assert storedGrant is not None
@@ -113,7 +113,7 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     admit, admitAtc = ipexAdmit(hab=receiver, message=admitMessage, grant=grant)
     admitIms = bytearray(admit.raw)
     admitIms.extend(admitAtc)
-    Parser(version=Vrsn_2_0).parse(ims=admitIms, framed=False, exc=exc)
+    Parser().parse(ims=admitIms, framed=False, exc=exc)
     assert admitIms == bytearray()
     storedAdmit = hby.db.exns.get(keys=(admit.said,))
     assert storedAdmit is not None
@@ -310,10 +310,9 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
     """
 
     with openHby(name="ipex-registry-lifecycle",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
-        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
+                 base="test") as hby:
+        amy = hby.makeHab(name="amy")
+        bob = hby.makeHab(name="bob")
 
         # Rebuild the same artifact pattern as the JSON worked example, but with
         # live Hab AIDs because the current IPEX builders sign through Hab.
@@ -503,11 +502,10 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
     """
 
     with openHby(name="ipex-selective-aggregate",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
-        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
-        vic = hby.makeHab(name="vic", version=Vrsn_2_0, kind=Kinds.json)
+                 base="test") as hby:
+        amy = hby.makeHab(name="amy")
+        bob = hby.makeHab(name="bob")
+        vic = hby.makeHab(name="vic")
 
         kind = Kinds.json
         ripper = regcept(israid=amy.pre, uuid=NONCES[3],
@@ -758,11 +756,10 @@ def test_partial_disclosure_compaction_IPEX_JSON():
     """
 
     with openHby(name="ipex-partial-compaction",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
-        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
-        vic = hby.makeHab(name="vic", version=Vrsn_2_0, kind=Kinds.json)
+                 base="test") as hby:
+        amy = hby.makeHab(name="amy")
+        bob = hby.makeHab(name="bob")
+        vic = hby.makeHab(name="vic")
 
         kind = Kinds.json
         ripper = regcept(israid=amy.pre, uuid=NONCES[0],
@@ -1083,11 +1080,10 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
     """
 
     with openHby(name="ipex-correlation-minimizing",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        amy = hby.makeHab(name="amy", version=Vrsn_2_0, kind=Kinds.json)
-        bob = hby.makeHab(name="bob", version=Vrsn_2_0, kind=Kinds.json)
-        vic = hby.makeHab(name="vic", version=Vrsn_2_0, kind=Kinds.json)
+                 base="test") as hby:
+        amy = hby.makeHab(name="amy")
+        bob = hby.makeHab(name="bob")
+        vic = hby.makeHab(name="vic")
 
         kind = Kinds.json
         states = ['issued', 'revoked']
