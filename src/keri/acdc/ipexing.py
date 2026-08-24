@@ -12,7 +12,7 @@ from hio.help import ogler
 
 from .. import Kinds
 from ..kering import Colds, Vrsn_2_0, sniff
-from ..core import (Counter, Codens, Diger, GenDex, Noncer, Number, Serdery, Texter,
+from ..core import (Counter, Codens, Diger, GenDex, Noncer, Number, Saider, Serdery, Texter,
                     exchange, messagize)
 from ..peer import cloneMessage
 
@@ -218,8 +218,8 @@ class IpexHandler:
             serder (Serder): Incoming IPEX exchange message.
             attachments (list | None): Parsed attachment payloads, unused in the
                 current linear workflow validation.
-            nests (list | None): Parsed V2 nested artifacts carried by grant
-                messages.
+            nests (list | None): Parsed V2 nested artifacts carried by offer
+                and grant messages.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -248,11 +248,26 @@ class IpexHandler:
             if nests:
                 return False
         elif verb == Ipex.offer:
-            if "o" not in attrs or nests or "dp" not in q or not isinstance(q["dp"], list):
+            if ("o" not in attrs or not isinstance(attrs["o"], str)
+                    or "dp" not in q or not isinstance(q["dp"], list) or not nests):
                 return False
+            try:
+                Saider(qb64=attrs["o"])
+            except Exception:
+                return False
+            for idx, nest in enumerate(nests):
+                nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+                if not nserder.verify():
+                    return False
+                if idx == 0 and not nserder.compare(attrs["o"]):
+                    return False
 
         elif verb == Ipex.grant:
-            if "o" not in attrs or not nests:
+            if "o" not in attrs or not isinstance(attrs["o"], str) or not nests:
+                return False
+            try:
+                Saider(qb64=attrs["o"])
+            except Exception:
                 return False
             for idx, nest in enumerate(nests):
                 nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
@@ -400,15 +415,17 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
     return serder, atc
 
 
-def offer(hab, message, origin, apply=None, recp=None, dt=None, kind=None, gvrsn=None,
-          modifiers=None, attrs=None):
+def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
+          kind=None, gvrsn=None, modifiers=None, attrs=None):
     """Create a signed V2 IPEX ``offer`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable offer message.
-        origin (Serder | bytes | bytearray): Origin presentation or credential
-            artifact identified in ``a.o``.
+        origin (Serder | bytes | bytearray): Origin metadata artifact
+            identified in ``a.o`` and carried as the first nested artifact.
+        artifacts (list[Serder | bytes | bytearray] | None): Optional
+            attached metadata artifacts carried after ``origin``.
         apply (Serder | None): Optional prior ``apply`` exchange.
         recp (str | None): Recipient AID. Defaults to the prior ``apply``
             sender; must be supplied directly for an offer-first exchange
@@ -449,6 +466,12 @@ def offer(hab, message, origin, apply=None, recp=None, dt=None, kind=None, gvrsn
     data = dict(attrs) if attrs is not None else {}
     data["m"] = message
     data["o"] = _streamSerder(origin).said
+    nests = [_normalizeNestedStream(origin)]
+    if artifacts is not None:
+        if not isinstance(artifacts, list):
+            raise TypeError("artifacts must be a list when provided")
+        for artifact in artifacts:
+            nests.append(_normalizeNestedStream(artifact))
     mods = dict(modifiers) if modifiers else {}
     mods.setdefault("dp", [])
 
@@ -467,7 +490,7 @@ def offer(hab, message, origin, apply=None, recp=None, dt=None, kind=None, gvrsn
         kind=kind if kind is not None else hab.kever.serder.kind,
     )
 
-    atc = bytearray(_sign(hab=hab, serder=serder, gvrsn=gvrsn))
+    atc = bytearray(_sign(hab=hab, serder=serder, nests=nests, gvrsn=gvrsn))
     del atc[:serder.size]
     return serder, atc
 

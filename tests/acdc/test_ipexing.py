@@ -216,7 +216,7 @@ def test_ipex_v2_builders_parse_happypath():
         assert offerResult.serder.ked["r"] == "/ipex/offer"
         assert offerResult.serder.ked["a"] == offerExn.ked["a"]
         assert offerResult.serder.ked["p"] == applyExn.said
-        assert offerResult.nests == []
+        assert [nest.serder.said for nest in offerResult.nests] == [acdc.said]
 
         # Agree
         agreeIms = bytearray(agreeExn.raw)
@@ -344,6 +344,73 @@ def test_ipex_v2_grant_carries_multiple_registry_updates():
         assert "iss" not in storedGrant.ked["a"]
 
 
+def test_ipex_v2_offer_metadata_origin_can_differ_from_grant_origin():
+    """Offer can carry a metadata DAG whose origin differs from the later grant origin."""
+    with openHby(name="ipex-v2-offer-metadata-origin",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        registry = regcept(israid=hab.pre)
+        offerMeta = acdcmap(israid=hab.pre,
+                            regid=registry.said,
+                            attribute=dict(d="", rules="club-entry"),
+                            iseaid=hab.pre)
+        grantOrigin = acdcmap(israid=hab.pre,
+                              regid=registry.said,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              iseaid=hab.pre)
+        schema = grantOrigin.sad["s"]["$id"]
+        issued = blindate(regid=registry.said,
+                          prior=registry.said,
+                          blid=Blinder.blind(acdc=grantOrigin.said, state="issued", sn=1).said)
+        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+
+        applyExn, _ = ipexApply(hab=hab,
+                                recp=hab.pre,
+                                message="Please issue a credential",
+                                attrs=dict(role="member"),
+                                modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+        offerExn, offerAtc = ipexOffer(hab=hab,
+                                       message="Here is the metadata offer",
+                                       origin=offerMeta,
+                                       apply=applyExn)
+        agreeExn, _ = ipexAgree(hab=hab,
+                                message="I agree to the metadata offer",
+                                offer=offerExn)
+        grantExn, grantAtc = ipexGrant(hab=hab,
+                                       recp=hab.pre,
+                                       message="Here is the granted credential",
+                                       origin=grantOrigin,
+                                       artifacts=[issued, anc],
+                                       agree=agreeExn)
+
+        offerIms = bytearray(offerExn.raw)
+        offerIms.extend(offerAtc)
+        offerResults = Parser(version=Vrsn_2_0).parse(ims=offerIms,
+                                                      framed=False,
+                                                      processive=False)
+        assert offerIms == bytearray()
+        assert len(offerResults) == 1
+
+        grantIms = bytearray(grantExn.raw)
+        grantIms.extend(grantAtc)
+        grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
+                                                      framed=False,
+                                                      processive=False)
+        assert grantIms == bytearray()
+        assert len(grantResults) == 1
+
+        assert offerExn.ked["a"]["o"] == offerMeta.said
+        assert grantExn.ked["a"]["o"] == grantOrigin.said
+        assert offerExn.ked["a"]["o"] != grantExn.ked["a"]["o"]
+        assert [nest.serder.said for nest in offerResults[0].nests] == [offerMeta.said]
+        assert [nest.serder.said for nest in grantResults[0].nests] == [
+            grantOrigin.said,
+            issued.said,
+            _serder(anc).said,
+        ]
+
+
 def test_ipex_v2_dispatch_linear_and_spurn():
     """Exercise linear routing, rejection, and spurn handling through Exchanger."""
     with openHby(name="ipex-v2-dispatch",
@@ -443,6 +510,15 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         assert "acdc" not in storedOffer.ked["a"]
         assert storedOffer.ked["q"]["dp"] == []
         assert storedOffer.ked["p"] == apply0.said
+
+        storedOfferMsg = serializeMessage(hby, offer0.said, framed=True)
+        storedOfferIms = bytearray(storedOfferMsg)
+        storedOfferResults = Parser(version=Vrsn_2_0).parse(ims=storedOfferIms,
+                                                            framed=False,
+                                                            processive=False)
+        assert storedOfferIms == bytearray()
+        assert len(storedOfferResults) == 1
+        assert [nest.serder.said for nest in storedOfferResults[0].nests] == [acdc.said]
 
         storedAgree = hby.db.exns.get(keys=(agree0.said,))
         assert storedAgree.ked["a"]["m"] == "I agree to the offer"
@@ -615,7 +691,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
         assert offerIms == bytearray()
         assert len(offerResults) == 1
         offerResult = offerResults[0]
-        assert offerResult.nests == []
+        assert [nest.serder.said for nest in offerResult.nests] == [acdc.said]
 
         # Parse Grant for assertions
         grantIms = bytearray(grantExn.raw)
@@ -700,7 +776,8 @@ def test_ipex_v2_rejects_offer_without_dp():
 
         atc = bytearray(hab.endorse(serder=badOffer,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0))
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(acdc)]))
         del atc[:badOffer.size]
 
         # Rebuild the tampered wire message with the malformed signed body.
@@ -746,7 +823,8 @@ def test_ipex_v2_rejects_offer_with_missing_origin_attr_without_throwing():
 
         atc = bytearray(hab.endorse(serder=badOffer,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0))
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(acdc)]))
         del atc[:badOffer.size]
 
         ims = bytearray(badOffer.raw)
@@ -756,6 +834,135 @@ def test_ipex_v2_rejects_offer_with_missing_origin_attr_without_throwing():
 
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(badOffer.said,)) is None
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_offer_with_nonstring_origin_without_throwing():
+    with openHby(name="ipex-v2-bad-offer-origin-type",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        registry = regcept(israid=hab.pre)
+        acdc = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+
+        exn, _ = ipexOffer(hab=hab,
+                           recp=hab.pre,
+                           origin=acdc,
+                           message="Here is the offered credential")
+        sad = dict(exn.ked)
+        sad["a"] = dict(exn.ked["a"])
+        sad["a"]["o"] = 123
+        badOffer = SerderKERI(sad=sad, makify=True, verify=False)
+
+        atc = bytearray(hab.endorse(serder=badOffer,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(acdc)]))
+        del atc[:badOffer.size]
+
+        ims = bytearray(badOffer.raw)
+        ims.extend(atc)
+
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(badOffer.said,)) is None
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_offer_without_origin_nested_artifact():
+    with openHby(name="ipex-v2-bad-offer-origin-nest",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        registry = regcept(israid=hab.pre)
+        origin = acdcmap(israid=hab.pre,
+                         regid=registry.said,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         iseaid=hab.pre)
+        sibling = acdcmap(israid=hab.pre,
+                          regid=registry.said,
+                          attribute=dict(d="", rules="club-entry"),
+                          iseaid=hab.pre)
+
+        exn, _ = ipexOffer(hab=hab,
+                           recp=hab.pre,
+                           origin=origin,
+                           artifacts=[sibling],
+                           message="Here is the offered credential")
+
+        atc = bytearray(hab.endorse(serder=exn,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(sibling)]))
+        del atc[:exn.size]
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_grant_with_invalid_origin_said_without_throwing():
+    with openHby(name="ipex-v2-bad-grant-origin-said",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        registry = regcept(israid=hab.pre)
+        acdc = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+        iss = blindate(regid=registry.said,
+                       prior=registry.said,
+                       blid=Blinder.blind(acdc=acdc.said, state="issued", sn=1).said)
+        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+
+        exn, _ = ipexGrant(hab=hab,
+                           recp=hab.pre,
+                           message="Here is the granted credential",
+                           origin=acdc,
+                           artifacts=[iss, anc])
+        sad = dict(exn.ked)
+        sad["a"] = dict(exn.ked["a"])
+        sad["a"]["o"] = "not-a-said"
+        badGrant = SerderKERI(sad=sad, makify=True, verify=False)
+
+        atc = bytearray(hab.endorse(serder=badGrant,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(acdc), _nest(iss), _nest(anc)]))
+        del atc[:badGrant.size]
+
+        ims = bytearray(badGrant.raw)
+        ims.extend(atc)
+
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(badGrant.said,)) is None
         assert recorder.items == []
 
 
