@@ -6,6 +6,7 @@ tests.app.agenting module
 import time
 
 from hio.base import doing, tyming
+from hio.core import http
 
 from keri import kering, core
 from keri.core import coring, serdering
@@ -14,6 +15,55 @@ from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
 from keri.db import basing, dbing
 from keri.vdr import eventing, viring
+
+
+def test_http_messengers_read_state_after_client_service():
+    expected = http.clienting.Response(
+        version=(1, 1),
+        status=204,
+        reason=None,
+        headers={},
+        body=b"",
+        data=None,
+        request=None,
+        errored=False,
+        error=None,
+    )
+
+    # Test both types of messenger
+    for klas in (agenting.HTTPMessenger, agenting.HTTPStreamMessenger):
+        kwa = dict(
+            hab=None,
+            wit="witness",
+            url="http://127.0.0.1:1",
+        )
+        if klas is agenting.HTTPStreamMessenger:
+            kwa["msg"] = b"message"
+
+        messenger = klas(**kwa)
+        serviced = False
+
+        def service():  # mock just to verify order of call to messenger
+            nonlocal serviced
+            if not serviced:
+                messenger.client.responses.append(expected._asdict())  # mock HTTP success
+                serviced = True
+
+        messenger.client.service = service  # Inject mock into service
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[messenger])
+        doist.enter()
+
+        try:
+            doist.recur()  # iterate doers normally exactly once
+
+            assert serviced
+            if isinstance(messenger, agenting.HTTPStreamMessenger):
+                assert messenger.done  # stream messenger is done after one message
+                assert messenger.rep == expected  # should be exactly one response
+            else:
+                assert list(messenger.sent) == [expected]  # should be exactly one response
+        finally:
+            doist.exit()
 
 
 def test_receiptor_tocks_are_generator_local():
