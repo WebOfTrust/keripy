@@ -1,13 +1,33 @@
 # -*- coding: utf-8 -*-
 """
-tests.acdc.test_bulk_issuance module
+tests.acdc.test_bulk_issuance_shared_registry module
 
-Worked, working example of *bulk-issued private ACDCs* (ACDC spec section 15.4,
-"Bulk-Issued Private ACDCs") used to defeat cross-verifier correlation for SEDI
+Worked, working example of BASIC bulk-issued private ACDCs -- the SHARED-REGISTRY
+form (ACDC spec section 15.4, "Bulk-Issued Private ACDCs" and its "Basic Bulk
+Issuance Procedure"): all M copies of a set share ONE registry, and one blinded
+aggregate 'B' commits the whole set. It defeats cross-verifier correlation for SEDI
 (Utah's State-Endorsed Digital Identity, Utah Code 63A-20). It is a sibling to
-tests/acdc/test_clc_disclosure.py (contractually-protected disclosure) and
+tests/acdc/test_cp_disclosure.py (contractually-protected disclosure) and
 tests/acdc/test_guardianship_presentation.py (represented presentation), and it
 adds the one axis neither shows: IDENTIFIER-level cross-verifier unlinkability.
+
+WHICH VARIANT IS THIS, AND WHICH ONE DOES UTAH WANT? This module is the SIMPLE way:
+one shared registry per set, aggregate 'B', one issuance commitment covering all M
+copies. It is the right thing to read first, because 'B' and the per-copy derivation
+are the foundation everything else builds on. But it is NOT what the State of Utah
+intends to deploy. Sam Smith, on ACDC spec PR trustoverip/kswg-acdc-specification#200
+(2026-07-23): "From a SEDI perspective they want to do Independent registry bulk
+issuance which does not use B." That fancier variant -- one registry PER COPY, no
+aggregate, and a single Merkle-root batch seal providing herd privacy -- comes in two
+arrangements, each with its own sibling module:
+tests/acdc/test_bulk_issuance_cocreated_registry.py, where each copy's registry is
+incepted with the set and derived from the shared salt, and
+tests/acdc/test_bulk_issuance_precreated_registry.py, where registries are incepted in
+quantity ahead of time and assigned later, which is the SEDI deployment target. Read
+this one for the mechanics; read the pre-created one for what Utah plans to run. The
+honest RESIDUAL this
+module asserts rather than hides (the shared registry SAID and 'B' recurring in every
+context, see test_partition_across_verifiers_JSON) is exactly what that module closes.
 
 The problem, from keripy discussion #1515. The sibling examples achieve ATTRIBUTE
 minimization (reveal "over 21", hide the birthdate) but still hand every verifier a
@@ -68,9 +88,12 @@ this example does NOT close, beyond the shared registry/B (see the partition tes
 cross-verifier join key, removable only by the Merkle-INCLUSION variant (panel
 PRV-F3); (b) even with per-context AID strings, a real deployment that witnesses the
 M holder AIDs on a shared witness pool / endpoint / mailbox re-links them via KEL
-discovery metadata (spec L2891; panel PRV-F2). The independent-AID and
-independent-registry/herd variants (spec 15.4) raise the technical bar further and are
-a deliberate follow-on (tick 6sjz), not this example.
+discovery metadata (spec L2891; panel PRV-F2). The independent-AID variant IS applied
+here (per-copy ALICE_k, below); the independent-REGISTRY and herd-anchoring variants
+(spec 15.4) raise the technical bar further and live in the two sibling modules
+tests/acdc/test_bulk_issuance_cocreated_registry.py and
+tests/acdc/test_bulk_issuance_precreated_registry.py, both of which close residual (a)
+outright -- neither has a [b_k] list to disclose because neither has an aggregate at all.
 
 A note on altitude. Like the sibling examples, this one models the credential graph,
 the bulk derivation, the blinded aggregate, and the registry state at the
@@ -136,12 +159,40 @@ BULK_SALT = b'bulkworkexamsalt'
 BULK_SIZE = 5
 
 
+def _hx(index):
+    """Render a derivation-path index as LOWERCASE HEX with no leading zeros.
+
+    Every index that becomes part of an HD derivation path goes through here. ACDC spec
+    15.4 currently says a bulk-issuance path index is "the decimal or hexadecimal textual
+    representation" of the index, which is an either/or that no implementation can honor:
+    the two renderings agree only for indices 0-9 and diverge from 10 onward ("10" vs
+    "a"), so two conformant implementations derive different nonces, different SAIDs and
+    different registries for every copy from the tenth. Hex is what KERI's HD paths
+    actually use everywhere -- Salter.signers (src/keri/core/signing.py:484), SaltyCreator
+    (src/keri/app/keeping.py:542,544) and Blinder.makeUUID via Number.snh
+    (src/keri/core/structing.py:1479) all render "{:x}", as does signify-ts
+    (src/keri/core/manager.ts:296) -- and it is what both specs already say for this same
+    object in prose (KERI spec L1914 / ACDC spec L3328: "the hex representation of the
+    count offset"). Sam's keripy discussion #929, the rationale for the separator-free
+    salty path, states the premise as "hex strings with no zero pre-padding" and builds
+    its whole proof on it.
+
+    This example previously rendered indices in decimal. That was not merely a latent
+    disagreement: the age credential's edge blocks sit at nested slots 20 and 21, which
+    decimal renders "20"/"21" and hex renders "14"/"15", so the divergence was already
+    live and every SAID below moved when it was corrected. Pinning the rendering in the
+    spec is proposed in trustoverip/kswg-acdc-specification#204.
+    """
+    return f"{index:x}" if isinstance(index, int) else index
+
+
 class _BulkNonces:
     """Deterministic per-copy nonce derivation for a bulk-issued set (ACDC spec 15.4).
 
     Every nonce for every copy is derived from ONE shared secret salt by argon2id
     (Salter.stretch) at a hierarchical path keyed on the copy index k, then wrapped as a
-    256-bit salty nonce (Noncer):
+    256-bit salty nonce (Noncer). Every index in a path is lowercase hex, no leading
+    zeros (see _hx):
 
         path "k"    -> copy k's top-level ACDC uuid  u_k
         path "k/j"  -> copy k's nested block j uuid   (attribute section j=0, blocks j>=1)
@@ -161,7 +212,7 @@ class _BulkNonces:
 
     def u(self, k, j=None):
         """Copy k's uuid: the top-level ACDC uuid (j is None) or nested block j's uuid."""
-        return self._nonce(f"{k}" if j is None else f"{k}/{j}")
+        return self._nonce(_hx(k) if j is None else f"{_hx(k)}/{_hx(j)}")
 
     def v(self, k):
         """Copy k's blinding factor v_k, derived at the path "k.".
@@ -179,7 +230,7 @@ class _BulkNonces:
         path unambiguously (proposed fix: "k."). Until then, this path is a keripy-local
         convention, not a ratified interop invariant.
         """
-        return self._nonce(f"{k}.")
+        return self._nonce(f"{_hx(k)}.")
 
 
 def _blind_said(v, d):
@@ -253,6 +304,23 @@ def test_bulk_derivation_primitive_JSON():
     # each regenerate the set independently -- neither stores it).
     assert [_BulkNonces(BULK_SALT).u(k) for k in range(M)] == us
     assert [_BulkNonces(BULK_SALT).v(k) for k in range(M)] == vs
+
+    # The path index rendering is LOWERCASE HEX, no leading zeros -- pinned by assertion
+    # rather than left to the coincidence that indices 0-9 render identically in both
+    # bases. Copy 10's uuid MUST derive at path "a", never at path "10". Every SAID in
+    # this module depends on this; get it wrong and nothing cross-verifies from the tenth
+    # copy onward (and, via the nested slots 20/21 used by the age edge, from the first).
+    salter = Salter(raw=BULK_SALT)
+
+    def _at(path):
+        return Noncer(raw=salter.stretch(size=32, path=path, temp=True),
+                      code=NonceDex.Salt_256).qb64
+
+    assert nonces.u(10) == _at("a")
+    assert nonces.u(10) != _at("10")
+    assert nonces.u(1, 20) == _at("1/14")            # the age edge slots, already >9
+    assert nonces.v(255) == _at("ff.")
+    assert _hx(0) == "0" and _hx(15) == "f" and _hx(16) == "10"   # no padding, lowercase
     # Uniqueness: every u_k distinct, every v_k distinct, and the blinding path "k."
     # never collides with the uuid path "k" -- the u and v spaces are disjoint.
     assert len(set(us)) == M and len(set(vs)) == M
@@ -286,7 +354,7 @@ def test_bulk_derivation_primitive_JSON():
 # Phase 2: the bulk sedi-id set + its shared blindable registry (keyed on B).
 # ===========================================================================
 # Schema helpers, ported verbatim in intent from the sibling SEDI examples
-# (test_clc_disclosure.py / test_guardianship_presentation.py).
+# (test_cp_disclosure.py / test_guardianship_presentation.py).
 def _saidify_schema(mad, kind=Kinds.json):
     """Compute a JSON Schema's SAID and return (said, schema-with-$id). Mirrors the
     sibling examples: a Mapper self-addresses the '$id' field (which must be first)."""
@@ -724,8 +792,8 @@ def test_bulk_sedi_age_set_JSON():
 
     # Pinned reproducible values (derived, not pasted).
     assert ageReg.said == "EEoc-CPP2nh8RoNYLL1fLKDYogKM9N2aKhuOwvk_qTiv"   # shared age registry
-    assert Bage == "EAVHvdSmGMTUudmJpnktavMhJosgr9p8HgfzIogDumtd"          # blinded aggregate B_age
-    assert ageCopies[0].said == "EHApv7RymJmbsCOvhzUuXgNFg_2IP0-MstWfNWj4oom0"
+    assert Bage == "EMdK65I5Yb9drnJ5QbKri6KNAS_zdrn5IdE7FzsdFERS"          # blinded aggregate B_age
+    assert ageCopies[0].said == "EI7SE4GIut8JhdmBBmPOUe-xnuIRyH5GMPwaXZBY54g_"
     assert ageAggors[0].agid == "EIhjnMKnP0I7Tzngtv4DPnvTc8szhi0NIdIQhXm0GZLU"
 
     # Selective disclosure over copy 0's aggregate: reveal over-21 + issuee, hide the rest.
@@ -873,8 +941,9 @@ def test_partition_across_verifiers_JSON():
     a hand-picked few. The holder AID IS partitioned here (the independent-AID variant),
     which is the dominant correlator basic bulk issuance would have left. The one residual
     is the SHARED registry (and the aggregate B) keyed per set -- a contract-gated
-    2nd-party correlator that full 3rd-party decorrelation (independent/herd registries via
-    a Sparse-Merkle-Tree root, tick 6sjz) would remove; it is asserted PRESENT in both, not
+    2nd-party correlator that full 3rd-party decorrelation (independent registries under a
+    single Merkle-root batch seal) would remove -- the arrangement Utah intends, worked in
+    tests/acdc/test_bulk_issuance_precreated_registry.py. It is asserted PRESENT here, not
     hidden. Public issuer/schema identifiers are shared by the whole population and single
     out no one.
     """
@@ -891,8 +960,8 @@ def test_partition_across_verifiers_JSON():
     assert k1 != k2                                       # per-verifier spend is injective
     pres1 = _presentation(kind, v1, idCopies, ageCopies, presNonces)
     pres2 = _presentation(kind, v2, idCopies, ageCopies, presNonces)
-    assert pres1.said == "EAkAGbSXZo8nT1HOvI8gF-zMeFLw_ymmMafsRZao2lTi"   # Alcove context
-    assert pres2.said == "EFBArucmWAjDKX-oE25MUvaVEWgqiCj49UTbH9XJL56_"   # dispensary context
+    assert pres1.said == "EE_6aAc5PGrQLmvQU4PTjbNldANYM_wQG7L7jCnN3Ig2"   # Alcove context
+    assert pres2.said == "ENYW0L2hrzatl4cgm_heeL0gVhoCyS7hCOPAjRtXIeLO"   # dispensary context
 
     # Each presentation verifies (I2I same-holder to copy-k sources) and rides the over-21
     # selective disclosure.
@@ -926,7 +995,7 @@ def test_partition_across_verifiers_JSON():
     assert pres1.said != pres2.said                       # presentation SAID partitioned
 
     # --- RESIDUAL: the shared registry (and B) recur in BOTH contexts -- the honest gap
-    # that independent/herd registries (tick 6sjz) would close. Asserted present, not hidden.
+    # that independent registries close (see the two independent-registry sibling modules).
     assert idCopies[k1].sad['rd'] == idCopies[k2].sad['rd'] == idReg.said   # shared id registry
     assert ageCopies[k1].sad['rd'] == ageCopies[k2].sad['rd'] == ageReg.said  # shared age registry
     assert Bid and Bage                                   # the aggregates are per-set, shared
@@ -965,8 +1034,14 @@ def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
     is built with a per-presentation salt, so it is an ephemeral, not a stable correlator)
     and a public governance ref. This is the 'correlation-budget doctrine' as
     policy-by-construction -- an EGF/implementation-guide requirement, not a schema change.
+
+    Its query block carries an EMPTY disclosure-paths list, `dp: []`. Because this offer
+    is SOLICITED -- `prior` binds the apply it answers -- an empty `dp` means "the same
+    paths the apply asked for" (#1549). Restating them would be redundant, and here it
+    would also be a second place for the two messages to drift.
     """
     return exchange(sender=sender, receiver=receiver, route="/ipex/offer", prior=prior,
+                    modifiers=dict(dp=[]),
                     attributes=dict(acdc=presentationSaid, governance=governance),
                     stamp=OFFER_STAMP, kind=kind)
 
@@ -996,13 +1071,73 @@ def test_disclosure_gating_and_revocation_JSON():
     pres = _presentation(kind, verifier, idCopies, ageCopies, presNonces)
 
     # 1. apply (verifier -> holder): the challenge (schema/fields + governance).
+    #
+    # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
+    # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, prefix, [paths])
+    # triples -- see the same construct in tests/acdc/test_cp_disclosure.py, and
+    # WebOfTrust/keripy discussion #1549 for the rules.
+    #
+    # The middle element is a path prefix: the DAG-absolute route to the ACDC the
+    # entry's schema SAID names, either empty or a route that both begins and ends with
+    # '/'. It is EMPTY on both entries here, which makes the paths ACDC-relative and
+    # leaves the breadth-first POSITION of each triple to say which ACDC it is about
+    # (@SmithSamuelM, #1549). The effective path is prefix + entry, concatenated with
+    # nothing between them, so an entry never leads with '/'.
+    #
+    # Bulk issuance is exactly why the list form matters here. The verifier names a
+    # SCHEMA SAID, which is shared by all M copies in the set and is therefore the one
+    # identifier that is deliberately NOT partitioned across presentation contexts. Had
+    # `dp` stayed a dict keyed by schema SAID, a DAG carrying two copies drawn from the
+    # same bulk-issued set would collapse onto a single key -- the ordered list keeps
+    # each copy addressable while the copy SAIDs themselves stay per-context.
+    #
+    # The zeroth entry is the DAG's origin node (#1549): the self-presentation ALICE_k
+    # issues to this verifier. Its schema is the one part of the presentation the
+    # verifier knows in advance, because the EGF fixes the shape of the presentation it
+    # will accept (@SmithSamuelM, #1542) -- and, unlike the copy SAIDs, a schema SAID is
+    # shared across contexts, so naming it costs nothing in correlation. The verifier
+    # asks it only for issuer and issuee: who is presenting, and that the presentation
+    # is addressed to this verifier rather than replayed from another context.
+    #
+    # All THREE nodes of the DAG get an entry, in breadth-first order: the presentation,
+    # then sedi-id and sedi-age, which the presentation's edge block names in that order.
+    # With empty prefixes it is POSITION that says which ACDC an entry is about, so the
+    # list cannot skip a node -- an entry for sedi-age at index 1 would sit where sedi-id
+    # belongs, and its schema SAID would contradict its position.
+    #
+    # sedi-id is asked for its issuee alone, and that is not a courtesy: BOTH edge
+    # operators in this DAG are checked against it. I2I holds only when the presentation's
+    # issuer is the issuee of each source, and E1E holds only when sedi-age and sedi-id
+    # share an issuee (see _verify_presentation and _verify_identity_edge). The edge blocks
+    # carry the far node's SAID and schema, never its issuee, so a verifier that never sees
+    # sedi-id's 'a/i' has to take the whole identity relation on faith. It costs nothing in
+    # correlation: that issuee is ALICE_k, which the age credential's 'A/i' already
+    # discloses, and the two matching is exactly what the operators assert.
+    presSchemaSaid, _ = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
+                     modifiers=dict(dp=[[presSchemaSaid, "", ["i", "a/i"]],
+                                        [idCopies[k].sad['s']['$id'], "", ["a/i"]],
+                                        [ageCopies[k].sad['s']['$id'], "",
+                                         ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21.",
-                                     disclose={ageCopies[k].sad['s']['$id']:
-                                               ["/A/i", "/A/over21"]},
                                      g=GOVERNANCE_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply"
+    dp = apply.sad['q']['dp']
+    assert dp == [[presSchemaSaid, "", ["i", "a/i"]],
+                  [idCopies[k].sad['s']['$id'], "", ["a/i"]],
+                  [ageCopies[k].sad['s']['$id'], "", ["A/i", "A/over21"]]]
+    # One entry per DAG node, breadth-first, so position and schema SAID agree.
+    assert len(dp) == 3
+    # Empty prefix on every entry, so the paths are relative to the ACDC each entry's
+    # position names, and none of them leads with '/'.
+    assert [entry[1] for entry in dp] == ["", "", ""]
+    assert all(not p.startswith("/") for _, _, paths in dp for p in paths)
+    assert presSchemaSaid == pres.sad['s']['$id']   # the origin the holder actually issues
+    # The schema SAID is shared across the whole bulk set by design; the request names
+    # it, never a copy SAID, so the apply itself introduces no cross-context correlator.
+    assert ageCopies[k].said.encode() not in apply.raw
+    assert idCopies[k].said.encode() not in apply.raw
 
     # 2. offer (holder -> verifier): via the leak-proof constructor. NO source SAIDs, NO v_k.
     offer = _offer(kind, sender=ALICES[k], receiver=verifier, prior=apply.said,
