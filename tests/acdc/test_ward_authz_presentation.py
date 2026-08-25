@@ -1331,6 +1331,22 @@ def test_wardauthz_presentation_JSON():
 
     # 1. apply (platform -> Cara): the challenge -- which schemas and which fields.
     #
+    # It carries the ANCHORED-EXCHANGE field 'ax' in the attribute block (#1613), as a
+    # LIST of booleans -- one element per DAG, and this presentation is a single DAG
+    # (#1627's "Use Required Lists", the same shape as the grant's 'o' for the same
+    # reason). The value is False, and the field is present-and-false rather than absent
+    # so its shape is visible: #1613 treats a missing 'ax' as no anchoring requirement,
+    # so the two are equivalent here.
+    #
+    # False is the honest value. A truthy 'ax' would oblige Cara to anchor the grant in
+    # her own KEL, and this module is data-structure-level throughout -- there is no KEL
+    # to anchor in. It is worth saying that a real deployment might well set it: Cara is
+    # the issuee presenting her own entitlement, which is exactly the replay case #1613
+    # wants a fresh proof-of-control for. Note also that the mandatory rule at #1613 does
+    # not fire here -- it binds when an ACDC in the DAG signals a presentation-anchor
+    # registry via 'rd' and 'i' at the top level of its ATTRIBUTE block, and no
+    # credential in this graph carries 'rd' there (it sits at the ACDC top level).
+    #
     # It does NOT name a governance framework. An earlier draft carried the AuthZ rules
     # SAID here as 'g' and again in the offer as 'governance', which was two labels for
     # a pointer the credential already publishes in its own rules section (asserted in
@@ -1416,7 +1432,8 @@ def test_wardauthz_presentation_JSON():
                                         [guardianCitizen.sad['s']['$id'], "",
                                          ["a/i"]]]),
                      attributes=dict(m="Prove a guardian authorized this minor account "
-                                       "holder's settings, and show the scope."),
+                                       "holder's settings, and show the scope.",
+                                     ax=[False]),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == SOCIAL
     dp = apply.sad['q']['dp']
@@ -1435,9 +1452,10 @@ def test_wardauthz_presentation_JSON():
     # Every node the binding reads is asked for, and every node in the DAG is a node the
     # binding reads -- so the request covers the DAG exactly.
     assert len(dp) == 4
-    assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m'}
+    assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'ax'}
     assert 'g' not in apply.sad['a']            # governance lives in ACDC rules
-    assert apply.said == "EK8c54LovECAuyNpNjuRdCvPxrDFQe1cRgMMN7Y9bSaK"
+    assert apply.sad['a']['ax'] == [False]      # unanchored exchange (#1613, #1627)
+    assert apply.said == "EM852Md0tpcxzoLO_ecuWlgZl-M_C7nnVC8gM2NUbJG-"
 
     # 2. offer (Cara -> platform): commits ONLY to the SAID of the credential she is
     # offering, and binds the apply. It deliberately does NOT
@@ -1460,13 +1478,14 @@ def test_wardauthz_presentation_JSON():
     # (#1549), so Cara restates nothing and the two messages cannot drift.
     offer = exchange(sender=CARA, receiver=SOCIAL, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
-                     attributes=dict(acdc=wardAuthz.said),
+                     attributes=dict(acdc=wardAuthz.said, ax=[False]),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                  # solicited: "as per the apply"
     assert 'governance' not in offer.sad['a']          # ...and not on the exchange
-    assert set(offer.sad['a']) == {'acdc'}
-    assert offer.said == "EKmxlQFMSOUZNu4t_pMSFX-0ACyaYfVkIv0YzLloTZ_j"
+    assert set(offer.sad['a']) == {'acdc', 'ax'}
+    assert offer.sad['a']['ax'] == [False]             # Cara agrees: no anchoring
+    assert offer.said == "EJLOZ700VVkuvhSEt2bilW3PLJhleyYwv2fCPlL9YPX1"
     assert wardAuthz.said.encode() in offer.raw        # the discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2009-04-10" not in offer.raw
     assert guardian.said.encode() not in offer.raw     # issuer commitments withheld...
@@ -1478,7 +1497,7 @@ def test_wardauthz_presentation_JSON():
     agree = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EJMvaBejL2_tduOfBDcrPLKlsoE0xhES3qRArCOPcRNM"
+    assert agree.said == "EKv6Wm_IKLWjiJu5EpO_GB-goYAN-00poXEKjlxuLGuH"
     svcSigner = _SIGNERS[3]                            # the platform's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1520,7 +1539,7 @@ def test_wardauthz_presentation_JSON():
         nests = nests if nests is not None else disclosures
         serder = exchange(sender=CARA, receiver=SOCIAL, route="/ipex/grant",
                           prior=agreeMsg.said,
-                          attributes=dict(o=[wardAuthz.said]),
+                          attributes=dict(o=[wardAuthz.said], ax=[False]),
                           stamp=GRANT_STAMP, kind=kind)
         caraSig = _SIGNERS[2].sign(ser=serder.raw, index=0)   # the discloser signs
         return serder, messagize(serder, sigers=[caraSig],
@@ -1538,14 +1557,14 @@ def test_wardauthz_presentation_JSON():
     # The valid agree unlocks the grant.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EBsZ8dlRvJsm5UOWVAWGDC4E6FqQtoWH-sOiSbNtpJ87"
+    assert grant.said == "ELp4e7S22Uyj-IW2QKPqIq1H43s9GoIBfdiYBpVnZ2Ea"
 
     # The attribute block is the origin and nothing else: a ONE-ELEMENT LIST, which is
     # #1627's "Use Required Lists" form. That option is preferred there over a field map
     # precisely because `dp` is already a list, so writing the single-DAG case as a list
     # now is what keeps this example from needing a second edit when DAG soup lands.
     granted = grant.sad['a']
-    assert granted == dict(o=[wardAuthz.said])         # origin SAID only; #1595, #1627
+    assert granted == dict(o=[wardAuthz.said], ax=[False])   # #1595, #1613, #1627
     assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
 
     # The credentials are on the stream, not in the body -- one artifact per dp entry,
@@ -1632,7 +1651,7 @@ def test_wardauthz_presentation_JSON():
     admit = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EKo47dZ9mrm9nBK8ChGwy9bgayaTIdS1BgIrVqkeaMES"
+    assert admit.said == "EBrp-miKYtL2_rG0HaY7Yu-jQj0s1WXozsduiZs9gJMB"
 
 
 # ---------------------------------------------------------------------------
