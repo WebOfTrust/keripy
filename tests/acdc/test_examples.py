@@ -298,7 +298,7 @@ def test_registry_issuance_lifecycle_JSON():
 def test_registry_issuance_lifecycle_IPEX_JSON():
     """Same lifecycle as the worked example, but transported through IPEX.
 
-    This stays distinct from test_clc_disclosure.py's gated exchange. The point
+    This stays distinct from test_cp_disclosure.py's gated exchange. The point
     here is not pre-disclosure negotiation; it is to carry the foundational
     registry artifacts inside the IPEX builders and route them through the real
     IPEX handlers we have today.
