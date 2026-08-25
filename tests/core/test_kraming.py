@@ -361,7 +361,7 @@ def test_intake():
         with openDB(name="test_intake_dis", temp=True) as db:
             kramer = Kramer(db, cf)
             serder = reply(pre=TEST_PRE, route="/test",
-                                    data=dict(a=1), pvrsn=Vrsn_2_0)
+                                    data=dict(a=1))
 
             result = kramer.intake(serder)
             assert result is serder  # passthrough, same object

@@ -9,6 +9,7 @@ on:
 jobs:
   wasm-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -22,8 +23,8 @@ jobs:
           - runtime: node
             runner: selenium
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - uses: pyodide/pyodide-actions/download-pyodide@v2
@@ -46,9 +47,9 @@ jobs:
         if: matrix.runner == 'playwright'
         run: |
           if [ "${{ matrix.playwright_browser }}" = "chromium" ]; then
-            python -m playwright install --with-deps --only-shell chromium
+            python -m playwright install --only-shell chromium
           else
-            python -m playwright install --with-deps ${{ matrix.playwright_browser }}
+            python -m playwright install ${{ matrix.playwright_browser }}
           fi
       - name: Prepare test directory
         run: |

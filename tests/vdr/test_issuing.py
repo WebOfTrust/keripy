@@ -60,7 +60,7 @@ def test_issuer(mockHelpingNowUTC):
         regery = Regery(hby=hby, name="bob", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="bob", noBackers=False, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -76,7 +76,7 @@ def test_issuer(mockHelpingNowUTC):
         creder = credential(hab=hab, regk=issuer.regk)
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -87,7 +87,7 @@ def test_issuer(mockHelpingNowUTC):
 
         rev = issuer.revoke(said=creder.said)
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
@@ -102,7 +102,7 @@ def test_issuer(mockHelpingNowUTC):
             regery = Regery(hby=hby, name="bob", temp=True)
             issuer = regery.makeRegistry(prefix=hab.pre, name="bob", noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
             rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-            hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+            hab.interact(data=[rseal])
             seqner = Seqner(sn=hab.kever.sn)
             diger = Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=issuer.regk,
@@ -120,7 +120,7 @@ def test_issuer(mockHelpingNowUTC):
             regery = Regery(hby=hby, name="bob", temp=True)
             issuer = regery.makeRegistry(prefix=hab.pre, name="bob", noBackers=True, version=Vrsn_1_0, kind=Kinds.json)
             rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-            hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+            hab.interact(data=[rseal])
             seqner = Seqner(sn=hab.kever.sn)
             diger = Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=issuer.regk,
@@ -134,7 +134,7 @@ def test_issuer(mockHelpingNowUTC):
 
             iss = issuer.issue(said=creder.said)
             rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-            hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+            hab.interact(data=[rseal])
             seqner = Seqner(sn=hab.kever.sn)
             diger = Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=iss.pre,
@@ -147,7 +147,7 @@ def test_issuer(mockHelpingNowUTC):
 
             rev = issuer.revoke(said=creder.said)
             rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
-            hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+            hab.interact(data=[rseal])
             seqner = Seqner(sn=hab.kever.sn)
             diger = Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=rev.pre,
@@ -167,7 +167,7 @@ def test_issuer(mockHelpingNowUTC):
                                      version=Vrsn_1_0, kind=Kinds.json,
                                      baks=["BAFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -180,7 +180,7 @@ def test_issuer(mockHelpingNowUTC):
         creder = credential(hab=hab, regk=issuer.regk)
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -195,7 +195,7 @@ def test_issuer(mockHelpingNowUTC):
                                   "BBC_BBLMeVwKFbfYSWU7aATS9itLSrGtIFQzCkfoKnjk"])
         rseq = Seqner(sn=rot.sn)
         rseal = SealEvent(rot.pre, rseq.snh, rot.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rot.pre,
@@ -208,7 +208,7 @@ def test_issuer(mockHelpingNowUTC):
 
         rev = issuer.revoke(said=creder.said)
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
@@ -226,7 +226,7 @@ def test_issuer(mockHelpingNowUTC):
         regery = Regery(hby=hby, name="bob", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="bob", noBackers=True, estOnly=True, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -239,7 +239,7 @@ def test_issuer(mockHelpingNowUTC):
         creder = credential(hab=hab, regk=issuer.regk)
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -252,7 +252,7 @@ def test_issuer(mockHelpingNowUTC):
 
         rev = issuer.revoke(said=creder.said)
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
-        hab.interact(data=[rseal], version=Vrsn_1_0, kind=Kinds.json)
+        hab.interact(data=[rseal])
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
@@ -275,7 +275,7 @@ def test_issuer(mockHelpingNowUTC):
                                      version=Vrsn_1_0, kind=Kinds.json,
                                      baks=["BAFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"], estOnly=True)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.rotate(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.rotate(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -289,7 +289,7 @@ def test_issuer(mockHelpingNowUTC):
                                           "BBC_BBLMeVwKFbfYSWU7aATS9itLSrGtIFQzCkfoKnjk"])
         rseq = Seqner(sn=rot.sn)
         rseal = SealEvent(rot.pre, rseq.snh, rot.said)._asdict()
-        hab.rotate(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.rotate(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rot.pre,
@@ -303,7 +303,7 @@ def test_issuer(mockHelpingNowUTC):
         creder = credential(hab=hab, regk=issuer.regk)
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.rotate(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.rotate(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -318,7 +318,7 @@ def test_issuer(mockHelpingNowUTC):
         rot = issuer.rotate(toad=2, cuts=["BAFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
         rseq = Seqner(sn=rot.sn)
         rseal = SealEvent(rot.pre, rseq.snh, rot.said)._asdict()
-        hab.rotate(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.rotate(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rot.pre,
@@ -331,7 +331,7 @@ def test_issuer(mockHelpingNowUTC):
 
         rev = issuer.revoke(said=creder.said)
         rseal = SealEvent(rev.pre, "1", rev.said)._asdict()
-        hab.rotate(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        hab.rotate(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=rev.pre,
