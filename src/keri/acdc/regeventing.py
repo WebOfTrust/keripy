@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.acdc.registring module
+keri.acdc.regeventing module
 
 Registry (TEL) event support
 

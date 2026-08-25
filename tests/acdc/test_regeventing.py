@@ -1,12 +1,12 @@
 # -*- encoding: utf-8 -*-
 """
-tests.acdc.test_registring module
+tests.acdc.test_regeventing module
 
-Tests for keri.acdc.registring: the ACDC v2 registry (TEL) verification core.
+Tests for keri.acdc.regeventing: the ACDC v2 registry (TEL) verification core.
 
 The verification core answers, for a party holding evidence: given a registry
 event chain (rip + bup events), the issuer's KEL (a Baser the caller has
-already populated -- KEL verification is not registring's job), and optionally
+already populated -- KEL verification is not regeventing's job), and optionally
 a disclosed blinded-state block, what is the registry's verified state?
 
 All valid material is built with keripy's own builders (regcept, blindate,
@@ -32,8 +32,8 @@ from keri import Vrsn_2_0, Ilks
 from keri.core import Blinder, BlindState, Diger, SerderACDC
 from keri.core.signing import Salter
 from keri.acdc import regcept, blindate, acdcmap
-from keri.acdc import registring
-from keri.acdc.registring import RegStateRecord, vet, vetBlind
+from keri.acdc import regeventing
+from keri.acdc.regeventing import RegStateRecord, vet, vetBlind
 from keri.app import habbing
 
 
@@ -578,8 +578,8 @@ def test_V23_no_salt_parameter_anywhere():
     """V23: the verify path's API surface -- no parameter anywhere accepts a
     salt.  The salt's absence from every signature is itself the row."""
     checked = 0
-    for name, obj in inspect.getmembers(registring):
-        if getattr(obj, "__module__", None) != registring.__name__:
+    for name, obj in inspect.getmembers(regeventing):
+        if getattr(obj, "__module__", None) != regeventing.__name__:
             continue
         if inspect.isfunction(obj):
             assert 'salt' not in inspect.signature(obj).parameters, name
