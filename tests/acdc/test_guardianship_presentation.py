@@ -58,9 +58,9 @@ worked out by the test_bulk_issuance_*.py siblings on branch
 feat-indep-registry-bulk-issuance. Phase 4 adds what no date can give: a BLINDABLE registry,
 so termination is checked at presentation.
 
-TWO DELIBERATE OMISSIONS. No 'scope' edge to a companion delegated-authority credential --
+TWO DELIBERATE OMISSIONS. No 'powers' edge to a companion delegated-authority credential --
 Utah does not want guardianship to depend on one, so the edge section is CLOSED at subject +
-authorization, at the cost that 'powers' cannot say which platforms or hours; a guardianship
+authorization, at the cost that 'scope' cannot say which platforms or hours; a guardianship
 needing that carries it inline, which is the sibling's subject. And no contractually-
 protected disclosure, which is test_cp_disclosure.py's; accountability rests instead on the
 governance framework the Rules section names by SAID, itself a PLACEHOLDER digest.
@@ -122,9 +122,9 @@ def _saidify_schema(mad, kind=Kinds.json):
     """Compute a JSON Schema's SAID and return (said, schema-with-$id).
 
     Mirrors the sibling examples: run the schema map through a Mapper that
-    self-addresses the '$id' field (which must be first, as its position is part
-    of the serialization the SAID digests). Mapper deep-copies its input, so the
-    caller's schema map is never mutated.
+    self-addresses the '$id' field (which must be first, as its position is part of the
+    serialization the SAID digests). Mapper deep-copies its input, so the caller's
+    schema map is never mutated.
     """
     mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E'},
                     saidive=True, kind=kind)
@@ -134,10 +134,10 @@ def _saidify_schema(mad, kind=Kinds.json):
 def assert_acdc_schema_valid(acdc, schema=None):
     """Validate a worked-example ACDC against its JSON Schema (Draft 2020-12).
 
-    Identical in intent to the helper in the sibling examples: it proves the schema
-    is itself well-formed and that the ACDC instance conforms to the schema it
-    commits to in its own 's' section. When the schema section has been compacted to
-    a bare SAID string, pass the schema explicitly.
+    Identical in intent to the helper in the sibling examples: it proves the schema is
+    itself well-formed and that the ACDC instance conforms to the schema it commits to
+    in its own 's' section. When the schema section has been compacted to a bare SAID
+    string, pass the schema explicitly.
     """
     if schema is None:
         schema = acdc.sad['s']
@@ -150,8 +150,8 @@ def assert_acdc_schema_valid(acdc, schema=None):
 
 
 # ---------------------------------------------------------------------------
-# Purpose-authored JSON Schemas (Draft 2020-12). Authored as maps with "$id" first
-# so _saidify_schema can self-address them per wire kind.
+# Purpose-authored JSON Schemas (Draft 2020-12). Authored as maps with "$id" first so
+# _saidify_schema can self-address them per wire kind.
 # ---------------------------------------------------------------------------
 
 def _disclosable_block(attr, attr_schema, desc):
@@ -382,9 +382,18 @@ BIRTHCERT_SCHEMA_MAD = {
 GUARDIAN_RULES_SAID = Diger(
     ser=b'SEDI guardianship governance framework v1').qb64
 
+# The coarse statutory scope enum, the same vocabulary the sibling module carries under
+# the same field name. Utah prefers LIMITED guardianship, so a verifier checks the
+# specific act against scope rather than taking a guardianship credential at face value.
+# ('powers' is deliberately NOT this field: in the sibling it is the finer-grained
+# DELEGABLE capability set, and one name meaning two things across two examples of the
+# same credential type is a trap for anyone reading both.)
+SCOPES = ["plenary", "healthCare", "residence", "education", "personalRecords",
+          "socialBenefits", "digitalIdentity", "contracts"]
+
 # --- sedi-guardian: Bob's ATTRIBUTIVE ('acm') authority credential, disclosed WHOLE. ---
 # The SEDI legal-recognition layer for a digital guardian: the statutory basis, the
-# scope of powers (Utah prefers LIMITED guardianship, so scope is explicit), and the
+# statutory scope (Utah prefers LIMITED guardianship, so scope is explicit), and the
 # appointment/registration. HELD BY THE GUARDIAN (issuee = Bob) and names the WARD by
 # edge (subject -> Mia's sedi-id) -- the holder != subject invariant. Authority
 # credentials are disclosed whole (a verifier needs basis + scope + validity together),
@@ -395,7 +404,7 @@ GUARDIAN_SCHEMA_MAD = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "SEDI Digital Guardian",
     "description": "SEDI legal-recognition layer for a digital guardian (Utah Code "
-                   "63A-20). Attests the statutory basis, the powers scope, and the "
+                   "63A-20). Attests the statutory basis, the statutory scope, and the "
                    "appointment/registration. Held by the guardian (issuee); the ward "
                    "is named by the subject edge (holder != subject). Registry-bound: "
                    "guardianship terminates dynamically.",
@@ -419,7 +428,7 @@ GUARDIAN_SCHEMA_MAD = {
             "oneOf": [
                 {"description": "Attribute Section SAID", "type": "string"},
                 {"type": "object",
-                 "required": ["d", "u", "i", "basis", "powers", "fiduciary",
+                 "required": ["d", "u", "i", "basis", "scope", "fiduciary",
                               "recognition", "effectiveDate"],
                  "properties": {
                      "d": {"description": "Section SAID", "type": "string"},
@@ -431,13 +440,10 @@ GUARDIAN_SCHEMA_MAD = {
                                         "courtGuardianMinor",
                                         "courtGuardianIncapacitated"]},
                      "subtype": {"enum": ["financialPOA", "healthCareAgent"]},
-                     "powers": {"description": "Scope of authority ('plenary' or an "
-                                               "explicit limited set)",
-                                "type": "array", "minItems": 1, "uniqueItems": True,
-                                "items": {"enum": ["plenary", "healthCare", "residence",
-                                                   "education", "personalRecords",
-                                                   "socialBenefits", "digitalIdentity",
-                                                   "contracts"]}},
+                     "scope": {"description": "Coarse statutory scope (Utah prefers "
+                                              "LIMITED guardianship)",
+                               "type": "array", "minItems": 1, "uniqueItems": True,
+                               "items": {"enum": SCOPES}},
                      "fiduciary": {"enum": ["bestInterest", "substitutedJudgment"]},
                      "capacityConditioned": {"type": "boolean"},
                      "residualParentalRights": {"type": "boolean"},
@@ -705,9 +711,8 @@ def _ward_id_disclosure(sedi, kind):
     """
     compactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
     compactor.compact()
-    compactor.expand(greedy=True)               # populates .partials (incl. the compact one)
-    allCompact = compactor.partials[('',)].mad
-    return dict(allCompact)                     # every attribute block as a bare SAID
+    compactor.expand(greedy=True)          # populates .partials (incl. the compact one)
+    return dict(compactor.partials[('',)].mad)
 
 
 def _age_disclosure(ageAggor):
@@ -724,9 +729,9 @@ def _age_disclosure(ageAggor):
     return disclosed
 
 
-def _committed_a_said(sedi, kind):
-    """The SAID sedi-id commits to for its attribute section (its most-compact form)."""
-    compactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
+def _committed_a_said(acdc, kind):
+    """The SAID an ACDC commits to for its attribute section (its most-compact form)."""
+    compactor = Compactor(mad=dict(acdc.sad['a']), makify=True, kind=kind)
     compactor.compact()
     return compactor.said
 
@@ -755,7 +760,7 @@ def _guardian_attr():
 
     Disclosed whole (flat, not selectively disclosable): a verifier needs basis + scope
     + validity together. basis = custodialParent (inherent parental right, no court);
-    powers limited to digitalIdentity (managing/presenting the ward's digital identity);
+    scope limited to digitalIdentity (managing/presenting the ward's digital identity);
     recognition names the inherent-parental authority type and Utah as appointing state.
 
     DATE HYGIENE, and it is not cosmetic. Because this credential is disclosed WHOLE, every
@@ -779,7 +784,7 @@ def _guardian_attr():
     """
     return dict(d='', u=NONCES[N_G_A],
                 basis="custodialParent",
-                powers=["digitalIdentity"],
+                scope=["digitalIdentity"],
                 fiduciary="bestInterest",
                 residualParentalRights=True,
                 recognition=dict(authorityType="inherentParental",
@@ -925,7 +930,7 @@ def test_guardian_authority_credential_JSON():
     issuee) and points at Mia's sedi-id; the authority is grounded in an authorizing
     instrument (the birth certificate) via the authorization edge; the credential is
     registry-bound (dynamic termination) and disclosed whole; and the schema enforces
-    the statutory shape (a bad basis, an empty powers list, a bad recognition block, or
+    the statutory shape (a bad basis, an empty scope list, a bad recognition block, or
     an edge other than subject/authorization are rejected).
     """
     kind = Kinds.json
@@ -941,7 +946,7 @@ def test_guardian_authority_credential_JSON():
     # holder != subject: the credential's issuee is Bob, and the ward is Mia, named
     # only by edge. This is the load-bearing invariant, asserted structurally.
     assert guardian.iseaid != sedi.iseaid           # Bob is not the ward
-    assert guardian.said == "EK_25_Gj2iHnu-0TpqYtqGgAMq1ZYml4K1G2R1sO8aV0"
+    assert guardian.said == "EK_489biyH5Mvt_VIpCsObT3fe7jSVptG3i5OrlEp5xA"
     assert guardian.sad['e']['subject']['n'] == sedi.said       # ward named by edge
     assert guardian.sad['e']['subject']['o'] == 'NI2I'          # reference, not delegation
     assert guardian.sad['e']['authorization']['n'] == birthCert.said   # authority grounded
@@ -950,7 +955,7 @@ def test_guardian_authority_credential_JSON():
     assert reg.said == "EIilAhmBAyNgcoAMe1YLBLtu5eu1_j2jDtZZxV_9IN5B"        # guardianship reg
     assert guardian.sad['rd'] == reg.said
     assert guardian.sad['a']['basis'] == "custodialParent"
-    assert guardian.sad['a']['powers'] == ["digitalIdentity"]
+    assert guardian.sad['a']['scope'] == ["digitalIdentity"]
     assert guardian.sad['a']['recognition']['authorityType'] == "inherentParental"
 
     # --- Date hygiene in a WHOLE-disclosed authority credential (see _guardian_attr). ---
@@ -969,25 +974,26 @@ def test_guardian_authority_credential_JSON():
     assert guardian.sad['r'] == GUARDIAN_RULES_SAID
     schema = assert_acdc_schema_valid(guardian)
 
-    # Schema teeth: a bad basis, an empty powers list, and a bad recognition authority
+    # Schema teeth: a bad basis, an empty scope list, and a bad recognition authority
     # type are each rejected -- the statutory shape is machine-checked.
     badBasis = json.loads(json.dumps(guardian.sad))
     badBasis['a']['basis'] = "selfAppointed"
     with pytest.raises(ValidationError):
         Draft202012Validator(schema).validate(badBasis)
-    emptyPowers = json.loads(json.dumps(guardian.sad))
-    emptyPowers['a']['powers'] = []
+    emptyScope = json.loads(json.dumps(guardian.sad))
+    emptyScope['a']['scope'] = []
     with pytest.raises(ValidationError):
-        Draft202012Validator(schema).validate(emptyPowers)
+        Draft202012Validator(schema).validate(emptyScope)
     badAuth = json.loads(json.dumps(guardian.sad))
     badAuth['a']['recognition']['authorityType'] = "vibes"
     with pytest.raises(ValidationError):
         Draft202012Validator(schema).validate(badAuth)
     # The edge section is closed at subject + authorization: any other edge (here the
-    # 'scope' edge an external delegated-authority credential would have hung off) is
-    # rejected, so the guardian credential carries no hook to one.
+    # 'powers' edge an external delegated-authority credential would have hung off, which
+    # is exactly the credential the sibling module makes its origin) is rejected, so the
+    # guardian credential carries no hook to one.
     extraEdge = json.loads(json.dumps(guardian.sad))
-    extraEdge['e']['scope'] = dict(d='', n=sedi.said, s=sedi.sad['s']['$id'], o='NI2I')
+    extraEdge['e']['powers'] = dict(d='', n=sedi.said, s=sedi.sad['s']['$id'], o='NI2I')
     with pytest.raises(ValidationError):
         Draft202012Validator(schema).validate(extraEdge)
 
@@ -1025,7 +1031,7 @@ def _represented_presentation(kind, guardian, sedi, age, compactify=False):
 
 
 def _verify_representation(presentation, guardian, wardSedi, wardAge,
-                           power="digitalIdentity"):
+                           scope="digitalIdentity"):
     """The verifier's binding for a represented presentation -- the security property.
 
     A represented presentation authorizes disclosure only if ALL of these hold; each is
@@ -1046,7 +1052,7 @@ def _verify_representation(presentation, guardian, wardSedi, wardAge,
          presenter is NOT the ward's issuee. An I2I ward edge would demand
          presenter == subject (impersonation); the schema pins these to NI2I, and this
          asserts the invariant structurally.
-      4. Scope: the requested action falls within the guardian's 'powers' (Utah prefers
+      4. Scope: the requested action falls within the guardian's 'scope' (Utah prefers
          LIMITED guardianship, so a verifier MUST check the specific act against scope).
       5. Identity (E1E): the disclosed age flag is the ward's own -- the age credential
          and the sedi-id name the same subject (via _verify_identity_edge).
@@ -1067,8 +1073,8 @@ def _verify_representation(presentation, guardian, wardSedi, wardAge,
     assert e['wardAge']['o'] == 'NI2I' and e['wardAge']['n'] == wardAge.said
     assert presentation.sad['i'] != wardSedi.iseaid            # presenter is not the ward
     assert presentation.sad['i'] != wardAge.iseaid
-    # (4) scope: requested action within powers.
-    assert power in guardian.sad['a']['powers']
+    # (4) scope: requested action within the statutory scope.
+    assert scope in guardian.sad['a']['scope']
     # (5) identity E1E: the disclosed age flag is the ward's own.
     assert _verify_identity_edge(wardAge, wardSedi)
     return True
@@ -1095,7 +1101,9 @@ def test_represented_presentation_JSON():
     to NI2I (an I2I ward edge -- the impersonation shape -- is rejected), and the binding
     fails if the authority does not actually cover THIS ward. The presentation runs as a
     gated IPEX exchange so the ward's under-13 disclosure crosses the wire only in the
-    grant, after the service accepts.
+    grant, after the service accepts -- and the grant delivers the presentation expanded,
+    with the guardian credential beside it, so the service can run the scope check its
+    own apply asked for rather than being told the answer.
     """
     kind = Kinds.json
     sedi, age, ageAggor = _ward_credentials(kind)
@@ -1107,7 +1115,7 @@ def test_represented_presentation_JSON():
     assert presentation.sad['a']['i'] == STORE    # the store is the Issuee (Disclosee)
     assert 'rd' not in presentation.sad           # one-time presentation, not logged
     assert presentation.sad['r'] == GUARDIAN_RULES_SAID   # governance by SAID
-    assert presentation.said == "EB7jIBYAnAECi8B8dHsJmAPNkE2JdYpkca3ZgnBLOBCt"
+    assert presentation.said == "EKb3szYoKJYQjPr4nPWsz__4nWdCgsy3EmZqTjWYjP6S"
 
     # The full binding holds for the honest presentation.
     assert _verify_representation(presentation, guardian, sedi, age)
@@ -1161,9 +1169,12 @@ def test_represented_presentation_JSON():
     # prefix naming it, an entry's ACDC is identified by the entry's POSITION, so the
     # list runs breadth-first from the origin node and the zeroth entry is the origin.
     # That breadth-first ordering is required even where a non-empty prefix would make
-    # it technically unnecessary (@SmithSamuelM, #1549). This DAG has no optional edges,
-    # so the ordering is gapless and each entry's ACDC is unambiguous without restating
-    # the route to it.
+    # it technically unnecessary (@SmithSamuelM, #1549). Every node this DAG reaches is
+    # asked for something here, so the list is gapless -- one entry per node, in
+    # breadth-first order -- and each entry's ACDC is unambiguous without restating the
+    # route to it. (The sibling's list is a gapless list's opposite number: nothing is
+    # asked of the guardian's own citizen credential there, so its entries are an ordered
+    # SUBSET, which works only because each entry still names its own schema SAID.)
     #
     # A '/'-rooted prefix would make the effective paths DAG-ABSOLUTE, rooted at the
     # origin node, and an absolute path reaching a non-origin ACDC must cross the edge
@@ -1171,14 +1182,18 @@ def test_represented_presentation_JSON():
     # near-side edge block to the top level of the far-side ACDC (@SmithSamuelM, #1549).
     # The same request written with non-empty prefixes reads:
     #     origin:   "/"                 ["i", "a/i"]
-    #     guardian: "/e/authority/_/"   ["a/i", "a/powers"]
+    #     guardian: "/e/authority/_/"   ["a/i", "a/scope"]
+    #     ward id:  "/e/wardId/_/"      ["a/i"]
     #     ward age: "/e/wardAge/_/"     ["A/i", "A/over13"]
     #
-    # A represented presentation is the case that makes the joining paths load-bearing:
-    # the service asks for the issuee from BOTH the guardian credential (a/i -- who is
-    # acting) and the ward's age credential (A/i -- whose fact is being asserted), and
-    # those two issuees are deliberately DIFFERENT AIDs. It is the guardianship edge,
-    # not issuee equality, that licenses Bob to speak for Mia.
+    # A represented presentation is the case that makes the joining paths load-bearing.
+    # The service asks three nodes for an issuee: the guardian credential (a/i -- who is
+    # acting), the ward's sedi-id (a/i -- who is being spoken for) and the ward's age
+    # credential (A/i -- whose fact is being asserted). The last two must MATCH and the
+    # first must DIFFER, which is the holder != subject split expressed in paths. It is
+    # the guardianship edge, not issuee equality, that licenses Bob to speak for Mia --
+    # the exact inverse of the sibling, where the ward presents for herself and the
+    # origin's issuee and the citizen credential's issuee are required to be equal.
     #
     # The zeroth entry is the DAG's origin node (#1549): Bob's presentation. Its schema
     # is governance even though Bob issues it -- "in all of these applications the
@@ -1190,7 +1205,8 @@ def test_represented_presentation_JSON():
     presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=STORE, receiver=BOB, route="/ipex/apply",
                      modifiers=dict(dp=[[presentSchemaSaid, "", ["i", "a/i"]],
-                                        [guardian.sad['s']['$id'], "", ["a/i", "a/powers"]],
+                                        [guardian.sad['s']['$id'], "", ["a/i", "a/scope"]],
+                                        [sedi.sad['s']['$id'], "", ["a/i"]],
                                         [age.sad['s']['$id'], "", ["A/i", "A/over13"]]]),
                      attributes=dict(m="Prove a consenting digital guardian and the "
                                        "ward's age category.",
@@ -1198,17 +1214,18 @@ def test_represented_presentation_JSON():
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == STORE
     dp = apply.sad['q']['dp']
-    assert [entry[0] for entry in dp] == [presentSchemaSaid,
-                                          guardian.sad['s']['$id'], age.sad['s']['$id']]
+    assert [entry[0] for entry in dp] == [presentSchemaSaid, guardian.sad['s']['$id'],
+                                          sedi.sad['s']['$id'], age.sad['s']['$id']]
     assert all(len(entry) == 3 for entry in dp)             # (schemaSAID, prefix, [paths])
-    assert [entry[1] for entry in dp] == ["", "", ""]       # no prefixes: paths stay relative
+    assert [entry[1] for entry in dp] == ["", "", "", ""]   # no prefixes: paths stay relative
     assert dp[0][2] == ["i", "a/i"]             # origin: who presents, and to whom
-    assert dp[1][2] == ["a/i", "a/powers"]      # attributive guardian cred: who acts, and how far
-    assert dp[2][2] == ["A/i", "A/over13"]      # aggregative ward age cred: whose, and the flag
+    assert dp[1][2] == ["a/i", "a/scope"]       # attributive guardian cred: who acts, and how far
+    assert dp[2][2] == ["a/i"]                  # ward sedi-id: the binding, nothing more
+    assert dp[3][2] == ["A/i", "A/over13"]      # aggregative ward age cred: whose, and the flag
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, _, paths in dp for p in paths)
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EFaBnG2TiUGd4ZzDq9sYN-CUpCYCHZbRda5iDdQJHo87"
+    assert apply.said == "EAf0260lVAH8TOx-_J1ClmtgNH2zvzRkGeBTThotr5LG"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
     # and the governance ref, and binds the apply. It deliberately does NOT enumerate the
@@ -1216,7 +1233,14 @@ def test_represented_presentation_JSON():
     # commitments, and attaching them before the service agrees would let a verifier
     # spurn and walk away with stable ward/guardian correlators, defeating the
     # metadata-ACDC decorrelation (panel review, PRV-F2). They arrive only post-agree, in
-    # the grant, reachable by expanding the delivered presentation.
+    # the grant, which delivers the presentation EXPANDED so its edge section is readable.
+    #
+    # What the one SAID this offer does commit to costs is nothing, and that is a
+    # property of the represented shape rather than of care taken here: the presentation
+    # is minted for this exchange, so a service that spurns holds a digest that will
+    # never be seen again. The sibling cannot say the same -- there the ward offers the
+    # SAID of a durable credential her guardian issued her, which is identical on every
+    # presentation she ever makes, so a spurning platform keeps a usable handle on her.
     # Its query block carries `dp` as an EMPTY list: the offer is SOLICITED (its `p`
     # binds the apply), and an empty `dp` means "the same paths the apply asked for"
     # (#1549), so Bob restates nothing and the two messages cannot drift.
@@ -1227,7 +1251,7 @@ def test_represented_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "EJiU9YeFBuYyBnpiVVp9FYb3Z7nhffpfi265WfPt-yYx"
+    assert offer.said == "EILgCjmGynmKPukEVZM_DQ93C-r2hwwqlwWMVjfdV0Ok"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1240,7 +1264,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "ECoRxYTOdzvKcHMAxGU5ZiiuG6egoL6Pbmb1CP6ayGj6"
+    assert agree.said == "ELLq3FgVAaIJqsDUSYhGDphTqI2zeIPZgykKvT7NAiad"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1249,15 +1273,20 @@ def test_represented_presentation_JSON():
     assert capturedKeyState.verify(sig=svcSig.raw, ser=agree.raw)
 
     # 4. The gate: Bob discloses only when handed a valid, signed, offer-binding agree.
+    # The grant carries the EXPANDED presentation (edges visible, so the service can walk
+    # the chain the apply named), the guardian credential it edges to (disclosed whole,
+    # as an authority credential must be), and the ward's two disclosures. Handing over a
+    # COMPACTIFIED presentation instead would satisfy the offer's promise in form only:
+    # with the edge section collapsed to a bare SAID there is nothing for the service to
+    # expand, and the scope check its own apply asked for could never run.
     def disclose(agreeMsg, sig, keyState):
         if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
                 and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
             return None
-        presentationCompact = _represented_presentation(kind, guardian, sedi, age,
-                                                        compactify=True)
         return exchange(sender=BOB, receiver=STORE, route="/ipex/grant",
                         prior=agreeMsg.said,
-                        attributes=dict(acdc=presentationCompact.sad,
+                        attributes=dict(acdc=presentation.sad,
+                                        authority=guardian.sad,
                                         wardId=_ward_id_disclosure(sedi, kind),
                                         wardAge=_age_disclosure(ageAggor)),
                         stamp=GRANT_STAMP, kind=kind)
@@ -1272,17 +1301,34 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EBta5rbHHFv4L0XQ2nZEn62dmlDZIngRMGEcKUT-2iYM"
+    assert grant.said == "EFM_0yFcaxXgruwnd-CJ0zoRz2YxzTzLI-AnpYF1lZU7"
     assert grant.sad['a']['wardAge'][AGE_OVER13]['over13'] is False    # under-13 disclosed
     assert grant.sad['a']['wardId']['i'] == MIA                       # ward bound (issuee)
     assert b"2020-03-15" not in grant.raw                             # birthdate withheld
     assert b"over18" not in grant.raw and b"over21" not in grant.raw   # thresholds withheld
+    # The service receives exactly what its apply asked of the guardian credential --
+    # who is acting, and how far the authority runs -- so it can run the scope check
+    # itself rather than taking the presentation's word for it.
+    assert grant.sad['a']['authority']['a']['i'] == BOB
+    assert grant.sad['a']['authority']['a']['scope'] == ["digitalIdentity"]
+    # The edge section rides expanded, so the source SAIDs the offer withheld are
+    # reachable now and only now -- which is what the offer's comment promises.
+    assert isinstance(grant.sad['a']['acdc']['e'], dict)
+    assert guardian.said.encode() in grant.raw
+    assert sedi.said.encode() in grant.raw and age.said.encode() in grant.raw
+    # Honest residual, asserted present rather than quietly avoided: the guardian
+    # credential is disclosed WHOLE, so its expiry -- Mia's 18th birthday -- crosses the
+    # wire and hands the service her birth month and day. An attribute in a
+    # whole-disclosed authority credential cannot be withheld the way an edge can. See
+    # _guardian_attr for why the mitigations are deployment-level, and the sibling
+    # module for the same residual on its own guardianship credential.
+    assert b"2038-03-15" in grant.raw
 
     # 5. admit (service -> Bob): closes the exchange.
     admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EE6Dv2q1QFmVj_VaxkitIKiB9SHHaOaqG4cQah6Of99w"
+    assert admit.said == "EMCDbUzBbCm1Hp1B0gJamOPBQHmcnxpym4o6-1e_jQv9"
 
 
 # ---------------------------------------------------------------------------
@@ -1338,8 +1384,8 @@ def test_revocation_and_accountability_JSON():
     issued = blindate(regid=reg.said, prior=reg.said, blid=issuedBlinder.said,
                       sn=1, stamp="2026-01-07T12:05:00.000000+00:00", kind=kind)
     assert issued.ilk == Ilks.bup
-    assert issuedBlinder.said == "EOncwOptXfMMqYCfejdrtkJuu_joNLDK43kckv9HuZ_-"
-    assert issued.said == "EFNU7aRxjIXA3N8V0gUM3fwXswlMz0v8UC6WmRNFjh7D"
+    assert issuedBlinder.said == "EPzyaHXPUd8NWjK-ig9Eh1nSvOyTAFLfSgQqmExpF7vV"
+    assert issued.said == "EDFrYNwV7d-GH5-t0abLRz-AoMPXszt5ILfDl2_Kskzt"
     assert issued.sad['b'] == issuedBlinder.said
     # Privacy: the state word and the guardian SAID never appear on the wire; only the
     # blinded SAID rides in the bup event.
@@ -1355,7 +1401,7 @@ def test_revocation_and_accountability_JSON():
                                    salt=GUARDIAN_SALT, sn=2)
     revoked = blindate(regid=reg.said, prior=issued.said, blid=revokedBlinder.said,
                        sn=2, stamp="2026-05-01T09:00:00.000000+00:00", kind=kind)
-    assert revoked.said == "EBZk65eshMVhrj5n_fK4vEScui9IOK7oBUIt3yxjTIz0"
+    assert revoked.said == "EDYR2V-oyZsuCwI9b-aaLLY_HMg9P4pA0HGxaKHGau0M"
     assert revoked.sad['p'] == issued.said          # chains onto the issuance update
     assert _guardian_status(revoked, guardian.said, sn=2) == 'revoked'
     # The credential graph still binds (edges are immutable), but a verifier that checks
