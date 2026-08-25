@@ -1222,8 +1222,16 @@ def test_represented_presentation_JSON():
         _verify_representation(presentation, guardian, otherWard, age)
 
     # --- The gated IPEX exchange: the ward's age flag crosses only in the grant. ---
-    # 1. apply (service -> Bob): the challenge -- which schemas/fields, and the
-    # governance framework the service will honor (guardian acceptance in scope).
+    # 1. apply (service -> Bob): the challenge -- which schemas and which fields.
+    #
+    # It does NOT name a governance framework. An earlier draft carried the guardianship
+    # rules SAID here as 'g' and again in the offer as 'governance', which was two labels
+    # for a pointer the presentation already publishes in its own rules section (asserted
+    # above: presentation.sad['r'] == GUARDIAN_RULES_SAID). Jurisdiction and safe-harbor
+    # belong in the ACDC 'r' section, not on the exchange (@ryan-hansen, #1595). If a
+    # disclosee ever needs to state a governance REQUIREMENT -- a different claim from
+    # the issuer's assertion, and one that could disagree with it -- that is a field to
+    # define in #1595 rather than a label to reuse here.
     #
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
     # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, prefix, [paths])
@@ -1295,8 +1303,7 @@ def test_represented_presentation_JSON():
                                         [age.sad['s']['$id'], "",
                                          ["A/i", "A/over13", "e"]]]),
                      attributes=dict(m="Prove a consenting digital guardian and the "
-                                       "ward's age category.",
-                                     g=GUARDIAN_RULES_SAID),
+                                       "ward's age category."),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == STORE
     dp = apply.sad['q']['dp']
@@ -1310,11 +1317,12 @@ def test_represented_presentation_JSON():
     assert dp[3][2] == ["A/i", "A/over13", "e"] # ward age cred: whose, the flag, + edges
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, _, paths in dp for p in paths)
-    assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EJ_GxwQgthb4SX0uZs1jkx1TIoKzJnXSZrMDOiEvWHfm"
+    assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m'}
+    assert 'g' not in apply.sad['a']            # governance lives in ACDC rules
+    assert apply.said == "EPTqrhdhmb3NFGJ57MvXvm76MzNSeDGQ1jQyhyFeCow5"
 
-    # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
-    # and the governance ref, and binds the apply. It deliberately does NOT enumerate the
+    # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID,
+    # and binds the apply. It deliberately does NOT enumerate the
     # issuer-committed source-credential SAIDs (guardian/sedi/age): those are issuer
     # commitments, and attaching them before the service agrees would let a verifier
     # spurn and walk away with stable ward/guardian correlators, defeating the
@@ -1332,12 +1340,13 @@ def test_represented_presentation_JSON():
     # (#1549), so Bob restates nothing and the two messages cannot drift.
     offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
-                     attributes=dict(acdc=presentation.said,
-                                     governance=GUARDIAN_RULES_SAID),
+                     attributes=dict(acdc=presentation.said),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "ELGn1GRsxUHNcY0uti3DGYfJ_qJ2-Rls5NMEzpUZNuBq"
+    assert 'governance' not in offer.sad['a']                 # ...and not on the exchange
+    assert set(offer.sad['a']) == {'acdc'}
+    assert offer.said == "ED3vDzceSOvrzIBlp2KhqGnfKJN81Zqf4iIenajpnS-e"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1350,7 +1359,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EGazLgeqbDzOYK5CBx0YmfG-JfIJ6sCxf7zMXTp6U-hX"
+    assert agree.said == "EDFsU3MlPJQciZJGo-LMlF2BpV6atRb8sFq804pfha1k"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1395,7 +1404,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EA19DxkX9Nr-J3S6i50JKZMtUrfwxh1j3oTxwENDBeL4"
+    assert grant.said == "ECbbZO4KNykDPrJB06Kak3HYuJcjKuL5KUaP3LvBJ-Ir"
     # Every artifact rides as a CREDENTIAL disclosed to the requested depth, not as a
     # bare section, and each still carries the SAID of the FULL credential -- an ACDC
     # commits to its most compact form, which is what makes a partial disclosure
@@ -1453,7 +1462,7 @@ def test_represented_presentation_JSON():
     admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EAEZ7t79cJJCiYY454QWslYoaKFfLo9RwG0IGt5zaCGP"
+    assert admit.said == "EDCqwJ4VjxvJTL5jsmh-b3QHMD8c17JtV4yafZgiI69r"
 
 
 # ---------------------------------------------------------------------------
