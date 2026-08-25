@@ -1262,6 +1262,21 @@ def test_represented_presentation_JSON():
     # --- The gated IPEX exchange: the ward's age flag crosses only in the grant. ---
     # 1. apply (service -> Bob): the challenge -- which schemas and which fields.
     #
+    # It carries the ANCHORED-EXCHANGE field 'ax' in the attribute block (#1613), as a
+    # LIST of booleans -- one element per DAG, and this presentation is a single DAG
+    # (#1627's "Use Required Lists", the same shape as the grant's 'o' for the same
+    # reason). The value is False, and the field is present-and-false rather than absent
+    # so its shape is visible: #1613 treats a missing 'ax' as no anchoring requirement,
+    # so the two are equivalent here.
+    #
+    # False is the honest value. A truthy 'ax' would oblige Bob to anchor the grant in
+    # his own KEL, and this module is data-structure-level throughout -- there is no KEL
+    # to anchor in. Note also that #1613's MANDATORY anchoring rule does not fire here:
+    # it binds when an ACDC in the DAG signals a presentation-anchor registry via 'rd'
+    # and 'i' at the top level of its ATTRIBUTE block, and no credential in this graph
+    # carries 'rd' there -- the presentation deliberately has no 'rd' at all, being a
+    # one-time artifact that is never logged.
+    #
     # It does NOT name a governance framework. An earlier draft carried the guardianship
     # rules SAID here as 'g' and again in the offer as 'governance', which was two labels
     # for a pointer the presentation already publishes in its own rules section (asserted
@@ -1341,7 +1356,8 @@ def test_represented_presentation_JSON():
                                         [age.sad['s']['$id'], "",
                                          ["A/i", "A/over13", "e"]]]),
                      attributes=dict(m="Prove a consenting digital guardian and the "
-                                       "ward's age category."),
+                                       "ward's age category.",
+                                     ax=[False]),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == STORE
     dp = apply.sad['q']['dp']
@@ -1355,9 +1371,10 @@ def test_represented_presentation_JSON():
     assert dp[3][2] == ["A/i", "A/over13", "e"] # ward age cred: whose, the flag, + edges
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, _, paths in dp for p in paths)
-    assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m'}
+    assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'ax'}
     assert 'g' not in apply.sad['a']            # governance lives in ACDC rules
-    assert apply.said == "EPTqrhdhmb3NFGJ57MvXvm76MzNSeDGQ1jQyhyFeCow5"
+    assert apply.sad['a']['ax'] == [False]      # unanchored exchange (#1613, #1627)
+    assert apply.said == "ELoaFzZN3bFbtWUmC8zYoCUXcZIqh1d8qfPrfbjsspP7"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID,
     # and binds the apply. It deliberately does NOT enumerate the
@@ -1378,13 +1395,14 @@ def test_represented_presentation_JSON():
     # (#1549), so Bob restates nothing and the two messages cannot drift.
     offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
-                     attributes=dict(acdc=presentation.said),
+                     attributes=dict(acdc=presentation.said, ax=[False]),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
     assert 'governance' not in offer.sad['a']                 # ...and not on the exchange
-    assert set(offer.sad['a']) == {'acdc'}
-    assert offer.said == "ED3vDzceSOvrzIBlp2KhqGnfKJN81Zqf4iIenajpnS-e"
+    assert set(offer.sad['a']) == {'acdc', 'ax'}
+    assert offer.sad['a']['ax'] == [False]                    # Bob agrees: no anchoring
+    assert offer.said == "EKmDgYH0eI3aC08kPrXnyH_KQ-sAptcYpcoBn_moDthC"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1397,7 +1415,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EDFsU3MlPJQciZJGo-LMlF2BpV6atRb8sFq804pfha1k"
+    assert agree.said == "EOHJdr-DzMaB1atW3kcbPa_82I14UFxOZ4eBU6Moqp9l"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1439,7 +1457,7 @@ def test_represented_presentation_JSON():
         nests = nests if nests is not None else disclosures
         serder = exchange(sender=BOB, receiver=STORE, route="/ipex/grant",
                           prior=agreeMsg.said,
-                          attributes=dict(o=[presentation.said]),
+                          attributes=dict(o=[presentation.said], ax=[False]),
                           stamp=GRANT_STAMP, kind=kind)
         bobSig = _SIGNERS[2].sign(ser=serder.raw, index=0)      # the discloser signs
         return serder, messagize(serder, sigers=[bobSig],
@@ -1458,13 +1476,13 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "ENqNGHnDESEtIixo3uQi6UpzI3eIDy0yxWCt98ymVfx9"
+    assert grant.said == "EDUW8AZNXfNh0xOsMGQI5rbsTw1pY2zxIlqtyixjGFwJ"
     # The attribute block is the origin and nothing else: a ONE-ELEMENT LIST, which is
     # #1627's "Use Required Lists" form. That option is preferred there over a field map
     # precisely because `dp` is already a list, so writing the single-DAG case as a list
     # now is what keeps this example from needing a second edit when DAG soup lands.
     granted = grant.sad['a']
-    assert granted == dict(o=[presentation.said])      # origin SAID only; #1595, #1627
+    assert granted == dict(o=[presentation.said], ax=[False])   # #1595, #1613, #1627
     assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
 
     # The credentials are on the stream, not in the body -- one artifact per dp entry,
@@ -1537,7 +1555,7 @@ def test_represented_presentation_JSON():
     admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EFmhzRVh84MZy5m0oIPE2ahB178B-YbTLysFjnza7-7v"
+    assert admit.said == "EDtw204TKrpDXwEDAIUkw8nB87N2W9ey7aW1LrZ5BDKk"
 
 
 # ---------------------------------------------------------------------------
