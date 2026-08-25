@@ -12,7 +12,7 @@ from hio.help import ogler
 
 from .. import Kinds
 from ..kering import Colds, Vrsn_2_0, sniff
-from ..core import (Counter, Codens, Diger, GenDex, Number, Serdery, Texter,
+from ..core import (Counter, Codens, Diger, GenDex, Noncer, Number, Saider, Serdery, Texter,
                     exchange, messagize)
 from ..peer import cloneMessage
 
@@ -27,7 +27,7 @@ PreviousRoutes = {
     Ipex.agree: (Ipex.offer,),
     Ipex.grant: (Ipex.agree,),
     Ipex.admit: (Ipex.grant,),
-    Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree),
+    Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
 }
 
 def _streamSerder(stream):
@@ -218,8 +218,8 @@ class IpexHandler:
             serder (Serder): Incoming IPEX exchange message.
             attachments (list | None): Parsed attachment payloads, unused in the
                 current linear workflow validation.
-            nests (list | None): Parsed V2 nested artifacts that must match the
-                artifact SAIDs carried in ``a`` for offer/grant.
+            nests (list | None): Parsed V2 nested artifacts carried by offer
+                and grant messages.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -239,47 +239,55 @@ class IpexHandler:
             return False
         verb = parts[2]
 
+        q = serder.ked.get("q")
+        if not isinstance(attrs, dict) or "m" not in attrs or not isinstance(q, dict):
+            return False
+
         if verb in (Ipex.apply, Ipex.agree, Ipex.admit, Ipex.spurn):
             # These IPEX verbs do not carry nested artifacts.
             if nests:
                 return False
         elif verb == Ipex.offer:
-            # An offer must carry exactly 1 acdc attr
-            if "acdc" not in attrs or len(nests) != 1:
+            if ("o" not in attrs or not isinstance(attrs["o"], str)
+                    or "dp" not in q or not isinstance(q["dp"], list) or not nests):
                 return False
-
-            nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
-
-            # Check that the artifact's SAID matches the acdc SAID in the outer body
-            if not nserder.verify() or not nserder.compare(attrs["acdc"]):
+            try:
+                Saider(qb64=attrs["o"])
+            except Exception:
                 return False
-
-        elif verb == Ipex.grant:
-            # Always expects an acdc
-            fields = ["acdc"]
-            if "iss" in attrs:
-                fields.append("iss")
-            if "anc" in attrs:
-                fields.append("anc")
-
-            # Check that the nested artifacts match the number of referenced artifacts
-            if len(nests) != len(fields):
-                return False
-
-            # Validate each field's SAID against their outer body SAID
-            for field, nest in zip(fields, nests):
+            for idx, nest in enumerate(nests):
                 nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
-                if not nserder.verify() or not nserder.compare(attrs[field]):
+                if not nserder.verify():
+                    return False
+                if idx == 0 and not nserder.compare(attrs["o"]):
                     return False
 
-        # Apply starts the flow so there must be no prior
+        elif verb == Ipex.grant:
+            if "o" not in attrs or not isinstance(attrs["o"], str) or not nests:
+                return False
+            try:
+                Saider(qb64=attrs["o"])
+            except Exception:
+                return False
+            for idx, nest in enumerate(nests):
+                nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+                if not nserder.verify():
+                    return False
+                if idx == 0 and not nserder.compare(attrs["o"]):
+                    return False
+
+        # Apply starts the flow, so it must have no prior and must carry both
+        # the recipient and the transaction id.
         if verb == Ipex.apply:
-            return not dig
+            if "dp" not in q or not isinstance(q["dp"], list):
+                return False
+            return bool(not dig and serder.ked.get("ri", "") and serder.ked.get("x", ""))
         
-        # Offer and Grant can start a flow so empty prior is okay
+        # Offer and Grant can start a flow, but flow-openers must carry both
+        # the recipient and the transaction id.
         if verb in (Ipex.offer, Ipex.grant):
             if not dig:
-                return True
+                return bool(serder.ked.get("ri", "") and serder.ked.get("x", ""))
 
         # Admit, Agree and Spurn are not allowed to start a flow so empty prior rejected
         elif verb in (Ipex.admit, Ipex.agree, Ipex.spurn):
@@ -300,6 +308,19 @@ class IpexHandler:
             return False
         pverb = pparts[2]
         if pverb not in PreviousRoutes[verb]:
+            return False
+        if verb == Ipex.spurn and pverb == Ipex.grant and pserder.ked.get("p", ""):
+            return False
+
+        # Replies must target the prior sender and come from the prior receiver
+        if serder.ked.get("ri", "") != pserder.ked.get("i", ""):
+            return False
+        preceiver = pserder.ked.get("ri", "")
+        if not preceiver:
+            return False
+        if serder.ked.get("i", "") != preceiver:
+            return False
+        if serder.ked.get("x", "") != pserder.ked.get("x", ""):
             return False
 
         return self.response(pserder) is None
@@ -341,36 +362,45 @@ class IpexHandler:
             m=attrs["m"],
         ))
 
-
-def apply(hab, recp, message, schema, attrs, dt=None, kind=None, gvrsn=None):
+def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gvrsn=None):
     """Create a signed V2 IPEX ``apply`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         recp (str): Recipient AID for the application.
         message (str): Human-readable application message.
-        schema (str | Serder): Schema SAID or schema-like object for the request.
-        attrs (dict): Requested credential attribute payload.
+        attrs (dict | None): Optional application body payload stored in ``a``.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
+        modifiers (dict | None): Query-section fields for ``q``. ``apply``
+            requires an explicit disclosure plan at ``modifiers["dp"]``.
 
     Returns:
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
+    if not recp:
+        raise ValueError("recp is required when apply starts a flow")
+    xid = Diger(ser=Noncer().qb64b).qb64
+    if attrs is not None and not isinstance(attrs, dict):
+        raise TypeError("attrs must be a dict when provided")
+
+    data = dict(attrs) if attrs is not None else {}
+    data["m"] = message
+    mods = dict(modifiers) if modifiers else {}
+    if "dp" not in mods or not isinstance(mods["dp"], list):
+        raise ValueError("modifiers['dp'] is required and must be a list")
+
     # Build the body
     serder = exchange(
         sender=hab.pre,
         receiver=recp,
+        xid=xid,
         route="/ipex/apply",
+        modifiers=mods,
         stamp=dt,
-        attributes=dict(
-            m=message,
-            s=schema.said if hasattr(schema, "said") else schema,
-            a=attrs,
-            i=recp,
-        ),
+        attributes=data,
         pvrsn=Vrsn_2_0,
         gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
         kind=kind if kind is not None else hab.kever.serder.kind,
@@ -385,20 +415,26 @@ def apply(hab, recp, message, schema, attrs, dt=None, kind=None, gvrsn=None):
     return serder, atc
 
 
-def offer(hab, message, acdc, apply=None, recp=None, dt=None, kind=None, gvrsn=None):
-    """Create a signed V2 IPEX ``offer`` exchange with a nested ACDC stream.
+def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
+          kind=None, gvrsn=None, modifiers=None, attrs=None):
+    """Create a signed V2 IPEX ``offer`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable offer message.
-        acdc (Serder | bytes | bytearray): Offered credential artifact.
+        origin (Serder | bytes | bytearray): Origin metadata artifact
+            identified in ``a.o`` and carried as the first nested artifact.
+        artifacts (list[Serder | bytes | bytearray] | None): Optional
+            attached metadata artifacts carried after ``origin``.
         apply (Serder | None): Optional prior ``apply`` exchange.
-        recp (str | None): Optional recipient AID. Defaults to the prior
-            ``apply`` sender; supply it directly for an offer-first exchange
+        recp (str | None): Recipient AID. Defaults to the prior ``apply``
+            sender; must be supplied directly for an offer-first exchange
             opened with no prior.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
+        modifiers (dict | None): Optional query-section fields for ``q``.
+        attrs (dict | None): Optional extra payload fields.
 
     Returns:
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
@@ -406,26 +442,54 @@ def offer(hab, message, acdc, apply=None, recp=None, dt=None, kind=None, gvrsn=N
     """
     # Get the prior event (apply) and the party to address (its sender)
     prior = apply.said if apply is not None else ""
-    receiver = recp if recp is not None else (apply.ked["i"] if apply is not None else "")
+
+    # If offer is starting the flow, recp must be provided and xid is
+    # generated locally. Otherwise infer both from the prior apply.
+    if apply is None:
+        if not recp:
+            raise ValueError("recp is required when no prior apply is provided")
+        xid = Diger(ser=Noncer().qb64b).qb64
+        receiver = recp
+    else:
+        if not apply.ked.get("ri", ""):
+            raise ValueError("prior exchange has no explicit receiver")
+        if hab.pre != apply.ked["ri"]:
+            raise ValueError("sender does not match prior exchange receiver")
+        if recp is not None and recp != apply.ked["i"]:
+            raise ValueError("recp does not match prior exchange sender")
+        receiver = apply.ked["i"]
+        pxid = apply.ked.get("x", "")
+        if pxid:
+            xid = pxid
+        else:
+            xid = ""
+    data = dict(attrs) if attrs is not None else {}
+    data["m"] = message
+    data["o"] = _streamSerder(origin).said
+    nests = [_normalizeNestedStream(origin)]
+    if artifacts is not None:
+        if not isinstance(artifacts, list):
+            raise TypeError("artifacts must be a list when provided")
+        for artifact in artifacts:
+            nests.append(_normalizeNestedStream(artifact))
+    mods = dict(modifiers) if modifiers else {}
+    mods.setdefault("dp", [])
 
     # Build the body
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,
+        xid=xid,
         prior=prior,
         route="/ipex/offer",
+        modifiers=mods,
         stamp=dt,
-        attributes=dict(
-            m=message,
-            acdc=_streamSerder(acdc).said,
-        ),
+        attributes=data,
         pvrsn=Vrsn_2_0,
         gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
         kind=kind if kind is not None else hab.kever.serder.kind,
     )
 
-    # Build attachments
-    nests = [_normalizeNestedStream(acdc)]
     atc = bytearray(_sign(hab=hab, serder=serder, nests=nests, gvrsn=gvrsn))
     del atc[:serder.size]
     return serder, atc
@@ -448,10 +512,22 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
-    receiver = recp if recp is not None else offer.ked["i"]
+    if not offer.ked.get("ri", ""):
+        raise ValueError("prior exchange has no explicit receiver")
+    if hab.pre != offer.ked["ri"]:
+        raise ValueError("sender does not match prior exchange receiver")
+    if recp is not None and recp != offer.ked["i"]:
+        raise ValueError("recp does not match prior exchange sender")
+    receiver = offer.ked["i"]
+    pxid = offer.ked.get("x", "")
+    if pxid:
+        xid = pxid
+    else:
+        xid = ""
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,
+        xid=xid,
         prior=offer.said,
         route="/ipex/agree",
         stamp=dt,
@@ -465,45 +541,61 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
     return serder, atc
 
 
-def grant(hab, recp, message, acdc, iss=None, anc=None, agree=None,
-          dt=None, kind=None, gvrsn=None):
+def grant(hab, recp, message, origin, artifacts=None, agree=None,
+          dt=None, kind=None, gvrsn=None, attrs=None):
     """Create a signed V2 IPEX ``grant`` exchange with nested disclosure artifacts.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         recp (str): Recipient AID for the disclosure.
         message (str): Human-readable disclosure message.
-        acdc (Serder | bytes | bytearray): Credential artifact to disclose.
-        iss (Serder | bytes | bytearray | None): Optional issuance artifact.
-        anc (Serder | bytes | bytearray | None): Optional anchoring event stream.
+        origin (Serder | bytes | bytearray): Origin presentation or credential
+            artifact identified in ``a.o`` and carried as the first nested
+            artifact.
+        artifacts (list[Serder | bytes | bytearray] | None): Optional
+            attached proofs or supporting artifacts carried after ``origin``.
         agree (Serder | None): Optional prior ``agree`` exchange.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
+        attrs (dict | None): Optional extra payload fields.
 
     Returns:
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
     prior = agree.said if agree is not None else ""
-    data = dict(
-        m=message,
-        i=recp,
-        acdc=_streamSerder(acdc).said,
-    )
-    nests = [_normalizeNestedStream(acdc)]
+    if agree is None:
+        if not recp:
+            raise ValueError("recp is required when no prior agree is provided")
+        xid = Diger(ser=Noncer().qb64b).qb64
+    else:
+        if not agree.ked.get("ri", ""):
+            raise ValueError("prior exchange has no explicit receiver")
+        if hab.pre != agree.ked["ri"]:
+            raise ValueError("sender does not match prior exchange receiver")
+        if recp != agree.ked["i"]:
+            raise ValueError("recp does not match prior exchange sender")
+        pxid = agree.ked.get("x", "")
+        if pxid:
+            xid = pxid
+        else:
+            xid = ""
+    data = dict(attrs) if attrs is not None else {}
+    data["m"] = message
+    data["o"] = _streamSerder(origin).said
+    nests = [_normalizeNestedStream(origin)]
 
-    if iss is not None:
-        data["iss"] = _streamSerder(iss).said
-        nests.append(_normalizeNestedStream(iss))
-
-    if anc is not None:
-        data["anc"] = _streamSerder(anc).said
-        nests.append(_normalizeNestedStream(anc))
+    if artifacts is not None:
+        if not isinstance(artifacts, list):
+            raise TypeError("artifacts must be a list when provided")
+        for artifact in artifacts:
+            nests.append(_normalizeNestedStream(artifact))
 
     serder = exchange(
         sender=hab.pre,
         receiver=recp,
+        xid=xid,
         prior=prior,
         route="/ipex/grant",
         stamp=dt,
@@ -534,10 +626,22 @@ def admit(hab, message, grant, recp=None, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
-    receiver = recp if recp is not None else grant.ked["i"]
+    if not grant.ked.get("ri", ""):
+        raise ValueError("prior exchange has no explicit receiver")
+    if hab.pre != grant.ked["ri"]:
+        raise ValueError("sender does not match prior exchange receiver")
+    if recp is not None and recp != grant.ked["i"]:
+        raise ValueError("recp does not match prior exchange sender")
+    receiver = grant.ked["i"]
+    pxid = grant.ked.get("x", "")
+    if pxid:
+        xid = pxid
+    else:
+        xid = ""
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,
+        xid=xid,
         prior=grant.said,
         route="/ipex/admit",
         stamp=dt,
@@ -568,10 +672,24 @@ def spurn(hab, message, spurned, recp=None, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
-    receiver = recp if recp is not None else spurned.ked["i"]
+    if not spurned.ked.get("ri", ""):
+        raise ValueError("prior exchange has no explicit receiver")
+    if spurned.ked["r"] == "/ipex/grant" and spurned.ked.get("p", ""):
+        raise ValueError("only flow-starting grants may be spurned")
+    if hab.pre != spurned.ked["ri"]:
+        raise ValueError("sender does not match prior exchange receiver")
+    if recp is not None and recp != spurned.ked["i"]:
+        raise ValueError("recp does not match prior exchange sender")
+    receiver = spurned.ked["i"]
+    pxid = spurned.ked.get("x", "")
+    if pxid:
+        xid = pxid
+    else:
+        xid = ""
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,
+        xid=xid,
         prior=spurned.said,
         route="/ipex/spurn",
         stamp=dt,

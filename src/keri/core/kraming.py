@@ -20,7 +20,7 @@ from hio.base import doing
 from hio.help import ogler
 
 
-from .coring import Verser, Prefixer, Diger
+from .coring import Verser, Prefixer, Diger, Dater
 from .indexing import Siger
 from .eventing import verifySigs
 
@@ -1406,16 +1406,31 @@ class Kramer:
                         case Ilks.xip:
                             xdts = msg.ked.get('dt', None)
                         case Ilks.exn:
-                            # x field value to fetch any existing cache entry with a matching AID.XID and copy its xdt
-                            # value. When no existing cache entry is found, then drop the event and exit.
+                            # First try the sender-scoped transactional cache (TMSC).
+                            # This is the fast path when the same sender has
+                            # already contributed earlier messages in the thread.
                             existingCache = next(self.db.kramTMSC.getTopItemIter((senderId, exId)), None)
 
                             if existingCache is not None:
-                                keys, cacheRecord = existingCache
+                                _, cacheRecord = existingCache
                                 xdts = cacheRecord.xdt
                             else:
-                                # No existing cache entry found, drop the event and exit
-                                return None
+                                # If the current sender has no row yet (ie no prior message)
+                                # fall back to the Exchange Opener Datetime cache (XDT) 
+                                # and use the xid for this exchange to find the 
+                                # opener's xdt
+                                threadDater = self.db.kramXDT.get(keys=(exId,))
+                                if threadDater is not None:
+                                    xdts = threadDater.dts
+                                # A bare transactional exn with no prior opens
+                                # a new thread, so its own mdt becomes the xdt.
+                                elif not msg.ked.get('p'):
+                                    xdts = mdts
+                                else:
+                                    # Replies with neither a sender-local cache
+                                    # row nor a thread-wide xid record cannot be
+                                    # tied to any known transaction.
+                                    return None
                         case _:
                             # Should never be reaching this case
                             raise KramError("Unexpected transactioned message type while kraming.")
@@ -1464,6 +1479,9 @@ class Kramer:
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.kramTMSC.pin(key, mcr)
+                        # Keep the xid-level opener time in sync so later
+                        # replies from any participant can recover this thread.
+                        self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
                         return msg
 
                     elif authType == AuthTypes.AttachedSignatureSingleKey:
@@ -1479,6 +1497,9 @@ class Kramer:
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.kramTMSC.pin(key, mcr)
+                        # Single-key transactional replies also refresh the
+                        # thread-wide xid lookup for later participants.
+                        self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
                         return msg
 
                 elif authType == AuthTypes.AttachedSignatureMultiKey:
@@ -1494,14 +1515,27 @@ class Kramer:
                         case Ilks.xip:
                             xdts = msg.ked.get('dt', None)
                         case Ilks.exn:
-                            existingCache = next(
-                                self.db.kramTMSC.getTopItemIter((senderId, exId)),
-                                None)
+                            # Reuse any sender-local transactional row first
+                            # before consulting the xid-level thread record.
+                            existingCache = next(self.db.kramTMSC.getTopItemIter((senderId, exId)), None)
                             if existingCache is not None:
-                                keys, cacheRecord = existingCache
+                                _, cacheRecord = existingCache
                                 xdts = cacheRecord.xdt
                             else:
-                                return None  # no existing cache, drop
+                                # Multi-key replies may arrive from a different
+                                # sender than the opener, so recover xdt from
+                                # the thread-wide xid index when needed.
+                                threadDater = self.db.kramXDT.get(keys=(exId,))
+                                if threadDater is not None:
+                                    xdts = threadDater.dts
+                                # A bare transactional exn still opens its own
+                                # thread even on the multi-key auth path.
+                                elif not msg.ked.get('p'):
+                                    xdts = mdts
+                                else:
+                                    # Without either cache source, this reply
+                                    # cannot be placed inside a known exchange.
+                                    return None
                         case _:
                             raise KramError(
                                 "Unexpected transactioned message type "
@@ -1525,6 +1559,9 @@ class Kramer:
                         mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.kramTMSC.pin(key, mcr)
+                    # Record the shared opener time once the transaction row is
+                    # accepted so later cross-sender replies reuse the same xdt.
+                    self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
 
                     # Check if threshold is immediately satisfied
                     sigIndices = [sig.index for sig in sigResult.sigers]
@@ -2153,6 +2190,11 @@ class Kramer:
 
                 # Remove non Auth Partials
                 self._remNonAuthAttachments((aid, mid))
+
+                # Drop the xid-level opener record only after the last
+                # transaction-cache row for that thread has been pruned.
+                if not any(rxid == xid for (_, rxid, _), _ in self.db.kramTMSC.getTopItemIter()):
+                    self.db.kramXDT.rem(keys=(xid,))
 
                 pruned = True
 

@@ -749,6 +749,11 @@ class Baser(LMDBer):
             datetimes, drift, and lag values.
             subkey 'tmsc.'
 
+        .kramXDT is named subDB instance of CesrSuber (klas=Dater) for
+            KRAM transaction opener datetimes. Maps XID to the opener datetime
+            that defines the thread's exchange window across all senders.
+            subkey 'xdt.'
+
         .kramPMKM is named subDB instance of SerderSuber for KRAM partially signed
             multi-key messages. Maps (AID, MID) key to the associated
             SerderKERI message.
@@ -1271,6 +1276,9 @@ class Baser(LMDBer):
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
         self.kramTMSC = koming.Komer(db=self, subkey='tmsc.',
                                  klas=TxnMsgCacheRecord)
+
+        # KRAM transaction opener datetime — key: XID, value: opener datetime
+        self.kramXDT = subing.CesrSuber(db=self, subkey='xdt.', klas=coring.Dater)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
         self.kramPMKM = subing.SerderSuber(db=self, subkey='pmkm.')
