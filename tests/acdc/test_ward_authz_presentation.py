@@ -77,8 +77,13 @@ from keri.core import (Salter, Noncer, Compactor, Mapper, Diger, Verfer,
                        exchange, messagize)
 from keri.core.coring import MtrDex
 from keri.core.eventing import incept
+from keri.core.serdering import SerderACDC
 from keri.acdc import regcept, acdcmap
 from keri.help.helping import ATREX
+# keri's ValidationError, kept distinct from jsonschema's above: the two are raised by
+# different layers of this module (SAID recomputation vs wire-shape validation) and a
+# test that conflates them cannot say which one caught a defect.
+from keri.kering import ValidationError as SaidError
 
 
 # --- Reproducible example actors (see module docstring). ---
@@ -1175,19 +1180,47 @@ def test_wardauthz_chain_and_negatives_JSON():
 # ---------------------------------------------------------------------------
 # Phase 4: Cara presents the AuthZ credential herself, over IPEX.
 # ---------------------------------------------------------------------------
-def _ward_id_disclosure(wardCitizen, kind):
-    """Cara's minimal disclosure of her citizen credential: issuee only.
+def _issuee_only_attributes(acdc, kind):
+    """An attributive credential's attribute section reduced to its issuee.
 
-    The platform needs to BIND the ward -- to see that the AuthZ credential's issuee and
-    the citizen credential's issuee are the same person -- not to read her name, her
-    birthdate or where she lives. The citizen credential is attributive, so disclosure
-    is by compaction: each nested block collapses to its bare SAID and the mix recomputes
-    to the same committed section SAID.
+    The platform needs to BIND a person -- to see that two credentials name the same
+    issuee -- not to read a name, a birthdate or a residence. Both citizen credentials
+    here are attributive with individually-disclosable nested blocks, so disclosure is
+    by compaction: each nested block collapses to its bare SAID, the issuee stays in the
+    clear, and the mix recomputes to the same committed section SAID.
     """
-    compactor = Compactor(mad=dict(wardCitizen.sad['a']), makify=True, kind=kind)
+    compactor = Compactor(mad=dict(acdc.sad['a']), makify=True, kind=kind)
     compactor.compact()
     compactor.expand(greedy=True)          # populates .partials (incl. the compact one)
     return dict(compactor.partials[('',)].mad)
+
+
+def _disclose(acdc, kind, attribute=None):
+    """Rebuild `acdc` as the partial disclosure that carries `attribute`.
+
+    THE reason a disclosure can be verified at all. An ACDC's SAID is computed over its
+    MOST COMPACT form, so every partial mix of the same sections commits to the same
+    'd'. Handing the platform a credential whose attribute section is compacted to the
+    issuee therefore hands it something that still recomputes to the credential SAID the
+    edges point at -- which is what lets the platform run the binding on what it
+    received instead of on what it was told. `attribute=None` discloses the section
+    whole (the right call for a FLAT section, which cannot be split; see _guardian_attr).
+    """
+    sad = acdc.sad
+    if attribute is None:
+        attribute = sad['a']
+    # The schema rides as a BARE SAID, not as the whole block. The disclosee named that
+    # SAID in its own dp, so it already has the schema; shipping the block back would be
+    # pure bulk -- and worse than bulk, because the block enumerates the FIELD NAMES of
+    # every withheld element, which is exactly what compacting a section is meant to
+    # hide. (The sibling module makes the sharper version of this point: there the block
+    # would name every age threshold the credential carries.)
+    schema = sad['s']['$id'] if isinstance(sad['s'], dict) else sad['s']
+    return acdcmap(israid=sad['i'], uuid=sad.get('u'), regid=sad.get('rd'),
+                   schema=schema, attribute=json.loads(json.dumps(attribute)),
+                   iseaid=acdc.iseaid,
+                   edge=json.loads(json.dumps(sad['e'])) if 'e' in sad else None,
+                   rule=sad.get('r'), kind=kind)
 
 
 def _committed_a_said(acdc, kind):
@@ -1195,6 +1228,39 @@ def _committed_a_said(acdc, kind):
     compactor = Compactor(mad=dict(acdc.sad['a']), makify=True, kind=kind)
     compactor.compact()
     return compactor.said
+
+
+def _platform_accepts_grant(granted, offeredOrigin, kind):
+    """The platform's grant-time verification, run on WHAT IT WAS HANDED.
+
+    Returns True or raises. This is the step the exchange exists to reach, and it takes
+    nothing on trust from the test's own scope: every credential is reconstructed from
+    the grant body with SerderACDC(verify=True), which recomputes the SAID over the
+    disclosed content -- most-compact-form semantics, so a partial disclosure verifies
+    to the same 'd' as the full credential -- and raises if it does not match.
+
+    Three things happen in order:
+
+      1. Each of the four disclosed artifacts is reconstructed and self-verified. A
+         tampered payload dies here, because its recomputed SAID stops matching its 'd'.
+      2. The origin is confirmed to be the credential the OFFER committed to. Without
+         this the platform could be handed a different, perfectly valid authorization
+         than the one whose terms it agreed to -- terms follow the data.
+      3. The seven-check binding runs on the RECONSTRUCTED objects. Every edge digest is
+         therefore checked against a SAID recomputed from disclosed content, so
+         substituting any far node into the disclosed set breaks the edge that names it.
+
+    A complete verifier adds registry status (walk each 'rd' TEL for a revocation) and
+    the Layer-2 question of whether the guardianship's issuer is competent to recognize
+    a guardianship. Both are out of scope at this altitude, as in _verify_authz_chain.
+    """
+    origin = SerderACDC(sad=json.loads(json.dumps(granted['acdc'])), verify=True)
+    authority = SerderACDC(sad=json.loads(json.dumps(granted['authority'])), verify=True)
+    subject = SerderACDC(sad=json.loads(json.dumps(granted['subject'])), verify=True)
+    guardianId = SerderACDC(sad=json.loads(json.dumps(granted['guardianId'])),
+                            verify=True)
+    assert origin.said == offeredOrigin       # the terms agreed to are the terms received
+    return _verify_authz_chain(origin, authority, subject, guardianId)
 
 
 def test_wardauthz_presentation_JSON():
@@ -1206,11 +1272,21 @@ def test_wardauthz_presentation_JSON():
     tests/acdc/test_guardianship_presentation.py, where the ward is too young to hold her
     own keys, so the guardian is the discloser and the ward never speaks.
 
-    The exchange is gated: apply, offer, agree, grant, admit, with the ward's citizen
-    attributes crossing the wire only after the platform has signed an agree, and even
-    then only as bare SAIDs -- the platform learns that Cara is the subject of a
-    state-endorsed citizen credential under guardianship, and learns her authorized
-    routes and capabilities, and learns nothing else about her.
+    The exchange is gated: apply, offer, agree, grant, admit, with either citizen
+    credential's attributes crossing the wire only after the platform has signed an
+    agree, and even then only as bare SAIDs -- the platform learns that Cara is the
+    subject of a state-endorsed citizen credential under guardianship, that the guardian
+    authorizing her is himself a state-endorsed person, and what routes and capabilities
+    she holds. It learns neither person's name, birthdate or residence.
+
+    THE EXCHANGE ENDS IN A VERIFICATION OF WHAT WAS TRANSMITTED. _platform_accepts_grant
+    reconstructs every disclosed artifact from the grant body, recomputes its SAID over
+    the disclosed content, confirms the origin is the credential the offer committed to,
+    and only then runs the seven-check binding on the reconstructed objects. Three
+    negatives hold it honest: a substituted authority credential, an origin other than
+    the one offered, and a tampered payload are each refused. A presentation example
+    that verifies credentials it already had in scope proves nothing about the wire, and
+    every one of those negatives would pass unnoticed if it did.
     """
     kind = Kinds.json
     guardianCitizen, guardian, wardCitizen, wardAuthz = _credential_graph(kind)
@@ -1239,9 +1315,10 @@ def test_wardauthz_presentation_JSON():
     # path reaching a non-origin ACDC must cross the edge that links it -- the virtual
     # '_' component, standing for the jump from the near-side edge block to the top level
     # of the far-side ACDC (#1549). The same request written with non-empty prefixes:
-    #     origin:       "/"                ["i", "a/i", "a/authz"]
-    #     guardianship: "/e/authority/_/"  ["a/i", "a/ward", "a/powers"]
-    #     ward citizen: "/e/subject/_/"    ["a/i"]
+    #     origin:           "/"                          ["i", "a/i", "a/authz", "e"]
+    #     guardianship:     "/e/authority/_/"            ["i", "a", "e"]
+    #     ward citizen:     "/e/subject/_/"              ["a/i", "e"]
+    #     guardian citizen: "/e/authority/_/e/citizen/_/" ["a/i"]
     #
     # The zeroth entry is the DAG's origin node (#1549). Here the origin is the AuthZ
     # credential itself -- Cara presents a credential she HOLDS, so unlike the sibling
@@ -1251,25 +1328,48 @@ def test_wardauthz_presentation_JSON():
     # will accept is its own published requirement (@SmithSamuelM, #1542, on the
     # applicant knowing the origin schema).
     #
-    # What the platform asks for is exactly the shape of the question it has to answer.
-    # From the origin: who issued this authorization, to whom, and what does it grant.
-    # From the guardianship: who holds it, over which ward, and how far his powers run --
-    # the three fields the attenuation check needs. From the ward's citizen credential:
-    # the issuee alone, which is all that is needed to bind Cara to the authorization.
-    # Guardian-as-Citizen (node 1) is a node in this DAG and carries NO entry, because
-    # nothing is requested from it: the platform has no business knowing Bob's name or
-    # where he lives. Entries are therefore a breadth-first-ordered SUBSET of the DAG,
-    # and each still names its own schema SAID, so a skipped node cannot shift the
-    # meaning of the entries below it. (The sibling's list asks something of every node
-    # its DAG reaches, so it is gapless -- one entry per node. Both are legal; a gap is
-    # only safe because the schema SAID travels with each entry.)
+    # WHAT THE PLATFORM ASKS FOR IS EXACTLY WHAT ITS BINDING NEEDS, and the discipline
+    # that produces this list is to walk _verify_authz_chain's seven checks and ask what
+    # each one reads. Anything the binding does not read is not requested; anything it
+    # does read must be requested, or the check cannot run on what arrives.
+    #
+    #   origin (AuthZ)   ["i", "a/i", "a/authz", "e"]
+    #       issuer and issuee for checks (1), (2) and (5); the payload for (6); and the
+    #       EDGE SECTION, without which the platform cannot walk to any other node --
+    #       every one of checks (1)-(4) reads an edge digest.
+    #   guardianship     ["i", "a", "e"]
+    #       the whole attribute section, not a field list. _guardian_attr is FLAT by
+    #       design -- basis, scope, powers and validity are meant to be read together --
+    #       and a flat section discloses whole or as one bare SAID, with nothing in
+    #       between. Asking for "a/ward" and "a/powers" individually would name paths no
+    #       disclosure mechanism can produce from this credential. Plus 'e' for check (3).
+    #   ward citizen     ["a/i", "e"]
+    #       the issuee, which binds Cara to the authorization, and the edge section,
+    #       without which check (4) -- the encumbrance -- cannot be evaluated at all.
+    #   guardian citizen ["a/i"]
+    #       the issuee alone. Check (3) asks whether the recognized guardian is a
+    #       state-endorsed person rather than a bare AID, and that is answered by the
+    #       issuee and the edge digest that reaches it. Bob's name, birthdate and
+    #       residence stay bare SAIDs: this credential's attribute section IS nested, so
+    #       unlike the guardianship it can be split, and the platform learns nothing
+    #       about the parent beyond the fact that the State endorsed him.
+    #
+    # So the list is GAPLESS -- one entry per node, breadth-first from the origin -- like
+    # the sibling's. An earlier draft of this example skipped the guardian's citizen
+    # credential on the grounds that the platform had no business learning anything about
+    # Bob; that was a privacy claim the binding could not afford, because check (3) reads
+    # that node. The privacy point survives in the honest form: ask for the issuee, not
+    # the person.
     authzSchemaSaid, _ = _saidify_schema(dict(AUTHZ_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/apply",
                      modifiers=dict(dp=[[authzSchemaSaid, "",
-                                         ["i", "a/i", "a/authz"]],
+                                         ["i", "a/i", "a/authz", "e"]],
                                         [guardian.sad['s']['$id'], "",
-                                         ["a/i", "a/ward", "a/powers"]],
-                                        [wardCitizen.sad['s']['$id'], "", ["a/i"]]]),
+                                         ["i", "a", "e"]],
+                                        [wardCitizen.sad['s']['$id'], "",
+                                         ["a/i", "e"]],
+                                        [guardianCitizen.sad['s']['$id'], "",
+                                         ["a/i"]]]),
                      attributes=dict(m="Prove a guardian authorized this minor account "
                                        "holder's settings, and show the scope.",
                                      g=AUTHZ_RULES_SAID),
@@ -1277,20 +1377,22 @@ def test_wardauthz_presentation_JSON():
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == SOCIAL
     dp = apply.sad['q']['dp']
     assert [entry[0] for entry in dp] == [authzSchemaSaid, guardian.sad['s']['$id'],
-                                          wardCitizen.sad['s']['$id']]
+                                          wardCitizen.sad['s']['$id'],
+                                          guardianCitizen.sad['s']['$id']]
     assert all(len(entry) == 3 for entry in dp)       # (schemaSAID, prefix, [paths])
-    assert [entry[1] for entry in dp] == ["", "", ""] # no prefixes: paths stay relative
-    assert dp[0][2] == ["i", "a/i", "a/authz"]        # origin: who granted, to whom, what
-    assert dp[1][2] == ["a/i", "a/ward", "a/powers"]  # guardianship: whose, over whom, how far
-    assert dp[2][2] == ["a/i"]                        # ward citizen: the binding, nothing more
+    assert [entry[1] for entry in dp] == ["", "", "", ""]  # no prefixes: paths relative
+    assert dp[0][2] == ["i", "a/i", "a/authz", "e"]   # origin: who, to whom, what, edges
+    assert dp[1][2] == ["i", "a", "e"]                # guardianship: flat 'a', so whole
+    assert dp[2][2] == ["a/i", "e"]                   # ward citizen: binding + encumbrance
+    assert dp[3][2] == ["a/i"]                        # guardian citizen: the issuee alone
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, _, paths in dp for p in paths)
     assert authzSchemaSaid == wardAuthz.sad['s']['$id']   # the origin Cara actually holds
-    # The guardian's own citizen credential is a node in the DAG and is asked for
-    # nothing: the platform has no business learning the parent's name or residence.
-    assert guardianCitizen.sad['s']['$id'] not in [entry[0] for entry in dp]
+    # Every node the binding reads is asked for, and every node in the DAG is a node the
+    # binding reads -- so the request covers the DAG exactly.
+    assert len(dp) == 4
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EMeUXBWGbmhe5MvD0DTPD1ckI5MyscpSC92qVzcOJFxk"
+    assert apply.said == "ECpsd2btQ79rndSrOrK9j4wKCq48o7_IXGRESV717T-K"
 
     # 2. offer (Cara -> platform): commits ONLY to the SAID of the credential she is
     # offering and to the governance ref, and binds the apply. It deliberately does NOT
@@ -1317,7 +1419,7 @@ def test_wardauthz_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                  # solicited: "as per the apply"
-    assert offer.said == "EHwBEyvCRbsccjyS_UFNHBYbT7tRq8Z_s4jKD9eSc3LQ"
+    assert offer.said == "EGKqASGat52SaGBi9mLmdCUmu9ovXlrQtsQHc6WDdA60"
     assert wardAuthz.said.encode() in offer.raw        # the discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2009-04-10" not in offer.raw
     assert guardian.said.encode() not in offer.raw     # issuer commitments withheld...
@@ -1329,7 +1431,7 @@ def test_wardauthz_presentation_JSON():
     agree = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EIcfwLEL6zJ_4TegWOY30qOYAwq8jCYKlxhaLzXfH6Ea"
+    assert agree.said == "EF_BoANaVLJrqsMwHX21FYTeEOTWN9Q-t7p2Jr9kNkX-"
     svcSigner = _SIGNERS[3]                            # the platform's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1338,20 +1440,32 @@ def test_wardauthz_presentation_JSON():
     assert capturedKeyState.verify(sig=svcSig.raw, ser=agree.raw)
 
     # 4. The gate: Cara discloses only when handed a valid, signed, offer-binding agree.
-    # The grant carries the EXPANDED AuthZ credential (edges visible, so the platform can
-    # walk the chain), the guardianship credential it edges to (disclosed whole, as an
-    # authority credential must be), and her own citizen credential compacted to the
-    # issuee alone.
+    # The grant carries ONE ARTIFACT PER dp ENTRY, in the same breadth-first order, each
+    # disclosed to the depth its entry asked for and no further. Building it from the dp
+    # list rather than from what is convenient is the whole discipline: a grant assembled
+    # independently of the request is a grant the platform cannot check its request
+    # against, and it is how an example ends up teaching both "honor dp" and "send whole
+    # credentials" in the same breath.
     def disclose(agreeMsg, sig, keyState):
         if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
                 and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
             return None
-        return exchange(sender=CARA, receiver=SOCIAL, route="/ipex/grant",
-                        prior=agreeMsg.said,
-                        attributes=dict(acdc=wardAuthz.sad,
-                                        authority=guardian.sad,
-                                        subject=_ward_id_disclosure(wardCitizen, kind)),
-                        stamp=GRANT_STAMP, kind=kind)
+        return exchange(
+            sender=CARA, receiver=SOCIAL, route="/ipex/grant", prior=agreeMsg.said,
+            attributes=dict(
+                # dp[0] ["i", "a/i", "a/authz", "e"] -- the payload is asked for, so the
+                # attribute section rides expanded; so does 'e', to be walkable.
+                acdc=_disclose(wardAuthz, kind).sad,
+                # dp[1] ["i", "a", "e"] -- flat section, disclosed whole because that is
+                # the only form it has.
+                authority=_disclose(guardian, kind).sad,
+                # dp[2] ["a/i", "e"] and dp[3] ["a/i"] -- nested sections, compacted to
+                # the issuee. Name, birthdate and residence stay bare SAIDs.
+                subject=_disclose(wardCitizen, kind,
+                                  _issuee_only_attributes(wardCitizen, kind)).sad,
+                guardianId=_disclose(guardianCitizen, kind,
+                                     _issuee_only_attributes(guardianCitizen, kind)).sad),
+            stamp=GRANT_STAMP, kind=kind)
 
     # A forged signature or a spurn (decline) unlocks nothing.
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0),
@@ -1364,41 +1478,77 @@ def test_wardauthz_presentation_JSON():
     # The valid agree unlocks the grant.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "ECPr0RSNH4H__JNu5Bex2TSaMH_bnlb2P3-4C_Pk41wd"
+    assert grant.said == "EBGFcsDsSCMeanK53iNBxmwLadlFWxhPA9obTg_KTHjs"
 
-    # What the platform receives is exactly what it asked for and no more: the
-    # authorization payload, the guardianship's scope, and a binding to Cara.
+    # What the platform receives is one artifact per dp entry, disclosed to the requested
+    # depth. Each one still carries the SAID of the FULL credential, because an ACDC's
+    # SAID is computed over its most compact form -- which is what makes a partial
+    # disclosure verifiable rather than merely plausible.
     granted = grant.sad['a']
+    assert set(granted) == {'acdc', 'authority', 'subject', 'guardianId'}   # one per dp
+    assert granted['acdc']['d'] == wardAuthz.said
+    assert granted['authority']['d'] == guardian.said
+    assert granted['subject']['d'] == wardCitizen.said
+    assert granted['guardianId']['d'] == guardianCitizen.said
     assert _authz_capabilities(granted['acdc']['a']['authz']) == {"read", "post",
                                                                   "message"}
     assert granted['authority']['a']['ward'] == CARA
-    assert granted['subject']['i'] == CARA             # the ward bound by issuee...
-    assert isinstance(granted['subject']['name'], str)  # ...with every attribute withheld
-    assert isinstance(granted['subject']['dob'], str)
+    assert granted['subject']['a']['i'] == CARA        # the ward bound by issuee...
+    assert isinstance(granted['subject']['a']['name'], str)   # ...attributes withheld
+    assert isinstance(granted['subject']['a']['dob'], str)
+    assert granted['guardianId']['a']['i'] == BOB      # the guardian likewise bound...
+    assert isinstance(granted['guardianId']['a']['name'], str)      # ...and withheld
+    assert isinstance(granted['guardianId']['a']['residence'], str)
     assert b"Cara Carver" not in grant.raw             # name never on the wire
     assert b"2009-04-10" not in grant.raw              # birthdate never on the wire
-    assert b"Bob Carver" not in grant.raw              # nor the parent's identity
-    # Honest residual, asserted present rather than quietly avoided: the guardianship
-    # credential is disclosed WHOLE, so its expiry -- Cara's 18th birthday -- crosses the
-    # wire and hands the platform her birth month and day. An attribute in a
-    # whole-disclosed authority credential cannot be withheld the way an edge can, which
-    # is the disclosure argument of the module docstring showing up as an actual leak.
+    assert b"Bob Carver" not in grant.raw              # nor the parent's name...
+    assert b"Provo" not in grant.raw                   # ...nor where he lives
+    # Honest residual, asserted present rather than quietly avoided: the guardianship's
+    # expiry -- Cara's 18th birthday -- crosses the wire and hands the platform her birth
+    # month and day. The cause is structural and is named in the dp comment above:
+    # _guardian_attr is FLAT, so its section discloses whole or not at all, and the
+    # platform's request could not have asked for less. Compare the two citizen
+    # credentials in this same grant, whose nested sections DO split. The fix is a
+    # coarser expiry or a nested guardianship section, and both are schema decisions for
+    # a deployment rather than something this example should invent.
     assert b"2027-04-10" in grant.raw
     # The withheld blocks still recompute to the section SAID the credential commits to,
     # so the platform can prove the disclosure belongs to Cara's citizen credential.
-    check = Compactor(mad=dict(granted['subject'], d=''), makify=True, kind=kind)
+    check = Compactor(mad=dict(granted['subject']['a'], d=''), makify=True, kind=kind)
     check.compact()
     assert check.said == _committed_a_said(wardCitizen, kind)
 
-    # The platform now runs the same binding a verifier runs anywhere, on the credentials
-    # it was handed -- which is the point of the whole exchange.
-    assert _verify_authz_chain(wardAuthz, guardian, wardCitizen, guardianCitizen)
+    # The platform now runs the same binding a verifier runs anywhere -- on the artifacts
+    # it was HANDED, reconstructed from the grant body, not on anything it knew before.
+    assert _platform_accepts_grant(granted, wardAuthz.said, kind)
+
+    # ...and the negatives that prove the acceptance is reading the wire. Each of these
+    # would pass unnoticed if the platform verified credentials it already held.
+    # (a) A guardianship over a different ward, substituted into the disclosed set.
+    otherGuardianAttr = dict(_guardian_attr(), ward=SOCIAL)
+    _, ggSchema = _saidify_schema(dict(GUARDIAN_SCHEMA_MAD), kind=kind)
+    otherGuardian = acdcmap(israid=STATE, uuid=NONCES[N_GG_ACDC],
+                            regid=_guardian_registry(kind).said, schema=ggSchema,
+                            attribute=otherGuardianAttr, iseaid=BOB,
+                            edge=dict(guardian.sad['e']), rule=GUARDIAN_RULES_SAID,
+                            kind=kind)
+    swappedAuthority = dict(granted, authority=otherGuardian.sad)
+    with pytest.raises(AssertionError):
+        _platform_accepts_grant(swappedAuthority, wardAuthz.said, kind)
+    # (b) An origin that is not the credential the offer committed to.
+    with pytest.raises(AssertionError):
+        _platform_accepts_grant(granted, guardian.said, kind)
+    # (c) A tampered payload: the SAID no longer recomputes over the content.
+    tampered = json.loads(json.dumps(granted))
+    tampered['acdc']['a']['authz']['rc']['social_store'] = ["purchase"]
+    with pytest.raises(SaidError):
+        _platform_accepts_grant(tampered, wardAuthz.said, kind)
 
     # 5. admit (platform -> Cara): closes the exchange.
     admit = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EIHZtaug8QZLED1659uJMKchvzttEnE7UmarnwiUOo5y"
+    assert admit.said == "EK1gyvwKLaUKxMev9I-MuSZt9v5Cxx68fnASopakqSid"
 
 
 # ---------------------------------------------------------------------------
@@ -1454,12 +1604,24 @@ def test_wardauthz_serialization_kinds(kind):
     assert compact.said == wardAuthz.said
     assert isinstance(compact.sad['e'], str)
 
-    # The ward's minimal disclosure recomputes to the committed section SAID.
-    disclosure = _ward_id_disclosure(wardCitizen, kind)
+    # The ward's minimal disclosure recomputes to the committed section SAID...
+    disclosure = _issuee_only_attributes(wardCitizen, kind)
     assert disclosure['i'] == CARA
     check = Compactor(mad=dict(disclosure, d=''), makify=True, kind=kind)
     check.compact()
     assert check.said == _committed_a_said(wardCitizen, kind)
+    # ...and the credential rebuilt around it still carries the FULL credential's SAID,
+    # on every kind. This is what the platform's acceptance rests on: a partial
+    # disclosure is verifiable because an ACDC commits to its most compact form.
+    partial = _disclose(wardCitizen, kind, disclosure)
+    assert partial.said == wardCitizen.said
+    assert isinstance(partial.sad['a']['name'], str)   # still withheld
+    # ...and the schema rides as a bare SAID, so the disclosure does not hand back a
+    # block naming every field it just took the trouble to withhold.
+    assert partial.sad['s'] == wardCitizen.sad['s']['$id']
+    assert isinstance(partial.sad['s'], str)
+    assert SerderACDC(sad=json.loads(json.dumps(partial.sad)),
+                      verify=True).said == wardCitizen.said
 
 
 if __name__ == "__main__":
