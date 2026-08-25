@@ -56,6 +56,11 @@ class RegistryStore:
         return self.baser.ancs.get(keys=said)
 
     def putAnchor(self, said, number, diger):
+        # Keep the earliest verified sealing event for this TEL event so later
+        # re-seals cannot rewrite sibling arbitration order.
+        current = self.anchor(said)
+        if current is not None and current[0].sn <= number.sn:
+            return False
         return self.baser.ancs.pin(keys=said, val=(number, diger))
 
     def head(self, regk):
