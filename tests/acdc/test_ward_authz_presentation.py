@@ -59,10 +59,11 @@ syntax UNSETTLED ("The syntax TBD", #1550), modeled on EVAC's 'rc' map and insul
 _authz_capabilities; the constraint the build measured -- a route cannot be a map LABEL in
 native CESR -- is at AUTHZ_BLOCK_SCHEMA. Over-reach is relational rather than structural, so
 an AuthZ credential exceeding (2)'s 'powers' is schema-valid and only the binding refuses it
-(Phase 3); note 'powers' here is the delegable capability set, where the sibling's statutory
-scope enum is 'scope'. And the altitude is the siblings': the credential graph, edge
-bindings and registry binding at the data-structure level on real v2 primitives, with no
-Habery/keystore and no verifyChain, which needs a live Reger/Tevery.
+(Phase 3); 'powers' here is the DELEGABLE capability set, and it is a different field from
+'scope', the coarse statutory enum that this module and the sibling both carry under that
+one name. And the altitude is the siblings': the credential graph, edge bindings and
+registry binding at the data-structure level on real v2 primitives, with no Habery/keystore
+and no verifyChain, which needs a live Reger/Tevery.
 """
 
 import json
@@ -166,8 +167,8 @@ def _disclosable_block(attr, attr_schema, desc):
     }
 
 
-# acm is a fixed-field format: it always carries (possibly empty) e and r sections even
-# when unused, so the schema must admit them.
+# acm is a fixed-field format: it always carries (possibly empty) e and r sections
+# even when unused, so the schema must admit them.
 _EMPTY_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
 
 
@@ -1259,7 +1260,9 @@ def test_wardauthz_presentation_JSON():
     # nothing is requested from it: the platform has no business knowing Bob's name or
     # where he lives. Entries are therefore a breadth-first-ordered SUBSET of the DAG,
     # and each still names its own schema SAID, so a skipped node cannot shift the
-    # meaning of the entries below it.
+    # meaning of the entries below it. (The sibling's list asks something of every node
+    # its DAG reaches, so it is gapless -- one entry per node. Both are legal; a gap is
+    # only safe because the schema SAID travels with each entry.)
     authzSchemaSaid, _ = _saidify_schema(dict(AUTHZ_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/apply",
                      modifiers=dict(dp=[[authzSchemaSaid, "",
@@ -1295,6 +1298,16 @@ def test_wardauthz_presentation_JSON():
     # credential): those are stable correlators, and attaching them before the platform
     # agrees would let a platform spurn and walk away with a persistent handle on both
     # the ward and her parent. They arrive only post-agree, in the grant.
+    #
+    # WHAT WITHHOLDING THEM DOES NOT BUY, and the sibling is the contrast that shows it.
+    # The one SAID this offer must commit to is the AuthZ credential's, and that is a
+    # credential Bob issued and Cara keeps: it is identical on every presentation she
+    # ever makes, so a platform that spurns still walks away with a stable handle on her.
+    # The sibling's origin is an envelope its discloser mints for the exchange, so a spurn
+    # there yields a digest never seen again. Decorrelation of the origin is something the
+    # represented shape gets for free and the ward-presents shape would have to buy -- by
+    # minting a per-exchange presentation ACDC that edges to the durable authorization,
+    # rather than offering the durable authorization itself as this example does.
     # Its query block carries `dp` as an EMPTY list: the offer is SOLICITED (its `p`
     # binds the apply), and an empty `dp` means "the same paths the apply asked for"
     # (#1549), so Cara restates nothing and the two messages cannot drift.
