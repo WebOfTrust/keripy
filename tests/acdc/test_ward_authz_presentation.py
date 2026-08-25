@@ -72,18 +72,14 @@ import pytest
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
-from keri import Kinds, Ilks
+from keri import Kinds, Ilks, Vrsn_2_0
 from keri.core import (Salter, Noncer, Compactor, Mapper, Diger, Verfer,
-                       exchange, messagize)
+                       exchange, messagize, Codens, Counter, Parser, Texter)
 from keri.core.coring import MtrDex
 from keri.core.eventing import incept
 from keri.core.serdering import SerderACDC
 from keri.acdc import regcept, acdcmap
 from keri.help.helping import ATREX
-# keri's ValidationError, kept distinct from jsonschema's above: the two are raised by
-# different layers of this module (SAID recomputation vs wire-shape validation) and a
-# test that conflates them cannot say which one caught a defect.
-from keri.kering import ValidationError as SaidError
 
 
 # --- Reproducible example actors (see module docstring). ---
@@ -1230,36 +1226,77 @@ def _committed_a_said(acdc, kind):
     return compactor.said
 
 
-def _platform_accepts_grant(granted, offeredOrigin, kind):
-    """The platform's grant-time verification, run on WHAT IT WAS HANDED.
+def _nest(serder):
+    """Wrap one disclosed artifact as a V2 nested substream the parser will accept.
 
-    Returns True or raises. This is the step the exchange exists to reach, and it takes
-    nothing on trust from the test's own scope: every credential is reconstructed from
-    the grant body with SerderACDC(verify=True), which recomputes the SAID over the
-    disclosed content -- most-compact-form semantics, so a partial disclosure verifies
-    to the same 'd' as the full credential -- and raises if it does not match.
+    Shape borrowed from tests/acdc/test_ipexing.py, which round-trips the same
+    construct: a non-CESR body is enclosed in a NonNativeBodyGroup, and an artifact with
+    no attachments of its own still needs an empty AttachmentGroup so the parser can
+    tell where the substream ends.
+    """
+    body = bytes(serder.raw)
+    if serder.kind != Kinds.cesr:
+        body = Counter.enclose(qb64=Texter(raw=body).qb64b,
+                               code=Codens.NonNativeBodyGroup, version=Vrsn_2_0)
+    empty = Counter.enclose(qb64=b'', code=Codens.ControllerIdxSigs, version=Vrsn_2_0)
+    nested = bytearray(body)
+    nested.extend(Counter.enclose(qb64=empty, code=Codens.AttachmentGroup,
+                                  version=Vrsn_2_0))
+    return Counter.enclose(qb64=nested, code=Codens.BodyWithAttachmentGroup,
+                           version=Vrsn_2_0)
 
-    Three things happen in order:
 
-      1. Each of the four disclosed artifacts is reconstructed and self-verified. A
-         tampered payload dies here, because its recomputed SAID stops matching its 'd'.
-      2. The origin is confirmed to be the credential the OFFER committed to. Without
-         this the platform could be handed a different, perfectly valid authorization
-         than the one whose terms it agreed to -- terms follow the data.
-      3. The seven-check binding runs on the RECONSTRUCTED objects. Every edge digest is
-         therefore checked against a SAID recomputed from disclosed content, so
-         substituting any far node into the disclosed set breaks the edge that names it.
+def _far(byDigest, near, label):
+    """The far node of `near`'s `label` edge, looked up by the digest the edge names."""
+    said = near.sad['e'][label]['n']
+    assert said in byDigest              # the DAG the origin commits to must be complete
+    return byDigest[said]
+
+
+def _platform_accepts_grant(grantStream, offeredOrigin):
+    """The platform's grant-time verification, run on WHAT CAME OFF THE WIRE.
+
+    Returns True or raises. Takes the signed grant STREAM -- body plus attachments --
+    and nothing else, so there is no way for a credential the platform already held to
+    stand in for one it was sent.
+
+    Four things happen in order:
+
+      1. Parse. Every nested artifact is reaped and self-verified as it is parsed: the
+         SAID is recomputed over the disclosed content, using most-compact-form
+         semantics so a partial disclosure verifies to the same 'd' as the full
+         credential. A tampered payload dies here, and takes the whole stream with it.
+      2. Confirm the origin is the credential the OFFER committed to. Without this the
+         platform could be handed a different, perfectly valid authorization than the
+         one whose terms it agreed to -- terms follow the data.
+      3. WALK THE DAG from that origin to find every other node, edge by edge, matching
+         each edge's digest against the parsed artifacts. This is what the `o` field
+         buys over the bespoke labels it replaced: the platform is no longer trusting
+         the discloser's choice of key names to tell it which credential is the
+         authority and which is the subject. It reads that from the origin's own edges,
+         which the origin's issuer committed to. A substituted far node breaks the
+         digest that names it.
+      4. Run the seven-check binding on the artifacts that walk produced.
 
     A complete verifier adds registry status (walk each 'rd' TEL for a revocation) and
     the Layer-2 question of whether the guardianship's issuer is competent to recognize
     a guardianship. Both are out of scope at this altitude, as in _verify_authz_chain.
     """
-    origin = SerderACDC(sad=json.loads(json.dumps(granted['acdc'])), verify=True)
-    authority = SerderACDC(sad=json.loads(json.dumps(granted['authority'])), verify=True)
-    subject = SerderACDC(sad=json.loads(json.dumps(granted['subject'])), verify=True)
-    guardianId = SerderACDC(sad=json.loads(json.dumps(granted['guardianId'])),
-                            verify=True)
-    assert origin.said == offeredOrigin       # the terms agreed to are the terms received
+    ims = bytearray(grantStream)
+    results = Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, processive=False)
+    # A nested artifact whose SAID does not recompute over its content voids the WHOLE
+    # stream -- the parser returns nothing rather than handing back the good artifacts
+    # and dropping the bad one, so a tampered credential cannot be quietly ignored.
+    assert results and len(results) == 1
+    result = results[0]
+    assert result.serder.sad['r'] == "/ipex/grant"
+    assert result.serder.sad['a']['o'] == [offeredOrigin]   # terms follow the data
+    byDigest = {nest.serder.said: nest.serder for nest in result.nests}
+
+    origin = byDigest[offeredOrigin]
+    authority = _far(byDigest, origin, 'authority')         # AuthZ -I2I-> guardianship
+    subject = _far(byDigest, origin, 'subject')             # AuthZ -E1E-> ward citizen
+    guardianId = _far(byDigest, authority, 'citizen')       # guardianship -E1E-> Bob's
     return _verify_authz_chain(origin, authority, subject, guardianId)
 
 
@@ -1456,63 +1493,88 @@ def test_wardauthz_presentation_JSON():
     # independently of the request is a grant the platform cannot check its request
     # against, and it is how an example ends up teaching both "honor dp" and "send whole
     # credentials" in the same breath.
-    def disclose(agreeMsg, sig, keyState):
+    # THE DISCLOSED ARTIFACTS DO NOT RIDE IN 'a'. The attribute block carries only the
+    # origin, and the credentials themselves are nested attachments on the signed grant
+    # stream (#1595's V2 table: 'e' embeds dropped, "nested attachments, not embeds").
+    # The disclosures are the four the dp list asked for, each cut to the depth its entry
+    # named; the ORDER they are attached in carries no meaning, because the platform
+    # finds each one by following an edge digest rather than by position or label.
+    disclosures = [
+        # dp[0] ["i", "a/i", "a/authz", "e"] -- the payload is asked for, so the
+        # attribute section rides expanded; so does 'e', to be walkable.
+        _disclose(wardAuthz, kind),
+        # dp[1] ["i", "a", "e"] -- flat section, disclosed whole because that is the
+        # only form it has.
+        _disclose(guardian, kind),
+        # dp[2] ["a/i", "e"] and dp[3] ["a/i"] -- nested sections, compacted to the
+        # issuee. Name, birthdate and residence stay bare SAIDs.
+        _disclose(wardCitizen, kind, _issuee_only_attributes(wardCitizen, kind)),
+        _disclose(guardianCitizen, kind,
+                  _issuee_only_attributes(guardianCitizen, kind)),
+    ]
+
+    def disclose(agreeMsg, sig, keyState, nests=None):
         if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
                 and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
-            return None
-        return exchange(
-            sender=CARA, receiver=SOCIAL, route="/ipex/grant", prior=agreeMsg.said,
-            attributes=dict(
-                # dp[0] ["i", "a/i", "a/authz", "e"] -- the payload is asked for, so the
-                # attribute section rides expanded; so does 'e', to be walkable.
-                acdc=_disclose(wardAuthz, kind).sad,
-                # dp[1] ["i", "a", "e"] -- flat section, disclosed whole because that is
-                # the only form it has.
-                authority=_disclose(guardian, kind).sad,
-                # dp[2] ["a/i", "e"] and dp[3] ["a/i"] -- nested sections, compacted to
-                # the issuee. Name, birthdate and residence stay bare SAIDs.
-                subject=_disclose(wardCitizen, kind,
-                                  _issuee_only_attributes(wardCitizen, kind)).sad,
-                guardianId=_disclose(guardianCitizen, kind,
-                                     _issuee_only_attributes(guardianCitizen, kind)).sad),
-            stamp=GRANT_STAMP, kind=kind)
+            return None, None
+        nests = nests if nests is not None else disclosures
+        serder = exchange(sender=CARA, receiver=SOCIAL, route="/ipex/grant",
+                          prior=agreeMsg.said,
+                          attributes=dict(o=[wardAuthz.said]),
+                          stamp=GRANT_STAMP, kind=kind)
+        caraSig = _SIGNERS[2].sign(ser=serder.raw, index=0)   # the discloser signs
+        return serder, messagize(serder, sigers=[caraSig],
+                                 nests=[_nest(d) for d in nests],
+                                 framed=False, gvrsn=Vrsn_2_0)
 
     # A forged signature or a spurn (decline) unlocks nothing.
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0),
-                    capturedKeyState) is None
+                    capturedKeyState) == (None, None)
     spurn = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/spurn", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, svcSigner.sign(ser=spurn.raw, index=0),
-                    capturedKeyState) is None
+                    capturedKeyState) == (None, None)
 
     # The valid agree unlocks the grant.
-    grant = disclose(agree, svcSig, capturedKeyState)
+    grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EKjAC72RSOZekQ-6AoGjqbGOFu7PD6N2ojmN_1_sF_fy"
+    assert grant.said == "EBsZ8dlRvJsm5UOWVAWGDC4E6FqQtoWH-sOiSbNtpJ87"
 
-    # What the platform receives is one artifact per dp entry, disclosed to the requested
-    # depth. Each one still carries the SAID of the FULL credential, because an ACDC's
-    # SAID is computed over its most compact form -- which is what makes a partial
-    # disclosure verifiable rather than merely plausible.
+    # The attribute block is the origin and nothing else: a ONE-ELEMENT LIST, which is
+    # #1627's "Use Required Lists" form. That option is preferred there over a field map
+    # precisely because `dp` is already a list, so writing the single-DAG case as a list
+    # now is what keeps this example from needing a second edit when DAG soup lands.
     granted = grant.sad['a']
-    assert set(granted) == {'acdc', 'authority', 'subject', 'guardianId'}   # one per dp
-    assert granted['acdc']['d'] == wardAuthz.said
-    assert granted['authority']['d'] == guardian.said
-    assert granted['subject']['d'] == wardCitizen.said
-    assert granted['guardianId']['d'] == guardianCitizen.said
-    assert _authz_capabilities(granted['acdc']['a']['authz']) == {"read", "post",
-                                                                  "message"}
-    assert granted['authority']['a']['ward'] == CARA
-    assert granted['subject']['a']['i'] == CARA        # the ward bound by issuee...
-    assert isinstance(granted['subject']['a']['name'], str)   # ...attributes withheld
-    assert isinstance(granted['subject']['a']['dob'], str)
-    assert granted['guardianId']['a']['i'] == BOB      # the guardian likewise bound...
-    assert isinstance(granted['guardianId']['a']['name'], str)      # ...and withheld
-    assert isinstance(granted['guardianId']['a']['residence'], str)
-    assert b"Cara Carver" not in grant.raw             # name never on the wire
-    assert b"2009-04-10" not in grant.raw              # birthdate never on the wire
-    assert b"Bob Carver" not in grant.raw              # nor the parent's name...
-    assert b"Provo" not in grant.raw                   # ...nor where he lives
+    assert granted == dict(o=[wardAuthz.said])         # origin SAID only; #1595, #1627
+    assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
+
+    # The credentials are on the stream, not in the body -- one artifact per dp entry,
+    # each still carrying the SAID of the FULL credential, because an ACDC's SAID is
+    # computed over its most compact form. That is what makes a partial disclosure
+    # verifiable rather than merely plausible.
+    parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(grantStream), framed=False,
+                                            processive=False)[0]
+    onWire = {nest.serder.said: nest.serder.sad for nest in parsed.nests}
+    assert set(onWire) == {wardAuthz.said, guardian.said, wardCitizen.said,
+                           guardianCitizen.said}
+    assert _authz_capabilities(onWire[wardAuthz.said]['a']['authz']) == {"read", "post",
+                                                                        "message"}
+    assert onWire[guardian.said]['a']['ward'] == CARA
+    assert onWire[wardCitizen.said]['a']['i'] == CARA          # the ward bound by issuee
+    assert isinstance(onWire[wardCitizen.said]['a']['name'], str)   # ...attrs withheld
+    assert isinstance(onWire[wardCitizen.said]['a']['dob'], str)
+    assert onWire[guardianCitizen.said]['a']['i'] == BOB       # the guardian likewise...
+    assert isinstance(onWire[guardianCitizen.said]['a']['name'], str)   # ...and withheld
+    assert isinstance(onWire[guardianCitizen.said]['a']['residence'], str)
+    # The PII checks run against the DECODED bodies rather than the stream: a nested
+    # non-CESR body rides Texter-encoded (base64) inside a NonNativeBodyGroup, so a
+    # plaintext substring check on grantStream would pass without proving anything. This
+    # is everything the platform can read after parsing, the grant body included.
+    decoded = bytes(grant.raw) + b"".join(bytes(nest.serder.raw) for nest in parsed.nests)
+    assert b"Cara Carver" not in decoded               # name never on the wire
+    assert b"2009-04-10" not in decoded                # birthdate never on the wire
+    assert b"Bob Carver" not in decoded                # nor the parent's name...
+    assert b"Provo" not in decoded                     # ...nor where he lives
     # Honest residual, asserted present rather than quietly avoided: the guardianship's
     # expiry -- Cara's 18th birthday -- crosses the wire and hands the platform her birth
     # month and day. The cause is structural and is named in the dp comment above:
@@ -1521,20 +1583,23 @@ def test_wardauthz_presentation_JSON():
     # credentials in this same grant, whose nested sections DO split. The fix is a
     # coarser expiry or a nested guardianship section, and both are schema decisions for
     # a deployment rather than something this example should invent.
-    assert b"2027-04-10" in grant.raw
+    assert b"2027-04-10" in decoded
     # The withheld blocks still recompute to the section SAID the credential commits to,
     # so the platform can prove the disclosure belongs to Cara's citizen credential.
-    check = Compactor(mad=dict(granted['subject']['a'], d=''), makify=True, kind=kind)
+    check = Compactor(mad=dict(onWire[wardCitizen.said]['a'], d=''), makify=True,
+                      kind=kind)
     check.compact()
     assert check.said == _committed_a_said(wardCitizen, kind)
 
-    # The platform now runs the same binding a verifier runs anywhere -- on the artifacts
-    # it was HANDED, reconstructed from the grant body, not on anything it knew before.
-    assert _platform_accepts_grant(granted, wardAuthz.said, kind)
+    # The platform now runs the same binding a verifier runs anywhere -- on the stream it
+    # RECEIVED, reparsed from scratch, not on anything it knew before.
+    assert _platform_accepts_grant(grantStream, wardAuthz.said)
 
     # ...and the negatives that prove the acceptance is reading the wire. Each of these
     # would pass unnoticed if the platform verified credentials it already held.
-    # (a) A guardianship over a different ward, substituted into the disclosed set.
+    # (a) A guardianship over a different ward, substituted into the disclosed set. It is
+    # a perfectly valid ACDC and it parses; the origin's authority edge names the real
+    # guardianship, which is now missing from the stream, so the DAG walk stops.
     otherGuardianAttr = dict(_guardian_attr(), ward=SOCIAL)
     _, ggSchema = _saidify_schema(dict(GUARDIAN_SCHEMA_MAD), kind=kind)
     otherGuardian = acdcmap(israid=STATE, uuid=NONCES[N_GG_ACDC],
@@ -1542,23 +1607,32 @@ def test_wardauthz_presentation_JSON():
                             attribute=otherGuardianAttr, iseaid=BOB,
                             edge=dict(guardian.sad['e']), rule=GUARDIAN_RULES_SAID,
                             kind=kind)
-    swappedAuthority = dict(granted, authority=otherGuardian.sad)
+    _, swapped = disclose(agree, svcSig, capturedKeyState,
+                          nests=[disclosures[0], otherGuardian,
+                                 disclosures[2], disclosures[3]])
     with pytest.raises(AssertionError):
-        _platform_accepts_grant(swappedAuthority, wardAuthz.said, kind)
+        _platform_accepts_grant(swapped, wardAuthz.said)
     # (b) An origin that is not the credential the offer committed to.
     with pytest.raises(AssertionError):
-        _platform_accepts_grant(granted, guardian.said, kind)
-    # (c) A tampered payload: the SAID no longer recomputes over the content.
-    tampered = json.loads(json.dumps(granted))
-    tampered['acdc']['a']['authz']['rc']['social_store'] = ["purchase"]
-    with pytest.raises(SaidError):
-        _platform_accepts_grant(tampered, wardAuthz.said, kind)
+        _platform_accepts_grant(grantStream, guardian.said)
+    # (c) A tampered payload. The forged AuthZ credential keeps the real credential's
+    # 'd' but grants a capability the real one does not, so its SAID no longer recomputes
+    # over its content. It is refused as it is parsed, and it voids the entire stream --
+    # the platform gets no artifacts at all rather than three good ones and a silent gap.
+    forged = json.loads(json.dumps(disclosures[0].sad))
+    forged['a']['authz']['rc']['social_store'] = ["purchase"]
+    forgedAcdc = SerderACDC(sad=forged, makify=False, verify=False)
+    assert forgedAcdc.said == wardAuthz.said           # it still CLAIMS to be hers
+    _, tampered = disclose(agree, svcSig, capturedKeyState,
+                           nests=[forgedAcdc] + disclosures[1:])
+    with pytest.raises(AssertionError):
+        _platform_accepts_grant(tampered, wardAuthz.said)
 
     # 5. admit (platform -> Cara): closes the exchange.
     admit = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "ENOajOwvH82FgQMoSYWGkNS9vKLPpekz9Q3ST38SVMYJ"
+    assert admit.said == "EKo47dZ9mrm9nBK8ChGwy9bgayaTIdS1BgIrVqkeaMES"
 
 
 # ---------------------------------------------------------------------------
