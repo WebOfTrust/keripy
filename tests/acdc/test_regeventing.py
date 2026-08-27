@@ -29,9 +29,9 @@ import pytest
 
 from keri import kering
 from keri import Vrsn_2_0, Ilks
-from keri.core import Blinder, BlindState, Diger, SerderACDC
+from keri.core import Blinder, BlindState, Diger, Number, SerderACDC
 from keri.core.signing import Salter
-from keri.acdc import regcept, blindate, acdcmap
+from keri.acdc import Registry, Regery, regcept, blindate, acdcmap
 from keri.acdc import regeventing
 from keri.acdc.regeventing import RegStateRecord, vet, vetBlind
 from keri.app import habbing
@@ -258,6 +258,44 @@ def test_V7_field_order_and_said_mutations_refused():
                 SerderACDC(raw=traw)
 
 
+def test_shared_tel_validation_kernel_rejects_overlap_rules():
+    """The shared TEL validators reject the malformed field combinations both sides care about."""
+    with openIssuer("shared-kernel") as (hby, hab):
+        # Set up 2 registry, and one ACDC 
+        ripper = makeRegistry(hab, anchored=False)
+        acdc = makeAcdc(hab, regid=ripper.said)
+        other = makeRegistry(hab, stamp=STAMP2, anchored=False)
+
+        # sn = 0 for rip
+        bad_rip = remake(ripper, n='1')
+        with pytest.raises(kering.MissequenceError):
+            regeventing._validateRip(bad_rip, issuer=hab.pre)
+
+        # issuer is unknown
+        foreign_rip = remake(ripper, i="EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        with pytest.raises(kering.ValidationError):
+            regeventing._validateRip(foreign_rip, issuer=hab.pre)
+
+        # sn = 0 for bup
+        _, zero_bup = makeUpdate(ripper.said, ripper.said, acdc.said, 'issued',
+                                 sn=0, stamp=STAMP1)
+        with pytest.raises(kering.MissequenceError):
+            regeventing._validateUpdate(zero_bup, regid=ripper.said)
+
+        # registry mismatch
+        _, stray = makeUpdate(other.said, ripper.said, acdc.said, 'issued',
+                              sn=1, stamp=STAMP1)
+        with pytest.raises(kering.MisregistryError):
+            regeventing._validateUpdate(stray, regid=ripper.said)
+
+        # wrong prior
+        _, crooked = makeUpdate(ripper.said, acdc.said, acdc.said, 'issued',
+                                sn=1, stamp=STAMP1)
+        with pytest.raises(kering.MisdigestError):
+            regeventing._validateUpdate(crooked, regid=ripper.said,
+                                        prior=ripper.said)
+
+
 # ---------------------------------------------------------------------------
 # Anchors (the seal-anchored verification core)
 # ---------------------------------------------------------------------------
@@ -277,6 +315,49 @@ def test_V8_unanchored_update_retryable():
         anchor(hab, bup)
         rec = vet(rip=ripper, updates=[bup], db=hby.db, blinder=blinder)
         assert rec.state == 'issued'
+
+
+def test_shared_anchor_couple_verifier_matches_local_and_verifier_policies():
+    """The shared anchor-couple verifier drives local commit while verifier-side still treats missing anchors as retryable."""
+    with openIssuer("shared-anchor-couple") as (hby, hab):
+        rgy = Regery(hby=hby, name="shared-anchor-couple", temp=True)
+        try:
+            registry = Registry(hab=hab, store=rgy.store, name="shared-anchor-couple")
+
+            # Setup registry and anchor the rip event 
+            ripper = registry.make(stamp=STAMP0)
+            seal = dict(i=ripper.said, s=ripper.sad['n'], d=ripper.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            assert registry.anchorMsg(ripper.said) is True
+
+            # Stage a valid update without its KEL anchor so the local path
+            # must escrow it in maes rather than accept it immediately.
+            acdc = makeAcdc(hab, regid=registry.regk)
+            blinder, bup = makeUpdate(registry.regk, ripper.said, acdc.said,
+                                      'issued', sn=1, stamp=STAMP1)
+            assert registry.processEvent(bup) is False
+            assert rgy.store.baser.maes.get(keys=registry.regk, on=1) == [(bup.said,)]
+
+            # The verifier-side policy is stricter: the same missing anchor is
+            # still a retryable failure, not an escrowed local state.
+            with pytest.raises(kering.MissingAnchorError):
+                vet(rip=ripper, updates=[bup], db=hby.db, blinder=blinder)
+
+            # Once the issuer does anchor the update, both paths should rely on
+            # the same explicit anchor-couple verifier for the KEL event.
+            seal = dict(i=registry.regk, s=bup.sad['n'], d=bup.said)
+            hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
+            number = Number(num=hab.kever.sn)
+            diger = Diger(qb64=hab.kever.serder.said)
+            
+            assert regeventing._verifyAnchorCouple(bup,
+                                                   db=hby.db,
+                                                   issuer=hab.pre,
+                                                   number=number,
+                                                   diger=diger)
+            assert registry.anchorMsg(bup.said, number=number, diger=diger) is True
+        finally:
+            rgy.close()
 
 
 def test_V9_anchor_in_strangers_kel_refused():
