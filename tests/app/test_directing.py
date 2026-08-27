@@ -316,6 +316,45 @@ def test_directant_closes_receive_cutoff_without_buffered_input(directHabs):
     server.close()
 
 
+def test_directant_reconciles_transport_removed_reactant(directHabs):
+    _, bob = directHabs
+    oldSocket, oldPeer = socket.socketpair()
+    replacementSocket, replacementPeer = socket.socketpair()
+
+    oldRemoter = makeRemoter(cs=oldSocket)
+    ca = oldRemoter.ca
+    server = serving.Server()
+    server.ixes[ca] = oldRemoter
+    directant = directing.Directant(hab=bob, server=server)
+    doist = doing.Doist(tock=0.03125, limit=1.0, doers=[directant])
+    doist.enter()
+
+    try:
+        doist.recur()
+        oldRant = directant.rants[ca]
+        oldRant.sendMessage(b"pending response")
+        oldRemoter.cutoff = True
+        doist.recur()
+        assert ca in directant.drainStops
+
+        server.removeIx(ca)
+        replacement = makeRemoter(cs=replacementSocket)
+        server.ixes[ca] = replacement
+
+        doist.recur()
+
+        assert oldRant not in directant.doers
+        assert directant.rants[ca] is not oldRant
+        assert directant.rants[ca].remoter is replacement
+        assert ca not in directant.drainStops
+        assert server.ixes[ca] is replacement
+    finally:
+        doist.exit()
+        server.close()
+        oldPeer.close()
+        replacementPeer.close()
+
+
 def test_directant_waits_for_all_output_from_one_cue(
         directHabs, monkeypatch):
     _, bob = directHabs

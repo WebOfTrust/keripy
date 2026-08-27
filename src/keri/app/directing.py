@@ -307,11 +307,15 @@ class Reactor(doing.DoDoer):
 class Directant(doing.DoDoer):
     """Supervise inbound direct-mode TCP connections with one Reactant each.
 
-    Directant owns every accepted raw-TCP ``Remoter`` and its corresponding
-    ``Reactant``. HIO ``cutoff`` means only that receive is closed, so it is a
-    transition into draining rather than permission to discard accepted input
-    or generated responses. HIO ``txCutoff`` independently reports that sending
-    has become terminal.
+    HIO owns each accepted raw-TCP ``Remoter`` while Directant owns its
+    corresponding ``Reactant`` application lifecycle. HIO ``cutoff`` means only
+    that receive is closed, so it is a transition into draining rather than
+    permission to discard accepted input or generated responses. HIO
+    ``txCutoff`` independently reports that sending has become terminal.
+
+    HIO may remove a Remoter after a transport error. Before scheduling its
+    children, Directant removes any Reactant whose exact Remoter is no longer
+    registered at its connection address.
 
     During draining, Directant waits for the active parser to end or fail,
     response production to settle, and ``txbs`` to empty. Terminal ``txCutoff``
@@ -371,6 +375,27 @@ class Directant(doing.DoDoer):
         """
         super(Directant, self).wind(tymth)
         self.server.wind(tymth)
+
+    def recur(self, tyme, deeds=None):
+        """Reconcile transport-owned connections before scheduling children."""
+        self._reconcileStaleReactants()
+        return super(Directant, self).recur(tyme=tyme, deeds=deeds)
+
+    def _reconcileStaleReactants(self):
+        """Remove Reactants whose Remoters left the HIO connection registry."""
+        for ca, rant in list(self.rants.items()):
+            if self.server.ixes.get(ca) is rant.remoter:
+                continue
+
+            ix = rant.remoter
+            if (ix.rxbs or ix.txbs or rant.messageInProgress or
+                    not rant.responseSettled):
+                self._logDrainFailure(ca=ca, ix=ix, rant=rant,
+                                      reason="transport removed connection")
+
+            self.remove([rant])
+            del self.rants[ca]
+            self.drainStops.pop(ca, None)
 
     def serviceDo(self, tymth=None, tock=0.0, **opts):
         """Create, retain, drain, and remove per-connection Reactants.
