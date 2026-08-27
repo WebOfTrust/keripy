@@ -895,7 +895,6 @@ class HTTPMessenger(doing.DoDoer):
         self.parser = None
         self.auth = auth
         doers = doers if doers is not None else []
-        doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
         up = urlparse(url)
         if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
@@ -904,7 +903,10 @@ class HTTPMessenger(doing.DoDoer):
         self.client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
-        doers.extend([clientDoer])
+        # Queue work, service the transport, then read its current state.
+        doers.extend([doing.doify(self.msgDo),
+                      clientDoer,
+                      doing.doify(self.responseDo)])
 
         super(HTTPMessenger, self).__init__(doers=doers, **kwa)
 
@@ -988,13 +990,15 @@ class HTTPStreamMessenger(doing.DoDoer):
         super(HTTPStreamMessenger, self).__init__(doers=doers, **kwa)
 
     def recur(self, tyme, deeds=None):
-        """Poll for a response and stop once received."""
+        """Service the client, then stop when its current response is ready."""
+        done = super(HTTPStreamMessenger, self).recur(tyme, deeds)
+
         if self.client.responses:
             self.rep = self.client.respond()
             self.remove([self.client])
             return True
 
-        return super(HTTPStreamMessenger, self).recur(tyme, deeds)
+        return done
 
 
 def mailbox(hab, cid):
