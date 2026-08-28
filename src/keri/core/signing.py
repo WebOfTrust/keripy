@@ -48,6 +48,10 @@ SeedCodeByVerferCode = {
     MtrDex.ECDSA_256k1N: MtrDex.ECDSA_256k1_Seed,
 }
 
+# Every private key seed Signer can be built from. Derived from the mapping above rather than
+# written out again, so the two cannot disagree about which algorithms exist.
+SeedCodes = frozenset(SeedCodeByVerferCode.values())
+
 
 class Signer(Matter):
     """
@@ -824,7 +828,12 @@ class Encrypter(Matter):
             if not code:
                 if prim.code == MtrDex.Salt_128:  # future other salt codes
                     code = MtrDex.X25519_Cipher_Salt
-                elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
+                elif prim.code in SeedCodes:
+                    # Every seed code takes the same cipher code. The sealed box is over the
+                    # plain text's *fully qualified* qb64, so the seed's own derivation code
+                    # travels inside the cipher and decryption reconstructs the right kind of
+                    # Signer. The cipher code therefore says how the wrapping was done, not
+                    # which algorithm was wrapped, and one value covers all of them.
                     code = MtrDex.X25519_Cipher_Seed
                 else:
                     raise InvalidValueError(f"Unsupported primitive with code ="
