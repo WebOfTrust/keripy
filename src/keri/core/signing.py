@@ -29,6 +29,25 @@ Tierage = namedtuple("Tierage", 'low med high')
 
 Tiers = Tierage(low='low', med='med', high='high')
 
+# Inverse of the seed-code -> verfer-code derivation Signer.__init__ performs below.
+#
+# Rotation has to carry an identifier's signing algorithm forward, and on an identifier that
+# already exists the only record of that algorithm is the code of its current public key: the
+# key store keeps public keys and seeds, not the code they were made with. Mapping back is
+# therefore how a rotation stays on the curve the inception chose, rather than silently
+# reverting to the Ed25519 default.
+#
+# Both the transferable and non-transferable public codes map to the same seed code, because
+# transferability is a property of how the public key is encoded and not of the algorithm.
+SeedCodeByVerferCode = {
+    MtrDex.Ed25519: MtrDex.Ed25519_Seed,
+    MtrDex.Ed25519N: MtrDex.Ed25519_Seed,
+    MtrDex.ECDSA_256r1: MtrDex.ECDSA_256r1_Seed,
+    MtrDex.ECDSA_256r1N: MtrDex.ECDSA_256r1_Seed,
+    MtrDex.ECDSA_256k1: MtrDex.ECDSA_256k1_Seed,
+    MtrDex.ECDSA_256k1N: MtrDex.ECDSA_256k1_Seed,
+}
+
 
 class Signer(Matter):
     """
