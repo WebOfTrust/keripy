@@ -403,6 +403,44 @@ def test_ipex_v2_grant_carries_multiple_dag_nodes():
         assert "iss" not in storedGrant.ked["a"]
 
 
+def test_ipex_v2_rejects_offer_with_duplicate_disclosed_node():
+    """Offer must not carry the same disclosed ACDC node more than once."""
+    with openHby(name="ipex-v2-bad-offer-duplicate-node",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        acdc = acdcmap(israid=holder.pre,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=holder.pre)
+        schema = acdc.sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(hab=verifier,
+                                       recp=holder.pre,
+                                       message="Prove over-21",
+                                       attrs=dict(role="member"),
+                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+        offerExn, offerAtc = ipexOffer(hab=holder,
+                                       message="Here are the terms",
+                                       origin=acdc,
+                                       artifacts=[acdc],
+                                       apply=applyExn)
+
+        for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
+        assert hby.db.exns.get(keys=(applyExn.said,)) is not None
+        assert hby.db.exns.get(keys=(offerExn.said,)) is None
+        assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+
+
 def test_ipex_v2_rejects_grant_with_missing_edged_node():
     """Grant must include every ACDC node referenced by the origin DAG."""
     with openHby(name="ipex-v2-bad-grant-dangling-edge",
@@ -426,6 +464,39 @@ def test_ipex_v2_rejects_grant_with_missing_edged_node():
                              recp=hab.pre,
                              message="Here is the incomplete DAG",
                              origin=origin)
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_grant_with_duplicate_disclosed_node():
+    """Grant must not carry the same disclosed ACDC node more than once."""
+    with openHby(name="ipex-v2-bad-grant-duplicate-node",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        child = acdcmap(israid=hab.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=hab.pre)
+        origin = acdcmap(israid=hab.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=_edge("holder", child),
+                         iseaid=hab.pre)
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        exn, atc = ipexGrant(hab=hab,
+                             recp=hab.pre,
+                             message="Here is the duplicated DAG",
+                             origin=origin,
+                             artifacts=[child, child])
 
         ims = bytearray(exn.raw)
         ims.extend(atc)

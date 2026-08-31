@@ -403,23 +403,43 @@ class IpexHandler:
             except Exception:
                 return False
 
-            # The first disclosed node is always the origin named in a.o[0].
-            # Every carried nest must be an ACDC body plus that node's
-            # attachment section.
-            for idx, nest in enumerate(nests):
-                nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
-                if not nserder.verify():
-                    return False
-                if nserder.proto != Protocols.acdc:
-                    return False
-                if idx == 0 and not nserder.compare(attrs["o"][0]):
-                    return False
+            if self._validNodeNest(origin=attrs["o"][0], nests=nests) is None:
+                return False
 
         # The other verbs never disclose nested ACDC nodes.
         elif nests:
             return False
 
         return True
+
+    def _validNodeNest(self, origin, nests):
+        """Validate disclosed node nests and index them by ACDC SAID.
+
+        Parameters:
+            origin (str): SAID of the origin node named in ``a.o[0]``.
+            nests (list): Parsed nested ACDC node substreams.
+
+        Returns:
+            dict | None: Mapping of disclosed node SAID to its parsed nest when
+                every nest is a unique ACDC node and the first nest matches the
+                origin; otherwise None.
+        """
+        nodes = {}
+        for idx, nest in enumerate(nests):
+            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+            if not nserder.verify():
+                return None
+            if nserder.proto != Protocols.acdc:
+                return None
+            if idx == 0 and not nserder.compare(origin):
+                return None
+            # Each disclosed DAG node must occupy exactly one nest so the node
+            # body cannot appear twice with conflicting attachment groups.
+            if nserder.said in nodes:
+                return None
+            nodes[nserder.said] = nest
+
+        return nodes
 
     def _verifyOpener(self, verb, serder, attrs, nests):
         """Validate a flow-opening IPEX message that has no prior.
@@ -512,13 +532,11 @@ class IpexHandler:
         # Retrieve the root SAID
         origin = attrs["o"][0]
 
-        # Build a mapping of SAID to nest for all carried nodes, reject if duplicates
-        nodes = {}
-        for nest in nests:
-            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
-            if nserder.said in nodes:
-                return False
-            nodes[nserder.said] = nest
+        # Reuse the disclosed-node validation so graph walking starts from a
+        # well-formed set of unique ACDC nests.
+        nodes = self._validNodeNest(origin=origin, nests=nests)
+        if nodes is None:
+            return False
 
         # Reject if origin is not carried in the nests
         if origin not in nodes:
