@@ -330,67 +330,16 @@ class IpexHandler:
         if verb not in (Ipex.apply, *PreviousRoutes.keys()):
             return False
 
-        # Stage 1: validate the common V2 IPEX payload shape shared by every verb.
-        if not self._verifyCommonShape(attrs=attrs, q=q):
-            return False
-
-        # Stage 2: validate the fields that depend on which IPEX verb this is,
-        # such as disclose plans for apply/offer and disclosed node nests for
-        # offer/grant.
-        if not self._verifyVerbShape(verb=verb, attrs=attrs, q=q, nests=nests):
-            return False
-
-        # Stage 3: opener flows validate directly from the message itself,
-        # while replies must first resolve and validate their prior exchange.
-        if not dig:
-            return self._verifyOpener(verb=verb, serder=serder, attrs=attrs, nests=nests)
-        if verb == Ipex.apply:
-            return False
-
-        if not self._verifyReplyChain(verb=verb, serder=serder, dig=dig):
-            return False
-
-        # Stage 4: only grant has extra semantic verification beyond the linear
-        # thread rules. The carried disclosed nodes must form exactly one DAG.
-        if verb == Ipex.grant:
-            return self._verifyGraph(attrs=attrs, nests=nests)
-
-        return True
-
-    def _verifyCommonShape(self, attrs, q):
-        """Validate the common payload shape shared by every V2 IPEX verb.
-
-        Parameters:
-            attrs (dict): Exchange attributes section from ``serder.ked["a"]``.
-            q (dict): Exchange query/modifier section from ``serder.ked["q"]``.
-
-        Returns:
-            bool: True when the shared V2 IPEX fields have the expected shape,
-                including optional single-DAG ``ax`` semantics.
-        """
-        if not isinstance(attrs, dict):
-            return False
-        if "m" not in attrs:
-            return False
-        if not isinstance(q, dict):
+        # Stage 1: every inbound IPEX message must at least carry an attrs map
+        # with a human message and a query/modifier map. `ax` is the only shared
+        # optional list field and remains syntax-only for this ticket.
+        if not isinstance(attrs, dict) or "m" not in attrs or not isinstance(q, dict):
             return False
         if "ax" in attrs and not _validSingleDagList(attrs["ax"], bool, allow_empty=True):
             return False
-        return True
 
-    def _verifyVerbShape(self, verb, attrs, q, nests):
-        """Validate the fields that depend on the current IPEX verb.
-
-        Parameters:
-            verb (str): IPEX route suffix such as ``apply`` or ``grant``.
-            attrs (dict): Exchange attributes section.
-            q (dict): Exchange query/modifier section.
-            nests (list): Parsed nested substreams carried on the message.
-
-        Returns:
-            bool: True when the verb-specific fields are well formed for the
-                current single-DAG wire shape, False otherwise.
-        """
+        # Stage 2: apply/offer carry disclose-paths, while offer/grant also
+        # carry disclosed node nests rooted at `a.o[0]`.
         if verb in (Ipex.apply, Ipex.offer):
             if "dp" not in q or not _validDisclosurePath(q["dp"]):
                 return False
@@ -403,12 +352,42 @@ class IpexHandler:
             except Exception:
                 return False
 
-            if self._validNodeNest(origin=attrs["o"][0], nests=nests) is None:
-                return False
-
         # The other verbs never disclose nested ACDC nodes.
         elif nests:
             return False
+
+        # Stage 3: opener flows validate directly from the message itself,
+        # while replies must first resolve and validate their prior exchange.
+        if not dig:
+            if verb == Ipex.apply:
+                # Apply is always a thread opener, so it must provide both
+                # receiver and transaction id on the message body.
+                if not (serder.ked.get("ri", "") and serder.ked.get("x", "")):
+                    return False
+            elif verb in (Ipex.offer, Ipex.grant):
+                # Offer and grant may also open a thread, but must then carry
+                # both the receiver and the generated exchange id themselves.
+                if not (serder.ked.get("ri", "") and serder.ked.get("x", "")):
+                    return False
+            else:
+                # Agree, admit, and spurn can only appear as replies.
+                return False
+        elif verb == Ipex.apply:
+            return False
+        elif not self._verifyReplyChain(verb=verb, serder=serder, dig=dig):
+            return False
+
+        # Stage 4: offer and grant both carry disclosed ACDC node nests. Those
+        # nests must describe exactly one reachable DAG rooted at a.o[0].
+        if verb in (Ipex.offer, Ipex.grant):
+            walked = self._walkGraph(origin=attrs["o"][0], nests=nests)
+            if walked is None:
+                return False
+
+            # Stage 5: only grant currently vets issuer-auth proof groups. Offer
+            # carries the same node-local framing but does not enforce proofs yet.
+            if verb == Ipex.grant and not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
+                return False
 
         return True
 
@@ -440,36 +419,6 @@ class IpexHandler:
             nodes[nserder.said] = nest
 
         return nodes
-
-    def _verifyOpener(self, verb, serder, attrs, nests):
-        """Validate a flow-opening IPEX message that has no prior.
-
-        Parameters:
-            verb (str): IPEX route suffix such as ``apply`` or ``offer``.
-            serder (Serder): Incoming exchange message being verified.
-            attrs (dict): Exchange attributes section.
-            nests (list): Parsed nested substreams carried on the opener.
-
-        Returns:
-            bool: True when the opener is legal for its verb and carries the
-                required thread/bootstrap data; False otherwise.
-        """
-        if verb == Ipex.apply:
-            # Apply is always a thread opener, so it must provide both receiver
-            # and transaction id directly on the message body.
-            return bool(serder.ked.get("ri", "") and serder.ked.get("x", ""))
-
-        if verb in (Ipex.offer, Ipex.grant):
-            # Offer and grant may also open a thread, but must then carry both
-            # the receiver and the generated exchange id on the opener itself.
-            if not (serder.ked.get("ri", "") and serder.ked.get("x", "")):
-                return False
-            # A flow-starting grant still has to prove that its carried nodes
-            # form exactly one DAG rooted at a.o[0].
-            return self._verifyGraph(attrs=attrs, nests=nests) if verb == Ipex.grant else True
-
-        # Agree, admit, and spurn cannot open an IPEX thread.
-        return False
 
     def _verifyReplyChain(self, verb, serder, dig):
         """Validate the prior-link rules for a reply inside an IPEX thread.
@@ -514,36 +463,32 @@ class IpexHandler:
             return False
         return True
 
-    def _verifyGraph(self, attrs, nests):
-        """Verify that the carried nested ACDCs form exactly one origin DAG.
+    def _walkGraph(self, origin, nests):
+        """Walk the disclosed origin DAG and return the visited node order.
 
         Parameters:
-            attrs (dict): Exchange attributes section. ``attrs["o"][0]`` names
-                the origin node for the disclosed DAG.
+            origin (str): SAID of the origin node named by ``a.o[0]``.
             nests (list): Parsed nested ACDC node substreams carried by the
-                grant message.
+                offer or grant message.
 
         Returns:
-            bool: True when the disclosed nests form one exact DAG rooted at
-                ``a.o[0]`` and every walked node passes issuer-auth checks;
-                False otherwise.
+            tuple | None: ``(nodes, order)`` when the disclosed nests form one
+                exact DAG rooted at ``origin``; otherwise ``None``.
         """
-
-        # Retrieve the root SAID
-        origin = attrs["o"][0]
-
         # Reuse the disclosed-node validation so graph walking starts from a
         # well-formed set of unique ACDC nests.
         nodes = self._validNodeNest(origin=origin, nests=nests)
         if nodes is None:
-            return False
+            return None
 
         # Reject if origin is not carried in the nests
         if origin not in nodes:
-            return False
+            return None
 
-        # Use deque for BFS traversal of the graph
+        # Use deque for BFS traversal so we start at the disclosed origin and
+        # then fan out across every referenced child node in graph order.
         seen = set()
+        order = []
         queue = deque([origin])
 
         # Walk the graph BFS, reject if any edge fails to resolve to a carried nest
@@ -552,6 +497,7 @@ class IpexHandler:
             if said in seen:
                 continue
             seen.add(said)
+            order.append(said)
 
             nest = nodes[said]
             nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
@@ -566,7 +512,7 @@ class IpexHandler:
                 elif isinstance(edges, list) and all(isinstance(edge, Mapping) for edge in edges):
                     blocks = edges
                 else:
-                    return False
+                    return None
 
                 # Walk each edge block, reject if any edge fails to resolve to a nest
                 for edge in blocks:
@@ -574,26 +520,45 @@ class IpexHandler:
                         if label in ("d", "o"):
                             continue
                         if not isinstance(node, Mapping):
-                            return False
+                            return None
                         edgeSaid = node.get("n")
                         if not isinstance(edgeSaid, str):
-                            return False
+                            return None
                         try:
                             Saider(qb64=edgeSaid)
                         except Exception:
-                            return False
+                            return None
                         if edgeSaid not in nodes:
-                            return False
+                            return None
                         if edgeSaid not in seen:
                             queue.append(edgeSaid)
 
-            # The issuer-auth hook runs in graph order so later proof-group
-            # checks can evaluate each node in the context of its own nest.
-            if not self._verifyIssuerAuthNode(serder=nserder, nest=nodes[said]):
+        # If any carried nest was never reached, the payload is not one exact DAG.
+        if len(seen) != len(nodes):
+            return None
+
+        return nodes, order
+
+    def _verifyIssuerAuthGraph(self, nodes, order):
+        """Verify issuer-auth proof groups for each walked disclosed DAG node.
+
+        Parameters:
+            nodes (dict): Mapping of disclosed node SAID to parsed nest.
+            order (list): Breadth-first walk order returned by ``_walkGraph``.
+
+        Returns:
+            bool: True when every walked node either has no registry binding or
+                vets successfully against its node-local proof group.
+        """
+        # Run proof verification in graph order so each registry-backed node is
+        # checked against the exact nested substream that carried its body.
+        for said in order:
+            nest = nodes[said]
+            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+            if not self._verifyIssuerAuthNode(serder=nserder, nest=nest):
                 return False
 
-        # If any carried nest was never reached, the payload is not one exact DAG.
-        return len(seen) == len(nodes)
+        return True
 
     def _verifyIssuerAuthNode(self, serder, nest):
         """Verify the issuer-auth proof carried on one disclosed ACDC node.

@@ -441,6 +441,92 @@ def test_ipex_v2_rejects_offer_with_duplicate_disclosed_node():
         assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
 
 
+def test_ipex_v2_rejects_offer_with_missing_edged_node():
+    """Offer must include every disclosed ACDC node referenced by the origin DAG."""
+    with openHby(name="ipex-v2-bad-offer-dangling-edge",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        child = acdcmap(israid=holder.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=holder.pre)
+        origin = acdcmap(israid=holder.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=_edge("holder", child),
+                         iseaid=holder.pre)
+        schema = origin.sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(hab=verifier,
+                                       recp=holder.pre,
+                                       message="Prove over-21",
+                                       attrs=dict(role="member"),
+                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+        offerExn, offerAtc = ipexOffer(hab=holder,
+                                       message="Here is the incomplete DAG",
+                                       origin=origin,
+                                       apply=applyExn)
+
+        for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
+        assert hby.db.exns.get(keys=(applyExn.said,)) is not None
+        assert hby.db.exns.get(keys=(offerExn.said,)) is None
+        assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+
+
+def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
+    """Offer must not carry extra nested ACDCs outside the disclosed origin DAG."""
+    with openHby(name="ipex-v2-bad-offer-extra-node",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        child = acdcmap(israid=holder.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=holder.pre)
+        extra = acdcmap(israid=holder.pre,
+                        attribute=dict(d="", department="kitchen"),
+                        iseaid=holder.pre)
+        origin = acdcmap(israid=holder.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=_edge("holder", child),
+                         iseaid=holder.pre)
+        schema = origin.sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(hab=verifier,
+                                       recp=holder.pre,
+                                       message="Prove over-21",
+                                       attrs=dict(role="member"),
+                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+        offerExn, offerAtc = ipexOffer(hab=holder,
+                                       message="Here is the overstuffed DAG",
+                                       origin=origin,
+                                       artifacts=[child, extra],
+                                       apply=applyExn)
+
+        for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
+        assert hby.db.exns.get(keys=(applyExn.said,)) is not None
+        assert hby.db.exns.get(keys=(offerExn.said,)) is None
+        assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+
+
 def test_ipex_v2_rejects_grant_with_missing_edged_node():
     """Grant must include every ACDC node referenced by the origin DAG."""
     with openHby(name="ipex-v2-bad-grant-dangling-edge",
