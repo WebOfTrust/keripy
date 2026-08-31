@@ -7,13 +7,16 @@ from datetime import timedelta
 
 import pytest
 from keri import Kinds, Vrsn_2_0
-from keri.acdc import (Regery, Registrar, acdcmap, blindate, apply as ipexApply, admit as ipexAdmit,
+from keri.acdc import (Regery, Registrar, acdcmap, blindate,
+                       apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
                        spurn as ipexSpurn)
 from keri.app import openCF, openHby
 from keri.core import (Blinder, Codens, Counter, GenDex, Kevery, Kramer, Parser,
-                       SerderKERI, Serdery, Texter, exchange)
+                       Diger, Number, SealEvent, SerderKERI, Serdery, Texter,
+                       exchange, messagize)
+from keri.db import reopenDB
 from keri.kering import Colds, sniff
 from keri.help import helping
 from keri.peer import Exchanger, cloneMessage, serializeMessage
@@ -415,6 +418,9 @@ def test_ipex_v2_dispatch_linear_and_spurn():
     with openHby(name="ipex-v2-dispatch",
                  base="test") as hby:
         hab = hby.makeHab(name="test")
+        endorser = hby.makeHab(name="endorser")
+        cigarEndorser = hby.makeHab(name="cigar-endorser",
+                                    transferable=False)
         registry = regcept(israid=hab.pre)
         acdc = acdcmap(israid=hab.pre,
                        regid=registry.said,
@@ -431,6 +437,75 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Non-grant IPEX routes reject otherwise valid foreign evidence before
+        # any durable exchange rows are written.
+        rejectedApply, _ = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Foreign evidence is not allowed on apply",
+            attrs=dict(role="member"),
+            modifiers=dict(dp=[[schema, "/", ["a/role"]]]),
+        )
+
+        def group(signer, serder):
+            return (signer.kever.prefixer,
+                    Number(sn=signer.kever.lastEst.s),
+                    Diger(qb64=signer.kever.lastEst.d),
+                    signer.sign(ser=serder.raw, indexed=True))
+
+        exc.processEvent(rejectedApply,
+                         tsgs=[group(hab, rejectedApply),
+                               group(endorser, rejectedApply)])
+        assert hby.db.exns.get(keys=(rejectedApply.said,)) is None
+        assert list(hby.db.esigs.getTopItemIter(
+            keys=(rejectedApply.said, ""))) == []
+        assert recorder.items == []
+
+        rejectedCigarApply, _ = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Foreign cigar is not allowed on apply",
+            attrs=dict(role="member"),
+            modifiers=dict(dp=[[schema, "/", ["a/role"]]]),
+        )
+        validForeignCigar = cigarEndorser.sign(
+            ser=rejectedCigarApply.raw, indexed=False)
+        exc.processEvent(rejectedCigarApply,
+                         tsgs=[group(hab, rejectedCigarApply)],
+                         cigars=validForeignCigar)
+        assert hby.db.exns.get(keys=(rejectedCigarApply.said,)) is None
+        assert hby.db.ecigs.get(keys=(rejectedCigarApply.said,)) == []
+
+        invalidCigarApply, _ = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Invalid foreign cigar is not allowed on apply",
+            attrs=dict(role="member"),
+            modifiers=dict(dp=[[schema, "/", ["a/role"]]]),
+        )
+        invalidForeignCigar = cigarEndorser.sign(
+            ser=b"different exchange message", indexed=False)
+        exc.processEvent(invalidCigarApply,
+                         tsgs=[group(hab, invalidCigarApply)],
+                         cigars=invalidForeignCigar)
+        assert hby.db.exns.get(keys=(invalidCigarApply.said,)) is None
+        assert hby.db.ecigs.get(keys=(invalidCigarApply.said,)) == []
+
+        unresolvedApply, _ = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Unresolved foreign signer is not allowed on apply",
+            attrs=dict(role="member"),
+            modifiers=dict(dp=[[schema, "/", ["a/role"]]]),
+        )
+        exc.processEvent(unresolvedApply,
+                         tsgs=[group(hab, unresolvedApply)],
+                         ulgs=[endorser.kever.prefixer])
+        assert hby.db.exns.get(keys=(unresolvedApply.said,)) is None
+        assert list(hby.db.esigs.getTopItemIter(
+            keys=(unresolvedApply.said, ""))) == []
+        assert recorder.items == []
 
         # Build a happy path chain: apply -> offer -> agree -> grant -> admit
         apply0, apply0Atc = ipexApply(hab=hab,
@@ -1963,6 +2038,10 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                   base="test",
                   version=Vrsn_2_0) as recipientHby):
         issuerHab = issuerHby.makeHab(name="issuer")
+        endorserHab = issuerHby.makeHab(name="endorser")
+        cigarEndorserHab = issuerHby.makeHab(name="cigar-endorser",
+                                             transferable=False)
+        unknownEndorserHab = issuerHby.makeHab(name="unknown-endorser")
         recipientHab = recipientHby.makeHab(name="recipient")
         rgy = Regery(hby=issuerHby, name="ipex-v2-blind-registry-kram-two-haberies", temp=True)
         try:
@@ -1986,13 +2065,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
             issuedAnc = _anchor(issuerHab, registry, issued, framed=False)
             issuedAncSerder = _serder(issuedAnc)
 
-            # Rotate after the TEL anchors so the later IPEX exchanges sign
-            # against a fresh establishment event KRAM can authenticate.
+            # Establish the single current key used by the offer flow while
+            # committing to the 2-of-3 key state used by the later grant.
             issuerRot = issuerHab.rotate(framed=True,
+                                         nsith="2",
+                                         ncount=3,
                                          version=Vrsn_2_0,
                                          kind=issuerHab.kever.serder.kind,
                                          gvrsn=Vrsn_2_0)
-
 
             recipientRemoteKvy = Kevery(db=recipientHby.db, lax=False, local=False)
             issuerRemoteKvy = Kevery(db=issuerHby.db, lax=False, local=False)
@@ -2007,11 +2087,16 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
             # verify the registry artifacts nested inside the later grant.
             issuerIcp = issuerHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerIcp), kvy=recipientRemoteKvy)
+            endorserIcp = endorserHab.msgOwnEvent(sn=0, framed=True,
+                                                  gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserIcp),
+                                           kvy=recipientRemoteKvy)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(ripAnc), kvy=recipientRemoteKvy)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(issuedAnc),
                                            framed=False,
                                            kvy=recipientRemoteKvy)
-            Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerRot), kvy=recipientRemoteKvy)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerRot),
+                                           kvy=recipientRemoteKvy)
 
             # Give each Habery its own IPEX exchanger and recorder so the test
             # can prove which side actually received which messages.
@@ -2232,24 +2317,115 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # the credential plus the blindable registry artifacts.
                 clock.advance(milliseconds=500)
                 grantStamp = helping.nowIso8601()
-                grantExn, grantAtc = ipexGrant(hab=issuerHab,
-                                               recp=recipientHab.pre,
-                                               message="Here is the blind registry disclosure",
-                                               origin=acdc,
-                                               artifacts=[issued, issuedAnc],
-                                               agree=storedAgree,
-                                               dt=grantStamp)
+                issuerGrantRot = issuerHab.rotate(
+                    framed=True,
+                    version=Vrsn_2_0,
+                    kind=issuerHab.kever.serder.kind,
+                    gvrsn=Vrsn_2_0,
+                )
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(issuerGrantRot), kvy=recipientRemoteKvy)
+                grantExn, _ = ipexGrant(hab=issuerHab,
+                                        recp=recipientHab.pre,
+                                        message="Here is the blind registry disclosure",
+                                        origin=acdc,
+                                        artifacts=[issued, issuedAnc],
+                                        agree=storedAgree,
+                                        dt=grantStamp)
                 grantReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
-                # Persist the outbound grant locally on the issuer side before
-                # sending it across so the issuer still has its own prior chain.
-                grantExnMsg = bytearray(grantExn.raw)
-                grantExnMsg.extend(grantAtc)
 
-                ims = bytearray(grantExnMsg)
-                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerSelfKvy)
-                assert ims == bytearray()
-                ims = bytearray(grantExnMsg)
+                # A distinct transferable AID endorses the grant with both a
+                # signature group and a KEL event that seals the grant SAID.
+                endorserAnchor = endorserHab.interact(
+                    data=[dict(d=grantExn.said)],
+                    framed=True,
+                    version=Vrsn_2_0,
+                    gvrsn=Vrsn_2_0,
+                )
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(endorserAnchor), kvy=recipientRemoteKvy)
+
+                senderSigs = issuerHab.sign(ser=grantExn.raw, indexed=True)
+                endorserSigs = endorserHab.sign(ser=grantExn.raw,
+                                                indexed=True)
+                endorserCigars = cigarEndorserHab.sign(
+                    ser=grantExn.raw, indexed=False)
+                recipientSigs = recipientHab.sign(ser=grantExn.raw,
+                                                  indexed=True)
+                unknownEndorserSigs = unknownEndorserHab.sign(
+                    ser=grantExn.raw, indexed=True)
+                grantEstSn = issuerHab.kever.lastEst.s
+                grantEstSaid = issuerHab.kever.lastEst.d
+
+                def sigGroup(hab, sigers):
+                    return (hab.kever.prefixer,
+                            Number(sn=hab.kever.lastEst.s),
+                            Diger(qb64=hab.kever.lastEst.d),
+                            sigers)
+
+                validSeal = SealEvent(i=endorserHab.pre,
+                                      s=f"{endorserHab.kever.sn:x}",
+                                      d=endorserHab.kever.serder.said)
+                invalidSeal = SealEvent(i=recipientHab.pre,
+                                        s=f"{recipientHab.kever.sn:x}",
+                                        d=recipientHab.kever.serder.said)
+                nests = [_nest(acdc), _nest(issued), _nest(issuedAnc)]
+
+                # Deliver a 2-of-3 sender signature threshold in two parser
+                # passes. KRAM must pool the bare sigers and rehydrate the
+                # optional evidence from the first pass. The recipient's
+                # foreign last-establishment group is present only in this
+                # partial delivery and must survive escrow in explicit form.
+                firstGrant = messagize(
+                    grantExn,
+                    sigers=[senderSigs[0]],
+                    tsgs=[sigGroup(endorserHab, endorserSigs)],
+                    lsgs=[(recipientHab.kever.prefixer, recipientSigs),
+                          (unknownEndorserHab.kever.prefixer,
+                           unknownEndorserSigs)],
+                    cigars=endorserCigars,
+                    bonds=[validSeal, invalidSeal],
+                    nests=nests,
+                    framed=False,
+                    gvrsn=Vrsn_2_0,
+                )
+                ims = bytearray(firstGrant)
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
+                assert ims == bytearray()
+                assert recipientHby.db.exns.get(keys=(grantExn.said,)) is None
+
+                partialKey = (issuerHab.pre, grantExn.said)
+                assert len(recipientHby.db.kramPMKS.get(keys=partialKey)) == 1
+                assert len(recipientHby.db.kramTSGS.get(keys=partialKey)) == 2
+                assert [prefixer.qb64 for prefixer in
+                        recipientHby.db.kramULGS.get(keys=partialKey)] == [
+                    unknownEndorserHab.pre,
+                ]
+                assert len(recipientHby.db.kramCIGS.get(keys=partialKey)) == 1
+                assert len(recipientHby.db.kramSSTS.get(keys=partialKey)) == 2
+
+                secondGrant = messagize(
+                    grantExn,
+                    sigers=[senderSigs[2]],
+                    nests=nests,
+                    framed=False,
+                    gvrsn=Vrsn_2_0,
+                )
+                ims = bytearray(secondGrant)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
+                assert ims == bytearray()
+
+                # Preserve the issuer's outbound prior so it can validate the
+                # recipient's admit at the end of the real IPEX sequence.
+                issuerGrant = messagize(
+                    grantExn,
+                    tsgs=[sigGroup(issuerHab, senderSigs)],
+                    nests=nests,
+                    framed=False,
+                    gvrsn=Vrsn_2_0,
+                )
+                ims = bytearray(issuerGrant)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=issuerSelfKvy)
                 assert ims == bytearray()
 
                 # The recipient stores this grant locally so the final admit can
@@ -2257,6 +2433,40 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 storedGrant, _ = cloneMessage(recipientHby, grantExn.said)
                 assert storedGrant is not None
                 assert storedGrant.ked["x"] == applyExn.ked["x"]
+
+                senderRows = list(recipientHby.db.esigs.getTopItemIter(
+                    keys=(grantExn.said, issuerHab.pre, "")))
+                endorserRows = list(recipientHby.db.esigs.getTopItemIter(
+                    keys=(grantExn.said, endorserHab.pre, "")))
+                recipientRows = list(recipientHby.db.esigs.getTopItemIter(
+                    keys=(grantExn.said, recipientHab.pre, "")))
+                assert len(senderRows) == 2
+                assert len(endorserRows) == 1
+                assert len(recipientRows) == 1
+                assert list(recipientHby.db.esigs.getTopItemIter(
+                    keys=(grantExn.said, unknownEndorserHab.pre, ""))) == []
+                storedCigars = recipientHby.db.ecigs.get(
+                    keys=(grantExn.said,))
+                assert [(verfer.qb64, cigar.qb64)
+                        for verfer, cigar in storedCigars] == [
+                    (cigarEndorserHab.pre, endorserCigars[0].qb64),
+                ]
+
+                validSeals = recipientHby.db.ests.get(
+                    keys=(grantExn.said, endorserHab.pre))
+                invalidSeals = recipientHby.db.ests.get(
+                    keys=(grantExn.said, recipientHab.pre))
+                assert [(number.sn, diger.qb64)
+                        for number, diger in validSeals] == [
+                    (endorserHab.kever.sn, endorserHab.kever.serder.said),
+                ]
+                assert invalidSeals == []
+                assert not any(cue.get("kin") == "query"
+                               for cue in recipientExc.cues)
+
+                response = recipientHby.db.erpy.get(
+                    keys=(grantExn.ked["p"],))
+                assert response.qb64 == grantExn.said
 
                 grantCache = recipientHby.db.kramTMSC.get(
                     keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said))
@@ -2302,25 +2512,136 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 assert (admitReceiveMs - d - sl) <= admitMdtMs <= (admitReceiveMs + d)
                 assert admitXdtMs <= admitMdtMs <= (admitXdtMs + xl)
 
-                # Re-serialize the stored grant from the recipient side to prove
-                # the nested ACDC, blind update, and anchor all survived the
-                # full cross-Habery KRAM plus exchanger path unchanged.
-                grantMsg = serializeMessage(recipientHby, grantExn.said, framed=True)
-                grantWire = bytearray(grantMsg)
-                grantResults = Parser(version=Vrsn_2_0).parse(ims=grantWire,
-                                                              framed=False,
-                                                              processive=False)
-                assert grantWire == bytearray()
-                assert len(grantResults) == 1
-                assert [nest.serder.said for nest in grantResults[0].nests] == [
-                    acdc.said,
-                    issued.said,
-                    issuedAncSerder.said,
-                ]
+                # Move the sender to a later establishment event after the
+                # grant is accepted. Durable replay must still verify the
+                # grant against the historical event that supplied its keys.
+                issuerPostGrantRot = issuerHab.rotate(
+                    framed=True,
+                    version=Vrsn_2_0,
+                    kind=issuerHab.kever.serder.kind,
+                    gvrsn=Vrsn_2_0,
+                )
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(issuerPostGrantRot), kvy=recipientRemoteKvy)
+                assert recipientHby.kevers[issuerHab.pre].lastEst.s > grantEstSn
+
+                # Run the production prune path after the exchange cache
+                # expires. It must remove only KRAM's temporary rows.
+                pruneMs = (int(helping.fromIso8601(
+                    grantCache.xdt).timestamp() * 1000) + grantCache.pxl + 1)
+                assert recipientKvy.kramer._pruneExchanges(rdt_ms=pruneMs)
+                assert recipientHby.db.kramTMSC.get(
+                    keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said)) is None
+                assert recipientHby.db.kramPMKM.get(keys=partialKey) is None
+                assert recipientHby.db.kramPMKS.get(keys=partialKey) == []
+                assert recipientHby.db.kramTSGS.get(keys=partialKey) == []
+                assert recipientHby.db.kramULGS.get(keys=partialKey) == []
+                assert recipientHby.db.kramCIGS.get(keys=partialKey) == []
+                assert recipientHby.db.kramSSTS.get(keys=partialKey) == []
+
+                # Close and reopen the receiver database before replay. The
+                # durable generic evidence and nested streams must survive both
+                # KRAM pruning and an LMDB lifecycle boundary.
+                with reopenDB(db=recipientHby.db, reuse=True):
+                    grantMsg = serializeMessage(recipientHby,
+                                                grantExn.said,
+                                                framed=True)
+                    grantWire = bytearray(grantMsg)
+                    grantResults = Parser(version=Vrsn_2_0).parse(
+                        ims=grantWire, framed=False, processive=False)
+                    assert grantWire == bytearray()
+                    assert len(grantResults) == 1
+
+                    replay = grantResults[0]
+                    replayGroups = {
+                        prefixer.qb64: (number, diger, sigers)
+                        for prefixer, number, diger, sigers in replay.tsgs
+                    }
+                    number, diger, sigers = replayGroups[issuerHab.pre]
+                    assert (number.sn, diger.qb64, len(sigers)) == (
+                        grantEstSn,
+                        grantEstSaid,
+                        2,
+                    )
+                    number, diger, sigers = replayGroups[endorserHab.pre]
+                    assert (number.sn, diger.qb64, len(sigers)) == (
+                        endorserHab.kever.lastEst.s,
+                        endorserHab.kever.lastEst.d,
+                        1,
+                    )
+                    number, diger, sigers = replayGroups[recipientHab.pre]
+                    assert (number.sn, diger.qb64, len(sigers)) == (
+                        recipientHab.kever.lastEst.s,
+                        recipientHab.kever.lastEst.d,
+                        1,
+                    )
+                    assert [(prefixer.qb64, number.sn, diger.qb64)
+                            for prefixer, number, diger in replay.ssts] == [
+                        (endorserHab.pre,
+                         endorserHab.kever.sn,
+                         endorserHab.kever.serder.said),
+                    ]
+                    assert [(cigar.verfer.qb64, cigar.qb64)
+                            for cigar in replay.cigars] == [
+                        (cigarEndorserHab.pre, endorserCigars[0].qb64),
+                    ]
+                    assert [nest.serder.said for nest in replay.nests] == [
+                        acdc.said,
+                        issued.said,
+                        issuedAncSerder.said,
+                    ]
+                    assert recipientHby.db.exns.get(
+                        keys=(staleOfferExn.said,)) is None
+                    assert recipientHby.db.exns.get(
+                        keys=(offerExn.said,)) is not None
+
+                    # Process the reconstructed message again after KRAM
+                    # pruning. The replay may refresh temporary KRAM state,
+                    # but it must not duplicate durable evidence or notify the
+                    # route handler a second time.
+                    beforeSenderRows = [
+                        (keys, siger.qb64)
+                        for keys, siger in recipientHby.db.esigs.getTopItemIter(
+                            keys=(grantExn.said, issuerHab.pre, ""))
+                    ]
+                    beforeEndorserRows = [
+                        (keys, siger.qb64)
+                        for keys, siger in recipientHby.db.esigs.getTopItemIter(
+                            keys=(grantExn.said, endorserHab.pre, ""))
+                    ]
+                    beforeSeals = [
+                        (keys, number.qb64, diger.qb64)
+                        for keys, (number, diger) in
+                        recipientHby.db.ests.getTopItemIter(
+                            keys=(grantExn.said, ""))
+                    ]
+                    beforeItems = list(recipientRecorder.items)
+
+                    replayWire = bytearray(grantMsg)
+                    Parser(version=Vrsn_2_0).parse(
+                        ims=replayWire, framed=True, kvy=recipientKvy)
+                    assert replayWire == bytearray()
+                    assert [
+                        (keys, siger.qb64)
+                        for keys, siger in recipientHby.db.esigs.getTopItemIter(
+                            keys=(grantExn.said, issuerHab.pre, ""))
+                    ] == beforeSenderRows
+                    assert [
+                        (keys, siger.qb64)
+                        for keys, siger in recipientHby.db.esigs.getTopItemIter(
+                            keys=(grantExn.said, endorserHab.pre, ""))
+                    ] == beforeEndorserRows
+                    assert [
+                        (keys, number.qb64, diger.qb64)
+                        for keys, (number, diger) in
+                        recipientHby.db.ests.getTopItemIter(
+                            keys=(grantExn.said, ""))
+                    ] == beforeSeals
+                    assert recipientRecorder.items == beforeItems
 
                 # Pull the carried blindable update back out of the stored grant
                 # and prove it still unblinds to the expected issued state.
-                carriedBup = grantResults[0].nests[1].serder
+                carriedBup = replay.nests[1].serder
                 unblinder = Blinder.unblind(said=carriedBup.sad["b"],
                                             uuid=issuedBlinder.uuid,
                                             acdc=acdc.said,
@@ -2346,8 +2667,6 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # Recovery here means the stale offer never landed, the retry did
                 # land, and the fake clock advanced cleanly from apply to admit.
                 assert helping.nowIso8601() == admitStamp
-                assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
-                assert recipientHby.db.exns.get(keys=(offerExn.said,)) is not None
         finally:
             rgy.close()
 

@@ -2134,6 +2134,10 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
 
         senderHab = senderHby.makeHab(name="rehSender", isith='2', icount=3,
                                       transferable=True, version=V2, kind=Kinds.cesr)
+        unknownHab = senderHby.makeHab(name="rehUnknown", isith='1', icount=1,
+                                       transferable=True, version=V2, kind=Kinds.cesr)
+        cigarHab = senderHby.makeHab(name="rehCigar", isith='1', icount=1,
+                                     transferable=False, version=V2, kind=Kinds.cesr)
         receiverHab = receiverHby.makeHab(name="rehReceiver", isith='1', icount=1,
                                           transferable=True, version=V2, kind=Kinds.cesr)
 
@@ -2165,6 +2169,8 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
             saider = Saider(qb64=senderKever.serder.said)
             diger = Diger(ser=msg.raw)
             otherPrefixer = Prefixer(qb64=receiverHab.pre)
+            unknownSigers = unknownHab.sign(ser=msg.raw, indexed=True)
+            foreignCigars = cigarHab.sign(ser=msg.raw, indexed=False)
 
             trqs = [(prefixer, seqner, saider, allSigers[0])]
             tsgs = [(otherPrefixer, seqner, saider, [allSigers[0]])]
@@ -2185,7 +2191,9 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
             texter = Texter(text='application/json')
             tmqs = [(diger, noncer0, labeler, texter)]
 
-            kwa = dict(lsgs=[(prefixer, [allSigers[0]])],
+            kwa = dict(lsgs=[(prefixer, [allSigers[0]]),
+                              (unknownHab.kever.prefixer, unknownSigers)],
+                       cigars=foreignCigars,
                        trqs=trqs, tsgs=tsgs, ssts=ssts,
                        frcs=frcs, tdcs=tdcs, ptds=ptds,
                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
@@ -2193,6 +2201,12 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
             r1 = kramer.kramit(msg, kwa)
             assert r1 is None
             assert len(kramer.db.kramPMKS.get(keys=partialKey)) == 1
+            assert [pre.qb64 for pre in
+                    kramer.db.kramULGS.get(keys=partialKey)] == [unknownHab.pre]
+            assert [(verfer.qb64, cigar.qb64) for verfer, cigar in
+                    kramer.db.kramCIGS.get(keys=partialKey)] == [
+                (cigarHab.pre, foreignCigars[0].qb64),
+            ]
 
             kwa2 = dict(lsgs=[(prefixer, [allSigers[2]])])
             r2 = kramer.kramit(msg, kwa2)
@@ -2201,6 +2215,11 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
             assert {s.index for s in kwa2['sigers']} == {0, 2}
             assert len(kwa2['trqs']) == 1
             assert len(kwa2['tsgs']) == 1
+            assert [pre.qb64 for pre in kwa2['ulgs']] == [unknownHab.pre]
+            assert [(cigar.verfer.qb64, cigar.qb64)
+                    for cigar in kwa2['cigars']] == [
+                (cigarHab.pre, foreignCigars[0].qb64),
+            ]
             assert len(kwa2['ssts']) == 1
             assert len(kwa2['frcs']) == 1
             assert len(kwa2['tdcs']) == 1
@@ -2211,6 +2230,89 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
 
             escrow = kramer.db.kramPMKS.get(keys=partialKey)
             assert {s.index for s in escrow} == {0, 2}
+
+    """Done Test"""
+
+
+@pytest.mark.parametrize("transactioned", [False, True],
+                         ids=["message-cache", "transaction-cache"])
+def test_repeated_sender_signature_preserves_new_non_auth_attachments(
+        mockHelpingNowUTC, transactioned):
+    """A repeated valid sender signature may carry new non-auth evidence.
+
+    Preserve that evidence in both partial multi-signature cache paths so a
+    later threshold-satisfying delivery can rehydrate it for downstream
+    verification.
+    """
+
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+
+    with (openHby(name="repeatSender", base="test", salt=salt1) as senderHby,
+          openHby(name="repeatReceiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="repeatSender", isith='2', icount=3,
+                                      transferable=True, version=V2,
+                                      kind=Kinds.cesr)
+        endorserHab = senderHby.makeHab(name="repeatEndorser", version=V2,
+                                        kind=Kinds.cesr)
+        receiverHab = receiverHby.makeHab(name="repeatReceiver", version=V2,
+                                          kind=Kinds.cesr)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        for hab in (senderHab, endorserHab):
+            msg = hab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+            Parser(version=V2).parse(ims=bytearray(msg), kvy=crossKvy)
+
+        with openCF(name="repeatKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            stamp = helping.nowIso8601()
+
+            if transactioned:
+                opener = exchept(sender=senderHab.pre,
+                                  receiver=receiverHab.pre,
+                                  route="/test/exchange",
+                                  stamp=stamp, **EXN_KWA)
+                openerSigs = senderHab.sign(ser=opener.raw, indexed=True)
+                assert kramer.kramit(
+                    opener, dict(sigers=openerSigs)) is not None
+                msg = exchange(sender=senderHab.pre,
+                               receiver=receiverHab.pre,
+                               xid=opener.said,
+                               route="/test/exchange",
+                               attributes=dict(m="repeat evidence"),
+                               stamp=stamp, **EXN_KWA)
+            else:
+                msg = query(pre=senderHab.pre,
+                            route="ksn",
+                            query=dict(i=senderHab.pre,
+                                       src=senderHab.pre),
+                            stamp=stamp,
+                            pvrsn=Vrsn_2_0)
+
+            senderSigs = senderHab.sign(ser=msg.raw, indexed=True)
+            endorserSigs = endorserHab.sign(ser=msg.raw, indexed=True)
+            endorserTsg = (endorserHab.kever.prefixer,
+                           Number(sn=endorserHab.kever.lastEst.s),
+                           Diger(qb64=endorserHab.kever.lastEst.d),
+                           endorserSigs)
+            partialKey = (senderHab.pre, msg.said)
+
+            assert kramer.kramit(
+                msg, dict(sigers=[senderSigs[0]])) is None
+            assert len(kramer.db.kramPMKS.get(keys=partialKey)) == 1
+
+            assert kramer.kramit(
+                msg,
+                dict(sigers=[senderSigs[0]],
+                     tsgs=[endorserTsg])) is None
+            assert len(kramer.db.kramTSGS.get(keys=partialKey)) == 1
+
+            final = dict(sigers=[senderSigs[2]])
+            assert kramer.kramit(msg, final) is not None
+            assert any(prefixer.qb64 == endorserHab.pre
+                       for prefixer, _, _, _ in final['tsgs'])
 
     """Done Test"""
 
@@ -2269,6 +2371,8 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
             # All non-auth attachment dbs empty
             assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
             assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramULGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramCIGS.get(keys=partialKey) == []
             assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
             assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
@@ -2282,7 +2386,7 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
 
 
 def test_rem_non_auth_attachments(mockHelpingNowUTC):
-    """Test _remNonAuthAttachments clears all ten non-auth dbs for a key."""
+    """Test _remNonAuthAttachments clears all non-auth dbs for a key."""
 
     salt1 = Salter(raw=b'0123456789abcdef').qb64
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
@@ -2323,11 +2427,15 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
             saider = Saider(qb64=senderKever.serder.said)
             diger = Diger(ser=msg.raw)
 
-            # Populate all ten non-auth dbs directly
+            # Populate all non-auth dbs directly
             receiverHby.db.kramTRQS.add(keys=partialKey,
                                     val=(prefixer, seqner, saider, allSigers[0]))
             receiverHby.db.kramTSGS.add(keys=partialKey,
                                     val=(prefixer, seqner, saider, allSigers[0]))
+            receiverHby.db.kramULGS.add(keys=partialKey, val=prefixer)
+            cigar = senderHab.sign(ser=msg.raw, indexed=False)[0]
+            receiverHby.db.kramCIGS.add(
+                keys=partialKey, val=(cigar.verfer, cigar))
             receiverHby.db.kramSSCS.add(keys=partialKey, val=(seqner, saider))
             receiverHby.db.kramSSTS.add(keys=partialKey, val=(prefixer, seqner, saider))
 
@@ -2358,6 +2466,8 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
             # Confirm all populated
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramULGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramCIGS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
@@ -2370,9 +2480,11 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
             # Call _remNonAuthAttachments
             kramer._remNonAuthAttachments(partialKey)
 
-            # All ten cleared
+            # All cleared
             assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
             assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramULGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramCIGS.get(keys=partialKey) == []
             assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
             assert receiverHby.db.kramFRCS.get(keys=partialKey) == []

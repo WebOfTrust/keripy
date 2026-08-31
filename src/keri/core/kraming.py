@@ -20,7 +20,7 @@ from hio.base import doing
 from hio.help import ogler
 
 
-from .coring import Verser, Prefixer, Diger, Dater
+from .coring import Verser, Prefixer, Diger, Dater, Number
 from .indexing import Siger
 from .eventing import verifySigs
 
@@ -707,6 +707,14 @@ class Kramer:
             raw=msg.raw, sigers=poolSigers, verfers=kever.verfers)
         verified = {s.qb64 for s in vsigers}
         self._scrubFailedVerification(senderId, kever, kwa, verified)
+        if msg.ilk == Ilks.exn and vsigers:
+            tsgs = [tsg for tsg in kwa.get('tsgs', [])
+                    if tsg[0].qb64 != senderId]
+            tsgs.insert(0, (kever.prefixer,
+                            Number(sn=kever.lastEst.s),
+                            Diger(qb64=kever.lastEst.d),
+                            list(vsigers)))
+            kwa['tsgs'] = tsgs
 
         return SigVerifyResult(
             verified=True if vsigers else False,
@@ -783,7 +791,7 @@ class Kramer:
         """Idempotently store non-authenticator attachments for a partially
         signed multi-key message pending threshold satisfaction.
 
-        Handles parser kwa attachment keys except lsgs, essrs, sscs, and
+        Handles parser kwa attachment keys except essrs, sscs, and
         sender-matching ssts. Seal couples (sscs) and source triples whose
         prefix is the message sender are anchoring-seal-reference material
         for this AID and are not stored here. Only ssts whose prefix differs
@@ -792,8 +800,11 @@ class Kramer:
 
         Sender-addressed tsgs quads are not written to kramTSGS (they are
         authenticator material, not non-auth forwarding); other prefixers'
-        tsgs are stored. The live kwa dict is not mutated by this method;
-        signature scrubbing may already have run in _verifyAttachedSigs.
+        tsgs are stored. A foreign last-establishment signature group is
+        resolved to that endorser's current establishment event at receipt
+        and stored in the same explicit form. The live kwa dict is not
+        mutated by this method; signature scrubbing may already have run in
+        _verifyAttachedSigs.
 
         Parameters:
             key (tuple): (AID, MID) partial db key
@@ -807,6 +818,20 @@ class Kramer:
                 continue
             for siger in sigers:
                 self.db.kramTSGS.add(key, (prefixer, number, diger, siger))
+        for prefixer, sigers in kwa.get('lsgs', []):
+            if prefixer.qb64 == senderId:
+                continue
+            kever = self.db.kevers.get(prefixer.qb64)
+            if kever is None:
+                self.db.kramULGS.add(key, prefixer)
+                continue
+            number = Number(sn=kever.lastEst.s)
+            diger = Diger(qb64=kever.lastEst.d)
+            for siger in sigers:
+                self.db.kramTSGS.add(key, (prefixer, number, diger, siger))
+        for cigar in kwa.get('cigars', []):
+            if cigar.verfer.qb64 != senderId:
+                self.db.kramCIGS.add(key, (cigar.verfer, cigar))
         for prefixer, number, diger in kwa.get('ssts', []):
             if prefixer.qb64 != senderId:
                 self.db.kramSSTS.add(key, (prefixer, number, diger))
@@ -832,6 +857,8 @@ class Kramer:
         """
         self.db.kramTRQS.rem(key)
         self.db.kramTSGS.rem(key)
+        self.db.kramULGS.rem(key)
+        self.db.kramCIGS.rem(key)
         self.db.kramSSCS.rem(key)
         self.db.kramSSTS.rem(key)
         self.db.kramFRCS.rem(key)
@@ -917,6 +944,17 @@ class Kramer:
         else:
             kwa.pop('tsgs', None)
 
+        ulgsEsc = list(self.db.kramULGS.get(partialKey) or [])
+        kwa['ulgs'] = self._dedupeAttachmentItems(
+            ulgsEsc + kwa.get('ulgs', []))
+
+        cigarsEsc = []
+        for verfer, cigar in self.db.kramCIGS.get(partialKey) or []:
+            cigar.verfer = verfer
+            cigarsEsc.append(cigar)
+        kwa['cigars'] = self._dedupeAttachmentItems(
+            cigarsEsc + kwa.get('cigars', []))
+
         sstsEsc = list(self.db.kramSSTS.get(partialKey) or [])
         kwa['ssts'] = self._dedupeAttachmentItems(
             sstsEsc + kwa.get('ssts', []))
@@ -945,8 +983,8 @@ class Kramer:
         kwa['tmqs'] = self._dedupeAttachmentItems(
             tmqsEsc + kwa.get('tmqs', []))
 
-        for name in ('trqs', 'ssts', 'frcs', 'tdcs', 'ptds', 'bsqs', 'bsss',
-                     'tmqs'):
+        for name in ('trqs', 'ulgs', 'cigars', 'ssts', 'frcs', 'tdcs', 'ptds',
+                     'bsqs', 'bsss', 'tmqs'):
             if not kwa.get(name):
                 kwa.pop(name, None)
 
@@ -1122,8 +1160,9 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.kramPMSK.pin(key, currentKeyState)
 
-                    # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(key, senderId, kwa)
+                # A repeated valid sender signature may carry new non-auth
+                # attachments. Preserve them even when the signature exists.
+                self._storeNonAuthAttachments(key, senderId, kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -1132,6 +1171,14 @@ class Kramer:
 
                     if kever.tholder.satisfy(indices=sigIndices):
                         self._rehydrateKwaFromEscrow(key, senderId, kwa)
+                        if msg.ilk == Ilks.exn:
+                            tsgs = [tsg for tsg in kwa.get('tsgs', [])
+                                    if tsg[0].qb64 != senderId]
+                            tsgs.insert(0, (kever.prefixer,
+                                            Number(sn=kever.lastEst.s),
+                                            Diger(qb64=kever.lastEst.d),
+                                            list(allSigs)))
+                            kwa['tsgs'] = tsgs
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1204,6 +1251,10 @@ class Kramer:
                             return None
                         if not sealValidated:
                             return None
+
+                    if hasSigs and msg.ilk == Ilks.exn:
+                        self._verifyAttachedSigs(
+                            msg=msg, senderId=senderId, kever=kever, kwa=kwa)
 
                     # Create cache and accept
                     mcr = MsgCacheRecord(
@@ -1355,8 +1406,9 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.kramPMSK.pin(partialKey, currentKeyState)
 
-                    # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(partialKey, senderId, kwa)
+                # A repeated valid sender signature may carry new non-auth
+                # attachments. Preserve them even when the signature exists.
+                self._storeNonAuthAttachments(partialKey, senderId, kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -1365,6 +1417,14 @@ class Kramer:
 
                     if kever.tholder.satisfy(indices=sigIndices):
                         self._rehydrateKwaFromEscrow(partialKey, senderId, kwa)
+                        if msg.ilk == Ilks.exn:
+                            tsgs = [tsg for tsg in kwa.get('tsgs', [])
+                                    if tsg[0].qb64 != senderId]
+                            tsgs.insert(0, (kever.prefixer,
+                                            Number(sn=kever.lastEst.s),
+                                            Diger(qb64=kever.lastEst.d),
+                                            list(allSigs)))
+                            kwa['tsgs'] = tsgs
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1473,6 +1533,10 @@ class Kramer:
                                 return None
                             if not sealValidated:
                                 return None
+
+                        if hasSigs and msg.ilk == Ilks.exn:
+                            self._verifyAttachedSigs(
+                                msg=msg, senderId=senderId, kever=kever, kwa=kwa)
 
                         # Create txn cache and accept
                         mcr = TxnMsgCacheRecord(

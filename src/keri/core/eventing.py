@@ -4789,10 +4789,12 @@ class Kevery:
             case Ilks.exn:
                 cigars = kwa.get('cigars', [])
                 tsgs = kwa.get('tsgs', [])
-                if not (cigars or tsgs):
+                sscs = kwa.get('sscs', [])
+                ssts = kwa.get('ssts', [])
+                if not (cigars or tsgs or sscs or ssts):
                     raise ValidationError(
                         f"Missing attached exchanger "
-                        f"signatures for msg={serder.pretty()}")
+                        f"authentication for msg={serder.pretty()}")
                 if exc is None:
                     raise ValidationError(
                         f"No exchanger to process so "
