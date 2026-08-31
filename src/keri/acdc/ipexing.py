@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from ..kering import Colds, Vrsn_2_0, sniff
+from ..kering import Colds, Ilks, Vrsn_2_0, sniff
 from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
                     Number, Saider, Serdery, Texter, exchange, messagize)
 from ..peer import cloneMessage
@@ -30,6 +30,8 @@ PreviousRoutes = {
     Ipex.admit: (Ipex.grant,),
     Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
 }
+
+DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
 
 def _streamSerder(stream):
     """Extract the message serder from a bare or nested artifact stream.
@@ -173,16 +175,16 @@ def _normalizeNodeStream(stream, attachment=None):
     # way IPEX expects: one ACDC body plus that node's attachment section.
     if _isNestedStream(stream):
         serder = _streamSerder(stream)
-        if serder.proto != Protocols.acdc:
-            raise ValueError("IPEX node nests must carry ACDC messages")
+        if serder.proto != Protocols.acdc or serder.ilk not in DisclosedNodeIlks:
+            raise ValueError("IPEX node nests must carry disclosed ACDC nodes")
         if attachment:
             raise ValueError("cannot append attachment bytes to a pre-nested ACDC node")
         return bytearray(stream.raw) if hasattr(stream, "raw") else bytearray(stream)
 
     raw = bytes(stream.raw) if hasattr(stream, "raw") else bytes(stream)
     serder = _streamSerder(raw)
-    if serder.proto != Protocols.acdc:
-        raise ValueError("IPEX node nests must carry ACDC messages")
+    if serder.proto != Protocols.acdc or serder.ilk not in DisclosedNodeIlks:
+        raise ValueError("IPEX node nests must carry disclosed ACDC nodes")
 
     # Rebuild plain ACDC input into the same per-node framing so later proof
     # groups can live on the owning node without changing the outer layout.
@@ -408,7 +410,9 @@ class IpexHandler:
             nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
             if not nserder.verify():
                 return None
-            if nserder.proto != Protocols.acdc:
+            # Each nest must carry a real disclosed credential node, not just
+            # any ACDC-protocol message such as a registry TEL event.
+            if nserder.proto != Protocols.acdc or nserder.ilk not in DisclosedNodeIlks:
                 return None
             if idx == 0 and not nserder.compare(origin):
                 return None

@@ -403,6 +403,38 @@ def test_ipex_v2_grant_carries_multiple_dag_nodes():
         assert "iss" not in storedGrant.ked["a"]
 
 
+def test_ipex_v2_builders_reject_registry_events_as_disclosed_nodes():
+    """Offer/grant builders must reject TEL events in disclosed DAG node slots."""
+    with openHby(name="ipex-v2-bad-node-builder",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        acdc = acdcmap(israid=holder.pre,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=holder.pre)
+        rip = regcept(israid=holder.pre)
+
+        with pytest.raises(ValueError, match="disclosed ACDC nodes"):
+            ipexOffer(hab=holder,
+                      recp=verifier.pre,
+                      message="Here is the bad offer",
+                      origin=rip)
+
+        with pytest.raises(ValueError, match="disclosed ACDC nodes"):
+            ipexGrant(hab=holder,
+                      recp=verifier.pre,
+                      message="Here is the bad grant",
+                      origin=rip)
+
+        with pytest.raises(ValueError, match="disclosed ACDC nodes"):
+            ipexGrant(hab=holder,
+                      recp=verifier.pre,
+                      message="Here is the bad grant artifact",
+                      origin=acdc,
+                      artifacts=[rip])
+
+
 def test_ipex_v2_rejects_offer_with_duplicate_disclosed_node():
     """Offer must not carry the same disclosed ACDC node more than once."""
     with openHby(name="ipex-v2-bad-offer-duplicate-node",
@@ -439,6 +471,46 @@ def test_ipex_v2_rejects_offer_with_duplicate_disclosed_node():
         assert hby.db.exns.get(keys=(applyExn.said,)) is not None
         assert hby.db.exns.get(keys=(offerExn.said,)) is None
         assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+
+
+def test_ipex_v2_rejects_offer_with_registry_event_nested_as_dag_node():
+    """Inbound offer verification must reject TEL events masquerading as DAG nodes."""
+    with openHby(name="ipex-v2-bad-offer-tel-node",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        rip = regcept(israid=hab.pre)
+        origin = acdcmap(israid=hab.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=_edge("holder", rip),
+                         iseaid=hab.pre)
+
+        # Build a syntactically valid offer body, then re-endorse it with a
+        # forged nested `rip` so the handler has to reject it as a non-node.
+        exn, _ = ipexOffer(hab=hab,
+                           recp=hab.pre,
+                           origin=origin,
+                           message="Here is the forged credential DAG")
+
+        atc = bytearray(hab.endorse(serder=exn,
+                                    framed=False,
+                                    gvrsn=Vrsn_2_0,
+                                    nests=[_nest(origin), _nest(rip)]))
+        del atc[:exn.size]
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert recorder.items == []
 
 
 def test_ipex_v2_rejects_offer_with_missing_edged_node():
