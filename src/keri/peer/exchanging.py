@@ -14,7 +14,7 @@ from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
                     Noncer, Sadder, Serder, SerderKERI, Texter,
-                    Saids, Codens, FirstSeen, Parser,
+                    Saids, Codens, BlindState, BoundState, FirstSeen, Parser,
                     messagize,
                     verifySigs)
 from ..db import fetchTsgs
@@ -789,8 +789,16 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
         raise ValueError("Unsupported mixed signature groups for nested substream serialization")
 
     bonds = []
-    for name in ("sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs"):
+    for name in ("sscs", "ssts", "tdcs"):
         bonds.extend(parsed.get(name) or [])
+    # Parsed blind-state proof groups come back as plain tuples of primitive
+    # instances, but messagize() expects namedtuple bond records when it
+    # reserializes the nested node into storage.
+    bonds.extend(item if isinstance(item, BlindState) else BlindState(*item)
+                 for item in (parsed.get("bsqs") or []))
+    bonds.extend(item if isinstance(item, BoundState) else BoundState(*item)
+                 for item in (parsed.get("bsss") or []))
+    bonds.extend(parsed.get("tmqs") or [])
     for item in parsed.get("frcs") or []:
         bonds.append(item if isinstance(item, FirstSeen) else FirstSeen(*item))
 

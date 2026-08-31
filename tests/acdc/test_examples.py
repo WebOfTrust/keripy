@@ -25,8 +25,8 @@ from jsonschema.exceptions import SchemaError, ValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (Noncer, Blinder, GenDex, Aggor, Compactor, Diger,
-                       DigDex, Parser)
-from keri.acdc import (regcept, blindate, acdcmap, acdcagg, loadHandlers,
+                       DigDex, Parser, messagize)
+from keri.acdc import (Regery, Registrar, regcept, blindate, acdcmap, acdcagg, loadHandlers,
                        grant as ipexGrant, admit as ipexAdmit)
 from keri.app import openHby
 from keri.peer import Exchanger
@@ -76,9 +76,40 @@ class Recorder:
         self.items.append(attrs)
 
 
+def _serder(stream):
+    """Extract the carried ACDC serder from a bare or proof-bearing node stream."""
+    if hasattr(stream, "said") and hasattr(stream, "raw"):
+        return stream
+
+    ims = bytearray(stream.raw) if hasattr(stream, "raw") else bytearray(stream)
+    results = Parser(version=Vrsn_2_0).parse(ims=ims,
+                                             framed=False,
+                                             processive=False)
+    assert ims == bytearray()
+    assert len(results) == 1
+    return results[0].serder
+
+
+def _proofed(acdc, *proofs):
+    """Attach one node-local registry proof group to the disclosed ACDC stream."""
+    return messagize(serder=acdc,
+                     bonds=[proof.data for proof in proofs],
+                     framed=False,
+                     gvrsn=Vrsn_2_0)
+
+
+def _anchor(hab, registry, serder, *, framed=False):
+    """Seal one registry event into the issuer's KEL so verifiers can vet it."""
+    seal = dict(i=registry.regk, s=serder.sad["n"], d=serder.said)
+    anc = hab.interact(data=[seal], framed=framed, gvrsn=Vrsn_2_0)
+    assert registry.anchorMsg(serder.said) is True
+    return anc
+
+
 def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
             origin, artifacts=None):
     """Round-trip one IPEX grant and its admit, returning the parsed grant."""
+    originSerder = _serder(origin)
     grant, grantAtc = ipexGrant(hab=sender, recp=receiver.pre, message=message,
                                 origin=origin, artifacts=artifacts)
     grantIms = bytearray(grant.raw)
@@ -93,10 +124,10 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert grantResult.serder.ked['p'] == ""
     assert grantResult.serder.ked['i'] == sender.pre
     assert grantResult.serder.ked['ri'] == receiver.pre
-    assert grantResult.serder.ked['a']['o'] == origin.said
-    nestSaids = [origin.said]
+    assert grantResult.serder.ked['a']['o'] == [originSerder.said]
+    nestSaids = [originSerder.said]
     if artifacts:
-        nestSaids.extend(artifact.said for artifact in artifacts)
+        nestSaids.extend(_serder(artifact).said for artifact in artifacts)
     assert [nest.serder.said for nest in grantResult.nests] == nestSaids
     wire = bytes(grant.raw) + bytes(grantAtc)
 
@@ -106,7 +137,7 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert grantDispatch == bytearray()
     storedGrant = hby.db.exns.get(keys=(grant.said,))
     assert storedGrant is not None
-    assert storedGrant.ked['a']['o'] == origin.said
+    assert storedGrant.ked['a']['o'] == [originSerder.said]
     assert "iss" not in storedGrant.ked['a']
     assert "anc" not in storedGrant.ked['a']
 
@@ -294,113 +325,92 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
 
     This stays distinct from test_clc_disclosure.py's gated exchange. The point
     here is not pre-disclosure negotiation; it is to carry the foundational
-    registry artifacts inside the IPEX builders and route them through the real
-    IPEX handlers we have today.
-
-    The current ``ipexing.grant`` builder gives us three carried artifacts:
-    ``acdc`` (the credential), ``iss`` (the current registry update), and
-    ``anc`` (one ancillary artifact). For this registry lifecycle example we use
-    that ancillary slot for the registry inception (`rip`) itself, so one bare
-    grant snapshots the whole state package the holder needs:
-
-      credential + current `bup` state + originating registry `rip`
-
-    A second bare grant later carries the revoked-state snapshot. Each bare
-    grant is acknowledged by an IPEX admit.
+    registry-backed ACDC through the real IPEX handlers we have today. In the
+    single-DAG wire shape for this ticket, the grant carries one nested ACDC
+    node per disclosure graph node, and TEL/KEL issuer-auth material is no
+    longer shipped as sibling grant artifacts.
     """
 
     with openHby(name="ipex-registry-lifecycle",
                  base="test") as hby:
         amy = hby.makeHab(name="amy")
         bob = hby.makeHab(name="bob")
+        rgy = Regery(hby=hby, name="ipex-registry-lifecycle", temp=True)
+        try:
+            # The live IPEX example now uses a real registry/TEL so the handler
+            # can vet the node-local proof group carried on the disclosed ACDC.
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="amy-registry", prefix=amy.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(amy, registry, rip, framed=True)
 
-        # Rebuild the same artifact pattern as the JSON worked example, but with
-        # live Hab AIDs because the current IPEX builders sign through Hab.
-        regStamp = '2025-07-04T17:50:00.000000+00:00'
-        ripper = regcept(israid=amy.pre, uuid=NONCES[0], stamp=regStamp)
-        assert ripper.ilk == Ilks.rip
-        regid = ripper.said
+            attribute = dict(d='', u=NONCES[7], name="Sunspot College", level="gold")
+            acdc = acdcmap(israid=amy.pre, uuid=NONCES[10], regid=registry.regk,
+                           attribute=attribute, iseaid=bob.pre)
+            assert acdc.ilk == Ilks.acm
+            assert acdc.sad['rd'] == registry.regk
+            assert acdc.sad['a']['i'] == bob.pre
+            assert_acdc_schema_valid(acdc)
 
-        attribute = dict(d='', u=NONCES[7], name="Sunspot College", level="gold")
-        acdc = acdcmap(israid=amy.pre, uuid=NONCES[10], regid=regid,
-                       attribute=attribute, iseaid=bob.pre)
-        assert acdc.ilk == Ilks.acm
-        assert acdc.sad['rd'] == regid
-        assert acdc.sad['a']['i'] == bob.pre
-        assert_acdc_schema_valid(acdc)
+            salt = NONCES[15]
+            issuedBlinder, issued = registrar.issue(registry,
+                                                    acdc=acdc,
+                                                    state='issued',
+                                                    salt=salt)
+            _anchor(amy, registry, issued, framed=False)
 
-        salt = NONCES[15]
-        issuedBlinder = Blinder.blind(acdc=acdc.said, state='issued', salt=salt, sn=1)
-        issued = blindate(regid=regid, prior=regid, blid=issuedBlinder.said,
-                          sn=1, stamp='2025-08-01T18:06:10.988921+00:00')
-        revokedBlinder = Blinder.blind(acdc=acdc.said, state='revoked', salt=salt, sn=2)
-        revoked = blindate(regid=regid, prior=issued.said, blid=revokedBlinder.said,
-                           sn=2, stamp='2025-09-01T18:06:10.988921+00:00')
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
 
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+            # The first presentation discloses only the current issued event's
+            # proof group on the ACDC's own nest.
+            issuedGrantResult, issuedGrantWire = ipexExn(
+                hby=hby,
+                exc=exc,
+                sender=amy,
+                receiver=bob,
+                message="Issued registry snapshot",
+                admitMessage="Received issued snapshot",
+                origin=_proofed(acdc, issuedBlinder),
+            )
+            assert issuedGrantResult.serder.ked['ri'] == bob.pre
+            assert len(issuedGrantResult.nests[0].bsqs) == 1
+            assert salt.encode() not in issuedGrantWire
+            assert issuedBlinder.uuid.encode() in issuedGrantWire
 
-        # Bare grant 1: the issued-state snapshot. The grant carries the
-        # credential as the origin plus the current `bup` and registry
-        # inception as attached artifacts.
-        issuedGrantResult, issuedGrantWire = ipexExn(
-            hby=hby,
-            exc=exc,
-            sender=amy,
-            receiver=bob,
-            message="Issued registry snapshot",
-            admitMessage="Received issued snapshot",
-            origin=acdc,
-            artifacts=[issued, ripper],
-        )
-        assert issuedGrantResult.serder.ked['ri'] == bob.pre
-        # The disclosed credential is present on the wire, but the registry state
-        # word itself remains hidden because the nested `bup` is blindable
-        assert b'issued' not in issuedGrantWire
-        assert b'revoked' not in issuedGrantWire
-        assert salt.encode() not in issuedGrantWire
+            # Once the registry advances, the later presentation carries only
+            # the new event's proof group and the earlier blind stays absent.
+            revokedBlinder, revoked = registrar.issue(registry,
+                                                      acdc=acdc,
+                                                      state='revoked',
+                                                      salt=salt)
+            _anchor(amy, registry, revoked, framed=False)
 
-        # The holder/verifier can now pull the carried `bup` out of the IPEX
-        # grant and perform the same unblinding confirmation as in the base test
-        issuedNest = issuedGrantResult.nests[1].serder
-        unblinder = Blinder.unblind(said=issuedNest.sad['b'], acdc=acdc.said,
-                                    states=['issued', 'revoked'], salt=salt, sn=1)
-        assert unblinder is not None
-        assert unblinder.state == 'issued'
-        assert unblinder.acdc == acdc.said
-        assert unblinder.crew == issuedBlinder.crew
+            assert revokedBlinder.uuid.encode() not in issuedGrantWire
 
-        # Bare grant 2: later the issuer ships the revoked-state snapshot the
-        # same way, again through the handler chain.
-        revokedGrantResult, revokedGrantWire = ipexExn(
-            hby=hby,
-            exc=exc,
-            sender=amy,
-            receiver=bob,
-            message="Revoked registry snapshot",
-            admitMessage="Received revoked snapshot",
-            origin=acdc,
-            artifacts=[revoked, ripper],
-        )
-        assert b'issued' not in revokedGrantWire
-        assert b'revoked' not in revokedGrantWire
-        assert salt.encode() not in revokedGrantWire
+            revokedGrantResult, revokedGrantWire = ipexExn(
+                hby=hby,
+                exc=exc,
+                sender=amy,
+                receiver=bob,
+                message="Revoked registry snapshot",
+                admitMessage="Received revoked snapshot",
+                origin=_proofed(acdc, revokedBlinder),
+            )
+            assert len(revokedGrantResult.nests[0].bsqs) == 1
+            assert salt.encode() not in revokedGrantWire
+            assert issuedBlinder.uuid.encode() not in revokedGrantWire
+            assert revokedBlinder.uuid.encode() in revokedGrantWire
 
-        revokedNest = revokedGrantResult.nests[1].serder
-        reunblinder = Blinder.unblind(said=revokedNest.sad['b'], acdc=acdc.said,
-                                      states=['issued', 'revoked'], salt=salt, sn=2)
-        assert reunblinder is not None
-        assert reunblinder.state == 'revoked'
-        assert reunblinder.acdc == acdc.said
-        assert reunblinder.crew == revokedBlinder.crew
-
-        assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/grant", "Issued registry snapshot"),
-            ("/exn/ipex/admit", "Received issued snapshot"),
-            ("/exn/ipex/grant", "Revoked registry snapshot"),
-            ("/exn/ipex/admit", "Received revoked snapshot"),
-        ]
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/exn/ipex/grant", "Issued registry snapshot"),
+                ("/exn/ipex/admit", "Received issued snapshot"),
+                ("/exn/ipex/grant", "Revoked registry snapshot"),
+                ("/exn/ipex/admit", "Received revoked snapshot"),
+            ]
+        finally:
+            rgy.close()
 
 
 def test_selective_disclosure_aggregate_JSON():
@@ -520,9 +530,11 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         aggor = Aggor(ael=iael, makify=True, kind=kind)
         agid = aggor.agid
 
-        acdc = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+        # This live IPEX example is about selective disclosure shape, not
+        # registry proofing, so keep the carried ACDC unbound from a registry.
+        acdc = acdcagg(israid=amy.pre, uuid=NONCES[10],
                        aggregate=aggor.ael, kind=kind)
-        compact = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+        compact = acdcagg(israid=amy.pre, uuid=NONCES[10],
                           aggregate=agid, kind=kind)
         schema = assert_acdc_schema_valid(acdc)
         assert_acdc_schema_valid(compact, schema=schema)
@@ -535,7 +547,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         full, k = aggor.disclose()
         assert k == kind
         assert Aggor.verifyDisclosure(full, kind=kind)
-        collapsed = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+        collapsed = acdcagg(israid=amy.pre, uuid=NONCES[10],
                             aggregate=full, kind=kind)
         assert collapsed.said == acdc.said
 
@@ -543,7 +555,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         # withhold the score/name elements as bare SAIDs.
         disclosed, k = aggor.disclose(indices=[1])
         assert k == kind
-        selective = acdcagg(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
+        selective = acdcagg(israid=amy.pre, uuid=NONCES[10],
                             aggregate=disclosed, kind=kind)
         assert selective.said == acdc.said
         assert_acdc_schema_valid(selective, schema=schema)
@@ -774,10 +786,12 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         ruleText = "AS IS basis. MUST NOT be shared."
         attrMad = dict(d='', u=NONCES[7], name="Bob Student", gpa=4)
         ruleMad = dict(d='', l=ruleText)
-        expanded = acdcmap(israid=amy.pre, uuid=NONCES[13], regid=ripper.said,
+        # These IPEX examples exercise section-level disclosure only, so they
+        # intentionally omit rd and avoid the step-4 registry-proof path.
+        expanded = acdcmap(israid=amy.pre, uuid=NONCES[13],
                            attribute=dict(attrMad), iseaid=bob.pre, rule=dict(ruleMad),
                            compactify=False, kind=kind)
-        compact = acdcmap(israid=amy.pre, uuid=NONCES[13], regid=ripper.said,
+        compact = acdcmap(israid=amy.pre, uuid=NONCES[13],
                           attribute=dict(attrMad), iseaid=bob.pre, rule=dict(ruleMad),
                           compactify=True, kind=kind)
         assert expanded.said == compact.said             # same commitment either way
@@ -788,7 +802,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert b"MUST NOT" not in compact.raw
 
         # Build the rule section disclosure
-        ruleOnly = acdcmap(israid=amy.pre, uuid=NONCES[13], regid=ripper.said,
+        ruleOnly = acdcmap(israid=amy.pre, uuid=NONCES[13],
                            schema=compact.sad['s'], attribute=compact.sad['a'],
                            rule=expanded.sad['r'], kind=kind)
         assert ruleOnly.said == compact.said == expanded.said
@@ -833,13 +847,13 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         withheld = compactor.partials[('', )]
         revealed = compactor.partials[('.grades', )]
 
-        gradesBase = acdcmap(israid=amy.pre, uuid=NONCES[11], regid=ripper.said,
+        gradesBase = acdcmap(israid=amy.pre, uuid=NONCES[11],
                              attribute=nested, kind=kind)
         gradesSchema = assert_acdc_schema_valid(gradesBase)
-        gradesWithheld = acdcmap(israid=amy.pre, uuid=NONCES[11], regid=ripper.said,
+        gradesWithheld = acdcmap(israid=amy.pre, uuid=NONCES[11],
                                  schema=gradesBase.sad['s'], attribute=withheld.mad,
                                  kind=kind)
-        gradesRevealed = acdcmap(israid=amy.pre, uuid=NONCES[11], regid=ripper.said,
+        gradesRevealed = acdcmap(israid=amy.pre, uuid=NONCES[11],
                                  schema=gradesBase.sad['s'], attribute=revealed.mad,
                                  kind=kind)
         assert withheld.said == sectSaid and revealed.said == sectSaid
@@ -906,10 +920,10 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         mixed = dict(allCompact)
         mixed['grades'] = allExpanded['grades']
 
-        mixedBase = acdcmap(israid=amy.pre, uuid=NONCES[12], regid=ripper.said,
+        mixedBase = acdcmap(israid=amy.pre, uuid=NONCES[12],
                             attribute=multi, kind=kind)
         mixedSchema = assert_acdc_schema_valid(mixedBase)
-        mixedAcdc = acdcmap(israid=amy.pre, uuid=NONCES[12], regid=ripper.said,
+        mixedAcdc = acdcmap(israid=amy.pre, uuid=NONCES[12],
                             schema=mixedBase.sad['s'], attribute=mixed, kind=kind)
         assert mixedAcdc.said == mixedBase.said
         assert_acdc_schema_valid(mixedAcdc, schema=mixedSchema)
@@ -1071,12 +1085,11 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
     """Per-event blind disclosure carried through the real IPEX grant path.
 
     The sibling JSON worked example proves that a disclosed blind reads exactly
-    one blindable registry update and no others. This companion test packages
-    those blinded registry updates as nested `bup` artifacts inside real IPEX
-    `grant` messages, routes them through the v2 handlers, and shows that the
-    verifier can unblind only the event whose per-sn nonce the holder chooses to
-    disclose out of band. The IPEX wire itself never carries the salt or either
-    cleartext state word.
+    one blindable registry update and no others. This companion test shows the
+    current IPEX shape for the same registry-backed credential: the grant
+    carries the ACDC node itself plus exactly one event's blind proof group on
+    that node's own nest. The salt still stays off wire, and each presentation
+    reveals only the one event-specific blind needed for that disclosed state.
     """
 
     with openHby(name="ipex-correlation-minimizing",
@@ -1084,107 +1097,80 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
         amy = hby.makeHab(name="amy")
         bob = hby.makeHab(name="bob")
         vic = hby.makeHab(name="vic")
+        rgy = Regery(hby=hby, name="ipex-correlation-minimizing", temp=True)
+        try:
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="correlation", prefix=amy.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(amy, registry, rip, framed=True)
 
-        kind = Kinds.json
-        states = ['issued', 'revoked']
+            kind = Kinds.json
+            acdc = acdcmap(israid=amy.pre, uuid=NONCES[10], regid=registry.regk,
+                           attribute=dict(d='', u=NONCES[7], name="Sunspot College",
+                                          level="gold"),
+                           iseaid=bob.pre, kind=kind)
+            assert_acdc_schema_valid(acdc)
+            salt = NONCES[15]
 
-        ripper = regcept(israid=amy.pre, uuid=NONCES[0],
-                         stamp='2025-07-04T17:50:00.000000+00:00')
-        acdc = acdcmap(israid=amy.pre, uuid=NONCES[10], regid=ripper.said,
-                       attribute=dict(d='', u=NONCES[7], name="Sunspot College",
-                                      level="gold"),
-                       iseaid=bob.pre, kind=kind)
-        assert_acdc_schema_valid(acdc)
-        salt = NONCES[15]
+            issuedBlinder, issued = registrar.issue(registry,
+                                                    acdc=acdc,
+                                                    state='issued',
+                                                    salt=salt)
+            _anchor(amy, registry, issued, framed=False)
 
-        issuedBlinder = Blinder.blind(acdc=acdc.said, state='issued', salt=salt, sn=1)
-        revokedBlinder = Blinder.blind(acdc=acdc.said, state='revoked', salt=salt, sn=2)
-        assert issuedBlinder.said != revokedBlinder.said
-        assert issuedBlinder.uuid != revokedBlinder.uuid
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
 
-        issued = blindate(regid=ripper.said, prior=ripper.said, blid=issuedBlinder.said,
-                          sn=1, stamp='2025-08-01T18:06:10.988921+00:00')
-        revoked = blindate(regid=ripper.said, prior=issued.said, blid=revokedBlinder.said,
-                           sn=2, stamp='2025-09-01T18:06:10.988921+00:00')
+            # Bob presents the currently issued snapshot to Vic. The grant wire
+            # carries the ACDC and only sn=1's disclosed blind proof.
+            issuedGrantResult, issuedWire = ipexExn(
+                hby=hby,
+                exc=exc,
+                sender=bob,
+                receiver=vic,
+                message="Current registry snapshot",
+                admitMessage="Received current registry snapshot",
+                origin=_proofed(acdc, issuedBlinder),
+            )
+            assert len(issuedGrantResult.nests[0].bsqs) == 1
+            assert salt.encode() not in issuedWire
+            assert issuedBlinder.uuid.encode() in issuedWire
 
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+            revokedBlinder, revoked = registrar.issue(registry,
+                                                      acdc=acdc,
+                                                      state='revoked',
+                                                      salt=salt)
+            _anchor(amy, registry, revoked, framed=False)
 
-        # Bob presents the issuance-state snapshot to Vic. The IPEX grant carries
-        # the blinded registry update, but not the per-event nonce Vic needs to
-        # interpret it; that nonce is modeled here as the separately-shared
-        # issuedBlinder.uuid, just as in the JSON example.
-        issuedGrantResult, issuedWire = ipexExn(
-            hby=hby,
-            exc=exc,
-            sender=bob,
-            receiver=vic,
-            message="Current registry snapshot",
-            admitMessage="Received current registry snapshot",
-            origin=acdc,
-            artifacts=[issued, ripper],
-        )
-        carriedIssued = issuedGrantResult.nests[1].serder
-        assert carriedIssued.said == issued.said
-        assert carriedIssued.sad['b'] == issuedBlinder.said
-        assert b'issued' not in carriedIssued.raw
-        assert b'revoked' not in carriedIssued.raw
-        assert salt.encode() not in issuedWire
-        assert issuedBlinder.uuid.encode() not in issuedWire
-        assert revokedBlinder.uuid.encode() not in issuedWire
+            assert issuedBlinder.said != revokedBlinder.said
+            assert issuedBlinder.uuid != revokedBlinder.uuid
+            assert revokedBlinder.uuid.encode() not in issuedWire
 
-        verifierAtIssuance = Blinder.unblind(said=carriedIssued.sad['b'],
-                                             uuid=issuedBlinder.uuid,
-                                             acdc=acdc.said, states=states)
-        assert verifierAtIssuance is not None
-        assert verifierAtIssuance.state == 'issued'
-        assert verifierAtIssuance.acdc == acdc.said
+            # Later Bob can disclose the later revoked snapshot, but that new
+            # presentation still reveals only one event-specific blind.
+            revokedGrantResult, revokedWire = ipexExn(
+                hby=hby,
+                exc=exc,
+                sender=bob,
+                receiver=vic,
+                message="Later registry snapshot",
+                admitMessage="Received later registry snapshot",
+                origin=_proofed(acdc, revokedBlinder),
+            )
+            assert len(revokedGrantResult.nests[0].bsqs) == 1
+            assert salt.encode() not in revokedWire
+            assert issuedBlinder.uuid.encode() not in revokedWire
+            assert revokedBlinder.uuid.encode() in revokedWire
 
-        # Later the holder sends a new blinded registry snapshot. A verifier that
-        # remembers only the earlier nonce still cannot read this later event.
-        revokedGrantResult, revokedWire = ipexExn(
-            hby=hby,
-            exc=exc,
-            sender=bob,
-            receiver=vic,
-            message="Later registry snapshot",
-            admitMessage="Received later registry snapshot",
-            origin=acdc,
-            artifacts=[revoked, ripper],
-        )
-        carriedRevoked = revokedGrantResult.nests[1].serder
-        assert carriedRevoked.said == revoked.said
-        assert carriedRevoked.sad['b'] == revokedBlinder.said
-        assert b'issued' not in carriedRevoked.raw
-        assert b'revoked' not in carriedRevoked.raw
-        assert salt.encode() not in revokedWire
-        assert issuedBlinder.uuid.encode() not in revokedWire
-        assert revokedBlinder.uuid.encode() not in revokedWire
-
-        laterPeek = Blinder.unblind(said=carriedRevoked.sad['b'],
-                                    uuid=issuedBlinder.uuid,
-                                    acdc=acdc.said, states=states)
-        assert laterPeek is None
-
-        earlierPeek = Blinder.unblind(said=carriedIssued.sad['b'],
-                                      uuid=revokedBlinder.uuid,
-                                      acdc=acdc.said, states=states)
-        assert earlierPeek is None
-
-        holderAtRevocation = Blinder.unblind(said=carriedRevoked.sad['b'],
-                                             acdc=acdc.said,
-                                             states=states, salt=salt, sn=2)
-        assert holderAtRevocation is not None
-        assert holderAtRevocation.state == 'revoked'
-        assert holderAtRevocation.acdc == acdc.said
-
-        assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/grant", "Current registry snapshot"),
-            ("/exn/ipex/admit", "Received current registry snapshot"),
-            ("/exn/ipex/grant", "Later registry snapshot"),
-            ("/exn/ipex/admit", "Received later registry snapshot"),
-        ]
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/exn/ipex/grant", "Current registry snapshot"),
+                ("/exn/ipex/admit", "Received current registry snapshot"),
+                ("/exn/ipex/grant", "Later registry snapshot"),
+                ("/exn/ipex/admit", "Received later registry snapshot"),
+            ]
+        finally:
+            rgy.close()
 
 
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
