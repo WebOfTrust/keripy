@@ -26,7 +26,8 @@ use, and SHE presents it. NOT claimed: that the ACDC is statutory consent. 13-71
 defines that as a notice ritual running toward the parent, and this runs the other way, so
 it models the parental AUTHORITY those duties rely on rather than the ceremony.
 
-Four credentials, registry-bound, each validated against a purpose-authored JSON Schema:
+Four DURABLE credentials, registry-bound, each validated against a purpose-authored JSON
+Schema, plus a fifth that Cara mints for the exchange itself:
 
   1. Guardian as Citizen  -- State -> Bob.  His own SEDI identity credential.
   2. Guardian as Guardian -- State -> Bob.  The guardianship, carrying the WARD's AID in its
@@ -34,10 +35,15 @@ Four credentials, registry-bound, each validated against a purpose-authored JSON
   3. Ward as Citizen Ward -- State -> Cara. Her identity credential, DECLARING ITSELF
      ENCUMBERED by its edge to (2).
   4. Ward AuthZ Social    -- Bob -> Cara, in BOB's OWN registry. Edges to (2) and (3).
+  5. Ward Presentation    -- Cara -> the platform. One-time, NOT registry-bound, minted per
+     exchange: the "bespoke on-the-fly origin" of #1627, with a single edge to (4). It is
+     the DAG's origin, and it is what lets the offer commit to a digest that is never seen
+     again. Phase 4 argues why the shape needs it.
 
-Four edges, four operators, each PINNED by a schema const so a mislabel fails wire
+Five edges, four operators, each PINNED by a schema const so a mislabel fails wire
 validation. Each is argued where it is built; in brief:
 
+  (5)->(4) authz      I2I   near issuer Cara == far issuee Cara: she presents her own.
   (4)->(2) authority  I2I   near issuer Bob == far issuee Bob: Bob held what he delegates.
   (4)->(3) subject    E1E   same subject, different issuers; I2I would demand Bob == Cara.
   (2)->(1) citizen    E1E   same subject again; I2I would demand State == Bob.
@@ -176,11 +182,12 @@ _EMPTY_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
 def _edge_schema(op_const, desc):
     """One edge schema whose operator is PINNED to a single value (const op_const).
 
-    Pinning the operator in the schema is what makes each of this example's four
-    relationships schema-enforced rather than conventional: the I2I authority edge, the
-    two E1E identity edges and the NI2I encumbrance edge cannot be silently swapped for
-    one another without failing wire validation. It also means E1E is never INFERRED --
-    an unlabeled identity edge would default to I2I, which is the wrong answer here.
+    Pinning the operator in the schema is what makes each of this example's five
+    relationships schema-enforced rather than conventional: the two I2I edges (the
+    presentation's and the authority's), the two E1E identity edges and the NI2I
+    encumbrance edge cannot be silently swapped for one another without failing wire
+    validation. It also means E1E is never INFERRED -- an unlabeled identity edge would
+    default to I2I, which is the wrong answer here.
     """
     return {
         "oneOf": [
@@ -513,6 +520,69 @@ AUTHZ_SCHEMA_MAD = {
     "additionalProperties": False,
 }
 
+# --- (5) Ward Presentation: the bespoke, one-time origin Cara mints per exchange. ---
+# Cara -> the platform. NOT registry-bound and deliberately so: a one-time presentation is
+# not a credential whose state anyone revokes, and giving it a registry would create a
+# durable, publicly-observable artifact for something meant to be forgotten. Its single
+# edge is I2I to (4) -- Cara issues it and Cara is the issuee of (4), so the same-holder
+# constraint holds and no new operator is needed (#1627: "each edge from the recipe ACDC
+# can use the I2I edge operator").
+#
+# Its attribute section is FLAT and tiny: the issuee (which platform this presentation is
+# addressed to) and what Cara says she is doing. Flat because there is nothing here worth
+# splitting -- both fields are read together or not at all -- and small because everything
+# a verifier actually binds on lives in the credentials this origin edges to.
+PRESENTATION_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Ward Presentation",
+    "description": "A one-time, bespoke presentation ACDC minted by the WARD for a "
+                   "single exchange and issued to the disclosee. Not registry-bound. "
+                   "Single I2I edge to the delegated authorization she holds; it is the "
+                   "origin node that turns her durable credential into a DAG whose "
+                   "origin digest is never reused.",
+    "credentialType": "WardPresentation",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "s", "a", "e", "r"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acm"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
+        "i": {"description": "Issuer = the WARD (she presents her own)",
+              "type": "string"},
+        "s": {"description": "Schema Section",
+              "oneOf": [{"type": "string"}, {"type": "object"}]},
+        "a": {"description": "What this presentation is (disclosed whole)",
+              "oneOf": [
+                  {"description": "Attribute Section SAID", "type": "string"},
+                  {"type": "object",
+                   "required": ["d", "u", "i", "purpose", "occurredAt"],
+                   "properties": {
+                       "d": {"description": "Section SAID", "type": "string"},
+                       "u": {"description": "Section UUID", "type": "string"},
+                       "i": {"description": "Issuee = the DISCLOSEE's AID: which "
+                                            "platform this presentation is addressed to",
+                             "type": "string"},
+                       "purpose": {"description": "Why the ward is presenting",
+                                   "type": "string"},
+                       "occurredAt": {"type": "string"}},
+                   "additionalProperties": False}]},
+        "e": {"description": "Edge section: I2I to the authorization she holds",
+              "oneOf": [
+                  {"type": "string"},
+                  {"type": "object", "required": ["d", "authz"],
+                   "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                                  "authz": _edge_schema(
+                                      "I2I", "the ward holds this authorization")},
+                   "additionalProperties": False}]},
+        "r": {"description": "SAID of the delegated-authorization governance framework",
+              "type": "string"},
+    },
+    "additionalProperties": False,
+}
+
 # Published governance frameworks, referenced BY SAID rather than authored here. Each is
 # a PLACEHOLDER digest of a description string, standing in for the SAID a real
 # deployment computes over the governance document.
@@ -532,6 +602,9 @@ REG_AUTHZ_STAMP = "2026-07-01T12:00:00.000000+00:00"
 # are reproducible).
 AUTHZ_STAMP = "2026-08-01T09:00:00.000000+00:00"
 APPLY_STAMP = "2026-08-03T18:00:00.000000+00:00"
+# The presentation ACDC is minted between the apply and the offer: Cara reads what was
+# asked for, then mints an origin for THIS exchange.
+PRESENT_STAMP = "2026-08-03T18:00:30.000000+00:00"
 OFFER_STAMP = "2026-08-03T18:01:00.000000+00:00"
 AGREE_STAMP = "2026-08-03T18:02:00.000000+00:00"
 GRANT_STAMP = "2026-08-03T18:03:00.000000+00:00"
@@ -550,6 +623,19 @@ N_WC_A, N_WC_NAME, N_WC_DOB, N_WC_RES = 12, 13, 14, 15
 N_WC_ACDC, N_WC_E, N_WC_E_GUARD = 16, 17, 18
 # (4) ward AuthZ social: attribute uuid, acdc uuid, edge-section uuid, two edge uuids.
 N_AZ_A, N_AZ_ACDC, N_AZ_E, N_AZ_E_AUTH, N_AZ_E_SUBJ = 19, 20, 21, 22, 23
+# (5) ward presentation: attribute uuid, acdc uuid, edge-section uuid, one edge uuid.
+N_PR_A, N_PR_ACDC, N_PR_E, N_PR_E_AUTHZ = 24, 25, 26, 27
+# The IPEX transaction id.
+N_XID = 28
+
+# The exchange's TRANSACTION ID, carried in the 'x' field of every message in the flow.
+# Merged main requires it: IpexHandler.verify (src/keri/acdc/ipexing.py) rejects an apply
+# whose 'x' is empty, and every later message must repeat the same value, which is what
+# binds five separately-signed messages into one exchange rather than five that merely
+# happen to chain by 'p'. The library mints it as the digest of a fresh random nonce
+# (Diger(ser=Noncer().qb64b)); this example pins the nonce so the SAIDs stay reproducible,
+# which is the only difference.
+XID = Diger(ser=NONCES[N_XID].encode()).qb64
 
 # Cara's age at presentation (DOB 2009-04-10, presentation 2026-08-03). 13-71 grades no
 # finer than "minor" (under 18), so her exact age is legally immaterial; what matters is
@@ -773,6 +859,49 @@ def _ward_authz(kind, guardian=None, wardCitizen=None, reg=None, authz=None,
                    kind=kind, compactify=compactify)
 
 
+def _presentation_attr():
+    """The presentation's attribute section (a fresh map each call).
+
+    Two fields and no more, plus the issuee that acdcmap inserts at the top from iseaid.
+    That issuee is the DISCLOSEE -- which platform this presentation is addressed to --
+    and it is the field that makes a captured presentation useless anywhere else.
+    'purpose' says what Cara is doing in her own words, and is written to carry NO part
+    of the answer: it names neither the routes nor the capabilities nor the window, all
+    of which live in (4) and cross only after the platform has agreed.
+    """
+    return dict(d='', u=NONCES[N_PR_A],
+                purpose="Exercise a guardian-authorized change to my own account "
+                        "settings.",
+                occurredAt=PRESENT_STAMP)
+
+
+def _ward_presentation(kind, wardAuthz=None, disclosee=SOCIAL, compactify=False):
+    """(5) Ward Presentation: the one-time origin Cara mints for a single exchange.
+
+    Issuer = CARA, issuee = the disclosee, no registry. One edge, to (4), operator I2I:
+    Cara issues this and Cara is the issuee of (4), so issuer(near) == issuee(far) and the
+    same-holder constraint holds. Sam's #1627 makes exactly this argument for a bespoke
+    origin -- it needs no new operator, no registry and no anchoring, only a signature,
+    because it is used once.
+
+    WHY THIS EXISTS AT ALL, which is the design content of Phase 4. Without it the origin
+    of the presented DAG is (4) itself: a durable credential Bob issued and Cara keeps,
+    identical on every presentation she ever makes. Committing to its SAID in the offer
+    hands a platform that then SPURNS a permanent handle on her. The bespoke origin costs
+    one signature and buys a digest that is never seen again, and the durable SAID moves
+    behind the origin's edge section, which the offer's metadata form withholds.
+    """
+    if wardAuthz is None:
+        wardAuthz = _ward_authz(kind)
+    _, schema = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
+    edge = dict(d='', u=NONCES[N_PR_E],
+                authz=dict(d='', u=NONCES[N_PR_E_AUTHZ], n=wardAuthz.said,
+                           s=wardAuthz.sad['s']['$id'], o='I2I'))
+    return acdcmap(israid=CARA, uuid=NONCES[N_PR_ACDC], schema=schema,
+                   attribute=_presentation_attr(), iseaid=disclosee,
+                   edge=edge, rule=AUTHZ_RULES_SAID, kind=kind, compactify=compactify)
+
+
 def _credential_graph(kind, powers=None, authz=None):
     """Build all four credentials in dependency order and return them.
 
@@ -875,20 +1004,47 @@ def _verify_authz_chain(wardAuthz, guardian, wardCitizen, guardianCitizen,
     return True
 
 
+def _verify_presentation(presentation, wardAuthz, disclosee):
+    """The exchange-level binding on the bespoke origin. Returns True or raises.
+
+    Three checks, and they are about the EXCHANGE rather than about the authority, which
+    is why they live here and not in _verify_authz_chain -- Phases 3 and 5 verify the
+    durable graph with no presentation in sight, exactly as a verifier would when it
+    re-checks a stored disclosure later.
+
+      1. Authz (I2I): the origin's edge names the authorization, with the delegative
+         operator. Whatever else the origin says, the authority it reaches is fixed by a
+         digest its own issuer committed to.
+      2. Same holder: the origin's ISSUER is the authorization's ISSUEE. Cara presents
+         what was issued to Cara. This is the I2I constraint stated as a binding rather
+         than as a label, and it is what stops anyone who merely OBSERVED the
+         authorization from minting an origin over it.
+      3. Addressed to me: the origin's issuee is this disclosee. A presentation captured
+         by one platform cannot be replayed at another, because the origin names the
+         audience and its SAID -- which the whole DAG hangs from -- covers that name.
+    """
+    edge = presentation.sad['e']['authz']
+    assert edge['o'] == 'I2I'
+    assert edge['n'] == wardAuthz.said
+    assert presentation.sad['i'] == wardAuthz.iseaid      # she presents her own
+    assert presentation.iseaid == disclosee               # ...to this platform only
+    return True
+
+
 # ---------------------------------------------------------------------------
-# Phase 1: the four schemas and the helpers that saidify and validate them.
+# Phase 1: the five schemas and the helpers that saidify and validate them.
 # ---------------------------------------------------------------------------
 def test_wardauthz_schemas_JSON():
-    """Phase 1: four purpose-authored Draft 2020-12 schemas, each self-addressed.
+    """Phase 1: five purpose-authored Draft 2020-12 schemas, each self-addressed.
 
     Every ACDC in this example commits to a real schema in its own 's' section, so the
     schemas come first and are asserted here on their own terms: each is a well-formed
-    Draft 2020-12 document, each saidifies to a stable '$id', and the four SAIDs are
+    Draft 2020-12 document, each saidifies to a stable '$id', and the five SAIDs are
     distinct (the ward's citizen credential and the guardian's share an attribute shape
     but are NOT the same schema -- the ward's requires the encumbrance edge, which is
     what a verifier reads to tell them apart).
 
-    The schema is also where the four edge operators are pinned, so the pins are
+    The schema is also where the five edge operators are pinned, so the pins are
     asserted directly rather than only through the credentials that carry them.
     """
     kind = Kinds.json
@@ -896,28 +1052,37 @@ def test_wardauthz_schemas_JSON():
     ggSaid, ggSchema = _saidify_schema(dict(GUARDIAN_SCHEMA_MAD), kind=kind)
     wcSaid, wcSchema = _saidify_schema(dict(WARD_CITIZEN_SCHEMA_MAD), kind=kind)
     azSaid, azSchema = _saidify_schema(dict(AUTHZ_SCHEMA_MAD), kind=kind)
+    prSaid, prSchema = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
 
-    for said, schema in ((gcSaid, gcSchema), (ggSaid, ggSchema),
-                         (wcSaid, wcSchema), (azSaid, azSchema)):
+    for said, schema in ((gcSaid, gcSchema), (ggSaid, ggSchema), (wcSaid, wcSchema),
+                         (azSaid, azSchema), (prSaid, prSchema)):
         Draft202012Validator.check_schema(schema)
         assert schema['$id'] == said                # self-addressed, '$id' first
         assert said.startswith('E')                 # Blake3-256 SAID
-    assert len({gcSaid, ggSaid, wcSaid, azSaid}) == 4
+    assert len({gcSaid, ggSaid, wcSaid, azSaid, prSaid}) == 5
     assert gcSaid == "EJVQ1b7CfiAQiq3MB0ffqaM6W3UT_6UW182Hvs9os7dS"
     assert ggSaid == "ENv3zT7Ni1yl8WOE4dIby4thRGXCKrgHMLqG86K1voFd"
     assert wcSaid == "EGg6ihxJmig7CE0cFSuxdQF6Gl4ByVTQqP5qYK8R6bW6"
     assert azSaid == "EP_6kA4inOsIK6DjNEy_qEPUF-vTExbfda1R_NgcPBVo"
+    assert prSaid == "EIn0_3g87vZCRjiP3D19mY8XLddtblRysjcGrahk4jAN"
 
-    # The four operator pins, read straight off the schemas. Each edge property's 'o'
+    # The five operator pins, read straight off the schemas. Each edge property's 'o'
     # is a const, so the operator is part of the shape rather than a convention.
     def pinned(schema, edgeName):
         return schema['properties']['e']['oneOf'][1]['properties'][edgeName][
             'oneOf'][1]['properties']['o']['const']
 
+    assert pinned(prSchema, 'authz') == 'I2I'       # (5) -> (4), same-holder
     assert pinned(azSchema, 'authority') == 'I2I'   # (4) -> (2), same-holder
     assert pinned(azSchema, 'subject') == 'E1E'     # (4) -> (3), identity
     assert pinned(ggSchema, 'citizen') == 'E1E'     # (2) -> (1), identity
     assert pinned(wcSchema, 'guardian') == 'NI2I'   # (3) -> (2), reference
+
+    # The presentation is the one schema that does NOT require a registry: a one-time
+    # origin has no state anyone revokes, so binding it to a registry would publish a
+    # durable artifact for something meant to be used once and forgotten.
+    assert 'rd' in ggSchema['required'] and 'rd' in azSchema['required']
+    assert 'rd' not in prSchema['required']
 
     # The AuthZ payload is illustrative and its syntax unsettled, so the block is
     # deliberately OPEN: an unknown sibling of 'rc' validates, and a later syntax can
@@ -951,6 +1116,10 @@ def test_wardauthz_credentials_JSON():
     against its own schema; that the ward's citizen credential declares its encumbrance;
     and that the schema has teeth -- an unrecognized capability, an empty powers list
     and a missing encumbrance edge are each rejected.
+
+    The bespoke presentation (5) is built here too, so its shape sits next to the four it
+    depends on, but it is a Phase 4 object: Cara mints one per exchange, it binds to no
+    registry, and what it is FOR is argued where it is used.
     """
     kind = Kinds.json
     guardianCitizen, guardian, wardCitizen, wardAuthz = _credential_graph(kind)
@@ -1008,6 +1177,26 @@ def test_wardauthz_credentials_JSON():
     assert _authz_capabilities(wardAuthz.sad['a']['authz']) == {"read", "post",
                                                                 "message"}
 
+    # (5) Ward Presentation: CARA -> the platform, NO registry, one I2I edge to (4). It
+    # is built here so its shape is asserted alongside the durable four, but it belongs
+    # to Phase 4 -- it is minted per exchange and the argument for it lives there.
+    presentation = _ward_presentation(kind, wardAuthz=wardAuthz)
+    assert presentation.sad['i'] == CARA             # the ward issues her own origin...
+    assert presentation.iseaid == SOCIAL             # ...addressed to one platform
+    assert 'rd' not in presentation.sad              # one-time: no registry at all
+    assert presentation.sad['r'] == AUTHZ_RULES_SAID
+    assert presentation.sad['e']['authz']['n'] == wardAuthz.said
+    assert presentation.sad['e']['authz']['o'] == 'I2I'
+    assert _i2i_holds(presentation, wardAuthz)       # issuer Cara == issuee Cara
+    assert presentation.said == "ECUgc001shq7dIF86UNgJq4fLkYECmlHB6DcOrj22YP6"
+    assert_acdc_schema_valid(presentation)
+    assert _verify_presentation(presentation, wardAuthz, SOCIAL)
+    # It says nothing about the authorization it reaches: routes, capabilities and window
+    # are all behind the edge, in (4). That is what lets its metadata form ride on an
+    # offer without disclosing anything (Phase 4).
+    assert set(presentation.sad['a']) == {'d', 'u', 'i', 'purpose', 'occurredAt'}
+    assert "social_" not in json.dumps(presentation.sad['a'])
+
     # A private ACDC: the compact and expanded forms share one SAID, so a ward can hand
     # over the compact form and expand only what a verifier has agreed to receive.
     compact = _ward_authz(kind, guardian=guardian, wardCitizen=wardCitizen,
@@ -1016,6 +1205,16 @@ def test_wardauthz_credentials_JSON():
     assert isinstance(wardAuthz.sad['e'], dict)      # sections inline...
     assert isinstance(compact.sad['e'], str)         # ...vs collapsed to a SAID
     assert_acdc_schema_valid(compact, schema=authzSchema)
+
+    # The presentation compacts the same way, and its compact form is what rides on the
+    # offer: same SAID, both sections collapsed to bare SAIDs. So an offer that commits
+    # to this origin discloses neither the purpose nor -- the point -- the SAID of the
+    # durable authorization its edge names.
+    compactPresentation = _ward_presentation(kind, wardAuthz=wardAuthz, compactify=True)
+    assert compactPresentation.said == presentation.said
+    assert isinstance(compactPresentation.sad['a'], str)
+    assert isinstance(compactPresentation.sad['e'], str)
+    assert wardAuthz.said not in json.dumps(compactPresentation.sad)
 
     # --- Schema teeth. ---
     # A capability outside the vocabulary is rejected in the AuthZ payload...
@@ -1253,21 +1452,21 @@ def _far(byDigest, near, label):
     return byDigest[said]
 
 
-def _platform_accepts_grant(grantStream, offeredOrigin):
+def _platform_accepts_grant(grantStream, offeredOrigin, disclosee=SOCIAL):
     """The platform's grant-time verification, run on WHAT CAME OFF THE WIRE.
 
     Returns True or raises. Takes the signed grant STREAM -- body plus attachments --
     and nothing else, so there is no way for a credential the platform already held to
     stand in for one it was sent.
 
-    Four things happen in order:
+    Five things happen in order:
 
       1. Parse. Every nested artifact is reaped and self-verified as it is parsed: the
          SAID is recomputed over the disclosed content, using most-compact-form
          semantics so a partial disclosure verifies to the same 'd' as the full
          credential. A tampered payload dies here, and takes the whole stream with it.
-      2. Confirm the origin is the credential the OFFER committed to. Without this the
-         platform could be handed a different, perfectly valid authorization than the
+      2. Confirm the origin is the artifact the OFFER committed to. Without this the
+         platform could be handed a different, perfectly valid presentation than the
          one whose terms it agreed to -- terms follow the data.
       3. WALK THE DAG from that origin to find every other node, edge by edge, matching
          each edge's digest against the parsed artifacts. This is what the `o` field
@@ -1276,7 +1475,11 @@ def _platform_accepts_grant(grantStream, offeredOrigin):
          authority and which is the subject. It reads that from the origin's own edges,
          which the origin's issuer committed to. A substituted far node breaks the
          digest that names it.
-      4. Run the seven-check binding on the artifacts that walk produced.
+      4. Bind the origin itself: it must be Cara's, and it must be addressed to THIS
+         platform. A one-time origin only decorrelates; it does not authenticate, and
+         the audience check is what keeps a captured presentation from being replayed
+         somewhere else.
+      5. Run the seven-check binding on the authorization the walk reached.
 
     A complete verifier adds registry status (walk each 'rd' TEL for a revocation) and
     the Layer-2 question of whether the guardianship's issuer is competent to recognize
@@ -1293,11 +1496,13 @@ def _platform_accepts_grant(grantStream, offeredOrigin):
     assert result.serder.sad['a']['o'] == [offeredOrigin]   # terms follow the data
     byDigest = {nest.serder.said: nest.serder for nest in result.nests}
 
-    origin = byDigest[offeredOrigin]
-    authority = _far(byDigest, origin, 'authority')         # AuthZ -I2I-> guardianship
-    subject = _far(byDigest, origin, 'subject')             # AuthZ -E1E-> ward citizen
+    origin = byDigest[offeredOrigin]                        # the bespoke presentation
+    authz = _far(byDigest, origin, 'authz')                 # presentation -I2I-> AuthZ
+    authority = _far(byDigest, authz, 'authority')          # AuthZ -I2I-> guardianship
+    subject = _far(byDigest, authz, 'subject')              # AuthZ -E1E-> ward citizen
     guardianId = _far(byDigest, authority, 'citizen')       # guardianship -E1E-> Bob's
-    return _verify_authz_chain(origin, authority, subject, guardianId)
+    assert _verify_presentation(origin, authz, disclosee)
+    return _verify_authz_chain(authz, authority, subject, guardianId)
 
 
 def test_wardauthz_presentation_JSON():
@@ -1316,14 +1521,29 @@ def test_wardauthz_presentation_JSON():
     authorizing her is himself a state-endorsed person, and what routes and capabilities
     she holds. It learns neither person's name, birthdate or residence.
 
+    ONE EXCHANGE, NOT FIVE CHAINED MESSAGES. Every message carries the same transaction
+    id in its 'x' field, minted with the apply that opens the flow, so the five are bound
+    into one exchange rather than merely linked pairwise by 'p'. Merged main enforces it:
+    an apply whose 'x' is empty is rejected outright (IpexHandler.verify in
+    src/keri/acdc/ipexing.py), and every reply must repeat the opener's value.
+
+    CARA MINTS AN ORIGIN. The DAG she presents is rooted in a one-time presentation ACDC
+    (5) she issues to the platform for this exchange alone, edged I2I to the durable
+    authorization. The offer then commits to a digest nobody will ever see again, and the
+    authorization's own SAID stays behind that origin's compacted edge section until the
+    platform agrees. Without it, the offer's commitment IS the durable credential's SAID
+    -- the same value on every presentation Cara ever makes -- so a platform that spurns
+    still walks away with a permanent handle on her.
+
     THE EXCHANGE ENDS IN A VERIFICATION OF WHAT WAS TRANSMITTED. _platform_accepts_grant
     reconstructs every disclosed artifact from the grant body, recomputes its SAID over
-    the disclosed content, confirms the origin is the credential the offer committed to,
-    and only then runs the seven-check binding on the reconstructed objects. Three
-    negatives hold it honest: a substituted authority credential, an origin other than
-    the one offered, and a tampered payload are each refused. A presentation example
-    that verifies credentials it already had in scope proves nothing about the wire, and
-    every one of those negatives would pass unnoticed if it did.
+    the disclosed content, confirms the origin is the artifact the offer committed to,
+    and only then runs the bindings on the reconstructed objects. Four negatives hold it
+    honest: a substituted authority credential, an origin other than the one offered, a
+    tampered payload, and a presentation replayed at a platform it was not addressed to
+    are each refused. A presentation example that verifies credentials it already had in
+    scope proves nothing about the wire, and every one of those negatives would pass
+    unnoticed if it did.
     """
     kind = Kinds.json
     guardianCitizen, guardian, wardCitizen, wardAuthz = _credential_graph(kind)
@@ -1376,25 +1596,37 @@ def test_wardauthz_presentation_JSON():
     # path reaching a non-origin ACDC must cross the edge that links it -- the virtual
     # '_' component, standing for the jump from the near-side edge block to the top level
     # of the far-side ACDC (#1549). The same request written with non-empty prefixes:
-    #     origin:           "/"                          ["i", "a/i", "a/authz", "e"]
-    #     guardianship:     "/e/authority/_/"            ["i", "a", "e"]
-    #     ward citizen:     "/e/subject/_/"              ["a/i", "e"]
-    #     guardian citizen: "/e/authority/_/e/citizen/_/" ["a/i"]
+    #     presentation:     "/"                            ["i", "a", "e"]
+    #     authorization:    "/e/authz/_/"                  ["i", "a/i", "a/authz", "e"]
+    #     guardianship:     "/e/authz/_/e/authority/_/"    ["i", "a", "e"]
+    #     ward citizen:     "/e/authz/_/e/subject/_/"      ["a/i", "e"]
+    #     guardian citizen: "/e/authz/_/e/authority/_/e/citizen/_/"  ["a/i"]
     #
-    # The zeroth entry is the DAG's origin node (#1549). Here the origin is the AuthZ
-    # credential itself -- Cara presents a credential she HOLDS, so unlike the sibling
-    # examples the origin is not an envelope she issues. Its schema is still something
-    # the platform knows in advance, and for a stronger reason than usual: the platform
-    # is the resource the authorization is ABOUT, so the shape of the authorization it
-    # will accept is its own published requirement (@SmithSamuelM, #1542, on the
-    # applicant knowing the origin schema).
+    # The zeroth entry is the DAG's origin node (#1549). Here that is the BESPOKE
+    # PRESENTATION Cara mints for this exchange, not the authorization itself -- the
+    # reason is decorrelation and it is argued at the offer, which is where the cost of
+    # the alternative falls. Its schema is something the platform knows in advance, and
+    # for two reasons: the platform is the resource the authorization is ABOUT, so the
+    # shape it will accept is its own published requirement (@SmithSamuelM, #1542, on
+    # the applicant knowing the origin schema); and a bespoke origin is one-time only in
+    # its INSTANCES -- "the schema of the bespoke ACDC, however, is not one-time use. It
+    # acts as a permanent recipe" (#1627), which is what makes it requestable at all.
     #
     # WHAT THE PLATFORM ASKS FOR IS EXACTLY WHAT ITS BINDING NEEDS, and the discipline
-    # that produces this list is to walk _verify_authz_chain's seven checks and ask what
-    # each one reads. Anything the binding does not read is not requested; anything it
-    # does read must be requested, or the check cannot run on what arrives.
+    # that produces this list is to walk the two bindings -- _verify_presentation's three
+    # checks and _verify_authz_chain's seven -- and ask what each one reads. Anything the
+    # bindings do not read is not requested; anything they do read must be requested, or
+    # the check cannot run on what arrives.
     #
-    #   origin (AuthZ)   ["i", "a/i", "a/authz", "e"]
+    #   presentation     ["i", "a", "e"]
+    #       the issuer, for the same-holder check; the attribute section, whose issuee is
+    #       the audience check; and the edge section, without which the platform cannot
+    #       reach the authorization at all. The attribute section is asked for WHOLE for
+    #       the same reason the guardianship's is -- it is flat, so it discloses whole or
+    #       as one bare SAID and there is nothing in between. Here that costs one field
+    #       the binding does not read, the purpose, and it is written (_presentation_attr)
+    #       to carry no part of the answer precisely because it cannot be withheld.
+    #   authorization    ["i", "a/i", "a/authz", "e"]
     #       issuer and issuee for checks (1), (2) and (5); the payload for (6); and the
     #       EDGE SECTION, without which the platform cannot walk to any other node --
     #       every one of checks (1)-(4) reads an edge digest.
@@ -1422,8 +1654,11 @@ def test_wardauthz_presentation_JSON():
     # that node. The privacy point survives in the honest form: ask for the issuee, not
     # the person.
     authzSchemaSaid, _ = _saidify_schema(dict(AUTHZ_SCHEMA_MAD), kind=kind)
-    apply = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/apply",
-                     modifiers=dict(dp=[[authzSchemaSaid, "",
+    presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
+    apply = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/apply", xid=XID,
+                     modifiers=dict(dp=[[presentSchemaSaid, "",
+                                         ["i", "a", "e"]],
+                                        [authzSchemaSaid, "",
                                          ["i", "a/i", "a/authz", "e"]],
                                         [guardian.sad['s']['$id'], "",
                                          ["i", "a", "e"]],
@@ -1436,68 +1671,114 @@ def test_wardauthz_presentation_JSON():
                                      ax=[False]),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == SOCIAL
+    # The apply OPENS the flow, so it mints the transaction id and carries no prior.
+    assert apply.sad['x'] == XID and apply.sad['p'] == ""
+    assert apply.sad['ri'] == CARA              # ...and names its receiver explicitly
     dp = apply.sad['q']['dp']
-    assert [entry[0] for entry in dp] == [authzSchemaSaid, guardian.sad['s']['$id'],
+    assert [entry[0] for entry in dp] == [presentSchemaSaid, authzSchemaSaid,
+                                          guardian.sad['s']['$id'],
                                           wardCitizen.sad['s']['$id'],
                                           guardianCitizen.sad['s']['$id']]
     assert all(len(entry) == 3 for entry in dp)       # (schemaSAID, prefix, [paths])
-    assert [entry[1] for entry in dp] == ["", "", "", ""]  # no prefixes: paths relative
-    assert dp[0][2] == ["i", "a/i", "a/authz", "e"]   # origin: who, to whom, what, edges
-    assert dp[1][2] == ["i", "a", "e"]                # guardianship: flat 'a', so whole
-    assert dp[2][2] == ["a/i", "e"]                   # ward citizen: binding + encumbrance
-    assert dp[3][2] == ["a/i"]                        # guardian citizen: the issuee alone
+    assert [entry[1] for entry in dp] == ["", "", "", "", ""]  # no prefixes: paths relative
+    assert dp[0][2] == ["i", "a", "e"]                # origin: who, flat 'a', edges
+    assert dp[1][2] == ["i", "a/i", "a/authz", "e"]   # authz: who, to whom, what, edges
+    assert dp[2][2] == ["i", "a", "e"]                # guardianship: flat 'a', so whole
+    assert dp[3][2] == ["a/i", "e"]                   # ward citizen: binding + encumbrance
+    assert dp[4][2] == ["a/i"]                        # guardian citizen: the issuee alone
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, _, paths in dp for p in paths)
-    assert authzSchemaSaid == wardAuthz.sad['s']['$id']   # the origin Cara actually holds
-    # Every node the binding reads is asked for, and every node in the DAG is a node the
-    # binding reads -- so the request covers the DAG exactly.
-    assert len(dp) == 4
+    assert authzSchemaSaid == wardAuthz.sad['s']['$id']   # the credential Cara holds...
+    assert presentSchemaSaid != authzSchemaSaid           # ...under an origin she mints
+    # Every node the bindings read is asked for, and every node in the DAG is a node the
+    # bindings read -- so the request covers the DAG exactly.
+    assert len(dp) == 5
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'ax'}
     assert 'g' not in apply.sad['a']            # governance lives in ACDC rules
     assert apply.sad['a']['ax'] == [False]      # unanchored exchange (#1613, #1627)
-    assert apply.said == "EM852Md0tpcxzoLO_ecuWlgZl-M_C7nnVC8gM2NUbJG-"
+    assert apply.said == "ELolLgcJkRPfrownK6b8NMRpD-tOJ0sFhxsh_g2mA2Kt"
 
-    # 2. offer (Cara -> platform): commits ONLY to the SAID of the credential she is
-    # offering, and binds the apply. It deliberately does NOT
-    # enumerate the issuer-committed source SAIDs (the guardianship, either citizen
-    # credential): those are stable correlators, and attaching them before the platform
-    # agrees would let a platform spurn and walk away with a persistent handle on both
-    # the ward and her parent. They arrive only post-agree, in the grant.
+    # 2. offer (Cara -> platform): Cara mints the origin, commits to its SAID in 'o', and
+    # attaches that origin's METADATA FORM as a nested artifact. That is the shape merged
+    # main builds and validates -- ipexing.offer() takes the origin, writes its SAID to
+    # 'a.o' and nests the artifact, and IpexHandler.verify refuses an offer whose first
+    # nest does not recompute to 'o'. The V1 'acdc' label this example used to carry is
+    # gone (#1629); the SAID it named now rides as the origin of a DAG rather than as a
+    # bare credential reference.
     #
-    # WHAT WITHHOLDING THEM DOES NOT BUY, and the sibling is the contrast that shows it.
-    # The one SAID this offer must commit to is the AuthZ credential's, and that is a
-    # credential Bob issued and Cara keeps: it is identical on every presentation she
-    # ever makes, so a platform that spurns still walks away with a stable handle on her.
-    # The sibling's origin is an envelope its discloser mints for the exchange, so a spurn
-    # there yields a digest never seen again. Decorrelation of the origin is something the
-    # represented shape gets for free and the ward-presents shape would have to buy -- by
-    # minting a per-exchange presentation ACDC that edges to the durable authorization,
-    # rather than offering the durable authorization itself as this example does.
-    # Its query block carries `dp` as an EMPTY list: the offer is SOLICITED (its `p`
+    # WHY THE ORIGIN IS MINTED RATHER THAN HELD, which is the decorrelation this shape
+    # would otherwise have to do without. Offering the durable authorization directly
+    # means committing to a SAID Bob issued and Cara keeps -- identical on every
+    # presentation she ever makes, so a platform that spurns walks away with a permanent
+    # handle on her. The sibling (#1530) never has this problem, because its origin is an
+    # envelope its discloser mints for the occasion. Here the envelope costs one extra
+    # signature and buys the same property: this offer commits to a digest that exists
+    # for one exchange.
+    #
+    # THE METADATA FORM IS WHAT MAKES THAT WORTH ANYTHING. The origin rides COMPACTIFIED
+    # -- attribute and edge sections collapsed to bare SAIDs -- so the offer discloses
+    # neither the purpose nor, decisively, the authorization SAID the edge section names.
+    # A fully-disclosed origin would put the durable correlator back on the wire and undo
+    # the whole point. What the platform CAN read pre-agree is the origin's schema and
+    # its rules SAID, which is exactly Sam's rationale for the metadata origin on #1629:
+    # the disclosee has to be able to agree to terms it can see, and the schema named in
+    # 'dp' does not carry the rule detail. Those terms are the AuthZ governance framework,
+    # published in the ACDC's own 'r' section rather than restated on the exchange
+    # (@ryan-hansen, #1595) -- so the two review points compose: governance belongs in the
+    # rules, and the metadata origin is how the disclosee sees it before it agrees.
+    #
+    # The issuer-committed source SAIDs (the guardianship, either citizen credential) stay
+    # off the offer entirely. Those are stable correlators on Cara AND on Bob, and they
+    # arrive only post-agree, in the grant.
+    #
+    # The query block carries `dp` as an EMPTY list: the offer is SOLICITED (its `p`
     # binds the apply), and an empty `dp` means "the same paths the apply asked for"
     # (#1549), so Cara restates nothing and the two messages cannot drift.
+    presentation = _ward_presentation(kind, wardAuthz=wardAuthz)
+    offerOrigin = _ward_presentation(kind, wardAuthz=wardAuthz, compactify=True)
+    assert offerOrigin.said == presentation.said       # same origin, less of it
     offer = exchange(sender=CARA, receiver=SOCIAL, route="/ipex/offer", prior=apply.said,
-                     modifiers=dict(dp=[]),
-                     attributes=dict(acdc=wardAuthz.said, ax=[False]),
+                     xid=XID, modifiers=dict(dp=[]),
+                     attributes=dict(m="Here is the presentation you asked for.",
+                                     o=[presentation.said], ax=[False]),
                      stamp=OFFER_STAMP, kind=kind)
-    assert offer.sad['p'] == apply.said
+    caraSigner = _SIGNERS[2]                           # the ward's establishing key
+    offerStream = messagize(offer, sigers=[caraSigner.sign(ser=offer.raw, index=0)],
+                            nests=[_nest(offerOrigin)], framed=False, gvrsn=Vrsn_2_0)
+    assert offer.sad['p'] == apply.said and offer.sad['x'] == XID
     assert offer.sad['q']['dp'] == []                  # solicited: "as per the apply"
     assert 'governance' not in offer.sad['a']          # ...and not on the exchange
-    assert set(offer.sad['a']) == {'acdc', 'ax'}
+    assert 'acdc' not in offer.sad['a']                # the V1 label is gone (#1629)
+    assert set(offer.sad['a']) == {'m', 'o', 'ax'}
+    assert offer.sad['a']['o'] == [presentation.said]
     assert offer.sad['a']['ax'] == [False]             # Cara agrees: no anchoring
-    assert offer.said == "EJLOZ700VVkuvhSEt2bilW3PLJhleyYwv2fCPlL9YPX1"
-    assert wardAuthz.said.encode() in offer.raw        # the discloser's own commitment
-    assert b"Cara Carver" not in offer.raw and b"2009-04-10" not in offer.raw
-    assert guardian.said.encode() not in offer.raw     # issuer commitments withheld...
-    assert wardCitizen.said.encode() not in offer.raw
-    assert guardianCitizen.said.encode() not in offer.raw
+    assert offer.said == "EBfw_jTVTW2K4wJ6zcjFR1RqjjtJeA_KY2-52ZXOzP01"
+
+    # What the platform can read off the offer, decoded rather than grepped -- the nested
+    # body rides Texter-encoded, so a substring check on the raw stream proves nothing.
+    offerParsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(offerStream), framed=False,
+                                                 processive=False)[0]
+    assert [nest.serder.said for nest in offerParsed.nests] == [presentation.said]
+    offerDecoded = bytes(offer.raw) + b"".join(bytes(nest.serder.raw)
+                                               for nest in offerParsed.nests)
+    assert presentation.said.encode() in offerDecoded  # the origin, and a one-time one
+    assert AUTHZ_RULES_SAID.encode() in offerDecoded   # the terms, visible pre-agree
+    # ...and nothing durable. The authorization's SAID is behind the origin's compacted
+    # edge section, so a platform that spurns here holds a digest and no correlator.
+    assert wardAuthz.said.encode() not in offerDecoded
+    assert guardian.said.encode() not in offerDecoded
+    assert wardCitizen.said.encode() not in offerDecoded
+    assert guardianCitizen.said.encode() not in offerDecoded
+    assert b"Cara Carver" not in offerDecoded and b"2009-04-10" not in offerDecoded
+    assert b"Exercise a guardian-authorized" not in offerDecoded   # purpose withheld too
 
     # 3. agree (platform -> Cara): acceptance, binding the offer SAID and signed by the
     # platform (via messagize -- the blessed genus-aware attachment path).
     agree = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/agree", prior=offer.said,
+                     xid=XID, attributes=dict(m="Agreed; disclose."),
                      stamp=AGREE_STAMP, kind=kind)
-    assert agree.sad['p'] == offer.said
-    assert agree.said == "EKv6Wm_IKLWjiJu5EpO_GB-goYAN-00poXEKjlxuLGuH"
+    assert agree.sad['p'] == offer.said and agree.sad['x'] == XID
+    assert agree.said == "ED4HHuzIAKtzEytlcUd1XssGiw8WDiZrK9ZwzCnctgI7"
     svcSigner = _SIGNERS[3]                            # the platform's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1515,17 +1796,21 @@ def test_wardauthz_presentation_JSON():
     # THE DISCLOSED ARTIFACTS DO NOT RIDE IN 'a'. The attribute block carries only the
     # origin, and the credentials themselves are nested attachments on the signed grant
     # stream (#1595's V2 table: 'e' embeds dropped, "nested attachments, not embeds").
-    # The disclosures are the four the dp list asked for, each cut to the depth its entry
+    # The disclosures are the five the dp list asked for, each cut to the depth its entry
     # named; the ORDER they are attached in carries no meaning, because the platform
     # finds each one by following an edge digest rather than by position or label.
     disclosures = [
-        # dp[0] ["i", "a/i", "a/authz", "e"] -- the payload is asked for, so the
+        # dp[0] ["i", "a", "e"] -- the SAME origin the offer committed to, now disclosed
+        # in full rather than compacted. Its SAID is unchanged, which is what lets the
+        # platform check the grant against terms it agreed to before it saw any of this.
+        _disclose(presentation, kind),
+        # dp[1] ["i", "a/i", "a/authz", "e"] -- the payload is asked for, so the
         # attribute section rides expanded; so does 'e', to be walkable.
         _disclose(wardAuthz, kind),
-        # dp[1] ["i", "a", "e"] -- flat section, disclosed whole because that is the
+        # dp[2] ["i", "a", "e"] -- flat section, disclosed whole because that is the
         # only form it has.
         _disclose(guardian, kind),
-        # dp[2] ["a/i", "e"] and dp[3] ["a/i"] -- nested sections, compacted to the
+        # dp[3] ["a/i", "e"] and dp[4] ["a/i"] -- nested sections, compacted to the
         # issuee. Name, birthdate and residence stay bare SAIDs.
         _disclose(wardCitizen, kind, _issuee_only_attributes(wardCitizen, kind)),
         _disclose(guardianCitizen, kind,
@@ -1534,14 +1819,16 @@ def test_wardauthz_presentation_JSON():
 
     def disclose(agreeMsg, sig, keyState, nests=None):
         if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
+                and agreeMsg.sad['x'] == XID
                 and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
             return None, None
         nests = nests if nests is not None else disclosures
         serder = exchange(sender=CARA, receiver=SOCIAL, route="/ipex/grant",
-                          prior=agreeMsg.said,
-                          attributes=dict(o=[wardAuthz.said], ax=[False]),
+                          prior=agreeMsg.said, xid=XID,
+                          attributes=dict(m="The disclosure you agreed to.",
+                                          o=[presentation.said], ax=[False]),
                           stamp=GRANT_STAMP, kind=kind)
-        caraSig = _SIGNERS[2].sign(ser=serder.raw, index=0)   # the discloser signs
+        caraSig = caraSigner.sign(ser=serder.raw, index=0)    # the discloser signs
         return serder, messagize(serder, sigers=[caraSig],
                                  nests=[_nest(d) for d in nests],
                                  framed=False, gvrsn=Vrsn_2_0)
@@ -1550,22 +1837,41 @@ def test_wardauthz_presentation_JSON():
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0),
                     capturedKeyState) == (None, None)
     spurn = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/spurn", prior=offer.said,
+                     xid=XID, attributes=dict(m="Declined."),
                      stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, svcSigner.sign(ser=spurn.raw, index=0),
+                    capturedKeyState) == (None, None)
+    # ...and neither does an agree from a DIFFERENT exchange, however well signed: the
+    # transaction id is what says which conversation a message belongs to.
+    strayAgree = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/agree",
+                          prior=offer.said, xid=Diger(ser=b'another exchange').qb64,
+                          attributes=dict(m="Agreed; disclose."),
+                          stamp=AGREE_STAMP, kind=kind)
+    assert disclose(strayAgree, svcSigner.sign(ser=strayAgree.raw, index=0),
                     capturedKeyState) == (None, None)
 
     # The valid agree unlocks the grant.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "ELp4e7S22Uyj-IW2QKPqIq1H43s9GoIBfdiYBpVnZ2Ea"
+    assert grant.sad['x'] == XID == apply.sad['x']     # one exchange, five messages
+    assert grant.said == "EL5MZNCnb74_W59oSFtUc_Jj8qVjWmKLpqJydvbTvNr_"
 
     # The attribute block is the origin and nothing else: a ONE-ELEMENT LIST, which is
     # #1627's "Use Required Lists" form. That option is preferred there over a field map
     # precisely because `dp` is already a list, so writing the single-DAG case as a list
     # now is what keeps this example from needing a second edit when DAG soup lands.
+    # RECORDED DIVERGENCE FROM MERGED MAIN: #1629 landed 'o' as a scalar string, and
+    # IpexHandler.verify rejects a list. The list is written here because #1627 is where
+    # the shape is being decided and this is a worked example of that shape; the
+    # reconciliation is being argued in that discussion rather than papered over here.
     granted = grant.sad['a']
-    assert granted == dict(o=[wardAuthz.said], ax=[False])   # #1595, #1613, #1627
+    assert granted == dict(m="The disclosure you agreed to.",
+                           o=[presentation.said], ax=[False])   # #1595, #1613, #1627
     assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
+    # The grant's origin is the offer's origin. Merged main permits them to differ --
+    # nothing in verify ties one to the other -- and this example declines the latitude,
+    # because the platform agreed to terms it could only read off the offered origin.
+    assert granted['o'] == offer.sad['a']['o']
 
     # The credentials are on the stream, not in the body -- one artifact per dp entry,
     # each still carrying the SAID of the FULL credential, because an ACDC's SAID is
@@ -1574,8 +1880,11 @@ def test_wardauthz_presentation_JSON():
     parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(grantStream), framed=False,
                                             processive=False)[0]
     onWire = {nest.serder.said: nest.serder.sad for nest in parsed.nests}
-    assert set(onWire) == {wardAuthz.said, guardian.said, wardCitizen.said,
-                           guardianCitizen.said}
+    assert set(onWire) == {presentation.said, wardAuthz.said, guardian.said,
+                           wardCitizen.said, guardianCitizen.said}
+    # The origin arrives expanded, and still recomputes to the SAID the offer named.
+    assert onWire[presentation.said]['a']['i'] == SOCIAL       # addressed to this platform
+    assert onWire[presentation.said]['e']['authz']['n'] == wardAuthz.said
     assert _authz_capabilities(onWire[wardAuthz.said]['a']['authz']) == {"read", "post",
                                                                         "message"}
     assert onWire[guardian.said]['a']['ward'] == CARA
@@ -1612,13 +1921,13 @@ def test_wardauthz_presentation_JSON():
 
     # The platform now runs the same binding a verifier runs anywhere -- on the stream it
     # RECEIVED, reparsed from scratch, not on anything it knew before.
-    assert _platform_accepts_grant(grantStream, wardAuthz.said)
+    assert _platform_accepts_grant(grantStream, presentation.said)
 
     # ...and the negatives that prove the acceptance is reading the wire. Each of these
     # would pass unnoticed if the platform verified credentials it already held.
     # (a) A guardianship over a different ward, substituted into the disclosed set. It is
-    # a perfectly valid ACDC and it parses; the origin's authority edge names the real
-    # guardianship, which is now missing from the stream, so the DAG walk stops.
+    # a perfectly valid ACDC and it parses; the authorization's authority edge names the
+    # real guardianship, which is now missing from the stream, so the DAG walk stops.
     otherGuardianAttr = dict(_guardian_attr(), ward=SOCIAL)
     _, ggSchema = _saidify_schema(dict(GUARDIAN_SCHEMA_MAD), kind=kind)
     otherGuardian = acdcmap(israid=STATE, uuid=NONCES[N_GG_ACDC],
@@ -1627,31 +1936,46 @@ def test_wardauthz_presentation_JSON():
                             edge=dict(guardian.sad['e']), rule=GUARDIAN_RULES_SAID,
                             kind=kind)
     _, swapped = disclose(agree, svcSig, capturedKeyState,
-                          nests=[disclosures[0], otherGuardian,
-                                 disclosures[2], disclosures[3]])
+                          nests=[disclosures[0], disclosures[1], otherGuardian,
+                                 disclosures[3], disclosures[4]])
     with pytest.raises(AssertionError):
-        _platform_accepts_grant(swapped, wardAuthz.said)
-    # (b) An origin that is not the credential the offer committed to.
+        _platform_accepts_grant(swapped, presentation.said)
+    # (b) An origin that is not the artifact the offer committed to.
     with pytest.raises(AssertionError):
         _platform_accepts_grant(grantStream, guardian.said)
     # (c) A tampered payload. The forged AuthZ credential keeps the real credential's
     # 'd' but grants a capability the real one does not, so its SAID no longer recomputes
     # over its content. It is refused as it is parsed, and it voids the entire stream --
-    # the platform gets no artifacts at all rather than three good ones and a silent gap.
-    forged = json.loads(json.dumps(disclosures[0].sad))
+    # the platform gets no artifacts at all rather than four good ones and a silent gap.
+    forged = json.loads(json.dumps(disclosures[1].sad))
     forged['a']['authz']['rc']['social_store'] = ["purchase"]
     forgedAcdc = SerderACDC(sad=forged, makify=False, verify=False)
     assert forgedAcdc.said == wardAuthz.said           # it still CLAIMS to be hers
     _, tampered = disclose(agree, svcSig, capturedKeyState,
-                           nests=[forgedAcdc] + disclosures[1:])
+                           nests=[disclosures[0], forgedAcdc] + disclosures[2:])
     with pytest.raises(AssertionError):
-        _platform_accepts_grant(tampered, wardAuthz.said)
+        _platform_accepts_grant(tampered, presentation.said)
+    # (d) REPLAY AT ANOTHER PLATFORM, which is the negative the bespoke origin earns.
+    # Every artifact here is genuine and every SAID recomputes -- this is the real
+    # disclosure, captured verbatim. It is refused anyway, because the origin names the
+    # platform it was minted for and the whole DAG hangs from that name. Without an
+    # addressed origin, a disclosure is bearer-grade: whoever holds the bytes can present
+    # them anywhere the same credentials are accepted.
+    with pytest.raises(AssertionError):
+        _platform_accepts_grant(grantStream, presentation.said, disclosee=STATE)
 
     # 5. admit (platform -> Cara): closes the exchange.
     admit = exchange(sender=SOCIAL, receiver=CARA, route="/ipex/admit", prior=grant.said,
+                     xid=XID, attributes=dict(m="Received; access granted."),
                      stamp=ADMIT_STAMP, kind=kind)
-    assert admit.sad['p'] == grant.said
-    assert admit.said == "EBrp-miKYtL2_rG0HaY7Yu-jQj0s1WXozsduiZs9gJMB"
+    assert admit.sad['p'] == grant.said and admit.sad['x'] == XID
+    assert admit.said == "EPlc2DXeDAISnzH2P6Vy0pMkVqPhNXOPH0UZBC1NoLIc"
+
+    # Every message in the flow carries a human-readable 'm' and the one transaction id.
+    # Merged main requires both: IpexHandler.verify rejects any IPEX message whose
+    # attribute block has no 'm', and rejects an apply whose 'x' is empty.
+    for msg in (apply, offer, agree, grant, admit, spurn):
+        assert msg.sad['a']['m'] and msg.sad['x'] == XID
 
 
 # ---------------------------------------------------------------------------
@@ -1661,10 +1985,11 @@ def test_wardauthz_presentation_JSON():
 def test_wardauthz_serialization_kinds(kind):
     """Phases 1-4 invariants hold across every serialization kind, not just JSON.
 
-    Exercises the same graph -- four schemas, four credentials, the four pinned edge
-    operators, the full binding, the attenuation ceiling and the compact/expanded SAID
-    equality -- over CESR (the native KERI wire format) and CBOR/MGPK, asserting the
-    behavioral invariants without pinning per-kind SAIDs. (The no-PII-on-the-wire checks
+    Exercises the same graph -- the four durable credentials, the bespoke origin Cara
+    mints over them, all five pinned edge operators, both bindings, the attenuation
+    ceiling and the compact/expanded SAID equality -- over CESR (the native KERI wire
+    format) and CBOR/MGPK, asserting the behavioral invariants without pinning per-kind
+    SAIDs. (The no-PII-on-the-wire checks
     stay in the JSON phase: the CESR wire form base64-encodes the payload, so a plaintext
     substring check does not apply.)
     """
@@ -1706,6 +2031,23 @@ def test_wardauthz_serialization_kinds(kind):
                           compactify=True)
     assert compact.said == wardAuthz.said
     assert isinstance(compact.sad['e'], str)
+
+    # The bespoke origin builds, binds and compacts on every kind too -- including native
+    # CESR, where its purpose string and its routeless attribute block have to survive the
+    # same strict field-label grammar the AuthZ payload is pinned to.
+    presentation = _ward_presentation(kind, wardAuthz=wardAuthz)
+    assert_acdc_schema_valid(presentation)
+    assert 'rd' not in presentation.sad                # one-time: never registry-bound
+    assert _i2i_holds(presentation, wardAuthz)         # issuer Cara == issuee Cara
+    assert _verify_presentation(presentation, wardAuthz, SOCIAL)
+    with pytest.raises(AssertionError):                # ...and not at another platform
+        _verify_presentation(presentation, wardAuthz, STATE)
+    compactPresentation = _ward_presentation(kind, wardAuthz=wardAuthz, compactify=True)
+    assert compactPresentation.said == presentation.said
+    assert isinstance(compactPresentation.sad['e'], str)   # the offer's metadata form...
+    assert isinstance(compactPresentation.sad['a'], str)
+    # ...which is what keeps the durable correlator off an offer on every kind.
+    assert wardAuthz.said not in json.dumps(compactPresentation.sad)
 
     # The ward's minimal disclosure recomputes to the committed section SAID...
     disclosure = _issuee_only_attributes(wardCitizen, kind)
