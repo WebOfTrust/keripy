@@ -424,6 +424,56 @@ def test_source_seal_couple_round_trips_as_resolved_triple(mockHelpingNowUTC):
             (sender.pre, sourceSeal[1].sn, sourceSeal[2].qb64),
         ]
 
+        sealPreferred = exchange(
+            sender=sender.pre,
+            route="/test/seal-source",
+            attributes=dict(m="valid seal with invalid sender signature"),
+            **kwa,
+        )
+        anchor = sender.interact(data=[dict(d=sealPreferred.said)],
+                                 framed=True,
+                                 gvrsn=Vrsn_2_0,
+                                 **kwa)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(anchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        sourceSeal = (sender.kever.prefixer,
+                      Number(sn=sender.kever.sn),
+                      Diger(qb64=sender.kever.serder.said))
+        invalidSenderTsg = (
+            sender.kever.prefixer,
+            Number(sn=sender.kever.lastEst.s),
+            Diger(qb64=sender.kever.lastEst.d),
+            sender.sign(ser=b"different exchange message", indexed=True),
+        )
+        exchanger.processEvent(sealPreferred,
+                               tsgs=[invalidSenderTsg],
+                               ssts=[sourceSeal])
+
+        assert receiverHby.db.exns.get(
+            keys=(sealPreferred.said,)) is not None
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(sealPreferred.said, sender.pre, ""))) == []
+        assert [(number.sn, diger.qb64)
+                for number, diger in receiverHby.db.ests.get(
+                    keys=(sealPreferred.said, sender.pre))] == [
+            (sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+        verify(receiverHby, sealPreferred)
+
+        replay = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(serializeMessage(receiverHby,
+                                           sealPreferred.said,
+                                           framed=True)),
+            framed=True,
+            processive=False,
+        )[0]
+        assert replay.tsgs == []
+        assert [(prefixer.qb64, number.sn, diger.qb64)
+                for prefixer, number, diger in replay.ssts] == [
+            (sender.pre, sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+
 
 def test_non_ipex_rejects_non_sender_evidence(mockHelpingNowUTC):
     """Non-IPEX routes keep the existing sender-only evidence contract."""
@@ -577,6 +627,47 @@ def test_non_ipex_rejects_non_sender_evidence(mockHelpingNowUTC):
                            tsgs=[group(endorser, foreignOnly.raw)])
         with pytest.raises(MissingSignatureError):
             verify(receiverHby, foreignOnly)
+
+
+def test_verify_fails_closed_on_invalid_stored_evidence(mockHelpingNowUTC):
+    """Invalid optional evidence makes an accepted stored EXN unverifiable."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+    with openHab(name="stored-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="stored-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="stored-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
+        for hab in (sender, endorser):
+            msg = hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(msg),
+                                           kvy=receiverHby.kvy,
+                                           local=True)
+
+        exn = exchange(sender=sender.pre,
+                       route="/test/stored-evidence",
+                       attributes=dict(m="invalid stored evidence"),
+                       **kwa)
+
+        def group(hab, sigers):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    sigers)
+
+        senderGroup = group(
+            sender, sender.sign(ser=exn.raw, indexed=True))
+        invalidEndorserGroup = group(
+            endorser,
+            endorser.sign(ser=b"different exchange message", indexed=True),
+        )
+        Exchanger(hby=receiverHby, handlers=[]).logEvent(
+            exn, tsgs=[senderGroup, invalidEndorserGroup])
+
+        with pytest.raises(MissingSignatureError):
+            verify(receiverHby, exn)
+        with pytest.raises(MissingSignatureError):
+            serializeMessage(receiverHby, exn.said, framed=True)
 
 
 def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC):
