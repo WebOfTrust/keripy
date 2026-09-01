@@ -1260,6 +1260,13 @@ def test_represented_presentation_JSON():
         _verify_representation(presentation, guardian, otherWard, age)
 
     # --- The gated IPEX exchange: the ward's age flag crosses only in the grant. ---
+    #
+    # Every verb below carries a human-readable 'm' in its attribute block, and that is
+    # not a courtesy. IpexHandler.verify rejects any IPEX exn whose 'a' section has no
+    # 'm' (src/keri/acdc/ipexing.py), and handle() passes it straight to the notifier, so
+    # a verb without one is a step in the flow that no human can be shown. The strings
+    # below are written to be read in that notification rather than as labels for code.
+    #
     # 1. apply (service -> Bob): the challenge -- which schemas and which fields.
     #
     # It carries the ANCHORED-EXCHANGE field 'ax' in the attribute block (#1613), as a
@@ -1395,14 +1402,17 @@ def test_represented_presentation_JSON():
     # (#1549), so Bob restates nothing and the two messages cannot drift.
     offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
-                     attributes=dict(acdc=presentation.said, ax=[False]),
+                     attributes=dict(m="A digital guardian will present for the ward, "
+                                       "under the governance framework the presentation "
+                                       "names.",
+                                     acdc=presentation.said, ax=[False]),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
     assert 'governance' not in offer.sad['a']                 # ...and not on the exchange
-    assert set(offer.sad['a']) == {'acdc', 'ax'}
+    assert set(offer.sad['a']) == {'m', 'acdc', 'ax'}
     assert offer.sad['a']['ax'] == [False]                    # Bob agrees: no anchoring
-    assert offer.said == "EKmDgYH0eI3aC08kPrXnyH_KQ-sAptcYpcoBn_moDthC"
+    assert offer.said == "EHqp8zkKZuz9UvjzG9EANSy9n8E1MPkIQwx8I77LVzu1"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1413,9 +1423,11 @@ def test_represented_presentation_JSON():
     # 3. agree (service -> Bob): acceptance, binding the offer SAID and signed by the
     # service (via messagize -- the blessed genus-aware attachment path).
     agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
+                     attributes=dict(m="Accepted. Disclose the presentation and the "
+                                       "credentials its edges name."),
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EOHJdr-DzMaB1atW3kcbPa_82I14UFxOZ4eBU6Moqp9l"
+    assert agree.said == "EEBpELZOJ_-9nJkVuqkz19dOn2jTsfH31WpZXRSJ3l8o"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1457,7 +1469,9 @@ def test_represented_presentation_JSON():
         nests = nests if nests is not None else disclosures
         serder = exchange(sender=BOB, receiver=STORE, route="/ipex/grant",
                           prior=agreeMsg.said,
-                          attributes=dict(o=[presentation.said], ax=[False]),
+                          attributes=dict(m="The presentation, the guardian's authority, "
+                                            "and the ward's age category.",
+                                          o=[presentation.said], ax=[False]),
                           stamp=GRANT_STAMP, kind=kind)
         bobSig = _SIGNERS[2].sign(ser=serder.raw, index=0)      # the discloser signs
         return serder, messagize(serder, sigers=[bobSig],
@@ -1468,6 +1482,7 @@ def test_represented_presentation_JSON():
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0),
                     capturedKeyState) == (None, None)
     spurn = exchange(sender=STORE, receiver=BOB, route="/ipex/spurn", prior=offer.said,
+                     attributes=dict(m="Declined; this store wants no disclosure."),
                      stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, svcSigner.sign(ser=spurn.raw, index=0),
                     capturedKeyState) == (None, None)
@@ -1476,13 +1491,16 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EDUW8AZNXfNh0xOsMGQI5rbsTw1pY2zxIlqtyixjGFwJ"
-    # The attribute block is the origin and nothing else: a ONE-ELEMENT LIST, which is
-    # #1627's "Use Required Lists" form. That option is preferred there over a field map
-    # precisely because `dp` is already a list, so writing the single-DAG case as a list
-    # now is what keeps this example from needing a second edit when DAG soup lands.
+    assert grant.said == "EEOtP74J1Ax-xzAcZK2mxk4_zN2ezr494ojTIb1snkok"
+    # Beyond the notifier message, the attribute block is the origin and nothing else --
+    # a ONE-ELEMENT LIST, which is #1627's "Use Required Lists" form. That option is
+    # preferred there over a field map precisely because `dp` is already a list, so
+    # writing the single-DAG case as a list now is what keeps this example from needing a
+    # second edit when DAG soup lands. No credential rides here; they are all on the
+    # stream.
     granted = grant.sad['a']
-    assert granted == dict(o=[presentation.said], ax=[False])   # #1595, #1613, #1627
+    assert set(granted) == {'m', 'o', 'ax'}                     # #1595, #1613, #1627
+    assert granted['o'] == [presentation.said] and granted['ax'] == [False]
     assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
 
     # The credentials are on the stream, not in the body -- one artifact per dp entry,
@@ -1553,9 +1571,16 @@ def test_represented_presentation_JSON():
 
     # 5. admit (service -> Bob): closes the exchange.
     admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
+                     attributes=dict(m="Received. The guardian's consent and the ward's "
+                                       "age category are accepted."),
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EDtw204TKrpDXwEDAIUkw8nB87N2W9ey7aW1LrZ5BDKk"
+    assert admit.said == "ELk6aFIB_qa6sxpyh7_nUSq12YlTo3zM3DcmInj5p1GQ"
+
+    # Every verb in the flow carries its notifier message, including the two that end it
+    # and the spurn that was refused above -- asserted once, for the whole flow.
+    for exn in (apply, offer, agree, grant, spurn, admit):
+        assert exn.sad['a']['m']
 
 
 # ---------------------------------------------------------------------------
