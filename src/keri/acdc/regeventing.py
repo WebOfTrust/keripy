@@ -1002,7 +1002,7 @@ class _RegEventer:
         if aserder is None:
             return False
 
-        # Retrieve the sn and and dig from the sealing event and verify the anchor couple
+        # Retrieve the sn and dig from the sealing event and verify the anchor couple
         number = Number(num=aserder.sn)
         diger = Diger(qb64=aserder.said)
         if not _verifyAnchorCouple(event.serder,
