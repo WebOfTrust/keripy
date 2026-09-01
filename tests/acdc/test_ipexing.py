@@ -228,7 +228,7 @@ def test_ipex_v2_builders_parse_happypath():
         assert offerResult.serder.ked["r"] == "/ipex/offer"
         assert offerResult.serder.ked["a"] == offerExn.ked["a"]
         assert offerResult.serder.ked["p"] == applyExn.said
-        assert [nest.serder.said for nest in offerResult.nests] == [acdc.said]
+        assert offerResult.nests == []
 
         # Agree
         agreeIms = bytearray(agreeExn.raw)
@@ -415,7 +415,7 @@ def test_ipex_v2_builders_reject_registry_events_as_disclosed_nodes():
                        iseaid=holder.pre)
         rip = regcept(israid=holder.pre)
 
-        with pytest.raises(ValueError, match="disclosed ACDC nodes"):
+        with pytest.raises(ValueError, match="disclosed ACDC node"):
             ipexOffer(hab=holder,
                       recp=verifier.pre,
                       message="Here is the bad offer",
@@ -435,8 +435,8 @@ def test_ipex_v2_builders_reject_registry_events_as_disclosed_nodes():
                       artifacts=[rip])
 
 
-def test_ipex_v2_rejects_offer_with_duplicate_disclosed_node():
-    """Offer must not carry the same disclosed ACDC node more than once."""
+def test_ipex_v2_offer_builder_rejects_disclosed_artifacts():
+    """Offer remains metadata-only and rejects any disclosed DAG node artifacts."""
     with openHby(name="ipex-v2-bad-offer-duplicate-node",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -445,36 +445,17 @@ def test_ipex_v2_rejects_offer_with_duplicate_disclosed_node():
         acdc = acdcmap(israid=holder.pre,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=holder.pre)
-        schema = acdc.sad["s"]["$id"]
 
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-        applyExn, applyAtc = ipexApply(hab=verifier,
-                                       recp=holder.pre,
-                                       message="Prove over-21",
-                                       attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
-        offerExn, offerAtc = ipexOffer(hab=holder,
-                                       message="Here are the terms",
-                                       origin=acdc,
-                                       artifacts=[acdc],
-                                       apply=applyExn)
-
-        for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
-            ims = bytearray(exn.raw)
-            ims.extend(atc)
-            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-            assert ims == bytearray()
-
-        assert hby.db.exns.get(keys=(applyExn.said,)) is not None
-        assert hby.db.exns.get(keys=(offerExn.said,)) is None
-        assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+        with pytest.raises(ValueError, match="offer does not disclose DAG nodes"):
+            ipexOffer(hab=holder,
+                      recp=verifier.pre,
+                      message="Here are the terms",
+                      origin=acdc,
+                      artifacts=[acdc])
 
 
-def test_ipex_v2_rejects_offer_with_registry_event_nested_as_dag_node():
-    """Inbound offer verification must reject TEL events masquerading as DAG nodes."""
+def test_ipex_v2_rejects_offer_with_unexpected_nested_artifacts():
+    """Inbound offer verification rejects any forged nested disclosure payload."""
     with openHby(name="ipex-v2-bad-offer-tel-node",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -490,8 +471,9 @@ def test_ipex_v2_rejects_offer_with_registry_event_nested_as_dag_node():
                          edge=_edge("holder", rip),
                          iseaid=hab.pre)
 
-        # Build a syntactically valid offer body, then re-endorse it with a
-        # forged nested `rip` so the handler has to reject it as a non-node.
+        # Build a syntactically valid metadata-only offer body, then re-endorse
+        # it with forged nests. Offer must reject any attempt to disclose
+        # payload bodies before grant.
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=origin,
@@ -513,8 +495,8 @@ def test_ipex_v2_rejects_offer_with_registry_event_nested_as_dag_node():
         assert recorder.items == []
 
 
-def test_ipex_v2_rejects_offer_with_missing_edged_node():
-    """Offer must include every disclosed ACDC node referenced by the origin DAG."""
+def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
+    """Offer may name a DAG origin SAID without carrying any disclosed node nests."""
     with openHby(name="ipex-v2-bad-offer-dangling-edge",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -539,7 +521,7 @@ def test_ipex_v2_rejects_offer_with_missing_edged_node():
                                        attrs=dict(role="member"),
                                        modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
-                                       message="Here is the incomplete DAG",
+                                       message="Here are the terms",
                                        origin=origin,
                                        apply=applyExn)
 
@@ -550,12 +532,26 @@ def test_ipex_v2_rejects_offer_with_missing_edged_node():
             assert ims == bytearray()
 
         assert hby.db.exns.get(keys=(applyExn.said,)) is not None
-        assert hby.db.exns.get(keys=(offerExn.said,)) is None
-        assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+        storedOffer = hby.db.exns.get(keys=(offerExn.said,))
+        assert storedOffer is not None
+        assert storedOffer.ked["a"]["o"] == [origin.said]
+
+        storedOfferMsg = serializeMessage(hby, offerExn.said, framed=True)
+        storedOfferIms = bytearray(storedOfferMsg)
+        storedOfferResults = Parser(version=Vrsn_2_0).parse(ims=storedOfferIms,
+                                                            framed=False,
+                                                            processive=False)
+        assert storedOfferIms == bytearray()
+        assert len(storedOfferResults) == 1
+        assert storedOfferResults[0].nests == []
+        assert recorder.items == [
+            {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"},
+            {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here are the terms"},
+        ]
 
 
-def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
-    """Offer must not carry extra nested ACDCs outside the disclosed origin DAG."""
+def test_ipex_v2_offer_builder_rejects_multiple_disclosed_artifacts():
+    """Offer rejects any attempt to carry additional disclosed DAG nodes."""
     with openHby(name="ipex-v2-bad-offer-extra-node",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -571,32 +567,13 @@ def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
                          attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                          edge=_edge("holder", child),
                          iseaid=holder.pre)
-        schema = origin.sad["s"]["$id"]
 
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-        applyExn, applyAtc = ipexApply(hab=verifier,
-                                       recp=holder.pre,
-                                       message="Prove over-21",
-                                       attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
-        offerExn, offerAtc = ipexOffer(hab=holder,
-                                       message="Here is the overstuffed DAG",
-                                       origin=origin,
-                                       artifacts=[child, extra],
-                                       apply=applyExn)
-
-        for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
-            ims = bytearray(exn.raw)
-            ims.extend(atc)
-            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-            assert ims == bytearray()
-
-        assert hby.db.exns.get(keys=(applyExn.said,)) is not None
-        assert hby.db.exns.get(keys=(offerExn.said,)) is None
-        assert recorder.items == [{"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"}]
+        with pytest.raises(ValueError, match="offer does not disclose DAG nodes"):
+            ipexOffer(hab=holder,
+                      recp=verifier.pre,
+                      message="Here is the overstuffed DAG",
+                      origin=origin,
+                      artifacts=[child, extra])
 
 
 def test_ipex_v2_rejects_grant_with_missing_edged_node():
@@ -735,7 +712,7 @@ def test_ipex_v2_rejects_grant_with_unreachable_nested_node():
 
 
 def test_ipex_v2_offer_metadata_origin_can_differ_from_grant_origin():
-    """Offer can carry a metadata DAG whose origin differs from the later grant origin."""
+    """Offer can name metadata origin SAID that differs from the later grant origin."""
     with openHby(name="ipex-v2-offer-metadata-origin",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -785,7 +762,7 @@ def test_ipex_v2_offer_metadata_origin_can_differ_from_grant_origin():
         assert offerExn.ked["a"]["o"] == [offerMeta.said]
         assert grantExn.ked["a"]["o"] == [grantOrigin.said]
         assert offerExn.ked["a"]["o"] != grantExn.ked["a"]["o"]
-        assert [nest.serder.said for nest in offerResults[0].nests] == [offerMeta.said]
+        assert offerResults[0].nests == []
         assert [nest.serder.said for nest in grantResults[0].nests] == [grantOrigin.said]
 
 
@@ -888,7 +865,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                                                             processive=False)
         assert storedOfferIms == bytearray()
         assert len(storedOfferResults) == 1
-        assert [nest.serder.said for nest in storedOfferResults[0].nests] == [acdc.said]
+        assert storedOfferResults[0].nests == []
 
         storedAgree = hby.db.exns.get(keys=(agree0.said,))
         assert storedAgree.ked["a"]["m"] == "I agree to the offer"
@@ -1051,7 +1028,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
         assert offerIms == bytearray()
         assert len(offerResults) == 1
         offerResult = offerResults[0]
-        assert [nest.serder.said for nest in offerResult.nests] == [acdc.said]
+        assert offerResult.nests == []
 
         # Parse Grant for assertions
         grantIms = bytearray(grantExn.raw)
@@ -1133,8 +1110,7 @@ def test_ipex_v2_rejects_offer_without_dp():
 
         atc = bytearray(hab.endorse(serder=badOffer,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0,
-                                    nests=[_nest(acdc)]))
+                                    gvrsn=Vrsn_2_0))
         del atc[:badOffer.size]
 
         # Rebuild the tampered wire message with the malformed signed body.
@@ -1179,8 +1155,7 @@ def test_ipex_v2_rejects_offer_with_missing_origin_attr_without_throwing():
 
         atc = bytearray(hab.endorse(serder=badOffer,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0,
-                                    nests=[_nest(acdc)]))
+                                    gvrsn=Vrsn_2_0))
         del atc[:badOffer.size]
 
         ims = bytearray(badOffer.raw)
@@ -1219,8 +1194,7 @@ def test_ipex_v2_rejects_offer_with_nonstring_origin_without_throwing():
 
         atc = bytearray(hab.endorse(serder=badOffer,
                                     framed=False,
-                                    gvrsn=Vrsn_2_0,
-                                    nests=[_nest(acdc)]))
+                                    gvrsn=Vrsn_2_0))
         del atc[:badOffer.size]
 
         ims = bytearray(badOffer.raw)
@@ -1233,7 +1207,7 @@ def test_ipex_v2_rejects_offer_with_nonstring_origin_without_throwing():
         assert recorder.items == []
 
 
-def test_ipex_v2_rejects_offer_without_origin_nested_artifact():
+def test_ipex_v2_rejects_offer_with_forged_nested_artifact():
     with openHby(name="ipex-v2-bad-offer-origin-nest",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -1254,7 +1228,6 @@ def test_ipex_v2_rejects_offer_without_origin_nested_artifact():
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=origin,
-                           artifacts=[sibling],
                            message="Here is the offered credential")
 
         atc = bytearray(hab.endorse(serder=exn,
@@ -2827,14 +2800,13 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                 assert applyStored is not None
                 assert applyStored.ked["x"] == applyExn.ked["x"]
 
-                # The issuer answers with the full disclosed DAG. Offer uses the
-                # new per-node nest shape but does not yet carry issuer-auth.
+                # The issuer answers with metadata only. Offer names the origin
+                # SAID but does not yet disclose any ACDC node bodies.
                 clock.advance(milliseconds=1)
                 offerStamp = helping.nowIso8601()
                 offerExn, offerAtc = ipexOffer(hab=issuerHab,
                                                message="Here is the credential DAG",
                                                origin=origin,
-                                               artifacts=[child],
                                                apply=applyExn,
                                                dt=offerStamp)
                 assert offerExn.ked["a"]["o"] == [origin.said]
@@ -2858,17 +2830,13 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                               framed=False,
                                                               processive=False)
                 
-                # Assert the nested DAG structure is preserved through the full roundtrip.
+                # Offer remains metadata-only through the full roundtrip.
                 assert len(offerResults) == 1
 
-                # The offer nests should contain the origin and child nodes in order.
-                assert [nest.serder.said for nest in offerResults[0].nests] == [
-                    origin.said,
-                    child.said,
-                ]
-                assert len(offerResults[0].nests[0].bsqs) == 0
+                assert offerResults[0].nests == []
 
-                # The recipient agrees to the disclosed DAG.
+                # The recipient agrees to the proposed disclosure, and the
+                # later grant carries the actual DAG nodes.
                 clock.advance(milliseconds=1)
                 agreeStamp = helping.nowIso8601()
                 agreeExn, agreeAtc = ipexAgree(hab=recipientHab,

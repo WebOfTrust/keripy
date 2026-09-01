@@ -311,8 +311,9 @@ class IpexHandler:
             serder (Serder): Incoming IPEX exchange message.
             attachments (list | None): Parsed attachment payloads, unused in the
                 current linear workflow validation.
-            nests (list | None): Parsed V2 nested artifacts carried by offer
-                and grant messages.
+            nests (list | None): Parsed V2 nested artifacts. In the current
+                single-DAG workflow only ``grant`` may disclose nested ACDC
+                nodes; ``offer`` stays metadata-only.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -341,12 +342,20 @@ class IpexHandler:
             return False
 
         # Stage 2: apply/offer carry disclose-paths, while offer/grant also
-        # carry disclosed node nests rooted at `a.o[0]`.
+        # carry a single-DAG origin SAID in `a.o[0]`. Only grant may disclose
+        # nested node bodies for that DAG.
         if verb in (Ipex.apply, Ipex.offer):
             if "dp" not in q or not _validDisclosurePath(q["dp"]):
                 return False
 
-        if verb in (Ipex.offer, Ipex.grant):
+        if verb == Ipex.offer:
+            if "o" not in attrs or not _validSingleDagList(attrs["o"], str) or nests:
+                return False
+            try:
+                Saider(qb64=attrs["o"][0])
+            except Exception:
+                return False
+        elif verb == Ipex.grant:
             if "o" not in attrs or not _validSingleDagList(attrs["o"], str) or not nests:
                 return False
             try:
@@ -379,16 +388,16 @@ class IpexHandler:
         elif not self._verifyReplyChain(verb=verb, serder=serder, dig=dig):
             return False
 
-        # Stage 4: offer and grant both carry disclosed ACDC node nests. Those
-        # nests must describe exactly one reachable DAG rooted at a.o[0].
-        if verb in (Ipex.offer, Ipex.grant):
+        # Stage 4: grant is the disclosure step. Its node nests must
+        # describe exactly one reachable DAG rooted at a.o[0].
+        if verb == Ipex.grant:
             walked = self._walkGraph(origin=attrs["o"][0], nests=nests)
             if walked is None:
                 return False
 
-            # Stage 5: only grant currently vets issuer-auth proof groups. Offer
-            # carries the same node-local framing but does not enforce proofs yet.
-            if verb == Ipex.grant and not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
+            # Stage 5: after the disclosed graph shape is accepted, each walked
+            # registry-backed node must vet its own node-local proof group.
+            if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
                 return False
 
         return True
@@ -473,7 +482,7 @@ class IpexHandler:
         Parameters:
             origin (str): SAID of the origin node named by ``a.o[0]``.
             nests (list): Parsed nested ACDC node substreams carried by the
-                offer or grant message.
+                grant message.
 
         Returns:
             tuple | None: ``(nodes, order)`` when the disclosed nests form one
@@ -771,10 +780,12 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable offer message.
-        origin (Serder | bytes | bytearray): Origin ACDC node identified in
-            ``a.o[0]`` and carried as the first nested artifact.
-        artifacts (list[Serder | bytes | bytearray] | None): Optional
-            additional disclosed ACDC nodes carried after ``origin``.
+        origin (Serder | bytes | bytearray): Origin disclosed ACDC node whose
+            SAID is copied into ``a.o[0]``. ``offer`` does not disclose nested
+            node bodies; ``grant`` later carries the actual ACDC node nests.
+        artifacts (list[Serder | bytes | bytearray] | None): Reserved for
+            signature compatibility. ``offer`` does not disclose additional
+            DAG nodes, so providing artifacts is rejected.
         apply (Serder | None): Optional prior ``apply`` exchange.
         recp (str | None): Recipient AID. Defaults to the prior ``apply``
             sender; must be supplied directly for an offer-first exchange
@@ -827,16 +838,15 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
         raise ValueError("attrs['ax'] must be [] or a one-item list of booleans")
 
-    # Offer emits the origin in list form and nests each disclosed ACDC node
-    # separately so node-local attachment groups stay with their owner.
-    data["o"] = [_streamSerder(origin).said]
-    nests = [_normalizeNodeStream(origin)]
+    # Offer stays metadata-only: it names the disclosed DAG
+    # origin, but does not reveal the ACDC node bodies until grant.
+    originSerder = _streamSerder(origin)
+    if originSerder.proto != Protocols.acdc or originSerder.ilk not in DisclosedNodeIlks:
+        raise ValueError("offer origin must identify a disclosed ACDC node")
+    data["o"] = [originSerder.said]
 
     if artifacts is not None:
-        if not isinstance(artifacts, list):
-            raise TypeError("artifacts must be a list when provided")
-        for artifact in artifacts:
-            nests.append(_normalizeNodeStream(artifact))
+        raise ValueError("offer does not disclose DAG nodes; use grant artifacts instead")
 
     # Build the body
     serder = exchange(
@@ -853,7 +863,7 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         kind=kind if kind is not None else hab.kever.serder.kind,
     )
 
-    atc = bytearray(_sign(hab=hab, serder=serder, nests=nests, gvrsn=gvrsn))
+    atc = bytearray(_sign(hab=hab, serder=serder, gvrsn=gvrsn))
     del atc[:serder.size]
     return serder, atc
 
