@@ -455,8 +455,8 @@ class Kramer:
                 exist (``kramit`` ensures this before calling).
         """
         tsgs = kwa.get('tsgs', [])
-        cur_sn = kever.sner.num
-        cur_said = kever.serder.said
+        cur_sn = kever.lastEst.s
+        cur_said = kever.lastEst.d
         for prefixer, number, sdiger, sigers in tsgs:
             if prefixer.qb64 != senderId:
                 continue
@@ -552,8 +552,8 @@ class Kramer:
         if not tsgs:
             return stale_tsgs
 
-        cur_sn = kever.sner.num
-        cur_said = kever.serder.said
+        cur_sn = kever.lastEst.s
+        cur_said = kever.lastEst.d
         new_tsgs = []
         for quad in tsgs:
             prefixer, number, sdiger, sigers = quad
@@ -608,8 +608,8 @@ class Kramer:
             if not kwa['lsgs']:
                 kwa.pop('lsgs', None)
 
-        curSn = kever.sner.num
-        curSaid = kever.serder.said
+        curSn = kever.lastEst.s
+        curSaid = kever.lastEst.d
         if kwa.get('tsgs'):
             newTsgs = []
             for quad in kwa['tsgs']:
@@ -694,8 +694,8 @@ class Kramer:
         for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 != senderId:
                 continue
-            if (number.sn != kever.sner.num or
-                    sdiger.qb64 != kever.serder.said):
+            if (number.sn != kever.lastEst.s or
+                    sdiger.qb64 != kever.lastEst.d):
                 continue
             for siger in sigers:
                 pool.add(siger.qb64)
