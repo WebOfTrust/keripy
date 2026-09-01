@@ -115,7 +115,7 @@ DGO, ENDORSER, BOB, MIA, STORE = (
 
 # Per-example blinding nonces, derived (not pasted) from a distinct raw prefix so this
 # file shares no nonce values with the sibling examples.
-RAWS = [b'guardworkexamra' + b'%0x' % (i,) for i in range(32)]
+RAWS = [b'guardworkexamra' + b'%0x' % (i,) for i in range(33)]
 NONCES = [Noncer(raw=raw).qb64 for raw in RAWS]
 
 
@@ -582,6 +582,14 @@ N_BC_A, N_BC_ACDC = 19, 20
 N_G_A, N_G_ACDC, N_G_E, N_G_E_SUBJ, N_G_E_AUTH = 21, 22, 23, 24, 25
 # presentation (attribute uuid, acdc uuid, edge-section uuid, three edge uuids).
 N_P_A, N_P_ACDC, N_P_E, N_P_E_AUTH, N_P_E_ID, N_P_E_AGE = 26, 27, 28, 29, 30, 31
+# The last slot is not a uuid: it seeds the IPEX exchange transaction id below.
+N_XID = 32
+
+# The exchange transaction id, minted by the flow-opening apply and echoed by every
+# later message. ipexing.apply() builds it as Diger(ser=Noncer().qb64b).qb64 -- a digest
+# over a fresh nonce; this is that formula with the randomness pinned to a NONCES slot,
+# so the exn SAIDs stay reproducible. The sibling module pins its own the same way.
+XID = Diger(ser=NONCES[N_XID].encode()).qb64
 
 # Age aggregate ARRAY positions (A[0] = AGID; A[1] = issuee; A[2..] = the flags).
 AGE_ISSUEE = 1
@@ -1355,8 +1363,14 @@ def test_represented_presentation_JSON():
     # individually: _guardian_attr is FLAT by design, and a flat section discloses whole
     # or as one bare SAID with nothing in between, so a field list would name paths that
     # credential cannot produce.
+    #
+    # The apply OPENS the flow, so it mints the exchange transaction id `x` and every
+    # later message echoes it. Merged verify rejects a flow-opener with an empty `x` (or
+    # an empty `ri`), and rejects any reply whose `x` differs from its prior's, so this
+    # field is what makes the six messages ONE exchange rather than six exns that happen
+    # to chain by `p`. See XID for how it is minted reproducibly here.
     presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
-    apply = exchange(sender=STORE, receiver=BOB, route="/ipex/apply",
+    apply = exchange(sender=STORE, receiver=BOB, route="/ipex/apply", xid=XID,
                      modifiers=dict(dp=[[presentSchemaSaid, "", ["i", "a/i", "e"]],
                                         [guardian.sad['s']['$id'], "", ["i", "a", "e"]],
                                         [sedi.sad['s']['$id'], "", ["a/i"]],
@@ -1381,7 +1395,7 @@ def test_represented_presentation_JSON():
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'ax'}
     assert 'g' not in apply.sad['a']            # governance lives in ACDC rules
     assert apply.sad['a']['ax'] == [False]      # unanchored exchange (#1613, #1627)
-    assert apply.said == "ELoaFzZN3bFbtWUmC8zYoCUXcZIqh1d8qfPrfbjsspP7"
+    assert apply.said == "ELFQ5HP1btm1yGt4QbRWvOCbrUQmbS_C0jrCqZadjbvr"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID,
     # and binds the apply. It deliberately does NOT enumerate the
@@ -1447,7 +1461,8 @@ def test_represented_presentation_JSON():
     # committed to, and that check is only worth running when the two are the same
     # artifact; a separate metadata ACDC would leave the store agreeing to terms attached
     # to nothing it ever receives.
-    offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
+    offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", xid=XID,
+                     prior=apply.said,
                      modifiers=dict(dp=[]),
                      attributes=dict(m="A digital guardian will present for the ward, "
                                        "under the governance framework the presentation "
@@ -1461,7 +1476,7 @@ def test_represented_presentation_JSON():
     assert set(offer.sad['a']) == {'m', 'o', 'ax'}
     assert offer.sad['a']['o'] == [presentation.said]         # one DAG, one entry (#1627)
     assert offer.sad['a']['ax'] == [False]                    # Bob agrees: no anchoring
-    assert offer.said == "EPTAhbfTtMh52L0tGeTrjuvLlDzQRHmsmW3U0iTyZC4L"
+    assert offer.said == "ELaLTpNJkT_ylWEymUv7U4ksrxmvAD2mNavGhw6pMTDW"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
 
     # Bob signs the offer and attaches the metadata origin, the same way the grant
@@ -1502,12 +1517,13 @@ def test_represented_presentation_JSON():
     # service (via messagize -- the blessed genus-aware attachment path). The store is
     # agreeing to terms it could actually read: it resolved the offer's `o` against the
     # artifact attached to it, above, before sending this.
-    agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
+    agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", xid=XID,
+                     prior=offer.said,
                      attributes=dict(m="Accepted. Disclose the presentation and the "
                                        "credentials its edges name."),
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EJXAN43XjEu2-7HnP_nlHOtnxWBp8Nx_tDgsm_Lpn9tX"
+    assert agree.said == "EHzDUFXHq5DGcponFPivffIvK_ZYDlgLNwoVQQzQIoRG"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1548,7 +1564,7 @@ def test_represented_presentation_JSON():
             return None, None
         nests = nests if nests is not None else disclosures
         serder = exchange(sender=BOB, receiver=STORE, route="/ipex/grant",
-                          prior=agreeMsg.said,
+                          xid=XID, prior=agreeMsg.said,
                           attributes=dict(m="The presentation, the guardian's authority, "
                                             "and the ward's age category.",
                                           o=[presentation.said], ax=[False]),
@@ -1561,7 +1577,8 @@ def test_represented_presentation_JSON():
     # A forged signature or a spurn (decline) unlocks nothing.
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0),
                     capturedKeyState) == (None, None)
-    spurn = exchange(sender=STORE, receiver=BOB, route="/ipex/spurn", prior=offer.said,
+    spurn = exchange(sender=STORE, receiver=BOB, route="/ipex/spurn", xid=XID,
+                     prior=offer.said,
                      attributes=dict(m="Declined; this store wants no disclosure."),
                      stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, svcSigner.sign(ser=spurn.raw, index=0),
@@ -1571,7 +1588,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "ELvj_eu85ztTNVJL2XCtWfpuRtgW8Msxwu6LCloyhgck"
+    assert grant.said == "ELeDr2J9DqO8jm34rZ47h1YdanApavJahdXpBLVRm6qx"
     # Beyond the notifier message, the attribute block is the origin and nothing else --
     # a ONE-ELEMENT LIST, which is #1627's "Use Required Lists" form. That option is
     # preferred there over a field map precisely because `dp` is already a list, so
@@ -1654,17 +1671,22 @@ def test_represented_presentation_JSON():
         _service_accepts_grant(tampered, presentation.said)
 
     # 5. admit (service -> Bob): closes the exchange.
-    admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
+    admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", xid=XID,
+                     prior=grant.said,
                      attributes=dict(m="Received. The guardian's consent and the ward's "
                                        "age category are accepted."),
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "ENB1vKJPv7_hU2pgv3EIyIH5K4ZXellVxyfT0yotymuI"
+    assert admit.said == "EL-lRKZXGhg2r3yRJfUWhEEkolohdF5P4Ij35Dmiq3v_"
 
-    # Every verb in the flow carries its notifier message, including the two that end it
-    # and the spurn that was refused above -- asserted once, for the whole flow.
+    # Every verb in the flow carries its notifier message and the transaction id the
+    # apply minted -- including the two that end it and the spurn refused above.
+    # Asserted once, for the whole flow.
     for exn in (apply, offer, agree, grant, spurn, admit):
         assert exn.sad['a']['m']
+        assert exn.sad['x'] == XID
+    assert apply.sad['p'] == ""         # only the flow-opener has no prior
+    assert all(exn.sad['p'] for exn in (offer, agree, grant, spurn, admit))
 
 
 # ---------------------------------------------------------------------------
