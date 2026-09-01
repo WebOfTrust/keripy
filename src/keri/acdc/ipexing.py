@@ -443,8 +443,9 @@ class IpexHandler:
 
         Returns:
             bool: True when the reply points to an allowed prior message, keeps
-                sender/receiver roles consistent, and does not duplicate an
-                existing response; False otherwise.
+                sender/receiver roles consistent, does not duplicate an
+                existing response, and for ``grant`` keeps the disclosed origin
+                committed to the earlier ``offer``; False otherwise.
         """
         pserder, _ = cloneMessage(self.hby, said=dig)
         if pserder is None:
@@ -474,6 +475,23 @@ class IpexHandler:
 
         if self.response(pserder) is not None:
             return False
+
+        # A reply-chain grant must disclose the same origin DAG root the offer
+        # negotiated. Offer stays metadata-only, but its `a.o[0]` is still a
+        # commitment to the exact later grant root, not just a loose topic hint.
+        if verb == Ipex.grant:
+            offerDig = pserder.ked.get("p", "")
+            if not offerDig:
+                return False
+            offer, _ = cloneMessage(self.hby, said=offerDig)
+            if offer is None:
+                return False
+            oattrs = offer.ked.get("a")
+            if not isinstance(oattrs, dict) or not _validSingleDagList(oattrs.get("o"), str):
+                return False
+            if serder.ked["a"]["o"] != oattrs["o"]:
+                return False
+
         return True
 
     def _walkGraph(self, origin, nests):
@@ -782,7 +800,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         message (str): Human-readable offer message.
         origin (Serder | bytes | bytearray): Origin disclosed ACDC node whose
             SAID is copied into ``a.o[0]``. ``offer`` does not disclose nested
-            node bodies; ``grant`` later carries the actual ACDC node nests.
+            node bodies, but this root SAID commits the negotiation to the
+            exact DAG that ``grant`` must later disclose.
         artifacts (list[Serder | bytes | bytearray] | None): Reserved for
             signature compatibility. ``offer`` does not disclose additional
             DAG nodes, so providing artifacts is rejected.
@@ -838,8 +857,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
         raise ValueError("attrs['ax'] must be [] or a one-item list of booleans")
 
-    # Offer stays metadata-only: it names the disclosed DAG
-    # origin, but does not reveal the ACDC node bodies until grant.
+    # Offer stays metadata-only: it names the exact disclosed DAG origin up
+    # front, but does not reveal the ACDC node bodies until grant.
     originSerder = _streamSerder(origin)
     if originSerder.proto != Protocols.acdc or originSerder.ilk not in DisclosedNodeIlks:
         raise ValueError("offer origin must identify a disclosed ACDC node")

@@ -711,13 +711,16 @@ def test_ipex_v2_rejects_grant_with_unreachable_nested_node():
         assert recorder.items == []
 
 
-def test_ipex_v2_offer_metadata_origin_can_differ_from_grant_origin():
-    """Offer can name metadata origin SAID that differs from the later grant origin."""
+def test_ipex_v2_rejects_grant_when_offer_origin_differs():
+    """Grant must disclose the same origin DAG root that the prior offer named."""
     with openHby(name="ipex-v2-offer-metadata-origin",
                  base="test",
                  version=Vrsn_2_0) as hby:
         hab = hby.makeHab(name="test")
-        registry = regcept(israid=hab.pre)
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
         offerMeta = acdcmap(israid=hab.pre,
                             attribute=dict(d="", rules="club-entry"),
                             iseaid=hab.pre)
@@ -725,45 +728,45 @@ def test_ipex_v2_offer_metadata_origin_can_differ_from_grant_origin():
                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                               iseaid=hab.pre)
         schema = grantOrigin.sad["s"]["$id"]
-        applyExn, _ = ipexApply(hab=hab,
-                                recp=hab.pre,
-                                message="Please issue a credential",
-                                attrs=dict(role="member"),
-                                modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+        applyExn, applyAtc = ipexApply(hab=hab,
+                                       recp=hab.pre,
+                                       message="Please issue a credential",
+                                       attrs=dict(role="member"),
+                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
         offerExn, offerAtc = ipexOffer(hab=hab,
                                        message="Here is the metadata offer",
                                        origin=offerMeta,
                                        apply=applyExn)
-        agreeExn, _ = ipexAgree(hab=hab,
-                                message="I agree to the metadata offer",
-                                offer=offerExn)
+        agreeExn, agreeAtc = ipexAgree(hab=hab,
+                                       message="I agree to the metadata offer",
+                                       offer=offerExn)
+
+        for exn, atc in ((applyExn, applyAtc),
+                         (offerExn, offerAtc),
+                         (agreeExn, agreeAtc)):
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
         grantExn, grantAtc = ipexGrant(hab=hab,
                                        recp=hab.pre,
                                        message="Here is the granted credential",
                                        origin=grantOrigin,
                                        agree=agreeExn)
-
-        offerIms = bytearray(offerExn.raw)
-        offerIms.extend(offerAtc)
-        offerResults = Parser(version=Vrsn_2_0).parse(ims=offerIms,
-                                                      framed=False,
-                                                      processive=False)
-        assert offerIms == bytearray()
-        assert len(offerResults) == 1
-
         grantIms = bytearray(grantExn.raw)
         grantIms.extend(grantAtc)
-        grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
-                                                      framed=False,
-                                                      processive=False)
+        Parser(version=Vrsn_2_0).parse(ims=grantIms, framed=False, exc=exc)
         assert grantIms == bytearray()
-        assert len(grantResults) == 1
-
         assert offerExn.ked["a"]["o"] == [offerMeta.said]
         assert grantExn.ked["a"]["o"] == [grantOrigin.said]
         assert offerExn.ked["a"]["o"] != grantExn.ked["a"]["o"]
-        assert offerResults[0].nests == []
-        assert [nest.serder.said for nest in grantResults[0].nests] == [grantOrigin.said]
+        assert hby.db.exns.get(keys=(grantExn.said,)) is None
+        assert [item["r"] for item in recorder.items] == [
+            "/exn/ipex/apply",
+            "/exn/ipex/offer",
+            "/exn/ipex/agree",
+        ]
 
 
 def test_ipex_v2_dispatch_linear_and_spurn():
