@@ -1399,20 +1399,33 @@ def test_represented_presentation_JSON():
     # presentation she ever makes, so a spurning platform keeps a usable handle on her.
     # Its query block carries `dp` as an EMPTY list: the offer is SOLICITED (its `p`
     # binds the apply), and an empty `dp` means "the same paths the apply asked for"
-    # (#1549), so Bob restates nothing and the two messages cannot drift.
+    # (#1549), so Bob restates nothing and the two messages cannot drift. That is also
+    # what the merged helper does -- ipexing.offer() defaults modifiers['dp'] to [] --
+    # so the two agree without either restating the paths.
+    #
+    # The origin rides in the `o` field, NOT the V1 label `acdc`, which #1629 removed
+    # from the offer's attribute block (tests/acdc/test_ipexing.py asserts "acdc" is
+    # absent). It is written as a ONE-ELEMENT LIST for the same reason the grant's is,
+    # and the two are deliberately the same shape: one entry per DAG, and this
+    # presentation is a single DAG. Merged main's validator wants a bare string here and
+    # would reject the list, and this module is knowingly ahead of the code on that
+    # point -- the list is #1627's "Use Required Lists" form, and the reconciliation
+    # belongs in that discussion rather than in a quiet edit here.
     offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
                      attributes=dict(m="A digital guardian will present for the ward, "
                                        "under the governance framework the presentation "
                                        "names.",
-                                     acdc=presentation.said, ax=[False]),
+                                     o=[presentation.said], ax=[False]),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
     assert 'governance' not in offer.sad['a']                 # ...and not on the exchange
-    assert set(offer.sad['a']) == {'m', 'acdc', 'ax'}
+    assert 'acdc' not in offer.sad['a']                       # the V1 label is gone (#1629)
+    assert set(offer.sad['a']) == {'m', 'o', 'ax'}
+    assert offer.sad['a']['o'] == [presentation.said]         # one DAG, one entry (#1627)
     assert offer.sad['a']['ax'] == [False]                    # Bob agrees: no anchoring
-    assert offer.said == "EHqp8zkKZuz9UvjzG9EANSy9n8E1MPkIQwx8I77LVzu1"
+    assert offer.said == "EPTAhbfTtMh52L0tGeTrjuvLlDzQRHmsmW3U0iTyZC4L"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1427,7 +1440,7 @@ def test_represented_presentation_JSON():
                                        "credentials its edges name."),
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EEBpELZOJ_-9nJkVuqkz19dOn2jTsfH31WpZXRSJ3l8o"
+    assert agree.said == "EJXAN43XjEu2-7HnP_nlHOtnxWBp8Nx_tDgsm_Lpn9tX"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1491,7 +1504,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EEOtP74J1Ax-xzAcZK2mxk4_zN2ezr494ojTIb1snkok"
+    assert grant.said == "ELvj_eu85ztTNVJL2XCtWfpuRtgW8Msxwu6LCloyhgck"
     # Beyond the notifier message, the attribute block is the origin and nothing else --
     # a ONE-ELEMENT LIST, which is #1627's "Use Required Lists" form. That option is
     # preferred there over a field map precisely because `dp` is already a list, so
@@ -1502,6 +1515,10 @@ def test_represented_presentation_JSON():
     assert set(granted) == {'m', 'o', 'ax'}                     # #1595, #1613, #1627
     assert granted['o'] == [presentation.said] and granted['ax'] == [False]
     assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
+    # The offer and the grant name the SAME origin, in the same field and the same shape.
+    # That equality is what lets _service_accepts_grant say "terms follow the data": the
+    # store is handed the DAG it agreed to, not merely a DAG.
+    assert granted['o'] == offer.sad['a']['o']
 
     # The credentials are on the stream, not in the body -- one artifact per dp entry,
     # each disclosed to the requested depth and each still carrying the SAID of the FULL
@@ -1575,7 +1592,7 @@ def test_represented_presentation_JSON():
                                        "age category are accepted."),
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "ELk6aFIB_qa6sxpyh7_nUSq12YlTo3zM3DcmInj5p1GQ"
+    assert admit.said == "ENB1vKJPv7_hU2pgv3EIyIH5K4ZXellVxyfT0yotymuI"
 
     # Every verb in the flow carries its notifier message, including the two that end it
     # and the spurn that was refused above -- asserted once, for the whole flow.
