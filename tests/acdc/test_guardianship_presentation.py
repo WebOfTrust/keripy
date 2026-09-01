@@ -802,7 +802,10 @@ def _service_accepts_grant(grantStream, offeredOrigin):
          tampered payload dies here, and takes the whole stream with it.
       2. Confirm the origin is the presentation the OFFER committed to. Without this the
          service could be handed a different, perfectly valid presentation than the one
-         whose terms it agreed to -- terms follow the data.
+         whose terms it agreed to -- terms follow the data. The offer attached that same
+         origin compacted to a metadata ACDC, so this is the artifact the service already
+         read, arriving expanded; merged main would have allowed the two to be different
+         ACDCs entirely, and then there would be nothing here to check.
       3. WALK THE DAG from that origin to find every other node, edge by edge, matching
          each edge's digest against the parsed artifacts. This is what the `o` field buys
          over the bespoke labels it replaced: the service is no longer trusting the
@@ -1222,7 +1225,9 @@ def test_represented_presentation_JSON():
     gated IPEX exchange so the ward's under-13 disclosure crosses the wire only in the
     grant, after the service accepts -- and the grant delivers the presentation expanded,
     with the guardian credential beside it, so the service can run the scope check its
-    own apply asked for rather than being told the answer.
+    own apply asked for rather than being told the answer. The offer attaches the SAME
+    presentation compacted to a metadata ACDC, so the store agrees to terms it can read
+    without being handed the answer first.
     """
     kind = Kinds.json
     sedi, age, ageAggor = _ward_credentials(kind)
@@ -1397,8 +1402,9 @@ def test_represented_presentation_JSON():
     assert apply.sad['a']['ax'] == [False]      # unanchored exchange (#1613, #1627)
     assert apply.said == "ELFQ5HP1btm1yGt4QbRWvOCbrUQmbS_C0jrCqZadjbvr"
 
-    # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID,
-    # and binds the apply. It deliberately does NOT enumerate the
+    # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
+    # -- attaching that presentation in its compact form, below -- and binds the apply.
+    # It deliberately does NOT enumerate the
     # issuer-committed source-credential SAIDs (guardian/sedi/age): those are issuer
     # commitments, and attaching them before the service agrees would let a verifier
     # spurn and walk away with stable ward/guardian correlators, defeating the
