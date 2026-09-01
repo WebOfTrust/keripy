@@ -1411,6 +1411,42 @@ def test_represented_presentation_JSON():
     # would reject the list, and this module is knowingly ahead of the code on that
     # point -- the list is #1627's "Use Required Lists" form, and the reconciliation
     # belongs in that discussion rather than in a quiet edit here.
+    #
+    # THE ORIGIN IS ATTACHED, not merely named. Merged verify requires an offer to carry
+    # at least one nested artifact whose SAID matches `a.o`, so naming a digest the
+    # disclosee cannot resolve is no longer a well-formed offer. What rides here is the
+    # presentation COMPACTIFIED -- the metadata ACDC of Sam's review on #1629: least
+    # disclosure, with the rules section visible so the disclosee agrees to terms it can
+    # see. An ACDC commits to its MOST COMPACT form, so this recomputes to
+    # presentation.said and costs the offer nothing it was not committing to already.
+    #
+    # WHAT THE COMPACT FORM SHOWS is the issuer (Bob), the schema SAID -- which the
+    # service itself named in the apply, so it already holds the schema -- and the rules
+    # SAID. The governance half of Sam's requirement is met here for free rather than by
+    # care taken: this presentation's `r` is ALREADY a bare SAID (GUARDIAN_RULES_SAID, a
+    # placeholder digest for the framework), so it rides identically in both forms and
+    # there was never a rules block to withhold.
+    #
+    # WHAT IT WITHHOLDS is the edge section and the attribute section, and the second is
+    # the judgment call. The edge section must go: it names the guardian, sedi-id and age
+    # SAIDs, and the PRV-F2 argument above is exactly the case for keeping those off a
+    # message a service can spurn. The attribute section is FLAT -- like _guardian_attr it
+    # discloses whole or as one bare SAID, with nothing in between -- so there is no
+    # partial to choose, and disclosing it whole would put the presentation's `purpose`
+    # string on the wire pre-agree. That string says the ward is in the CHILD age
+    # category, which is the very answer this gate exists to hold back until the service
+    # accepts; a store that spurned would walk away with the under-13 predicate it never
+    # agreed to receive. So it is withheld, and what the service agrees to is Bob, this
+    # schema, this governance framework: a thinner statement of terms than the purpose
+    # text would give, and the one that keeps the gate honest.
+    #
+    # Merged main PERMITS a wholly different artifact here -- test_ipexing.py's
+    # test_ipex_v2_offer_metadata_origin_can_differ_from_grant_origin offers one metadata
+    # ACDC and grants another, with unequal `o` fields. This example declines that
+    # freedom. _service_accepts_grant checks that the grant's origin is the one the OFFER
+    # committed to, and that check is only worth running when the two are the same
+    # artifact; a separate metadata ACDC would leave the store agreeing to terms attached
+    # to nothing it ever receives.
     offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
                      modifiers=dict(dp=[]),
                      attributes=dict(m="A digital guardian will present for the ward, "
@@ -1427,14 +1463,45 @@ def test_represented_presentation_JSON():
     assert offer.sad['a']['ax'] == [False]                    # Bob agrees: no anchoring
     assert offer.said == "EPTAhbfTtMh52L0tGeTrjuvLlDzQRHmsmW3U0iTyZC4L"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
-    assert b"Mia Carver" not in offer.raw and b"2020-03-15" not in offer.raw   # no PII
+
+    # Bob signs the offer and attaches the metadata origin, the same way the grant
+    # attaches its four disclosures: one nested substream per artifact.
+    offeredOrigin = _represented_presentation(kind, guardian, sedi, age, compactify=True)
+    assert offeredOrigin.said == presentation.said       # most-compact-form commitment
+    offerStream = messagize(offer, sigers=[_SIGNERS[2].sign(ser=offer.raw, index=0)],
+                            nests=[_nest(offeredOrigin)], framed=False, gvrsn=Vrsn_2_0)
+
+    # Read back off the wire, which is the only form the service ever sees. The nested
+    # artifact must SAID-match the `o` the body names -- one entry, one nest -- or merged
+    # verify refuses the offer.
+    offerParsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(offerStream), framed=False,
+                                                 processive=False)[0]
+    assert [nest.serder.said for nest in offerParsed.nests] == offer.sad['a']['o']
+    onOffer = offerParsed.nests[0].serder
+    assert onOffer.sad['i'] == BOB                       # who will present
+    assert onOffer.sad['s'] == presentSchemaSaid         # the schema the apply named
+    assert onOffer.sad['r'] == GUARDIAN_RULES_SAID       # the terms, readable
+    assert isinstance(onOffer.sad['a'], str)             # purpose withheld...
+    assert isinstance(onOffer.sad['e'], str)             # ...and the DAG withheld with it
+
+    # The pre-agree withholding claims, re-run against the WHOLE offer stream rather than
+    # the exn body alone: the attachment is new surface, and it must not have opened a
+    # hole in what the body was careful about. They run against the DECODED bodies for
+    # the reason the grant's do -- a nested non-CESR body rides Texter-encoded, so a
+    # substring check on the stream itself would pass without proving anything.
+    offerDecoded = bytes(offer.raw) + b"".join(bytes(nest.serder.raw)
+                                               for nest in offerParsed.nests)
+    assert b"Mia Carver" not in offerDecoded and b"2020-03-15" not in offerDecoded  # no PII
+    assert b"child age category" not in offerDecoded    # nor the answer the gate holds back
     # Issuer commitments withheld until after the service agrees (PRV-F2):
-    assert guardian.said.encode() not in offer.raw
-    assert sedi.said.encode() not in offer.raw
-    assert age.said.encode() not in offer.raw
+    assert guardian.said.encode() not in offerDecoded
+    assert sedi.said.encode() not in offerDecoded
+    assert age.said.encode() not in offerDecoded
 
     # 3. agree (service -> Bob): acceptance, binding the offer SAID and signed by the
-    # service (via messagize -- the blessed genus-aware attachment path).
+    # service (via messagize -- the blessed genus-aware attachment path). The store is
+    # agreeing to terms it could actually read: it resolved the offer's `o` against the
+    # artifact attached to it, above, before sending this.
     agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      attributes=dict(m="Accepted. Disclose the presentation and the "
                                        "credentials its edges name."),
