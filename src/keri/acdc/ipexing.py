@@ -329,9 +329,9 @@ class IpexHandler:
                        invalid=False):
         """Select verified non-sender evidence accepted by this IPEX route.
 
-        A grant retains cryptographically valid evidence without assigning it
-        an ACDC or DAG role. Invalid grant evidence is discarded. Other verbs
-        reject non-sender evidence.
+        The caller removes invalid attachments before this method runs. A grant
+        retains the valid subset without assigning it an ACDC or DAG role.
+        Other verbs reject non-sender evidence or any invalid attachment.
         """
         tsgs = tsgs if tsgs is not None else []
         cigars = cigars if cigars is not None else []
@@ -339,6 +339,8 @@ class IpexHandler:
 
         verb = serder.ked["r"].rsplit("/", 1)[-1]
         if verb == Ipex.grant:
+            # Grant evidence is optional, so retain the valid subset despite
+            # invalid extras.
             return tsgs, cigars, sourceSeals
 
         if tsgs or cigars or sourceSeals or invalid:

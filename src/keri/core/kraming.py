@@ -625,6 +625,17 @@ class Kramer:
             if not kwa['tsgs']:
                 kwa.pop('tsgs', None)
 
+    @staticmethod
+    def _setVerifiedSenderTsg(senderId, kever, sigers, kwa):
+        """Replace sender groups with one verified last-establishment group."""
+        tsgs = [tsg for tsg in kwa.get('tsgs', [])
+                if tsg[0].qb64 != senderId]
+        tsgs.insert(0, (kever.prefixer,
+                        Number(sn=kever.lastEst.s),
+                        Diger(qb64=kever.lastEst.d),
+                        list(sigers)))
+        kwa['tsgs'] = tsgs
+
     def _verifyAttachedSigs(self, *, msg, senderId, kever, kwa):
         """Verify attached signatures using cigar gate then oset pooling.
 
@@ -708,13 +719,7 @@ class Kramer:
         verified = {s.qb64 for s in vsigers}
         self._scrubFailedVerification(senderId, kever, kwa, verified)
         if msg.ilk == Ilks.exn and vsigers:
-            tsgs = [tsg for tsg in kwa.get('tsgs', [])
-                    if tsg[0].qb64 != senderId]
-            tsgs.insert(0, (kever.prefixer,
-                            Number(sn=kever.lastEst.s),
-                            Diger(qb64=kever.lastEst.d),
-                            list(vsigers)))
-            kwa['tsgs'] = tsgs
+            self._setVerifiedSenderTsg(senderId, kever, vsigers, kwa)
 
         return SigVerifyResult(
             verified=True if vsigers else False,
@@ -802,9 +807,11 @@ class Kramer:
         authenticator material, not non-auth forwarding); other prefixers'
         tsgs are stored. A foreign last-establishment signature group is
         resolved to that endorser's current establishment event at receipt
-        and stored in the same explicit form. The live kwa dict is not
-        mutated by this method; signature scrubbing may already have run in
-        _verifyAttachedSigs.
+        and stored in the same explicit form. This freezes the establishment
+        reference so a later endorser rotation before the sender reaches its
+        signature threshold does not reinterpret the escrowed signatures. The
+        live kwa dict is not mutated by this method; signature scrubbing may
+        already have run in _verifyAttachedSigs.
 
         Parameters:
             key (tuple): (AID, MID) partial db key
@@ -1172,13 +1179,8 @@ class Kramer:
                     if kever.tholder.satisfy(indices=sigIndices):
                         self._rehydrateKwaFromEscrow(key, senderId, kwa)
                         if msg.ilk == Ilks.exn:
-                            tsgs = [tsg for tsg in kwa.get('tsgs', [])
-                                    if tsg[0].qb64 != senderId]
-                            tsgs.insert(0, (kever.prefixer,
-                                            Number(sn=kever.lastEst.s),
-                                            Diger(qb64=kever.lastEst.d),
-                                            list(allSigs)))
-                            kwa['tsgs'] = tsgs
+                            self._setVerifiedSenderTsg(
+                                senderId, kever, allSigs, kwa)
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1418,13 +1420,8 @@ class Kramer:
                     if kever.tholder.satisfy(indices=sigIndices):
                         self._rehydrateKwaFromEscrow(partialKey, senderId, kwa)
                         if msg.ilk == Ilks.exn:
-                            tsgs = [tsg for tsg in kwa.get('tsgs', [])
-                                    if tsg[0].qb64 != senderId]
-                            tsgs.insert(0, (kever.prefixer,
-                                            Number(sn=kever.lastEst.s),
-                                            Diger(qb64=kever.lastEst.d),
-                                            list(allSigs)))
-                            kwa['tsgs'] = tsgs
+                            self._setVerifiedSenderTsg(
+                                senderId, kever, allSigs, kwa)
                         return msg
 
                 # Threshold not satisfied, message remains pending

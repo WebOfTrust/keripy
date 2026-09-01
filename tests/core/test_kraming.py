@@ -18,7 +18,7 @@ from keri.kering import (KramConfigurationError, MissingAuthAttachmentError,
 from keri.core import (Kramer, SerderKERI, Kevery, Pruner, Salter,
                        Parser, Seqner, Saider, Prefixer, Diger,
                        Dater, Noncer, Number, Verser, Labeler, Texter,
-                       AuthTypes, exchange, exchept, reply, query)
+                       AuthTypes, exchange, exchept, reply, query, verifySigs)
 
 from keri.app import openHby, openCF
 from keri.db import openDB
@@ -2240,9 +2240,9 @@ def test_repeated_sender_signature_preserves_new_non_auth_attachments(
         mockHelpingNowUTC, transactioned):
     """A repeated valid sender signature may carry new non-auth evidence.
 
-    Preserve that evidence in both partial multi-signature cache paths so a
-    later threshold-satisfying delivery can rehydrate it for downstream
-    verification.
+    Preserve a foreign last-establishment signature group in both partial
+    multi-signature cache paths. Freeze its establishment coordinates so an
+    endorser rotation before threshold completion does not reinterpret it.
     """
 
     salt1 = Salter(raw=b'0123456789abcdef').qb64
@@ -2293,10 +2293,7 @@ def test_repeated_sender_signature_preserves_new_non_auth_attachments(
 
             senderSigs = senderHab.sign(ser=msg.raw, indexed=True)
             endorserSigs = endorserHab.sign(ser=msg.raw, indexed=True)
-            endorserTsg = (endorserHab.kever.prefixer,
-                           Number(sn=endorserHab.kever.lastEst.s),
-                           Diger(qb64=endorserHab.kever.lastEst.d),
-                           endorserSigs)
+            endorserEst = endorserHab.kever.lastEst
             partialKey = (senderHab.pre, msg.said)
 
             assert kramer.kramit(
@@ -2306,13 +2303,33 @@ def test_repeated_sender_signature_preserves_new_non_auth_attachments(
             assert kramer.kramit(
                 msg,
                 dict(sigers=[senderSigs[0]],
-                     tsgs=[endorserTsg])) is None
-            assert len(kramer.db.kramTSGS.get(keys=partialKey)) == 1
+                     lsgs=[(endorserHab.kever.prefixer,
+                            endorserSigs)])) is None
+            escrowedTsgs = kramer.db.kramTSGS.get(keys=partialKey)
+            assert [(prefixer.qb64, number.sn, diger.qb64)
+                    for prefixer, number, diger, _ in escrowedTsgs] == [
+                (endorserHab.pre, endorserEst.s, endorserEst.d),
+            ]
+
+            endorserRot = endorserHab.rotate(
+                framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
+            Parser(version=V2).parse(ims=bytearray(endorserRot),
+                                     kvy=crossKvy)
+            assert receiverHby.kevers[endorserHab.pre].lastEst.s > endorserEst.s
 
             final = dict(sigers=[senderSigs[2]])
             assert kramer.kramit(msg, final) is not None
-            assert any(prefixer.qb64 == endorserHab.pre
-                       for prefixer, _, _, _ in final['tsgs'])
+            endorserTsg = next(
+                tsg for tsg in final['tsgs']
+                if tsg[0].qb64 == endorserHab.pre)
+            prefixer, number, diger, sigers = endorserTsg
+            assert (prefixer.qb64, number.sn, diger.qb64) == (
+                endorserHab.pre, endorserEst.s, endorserEst.d)
+
+            tholder, verfers = receiverHby.db.resolveVerifiers(
+                pre=prefixer.qb64, sn=number.sn, dig=diger.qb64)
+            _, indices = verifySigs(msg.raw, sigers, verfers)
+            assert tholder.satisfy(indices)
 
     """Done Test"""
 

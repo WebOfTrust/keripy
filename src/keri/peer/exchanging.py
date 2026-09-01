@@ -74,7 +74,12 @@ class Exchanger:
             cigars (list): of Cigar instances of attached non-trans sigs
             ptds (list[bytes]): pathed Cesr Streams
             essrs (list[Texter]): ESSR streams as Texters
-            kwa: optional source seals and parsed V2 nested substreams
+            kwa (dict): optional parsed attachment groups:
+                nests contains parsed V2 nested substreams
+                lsgs contains last-establishment signature groups
+                ulgs contains unresolved foreign signer prefixes
+                sscs contains sender-implied source seal couples
+                ssts contains explicit source seal triples
 
         """
         ptds = ptds if ptds is not None else []
@@ -107,6 +112,9 @@ class Exchanger:
 
         evidenceVerifier = getattr(behavior, "verifyEvidence", None)
         if senderTsgs and evidenceVerifier is None:
+            # Routes without an evidence policy preserve the existing
+            # TSG-over-cigar precedence. A sender TSG causes all cigars to be
+            # ignored.
             senderCigars = []
             extraCigars = []
         else:
@@ -123,6 +131,8 @@ class Exchanger:
         validSenderTsgs = []
         validSenderCigars = []
         if validSenderSourceSeals:
+            # A valid sender seal authenticates the EXN. Retain only valid
+            # optional sender TSGs and do not fail on invalid ones.
             validSenderTsgs, _, _, _ = verifyAttachments(
                 hby=self.hby, serder=serder, tsgs=senderTsgs)
 
@@ -169,6 +179,8 @@ class Exchanger:
                 validSenderCigars.append(cigar)
 
         elif not validSenderSourceSeals:
+            # Do not escrow unsupported foreign-only evidence as missing sender
+            # authentication on routes without an evidence policy.
             if (evidenceVerifier is None and
                     (extraTsgs or extraLsgs or extraCigars or unresolvedLsgs)):
                 msg = (f"Skipped evidence not from aid={sender} route={route} "
@@ -187,6 +199,9 @@ class Exchanger:
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             raise MissingSignatureError(msg)
 
+        # A sender authenticated above may still carry unsupported foreign
+        # evidence, which routes without an evidence policy must reject before
+        # persistence.
         if (evidenceVerifier is None and
                 (extraTsgs or extraLsgs or extraCigars or unresolvedLsgs)):
             msg = (f"Skipped evidence not from aid={sender} route={route} "
@@ -949,7 +964,11 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
 
 
 def verify(hby, serder):
-    """Verify stored authentication and endorsements for an exchange message.
+    """Verify all stored authentication and evidence for an exchange message.
+
+    Any invalid stored attachment fails verification. Source seals are
+    verified but omitted from the legacy two-item return tuple;
+    ``serializeMessage`` reloads them for wire reconstruction.
 
     Parameters:
         hby (Habery): database environment from which to verify message
@@ -996,7 +1015,7 @@ def verify(hby, serder):
         sourceSeals=sourceSeals,
     )
     if invalid:
-        msg = f"Invalid stored authentication for evt = {serder.said}"
+        msg = f"Invalid stored authentication or evidence for evt = {serder.said}"
         logger.info(msg)
         logger.debug("Exn Body=\n%s\n", serder.pretty())
         raise MissingSignatureError(msg)
