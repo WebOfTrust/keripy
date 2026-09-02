@@ -238,8 +238,10 @@ def _validDisclosurePath(value):
 
     Returns:
         bool: True when ``value`` is a list whose entries are disclosure-path
-            triples of ``[schema SAID, DAG path, ACDC paths]`` for one DAG,
-            False otherwise.
+            triples of ``[schema SAID, DAG path, ACDC paths]`` for one DAG.
+            The DAG path is either ``"/"`` for the root node or a canonical
+            edge-to-node prefix that starts and ends with ``/`` and terminates
+            at the far-node hop ``"_/"`` such as ``"/e/holder/_/"``.
     """
     if not isinstance(value, list):
         return False
@@ -253,7 +255,23 @@ def _validDisclosurePath(value):
             return False
         if not isinstance(path, str):
             return False
+        if path == "/":
+            pass
+        else:
+            # Non-root DAG prefixes must point at a far-node hop so later
+            # field paths append cleanly beneath that disclosed node.
+            if not (path.startswith("/") and path.endswith("/")):
+                return False
+
+            segments = path.strip("/").split("/")
+            if not segments or any(not isinstance(segment, str) or not segment for segment in segments):
+                return False
+            if segments[-1] != "_":
+                return False
+
         if not isinstance(fields, list):
+            return False
+        if any(not isinstance(field, str) or not field for field in fields):
             return False
 
     return True

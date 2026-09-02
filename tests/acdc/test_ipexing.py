@@ -479,7 +479,7 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
                                        message="Please disclose the credential DAG",
                                        attrs=dict(role="member"),
                                        modifiers=dict(dp=[[[schema, "/", []],
-                                                           [schema, "/e/holder", []]]]))
+                                                           [schema, "/e/holder/_/", []]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        recp=verifier.pre,
                                        message="Here are the terms",
@@ -513,7 +513,7 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
         assert storedGrant.ked["a"]["o"] == [origin.said]
         assert storedOffer.ked["a"]["o"] != storedGrant.ked["a"]["o"]
         assert storedOffer.ked["q"]["dp"] == [[[schema, "/", []],
-                                              [schema, "/e/holder", []]]]
+                                              [schema, "/e/holder/_/", []]]]
 
         offerWire = bytearray(serializeMessage(hby, offerExn.said, framed=True))
         offerResults = Parser(version=Vrsn_2_0).parse(ims=offerWire,
@@ -678,7 +678,7 @@ def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
                                        message="Show me the metadata path",
                                        attrs={},
                                        modifiers=dict(dp=[[[schema, "/", []],
-                                                           [schema, "/e/department", []]]]))
+                                                           [schema, "/e/department/_/", []]]]))
         # Carry only the disclosed root plus one reachable metadata child.
         # The child's farther edge to `grandchild` is intentionally omitted.
         offerExn, offerAtc = ipexOffer(hab=holder,
@@ -740,7 +740,7 @@ def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
                              origin=origin,
                              artifacts=[child, extra],
                              modifiers=dict(dp=[[[schema, "/", []],
-                                                 [schema, "/e/holder", []]]]))
+                                                 [schema, "/e/holder/_/", []]]]))
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
@@ -1906,6 +1906,52 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                       recp=holder.pre,
                       message="Bad disclosure plan nesting",
                       modifiers=dict(dp=[[[[schema, "/", ["a/role"]]]]]))
+        with pytest.raises(ValueError):
+            ipexApply(hab=verifier,
+                      recp=holder.pre,
+                      message="Bad disclosure plan prefix",
+                      modifiers=dict(dp=[[[schema, "/e/holder", ["a/role"]]]]))
+        with pytest.raises(ValueError):
+            ipexApply(hab=verifier,
+                      recp=holder.pre,
+                      message="Bad disclosure plan field entries",
+                      modifiers=dict(dp=[[[schema, "/", [1, {}]]]]))
+
+
+def test_ipex_v2_rejects_inbound_apply_with_malformed_disclosure_path():
+    """Inbound apply verification rejects forged dp entries with invalid field paths."""
+    with openHby(name="ipex-v2-bad-apply-dp",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        schema = acdcmap(israid=holder.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         iseaid=verifier.pre).sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        badApply = exchange(sender=verifier.pre,
+                            receiver=holder.pre,
+                            xid=Noncer().qb64,
+                            route="/ipex/apply",
+                            modifiers=dict(dp=[[[schema, "/", [1, {}]]]]),
+                            attributes=dict(m="Please disclose the forged plan"),
+                            pvrsn=Vrsn_2_0,
+                            gvrsn=Vrsn_2_0,
+                            kind=verifier.kever.serder.kind)
+        atc = bytearray(verifier.endorse(serder=badApply, framed=False, gvrsn=Vrsn_2_0))
+        del atc[:badApply.size]
+
+        ims = bytearray(badApply.raw)
+        ims.extend(atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(badApply.said,)) is None
+        assert recorder.items == []
 
 
 def test_ipex_v2_rejects_third_party_prior_response_without_throwing():
@@ -3190,13 +3236,13 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                attrs={},
                                                modifiers=dict(dp=[[
                                                    [schema, "/", []],
-                                                   [schema, "/e/holder", []],
+                                                   [schema, "/e/holder/_/", []],
                                                ]]),
                                                dt=applyStamp)
                 
                 assert applyExn.ked["q"]["dp"] == [[
                     [schema, "/", []],
-                    [schema, "/e/holder", []],
+                    [schema, "/e/holder/_/", []],
                 ]]
 
                 applyMsg = bytearray(applyExn.raw)
