@@ -328,7 +328,10 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
     registry-backed ACDC through the real IPEX handlers we have today. In the
     single-DAG wire shape for this ticket, the grant carries one nested ACDC
     node per disclosure graph node, and TEL/KEL issuer-auth material is no
-    longer shipped as sibling grant artifacts.
+    longer shipped as sibling grant artifacts. This example keeps every actor
+    in one Habery/Regery, so the verifier-side TEL view is already local; the
+    two-Habery IPEX tests cover the separate-party case where that TEL would be
+    learned beforehand, for example from observers.
     """
 
     with openHby(name="ipex-registry-lifecycle",
@@ -364,7 +367,9 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
 
             # The first presentation discloses only the current issued event's
-            # proof group on the ACDC's own nest.
+            # proof group on the ACDC's own nest. Because this example uses one
+            # shared Regery, the disclosee-side TEL chain is already present
+            # locally instead of being fetched separately from observers.
             issuedGrantResult, issuedGrantWire = ipexExn(
                 hby=hby,
                 exc=exc,
@@ -1090,6 +1095,9 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
     carries the ACDC node itself plus exactly one event's blind proof group on
     that node's own nest. The salt still stays off wire, and each presentation
     reveals only the one event-specific blind needed for that disclosed state.
+    This example also runs in one Habery/Regery, so the verifier already has
+    local TEL state; the separate-party observer-preload assumption is covered
+    by the two-Habery IPEX tests instead.
     """
 
     with openHby(name="ipex-correlation-minimizing",
@@ -1123,7 +1131,9 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
 
             # Bob presents the currently issued snapshot to Vic. The grant wire
-            # carries the ACDC and only sn=1's disclosed blind proof.
+            # carries the ACDC and only sn=1's disclosed blind proof. TEL
+            # lookup still succeeds here because this example's shared Regery
+            # already contains the issuer's registry history.
             issuedGrantResult, issuedWire = ipexExn(
                 hby=hby,
                 exc=exc,

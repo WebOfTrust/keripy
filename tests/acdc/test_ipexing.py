@@ -87,8 +87,7 @@ def _nest(stream):
 
 def _proofed(acdc, *proofs):
     """Attach one node-local registry proof group to a disclosed ACDC stream."""
-    # Step 4 keeps issuer-auth evidence on the same node substream, so grant()
-    # can wrap this body+proof stream as one nested BodyWithAttachmentGroup.
+    # Step 4 keeps only the issuer-auth proof group on the disclosed node.
     return messagize(serder=acdc,
                      bonds=[proof.data for proof in proofs],
                      framed=False,
@@ -2482,12 +2481,17 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                   version=Vrsn_2_0) as recipientHby):
         issuerHab = issuerHby.makeHab(name="issuer")
         recipientHab = recipientHby.makeHab(name="recipient")
-        rgy = Regery(hby=issuerHby, name="ipex-v2-blind-registry-kram-two-haberies", temp=True)
+        issuerRgy = Regery(hby=issuerHby,
+                           name="ipex-v2-blind-registry-kram-two-haberies-issuer",
+                           temp=True)
+        recipientRgy = Regery(hby=recipientHby,
+                              name="ipex-v2-blind-registry-kram-two-haberies-recipient",
+                              temp=True)
         try:
             # Build the issuer-owned registry inside the issuer's Habery.
-            registrar = Registrar(rgy=rgy)
+            registrar = Registrar(rgy=issuerRgy)
             registry = registrar.makeRegistry(name="blind-kram", prefix=issuerHab.pre)
-            rip = rgy.store.event(registry.regk)
+            rip = issuerRgy.store.event(registry.regk)
             ripAnc = _anchor(issuerHab, registry, rip, framed=True)
 
             # Issue one credential from the issuer to the recipient so the later
@@ -2521,7 +2525,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
             # Feed the issuer's KEL and TEL anchor material into the recipient's
             # local db so the recipient can authenticate the issuer's replies and
-            # verify the registry artifacts nested inside the later grant.
+            # verify the registry artifacts referenced by the later grant.
             issuerIcp = issuerHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerIcp), kvy=recipientRemoteKvy)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(ripAnc), kvy=recipientRemoteKvy)
@@ -2530,17 +2534,22 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                                            kvy=recipientRemoteKvy)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerRot), kvy=recipientRemoteKvy)
 
+            # Simulate observer retrieval by preloading the issuer's TEL chain
+            # into the recipient's local Regery before the grant is verified.
+            recipientRgy.store.accept(registry.regk, 0, rip)
+            recipientRgy.store.accept(registry.regk, 1, issued)
+            assert recipientRgy.store.seqEvent(registry.regk, 0).said == rip.said
+            assert recipientRgy.store.seqEvent(registry.regk, 1).said == issued.said
+
             # Give each Habery its own IPEX exchanger and recorder so the test
             # can prove which side actually received which messages.
             issuerRecorder = Recorder()
             issuerExc = Exchanger(hby=issuerHby, handlers=[])
-            loadHandlers(hby=issuerHby, exc=issuerExc, notifier=issuerRecorder, rgy=rgy)
+            loadHandlers(hby=issuerHby, exc=issuerExc, notifier=issuerRecorder, rgy=issuerRgy)
 
             recipientRecorder = Recorder()
             recipientExc = Exchanger(hby=recipientHby, handlers=[])
-            # The recipient verifies the issuer-auth proof against the issuer's
-            # preloaded TEL chain, so share the same test Regery here.
-            loadHandlers(hby=recipientHby, exc=recipientExc, notifier=recipientRecorder, rgy=rgy)
+            loadHandlers(hby=recipientHby, exc=recipientExc, notifier=recipientRecorder, rgy=recipientRgy)
 
             with (openCF(name="ipex-v2-kram-two-haberies-issuer", base="test", temp=True) as issuerCf,
                   openCF(name="ipex-v2-kram-two-haberies-recipient", base="test", temp=True) as recipientCf):
@@ -2851,7 +2860,8 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert recipientHby.db.exns.get(keys=(offerExn.said,)) is not None
         finally:
-            rgy.close()
+            recipientRgy.close()
+            issuerRgy.close()
 
 
 def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeHelpingClock):
@@ -2877,13 +2887,18 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                   version=Vrsn_2_0) as recipientHby):
         issuerHab = issuerHby.makeHab(name="issuer")
         recipientHab = recipientHby.makeHab(name="recipient")
-        rgy = Regery(hby=issuerHby, name="ipex-v2-dag-kram-two-haberies", temp=True)
+        issuerRgy = Regery(hby=issuerHby,
+                           name="ipex-v2-dag-kram-two-haberies-issuer",
+                           temp=True)
+        recipientRgy = Regery(hby=recipientHby,
+                              name="ipex-v2-dag-kram-two-haberies-recipient",
+                              temp=True)
         try:
             # Build the issuer-owned registry and anchor its inception so the
             # recipient can later vet the origin node's blind proof group.
-            registrar = Registrar(rgy=rgy)
+            registrar = Registrar(rgy=issuerRgy)
             registry = registrar.makeRegistry(name="blind-dag-kram", prefix=issuerHab.pre)
-            rip = rgy.store.event(registry.regk)
+            rip = issuerRgy.store.event(registry.regk)
             ripAnc = _anchor(issuerHab, registry, rip, framed=True)
 
             # The disclosed DAG has a registry-backed origin node that points to
@@ -2924,15 +2939,28 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                            kvy=recipientRemoteKvy)
             Parser(version=Vrsn_2_0).parse(ims=bytearray(issuerRot), kvy=recipientRemoteKvy)
 
+            # Simulate observer retrieval by preloading the issuer's TEL chain
+            # into the recipient's local Regery before the grant is verified.
+            recipientRgy.store.accept(registry.regk, 0, rip)
+            recipientRgy.store.accept(registry.regk, 1, issued)
+            assert recipientRgy.store.seqEvent(registry.regk, 0).said == rip.said
+            assert recipientRgy.store.seqEvent(registry.regk, 1).said == issued.said
+
 
             # Set up each Habery with its IPEX exchanger and recorder
             issuerRecorder = Recorder()
             issuerInboundExc = Exchanger(hby=issuerHby, handlers=[])
-            loadHandlers(hby=issuerHby, exc=issuerInboundExc, notifier=issuerRecorder, rgy=rgy)
+            loadHandlers(hby=issuerHby,
+                         exc=issuerInboundExc,
+                         notifier=issuerRecorder,
+                         rgy=issuerRgy)
 
             recipientRecorder = Recorder()
             recipientInboundExc = Exchanger(hby=recipientHby, handlers=[])
-            loadHandlers(hby=recipientHby, exc=recipientInboundExc, notifier=recipientRecorder, rgy=rgy)
+            loadHandlers(hby=recipientHby,
+                         exc=recipientInboundExc,
+                         notifier=recipientRecorder,
+                         rgy=recipientRgy)
 
             with (openCF(name="ipex-v2-dag-kram-issuer", base="test", temp=True) as issuerCf,
                   openCF(name="ipex-v2-dag-kram-recipient", base="test", temp=True) as recipientCf):
@@ -3138,7 +3166,8 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                     ("/exn/ipex/grant", "Here is the registry-backed DAG disclosure"),
                 ]
         finally:
-            rgy.close()
+            recipientRgy.close()
+            issuerRgy.close()
 
 
 def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):

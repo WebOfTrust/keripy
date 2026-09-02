@@ -623,8 +623,9 @@ class IpexHandler:
 
         Returns:
             bool: ``True`` when the node is either not registry-backed or its
-            node-local proof vets successfully against local TEL evidence;
-            otherwise ``False``.
+            node-local proof vets successfully against TEL evidence already
+            loaded in the verifier's local ``Regery`` store; otherwise
+            ``False``.
         """
         regk = serder.sad.get("rd")
         if regk:
@@ -657,9 +658,9 @@ class IpexHandler:
             if len(proofs) != 1:
                 return False
 
-            # Reuse an injected Regery when available. Otherwise reopen the local
-            # registry store for this Habery so IPEX can vet against persisted TEL
-            # evidence without changing the public handler API.
+            # IPEX verification assumes the disclosee has already learned the
+            # foreign TEL chain, for example by retrieving it from observers
+            # before processing the grant
             if self.rgy is None:
                 from .registraring import Regery
                 self.rgy = Regery(hby=self.hby,
@@ -667,16 +668,13 @@ class IpexHandler:
                                   base=self.hby.base,
                                   temp=self.hby.temp)
 
-            # The proof group only discloses one event's blinded state. The TEL
-            # chain itself is loaded from the local registry store and passed into
-            # regeventing.vet(), which checks anchoring and ACDC binding.
             rip = self.rgy.store.seqEvent(regk, 0)
             head = self.rgy.store.headEvent(regk)
             if rip is None or head is None:
                 return False
 
             updates = []
-            for sn in range(1, int(head.sad["n"], 16) + 1):
+            for sn in range(1, Number(numh=head.sad["n"]).num + 1):
                 if not (update := self.rgy.store.seqEvent(regk, sn)):
                     return False
                 updates.append(update)
