@@ -97,6 +97,60 @@ def test_receiptor_tocks_are_generator_local():
         query.close()
 
 
+def test_witness_publisher_idle_tracks_queued_and_active_work(monkeypatch):
+    with habbing.openHby(name="publisher-lifecycle", temp=True) as hby:
+        wit = hby.makeHab(name="witness", transferable=False)
+        hab = hby.makeHab(name="controller", transferable=True,
+                          wits=[wit.pre])
+
+        # Replace the HTTP/TCP transport so this test isolates the publisher's
+        # child-Doer lifecycle management.
+        class FakeMessenger(doing.Doer):
+            def __init__(self, wit):
+                super().__init__()
+                self.wit = wit
+                self.msgs = []
+
+            @property
+            def idle(self):
+                return not self.msgs
+
+        messenger = FakeMessenger(wit.pre)
+        monkeypatch.setattr(agenting, "messenger",
+                            lambda hab, wit: messenger)
+
+        publisher = agenting.WitnessPublisher(hby=hby)
+        evt = dict(pre=hab.pre, said=hab.pre,
+                   msg=hab.makeOwnInception())
+        publisher.msgs.append(evt)
+
+        # The queued event is pending work before a messenger is scheduled.
+        assert not publisher.idle
+
+        doist = doing.Doist(tock=0.03125, limit=1.0,
+                            doers=[publisher])
+        doist.enter()
+        try:
+            # The first recurrence transfers the event to an active child.
+            doist.recur()
+            assert messenger in publisher.witers
+            assert not publisher.idle
+
+            # Simulate transport drain so the next recurrence removes the child.
+            messenger.msgs.clear()
+            doist.recur()
+
+            assert publisher.idle
+            assert list(publisher.cues) == [evt]
+            assert messenger not in publisher.doers
+
+            # Completion cues are consumable output, not lifecycle state.
+            publisher.cues.popleft()
+            assert publisher.idle
+        finally:
+            doist.exit()
+
+
 def test_witness_receiptor(seeder):
     with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
             habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
