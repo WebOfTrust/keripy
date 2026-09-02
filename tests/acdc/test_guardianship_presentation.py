@@ -582,13 +582,17 @@ N_BC_A, N_BC_ACDC = 19, 20
 N_G_A, N_G_ACDC, N_G_E, N_G_E_SUBJ, N_G_E_AUTH = 21, 22, 23, 24, 25
 # presentation (attribute uuid, acdc uuid, edge-section uuid, three edge uuids).
 N_P_A, N_P_ACDC, N_P_E, N_P_E_AUTH, N_P_E_ID, N_P_E_AGE = 26, 27, 28, 29, 30, 31
-# The last slot is not a uuid: it seeds the IPEX exchange transaction id below.
+# The IPEX transaction id -- the one slot here that is not a uuid, and the reason the
+# table above runs to 33 rather than 32.
 N_XID = 32
 
-# The exchange transaction id, minted by the flow-opening apply and echoed by every
-# later message. ipexing.apply() builds it as Diger(ser=Noncer().qb64b).qb64 -- a digest
-# over a fresh nonce; this is that formula with the randomness pinned to a NONCES slot,
-# so the exn SAIDs stay reproducible. The sibling module pins its own the same way.
+# The exchange's TRANSACTION ID, carried in the 'x' field of every message in the flow.
+# Merged main requires it: IpexHandler.verify (src/keri/acdc/ipexing.py) rejects an apply
+# whose 'x' is empty, and every later message must repeat the same value, which is what
+# binds six separately-signed messages into one exchange rather than six that merely
+# happen to chain by 'p'. The library mints it as the digest of a fresh random nonce
+# (Diger(ser=Noncer().qb64b)); this example pins the nonce so the SAIDs stay reproducible,
+# which is the only difference.
 XID = Diger(ser=NONCES[N_XID].encode()).qb64
 
 # Age aggregate ARRAY positions (A[0] = AGID; A[1] = issuee; A[2..] = the flags).
@@ -1369,11 +1373,6 @@ def test_represented_presentation_JSON():
     # or as one bare SAID with nothing in between, so a field list would name paths that
     # credential cannot produce.
     #
-    # The apply OPENS the flow, so it mints the exchange transaction id `x` and every
-    # later message echoes it. Merged verify rejects a flow-opener with an empty `x` (or
-    # an empty `ri`), and rejects any reply whose `x` differs from its prior's, so this
-    # field is what makes the six messages ONE exchange rather than six exns that happen
-    # to chain by `p`. See XID for how it is minted reproducibly here.
     presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=STORE, receiver=BOB, route="/ipex/apply", xid=XID,
                      modifiers=dict(dp=[[presentSchemaSaid, "", ["i", "a/i", "e"]],
@@ -1386,6 +1385,9 @@ def test_represented_presentation_JSON():
                                      ax=[False]),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == STORE
+    # The apply OPENS the flow, so it mints the transaction id and carries no prior.
+    assert apply.sad['x'] == XID and apply.sad['p'] == ""
+    assert apply.sad['ri'] == BOB               # ...and names its receiver explicitly
     dp = apply.sad['q']['dp']
     assert [entry[0] for entry in dp] == [presentSchemaSaid, guardian.sad['s']['$id'],
                                           sedi.sad['s']['$id'], age.sad['s']['$id']]
@@ -1427,10 +1429,8 @@ def test_represented_presentation_JSON():
     # from the offer's attribute block (tests/acdc/test_ipexing.py asserts "acdc" is
     # absent). It is written as a ONE-ELEMENT LIST for the same reason the grant's is,
     # and the two are deliberately the same shape: one entry per DAG, and this
-    # presentation is a single DAG. Merged main's validator wants a bare string here and
-    # would reject the list, and this module is knowingly ahead of the code on that
-    # point -- the list is #1627's "Use Required Lists" form, and the reconciliation
-    # belongs in that discussion rather than in a quiet edit here.
+    # presentation is a single DAG. Merged main's validator wants a bare string and
+    # rejects the list; that divergence is deliberate and is recorded at the grant.
     #
     # THE ORIGIN IS ATTACHED, not merely named. Merged verify requires an offer to carry
     # at least one nested artifact whose SAID matches `a.o`, so naming a digest the
@@ -1467,69 +1467,58 @@ def test_represented_presentation_JSON():
     # committed to, and that check is only worth running when the two are the same
     # artifact; a separate metadata ACDC would leave the store agreeing to terms attached
     # to nothing it ever receives.
-    offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", xid=XID,
-                     prior=apply.said,
-                     modifiers=dict(dp=[]),
-                     attributes=dict(m="A digital guardian will present for the ward, "
-                                       "under the governance framework the presentation "
-                                       "names.",
+    offerOrigin = _represented_presentation(kind, guardian, sedi, age, compactify=True)
+    assert offerOrigin.said == presentation.said       # same origin, less of it
+    offer = exchange(sender=BOB, receiver=STORE, route="/ipex/offer", prior=apply.said,
+                     xid=XID, modifiers=dict(dp=[]),
+                     attributes=dict(m="Here is the guardian's presentation for the ward.",
                                      o=[presentation.said], ax=[False]),
                      stamp=OFFER_STAMP, kind=kind)
-    assert offer.sad['p'] == apply.said
-    assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert 'governance' not in offer.sad['a']                 # ...and not on the exchange
-    assert 'acdc' not in offer.sad['a']                       # the V1 label is gone (#1629)
+    bobSigner = _SIGNERS[2]                            # the guardian's establishing key
+    offerStream = messagize(offer, sigers=[bobSigner.sign(ser=offer.raw, index=0)],
+                            nests=[_nest(offerOrigin)], framed=False, gvrsn=Vrsn_2_0)
+    assert offer.sad['p'] == apply.said and offer.sad['x'] == XID
+    assert offer.sad['q']['dp'] == []                  # solicited: "as per the apply"
+    assert 'governance' not in offer.sad['a']          # ...and not on the exchange
+    assert 'acdc' not in offer.sad['a']                # the V1 label is gone (#1629)
     assert set(offer.sad['a']) == {'m', 'o', 'ax'}
-    assert offer.sad['a']['o'] == [presentation.said]         # one DAG, one entry (#1627)
-    assert offer.sad['a']['ax'] == [False]                    # Bob agrees: no anchoring
-    assert offer.said == "ELaLTpNJkT_ylWEymUv7U4ksrxmvAD2mNavGhw6pMTDW"
-    assert presentation.said.encode() in offer.raw            # Discloser's own commitment
+    assert offer.sad['a']['o'] == [presentation.said]
+    assert offer.sad['a']['ax'] == [False]             # Bob agrees: no anchoring
+    assert offer.said == "ELVe0HCg5gJO8Fw8xsbyGloJ945zxdL525evDLjrcFNh"
 
-    # Bob signs the offer and attaches the metadata origin, the same way the grant
-    # attaches its four disclosures: one nested substream per artifact.
-    offeredOrigin = _represented_presentation(kind, guardian, sedi, age, compactify=True)
-    assert offeredOrigin.said == presentation.said       # most-compact-form commitment
-    offerStream = messagize(offer, sigers=[_SIGNERS[2].sign(ser=offer.raw, index=0)],
-                            nests=[_nest(offeredOrigin)], framed=False, gvrsn=Vrsn_2_0)
-
-    # Read back off the wire, which is the only form the service ever sees. The nested
-    # artifact must SAID-match the `o` the body names -- one entry, one nest -- or merged
-    # verify refuses the offer.
+    # What the service can read off the offer, decoded rather than grepped -- the nested
+    # body rides Texter-encoded, so a substring check on the raw stream proves nothing.
+    # The nested artifact must SAID-match the `o` the body names -- one entry, one nest --
+    # or merged verify refuses the offer.
     offerParsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(offerStream), framed=False,
                                                  processive=False)[0]
     assert [nest.serder.said for nest in offerParsed.nests] == offer.sad['a']['o']
     onOffer = offerParsed.nests[0].serder
-    assert onOffer.sad['i'] == BOB                       # who will present
-    assert onOffer.sad['s'] == presentSchemaSaid         # the schema the apply named
-    assert onOffer.sad['r'] == GUARDIAN_RULES_SAID       # the terms, readable
-    assert isinstance(onOffer.sad['a'], str)             # purpose withheld...
-    assert isinstance(onOffer.sad['e'], str)             # ...and the DAG withheld with it
-
-    # The pre-agree withholding claims, re-run against the WHOLE offer stream rather than
-    # the exn body alone: the attachment is new surface, and it must not have opened a
-    # hole in what the body was careful about. They run against the DECODED bodies for
-    # the reason the grant's do -- a nested non-CESR body rides Texter-encoded, so a
-    # substring check on the stream itself would pass without proving anything.
+    assert onOffer.sad['i'] == BOB                     # who will present
+    assert onOffer.sad['s'] == presentSchemaSaid       # the schema the apply named
+    assert isinstance(onOffer.sad['a'], str)           # purpose withheld...
+    assert isinstance(onOffer.sad['e'], str)           # ...and the DAG withheld with it
     offerDecoded = bytes(offer.raw) + b"".join(bytes(nest.serder.raw)
                                                for nest in offerParsed.nests)
-    assert b"Mia Carver" not in offerDecoded and b"2020-03-15" not in offerDecoded  # no PII
-    assert b"child age category" not in offerDecoded    # nor the answer the gate holds back
-    # Issuer commitments withheld until after the service agrees (PRV-F2):
+    assert presentation.said.encode() in offerDecoded  # the origin, and a one-time one
+    assert GUARDIAN_RULES_SAID.encode() in offerDecoded  # the terms, visible pre-agree
+    # ...and nothing else. The issuer commitments are behind the origin's compacted edge
+    # section, so a service that spurns here holds a digest and no correlator (PRV-F2).
     assert guardian.said.encode() not in offerDecoded
     assert sedi.said.encode() not in offerDecoded
     assert age.said.encode() not in offerDecoded
+    assert b"Mia Carver" not in offerDecoded and b"2020-03-15" not in offerDecoded  # no PII
+    assert b"child age category" not in offerDecoded   # nor the answer the gate holds back
 
     # 3. agree (service -> Bob): acceptance, binding the offer SAID and signed by the
     # service (via messagize -- the blessed genus-aware attachment path). The store is
     # agreeing to terms it could actually read: it resolved the offer's `o` against the
     # artifact attached to it, above, before sending this.
-    agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", xid=XID,
-                     prior=offer.said,
-                     attributes=dict(m="Accepted. Disclose the presentation and the "
-                                       "credentials its edges name."),
+    agree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree", prior=offer.said,
+                     xid=XID, attributes=dict(m="Agreed; disclose."),
                      stamp=AGREE_STAMP, kind=kind)
-    assert agree.sad['p'] == offer.said
-    assert agree.said == "EHzDUFXHq5DGcponFPivffIvK_ZYDlgLNwoVQQzQIoRG"
+    assert agree.sad['p'] == offer.said and agree.sad['x'] == XID
+    assert agree.said == "EI1_PhyDRFJ_A59IaE1yw_9LP5u-waDHD3Iv5e1M8fEi"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1566,16 +1555,16 @@ def test_represented_presentation_JSON():
 
     def disclose(agreeMsg, sig, keyState, nests=None):
         if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
+                and agreeMsg.sad['x'] == XID
                 and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
             return None, None
         nests = nests if nests is not None else disclosures
         serder = exchange(sender=BOB, receiver=STORE, route="/ipex/grant",
-                          xid=XID, prior=agreeMsg.said,
-                          attributes=dict(m="The presentation, the guardian's authority, "
-                                            "and the ward's age category.",
+                          prior=agreeMsg.said, xid=XID,
+                          attributes=dict(m="The disclosure you agreed to.",
                                           o=[presentation.said], ax=[False]),
                           stamp=GRANT_STAMP, kind=kind)
-        bobSig = _SIGNERS[2].sign(ser=serder.raw, index=0)      # the discloser signs
+        bobSig = bobSigner.sign(ser=serder.raw, index=0)        # the discloser signs
         return serder, messagize(serder, sigers=[bobSig],
                                  nests=[_nest(d) for d in nests],
                                  framed=False, gvrsn=Vrsn_2_0)
@@ -1583,27 +1572,37 @@ def test_represented_presentation_JSON():
     # A forged signature or a spurn (decline) unlocks nothing.
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0),
                     capturedKeyState) == (None, None)
-    spurn = exchange(sender=STORE, receiver=BOB, route="/ipex/spurn", xid=XID,
-                     prior=offer.said,
-                     attributes=dict(m="Declined; this store wants no disclosure."),
+    spurn = exchange(sender=STORE, receiver=BOB, route="/ipex/spurn", prior=offer.said,
+                     xid=XID, attributes=dict(m="Declined."),
                      stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, svcSigner.sign(ser=spurn.raw, index=0),
+                    capturedKeyState) == (None, None)
+    # ...and neither does an agree from a DIFFERENT exchange, however well signed: the
+    # transaction id is what says which conversation a message belongs to.
+    strayAgree = exchange(sender=STORE, receiver=BOB, route="/ipex/agree",
+                          prior=offer.said, xid=Diger(ser=b'another exchange').qb64,
+                          attributes=dict(m="Agreed; disclose."),
+                          stamp=AGREE_STAMP, kind=kind)
+    assert disclose(strayAgree, svcSigner.sign(ser=strayAgree.raw, index=0),
                     capturedKeyState) == (None, None)
 
     # The valid agree unlocks the grant; the ward's age flag appears only now, and
     # the birthdate and every other threshold stay off the wire.
     grant, grantStream = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "ELeDr2J9DqO8jm34rZ47h1YdanApavJahdXpBLVRm6qx"
-    # Beyond the notifier message, the attribute block is the origin and nothing else --
-    # a ONE-ELEMENT LIST, which is #1627's "Use Required Lists" form. That option is
-    # preferred there over a field map precisely because `dp` is already a list, so
-    # writing the single-DAG case as a list now is what keeps this example from needing a
-    # second edit when DAG soup lands. No credential rides here; they are all on the
-    # stream.
+    assert grant.sad['x'] == XID == apply.sad['x']     # one exchange, six messages
+    assert grant.said == "EF3Ea2BEdyLyTH6tE6kxSrJu3sx-IbO2gFBDNe5Rs2g5"
+    # The attribute block is the origin and nothing else: a ONE-ELEMENT LIST, which is
+    # #1627's "Use Required Lists" form. That option is preferred there over a field map
+    # precisely because `dp` is already a list, so writing the single-DAG case as a list
+    # now is what keeps this example from needing a second edit when DAG soup lands.
+    # RECORDED DIVERGENCE FROM MERGED MAIN: #1629 landed 'o' as a scalar string, and
+    # IpexHandler.verify rejects a list. The list is written here because #1627 is where
+    # the shape is being decided and this is a worked example of that shape; the
+    # reconciliation is being argued in that discussion rather than papered over here.
     granted = grant.sad['a']
-    assert set(granted) == {'m', 'o', 'ax'}                     # #1595, #1613, #1627
-    assert granted['o'] == [presentation.said] and granted['ax'] == [False]
+    assert granted == dict(m="The disclosure you agreed to.",
+                           o=[presentation.said], ax=[False])   # #1595, #1613, #1627
     assert isinstance(granted['o'], list) and len(granted['o']) == 1   # one DAG
     # The offer and the grant name the SAME origin, in the same field and the same shape.
     # That equality is what lets _service_accepts_grant say "terms follow the data": the
@@ -1677,22 +1676,18 @@ def test_represented_presentation_JSON():
         _service_accepts_grant(tampered, presentation.said)
 
     # 5. admit (service -> Bob): closes the exchange.
-    admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", xid=XID,
-                     prior=grant.said,
-                     attributes=dict(m="Received. The guardian's consent and the ward's "
-                                       "age category are accepted."),
+    admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
+                     xid=XID,
+                     attributes=dict(m="Received; consent and age category accepted."),
                      stamp=ADMIT_STAMP, kind=kind)
-    assert admit.sad['p'] == grant.said
-    assert admit.said == "EL-lRKZXGhg2r3yRJfUWhEEkolohdF5P4Ij35Dmiq3v_"
+    assert admit.sad['p'] == grant.said and admit.sad['x'] == XID
+    assert admit.said == "EKkQtb8tJmyTku143Mds3VqS1KPWwh3fltAzoP88ha3N"
 
-    # Every verb in the flow carries its notifier message and the transaction id the
-    # apply minted -- including the two that end it and the spurn refused above.
-    # Asserted once, for the whole flow.
-    for exn in (apply, offer, agree, grant, spurn, admit):
-        assert exn.sad['a']['m']
-        assert exn.sad['x'] == XID
-    assert apply.sad['p'] == ""         # only the flow-opener has no prior
-    assert all(exn.sad['p'] for exn in (offer, agree, grant, spurn, admit))
+    # Every message in the flow carries a human-readable 'm' and the one transaction id.
+    # Merged main requires both: IpexHandler.verify rejects any IPEX message whose
+    # attribute block has no 'm', and rejects an apply whose 'x' is empty.
+    for msg in (apply, offer, agree, grant, admit, spurn):
+        assert msg.sad['a']['m'] and msg.sad['x'] == XID
 
 
 # ---------------------------------------------------------------------------
