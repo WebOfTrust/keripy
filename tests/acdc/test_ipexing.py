@@ -721,6 +721,86 @@ def test_ipex_v2_rejects_grant_with_missing_edged_node():
         assert recorder.items == []
 
 
+def test_ipex_v2_accepts_grant_with_section_level_edge_nonce():
+    """Grant accepts an expanded edge section that carries its own nonce."""
+    with openHby(name="ipex-v2-grant-edge-section-u",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        child = acdcmap(israid=hab.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=hab.pre)
+        origin = acdcmap(israid=hab.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=dict(d="",
+                                   u=Noncer().qb64,
+                                   holder=dict(d="", n=child.said, o="I2I")),
+                         iseaid=hab.pre)
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        exn, atc = ipexGrant(hab=hab,
+                             recp=hab.pre,
+                             message="Here is the expanded edge-section DAG",
+                             origin=origin,
+                             artifacts=[child])
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is not None
+        assert recorder.items == [{"r": "/exn/ipex/grant",
+                                   "d": exn.said,
+                                   "m": "Here is the expanded edge-section DAG"}]
+
+
+def test_ipex_v2_accepts_grant_with_nested_edge_group():
+    """Grant accepts nested edge groups and walks their far-node leaves."""
+    with openHby(name="ipex-v2-grant-edge-group",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        child0 = acdcmap(israid=hab.pre,
+                         attribute=dict(d="", role="member"),
+                         iseaid=hab.pre)
+        child1 = acdcmap(israid=hab.pre,
+                         attribute=dict(d="", department="kitchen"),
+                         iseaid=hab.pre)
+        origin = acdcmap(israid=hab.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=dict(d="",
+                                   u=Noncer().qb64,
+                                   either=dict(d="",
+                                               o="OR",
+                                               member=dict(d="", n=child0.said, o="I2I"),
+                                               staff=dict(d="", n=child1.said, o="I2I"))),
+                         iseaid=hab.pre)
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        exn, atc = ipexGrant(hab=hab,
+                             recp=hab.pre,
+                             message="Here is the grouped-edge DAG",
+                             origin=origin,
+                             artifacts=[child0, child1])
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is not None
+        assert recorder.items == [{"r": "/exn/ipex/grant",
+                                   "d": exn.said,
+                                   "m": "Here is the grouped-edge DAG"}]
+
+
 def test_ipex_v2_rejects_grant_with_duplicate_disclosed_node():
     """Grant must not carry the same disclosed ACDC node more than once."""
     with openHby(name="ipex-v2-bad-grant-duplicate-node",

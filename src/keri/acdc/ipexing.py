@@ -32,6 +32,8 @@ PreviousRoutes = {
 }
 
 DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
+EdgeGroupLabels = ("d", "u", "o", "w")
+EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 
 def _streamSerder(stream):
     """Extract the message serder from a bare or nested artifact stream.
@@ -526,8 +528,6 @@ class IpexHandler:
             # Retrieve the edges from the node
             edges = nserder.sad.get("e")
             if edges:
-                # `e` must stay directly walkable as a mapping or list of mappings.
-                #  A compacted edge SAID/string fails closed.
                 if isinstance(edges, Mapping):
                     blocks = [edges]
                 elif isinstance(edges, list) and all(isinstance(edge, Mapping) for edge in edges):
@@ -535,24 +535,33 @@ class IpexHandler:
                 else:
                     return None
 
-                # Walk each edge block, reject if any edge fails to resolve to a nest
+                # Expanded edge sections may contain nested edge groups
                 for edge in blocks:
-                    for label, node in edge.items():
-                        if label in ("d", "o"):
+                    groups = [edge]
+                    while groups:
+                        group = groups.pop()
+                        if "n" in group:
+                            if any(label not in EdgeNodeLabels for label in group):
+                                return None
+                            edgeSaid = group.get("n")
+                            if not isinstance(edgeSaid, str):
+                                return None
+                            try:
+                                Saider(qb64=edgeSaid)
+                            except Exception:
+                                return None
+                            if edgeSaid not in nodes:
+                                return None
+                            if edgeSaid not in seen:
+                                queue.append(edgeSaid)
                             continue
-                        if not isinstance(node, Mapping):
-                            return None
-                        edgeSaid = node.get("n")
-                        if not isinstance(edgeSaid, str):
-                            return None
-                        try:
-                            Saider(qb64=edgeSaid)
-                        except Exception:
-                            return None
-                        if edgeSaid not in nodes:
-                            return None
-                        if edgeSaid not in seen:
-                            queue.append(edgeSaid)
+
+                        for label, node in group.items():
+                            if label in EdgeGroupLabels:
+                                continue
+                            if not isinstance(node, Mapping):
+                                return None
+                            groups.append(node)
 
         # If any carried nest was never reached, the payload is not one exact DAG.
         if len(seen) != len(nodes):
