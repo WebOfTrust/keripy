@@ -500,11 +500,7 @@ class Kramer:
             return AuthTypes.AttachedSignatureMultiKey, False
 
         if hasSealRef and hasSigs:
-            try:
-                sealValid = self._validateSenderSeal(
-                    msg, senderId, kwa)
-            except MissingSenderKeyStateError:
-                sealValid = False
+            sealValid = self._validateSenderSeal(msg, senderId, kwa)
 
             if sealValid:
                 return AuthTypes.AttachedSealReference, True
@@ -728,6 +724,21 @@ class Kramer:
             sigers=vsigers,
             stale_tsgs=stale_tsgs)
 
+    def _cueMissingSenderKeyState(self, senderId, sn, error):
+        """Request the exact sender KEL event required by a seal reference."""
+        self.cues.append({
+            "kin": "keystate",
+            "aid": senderId,
+            "sn": sn,
+        })
+        logger.info(
+            "Cueing keystate retrieval: missing key state in seal reference "
+            "for sender=%s, sn=%s, error=%s",
+            senderId,
+            sn,
+            error,
+        )
+
     def _validateSenderSeal(self, msg, senderId, kwa):
         """Validate seal reference attachments against sender's KEL.
 
@@ -752,7 +763,8 @@ class Kramer:
 
         Raises:
             MissingSenderKeyStateError: when a referenced event is not
-                found in the sender's KEL (caller should drop + cue)
+                found in the sender's KEL; queues the exact missing event
+                before raising so the caller can drop the message
         """
         # Build list of (number, diger) candidates to check.
         # sscs first (implicit sender KEL ref), then sender-matching ssts.
@@ -774,8 +786,10 @@ class Kramer:
         sdig = self.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
 
         if sdig is None:
-            raise MissingSenderKeyStateError(
+            error = MissingSenderKeyStateError(
                 f"Event at sn={number.sn} not in KEL for sender {senderId}")
+            self._cueMissingSenderKeyState(senderId, number.sn, error)
+            raise error
 
         # Verify the event SAID matches the seal reference
         if bytes(sdig, "utf-8") != diger.qb64b:
@@ -784,8 +798,10 @@ class Kramer:
         # Fetch the actual event
         evtSerder = self.db.evts.get(keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
         if evtSerder is None:
-            raise MissingSenderKeyStateError(
+            error = MissingSenderKeyStateError(
                 f"Event data missing for sender {senderId} at sn={number.sn}")
+            self._cueMissingSenderKeyState(senderId, number.sn, error)
+            raise error
 
         # Search event's seal list for a seal whose 'd' field matches msg SAID
         for seal in (evtSerder.seals or []):
@@ -834,6 +850,7 @@ class Kramer:
             if kever is None:
                 self.db.kramULGS.add(key, prefixer)
                 continue
+            self.db.kramULGS.rem(keys=key, val=prefixer)
             number = Number(sn=kever.lastEst.s)
             diger = Diger(qb64=kever.lastEst.d)
             for siger in sigers:
@@ -908,7 +925,8 @@ class Kramer:
 
         After threshold is satisfied on a later delivery, ``kwa`` reflects only
         that parse; ``kramPMKS`` and non-auth attachment DBs hold the union of
-        state accumulated across deliveries.
+        state accumulated across deliveries. The caller removes that partial
+        state after this method copies it into the accepted delivery.
 
         Parameters:
             partialKey (tuple): ``(AID, MID)`` escrow key
@@ -1117,7 +1135,12 @@ class Kramer:
 
                 # "Both attached" case, try seal validation first
                 if hasSealRef and hasSigs:
-                    if self._validateSenderSeal(msg, senderId, kwa):
+                    try:
+                        sealValidated = self._validateSenderSeal(
+                            msg, senderId, kwa)
+                    except MissingSenderKeyStateError:
+                        return None
+                    if sealValidated:
                         # Seal valid -> treat as seal auth -> idempotent drop
                         return None
                     # Seal invalid -> fall through to signature auth below
@@ -1131,13 +1154,6 @@ class Kramer:
                 # Reached from both "pure sig multi-key" and
                 # "both attached with invalid seal, multi-key" paths.
 
-                # Verify attached sigs using type-appropriate dispatch
-                sigResult = self._verifyAttachedSigs(
-                    msg=msg, senderId=senderId, kever=kever, kwa=kwa)
-
-                if not sigResult.verified:
-                    return None  # no valid sigs in this delivery
-
                 # Key state change detection:
                 # Compare stored key state ref against current kever state
                 currentKeyState = (Number(num=kever.lastEst.s),
@@ -1147,7 +1163,20 @@ class Kramer:
                     storedSn, storedSaid = storedKeyState
                     if (storedSn.num != currentKeyState[0].num or
                             storedSaid.qb64 != currentKeyState[1].qb64):
+                        # Keep the timeliness cache to block this stale SAID.
+                        self.db.kramPMKM.rem(key)
+                        self.db.kramPMKS.rem(key)
+                        self.db.kramPMSK.rem(key)
+                        self._remNonAuthAttachments(key)
                         return None  # drop, key state changed
+
+                # Verify attached sigs using type-appropriate dispatch only
+                # after confirming that the accumulated pool is still usable.
+                sigResult = self._verifyAttachedSigs(
+                    msg=msg, senderId=senderId, kever=kever, kwa=kwa)
+
+                if not sigResult.verified:
+                    return None  # no valid sigs in this delivery
 
                 # Idempotently accumulate newly verified signatures
                 existingSigs = self.db.kramPMKS.get(key)
@@ -1183,6 +1212,12 @@ class Kramer:
                         if msg.ilk == Ilks.exn:
                             self._setVerifiedSenderTsg(
                                 senderId, kever, allSigs, kwa)
+                        # The cache remains as the replay marker. Partial state
+                        # is no longer retryable after the accepted handoff.
+                        self.db.kramPMKM.rem(key)
+                        self.db.kramPMKS.rem(key)
+                        self.db.kramPMSK.rem(key)
+                        self._remNonAuthAttachments(key)
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1209,8 +1244,11 @@ class Kramer:
 
                 # Resolve auth type before timeliness check per spec.
                 # Ensures "both attached" fallback to multi-key gets long lag.
-                authType, sealValidated = self._resolveAuthType(
-                    msg, kwa, kever, hasSealRef, hasSigs, senderId)
+                try:
+                    authType, sealValidated = self._resolveAuthType(
+                        msg, kwa, kever, hasSealRef, hasSigs, senderId)
+                except MissingSenderKeyStateError:
+                    return None
 
                 # Select lag values based on resolved auth type
                 d = cacheTypeRecord.d
@@ -1238,20 +1276,7 @@ class Kramer:
                         try:
                             sealValidated = self._validateSenderSeal(
                                 msg, senderId, kwa)
-                        except MissingSenderKeyStateError as e:
-                            logger.info("Missing sender key state for "
-                                        "%s: %s", senderId, e)
-                            # Append the cue for the keystate retrieval notification including the senderID and the sn
-                            self.cues.append({
-                                "kin": "keystate",
-                                "aid": senderId,
-                                "sn": kever.sn,
-                            })
-                            logger.info(
-                                "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
-                                senderId,
-                                kever.sn,
-                            )
+                        except MissingSenderKeyStateError:
                             return None
                         if not sealValidated:
                             return None
@@ -1357,7 +1382,12 @@ class Kramer:
 
                 # "Both attached" case, try seal validation first
                 if hasSealRef and hasSigs:
-                    if self._validateSenderSeal(msg, senderId, kwa):
+                    try:
+                        sealValidated = self._validateSenderSeal(
+                            msg, senderId, kwa)
+                    except MissingSenderKeyStateError:
+                        return None
+                    if sealValidated:
                         # Seal valid -> treat as seal auth -> idempotent drop
                         return None
                     # Seal invalid -> fall through to signature auth below
@@ -1371,13 +1401,6 @@ class Kramer:
                 # Reached from both "pure sig multi-key" and
                 # "both attached with invalid seal, multi-key" paths.
 
-                # Verify attached sigs using type-appropriate dispatch
-                sigResult = self._verifyAttachedSigs(
-                    msg=msg, senderId=senderId, kever=kever, kwa=kwa)
-
-                if not sigResult.verified:
-                    return None  # no valid sigs in this delivery
-
                 # Key state change detection:
                 # Compare stored key state ref against current kever state.
                 # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
@@ -1388,7 +1411,20 @@ class Kramer:
                     storedSn, storedSaid = storedKeyState
                     if (storedSn.num != currentKeyState[0].num or
                             storedSaid.qb64 != currentKeyState[1].qb64):
+                        # Keep the timeliness cache to block this stale SAID.
+                        self.db.kramPMKM.rem(partialKey)
+                        self.db.kramPMKS.rem(partialKey)
+                        self.db.kramPMSK.rem(partialKey)
+                        self._remNonAuthAttachments(partialKey)
                         return None  # drop, key state changed
+
+                # Verify attached sigs using type-appropriate dispatch only
+                # after confirming that the accumulated pool is still usable.
+                sigResult = self._verifyAttachedSigs(
+                    msg=msg, senderId=senderId, kever=kever, kwa=kwa)
+
+                if not sigResult.verified:
+                    return None  # no valid sigs in this delivery
 
                 # Idempotently accumulate newly verified signatures
                 existingSigs = self.db.kramPMKS.get(partialKey)
@@ -1424,6 +1460,12 @@ class Kramer:
                         if msg.ilk == Ilks.exn:
                             self._setVerifiedSenderTsg(
                                 senderId, kever, allSigs, kwa)
+                        # The cache remains as the replay marker. Partial state
+                        # is no longer retryable after the accepted handoff.
+                        self.db.kramPMKM.rem(partialKey)
+                        self.db.kramPMKS.rem(partialKey)
+                        self.db.kramPMSK.rem(partialKey)
+                        self._remNonAuthAttachments(partialKey)
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1449,8 +1491,11 @@ class Kramer:
                         f"Sender KEL unavailable for {senderId}")
 
                 # Resolve auth type before timeliness check per spec.
-                authType, sealValidated = self._resolveAuthType(
-                    msg, kwa, kever, hasSealRef, hasSigs, senderId)
+                try:
+                    authType, sealValidated = self._resolveAuthType(
+                        msg, kwa, kever, hasSealRef, hasSigs, senderId)
+                except MissingSenderKeyStateError:
+                    return None
 
                 d = cacheTypeRecord.d
                 if authType == AuthTypes.AttachedSignatureMultiKey:
@@ -1515,20 +1560,7 @@ class Kramer:
                             try:
                                 sealValidated = self._validateSenderSeal(
                                     msg, senderId, kwa)
-                            except MissingSenderKeyStateError as e:
-                                logger.info("Missing sender key state for "
-                                            "%s: %s", senderId, e)
-                                # Append the cue for the keystate retrieval notification including the senderID and the sn
-                                self.cues.append({
-                                    "kin": "keystate",
-                                    "aid": senderId,
-                                    "sn": kever.sn,
-                                })
-                                logger.info(
-                                    "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
-                                    senderId,
-                                    kever.sn,
-                                )
+                            except MissingSenderKeyStateError:
                                 return None
                             if not sealValidated:
                                 return None

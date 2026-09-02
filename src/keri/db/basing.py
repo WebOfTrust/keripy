@@ -787,7 +787,8 @@ class Baser(LMDBer):
             Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
             parser kwa key 'trqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramTSGS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key trans last sig group attachments. Each group is
@@ -797,7 +798,8 @@ class Baser(LMDBer):
             Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
             parser kwa key 'tsgs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramULGS is named subDB instance of CesrIoSetSuber (klas=Prefixer) for
             foreign last signature groups that KRAM could not resolve when a
@@ -805,16 +807,18 @@ class Baser(LMDBer):
             subkey 'ulgs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID.
             Values identify unresolved foreign signer prefixes. Multiple values
-            per key are allowed and entries persist until removed by the KRAM
-            pruner.
+            per key are allowed.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramCIGS is named subDB instance of CatCesrIoSetSuber
             (klas=(Verfer, Cigar)) for foreign nontransferable signatures on
             partially signed multi-key messages.
             subkey 'cigs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID.
-            Multiple values per key are allowed and entries persist until removed
-            by the KRAM pruner.
+            Multiple values per key are allowed.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramSSCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen seal couple attachments from issuing or
@@ -823,7 +827,8 @@ class Baser(LMDBer):
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Number, Diger) tuple. Sourced from parser kwa key 'sscs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramSSTS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key source seal triple attachments from issued or
@@ -833,7 +838,8 @@ class Baser(LMDBer):
             Value is (Prefixer, Number, Diger) tuple. Sourced from parser kwa
             key 'ssts'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramFRCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen replay couple attachments.
@@ -841,7 +847,8 @@ class Baser(LMDBer):
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Number, Dater) tuple. Sourced from parser kwa key 'frcs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramTDCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key typed digest seal couple attachments.
@@ -849,7 +856,8 @@ class Baser(LMDBer):
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Verser, Diger) tuple. Sourced from parser kwa key 'tdcs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramPTDS is named subDB instance of IoSetSuber for KRAM partially signed
             multi-key pathed stream attachments.
@@ -858,7 +866,8 @@ class Baser(LMDBer):
             Value is raw bytes of pathed CESR stream. Sourced from parser kwa
             key 'ptds'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramBSQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key blind state quadruple attachments.
@@ -867,7 +876,8 @@ class Baser(LMDBer):
             Value is (Diger, Noncer, Noncer, Labeler) tuple. Sourced from
             parser kwa key 'bsqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramBSSS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key bound state sextuple attachments.
@@ -876,7 +886,8 @@ class Baser(LMDBer):
             Value is (Diger, Noncer, Noncer, Labeler, Number, Noncer) tuple.
             Sourced from parser kwa key 'bsss'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramTMQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key type media quadruple attachments.
@@ -885,7 +896,8 @@ class Baser(LMDBer):
             Value is (Diger, Noncer, Labeler, Texter) tuple. Sourced from
             parser kwa key 'tmqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
     Properties:
         kevers (statedict): read through cache of kevers of states for KELs in db
