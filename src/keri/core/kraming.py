@@ -69,8 +69,10 @@ Fields:
 
 Key state ref and tholder are derivable from the sender's kever
 (current key state) and are not included here. Callers that need
-them should construct directly from kever.sner, kever.serder.said,
-and kever.tholder.
+them should construct directly from kever.lastEst.s, kever.lastEst.d,
+and kever.tholder. Signing keys change only at establishment events,
+so the key state ref names the last establishment event rather than
+the last event of any kind.
 """
 
 
