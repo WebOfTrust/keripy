@@ -60,6 +60,26 @@ class Exchanger:
 
         self.routes[handler.resource] = handler
 
+    def _raiseMissingKeyState(self, serder, missing):
+        """Request missing KEL events and reject the current exchange."""
+        seen = set()
+        for prefixer, number in missing:
+            sn = number.snh if number is not None else None
+            key = (prefixer.qb64, sn)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            query = dict(r="logs", pre=prefixer.qb64)
+            if sn is not None:
+                query["sn"] = sn
+            self.cues.append(dict(kin="query", q=query))
+
+        msg = f"Missing key state for attached evidence on evt={serder.said}"
+        logger.info(msg)
+        logger.debug("Exchange message body=\n%s\n", serder.pretty())
+        raise MissingSignatureError(msg)
+
     def processEvent(self, serder, tsgs=None, cigars=None, ptds=None, essrs=None, **kwa):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
@@ -125,15 +145,18 @@ class Exchanger:
         if evidenceVerifier is None:
             extraSourceSeals = []
 
-        _, _, validSenderSourceSeals, _ = verifyAttachments(
+        (_, _, validSenderSourceSeals, _,
+         missingSenderSourceSeals) = verifyAttachments(
             hby=self.hby, serder=serder, sourceSeals=senderSourceSeals)
+        if missingSenderSourceSeals:
+            self._raiseMissingKeyState(serder, missingSenderSourceSeals)
 
         validSenderTsgs = []
         validSenderCigars = []
         if validSenderSourceSeals:
             # A valid sender seal authenticates the EXN. Retain only valid
             # optional sender TSGs and do not fail on invalid ones.
-            validSenderTsgs, _, _, _ = verifyAttachments(
+            validSenderTsgs, _, _, _, _ = verifyAttachments(
                 hby=self.hby, serder=serder, tsgs=senderTsgs)
 
         elif senderTsgs:
@@ -213,15 +236,18 @@ class Exchanger:
         (validExtraTsgs,
          validExtraCigars,
          validExtraSourceSeals,
-         invalidExtra) = verifyAttachments(
+         invalidExtra,
+         missingExtra) = verifyAttachments(
              hby=self.hby,
              serder=serder,
              tsgs=extraTsgs,
              lsgs=extraLsgs,
              cigars=extraCigars,
              sourceSeals=extraSourceSeals,
-             unresolved=bool(unresolvedLsgs),
+             unresolved=unresolvedLsgs,
          )
+        if missingExtra:
+            self._raiseMissingKeyState(serder, missingExtra)
 
         e = Pather(parts=["e"])
 
@@ -884,7 +910,7 @@ def nesting(paths, acc, val):
 
 
 def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
-                      sourceSeals=None, unresolved=False):
+                      sourceSeals=None, unresolved=None):
     """Cryptographically verify exchange authentication attachments.
 
     Parameters:
@@ -894,21 +920,25 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
         lsgs (list): transferable signature groups without establishment references
         cigars (list): non-transferable signatures
         sourceSeals (list): source seal triples
-        unresolved (bool): True if an attachment could not be reconstructed
+        unresolved (list): signer prefixes whose attachments could not be
+            reconstructed without their KEL
 
     Returns:
         tuple: Valid transferable signature groups, non-transferable signatures,
-            source seal triples, and an invalid attachment flag.
+            source seal triples, an invalid attachment flag, and missing KEL
+            coordinates.
     """
     tsgs = list(tsgs or [])
     lsgs = lsgs or []
     cigars = cigars or []
     sourceSeals = sourceSeals or []
-    invalid = unresolved
+    unresolved = unresolved or []
+    invalid = False
+    missing = [(prefixer, None) for prefixer in unresolved]
 
     for prefixer, sigers in lsgs:
         if prefixer.qb64 not in hby.kevers:
-            invalid = True
+            missing.append((prefixer, None))
             continue
 
         kever = hby.kevers[prefixer.qb64]
@@ -919,8 +949,22 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
 
     validTsgs = []
     for prefixer, number, diger, sigers in tsgs:
-        if (prefixer.qb64 not in hby.kevers or
-                hby.kevers[prefixer.qb64].sn < number.sn):
+        if not prefixer.transferable:
+            invalid = True
+            continue
+
+        sdig = hby.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
+        if sdig is None:
+            missing.append((prefixer, number))
+            continue
+
+        aserder = hby.db.evts.get(
+            keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
+        if aserder is None:
+            missing.append((prefixer, number))
+            continue
+
+        if sdig != diger.qb64:
             invalid = True
             continue
 
@@ -949,9 +993,22 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
 
     validSourceSeals = []
     for prefixer, number, diger in sourceSeals:
+        if not prefixer.transferable:
+            invalid = True
+            continue
+
         sdig = hby.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
-        aserder = hby.db.evts.get(keys=(prefixer.qb64b, diger.qb64b))
-        if (sdig != diger.qb64 or aserder is None or
+        if sdig is None:
+            missing.append((prefixer, number))
+            continue
+
+        aserder = hby.db.evts.get(
+            keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
+        if aserder is None:
+            missing.append((prefixer, number))
+            continue
+
+        if (sdig != diger.qb64 or
                 not any(isinstance(seal, dict) and
                         seal.get("d") == serder.said
                         for seal in aserder.seals or [])):
@@ -960,7 +1017,7 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
 
         validSourceSeals.append((prefixer, number, diger))
 
-    return validTsgs, validCigars, validSourceSeals, invalid
+    return validTsgs, validCigars, validSourceSeals, invalid, missing
 
 
 def verify(hby, serder):
@@ -1007,14 +1064,14 @@ def verify(hby, serder):
         cigar.verfer = verfer
         cigars.append(cigar)
 
-    tsgs, cigars, sourceSeals, invalid = verifyAttachments(
+    tsgs, cigars, sourceSeals, invalid, missing = verifyAttachments(
         hby=hby,
         serder=serder,
         tsgs=tsgs,
         cigars=cigars,
         sourceSeals=sourceSeals,
     )
-    if invalid:
+    if invalid or missing:
         msg = f"Invalid stored authentication or evidence for evt = {serder.said}"
         logger.info(msg)
         logger.debug("Exn Body=\n%s\n", serder.pretty())

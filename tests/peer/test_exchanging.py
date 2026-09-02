@@ -557,15 +557,20 @@ def test_non_ipex_rejects_non_sender_evidence(mockHelpingNowUTC):
                              Diger(qb64=sender.kever.serder.said))
         queryCueCount = sum(cue.get("kin") == "query"
                             for cue in exchanger.cues)
-        exchanger.processEvent(
-            signedWithMissingSeal,
-            tsgs=[group(sender, signedWithMissingSeal.raw)],
-            ssts=[missingSenderSeal],
-        )
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                signedWithMissingSeal,
+                tsgs=[group(sender, signedWithMissingSeal.raw)],
+                ssts=[missingSenderSeal],
+            )
         assert receiverHby.db.exns.get(
-            keys=(signedWithMissingSeal.said,)).said == signedWithMissingSeal.said
+            keys=(signedWithMissingSeal.said,)) is None
         assert sum(cue.get("kin") == "query"
-                   for cue in exchanger.cues) == queryCueCount
+                   for cue in exchanger.cues) == queryCueCount + 1
+        assert any(cue.get("kin") == "query" and
+                   cue["q"] == dict(r="logs", pre=sender.pre,
+                                    sn=missingSenderSeal[1].snh)
+                   for cue in exchanger.cues)
         assert receiverHby.db.ests.get(
             keys=(signedWithMissingSeal.said, sender.pre)) == []
 
@@ -627,6 +632,148 @@ def test_non_ipex_rejects_non_sender_evidence(mockHelpingNowUTC):
                            tsgs=[group(endorser, foreignOnly.raw)])
         with pytest.raises(MissingSignatureError):
             verify(receiverHby, foreignOnly)
+
+
+def test_missing_foreign_key_state_requests_kel_before_persistence(
+        mockHelpingNowUTC):
+    """Missing endorser KEL state drops the EXN until a complete retry."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+
+    class EvidenceHandler:
+        resource = "/test/missing-evidence-state"
+
+        @staticmethod
+        def verify(serder, **kwa):
+            return True
+
+        @staticmethod
+        def verifyEvidence(serder, *, tsgs=None, cigars=None, sourceSeals=None,
+                           invalid=False):
+            if invalid:
+                return None
+            return tsgs or [], cigars or [], sourceSeals or []
+
+        @staticmethod
+        def handle(serder, **kwa):
+            return None
+
+    with openHab(name="missing-state-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="missing-state-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="missing-state-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
+        senderIcp = sender.msgOwnEvent(sn=0, framed=True,
+                                       gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(senderIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+
+        exchanger = Exchanger(hby=receiverHby,
+                              handlers=[EvidenceHandler()])
+
+        def group(hab, serder):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    hab.sign(ser=serder.raw, indexed=True))
+
+        missingTsg = exchange(
+            sender=sender.pre,
+            route=EvidenceHandler.resource,
+            attributes=dict(m="missing endorser establishment event"),
+            **kwa,
+        )
+        senderGroup = group(sender, missingTsg)
+        endorserGroup = group(endorser, missingTsg)
+
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                missingTsg, tsgs=[senderGroup, endorserGroup])
+
+        assert receiverHby.db.exns.get(keys=(missingTsg.said,)) is None
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(missingTsg.said, endorser.pre, ""))) == []
+        assert receiverHby.db.epse.get(keys=(missingTsg.said,)) is None
+        assert any(cue.get("kin") == "query" and
+                   cue["q"] == dict(r="logs", pre=endorser.pre,
+                                    sn=endorserGroup[1].snh)
+                   for cue in exchanger.cues)
+
+        endorserIcp = endorser.msgOwnEvent(sn=0, framed=True,
+                                           gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.cues.clear()
+        exchanger.processEvent(
+            missingTsg, tsgs=[senderGroup, endorserGroup])
+        assert receiverHby.db.exns.get(keys=(missingTsg.said,)) is not None
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(missingTsg.said, endorser.pre, "")))) == 1
+
+        invalidTsg = exchange(
+            sender=sender.pre,
+            route=EvidenceHandler.resource,
+            attributes=dict(m="known invalid endorser evidence"),
+            **kwa,
+        )
+        invalidEndorserGroup = (
+            endorser.kever.prefixer,
+            Number(sn=endorser.kever.lastEst.s),
+            Diger(qb64=sender.kever.lastEst.d),
+            endorser.sign(ser=invalidTsg.raw, indexed=True),
+        )
+        exchanger.cues.clear()
+        exchanger.processEvent(
+            invalidTsg, tsgs=[group(sender, invalidTsg),
+                               invalidEndorserGroup])
+        assert receiverHby.db.exns.get(keys=(invalidTsg.said,)) is None
+        assert not any(cue.get("kin") == "query" for cue in exchanger.cues)
+
+        missingSeal = exchange(
+            sender=sender.pre,
+            route=EvidenceHandler.resource,
+            attributes=dict(m="missing endorser anchor event"),
+            **kwa,
+        )
+        senderGroup = group(sender, missingSeal)
+        endorserAnchor = endorser.interact(
+            data=[dict(d=missingSeal.said)],
+            framed=True,
+            gvrsn=Vrsn_2_0,
+            **kwa,
+        )
+        sourceSeal = (endorser.kever.prefixer,
+                      Number(sn=endorser.kever.sn),
+                      Diger(qb64=endorser.kever.serder.said))
+
+        exchanger.cues.clear()
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                missingSeal, tsgs=[senderGroup], ssts=[sourceSeal])
+
+        assert receiverHby.db.exns.get(keys=(missingSeal.said,)) is None
+        assert receiverHby.db.ests.get(
+            keys=(missingSeal.said, endorser.pre)) == []
+        assert receiverHby.db.epse.get(keys=(missingSeal.said,)) is None
+        assert any(cue.get("kin") == "query" and
+                   cue["q"] == dict(r="logs", pre=endorser.pre,
+                                    sn=sourceSeal[1].snh)
+                   for cue in exchanger.cues)
+
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserAnchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.cues.clear()
+        exchanger.processEvent(
+            missingSeal, tsgs=[senderGroup], ssts=[sourceSeal])
+        assert receiverHby.db.exns.get(keys=(missingSeal.said,)) is not None
+        assert [(number.sn, diger.qb64)
+                for number, diger in receiverHby.db.ests.get(
+                    keys=(missingSeal.said, endorser.pre))] == [
+            (sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
 
 
 def test_verify_fails_closed_on_invalid_stored_evidence(mockHelpingNowUTC):
