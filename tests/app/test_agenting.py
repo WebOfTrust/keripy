@@ -66,6 +66,19 @@ def test_http_messengers_read_state_after_client_service():
             doist.exit()
 
 
+def test_stream_messenger_from_admits_tcp_payload():
+    with habbing.openHab(name="tcp-stream-payload", temp=True) as (_, hab):
+        msg = hab.makeOwnInception()
+        messenger = agenting.streamMessengerFrom(
+            hab=hab,
+            pre=hab.pre,
+            urls={kering.Schemes.tcp: "tcp://127.0.0.1:5631"},
+            msg=msg,
+        )
+
+        assert list(messenger.msgs) == [bytearray(msg)]
+
+
 def test_receiptor_tocks_are_generator_local():
     with habbing.openHby(name="receiptor-generator-tocks", temp=True) as hby:
         receiptor = agenting.Receiptor(hby=hby)

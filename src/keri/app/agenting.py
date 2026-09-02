@@ -1075,6 +1075,7 @@ def streamMessengerFrom(hab, pre, urls, msg, headers=None):
     elif kering.Schemes.tcp in urls:
         url = urls[kering.Schemes.tcp]
         witer = TCPStreamMessenger(hab=hab, wit=pre, url=url)
+        witer.msgs.append(bytearray(msg))
     else:
         raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
 
