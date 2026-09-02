@@ -5855,3 +5855,104 @@ def test_tsgs_current_when_latest_event_is_non_establishment(mockHelpingNowUTC):
                 "the second endorsement meets the threshold and releases the message"
             assert sorted(s.index for s in
                           receiverHby.db.kramPMKS.get(keys=partialKey)) == [0, 1]
+
+
+def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC):
+    """An interaction event during signature collection does not drop the escrow.
+
+    The partial-multisig escrow pins the sender's key state so that a rotation part-way
+    through collection invalidates what was gathered under the old keys. Keys change only
+    at establishment events, so the reference has to be ``kever.lastEst``: pinning the
+    latest event of any kind means an interaction event -- anchoring a registry inception,
+    a credential issuance, a revocation -- moves it without changing a key, and every later
+    delivery then mismatches. Nothing refreshes the stored value, so the escrow can never
+    reach threshold afterwards.
+
+    That matters because the long lag exists so a group can collect signatures at human
+    speed, and an issuer anchoring something inside that window is ordinary.
+
+    Covers:
+        - an ixn between two deliveries leaves the escrow able to reach threshold
+        - a rotation between two deliveries still drops it, which is the behavior the
+          key state pin is for
+    """
+    salt1 = Salter(raw=b'0123456789abcdem').qb64
+    salt2 = Salter(raw=b'0123456789abcden').qb64
+    salt3 = Salter(raw=b'0123456789abcdeo').qb64
+
+    with (openHby(name="anchorSender", base="test", salt=salt1) as senderHby,
+          openHby(name="rotateSender", base="test", salt=salt2) as rotHby,
+          openHby(name="anchorReceiver", base="test", salt=salt3) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="anchorSender", isith='2', icount=3,
+                                      transferable=True, version=V2, kind=Kinds.cesr)
+        rotHab = rotHby.makeHab(name="rotateSender", isith='2', icount=3,
+                                transferable=True, version=V2, kind=Kinds.cesr)
+        receiverHby.makeHab(name="anchorReceiver", isith='1', icount=1,
+                            transferable=True, version=V2, kind=Kinds.cesr)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        for hab in (senderHab, rotHab):
+            Parser(version=V2).parse(
+                ims=bytearray(hab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)), kvy=crossKvy)
+            assert hab.pre in crossKvy.kevers
+
+        with openCF(name="anchorKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            def deliver(hab, msg, chosen):
+                """One member's endorsement, naming the sender's current est event."""
+                kever = receiverHby.db.kevers[hab.pre]
+                return kramer.intake(msg, dict(tsgs=[(Prefixer(qb64=hab.pre),
+                                                      Number(num=kever.lastEst.s),
+                                                      Diger(qb64=kever.lastEst.d),
+                                                      chosen)]))
+
+            stamp = helping.nowIso8601()
+
+            # An ixn between deliveries: the keys did not change, so collection continues.
+            msg = query(pre=senderHab.pre, route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre, n='anch01'),
+                        stamp=stamp, pvrsn=Vrsn_2_0)
+            sigers = senderHab.mgr.sign(
+                ser=msg.raw, verfers=receiverHby.db.kevers[senderHab.pre].verfers,
+                indexed=True)
+            key = (senderHab.pre, msg.said)
+
+            assert deliver(senderHab, msg, [sigers[0]]) is None
+            assert [s.index for s in receiverHby.db.kramPMKS.get(key)] == [0]
+
+            Parser(version=V2).parse(
+                ims=bytearray(senderHab.interact(framed=True, version=V2, kind=Kinds.cesr,
+                                                 gvrsn=V2)),
+                kvy=crossKvy)
+            anchored = receiverHby.db.kevers[senderHab.pre]
+            assert anchored.sner.num == 1 and anchored.serder.ilk == Ilks.ixn
+            assert anchored.lastEst.s == 0
+
+            assert deliver(senderHab, msg, [sigers[1]]) is not None, \
+                "anchoring changes no key, so the second endorsement still counts"
+            assert sorted(s.index for s in receiverHby.db.kramPMKS.get(key)) == [0, 1]
+
+            # A rotation between deliveries: the keys did change, so the escrow drops.
+            rotMsg = query(pre=rotHab.pre, route="ksn",
+                           query=dict(i=rotHab.pre, src=rotHab.pre, n='anch02'),
+                           stamp=stamp, pvrsn=Vrsn_2_0)
+            rotSigers = rotHab.mgr.sign(
+                ser=rotMsg.raw, verfers=receiverHby.db.kevers[rotHab.pre].verfers,
+                indexed=True)
+            rotKey = (rotHab.pre, rotMsg.said)
+
+            assert deliver(rotHab, rotMsg, [rotSigers[0]]) is None
+            assert [s.index for s in receiverHby.db.kramPMKS.get(rotKey)] == [0]
+
+            Parser(version=V2).parse(
+                ims=bytearray(rotHab.rotate(framed=True, version=V2, kind=Kinds.cesr,
+                                            gvrsn=V2)),
+                kvy=crossKvy)
+            assert receiverHby.db.kevers[rotHab.pre].lastEst.s == 1
+
+            assert deliver(rotHab, rotMsg, [rotSigers[1]]) is None, \
+                "rotating invalidates what was gathered under the old keys"
+            assert [s.index for s in receiverHby.db.kramPMKS.get(rotKey)] == [0]

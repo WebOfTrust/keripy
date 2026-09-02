@@ -20,7 +20,7 @@ from hio.base import doing
 from hio.help import ogler
 
 
-from .coring import Verser, Prefixer, Diger, Dater
+from .coring import Verser, Prefixer, Diger, Dater, Number
 from .indexing import Siger
 from .eventing import verifySigs
 
@@ -1093,8 +1093,8 @@ class Kramer:
 
                 # Key state change detection:
                 # Compare stored key state ref against current kever state
-                currentKeyState = (kever.sner,
-                                   Diger(qb64=kever.serder.said))
+                currentKeyState = (Number(num=kever.lastEst.s),
+                                   Diger(qb64=kever.lastEst.d))
                 storedKeyState = self.db.kramPMSK.get(key)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
@@ -1248,8 +1248,8 @@ class Kramer:
                         return msg
 
                     # Threshold not met, store partials for accumulation
-                    currentKeyState = (kever.sner,
-                                       Diger(qb64=kever.serder.said))
+                    currentKeyState = (Number(num=kever.lastEst.s),
+                                       Diger(qb64=kever.lastEst.d))
                     self.db.kramPMKM.put(key, msg)
                     for sig in sigResult.sigers:
                         self.db.kramPMKS.add(key, sig)
@@ -1326,8 +1326,8 @@ class Kramer:
                 # Key state change detection:
                 # Compare stored key state ref against current kever state.
                 # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
-                currentKeyState = (kever.sner,
-                                   Diger(qb64=kever.serder.said))
+                currentKeyState = (Number(num=kever.lastEst.s),
+                                   Diger(qb64=kever.lastEst.d))
                 storedKeyState = self.db.kramPMSK.get(partialKey)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
@@ -1571,8 +1571,8 @@ class Kramer:
 
                     # Threshold not met, store partials for accumulation.
                     # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
-                    currentKeyState = (kever.sner,
-                                       Diger(qb64=kever.serder.said))
+                    currentKeyState = (Number(num=kever.lastEst.s),
+                                       Diger(qb64=kever.lastEst.d))
                     self.db.kramPMKM.put(partialKey, msg)
                     for sig in sigResult.sigers:
                         self.db.kramPMKS.add(partialKey, sig)

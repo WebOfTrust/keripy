@@ -767,8 +767,8 @@ class Baser(LMDBer):
 
         .kramPMSK is named subDB instance of CatCesrSuber (klas=(Number, Diger))
             for KRAM partially signed multi-key sender key state records. Maps
-            (AID, MID) key to (sn, event SAID) couple identifying the sender's
-            key state.
+            (AID, MID) key to (sn, establishment event SAID) couple identifying
+            the sender's key state.
             subkey 'pmsk.'
             Only one value per DB key is allowed.
 
