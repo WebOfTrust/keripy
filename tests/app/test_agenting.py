@@ -66,29 +66,17 @@ def test_http_messengers_read_state_after_client_service():
             doist.exit()
 
 
-def test_stream_messenger_from_admits_tcp_payload(monkeypatch):
-    class FakeTCPStreamMessenger:
-        def __init__(self, *, hab, wit, url):
-            self.hab = hab
-            self.wit = wit
-            self.url = url
-            self.msgs = []
+def test_stream_messenger_from_admits_tcp_payload():
+    with habbing.openHab(name="tcp-stream-payload", temp=True) as (_, hab):
+        msg = hab.makeOwnInception()
+        messenger = agenting.streamMessengerFrom(
+            hab=hab,
+            pre=hab.pre,
+            urls={kering.Schemes.tcp: "tcp://127.0.0.1:5631"},
+            msg=msg,
+        )
 
-    monkeypatch.setattr(agenting, "TCPStreamMessenger",
-                        FakeTCPStreamMessenger)
-
-    payload = b"tcp stream payload"
-    messenger = agenting.streamMessengerFrom(
-        hab="hab",
-        pre="witness",
-        urls={kering.Schemes.tcp: "tcp://127.0.0.1:5631"},
-        msg=payload,
-    )
-
-    assert messenger.hab == "hab"
-    assert messenger.wit == "witness"
-    assert messenger.url == "tcp://127.0.0.1:5631"
-    assert messenger.msgs == [bytearray(payload)]
+        assert list(messenger.msgs) == [bytearray(msg)]
 
 
 def test_receiptor_tocks_are_generator_local():
