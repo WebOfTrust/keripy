@@ -6,6 +6,7 @@ keri.app.directing module
 simple direct mode demo support classes
 """
 import itertools
+from hio import hioing
 from hio.base import doing
 
 from .. import help, kering
@@ -704,7 +705,14 @@ class Reactant(doing.DoDoer):
             msg: Bytes to queue on the connection.
             label: Optional description included in the log entry.
         """
-        self.remoter.tx(msg)  # send to remote
+        try:
+            self.remoter.tx(msg)  # send to remote
+        except hioing.TransmitClosedError as ex:
+            error = self.remoter.error if self.remoter.error is not None else ex
+            logger.error("Server %s could not queue %s after transmit cutoff; "
+                         "rejected=%d: %s",
+                         self.hab.name, label, len(msg), error)
+            return
         logger.info("Server %s: sent %s:\n%d\n\n", self.hab.name,
                     label, len(msg))
 
