@@ -410,6 +410,14 @@ class WitnessReceiptor(doing.DoDoer):
 
                 dgkey = dbing.dgKey(ser.preb, ser.saidb)
 
+                # Check before scheduling messenger children so a completed
+                # request does not leak no-work doers on resubmission.
+                wigs = hab.db.getWigs(dgkey)
+                completed = len(wigs) == len(wits)
+                if completed and not self.force:
+                    self.cues.push(evt)
+                    continue
+
                 witers = []
                 for wit in wits:
                     auth = self.auths[wit] if wit in self.auths else None
@@ -417,10 +425,7 @@ class WitnessReceiptor(doing.DoDoer):
                     witers.append(witer)
                     self.extend([witer])
 
-                # Check to see if we already have all the receipts we need for this event
-                wigs = hab.db.getWigs(dgkey)
-                completed = len(wigs) == len(wits)
-                if len(wigs) != len(wits):  # We have all the receipts, skip
+                if len(wigs) != len(wits):  # Send only when receipts are incomplete
                     for idx, witer in enumerate(witers):
                         wit = wits[idx]
 
@@ -440,11 +445,6 @@ class WitnessReceiptor(doing.DoDoer):
                         if len(wigs) == len(wits):
                             break
                         _ = yield tock
-
-                # If we started with all our receipts, exit unless told to force resubmit of all receipts
-                if completed and not self.force:
-                    self.cues.push(evt)
-                    continue
 
                 # generate all rct msgs to send to all witnesses
                 awigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
