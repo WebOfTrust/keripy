@@ -387,9 +387,8 @@ class Directant(doing.DoDoer):
         terminal. The whole-drain deadline bounds parser, producer, and egress
         work and logs their remaining state before forced removal.
 
-        A receive-closed Remoter with no Reactant and no input closes
-        immediately. Any queued ``txbs`` is logged as output without an
-        application owner instead of creating a speculative drain phase.
+        A receive-closed Remoter with no parser work still waits for any queued
+        ``txbs`` to drain, become terminal, or reach the same deadline.
 
         Yields:
             Once per connection-supervision recurrence.
@@ -410,18 +409,23 @@ class Directant(doing.DoDoer):
                         if not ix.cutoff and ix.tymer.expired:
                             ix.shutdownReceive()
 
-                if ca not in self.rants and ix.cutoff and not ix.rxbs:
-                    if ix.txbs:
-                        reason = ("transmit cutoff" if ix.txCutoff else
-                                  "queued output without Reactant")
-                        self._logDrainFailure(ca=ca, ix=ix, reason=reason)
-                    self.closeConnection(ca)
-                    continue
-
                 if ix.cutoff and ca not in self.drainStops:
                     self.drainStops[ca] = self.tyme + self.drainTymeout
 
                 if ca not in self.rants:  # create Reactant and extend doers with it
+                    if ix.cutoff and not ix.rxbs:
+                        if not ix.txbs:
+                            self.closeConnection(ca)
+                        elif ix.txCutoff:
+                            self._logDrainFailure(ca=ca, ix=ix,
+                                                  reason="transmit cutoff")
+                            self.closeConnection(ca)
+                        elif self.tyme >= self.drainStops[ca]:
+                            self._logDrainFailure(ca=ca, ix=ix,
+                                                  reason="drain deadline expired")
+                            self.closeConnection(ca)
+                        continue
+
                     rant = Reactant(tymth=self.tymth, hab=self.hab, verifier=self.verifier,
                                     exchanger=self.exchanger, remoter=ix)
                     self.rants[ca] = rant
