@@ -1951,6 +1951,33 @@ def test_compactor_compact_expand():
     assert compactor.mad == cmad
     assert compactor.said == csaid
 
+    # Disclose two non-adjacent blocks from single-layer credential attributes.
+    attributes = dict(
+        d="",
+        u="",
+        i="IssueeAID",
+        given=dict(d="", u="", value="John"),
+        middle=dict(d="", u="", value="Henry Davis"),
+        surname=dict(d="", u="", value="Smith"),
+        dateOfBirth=dict(d="", u="", value="2020-08-22"),
+    )
+    paths = [".given", ".surname"]
+    compactor = Compactor(mad=attributes, makify=True, kind=Kinds.json)
+    compactor.compact()
+    compactor.expand()
+
+    assert tuple(paths) in compactor.partials
+    partial = compactor.partials[tuple(paths)]
+    assert partial.mad["given"]["value"] == "John"
+    assert partial.mad["surname"]["value"] == "Smith"
+    assert isinstance(partial.mad["middle"], str)
+    assert isinstance(partial.mad["dateOfBirth"], str)
+
+    recompactor = Compactor(mad=dict(partial.mad, d=""), makify=True,
+                            kind=Kinds.json)
+    recompactor.compact()
+    assert recompactor.said == compactor.said
+
     """Done Test"""
 
 
@@ -2395,4 +2422,3 @@ if __name__ == "__main__":
     test_compactor_basic()
     test_compactor_compact_expand()
     test_aggor_basic()
-
