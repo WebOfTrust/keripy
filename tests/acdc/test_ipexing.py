@@ -131,7 +131,7 @@ def test_ipex_v2_builders_parse_happypath():
                                           recp=hab.pre,
                                           message="Please issue a credential",
                                           attrs=dict(role="member", ax=[False]),
-                                          modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                          modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
 
         # Build Offer message chained to apply 
         offerExn, offerAtc = ipexOffer(hab=hab,
@@ -173,7 +173,7 @@ def test_ipex_v2_builders_parse_happypath():
         # Assert fields
         assert applyExn.ked["a"]["m"] == "Please issue a credential"    # message
         assert applyExn.ked["a"]["ax"] == [False]
-        assert applyExn.ked["q"]["dp"] == [[schema, "/", ["a/role"]]]
+        assert applyExn.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
 
         assert offerExn.ked["a"]["m"] == "Here is the offered credential"
         assert offerExn.ked["a"]["ax"] == [False]
@@ -314,7 +314,7 @@ def test_ipex_v2_accepts_empty_ax_list_as_unanchored():
                                        recp=hab.pre,
                                        message="Please issue a credential",
                                        attrs=dict(role="member", ax=[]),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                       modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=hab,
                                        message="Here is the offered credential",
                                        origin=acdc,
@@ -478,8 +478,8 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
                                        recp=holder.pre,
                                        message="Please disclose the credential DAG",
                                        attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", []],
-                                                           [schema, "/e/holder", []]]))
+                                       modifiers=dict(dp=[[[schema, "/", []],
+                                                           [schema, "/e/holder", []]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        recp=verifier.pre,
                                        message="Here are the terms",
@@ -512,8 +512,8 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
         assert storedOffer.ked["a"]["o"] == [offerOrigin.said]
         assert storedGrant.ked["a"]["o"] == [origin.said]
         assert storedOffer.ked["a"]["o"] != storedGrant.ked["a"]["o"]
-        assert storedOffer.ked["q"]["dp"] == [[schema, "/", []],
-                                              [schema, "/e/holder", []]]
+        assert storedOffer.ked["q"]["dp"] == [[[schema, "/", []],
+                                              [schema, "/e/holder", []]]]
 
         offerWire = bytearray(serializeMessage(hby, offerExn.said, framed=True))
         offerResults = Parser(version=Vrsn_2_0).parse(ims=offerWire,
@@ -615,7 +615,7 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
                                        recp=holder.pre,
                                        message="Prove over-21",
                                        attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                       modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        message="Here are the terms",
                                        origin=origin,
@@ -677,8 +677,8 @@ def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
                                        recp=holder.pre,
                                        message="Show me the metadata path",
                                        attrs={},
-                                       modifiers=dict(dp=[[schema, "/", []],
-                                                           [schema, "/e/department", []]]))
+                                       modifiers=dict(dp=[[[schema, "/", []],
+                                                           [schema, "/e/department", []]]]))
         # Carry only the disclosed root plus one reachable metadata child.
         # The child's farther edge to `grandchild` is intentionally omitted.
         offerExn, offerAtc = ipexOffer(hab=holder,
@@ -739,8 +739,8 @@ def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
                              message="Here is the overstuffed DAG",
                              origin=origin,
                              artifacts=[child, extra],
-                             modifiers=dict(dp=[[schema, "/", []],
-                                                 [schema, "/e/holder", []]]))
+                             modifiers=dict(dp=[[[schema, "/", []],
+                                                 [schema, "/e/holder", []]]]))
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
@@ -987,7 +987,7 @@ def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
                                        recp=hab.pre,
                                        message="Please issue a credential",
                                        attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                       modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=hab,
                                        message="Here is the metadata offer",
                                        origin=offerMeta,
@@ -1046,7 +1046,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                                         recp=hab.pre,
                                         message="Please issue a credential",
                                         attrs=dict(role="member"),
-                                        modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                        modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offer0, offer0Atc = ipexOffer(hab=hab,
                                       message="Here is the offered credential",
                                       origin=acdc,
@@ -1083,7 +1083,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         assert storedApply is not None
         assert storedApply.ked["a"]["m"] == "Please issue a credential"
         assert storedApply.ked["a"]["role"] == "member"
-        assert storedApply.ked["q"]["dp"] == [[schema, "/", ["a/role"]]]
+        assert storedApply.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
 
         # Parse the rest of the chain
         offer0Ims = bytearray(offer0.raw)
@@ -1264,7 +1264,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
                                        recp=hab.pre,
                                        message="Please issue a credential",
                                        attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                       modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=hab,
                                        message="Here is the offered credential",
                                        origin=acdc,
@@ -1672,7 +1672,7 @@ def test_ipex_v2_responders_set_receiver():
                                 recp=holder.pre,
                                 message="Prove over-21",
                                 attrs=dict(role="member"),
-                                modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         assert applyExn.ked["i"] == verifier.pre
         assert applyExn.ked["ri"] == holder.pre
 
@@ -1751,7 +1751,7 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                 recp=holder.pre,
                                 message="Prove over-21",
                                 attrs=dict(role="member"),
-                                modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         # Continue with the valid holder response that derives its receiver and xid from the apply.
         offerExn, _ = ipexOffer(hab=holder,
                                 message="Here are the terms",
@@ -1836,7 +1836,7 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                       recp=holder.pre,
                       message="Bad xid",
                       attrs=dict(role="member"),
-                      modifiers=dict(dp=[[schema, "/", ["a/role"]]]),
+                      modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]),
                       xid="F" * 44)
 
         # Set 4: every flow starter still needs a recipient, but now generates
@@ -1871,16 +1871,17 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                       recp="",
                       message="Missing receiver",
                       attrs=dict(role="member"),
-                      modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                      modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         # Apply now generates xid internally when the caller omits it.
         bareApply, _ = ipexApply(hab=verifier,
                                  recp=holder.pre,
                                  message="Generated xid",
                                  attrs=dict(role="member"),
-                                 modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                 modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         assert bareApply.ked["p"] == ""
         assert bareApply.ked["ri"] == holder.pre
         assert bareApply.ked["x"] != ""
+        assert bareApply.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
 
         # Set 5: apply still enforces its own disclosure-plan contract after starter fields pass.
         # Even with recp present and xid auto-generated, apply still requires an explicit disclosure plan.
@@ -1898,8 +1899,13 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         with pytest.raises(ValueError):
             ipexApply(hab=verifier,
                       recp=holder.pre,
+                      message="Flat disclosure plan is no longer accepted",
+                      modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+        with pytest.raises(ValueError):
+            ipexApply(hab=verifier,
+                      recp=holder.pre,
                       message="Bad disclosure plan nesting",
-                      modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
+                      modifiers=dict(dp=[[[[schema, "/", ["a/role"]]]]]))
 
 
 def test_ipex_v2_rejects_third_party_prior_response_without_throwing():
@@ -1925,7 +1931,7 @@ def test_ipex_v2_rejects_third_party_prior_response_without_throwing():
                                        recp=holder.pre,
                                        message="Prove over-21",
                                        attrs=dict(role="member"),
-                                       modifiers=dict(dp=[[schema, "/", ["a/role"]]]))
+                                       modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        message="Here are the terms",
                                        origin=acdc,
@@ -2089,6 +2095,80 @@ def test_ipex_v2_rejects_registry_backed_grant_without_node_proof_group():
             rgy.close()
 
 
+def test_ipex_v2_escrows_registry_backed_grant_until_tel_evidence_arrives():
+    """Recipient keeps a registry-backed grant retryable until TEL evidence is loaded."""
+    with (openHby(name="ipex-v2-proof-escrow-issuer",
+                  base="test",
+                  version=Vrsn_2_0) as issuerHby,
+          openHby(name="ipex-v2-proof-escrow-recipient",
+                  base="test",
+                  version=Vrsn_2_0) as recipientHby):
+        issuerHab = issuerHby.makeHab(name="issuer")
+        recipientHab = recipientHby.makeHab(name="recipient")
+        issuerRgy = Regery(hby=issuerHby, name="ipex-v2-proof-escrow-issuer", temp=True)
+        recipientRgy = Regery(hby=recipientHby, name="ipex-v2-proof-escrow-recipient", temp=True)
+        try:
+            registrar = Registrar(rgy=issuerRgy)
+            registry = registrar.makeRegistry(name="proof-escrow", prefix=issuerHab.pre)
+            rip = issuerRgy.store.event(registry.regk)
+            ripAnc = _anchor(issuerHab, registry, rip, framed=True)
+
+            acdc = acdcmap(israid=issuerHab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=recipientHab.pre)
+            issuedBlinder, issued = registrar.issue(registry, acdc=acdc, state="issued")
+            issuedAnc = _anchor(issuerHab, registry, issued, framed=False)
+
+            recipientRemoteKvy = Kevery(db=recipientHby.db, lax=False, local=False)
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(issuerHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)),
+                kvy=recipientRemoteKvy)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(ripAnc), kvy=recipientRemoteKvy)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(issuedAnc),
+                                           framed=False,
+                                           kvy=recipientRemoteKvy)
+
+            recorder = Recorder()
+            exc = Exchanger(hby=recipientHby, handlers=[])
+            loadHandlers(hby=recipientHby, exc=exc, notifier=recorder, rgy=recipientRgy)
+
+            grantExn, grantAtc = ipexGrant(hab=issuerHab,
+                                           recp=recipientHab.pre,
+                                           message="Waiting on observer TEL",
+                                           origin=_proofed(acdc, issuedBlinder))
+
+            ims = bytearray(grantExn.raw)
+            ims.extend(grantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+            assert ims == bytearray()
+            assert recipientHby.db.exns.get(keys=(grantExn.said,)) is None
+            assert recipientHby.db.epse.get(keys=(grantExn.said,)) is not None
+            assert recorder.items == []
+            assert list(exc.cues) == [dict(kin="proof", said=grantExn.said)]
+
+            # Simulate the disclosee learning the issuer's TEL later, for
+            # example by fetching it from observers after the first grant parse.
+            recipientRgy.store.accept(registry.regk, 0, rip)
+            recipientRgy.store.accept(registry.regk, 1, issued)
+
+            exc.processEscrow()
+
+            assert recipientHby.db.exns.get(keys=(grantExn.said,)) is not None
+            assert recipientHby.db.epse.get(keys=(grantExn.said,)) is None
+            assert recorder.items == [
+                {"r": "/exn/ipex/grant", "d": grantExn.said, "m": "Waiting on observer TEL"},
+            ]
+            assert list(exc.cues) == [
+                dict(kin="proof", said=grantExn.said),
+                dict(kin="saved", said=grantExn.said),
+            ]
+        finally:
+            recipientRgy.close()
+            issuerRgy.close()
+
+
 def test_ipex_v2_blind_registry_update_roundtrip():
     """Grant a blind ``bup`` registry update through a full linear V2 IPEX exchange."""
     with openHby(name="ipex-v2-blind-registry",
@@ -2134,7 +2214,7 @@ def test_ipex_v2_blind_registry_update_roundtrip():
                                            recp=hab.pre,
                                            message="Please issue the blind credential",
                                            attrs=dict(flow="blind"),
-                                           modifiers=dict(dp=[[schema, "/", []]]))
+                                           modifiers=dict(dp=[[[schema, "/", []]]]))
             offerExn, offerAtc = ipexOffer(hab=hab,
                                            message="Here is the blind credential",
                                            origin=acdc,
@@ -2288,7 +2368,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                                                recp=hab.pre,
                                                message="Please issue the blind credential",
                                                attrs={},
-                                               modifiers=dict(dp=[[schema, "/", []]]),
+                                               modifiers=dict(dp=[[[schema, "/", []]]]),
                                                dt=applyStamp)
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
@@ -2656,7 +2736,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                                                recp=issuerHab.pre,
                                                message="Please issue the blind credential",
                                                attrs={},
-                                               modifiers=dict(dp=[[schema, "/", []]]),
+                                               modifiers=dict(dp=[[[schema, "/", []]]]),
                                                dt=applyStamp)
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
@@ -3064,16 +3144,16 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                recp=issuerHab.pre,
                                                message="Please issue the DAG credential",
                                                attrs={},
-                                               modifiers=dict(dp=[
+                                               modifiers=dict(dp=[[
                                                    [schema, "/", []],
                                                    [schema, "/e/holder", []],
-                                               ]),
+                                               ]]),
                                                dt=applyStamp)
                 
-                assert applyExn.ked["q"]["dp"] == [
+                assert applyExn.ked["q"]["dp"] == [[
                     [schema, "/", []],
                     [schema, "/e/holder", []],
-                ]
+                ]]
 
                 applyMsg = bytearray(applyExn.raw)
                 applyMsg.extend(applyAtc)
@@ -3588,7 +3668,7 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
                                                        recp=hab.pre,
                                                        message="Please issue the issued blind credential",
                                                        attrs=None,
-                                                       modifiers=dict(dp=[[schema, "/", []]]))
+                                                       modifiers=dict(dp=[[[schema, "/", []]]]))
             issuedOfferExn, issuedOfferAtc = ipexOffer(hab=hab,
                                                        message="Here is the issued blind credential",
                                                        origin=acdc,
@@ -3651,7 +3731,7 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
                                                          recp=hab.pre,
                                                          message="Please issue the revoked blind credential",
                                                          attrs=dict(flow="revoked"),
-                                                         modifiers=dict(dp=[[schema, "/", []]]))
+                                                         modifiers=dict(dp=[[[schema, "/", []]]]))
             revokedOfferExn, revokedOfferAtc = ipexOffer(hab=hab,
                                                          message="Here is the revoked blind credential",
                                                          origin=acdc,

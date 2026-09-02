@@ -12,7 +12,10 @@ from collections.abc import Mapping
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from ..kering import Colds, Ilks, Vrsn_2_0, sniff
+from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
+                      MisbindingError, MissingAnchorError, MissingChainError,
+                      MisdigestError, MisregistryError, MissequenceError,
+                      RootSealError, UnverifiedBlindError, Vrsn_2_0, sniff)
 from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
                     Number, Saider, Serdery, Texter, exchange, messagize)
 from ..peer import cloneMessage
@@ -228,23 +231,32 @@ def _validSingleDagList(value, itemtype, *, allow_empty=False):
 
 
 def _validDisclosurePath(value):
-    """Validate ``q.dp`` as one disclose-path list for the current DAG.
+    """Validate one DAG's disclose-path plan.
 
     Parameters:
-        value: Candidate ``q.dp`` wire value.
+        value: Candidate disclose-path list for one DAG.
 
     Returns:
         bool: True when ``value`` is a list whose entries are disclosure-path
-            triples of ``[schema SAID, DAG path, ACDC paths]``, False
-            otherwise.
+            triples of ``[schema SAID, DAG path, ACDC paths]`` for one DAG,
+            False otherwise.
     """
-    return (isinstance(value, list)
-            and all(isinstance(item, list)
-                    and len(item) == 3
-                    and isinstance(item[0], str)
-                    and isinstance(item[1], str)
-                    and isinstance(item[2], list)
-                    for item in value))
+    if not isinstance(value, list):
+        return False
+
+    for item in value:
+        if not isinstance(item, list) or len(item) != 3:
+            return False
+
+        schema, path, fields = item
+        if not isinstance(schema, str):
+            return False
+        if not isinstance(path, str):
+            return False
+        if not isinstance(fields, list):
+            return False
+
+    return True
 
 
 def _sign(hab, serder, *, nests=None, gvrsn=None):
@@ -314,12 +326,17 @@ class IpexHandler:
             attachments (list | None): Parsed attachment payloads, unused in the
                 current linear workflow validation.
             nests (list | None): Parsed V2 nested artifacts. In the current
-                single-DAG workflow only ``grant`` may disclose nested ACDC
-                nodes; ``offer`` stays metadata-only.
+                single-DAG workflow ``offer`` may carry a metadata DAG subset
+                and ``grant`` may carry the final disclosed DAG.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
                 False otherwise.
+
+        Raises:
+            MissingChainError: When a grant's issuer-auth proof needs TEL
+                evidence that is not yet available locally and the exchange
+                should be retried from escrow later.
         """
         nests = nests if nests is not None else []
         q = serder.ked.get("q")
@@ -343,11 +360,15 @@ class IpexHandler:
         if "ax" in attrs and not _validSingleDagList(attrs["ax"], bool, allow_empty=True):
             return False
 
-        # Stage 2: apply/offer carry disclose-paths. Offer may optionally name
-        # or carry a metadata DAG in `a.o[0]`, while grant must name and carry
-        # the final disclosed DAG root.
+        # Stage 2: apply/offer carry disclose-paths. The wire shape is now one
+        # disclose-path list per DAG, so today's single-DAG form is a one-item
+        # outer list. Offer may optionally name or carry a metadata DAG in
+        # `a.o[0]`, while grant must name and carry the final disclosed DAG
+        # root.
         if verb in (Ipex.apply, Ipex.offer):
-            if "dp" not in q or not _validDisclosurePath(q["dp"]):
+            if ("dp" not in q
+                    or not _validSingleDagList(q["dp"], list)
+                    or not _validDisclosurePath(q["dp"][0])):
                 return False
 
         if verb == Ipex.offer:
@@ -400,7 +421,8 @@ class IpexHandler:
             if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False) is None:
                 return False
         elif verb == Ipex.grant:
-            if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=True) is None:
+            walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=True)
+            if walked is None:
                 return False
 
             # Stage 5: after the disclosed graph shape is accepted, each walked
@@ -587,6 +609,10 @@ class IpexHandler:
         Returns:
             bool: True when every walked node either has no registry binding or
                 vets successfully against its node-local proof group.
+
+        Raises:
+            MissingChainError: When a registry-backed node names TEL evidence
+                that the verifier has not loaded locally yet.
         """
         # Run proof verification in graph order so each registry-backed node is
         # checked against the exact nested substream that carried its body.
@@ -632,8 +658,13 @@ class IpexHandler:
         Returns:
             bool: ``True`` when the node is either not registry-backed or its
             node-local proof vets successfully against TEL evidence already
-            loaded in the verifier's local ``Regery`` store; otherwise
-            ``False``.
+            loaded in the verifier's local ``Regery`` store; ``False`` when the
+            node's proof is permanently invalid for this ACDC.
+
+        Raises:
+            MissingChainError: When the verifier is still missing retryable TEL
+                evidence, such as the registry inception, a later update, or an
+                anchor that has not replicated yet.
         """
         regk = serder.sad.get("rd")
         if regk:
@@ -679,12 +710,12 @@ class IpexHandler:
             rip = self.rgy.store.seqEvent(regk, 0)
             head = self.rgy.store.headEvent(regk)
             if rip is None or head is None:
-                return False
+                raise MissingChainError(f"missing local TEL evidence for registry {regk}")
 
             updates = []
             for sn in range(1, Number(numh=head.sad["n"]).num + 1):
                 if not (update := self.rgy.store.seqEvent(regk, sn)):
-                    return False
+                    raise MissingChainError(f"missing local TEL update {sn} for registry {regk}")
                 updates.append(update)
 
             from . import regeventing
@@ -694,7 +725,15 @@ class IpexHandler:
                                 db=self.hby.db,
                                 acdc=serder,
                                 blinder=proofs[0])
-            except Exception:
+            # Missing anchors mean the local verifier does not yet know enough
+            # to conclude; keep the grant retryable instead of dropping it.
+            except MissingAnchorError as ex:
+                raise MissingChainError(f"registry {regk} is missing anchored TEL evidence") from ex
+            # Named vet refusals are permanent: the disclosed node and its proof
+            # do not match the registry evidence the verifier already has.
+            except (MisdigestError, MissequenceError, MisregistryError,
+                    MisanchorError, RootSealError, MisbindingError,
+                    DuplicitousRegistryError, UnverifiedBlindError):
                 return False
 
         return True
@@ -765,9 +804,10 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
     data["m"] = message
     mods = dict(modifiers) if modifiers else {}
 
-    # Validate dp field, it must be the DAG's disclose-path list.
-    if "dp" not in mods or not _validDisclosurePath(mods["dp"]):
-        raise ValueError("modifiers['dp'] is required and must be a list of disclosure-path triples")
+    if ("dp" not in mods
+            or not _validSingleDagList(mods["dp"], list)
+            or not _validDisclosurePath(mods["dp"][0])):
+        raise ValueError("modifiers['dp'] is required and must carry one disclose-path list per DAG")
 
     # Validate ax field, must be a list of booleans, is allowed to be empty
     if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
@@ -857,11 +897,11 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         aq = apply.ked.get("q")
         if isinstance(aq, dict) and "dp" in aq:
             mods["dp"] = aq["dp"]
-    mods.setdefault("dp", [])     # defaults to an empty list if none is provided
+    mods.setdefault("dp", [[]])     # default to one empty disclose-path list for the one DAG
 
-    # Validate dp field, it must be a list of lists.
-    if not _validDisclosurePath(mods["dp"]):
-        raise ValueError("modifiers['dp'] must be a list of disclosure-path triples")
+    # Offer uses the same canonical q.dp builder contract as apply.
+    if not _validSingleDagList(mods["dp"], list) or not _validDisclosurePath(mods["dp"][0]):
+        raise ValueError("modifiers['dp'] must carry one disclose-path list per DAG")
 
     # Validate the ax field if present. It must be a list of booleans
     if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
