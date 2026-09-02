@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import socket
 
 import multicommand
 import pytest
@@ -11,7 +12,7 @@ from keri.kering import ValidationError, AuthError
 from keri import core, help
 from keri.core import coring
 
-from keri.app import directing, habbing
+from keri.app import configing, directing, habbing
 
 from keri.app.cli import commands
 from keri.app.cli.common import existing
@@ -348,6 +349,40 @@ def test_launch_normalizes_loglevel(monkeypatch):
     args.handler(args)  # -> launch(args)
 
     assert help.ogler.level == logging.DEBUG
+
+
+def test_run_witness_reads_configured_aids(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+    aids = ["BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha"]
+    cf = configing.Configer(name="witness", headDirPath=str(tmp_path), temp=False)
+    cf.put(dict(aids=aids))
+    cf.close()
+
+    spy_aids = {}
+    setup_witness = witness_start.indirecting.setupWitness
+
+    # Wrap setupWitness to spy on the "aids" val it configures"
+    def spy_setupWitness(**kwa):
+        doers = setup_witness(**kwa)
+        receiptEnd = next(doer for doer in doers
+                          if isinstance(doer, witness_start.indirecting.ReceiptEnd))
+        spy_aids["aids"] = receiptEnd.aids
+        return doers
+
+    # inject spy
+    monkeypatch.setattr(witness_start.indirecting, "setupWitness", spy_setupWitness)
+
+    with socket.socket() as tcpServer, socket.socket() as httpServer:
+        tcpServer.bind(("", 0))
+        httpServer.bind(("", 0))
+        tcp = tcpServer.getsockname()[1]
+        http = httpServer.getsockname()[1]
+
+    witness_start.runWitness(name="witness-aids", alias="wit", tcp=tcp, http=http,
+                             expire=0.125, configDir=str(tmp_path), configFile="witness")
+
+    assert spy_aids["aids"] == aids
 
 
 def test_run_failure_is_logged_and_hby_closed(helpers, monkeypatch):

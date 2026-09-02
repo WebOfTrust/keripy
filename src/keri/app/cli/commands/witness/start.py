@@ -121,7 +121,7 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     if configFile is not None:
         cf = configing.Configer(name=configFile, headDirPath=configDir, temp=False, reopen=True, clear=False)
 
-    aids = cf.get("aids", default=None) if cf is not None else None
+    aids = cf.get().get("aids") if cf is not None else None
 
     hby = None
     try:
