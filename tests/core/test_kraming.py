@@ -5860,21 +5860,10 @@ def test_tsgs_current_when_latest_event_is_non_establishment(mockHelpingNowUTC):
 def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC):
     """An interaction event during signature collection does not drop the escrow.
 
-    The partial-multisig escrow pins the sender's key state so that a rotation part-way
-    through collection invalidates what was gathered under the old keys. Keys change only
-    at establishment events, so the reference has to be ``kever.lastEst``: pinning the
-    latest event of any kind means an interaction event -- anchoring a registry inception,
-    a credential issuance, a revocation -- moves it without changing a key, and every later
-    delivery then mismatches. Nothing refreshes the stored value, so the escrow can never
-    reach threshold afterwards.
-
-    That matters because the long lag exists so a group can collect signatures at human
-    speed, and an issuer anchoring something inside that window is ordinary.
-
-    Covers:
-        - an ixn between two deliveries leaves the escrow able to reach threshold
-        - a rotation between two deliveries still drops it, which is the behavior the
-          key state pin is for
+    Keys change only at establishment events, so the key state pin is ``kever.lastEst``.
+    Both halves are here because the pin has a job to do: an ixn between two deliveries
+    leaves the escrow able to reach threshold, and a rotation between two still drops it.
+    See #1661.
     """
     salt1 = Salter(raw=b'0123456789abcdem').qb64
     salt2 = Salter(raw=b'0123456789abcden').qb64
