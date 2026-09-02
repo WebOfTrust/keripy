@@ -388,6 +388,8 @@ class IpexHandler:
                     or not _validSingleDagList(q["dp"], list)
                     or not _validDisclosurePath(q["dp"][0])):
                 return False
+            if verb == Ipex.offer and not dig and not q["dp"][0]:
+                return False
 
         if verb == Ipex.offer:
             if "o" in attrs:
@@ -910,16 +912,22 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
 
     # Retrieve dp from modifiers if present. When the offer answers an apply,
     # inherit the requested disclose-path plan unless the caller overrides it.
+    # Offer-first flows have no earlier disclosure request to inherit, so they
+    # must provide their own explicit disclosure plan.
     mods = dict(modifiers) if modifiers else {}
-    if "dp" not in mods and apply is not None:
-        aq = apply.ked.get("q")
-        if isinstance(aq, dict) and "dp" in aq:
-            mods["dp"] = aq["dp"]
-    mods.setdefault("dp", [[]])     # default to one empty disclose-path list for the one DAG
+    if "dp" not in mods:
+        if apply is not None:
+            aq = apply.ked.get("q")
+            if isinstance(aq, dict) and "dp" in aq:
+                mods["dp"] = aq["dp"]
+        else:
+            raise ValueError("modifiers['dp'] is required when no prior apply is provided")
 
     # Offer uses the same canonical q.dp builder contract as apply.
     if not _validSingleDagList(mods["dp"], list) or not _validDisclosurePath(mods["dp"][0]):
         raise ValueError("modifiers['dp'] must carry one disclose-path list per DAG")
+    if apply is None and not mods["dp"][0]:
+        raise ValueError("offer-first modifiers['dp'] must include at least one disclosure-path entry")
 
     # Validate the ax field if present. It must be a list of booleans
     if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):

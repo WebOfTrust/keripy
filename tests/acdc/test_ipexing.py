@@ -418,7 +418,8 @@ def test_ipex_v2_builders_reject_registry_events_as_disclosed_nodes():
             ipexOffer(hab=holder,
                       recp=verifier.pre,
                       message="Here is the bad offer",
-                      origin=rip)
+                      origin=rip,
+                      modifiers=dict(dp=[[[acdc.sad["s"]["$id"], "/", []]]]))
 
         with pytest.raises(ValueError, match="disclosed ACDC nodes"):
             ipexGrant(hab=holder,
@@ -1190,13 +1191,20 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         with pytest.raises(ValueError):
             ipexOffer(hab=hab, message="Bare offer without receiver", origin=acdc)
 
+        with pytest.raises(ValueError):
+            ipexOffer(hab=hab,
+                      message="Bare offer without disclosure plan",
+                      origin=acdc,
+                      recp=hab.pre)
+
         # Build a bare offer with the committed origin and explicit receiver;
-        # the starter generates its own xid and still supports a valid spurn
-        # against it.
+        # the starter generates its own xid once it is also given the explicit
+        # disclosure plan that an unsolicited offer now requires.
         offer1, offer1Atc = ipexOffer(hab=hab,
                                       message="Bare offer for spurn path",
                                       origin=acdc,
-                                      recp=hab.pre)
+                                      recp=hab.pre,
+                                      modifiers=dict(dp=[[[acdc.sad["s"]["$id"], "/", []]]]))
         assert offer1.ked["x"] != ""
         spurn2, spurn2Atc = ipexSpurn(hab=hab,
                                       message="I reject this offer",
@@ -1356,13 +1364,15 @@ def test_ipex_v2_rejects_offer_without_dp():
         acdc = acdcmap(israid=hab.pre,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
+        schema = acdc.sad["s"]["$id"]
 
         # Build a normal offer first, then remove q.dp to prove the V2 handler
         # fails closed on the required disclosure-plan field.
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=acdc,
-                           message="Here is the offered credential")
+                           message="Here is the offered credential",
+                           modifiers=dict(dp=[[[schema, "/", []]]]))
         sad = dict(exn.ked)
         sad["q"] = {}
         badOffer = SerderKERI(sad=sad, makify=True, verify=False)
@@ -1402,11 +1412,13 @@ def test_ipex_v2_accepts_offer_with_missing_origin_attr_without_throwing():
         acdc = acdcmap(israid=hab.pre,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
+        schema = acdc.sad["s"]["$id"]
 
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=acdc,
-                           message="Here is the offered credential")
+                           message="Here is the offered credential",
+                           modifiers=dict(dp=[[[schema, "/", []]]]))
         sad = dict(exn.ked)
         sad["a"] = dict(exn.ked["a"])
         sad["a"].pop("o")
@@ -1443,11 +1455,13 @@ def test_ipex_v2_rejects_offer_with_nonstring_origin_without_throwing():
         acdc = acdcmap(israid=hab.pre,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=hab.pre)
+        schema = acdc.sad["s"]["$id"]
 
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=acdc,
-                           message="Here is the offered credential")
+                           message="Here is the offered credential",
+                           modifiers=dict(dp=[[[schema, "/", []]]]))
         sad = dict(exn.ked)
         sad["a"] = dict(exn.ked["a"])
         sad["a"]["o"] = 123
@@ -1485,11 +1499,13 @@ def test_ipex_v2_rejects_offer_with_forged_nested_artifact():
         sibling = acdcmap(israid=hab.pre,
                           attribute=dict(d="", rules="club-entry"),
                           iseaid=hab.pre)
+        schema = origin.sad["s"]["$id"]
 
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=origin,
-                           message="Here is the offered credential")
+                           message="Here is the offered credential",
+                           modifiers=dict(dp=[[[schema, "/", []]]]))
 
         atc = bytearray(hab.endorse(serder=exn,
                                     framed=False,
@@ -1715,7 +1731,8 @@ def test_ipex_v2_responders_set_receiver():
         bootExn, _ = ipexOffer(hab=holder,
                                message="Opening offer",
                                origin=acdc,
-                               recp=verifier.pre)
+                               recp=verifier.pre,
+                               modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         assert bootExn.ked["p"] == ""
         assert bootExn.ked["ri"] == verifier.pre
         assert bootExn.ked["x"] != ""
@@ -1844,18 +1861,30 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
         # Offer-first flows reject a starter with no recipient.
         with pytest.raises(ValueError):
             ipexOffer(hab=holder, message="Bare offer", origin=acdc)
-        # Supplying the origin plus recipient is enough for an offer-first opener.
-        bareOffer, _ = ipexOffer(hab=holder, message="Bare offer", origin=acdc, recp=verifier.pre)
+        with pytest.raises(ValueError):
+            ipexOffer(hab=holder,
+                      message="Bare offer",
+                      origin=acdc,
+                      recp=verifier.pre)
+        # Supplying the origin plus recipient and explicit dp is enough for an
+        # offer-first opener.
+        bareOffer, _ = ipexOffer(hab=holder,
+                                 message="Bare offer",
+                                 origin=acdc,
+                                 recp=verifier.pre,
+                                 modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         assert bareOffer.ked["p"] == ""
         assert bareOffer.ked["ri"] == verifier.pre
         assert bareOffer.ked["x"] != ""
         assert bareOffer.ked["a"]["o"] == [acdc.said]
+        assert bareOffer.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
         # Supplying xid directly is no longer supported at all.
         with pytest.raises(TypeError):
             ipexOffer(hab=holder,
                       message="Bare offer",
                       origin=acdc,
                       recp=verifier.pre,
+                      modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]),
                       xid="E" * 44)
         # Grant-first flows follow the same auto-generated-xid rule.
         bareGrant, _ = ipexGrant(hab=holder,
@@ -3460,6 +3489,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                            regid=registry.regk,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            iseaid=recipient.pre)
+            schema = acdc.sad["s"]["$id"]
             issuedBlinder, issued = registrar.issue(registry, acdc=acdc, state="issued")
             _anchor(hab, registry, issued, framed=False)
 
@@ -3500,6 +3530,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                                                message="Offer starts the blind credential flow",
                                                origin=acdc,
                                                recp=recipient.pre,
+                                               modifiers=dict(dp=[[[schema, "/", []]]]),
                                                dt=offerStamp)
                 agreeExn, agreeAtc = ipexAgree(hab=recipient,
                                                message="I agree to the offer-first credential",
