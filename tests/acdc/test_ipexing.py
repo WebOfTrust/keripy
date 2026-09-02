@@ -2037,6 +2037,17 @@ def test_ipex_v2_blindable_registry_roundtrip():
                                                     processive=False)
             assert [nest.serder.said for nest in parsed] == [acdc.said]
             assert len(parsed[0].bsqs) == 1
+            proof = parsed[0].bsqs[0]
+            assert proof[0].qb64 == issuedBlinder.said
+            assert proof[1].nonce == issuedBlinder.uuid
+            assert proof[2].nonce == acdc.said
+            assert proof[3].text == "issued"
+            unblinder = Blinder.unblind(said=proof[0].qb64,
+                                        uuid=proof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=["issued", "revoked"])
+            assert unblinder is not None
+            assert unblinder.state == "issued"
 
             # Serializing the whole stored message should round-trip the same
             # nested node and its proof-group attachment section.
@@ -2049,6 +2060,17 @@ def test_ipex_v2_blindable_registry_roundtrip():
             assert len(results) == 1
             assert [nest.serder.said for nest in results[0].nests] == [acdc.said]
             assert len(results[0].nests[0].bsqs) == 1
+            proof = results[0].nests[0].bsqs[0]
+            assert proof[0].qb64 == issuedBlinder.said
+            assert proof[1].nonce == issuedBlinder.uuid
+            assert proof[2].nonce == acdc.said
+            assert proof[3].text == "issued"
+            unblinder = Blinder.unblind(said=proof[0].qb64,
+                                        uuid=proof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=["issued", "revoked"])
+            assert unblinder is not None
+            assert unblinder.state == "issued"
         finally:
             rgy.close()
 
@@ -2264,6 +2286,17 @@ def test_ipex_v2_blind_registry_update_roundtrip():
             assert len(results) == 1
             assert [nest.serder.said for nest in results[0].nests] == [acdc.said]
             assert len(results[0].nests[0].bsqs) == 1
+            proof = results[0].nests[0].bsqs[0]
+            assert proof[0].qb64 == blinder.said
+            assert proof[1].nonce == blinder.uuid
+            assert proof[2].nonce == acdc.said
+            assert proof[3].text == "revoked"
+            unblinder = Blinder.unblind(said=proof[0].qb64,
+                                        uuid=proof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=["issued", "revoked"])
+            assert unblinder is not None
+            assert unblinder.state == "revoked"
 
             # The notifier should report the accepted linear IPEX exchange in send order
             assert [(item["r"], item["m"]) for item in recorder.items] == [
@@ -2560,6 +2593,17 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 assert len(grantResults) == 1
                 assert [nest.serder.said for nest in grantResults[0].nests] == [acdc.said]
                 assert len(grantResults[0].nests[0].bsqs) == 1
+                proof = grantResults[0].nests[0].bsqs[0]
+                assert proof[0].qb64 == issuedBlinder.said
+                assert proof[1].nonce == issuedBlinder.uuid
+                assert proof[2].nonce == acdc.said
+                assert proof[3].text == "issued"
+                unblinder = Blinder.unblind(said=proof[0].qb64,
+                                            uuid=proof[1].nonce,
+                                            acdc=acdc.said,
+                                            states=["issued", "revoked"])
+                assert unblinder is not None
+                assert unblinder.state == "issued"
 
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
@@ -3266,6 +3310,17 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                     child.said,
                 ]
                 assert len(grantResults[0].nests[0].bsqs) == 1
+                proof = grantResults[0].nests[0].bsqs[0]
+                assert proof[0].qb64 == issuedBlinder.said
+                assert proof[1].nonce == issuedBlinder.uuid
+                assert proof[2].nonce == origin.said
+                assert proof[3].text == "issued"
+                unblinder = Blinder.unblind(said=proof[0].qb64,
+                                            uuid=proof[1].nonce,
+                                            acdc=origin.said,
+                                            states=["issued", "revoked"])
+                assert unblinder is not None
+                assert unblinder.state == "issued"
                 assert len(grantResults[0].nests[1].bsqs) == 0
 
                 # The recipient closes the happy path with admit
@@ -3469,6 +3524,17 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 assert len(grantResults) == 1
                 assert [nest.serder.said for nest in grantResults[0].nests] == [acdc.said]
                 assert len(grantResults[0].nests[0].bsqs) == 1
+                proof = grantResults[0].nests[0].bsqs[0]
+                assert proof[0].qb64 == issuedBlinder.said
+                assert proof[1].nonce == issuedBlinder.uuid
+                assert proof[2].nonce == acdc.said
+                assert proof[3].text == "issued"
+                unblinder = Blinder.unblind(said=proof[0].qb64,
+                                            uuid=proof[1].nonce,
+                                            acdc=acdc.said,
+                                            states=["issued", "revoked"])
+                assert unblinder is not None
+                assert unblinder.state == "issued"
 
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
@@ -3617,6 +3683,17 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 assert len(grantResults) == 1
                 assert [nest.serder.said for nest in grantResults[0].nests] == [acdc.said]
                 assert len(grantResults[0].nests[0].bsqs) == 1
+                proof = grantResults[0].nests[0].bsqs[0]
+                assert proof[0].qb64 == issuedBlinder.said
+                assert proof[1].nonce == issuedBlinder.uuid
+                assert proof[2].nonce == acdc.said
+                assert proof[3].text == "issued"
+                unblinder = Blinder.unblind(said=proof[0].qb64,
+                                            uuid=proof[1].nonce,
+                                            acdc=acdc.said,
+                                            states=["issued", "revoked"])
+                assert unblinder is not None
+                assert unblinder.state == "issued"
 
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
@@ -3713,6 +3790,17 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
             assert len(issuedResults) == 1
             assert [nest.serder.said for nest in issuedResults[0].nests] == [acdc.said]
             assert len(issuedResults[0].nests[0].bsqs) == 1
+            proof = issuedResults[0].nests[0].bsqs[0]
+            assert proof[0].qb64 == issuedBlinder.said
+            assert proof[1].nonce == issuedBlinder.uuid
+            assert proof[2].nonce == acdc.said
+            assert proof[3].text == "issued"
+            unblinder = Blinder.unblind(said=proof[0].qb64,
+                                        uuid=proof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=["issued", "revoked"])
+            assert unblinder is not None
+            assert unblinder.state == "issued"
 
             # Commit a revoked blind update that follows the issued state
             revokedBlinder, revoked = registrar.issue(registry, acdc=acdc, state="revoked")
@@ -3776,6 +3864,17 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
             assert len(revokedResults) == 1
             assert [nest.serder.said for nest in revokedResults[0].nests] == [acdc.said]
             assert len(revokedResults[0].nests[0].bsqs) == 1
+            proof = revokedResults[0].nests[0].bsqs[0]
+            assert proof[0].qb64 == revokedBlinder.said
+            assert proof[1].nonce == revokedBlinder.uuid
+            assert proof[2].nonce == acdc.said
+            assert proof[3].text == "revoked"
+            unblinder = Blinder.unblind(said=proof[0].qb64,
+                                        uuid=proof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=["issued", "revoked"])
+            assert unblinder is not None
+            assert unblinder.state == "revoked"
 
             # The notifier should reflect both full disclosures in the order they were sent
             assert [(item["r"], item["m"]) for item in recorder.items] == [

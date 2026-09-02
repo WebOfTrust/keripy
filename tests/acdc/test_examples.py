@@ -1144,6 +1144,17 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
                 origin=_proofed(acdc, issuedBlinder),
             )
             assert len(issuedGrantResult.nests[0].bsqs) == 1
+            issuedProof = issuedGrantResult.nests[0].bsqs[0]
+            assert issuedProof[0].qb64 == issuedBlinder.said
+            assert issuedProof[1].nonce == issuedBlinder.uuid
+            assert issuedProof[2].nonce == acdc.said
+            assert issuedProof[3].text == 'issued'
+            unblinder = Blinder.unblind(said=issuedProof[0].qb64,
+                                        uuid=issuedProof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=['issued', 'revoked'])
+            assert unblinder is not None
+            assert unblinder.state == 'issued'
             assert salt.encode() not in issuedWire
             assert issuedBlinder.uuid.encode() in issuedWire
 
@@ -1169,9 +1180,36 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
                 origin=_proofed(acdc, revokedBlinder),
             )
             assert len(revokedGrantResult.nests[0].bsqs) == 1
+            revokedProof = revokedGrantResult.nests[0].bsqs[0]
+            assert revokedProof[0].qb64 == revokedBlinder.said
+            assert revokedProof[1].nonce == revokedBlinder.uuid
+            assert revokedProof[2].nonce == acdc.said
+            assert revokedProof[3].text == 'revoked'
+            unblinder = Blinder.unblind(said=revokedProof[0].qb64,
+                                        uuid=revokedProof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=['issued', 'revoked'])
+            assert unblinder is not None
+            assert unblinder.state == 'revoked'
             assert salt.encode() not in revokedWire
             assert issuedBlinder.uuid.encode() not in revokedWire
             assert revokedBlinder.uuid.encode() in revokedWire
+
+            # The exact nonce disclosed in the first IPEX grant still opens only
+            # the issued event, not the later revoked event.
+            laterPeek = Blinder.unblind(said=revokedProof[0].qb64,
+                                        uuid=issuedProof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=['issued', 'revoked'])
+            assert laterPeek is None
+
+            # And the nonce disclosed in the later grant cannot retroactively
+            # reveal the earlier issued event either.
+            earlierPeek = Blinder.unblind(said=issuedProof[0].qb64,
+                                          uuid=revokedProof[1].nonce,
+                                          acdc=acdc.said,
+                                          states=['issued', 'revoked'])
+            assert earlierPeek is None
 
             assert [(item["r"], item["m"]) for item in recorder.items] == [
                 ("/exn/ipex/grant", "Current registry snapshot"),
