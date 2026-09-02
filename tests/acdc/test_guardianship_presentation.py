@@ -791,7 +791,7 @@ def _far(byDigest, near, label):
     return byDigest[said]
 
 
-def _service_accepts_grant(grantStream, offeredOrigin):
+def _service_accepts_grant(grantStream, offeredOrigin, disclosee=STORE):
     """The service's grant-time verification, run on WHAT CAME OFF THE WIRE.
 
     Returns True or raises. Takes the signed grant STREAM -- body plus attachments -- and
@@ -817,10 +817,16 @@ def _service_accepts_grant(grantStream, offeredOrigin):
          which is the ward's. It reads that from Bob's own edges, which he committed to
          when he minted the presentation. A substituted far node breaks the digest that
          names it.
-      4. Run the five-check binding on the artifacts that walk produced.
+      4. Bind the origin's AUDIENCE: the presentation must be addressed to THIS service.
+         The origin is minted for one exchange, which decorrelates but does not
+         authenticate, and the audience check is what keeps a captured disclosure from
+         being replayed somewhere else. The sibling module makes the same check for the
+         same reason (_verify_presentation there), and it is the one check here that
+         reads the origin's own attribute section rather than an edge.
+      5. Run the five-check binding on the artifacts that walk produced.
 
-    Registry status is the sixth check a complete verifier adds, and Phase 4 exercises it
-    live: guardianship terminates dynamically, so the blindable registry must show the
+    Registry status is the check a complete verifier adds on top, and Phase 4 exercises
+    it live: guardianship terminates dynamically, so the blindable registry must show the
     guardian credential currently issued.
     """
     ims = bytearray(grantStream)
@@ -835,6 +841,7 @@ def _service_accepts_grant(grantStream, offeredOrigin):
     byDigest = {nest.serder.said: nest.serder for nest in result.nests}
 
     origin = byDigest[offeredOrigin]
+    assert origin.sad['a']['i'] == disclosee             # addressed to THIS service
     authority = _far(byDigest, origin, 'authority')     # presentation -I2I-> guardianship
     wardId = _far(byDigest, origin, 'wardId')           # presentation -NI2I-> sedi-id
     wardAge = _far(byDigest, origin, 'wardAge')         # presentation -NI2I-> age
@@ -1674,6 +1681,15 @@ def test_represented_presentation_JSON():
                            nests=[disclosures[0], forgedAcdc] + disclosures[2:])
     with pytest.raises(AssertionError):
         _service_accepts_grant(tampered, presentation.said)
+    # (d) REPLAY AT ANOTHER RELYING PARTY, which is the negative the bespoke origin
+    # earns. Every artifact here is genuine and every SAID recomputes -- this is the real
+    # disclosure, captured verbatim. It is refused anyway, because the presentation names
+    # the service it was minted for and the whole DAG hangs from that name. Without an
+    # addressed origin, a disclosure is bearer-grade: whoever holds the bytes can present
+    # them anywhere the same credentials are accepted. ENDORSER stands in for any second
+    # relying party; the check is on the AID, so any AID but the store's fails.
+    with pytest.raises(AssertionError):
+        _service_accepts_grant(grantStream, presentation.said, disclosee=ENDORSER)
 
     # 5. admit (service -> Bob): closes the exchange.
     admit = exchange(sender=STORE, receiver=BOB, route="/ipex/admit", prior=grant.said,
