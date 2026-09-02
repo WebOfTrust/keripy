@@ -112,7 +112,7 @@ class AddDoer(doing.DoDoer):
 
         client.request(
             method="POST",
-            path=f"{client.requester.path}/mailboxes",
+            path=f"{client.requester.path.rstrip('/')}/mailboxes",
             headers=headers,
             fargs=fargs
         )
