@@ -721,7 +721,11 @@ class WitnessPublisher(doing.DoDoer):
 
 
 class TCPMessenger(doing.DoDoer):
-    """Send outbound CESR messages to a witness via TCP and parse inbound receipts."""
+    """Send outbound CESR messages to a witness via TCP and parse inbound receipts.
+
+    ``sent`` is a consumable notification queue, so lifecycle accounting is
+    kept separately in ``msgs`` and ``messageInProgress``.
+    """
 
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
         """Initialize TCP messenger with queues and parser wiring.
@@ -736,7 +740,7 @@ class TCPMessenger(doing.DoDoer):
         self.hab = hab
         self.wit = wit
         self.url = url
-        self.posted = 0
+        self.messageInProgress = False
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -770,7 +774,7 @@ class TCPMessenger(doing.DoDoer):
                 yield tock
 
             msg = self.msgs.popleft()
-            self.posted += 1
+            self.messageInProgress = True
 
             client.tx(msg)  # send to connected remote
 
@@ -778,6 +782,7 @@ class TCPMessenger(doing.DoDoer):
                 yield tock
 
             self.sent.append(msg)
+            self.messageInProgress = False
             yield tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -792,11 +797,17 @@ class TCPMessenger(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.sent) == self.posted
+        return not self.msgs and not self.messageInProgress
 
 
 class TCPStreamMessenger(doing.DoDoer):
-    """Stream a CESR message to a witness via TCP and parse inbound receipts."""
+    """Stream a CESR message to a witness via TCP and parse inbound receipts.
+
+    ``sent`` is a consumable notification queue, so lifecycle accounting is
+    kept separately in ``msgs`` and ``messageInProgress``. This messenger
+    remains recurrent after a successful send; terminal stream lifecycle is a
+    separate transport concern.
+    """
 
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
         """Initialize TCP stream messenger with queues and parser wiring.
@@ -811,7 +822,7 @@ class TCPStreamMessenger(doing.DoDoer):
         self.hab = hab
         self.wit = wit
         self.url = url
-        self.posted = 0
+        self.messageInProgress = False
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -848,7 +859,7 @@ class TCPStreamMessenger(doing.DoDoer):
                 yield tock
 
             msg = self.msgs.popleft()
-            self.posted += 1
+            self.messageInProgress = True
 
             client.tx(msg)  # send to connected remote
 
@@ -856,6 +867,7 @@ class TCPStreamMessenger(doing.DoDoer):
                 yield tock
 
             self.sent.append(msg)
+            self.messageInProgress = False
             yield tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -870,11 +882,15 @@ class TCPStreamMessenger(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.sent) == self.posted
+        return not self.msgs and not self.messageInProgress
 
 
 class HTTPMessenger(doing.DoDoer):
-    """Send CESR messages to a witness over HTTP and capture responses."""
+    """Send CESR messages to a witness over HTTP and capture responses.
+
+    ``sent`` is a consumable response-notification queue, so outstanding
+    requests are tracked separately in ``pending``.
+    """
 
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, auth=None, **kwa):
         """Initialize HTTP messenger with queues and optional auth.
@@ -889,7 +905,7 @@ class HTTPMessenger(doing.DoDoer):
         """
         self.hab = hab
         self.wit = wit
-        self.posted = 0
+        self.pending = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -924,7 +940,7 @@ class HTTPMessenger(doing.DoDoer):
             if self.auth is not None:
                 headers["Authorization"] = self.auth
 
-            self.posted += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
+            self.pending += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
                 yield tock
 
@@ -939,12 +955,13 @@ class HTTPMessenger(doing.DoDoer):
             while self.client.responses:
                 rep = self.client.respond()
                 self.sent.append(rep)
+                self.pending -= 1
                 yield
             yield
 
     @property
     def idle(self):
-        return len(self.msgs) == 0 and self.posted == len(self.sent)
+        return not self.msgs and self.pending == 0
 
 
 class HTTPStreamMessenger(doing.DoDoer):

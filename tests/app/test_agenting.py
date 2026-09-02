@@ -5,8 +5,12 @@ tests.app.agenting module
 """
 import time
 
+import falcon
+import pytest
+
 from hio.base import doing, tyming
 from hio.core import http
+from hio.core.tcp import serving
 
 from keri import kering, core
 from keri.core import coring, serdering
@@ -77,6 +81,112 @@ def test_stream_messenger_from_admits_tcp_payload():
         )
 
         assert list(messenger.msgs) == [bytearray(msg)]
+
+
+@pytest.mark.parametrize("klas", [agenting.TCPMessenger,
+                                  agenting.TCPStreamMessenger])
+def test_tcp_messenger_accounts_for_real_delivery(klas):
+    with habbing.openHby(name="sender", temp=True) as senderHby, \
+            habbing.openHby(name="receiver", temp=True) as receiverHby:
+        senderHab = senderHby.makeHab(name="sender")
+        receiverHab = receiverHby.makeHab(name="receiver",
+                                          transferable=False)
+
+        server = serving.Server(host="127.0.0.1", port=0)
+        assert server.reopen()
+        server.eha = server.ha
+        messenger = klas(hab=senderHab,
+                         wit=receiverHab.pre,
+                         url=f"tcp://127.0.0.1:{server.ha[1]}")
+        msg = bytearray(senderHab.makeOwnEvent(sn=0))
+
+        # Queuing work must make the messenger non-idle before scheduling starts.
+        assert messenger.idle
+        messenger.msgs.append(msg)
+        assert not messenger.idle
+
+        doist = doing.Doist(tock=0.01,
+                            limit=1.0,
+                            doers=[serving.ServerDoer(server=server),
+                                   directing.Directant(hab=receiverHab,
+                                                       server=server),
+                                   messenger])
+        doist.enter()
+        try:
+            deadline = doist.tyme + doist.limit
+
+            # Advance until the message leaves the queue but is still being sent.
+            while (not messenger.messageInProgress and
+                   doist.tyme < deadline):
+                doist.recur()
+                time.sleep(doist.tock)
+
+            assert messenger.messageInProgress
+            assert not messenger.idle
+
+            # Continue through local transmission and parsing by the receiver.
+            while ((not messenger.idle or
+                    senderHab.pre not in receiverHby.kevers) and
+                   doist.tyme < deadline):
+                doist.recur()
+                time.sleep(doist.tock)
+
+            assert senderHab.pre in receiverHby.kevers
+
+            # Consuming the completion cue must not make completed work non-idle.
+            assert messenger.sent.popleft() == msg
+            assert messenger.idle
+        finally:
+            doist.exit()
+
+
+def test_http_messenger_accounts_for_real_delivery():
+    with habbing.openHby(name="http-sender", temp=True) as senderHby, \
+            habbing.openHby(name="http-receiver", temp=True) as receiverHby:
+        senderHab = senderHby.makeHab(name="sender")
+        receiverHab = receiverHby.makeHab(name="receiver",
+                                          transferable=False)
+        endpoint = indirecting.HttpEnd(rxbs=receiverHab.psr.ims)
+        app = falcon.App()
+        app.add_route("/", endpoint)
+        servant = serving.Server(host="127.0.0.1", port=0)
+        server = http.Server(app=app, servant=servant)
+        assert server.reopen()
+        servant.eha = servant.ha
+
+        messenger = agenting.HTTPMessenger(
+            hab=senderHab,
+            wit=receiverHab.pre,
+            url=f"http://127.0.0.1:{servant.ha[1]}",
+        )
+        msg = bytearray(senderHab.makeOwnEvent(sn=0))
+
+        # The queued inception keeps the messenger active until its response arrives.
+        messenger.msgs.append(bytearray(msg))
+        assert not messenger.idle
+
+        doist = doing.Doist(tock=0.01,
+                            limit=1.0,
+                            doers=[http.ServerDoer(server=server), messenger])
+        doist.enter()
+        try:
+            deadline = doist.tyme + doist.limit
+
+            # Drive the real HTTP exchange until the pending response is accounted for.
+            while (not messenger.idle and doist.tyme < deadline):
+                doist.recur()
+                time.sleep(doist.tock)
+
+            # Verify transport success and application-layer delivery to the receiver.
+            response = messenger.sent.popleft()
+            assert response.status == 204
+            receiverHab.psr.parse()
+            assert senderHab.pre in receiverHby.kevers
+
+            # Removing the response cue does not erase completed lifecycle state.
+            assert messenger.idle
+        finally:
+            doist.exit()
 
 
 def test_receiptor_tocks_are_generator_local():
