@@ -393,15 +393,14 @@ class IpexHandler:
         elif not self._verifyReplyChain(verb=verb, serder=serder, dig=dig):
             return False
 
-        # Stage 4: when an offer carries a metadata DAG, or when a grant
-        # carries the final disclosure DAG, the nests must describe one exact
-        # reachable graph rooted at the message's `a.o[0]`.
+        # Stage 4: offer may disclose only a reachable metadata subgraph,
+        # while grant must disclose one fully closed reachable DAG rooted at
+        # the message's `a.o[0]`.
         if verb == Ipex.offer and nests:
-            if self._walkGraph(origin=attrs["o"][0], nests=nests) is None:
+            if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False) is None:
                 return False
         elif verb == Ipex.grant:
-            walked = self._walkGraph(origin=attrs["o"][0], nests=nests)
-            if walked is None:
+            if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=True) is None:
                 return False
 
             # Stage 5: after the disclosed graph shape is accepted, each walked
@@ -486,17 +485,21 @@ class IpexHandler:
 
         return True
 
-    def _walkGraph(self, origin, nests):
+    def _walkGraph(self, origin, nests, *, closed):
         """Walk the disclosed origin DAG and return the visited node order.
 
         Parameters:
             origin (str): SAID of the origin node named by ``a.o[0]``.
             nests (list): Parsed nested ACDC node substreams carried by the
-                grant message.
+                offer or grant message.
+            closed (bool): True requires every referenced edge target to be
+                carried in ``nests``. False allows undisclosed far nodes, but
+                every carried nest must still be reachable from ``origin``.
 
         Returns:
             tuple | None: ``(nodes, order)`` when the disclosed nests form one
-                exact DAG rooted at ``origin``; otherwise ``None``.
+                reachable disclosed graph rooted at ``origin`` under the
+                selected closure rule; otherwise ``None``.
         """
         # Reuse the disclosed-node validation so graph walking starts from a
         # well-formed set of unique ACDC nests.
@@ -514,7 +517,9 @@ class IpexHandler:
         order = []
         queue = deque([origin])
 
-        # Walk the graph BFS, reject if any edge fails to resolve to a carried nest
+        # Walk the graph BFS. Grant fails closed on dangling references, while
+        # offer may omit farther undisclosed nodes as long as carried nodes
+        # still form one root-reachable subgraph.
         while queue:
             said = queue.popleft()
             if said in seen:
@@ -551,7 +556,9 @@ class IpexHandler:
                             except Exception:
                                 return None
                             if edgeSaid not in nodes:
-                                return None
+                                if closed:
+                                    return None
+                                continue
                             if edgeSaid not in seen:
                                 queue.append(edgeSaid)
                             continue
@@ -563,7 +570,8 @@ class IpexHandler:
                                 return None
                             groups.append(node)
 
-        # If any carried nest was never reached, the payload is not one exact DAG.
+        # Even when offer omits farther nodes, every carried nest must still be
+        # part of the root-reachable disclosed graph.
         if len(seen) != len(nodes):
             return None
 

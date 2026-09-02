@@ -647,6 +647,70 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
         ]
 
 
+def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
+    """Offer may disclose a reachable metadata subgraph without full closure."""
+    with openHby(name="ipex-v2-offer-partial-subgraph",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+
+        grandchild = acdcmap(israid=holder.pre,
+                             uuid="",
+                             attribute=dict(d="", role="member"))
+        child = acdcmap(israid=holder.pre,
+                        uuid="",
+                        attribute=dict(d="", department="kitchen"),
+                        edge=_edge("member", grandchild))
+        origin = acdcmap(israid=holder.pre,
+                         uuid="",
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         edge=_edge("department", child),
+                         iseaid=verifier.pre)
+        schema = origin.sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(hab=verifier,
+                                       recp=holder.pre,
+                                       message="Show me the metadata path",
+                                       attrs={},
+                                       modifiers=dict(dp=[[schema, "/", []],
+                                                           [schema, "/e/department", []]]))
+        # Carry only the disclosed root plus one reachable metadata child.
+        # The child's farther edge to `grandchild` is intentionally omitted.
+        offerExn, offerAtc = ipexOffer(hab=holder,
+                                       recp=verifier.pre,
+                                       message="Here is the partial metadata DAG",
+                                       origin=origin,
+                                       artifacts=[child],
+                                       apply=applyExn)
+
+        for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
+        storedOffer = hby.db.exns.get(keys=(offerExn.said,))
+        assert storedOffer is not None
+        assert storedOffer.ked["a"]["o"] == [origin.said]
+
+        offerWire = bytearray(serializeMessage(hby, offerExn.said, framed=True))
+        offerResults = Parser(version=Vrsn_2_0).parse(ims=offerWire,
+                                                      framed=False,
+                                                      processive=False)
+        assert offerWire == bytearray()
+        assert len(offerResults) == 1
+        assert [nest.serder.said for nest in offerResults[0].nests] == [origin.said, child.said]
+        assert recorder.items == [
+            {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Show me the metadata path"},
+            {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here is the partial metadata DAG"},
+        ]
+
+
 def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
     """Offer DAG nests must describe exactly one reachable metadata graph."""
     with openHby(name="ipex-v2-bad-offer-extra-node",
