@@ -21,7 +21,7 @@ from ..kering import (Version, Vrsn_1_0, Ilks, Kinds, Roles, Schemes,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
-                    Codens, MtrDex, TraitDex,
+                    Codens, MtrDex, TraitDex, SeedCodeByVerferCode,
                     messagize, exchange,)
 from ..core import eventing
 from ..recording import HabitatRecord, OobiRecord
@@ -2862,7 +2862,7 @@ class Hab(BaseHab):
         super(Hab, self).__init__(**kwa)
 
     def incept(self, *, secrecies=None, iridx=0, code=MtrDex.Blake3_256,
-               dcode=MtrDex.Blake3_256, icode=MtrDex.Ed25519_Seed,
+               dcode=MtrDex.Blake3_256, icode=MtrDex.Ed25519_Seed, ncode=None,
                transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
              hidden=False, data=None, algo=None, salt=None, tier=None,
@@ -2950,9 +2950,14 @@ class Hab(BaseHab):
             verfers, digers = self.mgr.replay(pre=ipre, advance=False)
 
         else:  # use defaults
+            # An identifier signs with one algorithm, so the next keys default to the algorithm
+            # the current keys were made with rather than to Ed25519. Passing icode alone used
+            # to leave the pre-rotated commitment on the default, and the identifier changed
+            # algorithm at its first rotation without anything saying so.
             verfers, digers = self.mgr.incept(icount=icount,
                                               icode=icode,
                                               ncount=ncount,
+                                              ncode=ncode if ncode is not None else icode,
                                               stem=stem,
                                               transferable=transferable,
                                               dcode=dcode,
@@ -3015,7 +3020,7 @@ class Hab(BaseHab):
         pp = self.ks.prms.get(self.pre)
         return pp.algo
 
-    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None,
+    def rotate(self, *, isith=None, nsith=None, ncount=None, ncode=None, toad=None,
                cuts=None, adds=None, data=None, **kwa):
         """Perform a rotation operation and register it in the database.
 
@@ -3059,11 +3064,20 @@ class Hab(BaseHab):
         # sync with the KEL (issue #819).
         ps_before = self.mgr.ks.sits.get(self.pre)
 
+        if ncode is None:
+            # Carry the identifier's own algorithm forward. The key store records public keys
+            # and seeds but not the code they were made with, so the current public key is the
+            # only statement of which algorithm this identifier signs with. Defaulting to
+            # Ed25519 here would move a P-256 identifier onto a different curve mid-KEL, which
+            # no verifier holding its certificate could survive.
+            ncode = SeedCodeByVerferCode.get(kever.verfers[0].code, MtrDex.Ed25519_Seed)
+
         try:
             verfers, digers = self.mgr.replay(pre=self.pre, erase=False)
         except IndexError:  # old next is new current
             verfers, digers = self.mgr.rotate(pre=self.pre,
                                               ncount=ncount,
+                                              ncode=ncode,
                                               temp=self.temp,
                                               erase=False)
 

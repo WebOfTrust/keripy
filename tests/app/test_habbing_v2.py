@@ -1325,6 +1325,134 @@ def test_habery_reconfigure_v2_with_kram(mockHelpingNowUTC):
     _exercise_habery_reconfigure_v2(enable_kram=True)
 
 
+
+def test_incept_with_ecdsa_256r1_uses_that_curve():
+    """A hab incepted with icode=ECDSA_256r1_Seed signs with a P-256 key."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+
+def test_rotation_preserves_the_inception_key_algorithm():
+    """Rotating a P-256 identifier keeps it on P-256.
+
+    The next-key commitment used to be generated with the Ed25519 default no matter what
+    icode said, so an identifier incepted on P-256 changed algorithm at its first rotation
+    and nothing reported it. A verifier holding a certificate over the old key could not
+    survive that, so it is a silent break rather than a visible one.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256rot", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256rot", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+        hab.rotate()
+        assert hab.kever.sn == 1
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+
+def test_repeated_rotation_stays_on_the_same_curve():
+    """The algorithm survives more than one rotation, not just the first."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256rot3", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256rot3", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        for expected_sn in (1, 2, 3):
+            hab.rotate()
+            assert hab.kever.sn == expected_sn
+            assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+
+def test_signatures_verify_after_rotating_a_p256_identifier():
+    """The rotated key is usable, not merely labelled with the right code."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256sig", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256sig", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        hab.rotate()
+        data = b"an assertion signed after rotation"
+        siger = hab.sign(ser=data, indexed=True)[0]
+        assert hab.kever.verfers[0].verify(siger.raw, data)
+
+
+def test_incept_with_secp256k1_also_carries_forward():
+    """The fix is about carrying the algorithm forward, not about P-256 specifically."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="k1", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="k1", icode=MtrDex.ECDSA_256k1_Seed,
+                          wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256k1
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256k1
+
+
+def test_ed25519_remains_the_default_and_is_unaffected():
+    """The default path is untouched: no icode still means Ed25519, before and after rotation."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="ed", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="ed", wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+
+def test_explicit_ncode_overrides_the_icode_default_at_inception():
+    """ncode is separable from icode, for a caller that means to pre-commit a different curve.
+
+    Rotating then lands on the pre-committed algorithm, which is what the next-key commitment
+    said all along -- an intentional change of algorithm rather than a silent one.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="mixed", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="mixed", icode=MtrDex.ECDSA_256r1_Seed,
+                          ncode=MtrDex.Ed25519_Seed, wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+
+def test_explicit_ncode_on_rotate_changes_the_next_commitment():
+    """A caller may steer the algorithm at rotation, and the change lands one rotation later.
+
+    Rotation replays the keys already pre-committed, so ncode governs the keys committed
+    *for next time*: the curve changes at the following rotation, not this one.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="steer", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="steer", wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+        hab.rotate(ncode=MtrDex.ECDSA_256r1_Seed)
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+
+def test_seed_code_mapping_covers_every_algorithm_signer_supports():
+    """The inverse map is kept complete by a test rather than by memory.
+
+    Signer derives a verfer code from a seed code; rotation needs the inverse. A new algorithm
+    added to Signer without a matching entry here would silently fall back to Ed25519, which is
+    the exact failure this whole change exists to remove.
+    """
+    from keri.core.signing import SeedCodeByVerferCode
+    from keri.core import Signer
+
+    seed_codes = [MtrDex.Ed25519_Seed, MtrDex.ECDSA_256r1_Seed, MtrDex.ECDSA_256k1_Seed]
+    for seed_code in seed_codes:
+        for transferable in (True, False):
+            signer = Signer(code=seed_code, transferable=transferable)
+            verfer_code = signer.verfer.code
+            assert verfer_code in SeedCodeByVerferCode, (
+                f"Signer produces verfer code {verfer_code} from seed code {seed_code}, "
+                f"but the inverse map has no entry for it"
+            )
+            assert SeedCodeByVerferCode[verfer_code] == seed_code
+
 if __name__ == "__main__":
     test_habery()
     test_make_load_hab_with_habery_v2()

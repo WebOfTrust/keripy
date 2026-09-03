@@ -30,7 +30,7 @@ from .routing import Router, Revery, Route, compile_uri_template
 from .scheming import CacheResolver, JSONSchema, Schemer
 from .serdering import FieldDom, Serdery, Serder, SerderKERI, SerderACDC
 from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
-                      Encrypter, Decrypter, Streamer)
+                      Encrypter, Decrypter, Streamer, SeedCodeByVerferCode)
 from .structing import (SealDigest, SealRoot, SealSource, SealEvent, SealLast,
                         SealBack, SealKind, BlindState, BoundState, TypeMedia,
                         StateEstEvent, StateEvent,

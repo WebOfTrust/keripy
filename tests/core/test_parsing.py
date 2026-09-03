@@ -4,7 +4,7 @@ tests.core.test_parsing module
 
 """
 import os
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 
 import pytest
 
@@ -5144,3 +5144,74 @@ if __name__ == "__main__":
     test_group_parsator()
     test_parse_native_cesr_fixed_field()
     test_parser_v2_substream()
+
+
+@dataclass
+class _FakeExts:
+    """Minimal stand-in for what msgParsator returns; asdict() is all the caller needs."""
+    said: str = "EFakeFakeFake"
+
+
+class _StubbedParser(Parser):
+    """A Parser whose extraction always succeeds, so a test can reach msgProcess directly.
+
+    Stubbing the extraction rather than building a stream keeps this test about the one thing
+    it is pinning: what onceParsator does with an exception that msgProcess raises.
+    """
+
+    def __init__(self, *pa, raises=None, **kwa):
+        super().__init__(*pa, **kwa)
+        self.raises = raises
+        self.processed = 0
+
+    def msgParsator(self, **kwa):
+        return _FakeExts()
+        yield  # never reached; makes this a generator, as the caller requires
+
+    def msgProcess(self, **kwa):
+        self.processed += 1
+        if self.raises is not None:
+            raise self.raises
+        return True
+
+
+def test_a_base_exception_during_processing_is_not_swallowed():
+    """A BaseException raised while processing must propagate, not report success.
+
+    ``onceParsator`` used to set ``result = True`` and ``break`` inside a ``finally``. The
+    ``except`` above it already catches ``Exception``, so the success path and the
+    ordinary-error path both reached those two statements anyway; what the ``finally`` added
+    was swallowing everything the ``except`` does *not* catch. A ``KeyboardInterrupt``,
+    ``SystemExit`` or ``asyncio.CancelledError`` raised inside ``msgProcess`` was discarded by
+    the ``break``, and the parse then returned ``True`` — reporting success for a message it
+    never finished processing, and making the interrupt itself disappear.
+
+    Python 3.14 warns on this shape (PEP 765) and a later version makes it an error, but the
+    behaviour was wrong before the warning existed, which is what this test pins.
+    """
+    parser = _StubbedParser(raises=KeyboardInterrupt("interrupted mid-message"))
+
+    with pytest.raises(KeyboardInterrupt):
+        parser.parseOne(ims=bytearray(b"any"))
+
+    assert parser.processed == 1
+
+
+def test_an_ordinary_exception_during_processing_still_reports_success():
+    """The behaviour that must NOT change: an Exception is logged and the parse returns True.
+
+    Extraction already succeeded by this point, so the stream is not flushed and the parser
+    resumes — the comment above the except says so. Pinned here because moving those two
+    statements out of the finally would be a silent behaviour change if this path did not hold.
+    """
+    parser = _StubbedParser(raises=ValidationError("bad message"))
+
+    assert parser.parseOne(ims=bytearray(b"any")) is True
+    assert parser.processed == 1
+
+
+def test_a_clean_parse_still_reports_success():
+    parser = _StubbedParser()
+
+    assert parser.parseOne(ims=bytearray(b"any")) is True
+    assert parser.processed == 1
