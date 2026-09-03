@@ -301,12 +301,14 @@ def vetBlind(blinder, *, blid):
                                f"disclosure proves nothing.")
 
 
-def vetBindings(acdc, *, regid, td):
-    """Verify the binding equalities between a presented ACDC and its
-    registry evidence.  These two equalities are the issuer's only
-    commitment to the credential: v2 ACDCs are not directly signed, so a
-    verifier that skips them passes every other obligation while accepting a
-    substituted credential.
+def vetBindings(acdc, *, regid, issuer, td):
+    """Verify the bindings between a presented ACDC and its registry evidence.
+
+    The registry evidence must commit to the presented ACDC, the ACDC must
+    name the presented registry when ``rd`` is present, and the ACDC's own
+    issuer must match the issuer that incepted the presented registry. V2
+    ACDCs are not directly signed, so a verifier that skips these bindings
+    passes every other obligation while accepting a substituted credential.
 
     Returns:
         binding (str): 'mutual' when td == acdc.d and acdc.rd == rip.d both
@@ -317,6 +319,8 @@ def vetBindings(acdc, *, regid, td):
     Parameters:
         acdc (SerderACDC|bytes): the presented ACDC
         regid (str): qb64 SAID of the presented registry inception (rip)
+        issuer (str): qb64 AID of the issuer that incepted the presented
+            registry
         td (str|None): qb64 transaction ACDC said the registry's verified
             head state commits to
 
@@ -328,6 +332,10 @@ def vetBindings(acdc, *, regid, td):
         raise MisbindingError(f"Registry state's transaction ACDC said "
                               f"td={td} does not bind the presented ACDC's "
                               f"said {serder.said}.")
+    if serder.sad.get('i') != issuer:
+        raise MisbindingError(f"Presented ACDC issuer {serder.sad.get('i')} "
+                              f"does not match presented registry issuer "
+                              f"{issuer}.")
     rd = serder.sad.get('rd')
     if rd:
         if rd != regid:
@@ -442,7 +450,8 @@ def vet(rip, updates=None, *, db, acdc=None, blinder=None, sources=None):
                                        f"n={head.sad['n']} is blinded and "
                                        f"no state was disclosed: nothing "
                                        f"binds ACDC {serder.said} to it.")
-        binding = vetBindings(acdc=serder, regid=ripper.said, td=acdcsaid)
+        binding = vetBindings(acdc=serder, regid=ripper.said,
+                              issuer=issuer, td=acdcsaid)
 
     return RegStateRecord(regid=ripper.said, issuer=issuer, said=head.said,
                           sn=Number(numh=head.sad['n']).num, ilk=head.ilk,

@@ -827,8 +827,9 @@ class IpexHandler:
         Returns:
             bool: ``True`` when the node is either not registry-backed or its
             node-local proof vets successfully against TEL evidence already
-            loaded in the verifier's local ``Regery`` store; ``False`` when the
-            node's proof is permanently invalid for this ACDC.
+            loaded in the verifier's injected local ``Regery`` store; ``False``
+            when the node's proof is permanently invalid for this ACDC or the
+            handler was not configured with verifier-side registry access.
 
         Raises:
             MissingChainError: When the verifier is still missing retryable TEL
@@ -842,25 +843,17 @@ class IpexHandler:
             bsqs = nest.get("bsqs", []) if isinstance(nest, dict) else nest.bsqs
             bsss = nest.get("bsss", []) if isinstance(nest, dict) else nest.bsss
 
-            # The parser gives us primitive instances. Rebuild those into the
-            # canonical crew form so regeventing.vetBlind() sees the expected
-            # cast (d as qb64 digest, u/td/bd as nonce strings, ts as text).
+            # The parser gives us primitive tuples. Rebuild those as the
+            # canonical BlindState / BoundState data records before handing
+            # them back to Blinder.
             proofs = []
             for proof in bsqs:
-                crew = BlindState(d=proof[0].qb64,
-                                  u=proof[1].nonce,
-                                  td=proof[2].nonce,
-                                  ts=proof[3].text)
-                proofs.append(Blinder(crew=crew))
+                data = proof if isinstance(proof, BlindState) else BlindState(*proof)
+                proofs.append(Blinder(data=data))
 
             for proof in bsss:
-                crew = BoundState(d=proof[0].qb64,
-                                  u=proof[1].nonce,
-                                  td=proof[2].nonce,
-                                  ts=proof[3].text,
-                                  bn=proof[4].sn,
-                                  bd=proof[5].nonce)
-                proofs.append(Blinder(crew=crew))
+                data = proof if isinstance(proof, BoundState) else BoundState(*proof)
+                proofs.append(Blinder(data=data))
 
             # The proof group must disclose exactly one blinded state for the registry's root event.
             if len(proofs) != 1:
@@ -868,13 +861,10 @@ class IpexHandler:
 
             # IPEX verification assumes the disclosee has already learned the
             # foreign TEL chain, for example by retrieving it from observers
-            # before processing the grant
+            # before processing the grant, and the app injects that local
+            # registry store into the handler up front.
             if self.rgy is None:
-                from .registraring import Regery
-                self.rgy = Regery(hby=self.hby,
-                                  name=self.hby.name,
-                                  base=self.hby.base,
-                                  temp=self.hby.temp)
+                return False
 
             rip = self.rgy.store.seqEvent(regk, 0)
             head = self.rgy.store.headEvent(regk)

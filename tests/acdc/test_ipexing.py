@@ -2153,6 +2153,95 @@ def test_ipex_v2_blindable_registry_roundtrip():
             rgy.close()
 
 
+def test_ipex_v2_bound_registry_proof_roundtrip():
+    """Grant a bound blind proof through IPEX and keep it as bsss on the node nest."""
+    with openHby(name="ipex-v2-bound-blindable",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        rgy = Regery(hby=hby, name="ipex-v2-bound-blindable", temp=True)
+        try:
+            # Create and anchor a real registry so the later proof has accepted
+            # TEL evidence to verify against.
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="bound-blindable", prefix=hab.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(hab, registry, rip, framed=True)
+
+            # Build a registry-backed ACDC that will be disclosed through the grant.
+            acdc = acdcmap(israid=hab.pre,
+                           regid=registry.regk,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           iseaid=hab.pre)
+
+            # Issue a bound blind state so the proof lands in the bsss group
+            # rather than the simpler bsqs group.
+            boundBlinder, issued = registrar.issue(registry,
+                                                   acdc=acdc,
+                                                   state="issued",
+                                                   bound=True,
+                                                   bsn=hab.kever.sn,
+                                                   bd=hab.kever.serder.said)
+            _anchor(hab, registry, issued, framed=False)
+
+            # Wire the normal IPEX verifier path with access to the local Regery.
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
+
+            # Grant the ACDC and carry the bound proof on the same node nest.
+            grantExn, grantAtc = ipexGrant(hab=hab,
+                                           recp=hab.pre,
+                                           message="Bound blindable disclosure",
+                                           origin=_proofed(acdc, boundBlinder))
+
+            # Parse the inbound grant end to end. Successful acceptance proves
+            # the handler can vet bsss-based issuer-auth evidence.
+            ims = bytearray(grantExn.raw)
+            ims.extend(grantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(grantExn.said,)) is not None
+
+            # Reload the stored message and confirm the disclosed node still
+            # carries one bound proof group, not a plain blind proof group.
+            msg = serializeMessage(hby, grantExn.said, framed=True)
+            ims = bytearray(msg)
+            results = Parser(version=Vrsn_2_0).parse(ims=ims,
+                                                     framed=False,
+                                                     processive=False)
+            assert ims == bytearray()
+            assert len(results) == 1
+            assert [nest.serder.said for nest in results[0].nests] == [acdc.said]
+            assert len(results[0].nests[0].bsqs) == 0
+            assert len(results[0].nests[0].bsss) == 1
+            proof = results[0].nests[0].bsss[0]
+
+            # These fields are the on-wire bound disclosure tuple:
+            # blid, uuid, transaction ACDC said, state, bound sn, bound said.
+            assert proof[0].qb64 == boundBlinder.said
+            assert proof[1].nonce == boundBlinder.uuid
+            assert proof[2].nonce == acdc.said
+            assert proof[3].text == "issued"
+            assert proof[4].snh == boundBlinder.bnh
+            assert proof[5].nonce == boundBlinder.bd
+            
+            # Unblind from the stored tuple to prove the bsss data round-trips
+            # through IPEX storage and serialization without losing meaning.
+            unblinder = Blinder.unblind(said=proof[0].qb64,
+                                        uuid=proof[1].nonce,
+                                        acdc=acdc.said,
+                                        states=["issued", "revoked"],
+                                        bound=True,
+                                        bounds=[(proof[4].sn, proof[5].nonce)])
+            assert unblinder is not None
+            assert unblinder.state == "issued"
+            assert unblinder.bsn == boundBlinder.bsn
+            assert unblinder.bd == boundBlinder.bd
+        finally:
+            rgy.close()
+
+
 def test_ipex_v2_rejects_registry_backed_grant_without_node_proof_group():
     """A grant with rd must carry exactly one node-local registry proof group."""
     with openHby(name="ipex-v2-missing-node-proof",

@@ -191,7 +191,7 @@ class Registry:
                 not committed any event yet.
         """
         head = self.store.headEvent(self.regk) if self.regk is not None else None
-        return int(head.sad["n"], 16) if head is not None else -1
+        return Number(numh=head.sad["n"]).num if head is not None else -1
 
     @property
     def regser(self):
@@ -264,7 +264,7 @@ class Registry:
             raise ValidationError(f"unsupported registry event type {serder.ilk}")
 
         regk = serder.said if serder.ilk == "rip" else serder.regid
-        sn = int(serder.sad["n"], 16)
+        sn = Number(numh=serder.sad["n"]).num
         if serder.ilk == "rip" and sn != 0:
             raise ValidationError(f"registry inception event {serder.said} has invalid sn {sn}")
         if serder.ilk == "rip" and serder.sad["i"] != self.hab.pre:
@@ -298,7 +298,7 @@ class Registry:
         """
         # Retrieve the registry key and sn from the event
         regk = serder.said if serder.ilk == "rip" else serder.regid
-        sn = int(serder.sad["n"], 16)
+        sn = Number(numh=serder.sad["n"]).num
 
         # Update the registry store and clear every escrowed candidate for this
         # slot now that one event has won it
@@ -668,7 +668,7 @@ class Registry:
         while tip is not None:
             # Only the immediate next sequence slot can legally extend the
             # current tip, so advance one TEL step at a time.
-            sn = int(tip.sad["n"], 16) + 1
+            sn = Number(numh=tip.sad["n"]).num + 1
             saids = []
             seen = set()
             for escrowdb in (self.store.baser.maes, self.store.baser.ooes):
@@ -724,7 +724,7 @@ class Registry:
 
         # The new blind update must extend the effective frontier, which may be
         # newer than the last committed head when pipelining staged updates.
-        sn = int(tip.sad["n"], 16) + 1
+        sn = Number(numh=tip.sad["n"]).num + 1
         acdcSaid = acdc.said
         blinder = Blinder.blind(sn=sn, acdc=acdcSaid, state=state, **blindkwa)
 
