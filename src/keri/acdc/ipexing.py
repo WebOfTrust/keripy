@@ -37,10 +37,12 @@ PreviousRoutes = {
 }
 
 DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
-EdgeGroupLabels = ("d", "u", "o", "w")
+EdgeSectionLabels = ("d", "u", "o", "w")
+EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
 DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
+EdgeGroupOps = ("AND", "OR")
 
 def _streamSerder(stream):
     """Extract the message serder from a bare or nested artifact stream.
@@ -590,12 +592,14 @@ class IpexHandler:
 
                 # Expanded edge sections may contain nested edge groups
                 for edge in blocks:
-                    groups = [edge]
+                    groups = [(edge, False)]
                     while groups:
-                        group = groups.pop()
+                        group, nested = groups.pop()
+                        labels = EdgeGroupLabels if nested else EdgeSectionLabels   # Leaf vs group labels
                         if "n" in group:
-                            if any(label not in EdgeNodeLabels for label in group):
-                                return None
+                            for label in group:
+                                if label not in EdgeNodeLabels:
+                                    return None
                             edgeSaid = group.get("n")
                             if not isinstance(edgeSaid, str):
                                 return None
@@ -612,11 +616,11 @@ class IpexHandler:
                             continue
 
                         for label, node in group.items():
-                            if label in EdgeGroupLabels:
+                            if label in labels:
                                 continue
                             if not isinstance(node, Mapping):
                                 return None
-                            groups.append(node)
+                            groups.append((node, True))
 
         # Even when offer omits farther nodes, every carried nest must still be
         # part of the root-reachable disclosed graph.
@@ -624,6 +628,187 @@ class IpexHandler:
             return None
 
         return nodes, order
+
+    def _evaluateLeafEdge(self, group, *, nodes, nserder, inheritedSchema):
+        """Evaluate one disclosed leaf edge against its referenced far node.
+
+        Parameters:
+            group (Mapping): Leaf edge mapping that must carry an ``n`` field
+                naming the far-node SAID, and may carry scalar-string ``o``
+                and ``s`` fields for operator and schema-pin semantics.
+            nodes (dict): Mapping of disclosed node SAIDs to parsed nests built
+                during the origin-graph walk.
+            nserder (Serder): Serder for the current near node whose edge block
+                is being evaluated.
+            inheritedSchema (str | Mapping | None): Optional schema pin passed
+                down from a parent edge group.
+
+        Returns:
+            bool | None: ``True`` when the leaf edge semantics are satisfied,
+                ``False`` when the leaf is well-formed but its relation or
+                schema constraints do not match, or ``None`` when the leaf
+                shape itself is malformed and verification must fail closed.
+        """
+        # Reject unknown leaf labels before we inspect the reference.
+        for label in group:
+            if label not in EdgeNodeLabels:
+                return None
+
+        # Resolve the far node that this edge claims to reference.
+        edgeSaid = group.get("n")
+        if edgeSaid not in nodes:
+            return None
+        far = nodes[edgeSaid]
+        fserder = far["serder"] if isinstance(far, dict) else far.serder
+
+        # Leaf edge operators are optional scalar strings in the V2 shape.
+        op = group.get("o")
+        if op is not None and not isinstance(op, str):
+            return None
+
+        # Missing `o` is valid and means there is no explicit unary operator
+        # constraint on this leaf. A provided but unrecognized operator fails
+        # closed instead of being treated like an omitted one.
+        if op is None:
+            recognizedOp = None
+        elif op not in UnaryEdgeOps:
+            return None
+        else:
+            recognizedOp = op
+
+        # Edge operators either drive the issuer/issuee relation
+        # check directly or, for E1E, add an issuee-to-issuee constraint.
+        dop = recognizedOp if recognizedOp in DelegativeEdgeOps else None
+
+        # Unsupported leaf operators fail closed instead of being ignored.
+        if recognizedOp == "NOT" or dop == "DI2I":
+            return None
+
+        # Start from a passing state, then knock the edge down to False if
+        # any required relation check fails.
+        matched = True
+        if recognizedOp == "E1E":
+            if (not nserder.iseaid
+                    or not fserder.iseaid
+                    or nserder.iseaid != fserder.iseaid):
+                matched = False
+
+        # Delegative operators compare the near node's issuer relation to the
+        # far node's issuer AID.
+        if matched and dop is not None and dop != "NI2I":
+            if not fserder.iseaid:
+                matched = False
+            elif dop == "I2I" and nserder.israid != fserder.iseaid:
+                matched = False
+
+        # A leaf may pin the far node's schema directly, otherwise it
+        # inherits the schema pin from its parent group.
+        edgeSchema = group["s"] if "s" in group else inheritedSchema
+        if matched and edgeSchema is not None:
+            edgeSchemer = None
+            if isinstance(edgeSchema, str):
+                edgeSchemaId = edgeSchema
+            elif isinstance(edgeSchema, Mapping):
+                declared = edgeSchema.get("$id")
+                if not isinstance(declared, str):
+                    return None
+                try:
+                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
+                except (ValidationError, ValueError):
+                    return None
+                if edgeSchemer.said != declared:
+                    return None
+                edgeSchemaId = edgeSchemer.said
+            else:
+                return None
+
+            farSchema = fserder.schema
+            if isinstance(farSchema, Mapping):
+                farSchemaId = farSchema.get("$id")
+            elif isinstance(farSchema, str):
+                farSchemaId = farSchema
+            else:
+                return None
+            if not isinstance(farSchemaId, str):
+                return None
+
+            # A direct schema SAID match is enough. Otherwise load or build
+            # the schema and verify the far node against it.
+            if edgeSchemaId != farSchemaId:
+                if edgeSchemer is None:
+                    edgeSchemer = self.hby.db.schema.get(edgeSchemaId)
+                    if edgeSchemer is None:
+                        return None
+                try:
+                    edgeSchemer.verify(fserder.raw)
+                except ValidationError:
+                    matched = False
+
+        return matched
+
+    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, inheritedSchema):
+        """Evaluate one disclosed edge group and reduce its child results.
+
+        Parameters:
+            group (Mapping): Edge-section or nested edge-group mapping whose
+                child entries are either more groups or leaf edges.
+            nodes (dict): Mapping of disclosed node SAIDs to parsed nests built
+                during the origin-graph walk.
+            nserder (Serder): Serder for the current near node whose edge block
+                is being evaluated.
+            nested (bool): ``True`` when ``group`` is a nested edge group and
+                therefore allows group-only labels like ``s``; ``False`` for a
+                top-level edge section.
+            inheritedSchema (str | Mapping | None): Optional schema pin passed
+                down from the parent edge group.
+
+        Returns:
+            bool | None: ``True`` when the group is well-formed and its child
+                results satisfy the group's ``AND`` or ``OR`` semantics,
+                ``False`` when the group is well-formed but the reduced child
+                result fails, or ``None`` when the group shape is malformed and
+                verification must fail closed.
+        """
+        # Top-level edge sections and nested edge groups allow slightly
+        # different reserved labels, so choose the right set up front.
+        labels = EdgeGroupLabels if nested else EdgeSectionLabels
+
+        # Nested groups may contribute an m-ary operator and a shared schema
+        # pin for every child below them.
+        groupOp = group.get("o", "AND")
+        if not isinstance(groupOp, str) or groupOp not in EdgeGroupOps:
+            return None
+
+        # Nested groups can pin one schema for every child below them.
+        nextSchema = group.get("s", inheritedSchema) if nested else inheritedSchema
+        results = []
+        for label, node in group.items():
+            if label in labels:
+                continue
+            if not isinstance(node, Mapping):
+                return None
+
+            # Recurse into each child and fail closed if any child is malformed.
+            if "n" in node:
+                matched = self._evaluateLeafEdge(node,
+                                                 nodes=nodes,
+                                                 nserder=nserder,
+                                                 inheritedSchema=nextSchema)
+            else:
+                matched = self._evaluateGroupEdge(node,
+                                                  nodes=nodes,
+                                                  nserder=nserder,
+                                                  nested=True,
+                                                  inheritedSchema=nextSchema)
+            if matched is None:
+                return None
+            results.append(matched)
+
+        if not results:
+            return None
+
+        # Reduce the child booleans according to the group's operator.
+        return any(results) if groupOp == "OR" else all(results)
 
     def _verifyGraphSemantics(self, nodes, order):
         """Verify grant edge operators and edge-schema pins across walked nodes.
@@ -633,8 +818,8 @@ class IpexHandler:
             order (list): Breadth-first walk order returned by ``_walkGraph``.
 
         Returns:
-            bool: True when every walked edge leaf names a disclosed far node
-                and every leaf-level operator and schema constraint is
+            bool: True when every walked edge block is well-formed and its
+                leaf-level and group-level operator/schema constraints are
                 satisfied; False on any malformed or violated edge semantics.
         """
         for said in order:
@@ -658,113 +843,22 @@ class IpexHandler:
                 return False
 
             for edge in blocks:
-                # Walk nested edge groups until we reach each leaf `n`
-                groups = [edge]
-                while groups:
-                    group = groups.pop()
-                    if "n" in group:
-                        # Leaf edges may only use leaf labels
-                        if any(label not in EdgeNodeLabels for label in group):
-                            return False
-
-                        # `n` points to the far disclosed node
-                        edgeSaid = group.get("n")
-                        if edgeSaid not in nodes:
-                            return False
-                        far = nodes[edgeSaid]
-                        # Normalize access to the far-node serder
-                        fserder = far["serder"] if isinstance(far, dict) else far.serder
-
-                        # `o` may be missing, one string, or a list of strings
-                        op = group.get("o")
-                        if op is None:
-                            ops = []
-                        elif isinstance(op, str):
-                            ops = [op]
-                        elif isinstance(op, (list, tuple)) and all(isinstance(item, str) for item in op):
-                            ops = list(op)
-                        else:
-                            return False
-
-                        # Keep only the operators this verifier understands
-                        ops = [cand for cand in ops if cand in UnaryEdgeOps]
-                        # The last delegative operator wins
-                        dop = next((cand for cand in reversed(ops) if cand in DelegativeEdgeOps), None)
-                        if not ops:
-                            # Default from the far-node shape
-                            dop = "I2I" if fserder.iseaid is not None else "NI2I"
-
-                        # Reject unsupported grant edge semantics
-                        if "NOT" in ops or dop == "DI2I":
-                            return False
-
-                        # E1E requires matching `i` values on both nodes
-                        if "E1E" in ops:
-                            if not nserder.iseaid or not fserder.iseaid or nserder.iseaid != fserder.iseaid:
-                                return False
-
-                        # Issuer-linked edges require a valid far-node issuer
-                        if dop is not None and dop != "NI2I":
-                            if not fserder.iseaid:
-                                return False
-                            if dop == "I2I" and nserder.israid != fserder.iseaid:
-                                return False
-
-                        # `s` optionally pins the far-node schema
-                        if "s" in group:
-                            edgeSchema = group["s"]
-                            edgeSchemer = None
-                            if isinstance(edgeSchema, str):
-                                edgeSchemaId = edgeSchema
-                            elif isinstance(edgeSchema, Mapping):
-                                # Inline schemas must match their declared `$id`
-                                declared = edgeSchema.get("$id")
-                                if not isinstance(declared, str):
-                                    return False
-                                try:
-                                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
-                                except (ValidationError, ValueError):
-                                    return False
-                                if edgeSchemer.said != declared:
-                                    return False
-                                edgeSchemaId = edgeSchemer.said
-                            else:
-                                return False
-
-                            # Read the far node's schema reference
-                            farSchema = fserder.schema
-                            if isinstance(farSchema, Mapping):
-                                farSchemaId = farSchema.get("$id")
-                            elif isinstance(farSchema, str):
-                                farSchemaId = farSchema
-                            else:
-                                return False
-                            if not isinstance(farSchemaId, str):
-                                return False
-
-                            # If the IDs differ, the far node must still validate
-                            # against the schema named by the edge
-                            if edgeSchemaId != farSchemaId:
-                                if edgeSchemer is None:
-                                    # Resolve SAID-only schema pins from the local cache
-                                    edgeSchemer = self.hby.db.schema.get(edgeSchemaId)
-                                    if edgeSchemer is None:
-                                        return False
-                                try:
-                                    # Enforce the schema pin
-                                    edgeSchemer.verify(fserder.raw)
-                                except ValidationError:
-                                    return False
-                        continue
-
-                    # Group operators shape traversal only
-                    for label, node in group.items():
-                        if label in EdgeGroupLabels:
-                            continue
-                        # Child groups must also be edge mappings
-                        if not isinstance(node, Mapping):
-                            return False
-                        groups.append(node)
+                # Evaluate the whole edge tree from the root down. Each leaf
+                # returns one boolean and each group reduces its child booleans
+                # with AND/OR using any inherited schema pin.
+                if "n" in edge:
+                    matched = self._evaluateLeafEdge(edge,
+                                                     nodes=nodes,
+                                                     nserder=nserder,
+                                                     inheritedSchema=None)
+                else:
+                    matched = self._evaluateGroupEdge(edge,
+                                                      nodes=nodes,
+                                                      nserder=nserder,
+                                                      nested=False,
+                                                      inheritedSchema=None)
+                if matched is not True:
+                    return False
 
         return True
 

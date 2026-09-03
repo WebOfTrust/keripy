@@ -102,9 +102,11 @@ def _anchor(hab, registry, serder, *, framed=False):
     return anc
 
 
-def _edge(label, node, *, op="I2I", schema=None):
+def _edge(label, node, *, op=None, schema=None):
     """Create a simple edge block that points at another disclosed ACDC node."""
-    target = dict(d="", n=node.said, o=op)
+    target = dict(d="", n=node.said)
+    if op is not None:
+        target["o"] = op
     if schema is not None:
         target["s"] = schema
     return dict(d="", **{label: target})
@@ -568,13 +570,15 @@ def test_ipex_v2_rejects_offer_with_unexpected_nested_artifacts():
                          attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                          edge=_edge("holder", rip),
                          iseaid=hab.pre)
+        schema = origin.sad["s"]["$id"]
 
         # Build a syntactically valid offer body, then re-endorse it with an
         # invalid nested DAG that points at a TEL event instead of an ACDC node.
         exn, _ = ipexOffer(hab=hab,
                            recp=hab.pre,
                            origin=origin,
-                           message="Here is the forged credential DAG")
+                           message="Here is the forged credential DAG",
+                           modifiers=dict(dp=[[[schema, "/", []]]]))
 
         atc = bytearray(hab.endorse(serder=exn,
                                     framed=False,
@@ -802,26 +806,65 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         schemaOrigin,
                         [schemaChild])
 
-        # Case 2: nested edge groups still walk correctly, and leaf operators
-        # are evaluated against the far nodes they point to.
-        memberChild = acdcmap(israid=issuer.pre,
-                              attribute=dict(d="", role="member"),
-                              iseaid=issuer.pre)
-        subjectChild = acdcmap(israid=issuer.pre,
-                               attribute=dict(d="", department="kitchen"),
-                               iseaid=subject.pre)
+        # Case 2: the edge schema allows `s` on a nested edge group. IPEX
+        # interprets that as one shared far-node schema pin for the group's
+        # children unless a leaf provides its own `s`.
+        groupedSchemaMember = acdcmap(israid=issuer.pre,
+                                      attribute=dict(d="", role="member"),
+                                      iseaid=issuer.pre)
+        groupedSchemaStaff = acdcmap(israid=issuer.pre,
+                                     attribute=dict(d="", role="staff"),
+                                     iseaid=issuer.pre)
+        groupedSchemaOrigin = acdcmap(israid=issuer.pre,
+                                      attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                      edge=dict(d="",
+                                                u=Noncer().qb64,
+                                                reports=dict(d="",
+                                                             s=compatSchemer.said,
+                                                             member=dict(d="",
+                                                                         n=groupedSchemaMember.said,
+                                                                         o="I2I"),
+                                                             staff=dict(d="",
+                                                                        n=groupedSchemaStaff.said,
+                                                                        o="I2I"))),
+                                      iseaid=subject.pre)
+        assert_accepted("Here is the grouped-schema DAG",
+                        groupedSchemaOrigin,
+                        [groupedSchemaMember, groupedSchemaStaff])
+
+        # Case 3: a grouped OR succeeds when at least one child edge relation
+        # is satisfied, instead of requiring every branch to pass.
+        orMember = acdcmap(israid=issuer.pre,
+                           attribute=dict(d="", role="member"),
+                           iseaid=issuer.pre)
+        orStaff = acdcmap(israid=issuer.pre,
+                          attribute=dict(d="", department="kitchen"),
+                          iseaid=subject.pre)
         groupedOrigin = acdcmap(israid=issuer.pre,
                                 attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                                 edge=dict(d="",
                                           u=Noncer().qb64,
                                           either=dict(d="",
                                                       o="OR",
-                                                      member=dict(d="", n=memberChild.said, o="I2I"),
-                                                      staff=dict(d="", n=subjectChild.said, o="E1E"))),
+                                                      member=dict(d="", n=orMember.said, o="I2I"),
+                                                      staff=dict(d="", n=orStaff.said, o="I2I"))),
                                 iseaid=subject.pre)
-        assert_accepted("Here is the grouped-edge DAG",
+        assert_accepted("Here is the grouped-OR DAG",
                         groupedOrigin,
-                        [memberChild, subjectChild])
+                        [orMember, orStaff])
+
+        # Case 4: a leaf edge may omit `o`. The V2 edge shape allows that, and
+        # IPEX does not infer an I2I/NI2I default when the operator is absent.
+        noOpChild = acdcmap(israid=issuer.pre,
+                            attribute=dict(d="", role="member"),
+                            iseaid=subject.pre)
+        noOpOrigin = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                             edge=_edge("holder", noOpChild),
+                             iseaid=subject.pre)
+        assert_accepted("Here is the no-operator DAG",
+                        noOpOrigin,
+                        [noOpChild])
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
@@ -951,6 +994,51 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the DI2I-operator DAG",
                         diOrigin,
                         [diChild])
+
+        # List-valued leaf operators are not supported
+        listOpChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        listOpOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=_edge("holder", listOpChild, op=["I2I"]),
+                               iseaid=subject.pre)
+        assert_rejected("Here is the list-valued leaf-operator DAG",
+                        listOpOrigin,
+                        [listOpChild])
+
+        # Unknown edge operators are not supported
+        bogusChild = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="member"),
+                             iseaid=issuer.pre)
+        bogusOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=_edge("holder", bogusChild, op="BOGUS"),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the unknown-operator DAG",
+                        bogusOrigin,
+                        [bogusChild])
+
+        # An OR group fails when none of its children satisfy the
+        # disclosed relation constraints.
+        orLeft = acdcmap(israid=issuer.pre,
+                         attribute=dict(d="", role="member"),
+                         iseaid=subject.pre)
+        orRight = acdcmap(israid=issuer.pre,
+                          attribute=dict(d="", department="kitchen"),
+                          iseaid=subject.pre)
+        badOrOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=dict(d="",
+                                        u=Noncer().qb64,
+                                        either=dict(d="",
+                                                    o="OR",
+                                                    member=dict(d="", n=orLeft.said, o="I2I"),
+                                                    staff=dict(d="", n=orRight.said, o="I2I"))),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the unsatisfied grouped-OR DAG",
+                        badOrOrigin,
+                        [orLeft, orRight])
 
         # A pinned edge schema must either match the far node's own schema or
         # be a different compatible schema that the far node still satisfies.
