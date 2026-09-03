@@ -8,6 +8,7 @@ IPEx protocol service support (Issuance and Presentation Exchange)
 
 from collections import deque, namedtuple
 from collections.abc import Mapping
+from copy import deepcopy
 
 from hio.help import ogler
 
@@ -15,9 +16,10 @@ from .. import Kinds, Protocols
 from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
                       MisbindingError, MissingAnchorError, MissingChainError,
                       MisdigestError, MisregistryError, MissequenceError,
-                      RootSealError, UnverifiedBlindError, Vrsn_2_0, sniff)
+                      RootSealError, UnverifiedBlindError, ValidationError,
+                      Vrsn_2_0, sniff)
 from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
-                    Number, Saider, Serdery, Texter, exchange, messagize)
+                    Number, Saider, Schemer, Serdery, Texter, exchange, messagize)
 from ..peer import cloneMessage
 
 logger = ogler.getLogger()
@@ -37,6 +39,8 @@ PreviousRoutes = {
 DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
 EdgeGroupLabels = ("d", "u", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
+UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
+DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
 
 def _streamSerder(stream):
     """Extract the message serder from a bare or nested artifact stream.
@@ -444,6 +448,8 @@ class IpexHandler:
             walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=True)
             if walked is None:
                 return False
+            if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
+                return False
 
             # Stage 5: after the disclosed graph shape is accepted, each walked
             # registry-backed node must vet its own node-local proof group.
@@ -618,6 +624,149 @@ class IpexHandler:
             return None
 
         return nodes, order
+
+    def _verifyGraphSemantics(self, nodes, order):
+        """Verify grant edge operators and edge-schema pins across walked nodes.
+
+        Parameters:
+            nodes (dict): Mapping of disclosed node SAID to parsed nest.
+            order (list): Breadth-first walk order returned by ``_walkGraph``.
+
+        Returns:
+            bool: True when every walked edge leaf names a disclosed far node
+                and every leaf-level operator and schema constraint is
+                satisfied; False on any malformed or violated edge semantics.
+        """
+        for said in order:
+            # Current near node from the walked grant DAG
+            near = nodes[said]
+
+            # Retrieve node serder
+            nserder = near["serder"] if isinstance(near, dict) else near.serder
+
+            # No edges means nothing more to validate for this node
+            edges = nserder.sad.get("e")
+            if not edges:
+                continue
+
+            # Normalize a single edge block or a list of edge blocks
+            if isinstance(edges, Mapping):
+                blocks = [edges]
+            elif isinstance(edges, list) and all(isinstance(edge, Mapping) for edge in edges):
+                blocks = edges
+            else:
+                return False
+
+            for edge in blocks:
+                # Walk nested edge groups until we reach each leaf `n`
+                groups = [edge]
+                while groups:
+                    group = groups.pop()
+                    if "n" in group:
+                        # Leaf edges may only use leaf labels
+                        if any(label not in EdgeNodeLabels for label in group):
+                            return False
+
+                        # `n` points to the far disclosed node
+                        edgeSaid = group.get("n")
+                        if edgeSaid not in nodes:
+                            return False
+                        far = nodes[edgeSaid]
+                        # Normalize access to the far-node serder
+                        fserder = far["serder"] if isinstance(far, dict) else far.serder
+
+                        # `o` may be missing, one string, or a list of strings
+                        op = group.get("o")
+                        if op is None:
+                            ops = []
+                        elif isinstance(op, str):
+                            ops = [op]
+                        elif isinstance(op, (list, tuple)) and all(isinstance(item, str) for item in op):
+                            ops = list(op)
+                        else:
+                            return False
+
+                        # Keep only the operators this verifier understands
+                        ops = [cand for cand in ops if cand in UnaryEdgeOps]
+                        # The last delegative operator wins
+                        dop = next((cand for cand in reversed(ops) if cand in DelegativeEdgeOps), None)
+                        if not ops:
+                            # Default from the far-node shape
+                            dop = "I2I" if fserder.iseaid is not None else "NI2I"
+
+                        # Reject unsupported grant edge semantics
+                        if "NOT" in ops or dop == "DI2I":
+                            return False
+
+                        # E1E requires matching `i` values on both nodes
+                        if "E1E" in ops:
+                            if not nserder.iseaid or not fserder.iseaid or nserder.iseaid != fserder.iseaid:
+                                return False
+
+                        # Issuer-linked edges require a valid far-node issuer
+                        if dop is not None and dop != "NI2I":
+                            if not fserder.iseaid:
+                                return False
+                            if dop == "I2I" and nserder.israid != fserder.iseaid:
+                                return False
+
+                        # `s` optionally pins the far-node schema
+                        if "s" in group:
+                            edgeSchema = group["s"]
+                            edgeSchemer = None
+                            if isinstance(edgeSchema, str):
+                                edgeSchemaId = edgeSchema
+                            elif isinstance(edgeSchema, Mapping):
+                                # Inline schemas must match their declared `$id`
+                                declared = edgeSchema.get("$id")
+                                if not isinstance(declared, str):
+                                    return False
+                                try:
+                                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
+                                except (ValidationError, ValueError):
+                                    return False
+                                if edgeSchemer.said != declared:
+                                    return False
+                                edgeSchemaId = edgeSchemer.said
+                            else:
+                                return False
+
+                            # Read the far node's schema reference
+                            farSchema = fserder.schema
+                            if isinstance(farSchema, Mapping):
+                                farSchemaId = farSchema.get("$id")
+                            elif isinstance(farSchema, str):
+                                farSchemaId = farSchema
+                            else:
+                                return False
+                            if not isinstance(farSchemaId, str):
+                                return False
+
+                            # If the IDs differ, the far node must still validate
+                            # against the schema named by the edge
+                            if edgeSchemaId != farSchemaId:
+                                if edgeSchemer is None:
+                                    # Resolve SAID-only schema pins from the local cache
+                                    edgeSchemer = self.hby.db.schema.get(edgeSchemaId)
+                                    if edgeSchemer is None:
+                                        return False
+                                try:
+                                    # Enforce the schema pin
+                                    edgeSchemer.verify(fserder.raw)
+                                except ValidationError:
+                                    return False
+                        continue
+
+                    # Group operators shape traversal only
+                    for label, node in group.items():
+                        if label in EdgeGroupLabels:
+                            continue
+                        # Child groups must also be edge mappings
+                        if not isinstance(node, Mapping):
+                            return False
+                        groups.append(node)
+
+        return True
 
     def _verifyIssuerAuthGraph(self, nodes, order):
         """Verify issuer-auth proof groups for each walked disclosed DAG node.

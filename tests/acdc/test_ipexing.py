@@ -13,7 +13,7 @@ from keri.acdc import (Regery, Registrar, acdcmap, blindate, apply as ipexApply,
                        spurn as ipexSpurn)
 from keri.app import openCF, openHby
 from keri.core import (Blinder, Codens, Counter, GenDex, Kevery, Kramer, Noncer, Parser,
-                       messagize,
+                       Schemer, messagize,
                        SerderKERI, Serdery, Texter, exchange)
 from keri.kering import Colds, sniff
 from keri.help import helping
@@ -452,7 +452,7 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
         origin = acdcmap(israid=holder.pre,
                          uuid=Noncer().qb64,
                          attribute=dict(d="", u=Noncer().qb64, LEI="254900OPPU84GM83MG36"),
-                         edge=_edge("holder", child),
+                         edge=_edge("holder", child, op="E1E"),
                          rule=dict(d="", l="Use only for onboarding."),
                          iseaid=verifier.pre)
         schema = origin.sad["s"]["$id"]
@@ -468,7 +468,7 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
                               uuid="",
                               schema=origin.sad["s"]["$id"],
                               attribute=origin.sad["a"]["d"],
-                              edge=_edge("holder", offerChild),
+                              edge=_edge("holder", offerChild, op="E1E"),
                               rule=origin.sad["r"])
 
         recorder = Recorder()
@@ -752,219 +752,222 @@ def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
         assert recorder.items == []
 
 
-def test_ipex_v2_rejects_grant_with_missing_edged_node():
-    """Grant must include every ACDC node referenced by the origin DAG."""
-    with openHby(name="ipex-v2-bad-grant-dangling-edge",
+def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
+    """Grant accepts valid edge-group shapes and valid leaf operator/schema semantics."""
+    with openHby(name="ipex-v2-grant-graph-semantics",
                  base="test",
                  version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        registry = regcept(israid=hab.pre)
-        child = acdcmap(israid=hab.pre,
-                        attribute=dict(d="", role="member"),
-                        iseaid=hab.pre)
-        origin = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         edge=_edge("holder", child),
-                         iseaid=hab.pre)
+        issuer = hby.makeHab(name="issuer")
+        subject = hby.makeHab(name="subject")
 
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        exn, atc = ipexGrant(hab=hab,
-                             recp=hab.pre,
-                             message="Here is the incomplete DAG",
-                             origin=origin)
+        def assert_accepted(message, origin, artifacts):
+            exn, atc = ipexGrant(hab=issuer,
+                                 recp=subject.pre,
+                                 message=message,
+                                 origin=origin,
+                                 artifacts=artifacts)
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(exn.said,)) is not None
+            assert recorder.items[-1] == {"r": "/exn/ipex/grant",
+                                          "d": exn.said,
+                                          "m": message}
 
-        ims = bytearray(exn.raw)
-        ims.extend(atc)
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        # Case 1: an expanded edge section may carry its own nonce, and an edge
+        # schema may name a different but still compatible schema that the far
+        # node satisfies.
+        schemaChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        compatSchema = dict(schemaChild.sad["s"])
+        compatSchema["title"] = "ACM Default Schema (compatible grant edge)"
+        compatSchemer = Schemer(sed=compatSchema)
+        hby.db.schema.pin(compatSchemer.said, compatSchemer)
+        schemaOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=dict(d="",
+                                         u=Noncer().qb64,
+                                         holder=dict(d="",
+                                                     n=schemaChild.said,
+                                                     o="I2I",
+                                                     s=compatSchemer.said)),
+                               iseaid=subject.pre)
+        assert_accepted("Here is the schema-pinned DAG",
+                        schemaOrigin,
+                        [schemaChild])
 
-        assert ims == bytearray()
-        assert hby.db.exns.get(keys=(exn.said,)) is None
-        assert recorder.items == []
+        # Case 2: nested edge groups still walk correctly, and leaf operators
+        # are evaluated against the far nodes they point to.
+        memberChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        subjectChild = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", department="kitchen"),
+                               iseaid=subject.pre)
+        groupedOrigin = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                edge=dict(d="",
+                                          u=Noncer().qb64,
+                                          either=dict(d="",
+                                                      o="OR",
+                                                      member=dict(d="", n=memberChild.said, o="I2I"),
+                                                      staff=dict(d="", n=subjectChild.said, o="E1E"))),
+                                iseaid=subject.pre)
+        assert_accepted("Here is the grouped-edge DAG",
+                        groupedOrigin,
+                        [memberChild, subjectChild])
 
 
-def test_ipex_v2_accepts_grant_with_section_level_edge_nonce():
-    """Grant accepts an expanded edge section that carries its own nonce."""
-    with openHby(name="ipex-v2-grant-edge-section-u",
+def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
+    """Grant rejects malformed graph closure and violated leaf edge semantics."""
+    with openHby(name="ipex-v2-bad-grant-graph-semantics",
                  base="test",
                  version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        child = acdcmap(israid=hab.pre,
-                        attribute=dict(d="", role="member"),
-                        iseaid=hab.pre)
-        origin = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         edge=dict(d="",
-                                   u=Noncer().qb64,
-                                   holder=dict(d="", n=child.said, o="I2I")),
-                         iseaid=hab.pre)
+        issuer = hby.makeHab(name="issuer")
+        subject = hby.makeHab(name="subject")
 
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        exn, atc = ipexGrant(hab=hab,
-                             recp=hab.pre,
-                             message="Here is the expanded edge-section DAG",
-                             origin=origin,
-                             artifacts=[child])
+        baseChild = acdcmap(israid=issuer.pre,
+                            attribute=dict(d="", role="member"),
+                            iseaid=issuer.pre)
+        incompatSchema = dict(baseChild.sad["s"])
+        incompatSchema["title"] = "ACM Default Schema (incompatible grant edge)"
+        incompatSchema["required"] = list(dict.fromkeys([*incompatSchema["required"], "z"]))
+        incompatSchemer = Schemer(sed=incompatSchema)
+        hby.db.schema.pin(incompatSchemer.said, incompatSchemer)
 
-        ims = bytearray(exn.raw)
-        ims.extend(atc)
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        def assert_rejected(message, origin, artifacts=None):
+            before = len(recorder.items)
+            exn, atc = ipexGrant(hab=issuer,
+                                 recp=subject.pre,
+                                 message=message,
+                                 origin=origin,
+                                 artifacts=artifacts)
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(exn.said,)) is None
+            assert len(recorder.items) == before
 
-        assert ims == bytearray()
-        assert hby.db.exns.get(keys=(exn.said,)) is not None
-        assert recorder.items == [{"r": "/exn/ipex/grant",
-                                   "d": exn.said,
-                                   "m": "Here is the expanded edge-section DAG"}]
+        # Missing referenced node: the walk is not closed.
+        missingChild = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", role="member"),
+                               iseaid=issuer.pre)
+        missingOrigin = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                edge=_edge("holder", missingChild),
+                                iseaid=subject.pre)
+        assert_rejected("Here is the incomplete DAG", missingOrigin)
 
+        # Duplicate disclosed node: one DAG node must not appear twice.
+        duplicateChild = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", role="member"),
+                                 iseaid=issuer.pre)
+        duplicateOrigin = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                  edge=_edge("holder", duplicateChild),
+                                  iseaid=subject.pre)
+        assert_rejected("Here is the duplicated DAG",
+                        duplicateOrigin,
+                        [duplicateChild, duplicateChild])
 
-def test_ipex_v2_accepts_grant_with_nested_edge_group():
-    """Grant accepts nested edge groups and walks their far-node leaves."""
-    with openHby(name="ipex-v2-grant-edge-group",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        child0 = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", role="member"),
-                         iseaid=hab.pre)
-        child1 = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", department="kitchen"),
-                         iseaid=hab.pre)
-        origin = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         edge=dict(d="",
-                                   u=Noncer().qb64,
-                                   either=dict(d="",
-                                               o="OR",
-                                               member=dict(d="", n=child0.said, o="I2I"),
-                                               staff=dict(d="", n=child1.said, o="I2I"))),
-                         iseaid=hab.pre)
+        # Compacted edge section is not walkable.
+        compactOrigin = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                iseaid=subject.pre)
+        compactSad = dict(compactOrigin.sad)
+        compactSad["e"] = regcept(israid=issuer.pre).said
+        assert_rejected("Here is the compacted DAG",
+                        type(compactOrigin)(sad=compactSad, makify=True))
 
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        # Extra carried node must still be reachable from the origin.
+        reachableChild = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", role="member"),
+                                 iseaid=issuer.pre)
+        extraChild = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", department="kitchen"),
+                             iseaid=subject.pre)
+        extraOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=_edge("holder", reachableChild),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the overstuffed DAG",
+                        extraOrigin,
+                        [reachableChild, extraChild])
 
-        exn, atc = ipexGrant(hab=hab,
-                             recp=hab.pre,
-                             message="Here is the grouped-edge DAG",
-                             origin=origin,
-                             artifacts=[child0, child1])
+        # I2I requires the near issuer to equal the far issuee.
+        wrongI2IChild = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", role="member"),
+                                iseaid=subject.pre)
+        wrongI2IOrigin = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                 edge=_edge("holder", wrongI2IChild, op="I2I"),
+                                 iseaid=subject.pre)
+        assert_rejected("Here is the I2I-violating DAG",
+                        wrongI2IOrigin,
+                        [wrongI2IChild])
 
-        ims = bytearray(exn.raw)
-        ims.extend(atc)
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        # E1E requires the near and far nodes to target the same issuee.
+        wrongE1EChild = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", department="kitchen"),
+                                iseaid=issuer.pre)
+        wrongE1EOrigin = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                 edge=_edge("holder", wrongE1EChild, op="E1E"),
+                                 iseaid=subject.pre)
+        assert_rejected("Here is the E1E-violating DAG",
+                        wrongE1EOrigin,
+                        [wrongE1EChild])
 
-        assert ims == bytearray()
-        assert hby.db.exns.get(keys=(exn.said,)) is not None
-        assert recorder.items == [{"r": "/exn/ipex/grant",
-                                   "d": exn.said,
-                                   "m": "Here is the grouped-edge DAG"}]
+        # Unsupported leaf operators fail closed instead of being treated as no-op.
+        notChild = acdcmap(israid=issuer.pre,
+                           attribute=dict(d="", role="member"),
+                           iseaid=issuer.pre)
+        notOrigin = acdcmap(israid=issuer.pre,
+                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                            edge=_edge("holder", notChild, op="NOT"),
+                            iseaid=subject.pre)
+        assert_rejected("Here is the NOT-operator DAG",
+                        notOrigin,
+                        [notChild])
 
+        diChild = acdcmap(israid=issuer.pre,
+                          attribute=dict(d="", role="member"),
+                          iseaid=issuer.pre)
+        diOrigin = acdcmap(israid=issuer.pre,
+                           attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                           edge=_edge("holder", diChild, op="DI2I"),
+                           iseaid=subject.pre)
+        assert_rejected("Here is the DI2I-operator DAG",
+                        diOrigin,
+                        [diChild])
 
-def test_ipex_v2_rejects_grant_with_duplicate_disclosed_node():
-    """Grant must not carry the same disclosed ACDC node more than once."""
-    with openHby(name="ipex-v2-bad-grant-duplicate-node",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        child = acdcmap(israid=hab.pre,
-                        attribute=dict(d="", role="member"),
-                        iseaid=hab.pre)
-        origin = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         edge=_edge("holder", child),
-                         iseaid=hab.pre)
-
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-        exn, atc = ipexGrant(hab=hab,
-                             recp=hab.pre,
-                             message="Here is the duplicated DAG",
-                             origin=origin,
-                             artifacts=[child, child])
-
-        ims = bytearray(exn.raw)
-        ims.extend(atc)
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-
-        assert ims == bytearray()
-        assert hby.db.exns.get(keys=(exn.said,)) is None
-        assert recorder.items == []
-
-
-def test_ipex_v2_rejects_grant_with_nonwalkable_compact_edges():
-    """Grant rejects ACDCs whose edge block is compacted to a non-walkable value."""
-    with openHby(name="ipex-v2-bad-grant-compact-edge",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        registry = regcept(israid=hab.pre)
-        origin = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         iseaid=hab.pre)
-        sad = dict(origin.sad)
-        sad["e"] = regcept(israid=hab.pre).said
-        compactOrigin = type(origin)(sad=sad, makify=True)
-
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-        exn, atc = ipexGrant(hab=hab,
-                             recp=hab.pre,
-                             message="Here is the compacted DAG",
-                             origin=compactOrigin)
-
-        ims = bytearray(exn.raw)
-        ims.extend(atc)
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-
-        assert ims == bytearray()
-        assert hby.db.exns.get(keys=(exn.said,)) is None
-        assert recorder.items == []
-
-
-def test_ipex_v2_rejects_grant_with_unreachable_nested_node():
-    """Grant must not carry extra nested ACDCs outside the origin DAG."""
-    with openHby(name="ipex-v2-bad-grant-extra-node",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        hab = hby.makeHab(name="test")
-        registry = regcept(israid=hab.pre)
-        child = acdcmap(israid=hab.pre,
-                        attribute=dict(d="", role="member"),
-                        iseaid=hab.pre)
-        extra = acdcmap(israid=hab.pre,
-                        attribute=dict(d="", department="kitchen"),
-                        iseaid=hab.pre)
-        origin = acdcmap(israid=hab.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         edge=_edge("holder", child),
-                         iseaid=hab.pre)
-
-        recorder = Recorder()
-        exc = Exchanger(hby=hby, handlers=[])
-        loadHandlers(hby=hby, exc=exc, notifier=recorder)
-
-        exn, atc = ipexGrant(hab=hab,
-                             recp=hab.pre,
-                             message="Here is the overstuffed DAG",
-                             origin=origin,
-                             artifacts=[child, extra])
-
-        ims = bytearray(exn.raw)
-        ims.extend(atc)
-        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-
-        assert ims == bytearray()
-        assert hby.db.exns.get(keys=(exn.said,)) is None
-        assert recorder.items == []
+        # A pinned edge schema must either match the far node's own schema or
+        # be a different compatible schema that the far node still satisfies.
+        badSchemaChild = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", role="member"),
+                                 iseaid=issuer.pre)
+        badSchemaOrigin = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                  edge=dict(d="",
+                                            holder=dict(d="",
+                                                        n=badSchemaChild.said,
+                                                        o="I2I",
+                                                        s=incompatSchemer.said)),
+                                  iseaid=subject.pre)
+        assert_rejected("Here is the incompatible-schema DAG",
+                        badSchemaOrigin,
+                        [badSchemaChild])
 
 
 def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
@@ -3172,7 +3175,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
             origin = acdcmap(israid=issuerHab.pre,
                              regid=registry.regk,
                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                             edge=_edge("holder", child),
+                             edge=_edge("holder", child, op="E1E"),
                              iseaid=recipientHab.pre)
             schema = origin.sad["s"]["$id"]
 
