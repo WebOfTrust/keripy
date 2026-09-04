@@ -2840,6 +2840,9 @@ def test_serderacdc():
     assert serder.issuer == None
     assert serder.iseaid == None
     assert serder.issuee == None
+    assert serder.snh == None
+    assert serder.sner == None
+    assert serder.sn == None
 
     sad = serder.sad
     raw = serder.raw
@@ -2945,6 +2948,8 @@ def test_serder_v2():
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
     assert serder.stamp == None
+    assert serder.snh == None
+    assert serder.sner == None
     assert serder.compare(said=said)
     assert serder.compare(said=said.encode("utf-8"))
     assert not serder.compare(said='EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE')

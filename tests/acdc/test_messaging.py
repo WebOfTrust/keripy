@@ -3,11 +3,12 @@
 tests.vc.test_messaging module
 
 """
+import pytest
 
 from jsonschema import Draft202012Validator
 
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
-from keri.core import (GenDex, Noncer, SerderACDC, BlindState, Blinder,
+from keri.core import (GenDex, Noncer, Number, SerderACDC, BlindState, Blinder,
                        Compactor, Aggor)
 from keri.acdc import (regcept, blindate, update,
                     acdcatt, acdcagg, acdcmap,
@@ -36,6 +37,9 @@ def test_regcept_message():
     assert serder.uuid == uuid
     assert serder.israid == issuer
     assert serder.stamp == stamp
+    assert serder.snh == '0'
+    assert serder.sn == 0
+    assert isinstance(serder.sner, Number)
 
 
     assert serder.sad == \
@@ -131,6 +135,9 @@ def test_blindate_message():
     assert serder.ilk == Ilks.bup
     assert serder.said == said
     assert serder.stamp == stamp
+    assert serder.snh == '1'
+    assert serder.sn == 1
+    assert isinstance(serder.sner, Number)
     assert serder.sad == \
     {
         'v': 'ACDCCAACAAJSONAAEi.',
@@ -147,6 +154,10 @@ def test_blindate_message():
                         b'DgaZJNiJjB","rd":"EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8","n":"1","p":'
                         b'"EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8","dt":"2020-08-23T18:06:10.988'
                         b'921+00:00","b":"EBTAKXL5si31rCKCimOwR_gJTRmLaqixvrJEj5OzK769"}')
+
+    # test attempt to use sn=-
+    with pytest.raises(ValueError):
+        serderbad = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, sn=0)
 
     # Test CESR
     said = 'EIOVlgnJvK96aMVLtB3PoaIcjpvPDoq41xtIKQE92Rx_'

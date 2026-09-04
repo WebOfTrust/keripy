@@ -67,12 +67,14 @@ def blindate(regid, prior, blid, *, sn=1, stamp=None,
     """
     vs = versify(proto=Protocols.acdc, pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
     ilk = Ilks.bup
-    snh = Number(num=sn).numh  # sn for registry incept must be 0
+    if sn <= 0:  # sn for blind update must be greater than 0
+        raise ValueError(f"Sequence number, {sn=} not greater than zero")
+    snh = Number(num=sn).numh
     stamp = stamp if stamp is not None else nowIso8601()
     sad = dict(v=vs, t=ilk, d='', rd=regid, n=snh, p=prior, dt=stamp, b=blid)
     return SerderACDC(sad=sad, makify=True)
 
-
+# DEPRECATED
 def update(regid, prior, acdc, state, *, sn=1, stamp=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create registry update message of type 'upd'

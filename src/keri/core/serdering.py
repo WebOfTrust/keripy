@@ -2098,6 +2098,7 @@ class Serder:
         """
         return self.said.encode("utf-8") if self.said is not None else None
 
+
     @property
     def diger(self):
         """diger property getter
@@ -2105,6 +2106,7 @@ class Serder:
             diger (Diger): Diger instance created from .said
         """
         return Diger(qb64=self.said)
+
 
     @property
     def ilk(self):
@@ -2123,6 +2125,38 @@ class Serder:
             stamp (str | None): sad["dt"] when present
         """
         return self._sad.get('dt')
+
+
+    @property
+    def snh(self):
+        """snh (sequence number as hex str) property getter
+        Optional fields return None when not present
+        Returns:
+            snh (str|None): sad["n"] when present hex str
+        """
+        return self._sad.get('n')
+
+
+    @property
+    def sner(self):
+        """sner (sequence number) property getter
+        Optional fields return None when not present
+        Returns:
+            sner (Number|None): Number instance of sad['n'] when present
+        """
+        snh = self.snh
+        return Number(numh=snh) if snh is not None else None
+
+
+    @property
+    def sn(self):
+        """sn (sequence number as int) property getter
+        Optional fields return None when not present
+        Returns:
+            sn (int|None): sad["n"] when present as int
+        """
+        sner = self.sner
+        return sner.num if sner is not None else None
 
 
 class SerderKERI(Serder):

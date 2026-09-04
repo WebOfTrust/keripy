@@ -13,35 +13,34 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
-from keri.core import MtrDex, Salter, incept
+from keri.core import MtrDex, Noncer, Salter, incept
+from keri.acdc import regcept, blindate, update, acdcmap
 
+
+def test_sedi_schema():
+    """Test setup of schema for core SEDI acdcs"""
+
+
+
+    """done test"""
 
 def test_core_identity():
-    """Test core identity recipt and entitlement
-
+    """Test core identity receipt and entitlement
 
     IAL3 process
 
     Proof-of-control over SMAID by citizen
 
-    """
-    """
     Create incepting key states for participants:
         Sue as State Issuer Department Level
         Pat as Proofer (Identity)
         Guy as Guardian Parent Citizen
+        Gal as Guardian Parent Citizen
         Wyn as Ward Child Citizen
-
-
 
     use same salter for a set of keys where each uses same salt but different path.
           salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    """
-    salt = b'sediacdcworksalt'  # base salt
-    salter = Salter(raw=salt)
-    assert salter.qb64 == '0ABzZWRpYWNkY3dvcmtzYWx0'  # CESR encoded
 
-    """
     Create set of signers each with private signing key and public verification key
         Under the hood, using Argon2, Salter creates a stretched 32 byte seed
         from 16 byte salt thusly;
@@ -64,13 +63,25 @@ def test_core_identity():
         for signing all based on internal salt but different path for each in
         stretch
 
+    Setup Sue's Issuer ACDC Registries and shared secret salts for blinds
+        Create a set of unique entropy Noncer instances for the ue fields (old uuid)
+        Creates a set of shared secret salts for later blinded update events
+        Create datetime stap for rip events
+        Creeate a set of rip events for vacuous registrys
+        Create list of rids (registry id as rip event said )
     """
-    signers = salter.signers(count=8, transferable=True, temp=True)
 
-    # create witness signers as nontransferable
+    salt = b'sediacdcworksalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 == '0ABzZWRpYWNkY3dvcmtzYWx0'  # CESR encoded
+
+    # create signers, each contains siging key pair
+    signers = salter.signers(count=10, transferable=True, temp=True)  # two per
+
+    # create witness signers as nontransferable, each contains key pair
     walt = b'sediacdcworkwits'  # different salt for witness keys
     walter = Salter(raw=walt)
-    wigners = walter.signers(count=4,transferable=False, temp=True)
+    wigners = walter.signers(count=5,transferable=False, temp=True)  # one per
 
 
     # Create Sue's AID (State Issuer) with single sig single wit inception event JSON
@@ -96,9 +107,10 @@ def test_core_identity():
         'c': [],
         'a': []
     }
+    sue = sueISerder.aid
+    assert sue == 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-'  # State Issuer Sue's AID
+    assert sueISerder.said == sue
 
-    assert sueISerder.aid == 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-'  # State Issuer Sue's AID
-    assert sueISerder.said == sueISerder.aid
 
     # Create Pat's AID (Identity Proofer) with single sig single wit inception event JSON
     patKeys = [signers[2].verfer.qb64]  # incepting public verification key(s)
@@ -123,12 +135,13 @@ def test_core_identity():
         'c': [],
         'a': []
     }
-    assert patISerder.aid == 'EAgq2LY03zk9NUempbqdLzG4PiGnmVMqTD0DfrY9Whwh'  # Proofer Pat's AID
-    assert patISerder.said == patISerder.aid
+    pat = patISerder.aid
+    assert pat== 'EAgq2LY03zk9NUempbqdLzG4PiGnmVMqTD0DfrY9Whwh'  # Proofer Pat's AID
+    assert patISerder.said == pat
 
     # Create Guy's SMAID (Guardian Parent) with single sig single wit inception event JSON
-    guyKeys = [signers[3].verfer.qb64]  # incepting public verification key(s)
-    guyNKeys = [signers[4].verfer.qb64]  # next (rotation) public verification key(s)
+    guyKeys = [signers[4].verfer.qb64]  # incepting public verification key(s)
+    guyNKeys = [signers[5].verfer.qb64]  # next (rotation) public verification key(s)
     guyWits = [wigners[2].verfer.qb64]  # witness aids (same as public verkey)
     guyISerder = incept(guyKeys, code=MtrDex.Blake3_256, ndigs=guyNKeys, wits=guyWits,
                         version=Vrsn_2_0, kind=Kinds.json)
@@ -137,25 +150,53 @@ def test_core_identity():
     {
         'v': 'KERICAACAAJSONAAFb.',
         't': 'icp',
-        'd': 'EFBN1EhcYJ17oA7hTVokJlLVnr8H5saVa_zX1ajXwnX3',
-        'i': 'EFBN1EhcYJ17oA7hTVokJlLVnr8H5saVa_zX1ajXwnX3',
+        'd': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+        'i': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
         's': '0',
         'kt': '1',
-        'k': ['DPJFmK2jfmifFVYvsCPGw-FQbl2xmHJ7fEb_nLlWx4pm'],
+        'k': ['DLew-r-sGNE2Rr1mKBeNGI78UFgAM4bQ1LprmHHNoFUT'],
         'nt': '1',
-        'n': ['DLew-r-sGNE2Rr1mKBeNGI78UFgAM4bQ1LprmHHNoFUT'],
+        'n': ['DPZOdALUpQMCqhrj2d43BSpwzSW7kn0z15odwVwhU4no'],
         'bt': '1',
         'b': ['BG3WKpXb9Ma91C4TnfbMCuLJ0_mgoCbrpMopUuH7M-cM'],
         'c': [],
         'a': []
     }
-    assert guyISerder.aid == 'EFBN1EhcYJ17oA7hTVokJlLVnr8H5saVa_zX1ajXwnX3'  # Guardian Guy's AID
-    assert guyISerder.said == guyISerder.aid
+    guy = guyISerder.aid
+    assert guy == 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR'  # Guardian Guy's AID
+    assert guyISerder.said == guy
+
+    # Create Gal's SMAID (Guardian Parent) with single sig single wit inception event JSON
+    galKeys = [signers[6].verfer.qb64]  # incepting public verification key(s)
+    galNKeys = [signers[7].verfer.qb64]  # next (rotation) public verification key(s)
+    galWits = [wigners[3].verfer.qb64]  # witness aids (same as public verkey)
+    galISerder = incept(galKeys, code=MtrDex.Blake3_256, ndigs=galNKeys, wits=galWits,
+                        version=Vrsn_2_0, kind=Kinds.json)
+
+    assert galISerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAAFb.',
+        't': 'icp',
+        'd': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+        'i': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+        's': '0',
+        'kt': '1',
+        'k': ['DItB34DWsii2vL0nFZbFBRZQljDGmKTY72zZmMAY9_5e'],
+        'nt': '1',
+        'n': ['DBHznQBZMr94KRQ4lN8e1jS-IWCE_QmrE78d8I0coqyT'],
+        'bt': '1',
+        'b': ['BDkey6lzDqWVw6ANa6zr81Yl7gy6nzDblbt1_ENNAw0V'],
+        'c': [],
+        'a': []
+    }
+    gal = galISerder.aid
+    assert gal == 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY'  # Guardian Guy's AID
+    assert galISerder.said == gal
 
     # Create Wyn's SMAID (Ward Child) with single sig single wit inception event JSON
-    wynKeys = [signers[3].verfer.qb64]  # incepting public verification key(s)
-    wynNKeys = [signers[4].verfer.qb64]  # next (rotation) public verification key(s)
-    wynWits = [wigners[2].verfer.qb64]  # witness aids (same as public verkey)
+    wynKeys = [signers[8].verfer.qb64]  # incepting public verification key(s)
+    wynNKeys = [signers[9].verfer.qb64]  # next (rotation) public verification key(s)
+    wynWits = [wigners[4].verfer.qb64]  # witness aids (same as public verkey)
     wynISerder = incept(wynKeys, code=MtrDex.Blake3_256, ndigs=wynNKeys, wits=wynWits,
                         version=Vrsn_2_0, kind=Kinds.json)
 
@@ -163,49 +204,71 @@ def test_core_identity():
     {
         'v': 'KERICAACAAJSONAAFb.',
         't': 'icp',
-        'd': 'EFBN1EhcYJ17oA7hTVokJlLVnr8H5saVa_zX1ajXwnX3',
-        'i': 'EFBN1EhcYJ17oA7hTVokJlLVnr8H5saVa_zX1ajXwnX3',
+        'd': 'EKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1',
+        'i': 'EKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1',
         's': '0',
         'kt': '1',
-        'k': ['DPJFmK2jfmifFVYvsCPGw-FQbl2xmHJ7fEb_nLlWx4pm'],
+        'k': ['DOZasipADYGcDse0RsrrdYKpn2RSLy3U6EDEi4yWrwjm'],
         'nt': '1',
-        'n': ['DLew-r-sGNE2Rr1mKBeNGI78UFgAM4bQ1LprmHHNoFUT'],
+        'n': ['DEep2D7cgt5AmS_QzPvdz0xaGnc9iDX5TO-rwPq9hxUt'],
         'bt': '1',
-        'b': ['BG3WKpXb9Ma91C4TnfbMCuLJ0_mgoCbrpMopUuH7M-cM'],
+        'b': ['BA87lX6lbHymHSSunaf4b1X07KvquE-79TthnQ9_ks9A'],
         'c': [],
         'a': []
     }
-
-    assert wynISerder.aid == 'EFBN1EhcYJ17oA7hTVokJlLVnr8H5saVa_zX1ajXwnX3'  # Ward Wyn's AID
-    assert wynISerder.said == wynISerder.aid
-
-
-    """
-    Setup Sue's Issuer ACDC Registries
+    wyn = wynISerder.aid
+    assert wyn == 'EKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1'  # Ward Wyn's AID
+    assert wynISerder.said == wyn
 
 
+    # Setup Registries for Sue as Issuer
+    # Create u field values for rip events
+    ueraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(8)]
+    uens = [Noncer(raw=raw).qb64 for raw in ueraws]  # unique entropy nonce qb64
+    # create shared secret salts for bup events
+    ssraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(8)]
+    ssss = [Noncer(raw=raw).qb64 for raw in ssraws]  # shared secret salt qb64
+    stamp = '2026-09-00T08:30:00.000000+00:00'
+
+    # create registry serders for sue as Issuer
+    regserders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in uens]
+    rids = [rss.said for rss in regserders]
+
+    assert regserders[0].sad == \
+    {
+        'v': 'ACDCCAACAAJSONAADa.',
+        't': 'rip',
+        'd': 'ECvi_BgZw_Jp3qaVoNC-kOjW7X33i7fVQ0vIITy8Nfr5',
+        'u': '0ABzZWRpYWNkY3dvcmtyZWcw',
+        'i': 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-',
+        'n': '0',
+        'dt': '2026-09-00T08:30:00.000000+00:00'
+    }
+    assert rids[0] == regserders[0].said == 'ECvi_BgZw_Jp3qaVoNC-kOjW7X33i7fVQ0vIITy8Nfr5'
+    assert regserders[0].israid == sue
+    assert regserders[0].nonce == uens[0]
+    assert regserders[0].sner.num == 0
+    assert regserders[0].stamp == stamp
 
 
-    """
 
-    # Identity Assurance Receipt as Signed by proofing agent (not anchored) ACDC
+    # Identity Assurance Receipt (iar) as Signed by proofing agent (not anchored) ACDC
     iarMad = \
     {
         "v": "",  # VersionString
         "t": "acm",
         "d": "",  # SAID
         "u": "ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux",  # 128 bit entropy challenge salty nonce
-        "i": "ProofingAgentAID",  # identity assurance proofing agent AID
+        "i": pat,  # pat as identity assurance proofing agent AID
         "s": "",  # schema of identity assurance receipt
         "a":
         {
             "d": "",  # SAID
             "i": "CitizenSMAID",  # citizens SEDI managment AID (SMAID)
-
-            "given": "John",  # given name first name(s)
-            "middle":"Henry Davis",  # middle name(s) other names
-            "surname": "Smith",  # last name family name
-            "dateOfBirth": "2020-08-22T17:50:09.988921+00:00",
+            "givenName": "John",  # given name first name(s)
+            "middleName":"Henry Davis",  # middle name(s) other names
+            "familyName": "Smith",  # last name family name
+            "dateOfBirth": "2020-08-22T00:00:00.000000+00:00",  # time MBZ
             "placeOfBirth": \
             {
                 "city": "Beaver",
@@ -213,10 +276,10 @@ def test_core_identity():
                 "state": "Utah",
                 "country": "United States",
             },
-            "facialBiometric": "",
+            "facialImage": "",
             "legalPresence": "TBD",
-            "datetimeOfProofing": "2020-08-22T17:50:09.988921+00:00",
-            "url": "uniquerequesturlforseditimelimited", # place to go to get core sedi
+            "datetimeOfProofing": "2026-09-01T09:30:00.000000+00:00",
+            "url": "https://example.com/sedi/here", # place to go to get core sedi
         }
     }
 
@@ -241,19 +304,19 @@ def test_core_identity():
             "d": "",
             "u": "",
             "i": "CitizenSEDI_AID",
-            "given": \
+            "givenName": \
             {
                 "d": "",
                 "u": "",
                 "value": "John",
             },
-            "middle": \
+            "middleName": \
             {
                 "d": "",
                 "u": "",
                 "value": "Henry Davis",
             },
-            "surname": \
+            "familyName": \
             {
                 "d": "",
                 "u": "",
@@ -311,4 +374,5 @@ def test_core_identity():
 
 
 if __name__ == "__main__":
+    test_sedi_schema()
     test_core_identity()

@@ -261,7 +261,7 @@ def test_V7_field_order_and_said_mutations_refused():
 def test_shared_tel_validation_kernel_rejects_overlap_rules():
     """The shared TEL validators reject the malformed field combinations both sides care about."""
     with openIssuer("shared-kernel") as (hby, hab):
-        # Set up 2 registry, and one ACDC 
+        # Set up 2 registry, and one ACDC
         ripper = makeRegistry(hab, anchored=False)
         acdc = makeAcdc(hab, regid=ripper.said)
         other = makeRegistry(hab, stamp=STAMP2, anchored=False)
@@ -277,10 +277,11 @@ def test_shared_tel_validation_kernel_rejects_overlap_rules():
             regeventing._validateRip(foreign_rip, issuer=hab.pre)
 
         # sn = 0 for bup
-        _, zero_bup = makeUpdate(ripper.said, ripper.said, acdc.said, 'issued',
+        with pytest.raises(ValueError):  # blindate now raises ValueError if attempt sn=0
+            _, zero_bup = makeUpdate(ripper.said, ripper.said, acdc.said, 'issued',
                                  sn=0, stamp=STAMP1)
-        with pytest.raises(kering.MissequenceError):
-            regeventing._validateUpdate(zero_bup, regid=ripper.said)
+        #with pytest.raises(kering.MissequenceError):
+            #regeventing._validateUpdate(zero_bup, regid=ripper.said)
 
         # registry mismatch
         _, stray = makeUpdate(other.said, ripper.said, acdc.said, 'issued',
@@ -324,7 +325,7 @@ def test_shared_anchor_couple_verifier_matches_local_and_verifier_policies():
         try:
             registry = Registry(hab=hab, store=rgy.store, name="shared-anchor-couple")
 
-            # Setup registry and anchor the rip event 
+            # Setup registry and anchor the rip event
             ripper = registry.make(stamp=STAMP0)
             seal = dict(i=ripper.said, s=ripper.sad['n'], d=ripper.said)
             hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
@@ -349,7 +350,7 @@ def test_shared_anchor_couple_verifier_matches_local_and_verifier_policies():
             hab.interact(data=[seal], framed=True, gvrsn=Vrsn_2_0)
             number = Number(num=hab.kever.sn)
             diger = Diger(qb64=hab.kever.serder.said)
-            
+
             assert regeventing._verifyAnchorCouple(bup,
                                                    db=hby.db,
                                                    issuer=hab.pre,
