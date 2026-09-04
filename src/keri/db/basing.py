@@ -46,7 +46,7 @@ def _strip_prerelease(version_str):
 MIGRATIONS = [
     ("0.6.8", ["hab_data_rename"]),
     ("1.0.0", ["add_key_and_reg_state_schemas"]),
-    ("1.2.0", ["rekey_habs"])
+    ("1.2.0", ["rekey_habs"]),
 ]
 
 
@@ -1795,122 +1795,6 @@ class Baser(LMDBer):
         msg = messagize(serder=serder, sigers=sigers, wigers=wigers,
                         cigars=cigars, rsgs=rsgs, bonds=bonds, gvrsn=gvrsn)
         return msg
-
-
-
-    #def cloneEvtMsgOld(self, pre, fn, dig, version=Vrsn_1_0):
-        #"""
-        #Clones Event as Serialized CESR Message with Body and attached Foot
-
-        #Parameters:
-            #pre (bytes): identifier prefix of event
-            #fn (int): first seen number (ordinal) of event
-            #dig (bytes): digest of event
-            #version (Versionage): CESR Genus version for attachment group codes
-
-
-        #Returns:
-            #bytearray: message body with attachments
-        #"""
-        #from ..core import coring
-        #from ..core.counting import Counter, Codens
-        #from ..core.structing import  SealSource
-
-        #msg = bytearray()  # message
-        #atc = bytearray()  # attachments
-        #dgkey = dgKey(pre, dig)  # get message
-        #if not (serder := self.evts.get(keys=(pre, dig))):
-            #raise MissingEntryError("Missing event for dig={}.".format(dig))
-        #msg.extend(serder.raw)
-
-        ## add indexed signatures to attachments
-        #if not (sigers := self.sigs.get(keys=dgkey)):
-            #raise MissingEntryError("Missing sigs for dig={}.".format(dig))
-        #atc.extend(Counter(code=Codens.ControllerIdxSigs,
-                           #count=len(sigers), version=Vrsn_1_0).qb64b)
-        #for siger in sigers:
-            #atc.extend(siger.qb64b)
-
-        ## add indexed witness signatures to attachments
-        #if wigers := self.wigs.get(keys=dgkey):
-            #atc.extend(Counter(code=Codens.WitnessIdxSigs,
-                               #count=len(wigers), version=Vrsn_1_0).qb64b)
-            #for wiger in wigers:
-                #atc.extend(wiger.qb64b)
-
-        ## add nontrans endorsement couples to attachments not witnesses
-        ## may have been originally key event attachments or receipted endorsements
-        #if coups := self.rcts.get(keys=dgkey):
-            #atc.extend(Counter(code=Codens.NonTransReceiptCouples,
-                               #count=len(coups), version=Vrsn_1_0).qb64b)
-            #for prefixer, cigar in coups:
-                #atc.extend(prefixer.qb64b)
-                #atc.extend(cigar.qb64b)
-
-        ## add trans endorsement attachments not controller
-        ## may have been originally key event attachments or receipted endorsements
-        ## vrcsNew add non-controller trans endorsement attachments
-        ## may have been originally non-controller sigs or receipted endorsements
-        ## collate sigersets by triple of rpre,rsnh,rdig
-        #topkeys = (pre, dig)
-        #sigersets = dict()
-        #for keys, siger in self.vrcs.getTopItemIter(keys=topkeys):
-            #epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
-            #triple = (rpre, rsnh, rdig)
-            #if triple not in sigersets:
-                #sigersets[triple] = [siger]
-            #else:
-                #sigersets[triple].append(siger)
-
-        ## create and attach an attachment group per sigerset
-        #if sigersets:
-            #cims = bytearray()
-            #for keys, sigers in sigersets.items():
-                #sims = bytearray()
-                #sims.extend(Counter(code=Codens.ControllerIdxSigs,
-                                    #count=len(sigers),
-                                    #version=Vrsn_1_0).qb64b)
-                #for siger in sigers:
-                    #sims.extend(siger.qb64b)
-
-                ##sims = Counter.enclose(qb64=sims,
-                                       ##code=Codens.ControllerIdxSigs,
-                                       ##version=Vrsn_2_0)
-                #rpre, rsnh, rdig = keys
-                #cims.extend(rpre.encode() + coring.Number(snh=rsnh).qb64b + rdig.encode())
-                #cims.extend(sims)
-            #gims = Counter.enclose(qb64=cims,
-                                       #code=Codens.TransReceiptIdxSigGroups,
-                                       #version=Vrsn_1_0)
-            #atc.extend(gims)
-
-
-
-        ## add authorizer (delegator/issuer) source seal event couple to attachments
-        #if (duple := self.aess.get(keys=(pre, dig))) is not None:
-            #number, diger = duple
-            #atc.extend(Counter(code=Codens.SealSourceCouples,
-                               #count=1, version=Vrsn_1_0).qb64b)
-            #atc.extend(number.qb64b + diger.qb64b)
-
-
-        ## add first seen replay couple to attachments
-        #if not (dater := self.dtss.get(keys=dgkey)):
-            #raise MissingEntryError("Missing datetime for dig={}.".format(dig))
-        #atc.extend(Counter(code=Codens.FirstSeenReplayCouples,
-                           #count=1, version=Vrsn_1_0).qb64b)
-        #atc.extend(coring.Number(num=fn).qb64b)  # may not need to be Huge
-        #atc.extend(dater.qb64b)
-
-        ## enclose attachments in AttachmentGroup
-        #if len(atc) % 4:
-            #raise SerializeError("Invalid attachments size={}, nonintegral"
-                             #" quadlets.".format(len(atc)))
-        #pcnt = Counter(code=Codens.AttachmentGroup,
-                       #count=(len(atc) // 4), version=Vrsn_1_0).qb64b
-        #msg.extend(pcnt)
-        #msg.extend(atc)
-        #return msg
 
 
     def cloneDelegation(self, kever, gvrsn=Version, *, version=None):
