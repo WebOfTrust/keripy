@@ -9,17 +9,19 @@ import pysodium
 import pytest
 
 from keri import Kinds, Vrsn_1_0, Vrsn_2_0
-from keri.core import (Salter, Counter, Texter,
+from keri.kering import MissingSignatureError
+from keri.core import (Salter, Counter, Dater, Texter, Kevery, Kramer,
                        Diger, Prefixer, Number,
-                       SerderKERI, Parser, messagize,
+                       SealSource, SerderKERI, Parser, messagize,
                        MtrDex, Codens, exchange)
 
 from keri.app import (Notifier, Counselor, Multiplexor,
-                      openHab, openHby,
+                      openCF, openHab, openHby,
                       multisigInceptExn, multisigRotateExn)
 from keri.app.grouping import loadHandlers
 
-from keri.peer import Exchanger, nesting, specialExchange, serializeMessage
+from keri.peer import (Exchanger, nesting, serializeMessage, specialExchange,
+                       verify)
 from keri.vdr import incept
 
 TEST_VERSION = Vrsn_1_0
@@ -290,6 +292,843 @@ def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUT
 
         # The child inside the rebuilt message should be the same child that was originally sent
         assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_source_seal_couple_round_trips_as_resolved_triple(mockHelpingNowUTC):
+    """Durable replay makes the implicit sender of a seal couple explicit."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+    with openHab(name="seal-source", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="seal-receiver", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (receiverHby, _):
+        Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(sender.msgOwnEvent(sn=0,
+                                             framed=True,
+                                             gvrsn=Vrsn_2_0)),
+            kvy=receiverHby.kvy,
+            local=True,
+        )
+        exn = exchange(sender=sender.pre,
+                       route="/test/seal-source",
+                       attributes=dict(m="sealed exchange"),
+                       **kwa)
+        anchor = sender.interact(data=[dict(d=exn.said)],
+                                 framed=True,
+                                 gvrsn=Vrsn_2_0,
+                                 **kwa)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(anchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+
+        number = Number(sn=sender.kever.sn)
+        diger = Diger(qb64=sender.kever.serder.said)
+        assert receiverHby.db.kels.getLast(
+            keys=sender.kever.prefixer.qb64b, on=number.sn) == diger.qb64
+        anchorSerder = receiverHby.db.evts.get(
+            keys=(sender.kever.prefixer.qb64b, diger.qb64b))
+        assert anchorSerder is not None
+        assert anchorSerder.seals == [dict(d=exn.said)]
+        msg = messagize(exn,
+                        bonds=[SealSource(s=number, d=diger)],
+                        framed=True,
+                        gvrsn=Vrsn_2_0)
+        exchanger = Exchanger(hby=receiverHby, handlers=[])
+        receiverHby.kvy.kramer = None
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(msg),
+                                       framed=True,
+                                       kvy=receiverHby.kvy,
+                                       exc=exchanger)
+
+        assert [(snumber.sn, sdiger.qb64)
+                for snumber, sdiger in receiverHby.db.ests.get(
+                    keys=(exn.said, sender.pre))] == [
+            (number.sn, diger.qb64),
+        ]
+        assert receiverHby.db.exns.get(keys=(exn.said,)) is not None
+
+        replay = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(serializeMessage(receiverHby, exn.said,
+                                           framed=True)),
+            framed=True,
+            processive=False,
+        )[0]
+        assert replay.sscs == []
+        assert [(prefixer.qb64, snumber.sn, sdiger.qb64)
+                for prefixer, snumber, sdiger in replay.ssts] == [
+            (sender.pre, number.sn, diger.qb64),
+        ]
+
+        signed = exchange(sender=sender.pre,
+                          route="/test/seal-source",
+                          attributes=dict(m="signed and sealed exchange"),
+                          **kwa)
+        anchor = sender.interact(data=[dict(d=signed.said)],
+                                 framed=True,
+                                 gvrsn=Vrsn_2_0,
+                                 **kwa)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(anchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        sourceSeal = (sender.kever.prefixer,
+                      Number(sn=sender.kever.sn),
+                      Diger(qb64=sender.kever.serder.said))
+        senderSigs = sender.sign(ser=signed.raw, indexed=True)
+        msg = messagize(
+            signed,
+            lsgs=[(sender.kever.prefixer, senderSigs)],
+            bonds=[SealSource(s=sourceSeal[1], d=sourceSeal[2])],
+            framed=True,
+            gvrsn=Vrsn_2_0,
+        )
+        config = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000,
+                          5000, 60000, 300000],
+                },
+            },
+        }
+        with openCF(name="signed-seal-kram", base="test", temp=True) as cf:
+            cf.put(config)
+            kvy = Kevery(db=receiverHby.db,
+                         lax=False,
+                         local=False,
+                         kramer=Kramer(db=receiverHby.db, cf=cf),
+                         exc=exchanger)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(msg), kvy=kvy)
+
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(signed.said, sender.pre, "")))) == 1
+        assert [(snumber.sn, sdiger.qb64)
+                for snumber, sdiger in receiverHby.db.ests.get(
+                    keys=(signed.said, sender.pre))] == [
+            (sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+        verify(receiverHby, signed)
+
+        replay = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(serializeMessage(receiverHby, signed.said,
+                                           framed=True)),
+            framed=True,
+            processive=False,
+        )[0]
+        assert [(prefixer.qb64, snumber.sn, sdiger.qb64, len(sigers))
+                for prefixer, snumber, sdiger, sigers in replay.tsgs] == [
+            (sender.pre, sender.kever.lastEst.s,
+             sender.kever.lastEst.d, len(senderSigs)),
+        ]
+        assert [(prefixer.qb64, snumber.sn, sdiger.qb64)
+                for prefixer, snumber, sdiger in replay.ssts] == [
+            (sender.pre, sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+
+        sealPreferred = exchange(
+            sender=sender.pre,
+            route="/test/seal-source",
+            attributes=dict(m="valid seal with invalid sender signature"),
+            **kwa,
+        )
+        anchor = sender.interact(data=[dict(d=sealPreferred.said)],
+                                 framed=True,
+                                 gvrsn=Vrsn_2_0,
+                                 **kwa)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(anchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        sourceSeal = (sender.kever.prefixer,
+                      Number(sn=sender.kever.sn),
+                      Diger(qb64=sender.kever.serder.said))
+        invalidSenderTsg = (
+            sender.kever.prefixer,
+            Number(sn=sender.kever.lastEst.s),
+            Diger(qb64=sender.kever.lastEst.d),
+            sender.sign(ser=b"different exchange message", indexed=True),
+        )
+        exchanger.processEvent(sealPreferred,
+                               tsgs=[invalidSenderTsg],
+                               ssts=[sourceSeal])
+
+        assert receiverHby.db.exns.get(
+            keys=(sealPreferred.said,)) is not None
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(sealPreferred.said, sender.pre, ""))) == []
+        assert [(number.sn, diger.qb64)
+                for number, diger in receiverHby.db.ests.get(
+                    keys=(sealPreferred.said, sender.pre))] == [
+            (sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+        verify(receiverHby, sealPreferred)
+
+        replay = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(serializeMessage(receiverHby,
+                                           sealPreferred.said,
+                                           framed=True)),
+            framed=True,
+            processive=False,
+        )[0]
+        assert replay.tsgs == []
+        assert [(prefixer.qb64, number.sn, diger.qb64)
+                for prefixer, number, diger in replay.ssts] == [
+            (sender.pre, sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+
+
+def test_non_ipex_rejects_non_sender_evidence(mockHelpingNowUTC):
+    """Non-IPEX routes keep the existing sender-only evidence contract."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+    with openHab(name="extra-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="extra-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="extra-unknown", base="test",
+                    salt=b'0123456789abcdeg', **kwa) as (_, unknown), \
+            openHab(name="extra-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
+        for hab in (sender, endorser):
+            msg = hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(msg),
+                                           kvy=receiverHby.kvy,
+                                           local=True)
+
+        def group(hab, ser):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    hab.sign(ser=ser, indexed=True))
+
+        exchanger = Exchanger(hby=receiverHby, handlers=[])
+        ordinary = exchange(sender=sender.pre,
+                            route="/test/ordinary",
+                            attributes=dict(m="ordinary"),
+                            **kwa)
+        exchanger.processEvent(ordinary,
+                               tsgs=[group(sender, ordinary.raw)])
+        assert receiverHby.db.exns.get(keys=(ordinary.said,)).said == ordinary.said
+
+        transferableCigar = exchange(
+            sender=sender.pre,
+            route="/test/ordinary",
+            attributes=dict(m="transferable cigar"),
+            **kwa,
+        )
+        senderCigars = sender.sign(ser=transferableCigar.raw, indexed=False)
+        assert senderCigars[0].verfer.transferable
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(transferableCigar, cigars=senderCigars)
+        assert receiverHby.db.exns.get(keys=(transferableCigar.said,)) is None
+
+        mixed = exchange(sender=sender.pre,
+                         route="/test/ordinary",
+                         attributes=dict(m="mixed sender evidence"),
+                         **kwa)
+        ignoredCigars = endorser.sign(ser=b"different exchange message",
+                                      indexed=False)
+        exchanger.processEvent(mixed,
+                               tsgs=[group(sender, mixed.raw)],
+                               cigars=ignoredCigars)
+        assert receiverHby.db.exns.get(keys=(mixed.said,)).said == mixed.said
+        assert receiverHby.db.ecigs.get(keys=(mixed.said,)) == []
+
+        mixedSeal = exchange(sender=sender.pre,
+                             route="/test/ordinary",
+                             attributes=dict(m="mixed source seal"),
+                             **kwa)
+        foreignSeal = (endorser.kever.prefixer,
+                       Number(sn=endorser.kever.sn),
+                       Diger(qb64=endorser.kever.serder.said))
+        exchanger.processEvent(mixedSeal,
+                               tsgs=[group(sender, mixedSeal.raw)],
+                               ssts=[foreignSeal])
+        assert receiverHby.db.exns.get(
+            keys=(mixedSeal.said,)).said == mixedSeal.said
+        assert receiverHby.db.ests.get(
+            keys=(mixedSeal.said, endorser.pre)) == []
+
+        signedWithMissingSeal = exchange(
+            sender=sender.pre,
+            route="/test/ordinary",
+            attributes=dict(m="authenticated with missing sender seal"),
+            **kwa,
+        )
+        missingSenderSeal = (sender.kever.prefixer,
+                             Number(sn=sender.kever.sn + 1),
+                             Diger(qb64=sender.kever.serder.said))
+        queryCueCount = sum(cue.get("kin") == "query"
+                            for cue in exchanger.cues)
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                signedWithMissingSeal,
+                tsgs=[group(sender, signedWithMissingSeal.raw)],
+                ssts=[missingSenderSeal],
+            )
+        assert receiverHby.db.exns.get(
+            keys=(signedWithMissingSeal.said,)) is None
+        assert sum(cue.get("kin") == "query"
+                   for cue in exchanger.cues) == queryCueCount + 1
+        assert any(cue.get("kin") == "query" and
+                   cue["q"] == dict(r="logs", pre=sender.pre,
+                                    sn=missingSenderSeal[1].snh)
+                   for cue in exchanger.cues)
+        assert receiverHby.db.ests.get(
+            keys=(signedWithMissingSeal.said, sender.pre)) == []
+
+        withExtra = exchange(sender=sender.pre,
+                             route="/test/ordinary",
+                             attributes=dict(m="foreign evidence"),
+                             **kwa)
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                withExtra,
+                tsgs=[group(sender, withExtra.raw),
+                      group(endorser, withExtra.raw)],
+            )
+
+        assert receiverHby.db.exns.get(keys=(withExtra.said,)) is None
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(withExtra.said, endorser.pre, "")
+        )) == []
+
+        missingSender = exchange(sender=unknown.pre,
+                                 route="/test/ordinary",
+                                 attributes=dict(m="missing sender state"),
+                                 **kwa)
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                missingSender,
+                tsgs=[group(unknown, missingSender.raw),
+                      group(endorser, missingSender.raw)],
+            )
+        assert any(cue.get("kin") == "query" and
+                   cue["q"]["pre"] == unknown.pre
+                   for cue in exchanger.cues)
+
+        unknownIcp = unknown.msgOwnEvent(sn=0, framed=True,
+                                         gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(unknownIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.processEscrow()
+        assert receiverHby.db.exns.get(keys=(missingSender.said,)) is None
+
+        unsupportedOnly = exchange(sender=sender.pre,
+                                   route="/test/ordinary",
+                                   attributes=dict(m="foreign only input"),
+                                   **kwa)
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                unsupportedOnly,
+                tsgs=[group(endorser, unsupportedOnly.raw)],
+            )
+        assert receiverHby.db.epse.get(
+            keys=(unsupportedOnly.said,)) is None
+
+        foreignOnly = exchange(sender=sender.pre,
+                               route="/test/ordinary",
+                               attributes=dict(m="foreign only"),
+                               **kwa)
+        exchanger.logEvent(foreignOnly,
+                           tsgs=[group(endorser, foreignOnly.raw)])
+        with pytest.raises(MissingSignatureError):
+            verify(receiverHby, foreignOnly)
+
+
+def test_missing_foreign_key_state_requests_kel_before_persistence(
+        mockHelpingNowUTC):
+    """Missing endorser KEL state drops the EXN until a complete retry."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+
+    class EvidenceHandler:
+        resource = "/test/missing-evidence-state"
+
+        @staticmethod
+        def verify(serder, **kwa):
+            return True
+
+        @staticmethod
+        def verifyEvidence(serder, *, tsgs=None, cigars=None, sourceSeals=None,
+                           invalid=False):
+            if invalid:
+                return None
+            return tsgs or [], cigars or [], sourceSeals or []
+
+        @staticmethod
+        def handle(serder, **kwa):
+            return None
+
+    with openHab(name="missing-state-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="missing-state-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="missing-state-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
+        senderIcp = sender.msgOwnEvent(sn=0, framed=True,
+                                       gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(senderIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+
+        exchanger = Exchanger(hby=receiverHby,
+                              handlers=[EvidenceHandler()])
+
+        def group(hab, serder):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    hab.sign(ser=serder.raw, indexed=True))
+
+        missingTsg = exchange(
+            sender=sender.pre,
+            route=EvidenceHandler.resource,
+            attributes=dict(m="missing endorser establishment event"),
+            **kwa,
+        )
+        senderGroup = group(sender, missingTsg)
+        endorserGroup = group(endorser, missingTsg)
+
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                missingTsg, tsgs=[senderGroup, endorserGroup])
+
+        assert receiverHby.db.exns.get(keys=(missingTsg.said,)) is None
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(missingTsg.said, endorser.pre, ""))) == []
+        assert receiverHby.db.epse.get(keys=(missingTsg.said,)) is None
+        assert any(cue.get("kin") == "query" and
+                   cue["q"] == dict(r="logs", pre=endorser.pre,
+                                    sn=endorserGroup[1].snh)
+                   for cue in exchanger.cues)
+
+        endorserIcp = endorser.msgOwnEvent(sn=0, framed=True,
+                                           gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.cues.clear()
+        exchanger.processEvent(
+            missingTsg, tsgs=[senderGroup, endorserGroup])
+        assert receiverHby.db.exns.get(keys=(missingTsg.said,)) is not None
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(missingTsg.said, endorser.pre, "")))) == 1
+
+        invalidTsg = exchange(
+            sender=sender.pre,
+            route=EvidenceHandler.resource,
+            attributes=dict(m="known invalid endorser evidence"),
+            **kwa,
+        )
+        invalidEndorserGroup = (
+            endorser.kever.prefixer,
+            Number(sn=endorser.kever.lastEst.s),
+            Diger(qb64=sender.kever.lastEst.d),
+            endorser.sign(ser=invalidTsg.raw, indexed=True),
+        )
+        exchanger.cues.clear()
+        exchanger.processEvent(
+            invalidTsg, tsgs=[group(sender, invalidTsg),
+                               invalidEndorserGroup])
+        assert receiverHby.db.exns.get(keys=(invalidTsg.said,)) is None
+        assert not any(cue.get("kin") == "query" for cue in exchanger.cues)
+
+        missingSeal = exchange(
+            sender=sender.pre,
+            route=EvidenceHandler.resource,
+            attributes=dict(m="missing endorser anchor event"),
+            **kwa,
+        )
+        senderGroup = group(sender, missingSeal)
+        endorserAnchor = endorser.interact(
+            data=[dict(d=missingSeal.said)],
+            framed=True,
+            gvrsn=Vrsn_2_0,
+            **kwa,
+        )
+        sourceSeal = (endorser.kever.prefixer,
+                      Number(sn=endorser.kever.sn),
+                      Diger(qb64=endorser.kever.serder.said))
+
+        exchanger.cues.clear()
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                missingSeal, tsgs=[senderGroup], ssts=[sourceSeal])
+
+        assert receiverHby.db.exns.get(keys=(missingSeal.said,)) is None
+        assert receiverHby.db.ests.get(
+            keys=(missingSeal.said, endorser.pre)) == []
+        assert receiverHby.db.epse.get(keys=(missingSeal.said,)) is None
+        assert any(cue.get("kin") == "query" and
+                   cue["q"] == dict(r="logs", pre=endorser.pre,
+                                    sn=sourceSeal[1].snh)
+                   for cue in exchanger.cues)
+
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserAnchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.cues.clear()
+        exchanger.processEvent(
+            missingSeal, tsgs=[senderGroup], ssts=[sourceSeal])
+        assert receiverHby.db.exns.get(keys=(missingSeal.said,)) is not None
+        assert [(number.sn, diger.qb64)
+                for number, diger in receiverHby.db.ests.get(
+                    keys=(missingSeal.said, endorser.pre))] == [
+            (sourceSeal[1].sn, sourceSeal[2].qb64),
+        ]
+
+
+def test_verify_fails_closed_on_invalid_stored_evidence(mockHelpingNowUTC):
+    """Invalid optional evidence makes an accepted stored EXN unverifiable."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+    with openHab(name="stored-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="stored-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="stored-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
+        for hab in (sender, endorser):
+            msg = hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(msg),
+                                           kvy=receiverHby.kvy,
+                                           local=True)
+
+        exn = exchange(sender=sender.pre,
+                       route="/test/stored-evidence",
+                       attributes=dict(m="invalid stored evidence"),
+                       **kwa)
+
+        def group(hab, sigers):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    sigers)
+
+        senderGroup = group(
+            sender, sender.sign(ser=exn.raw, indexed=True))
+        invalidEndorserGroup = group(
+            endorser,
+            endorser.sign(ser=b"different exchange message", indexed=True),
+        )
+        Exchanger(hby=receiverHby, handlers=[]).logEvent(
+            exn, tsgs=[senderGroup, invalidEndorserGroup])
+
+        with pytest.raises(MissingSignatureError):
+            verify(receiverHby, exn)
+        with pytest.raises(MissingSignatureError):
+            serializeMessage(receiverHby, exn.said, framed=True)
+
+
+def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC):
+    """Exchanger escrow rows do not bypass evidence selection on replay."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+
+    class EvidenceHandler:
+        resource = "/test/evidence"
+
+        @staticmethod
+        def verify(serder, **kwa):
+            return True
+
+        @staticmethod
+        def verifyEvidence(serder, *, tsgs=None, cigars=None, sourceSeals=None,
+                           invalid=False):
+            return tsgs or [], cigars or [], sourceSeals or []
+
+        @staticmethod
+        def handle(serder, **kwa):
+            return None
+
+    with openHab(name="escrow-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="escrow-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="escrow-cigar", base="test",
+                    salt=b'0123456789abcdeg', transferable=False,
+                    **kwa) as (_, cigarEndorser), \
+            openHab(name="escrow-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, receiver):
+        endorserIcp = endorser.msgOwnEvent(sn=0, framed=True,
+                                           gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+
+        exchanger = Exchanger(hby=receiverHby,
+                              handlers=[EvidenceHandler()])
+        exn = exchange(sender=sender.pre,
+                       route=EvidenceHandler.resource,
+                       attributes=dict(m="escrow evidence"),
+                       **kwa)
+
+        def group(hab, sigers):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    sigers)
+
+        senderGroup = group(sender, sender.sign(ser=exn.raw, indexed=True))
+        endorserGroup = group(
+            endorser,
+            endorser.sign(ser=exn.raw, indexed=True),
+        )
+        invalidGroup = group(
+            receiver,
+            receiver.sign(ser=b"different exchange message", indexed=True),
+        )
+        validCigar = cigarEndorser.sign(ser=exn.raw, indexed=False)
+        invalidCigar = cigarEndorser.sign(
+            ser=b"different exchange message", indexed=False)
+
+        endorserAnchor = endorser.interact(
+            data=[dict(d=exn.said)],
+            framed=True,
+            version=Vrsn_2_0,
+            gvrsn=Vrsn_2_0,
+        )
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserAnchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        validSeal = (endorser.kever.prefixer,
+                     Number(sn=endorser.kever.sn),
+                     Diger(qb64=endorser.kever.serder.said))
+        invalidSeal = (receiver.kever.prefixer,
+                       Number(sn=receiver.kever.sn),
+                       Diger(qb64=receiver.kever.serder.said))
+
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(exn,
+                                   tsgs=[senderGroup, endorserGroup,
+                                         invalidGroup],
+                                   cigars=validCigar + invalidCigar,
+                                   ssts=[validSeal, invalidSeal])
+
+        assert receiverHby.db.epse.get(keys=(exn.said,)) is not None
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, endorser.pre, "")))) == 1
+        assert len(receiverHby.db.ecigs.get(keys=(exn.said,))) == 2
+
+        senderIcp = sender.msgOwnEvent(sn=0, framed=True,
+                                       gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(senderIcp),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.processEscrow()
+
+        assert receiverHby.db.exns.get(keys=(exn.said,)) is not None
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, sender.pre, "")))) == 1
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, endorser.pre, "")))) == 1
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, receiver.pre, ""))) == []
+
+        sourceSeals = receiverHby.db.ests.get(
+            keys=(exn.said, endorser.pre))
+        assert [(number.sn, diger.qb64)
+                for number, diger in sourceSeals] == [
+            (endorser.kever.sn, endorser.kever.serder.said),
+        ]
+        assert receiverHby.db.ests.get(
+            keys=(exn.said, receiver.pre)) == []
+        assert [(verfer.qb64, cigar.qb64)
+                for verfer, cigar in receiverHby.db.ecigs.get(
+                    keys=(exn.said,))] == [
+            (cigarEndorser.pre, validCigar[0].qb64),
+        ]
+
+        serialized = serializeMessage(receiverHby, exn.said, framed=True)
+        assert serialized is not None
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(serialized), framed=True, processive=False)
+        replayGroups = {prefixer.qb64: (number, diger, sigers)
+                        for prefixer, number, diger, sigers
+                        in parsed[0].tsgs}
+        number, diger, sigers = replayGroups[endorser.pre]
+        assert (number.sn, diger.qb64, len(sigers)) == (
+            endorser.kever.lastEst.s,
+            endorser.kever.lastEst.d,
+            1,
+        )
+        assert [(prefixer.qb64, number.sn, diger.qb64)
+                for prefixer, number, diger in parsed[0].ssts] == [
+            (endorser.pre, endorser.kever.sn, endorser.kever.serder.said),
+        ]
+        assert [(cigar.verfer.qb64, cigar.qb64)
+                for cigar in parsed[0].cigars] == [
+            (cigarEndorser.pre, validCigar[0].qb64),
+        ]
+
+        historical = exchange(sender=sender.pre,
+                              route=EvidenceHandler.resource,
+                              attributes=dict(m="historical endorsement"),
+                              **kwa)
+        historicalEst = endorser.kever.lastEst
+        historicalSigs = endorser.sign(ser=historical.raw, indexed=True)
+        endorserRot = endorser.rotate(framed=True,
+                                     gvrsn=Vrsn_2_0,
+                                     **kwa)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserRot),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        exchanger.processEvent(
+            historical,
+            tsgs=[group(sender, sender.sign(ser=historical.raw,
+                                            indexed=True)),
+                  (endorser.kever.prefixer,
+                   Number(sn=historicalEst.s),
+                   Diger(qb64=historicalEst.d),
+                   historicalSigs)],
+        )
+        assert receiverHby.db.exns.get(keys=(historical.said,)) is not None
+        historicalRows = list(receiverHby.db.esigs.getTopItemIter(
+            keys=(historical.said, endorser.pre, "")))
+        assert len(historicalRows) == 1
+        assert historicalRows[0][0][2:] == (
+            f"{historicalEst.s:032x}",
+            historicalEst.d,
+        )
+        historicalReplay = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(serializeMessage(receiverHby,
+                                           historical.said,
+                                           framed=True)),
+            framed=True,
+            processive=False,
+        )[0]
+        historicalGroups = {
+            prefixer.qb64: (number, diger, sigers)
+            for prefixer, number, diger, sigers in historicalReplay.tsgs
+        }
+        number, diger, sigers = historicalGroups[endorser.pre]
+        assert (number.sn, diger.qb64, len(sigers)) == (
+            historicalEst.s,
+            historicalEst.d,
+            1,
+        )
+
+        fallback = exchange(sender=sender.pre,
+                            route=EvidenceHandler.resource,
+                            attributes=dict(m="signature fallback"),
+                            **kwa)
+        fallbackSigs = endorser.sign(ser=fallback.raw, indexed=True)
+        exchanger.processEvent(
+            fallback,
+            tsgs=[group(sender, sender.sign(ser=fallback.raw,
+                                            indexed=True))],
+            lsgs=[(endorser.kever.prefixer, fallbackSigs)],
+            ssts=[validSeal],
+        )
+        fallbackRows = list(receiverHby.db.esigs.getTopItemIter(
+            keys=(fallback.said, endorser.pre, "")))
+        assert len(fallbackRows) == 1
+        assert fallbackRows[0][0][2:] == (
+            f"{endorser.kever.lastEst.s:032x}",
+            endorser.kever.lastEst.d,
+        )
+        assert receiverHby.db.ests.get(
+            keys=(fallback.said, endorser.pre)) == []
+
+
+def test_complete_redelivery_replaces_temporary_evidence(mockHelpingNowUTC):
+    """A complete redelivery cannot promote evidence from an older PSE row."""
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+
+    class EvidenceHandler:
+        resource = "/test/redelivery-evidence"
+
+        @staticmethod
+        def verify(serder, **kwa):
+            return True
+
+        @staticmethod
+        def verifyEvidence(serder, *, tsgs=None, cigars=None, sourceSeals=None,
+                           invalid=False):
+            return tsgs or [], cigars or [], sourceSeals or []
+
+        @staticmethod
+        def handle(serder, **kwa):
+            return None
+
+    with openHab(name="redelivery-sender", base="test",
+                 salt=b'0123456789abcdef', **kwa) as (_, sender), \
+            openHab(name="redelivery-endorser", base="test",
+                    salt=b'abcdef0123456789', **kwa) as (_, endorser), \
+            openHab(name="redelivery-cigar", base="test",
+                    salt=b'0123456789abcdeg', transferable=False,
+                    **kwa) as (_, cigarEndorser), \
+            openHab(name="redelivery-receiver", base="test",
+                    salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
+        Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(endorser.msgOwnEvent(
+                sn=0, framed=True, gvrsn=Vrsn_2_0)),
+            kvy=receiverHby.kvy,
+            local=True,
+        )
+
+        exchanger = Exchanger(hby=receiverHby,
+                              handlers=[EvidenceHandler()])
+        exn = exchange(sender=sender.pre,
+                       route=EvidenceHandler.resource,
+                       attributes=dict(m="complete redelivery"),
+                       **kwa)
+
+        def group(hab):
+            return (hab.kever.prefixer,
+                    Number(sn=hab.kever.lastEst.s),
+                    Diger(qb64=hab.kever.lastEst.d),
+                    hab.sign(ser=exn.raw, indexed=True))
+
+        senderGroup = group(sender)
+        endorserGroup = group(endorser)
+        foreignCigars = cigarEndorser.sign(ser=exn.raw, indexed=False)
+        endorserAnchor = endorser.interact(
+            data=[dict(d=exn.said)], framed=True, gvrsn=Vrsn_2_0, **kwa)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserAnchor),
+                                       kvy=receiverHby.kvy,
+                                       local=True)
+        foreignSeal = (endorser.kever.prefixer,
+                       Number(sn=endorser.kever.sn),
+                       Diger(qb64=endorser.kever.serder.said))
+
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(exn,
+                                   tsgs=[senderGroup, endorserGroup],
+                                   cigars=foreignCigars,
+                                   ssts=[foreignSeal])
+
+        assert receiverHby.db.epse.get(keys=(exn.said,)) is not None
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, endorser.pre, "")))) == 1
+        assert len(receiverHby.db.ecigs.get(keys=(exn.said,))) == 1
+        assert len(receiverHby.db.ests.get(
+            keys=(exn.said, endorser.pre))) == 1
+
+        Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(sender.msgOwnEvent(
+                sn=0, framed=True, gvrsn=Vrsn_2_0)),
+            kvy=receiverHby.kvy,
+            local=True,
+        )
+        exchanger.processEvent(exn, tsgs=[senderGroup])
+
+        assert receiverHby.db.exns.get(keys=(exn.said,)) is not None
+        assert receiverHby.db.epse.get(keys=(exn.said,)) is None
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, sender.pre, "")))) == 1
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, endorser.pre, ""))) == []
+        assert receiverHby.db.ecigs.get(keys=(exn.said,)) == []
+        assert receiverHby.db.ests.get(
+            keys=(exn.said, endorser.pre)) == []
+        verify(receiverHby, exn)
+
+        before = serializeMessage(receiverHby, exn.said, framed=True)
+        receiverHby.db.epse.put(keys=(exn.said,), val=exn)
+        receiverHby.db.epsd.put(
+            keys=(exn.said,),
+            val=Dater(dts="2021-01-01T00:00:00.000000+00:00"),
+        )
+        exchanger.processEscrow()
+        assert receiverHby.db.epse.get(keys=(exn.said,)) is None
+        assert serializeMessage(receiverHby, exn.said, framed=True) == before
 
 
 def test_v2_multisig_incept_escrow_replay_then_rotation_anchors_in_kel(mockHelpingNowUTC):
