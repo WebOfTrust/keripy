@@ -9,6 +9,7 @@ import cbor2 as cbor
 import pytest
 
 from dataclasses import asdict
+from itertools import combinations
 
 from keri.kering import (Colds, Kinds, SerializeError,
                          DeserializeError, InvalidValueError)
@@ -1986,20 +1987,66 @@ def test_compactor_compact_expand():
     recompactor.compact()
     assert recompactor.said == compactor.said
 
-    # A trailing separator discloses the complete node and its descendants.
-    paths = ["a/grades/"]
-    compactor = Compactor(mad=attributes, makify=True, kind=Kinds.json)
-    compactor.compact(paths=paths, root="a")
+    # Every combination of sibling leaves preserves the canonical commitment.
+    labels = ("given", "middle", "surname", "dateOfBirth")
+    for kind in (Kinds.json, Kinds.cesr):
+        canonical = Compactor(mad=attributes, makify=True, kind=kind)
+        canonical.compact()
+        for count in range(len(labels) + 1):
+            for selected in combinations(labels, count):
+                paths = ["a/i"] + [f"a/{label}/value" for label in selected]
+                compactor = Compactor(mad=attributes, makify=True, kind=kind)
+                compactor.compact(paths=paths, root="a")
+                assert compactor.mad == canonical.mad
+                assert list(compactor.partials) == [tuple(paths)]
+
+                partial = compactor.partials[tuple(paths)]
+                assert partial.said == canonical.said
+                assert partial.mad["grades"] == canonical.mad["grades"]
+                for label in labels:
+                    if label in selected:
+                        assert partial.mad[label]["value"] == attributes[label]["value"]
+                        assert partial.mad[label]["d"] == canonical.mad[label]
+                    else:
+                        assert partial.mad[label] == canonical.mad[label]
+
+                recompactor = Compactor(mad=partial.mad, verify=False, kind=kind)
+                recompactor.compact()
+                assert recompactor.mad == canonical.mad
+
+    # A trailing separator discloses descendants even with overlapping paths.
+    for paths in (["a/grades/"],
+                  ["a/grades/transcript/courses", "a/grades/",
+                   "a/grades/transcript/courses"]):
+        compactor = Compactor(mad=attributes, makify=True, kind=Kinds.json)
+        compactor.compact(paths=paths, root="a")
+
+        partial = compactor.partials[tuple(paths)]
+        assert partial.mad["grades"]["gpa"] == "4.0"
+        assert partial.mad["grades"]["transcript"]["courses"] == "Algebra"
+        assert isinstance(partial.mad["given"], str)
+
+        recompactor = Compactor(mad=dict(partial.mad, d=""), makify=True,
+                                kind=Kinds.json)
+        recompactor.compact()
+        assert recompactor.said == compactor.said
+
+    # A disclosed leaf may have enclosing mappings without their own SAIDs.
+    plain = dict(z=imad["z"], y=imad["y"])
+    canonical = Compactor(mad=plain, makify=True)
+    canonical.compact()
+    paths = ["z/x/w"]
+    compactor = Compactor(mad=plain, makify=True)
+    compactor.compact(paths=paths)
 
     partial = compactor.partials[tuple(paths)]
-    assert partial.mad["grades"]["gpa"] == "4.0"
-    assert partial.mad["grades"]["transcript"]["courses"] == "Algebra"
-    assert isinstance(partial.mad["given"], str)
-
-    recompactor = Compactor(mad=dict(partial.mad, d=""), makify=True,
-                            kind=Kinds.json)
+    assert partial.said is None
+    assert partial.mad["z"]["x"] == xmad
+    assert partial.mad["z"]["u"] == "under"
+    assert partial.mad["y"] == ysaid
+    recompactor = Compactor(mad=partial.mad, verify=False)
     recompactor.compact()
-    assert recompactor.said == compactor.said
+    assert recompactor.mad == canonical.mad == compactor.mad
 
     # Numeric path components resolve by field ordinal.
     paths = ["a/given/value"]

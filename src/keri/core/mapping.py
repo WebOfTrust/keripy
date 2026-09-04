@@ -1120,6 +1120,8 @@ class Compactor(Mapper):
         compacting the leaves.
 
         Repeat above on newly compacted mad until reach fully compacted mad.
+        Then restore the requested disclosure from the cached canonical leaves
+        in one partial, with ancestors restored before their descendants.
         A targeted call consumes the expanded mapping. Use a new Compactor
         instance to create another targeted partial.
 
@@ -1201,48 +1203,32 @@ class Compactor(Mapper):
             if not matched:
                 dpaths = None
 
-        pmad = None
-        pmarks = None
         while True:  # at least once so trace computes top-level said
             epaths = []
             cpaths = self._trace(mad=self.mad, paths=[], path='', epaths=epaths,
                                  saidify=True)
             compacted = False
             for path in epaths:  # only check to compact new leaves
-                if path in marks:
-                    continue
                 leafer = self._eleaves[path]  # get leafer for new leaf path
                 mad, tail = self.getMad(path)
                 if mad is not None and tail is not None:
                     mad[tail] = leafer.said  # assign primary said to compact
                     compacted = True
 
-            # Save requested closure, then finish canonical compaction without marks.
-            if dpaths is not None and pmad is None and not compacted:
-                pmad = deepcopy(self.mad)
-                pmarks = marks
-                marks = set()
-                continue
-
             if not cpaths or self.iscompact:  # either no leaves or compact
                 break
             if not compacted:
                 raise InvalidValueError("Unable to compact mapping")
 
-        # Replace provisional SAIDs with values from the canonical compact tree.
-        if pmad is not None:
-            for path in pmarks:
-                if path not in self._eleaves:
+        if dpaths is not None:
+            # Restore marked ancestors before descendants from canonical leaves.
+            pmad = deepcopy(self.mad)
+            for path in sorted(marks.intersection(self._eleaves), key=len):
+                if not path:
                     continue
-
-                tail = self.getTail(path=path, mad=pmad)
-                if not isinstance(tail, Mapping):
-                    continue
-
-                leafer = self._eleaves[path]
-                for label in leafer.saids:
-                    if label in tail:
-                        tail[label] = leafer.mad[label]
+                mad, tail = self.getMad(path=path, mad=pmad)
+                if mad is not None and tail is not None:
+                    mad[tail] = deepcopy(self._eleaves[path].mad)
 
             partial = Compactor(mad=pmad, strict=self.strict,
                                 saids=self.saids, saidive=self.saidive,
