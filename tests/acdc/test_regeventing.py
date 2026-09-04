@@ -499,6 +499,38 @@ def test_V15_acdc_rd_mismatch_refused():
         assert 'rd' in str(ex.value)
 
 
+def test_acdc_issuer_mismatch_refused():
+    """ACDC whose issuer does not match the registry's issuer is refused."""
+    with habbing.openHby(name="v15b", temp=True, version=Vrsn_2_0) as hby:
+
+        # Build two local identifiers so the registry and the presented ACDC
+        # can intentionally disagree about who the issuer is.
+        issuer = hby.makeHab(name="issuer", version=Vrsn_2_0)
+        stranger = hby.makeHab(name="stranger", version=Vrsn_2_0)
+
+        # The registry is genuinely controlled and anchored by `issuer`.
+        ripper = makeRegistry(issuer, stamp=STAMP0)
+
+        # The presented ACDC points at that registry but falsely claims that a
+        # different issuer created the credential body.
+        acdc = acdcmap(israid=stranger.pre,
+                       regid=ripper.said,
+                       attribute=dict(d='', name="Sunspot College", level="gold"))
+
+        # Build a real blinded update whose td commits to this ACDC SAID, so
+        # the only thing wrong is the issuer mismatch.
+        blinder, bup = makeUpdate(ripper.said, ripper.said, acdc.said,
+                                  'issued', sn=1, stamp=STAMP1)
+        anchor(issuer, bup)
+
+        # Verification must reject the presentation because the ACDC's `i`
+        # does not match the issuer that incepted the registry.
+        with pytest.raises(kering.MisbindingError) as ex:
+            vet(rip=ripper, updates=[bup], db=hby.db, acdc=acdc,
+                blinder=blinder)
+        assert 'issuer' in str(ex.value)
+
+
 def test_V16_rdless_acdc_oneway_binding():
     """V16: an rd-less ACDC whose chain td matches verifies, and the verdict
     names the one-directional binding (registry->ACDC only)."""
@@ -689,6 +721,7 @@ if __name__ == "__main__":
     test_V13_seal_reference_without_seal_retryable()
     test_V14_substitution_sibling_registry_refused()
     test_V15_acdc_rd_mismatch_refused()
+    test_V15b_acdc_issuer_mismatch_refused()
     test_V16_rdless_acdc_oneway_binding()
     test_V16b_blinded_head_undisclosed_binds_nothing()
     test_V18_equal_n_duplicity_both_orders()
