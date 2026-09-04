@@ -22,7 +22,7 @@ from ..kering import (Colds, Kinds, EmptyMaterialError, InvalidValueError,
 from ..help import isNonStringIterable
 
 from .counting import  Codens, Counter
-from .coring import (MtrDex, Matter, Labeler, LabelDex, DecDex, Decimer,
+from .coring import (MtrDex, Matter, Labeler, LabelDex, DecDex, Decimer, Pather,
                      DigDex, Diger)
 
 
@@ -789,9 +789,9 @@ class Compactor(Mapper):
         partials (dict[Compactor]|None): each compactor instance of partially
                                disclosable variants of with
                                fully computed saids for its leaves.
-                               keyed by tuple of leaf paths,
+                               keyed by tuple of disclosure paths,
                                value is Compactor instance.
-                               None means have yet to expand
+                               None means no partials have been built
         iscompact (bool|None): True means one leaf with path = '' i.e.
                                         leaf is at top level and has said
                                         but does not verify said
@@ -809,9 +809,11 @@ class Compactor(Mapper):
         ._saids (dict): default top-level said fields and codes
         ._saidive (bool): compute saids or not
         ._leaves (dict[Mapper]): mapper of each leaf indexed by path to leaf
+        ._eleaves (dict[tuple, Mapper]): mapper of each leaf indexed by exact
+                                         tuple of labels for internal traversal
         ._partials (dict[Compactor]|None): partially compacted mad with fully
                            computed saids
-                           indexd by tuple of leaf paths in mad
+                           indexed by tuple of disclosure paths in mad
 
     """
 
@@ -857,6 +859,7 @@ class Compactor(Mapper):
 
         """
         self._leaves = {}
+        self._eleaves = {}
         self._partials = None
         super(Compactor, self).__init__(saidive=saidive, makify=makify, **kwa)
         if makify and self.saidive and compactify:
@@ -896,7 +899,7 @@ class Compactor(Mapper):
         Returns:
             partials (dict[Compactor]): each compactor of partially disclosable
                                variant with fully computed saids for its leaves
-                               keyed by tuple of leaf paths,
+                               keyed by tuple of disclosure paths,
                                value is Compactor instance.
         """
         return self._partials
@@ -952,7 +955,8 @@ class Compactor(Mapper):
         return paths
 
 
-    def _trace(self, mad, paths=None, path='', *, saidify=False):
+    def _trace(self, mad, paths=None, path='', *, epath=(), epaths=None,
+               saidify=False):
         """Recursively trace paths to leaves in mad and populate .leaves
 
         Returns:
@@ -963,6 +967,8 @@ class Compactor(Mapper):
             paths(list|None): path strs of leafs in top down order
                                None means start at top
             path (str): current relative to top-level mad as dot '.' separated
+            epath (tuple): exact labels for current path
+            epaths (list|None): exact label paths for each leaf
             saidify (bool): True means compute and assign SAID at each leaf
                             False means do not assign SAID
 
@@ -984,22 +990,27 @@ class Compactor(Mapper):
                 if self._hassaid(mad=v):
                     isleaf = False
                     paths = self._trace(mad=v, paths=paths, path=path + "." + l,
+                                        epath=epath + (l,), epaths=epaths,
                                         saidify=saidify)
 
         if isleaf:
             paths.append(path)
+            if epaths is not None:
+                epaths.append(epath)
             if saidify:
                 # leafer Mapper makes deepcopy of input mad arg
-                leafer = Mapper(mad=mad, makify=True,
+                leafer = Mapper(mad=mad, makify=True, strict=self.strict,
                                 saids=self.saids, saidive=True, kind=self.kind)
                 for l in leafer.saids:  # assign computed saids to original mad
                     if l in mad:
                         mad[l] = leafer.mad[l]
             else:
                 # leafer Mapper makes deepcopy of input mad arg
-                leafer = Mapper(mad=mad, makify=True, kind=self.kind)
+                leafer = Mapper(mad=mad, makify=True, strict=self.strict,
+                                saids=self.saids, kind=self.kind)
 
             self.leaves[path] = leafer
+            self._eleaves[epath] = leafer
 
         return paths
 
@@ -1037,14 +1048,14 @@ class Compactor(Mapper):
             tail (dict|None):  tail of path into mad or None if not found
 
         Parameters:
-            path (str): dot "." separated path. Top-level is "" so ".x" is one
-                       level down.
+            path (str|tuple): dot "." separated path or exact label tuple.
+                              Top-level is "" or ().
            mad (dict|None): field map dict (MApping Dict). None uses default of
                             self.mad
 
         """
         tail = mad if mad is not None else self.mad
-        parts = path.split(".")[1:]  # split and strip off top level part
+        parts = path.split(".")[1:] if isinstance(path, str) else path
         for part in parts:
             if part not in tail:
                 return None
@@ -1062,13 +1073,27 @@ class Compactor(Mapper):
 
 
         Parameters:
-            path (str): dot "." separated path. Top-level is "" so ".x" is one
-                       level down.
+            path (str|tuple): dot "." separated path or exact label tuple.
+                              Top-level is "" or ().
            mad (dict|None): field map dict (MApping Dict). None uses default of
                             self.mad
 
         """
         mad = mad if mad is not None else self.mad
+        if not isinstance(path, str):
+            parts = list(path)
+            if not parts:
+                return (None, "")
+
+            tail = parts.pop()
+            for part in parts:
+                if part not in mad:
+                    return (None, tail)
+                mad = mad[part]
+            if tail not in mad:
+                return (None, None)
+            return (mad, tail)
+
         # split and then strip off bottom level part
         parts = path.split(".")  # split
         tail = parts[-1] if parts else None  # save tail
@@ -1086,7 +1111,7 @@ class Compactor(Mapper):
         return (mad, tail)
 
 
-    def compact(self):
+    def compact(self, paths=None, root=None):
         """Recursively apply most compact said algorithm to mad. Populates
         .leaves in the process
 
@@ -1095,17 +1120,135 @@ class Compactor(Mapper):
         compacting the leaves.
 
         Repeat above on newly compacted mad until reach fully compacted mad.
+        A targeted call consumes the expanded mapping. Use a new Compactor
+        instance to create another targeted partial.
+
+        Parameters:
+            paths (Iterable[str]|None): ACDC-relative SAD paths whose combined
+                closure remains expanded in one saved partial. A trailing path
+                separator keeps the whole node expanded. Numeric components
+                select mapping fields by ordinal. None means do not save a
+                targeted partial.
+            root (str|None): first path component for the section in self.mad.
+                No partial is saved when every path is outside root. None means
+                paths are relative to self.mad.
         """
+        dpaths = None
+        marks = set()
+        if paths is not None:
+            if not isNonStringIterable(paths):
+                raise InvalidValueError(f"Invalid disclosure {paths=}")
+            if root is not None and not isinstance(root, str):
+                raise InvalidValueError(f"Invalid disclosure {root=}")
+            if self.iscompact:
+                raise InvalidValueError("Cannot disclose from compact mapping")
+
+            dpaths = list(paths)
+            matched = False
+            # Resolve disclosure paths into exact mapping paths to preserve.
+            for path in dpaths:
+                if not isinstance(path, str):
+                    raise InvalidValueError(f"Invalid disclosure {path=}")
+
+                tail = self.mad
+                parts = list(Pather(path=path, relative=True).rparts)
+                isnode = not parts or not parts[-1]
+                if root is not None:
+                    if not parts or parts[0] != root:
+                        continue
+                    parts = parts[1:]
+
+                matched = True
+                marks.add(())
+                if isnode and parts and not parts[-1]:
+                    parts.pop()
+
+                mark = ()
+                for part in parts:
+                    if not isinstance(tail, Mapping):
+                        raise InvalidValueError(f"Invalid disclosure {path=}")
+
+                    if part.isdigit():
+                        index = int(part)
+                        labels = list(tail)
+                        if index >= len(labels):
+                            raise InvalidValueError(f"Invalid disclosure {path=}")
+                        label = labels[index]
+                    elif part in tail:
+                        label = part
+                    else:
+                        raise InvalidValueError(f"Invalid disclosure {path=}")
+
+                    tail = tail[label]
+                    mark += (label,)
+                    marks.add(mark)
+
+                if isnode:
+                    if not isinstance(tail, Mapping):
+                        raise InvalidValueError(f"Invalid disclosure {path=}")
+
+                    # Preserve every nested mapping for whole-node disclosure.
+                    nodes = [(mark, tail)]
+                    while nodes:
+                        parent, node = nodes.pop()
+                        for label, value in node.items():
+                            if isinstance(value, Mapping):
+                                child = parent + (label,)
+                                marks.add(child)
+                                nodes.append((child, value))
+
+            self._partials = {}
+            if not matched:
+                dpaths = None
+
+        pmad = None
+        pmarks = None
         while True:  # at least once so trace computes top-level said
-            paths = self._trace(mad=self.mad, paths=[], path='', saidify=True)
-            for path in paths:  # only check to compact new leaves
-                leafer = self.leaves[path]  # get leafer for new leaf path
+            epaths = []
+            cpaths = self._trace(mad=self.mad, paths=[], path='', epaths=epaths,
+                                 saidify=True)
+            compacted = False
+            for path in epaths:  # only check to compact new leaves
+                if path in marks:
+                    continue
+                leafer = self._eleaves[path]  # get leafer for new leaf path
                 mad, tail = self.getMad(path)
                 if mad is not None and tail is not None:
                     mad[tail] = leafer.said  # assign primary said to compact
+                    compacted = True
 
-            if not paths or self.iscompact:  # either no leaves or compact
+            # Save requested closure, then finish canonical compaction without marks.
+            if dpaths is not None and pmad is None and not compacted:
+                pmad = deepcopy(self.mad)
+                pmarks = marks
+                marks = set()
+                continue
+
+            if not cpaths or self.iscompact:  # either no leaves or compact
                 break
+            if not compacted:
+                raise InvalidValueError("Unable to compact mapping")
+
+        # Replace provisional SAIDs with values from the canonical compact tree.
+        if pmad is not None:
+            for path in pmarks:
+                if path not in self._eleaves:
+                    continue
+
+                tail = self.getTail(path=path, mad=pmad)
+                if not isinstance(tail, Mapping):
+                    continue
+
+                leafer = self._eleaves[path]
+                for label in leafer.saids:
+                    if label in tail:
+                        tail[label] = leafer.mad[label]
+
+            partial = Compactor(mad=pmad, strict=self.strict,
+                                saids=self.saids, saidive=self.saidive,
+                                verify=False, kind=self.kind)
+            partial.trace()
+            self.partials[tuple(dpaths)] = partial
 
 
     def expand(self, greedy=True):
@@ -1118,14 +1261,14 @@ class Compactor(Mapper):
                            False means do not use expand by reversing leaf order
         """
         self._partials = {}  # reset partials dict
-        paths = list(self.leaves.keys())
+        paths = list(self._eleaves.keys())
         if greedy:
             paths.reverse()
 
         used = []  # already expanded paths
-        if "" in paths:  # create partial of fully compacted leaf
-            path = ""
-            leafer = self.leaves[path]
+        if () in paths:  # create partial of fully compacted leaf
+            path = ()
+            leafer = self._eleaves[path]
             pmad = deepcopy(leafer.mad)  # expand pmad with copy of leafer
             used.append(path)
             # don't compute or verify top-level saids on partials makify=Fase verify=False
@@ -1140,7 +1283,7 @@ class Compactor(Mapper):
             for path in unused:
                 lmad, leaf = self.getMad(path=path, mad=pmad)
                 if lmad is not None and leaf is not None:
-                    leafer = self.leaves[path]
+                    leafer = self._eleaves[path]
                     lmad[leaf] = deepcopy(leafer.mad)  # expand pmad with copy of leafer
                     used.append(path)
                     created = True
