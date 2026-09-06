@@ -10,7 +10,10 @@ from base64 import urlsafe_b64decode as decodeB64
 
 import pytest
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator as SchemaValidator
+from jsonschema.exceptions import SchemaError
+from jsonschema.exceptions import ValidationError as SchemaValidationError
+
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import MtrDex, Noncer, Salter, incept, Mapper
@@ -247,6 +250,8 @@ def test_sedi_schema():
     }
 
     #mapper.raw   # compact json of mapper
+
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
 
 
     """done test"""
