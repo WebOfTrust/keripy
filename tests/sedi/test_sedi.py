@@ -20,6 +20,119 @@ from keri.core import MtrDex, Noncer, Salter, incept, Mapper
 from keri.acdc import regcept, blindate, update, acdcmap
 
 
+# see test_sedi_schema() for generating and testing
+IarSchema = \
+{
+  '$id': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI IAR Schema',
+  'description': 'SEDI IAR Identity Assurance Receipt JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_IAR_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 's', 'a'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail', 'type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID', 'type': 'string'},
+        {
+        'description': 'Attribute Section Detail',
+        'type': 'object',
+        'required':
+        [
+          'd',
+          'i',
+          'givenName',
+          'middleName',
+          'familyName',
+          'birthDate',
+          'facialImageProof',
+          'legalPresenceStatus',
+          'residence',
+          'proofingDatetime',
+          'sediURL'
+        ],
+        'properties':
+        {
+          'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+          'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+          'givenName': {'description': 'Given Name', 'type': 'string'},
+          'middleName': {'description': 'Middle Name(s)', 'type': 'string'},
+          'familyName': {'description': 'Family Name', 'type': 'string'},
+          'birthDate': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+          'facialImageProof': {'description': 'Image typed media block SAID', 'type': 'string'},
+          'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen', 'type': 'string'},
+          'residence':
+          {
+            'description': 'Residence detail',
+            'type': 'object',
+            'required':
+            [
+              'street',
+              'city',
+              'county',
+              'state',
+              'postcode',
+              'country'
+            ],
+            'properties':
+            {
+              'street': {'description': 'Street address with unit', 'type': 'string'},
+              'city': {'description': 'City name', 'type': 'string'},
+              'county': {'description': 'County name', 'type': 'string'},
+              'state': {'description': 'State name', 'type': 'string'},
+              'postcode': {'description': 'Postal (zip) code', 'type': 'string'},
+              'country': {'description': 'Country name', 'type': 'string'}
+            }
+          },
+          'proofingDatetime': {'description': 'Proofing session datetime RFC-3339/ISO-8601', 'type': 'string'},
+          'sediURL': {'description': 'URL to obtain SEDI', 'type': 'string'}
+        },
+        'additionalProperties': False}
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+          'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+
 def test_sedi_schema():
     """Test setup of schema for core SEDI acdcs"""
 
@@ -35,7 +148,7 @@ def test_sedi_schema():
         "credentialType": "SEDI_IAR_ACDC_acm_message",
         "version": "0.1.0",
         "type": "object",
-        "required": ["v", "d", "i", "s", "a", "r"],
+        "required": ["v", "d", "i", "s", "a"],
         "properties":
         {
             "v": {"description": "ACDC version string", "type": "string"},
@@ -70,7 +183,7 @@ def test_sedi_schema():
                             'familyName',
                             'birthDate',
                             'facialImageProof',
-                            'legalPresenceStatus'
+                            'legalPresenceStatus',
                             'residence',
                             'proofingDatetime',
                             'sediURL'
@@ -134,18 +247,18 @@ def test_sedi_schema():
     mapper = Mapper(mad=iarSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     iarSchemaSAID = mapper.said
-    assert  iarSchemaSAID == 'EAnaRWd8roN8uOiAzql8z_CAgENsCp4eZvoHZIlV0Mg0'
+    assert  iarSchemaSAID == 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd'
 
     assert mapper.mad == \
     {
-      '$id': 'EAnaRWd8roN8uOiAzql8z_CAgENsCp4eZvoHZIlV0Mg0',
+      '$id': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'title': 'SEDI IAR Schema',
       'description': 'SEDI IAR Identity Assurance Receipt JSON Schema for acm ACDC.',
       'credentialType': 'SEDI_IAR_ACDC_acm_message',
       'version': '0.1.0',
       'type': 'object',
-      'required': ['v', 'd', 'i', 's', 'a', 'r'],
+      'required': ['v', 'd', 'i', 's', 'a'],
       'properties':
       {
         'v': {'description': 'ACDC version string', 'type': 'string'},
@@ -180,7 +293,7 @@ def test_sedi_schema():
               'familyName',
               'birthDate',
               'facialImageProof',
-              'legalPresenceStatus'
+              'legalPresenceStatus',
               'residence',
               'proofingDatetime',
               'sediURL'
@@ -193,10 +306,8 @@ def test_sedi_schema():
               'middleName': {'description': 'Middle Name(s)', 'type': 'string'},
               'familyName': {'description': 'Family Name', 'type': 'string'},
               'birthDate': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
-              'facialImageProof': {'description': 'Image typed media block SAID',
-                                 'type': 'string'},
-              'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen',
-                                    'type': 'string'},
+              'facialImageProof': {'description': 'Image typed media block SAID', 'type': 'string'},
+              'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen', 'type': 'string'},
               'residence':
               {
                 'description': 'Residence detail',
@@ -253,8 +364,10 @@ def test_sedi_schema():
 
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
 
+    assert mapper.mad == IarSchema
 
     """done test"""
+
 
 def test_core_identity():
     """Test core identity receipt and entitlement
@@ -482,13 +595,17 @@ def test_core_identity():
     assert regserders[0].sner.num == 0
     assert regserders[0].stamp == stamp
 
+
     # Challenge Salty Nonce 128 bit entropy
     raw = b'sediiarchallenge'  # raw challenge salt
     salter = Salter(raw=salt)
     challenge = salter.qb64
     assert challenge == '0ABzZWRpYWNkY3dvcmtzYWx0'  # CESR encoded
 
-    # Guy's Identity Assurance Receipt (iar) as Signed by proofing agent (not anchored) ACDC
+    iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
+
+    # Guy's Identity Assurance Receipt (iar) ACDC
+    # issued signed (not anchored) by proofing agent
     guyIarMad = \
     {
         "v": "",  # VersionString
@@ -521,7 +638,10 @@ def test_core_identity():
         }
     }
 
-    # Gal's Identity Assurance Receipt (iar) as Signed by proofing agent (not anchored) ACDC
+    iarValidator.validate(guyIarMad)  # raises error if invalid
+
+    # Gal's Identity Assurance Receipt (iar) ACDC
+    # issued signed (not anchored) by proofing agent
     galIarMad = \
     {
         "v": "",  # VersionString
@@ -553,6 +673,9 @@ def test_core_identity():
             "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
         }
     }
+
+    iarValidator.validate(galIarMad)  # raises error if invalid
+
 
     # Challenge Nonce Seal anchored in KEL of SMAID
     cns = {}
