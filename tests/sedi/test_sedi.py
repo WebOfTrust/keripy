@@ -65,11 +65,11 @@ def test_sedi_schema():
                             'givenName',
                             'middleName',
                             'familyName',
-                            'dateOfBirth',
+                            'birthDate',
                             'facialImageProof',
                             'legalPresenceStatus'
-                            'placeOfResidence',
-                            'datetimeOfProofing',
+                            'residence',
+                            'proofingDatetime',
                             'sediURL'
                         ],
                         "properties":
@@ -79,12 +79,12 @@ def test_sedi_schema():
                             "givenName": {"description": "Given Name", "type": "string"},
                             "middleName": {"description": "Middle Name(s)", "type": "string"},
                             "familyName": {"description": "Family Name", "type": "string"},
-                            "dateOfBirth": {"description": "Date of birth RFC-3339/ISO-8601 time MBZ", "type": "string"},
+                            "birthDate": {"description": "Date of birth RFC-3339/ISO-8601 time MBZ", "type": "string"},
                             "facialImageProof": {"description": "Image typed media block SAID", "type": "string"},
                             "legalPresenceStatus": {"description": "Legal presences status i.e. citizen", "type": "string"},
-                            "placeOfResidence":
+                            "residence":
                             {
-                                "description": "Place of residence detail",
+                                "description": "Residence detail",
                                 "type": "object",
                                 "required": ["street", "city", "county", "state", "postcode", "country"],
                                 "properties":
@@ -97,7 +97,7 @@ def test_sedi_schema():
                                     "country": {"description": "Country name", "type": "string"},
                                 }
                             },
-                            "datetimeOfProofing": {"description": "Datetime of proofing RFC-3339/ISO-8601", "type": "string"},
+                            "proofingDatetime": {"description": "Proofing session datetime RFC-3339/ISO-8601", "type": "string"},
                             "sediURL": {"description": "URL to obtain SEDI", "type": "string"},
 
                         },
@@ -131,11 +131,11 @@ def test_sedi_schema():
     mapper = Mapper(mad=iarSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     iarSchemaSAID = mapper.said
-    assert  iarSchemaSAID == 'EJS0s9-EIWeRbLd_Z8nxVhFviHJOJ5Ob95DSB9mqb-ao'
+    assert  iarSchemaSAID == 'EAnaRWd8roN8uOiAzql8z_CAgENsCp4eZvoHZIlV0Mg0'
 
     assert mapper.mad == \
     {
-      '$id': 'EJS0s9-EIWeRbLd_Z8nxVhFviHJOJ5Ob95DSB9mqb-ao',
+      '$id': 'EAnaRWd8roN8uOiAzql8z_CAgENsCp4eZvoHZIlV0Mg0',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'title': 'SEDI IAR Schema',
       'description': 'SEDI IAR Identity Assurance Receipt JSON Schema for acm ACDC.',
@@ -175,11 +175,11 @@ def test_sedi_schema():
               'givenName',
               'middleName',
               'familyName',
-              'dateOfBirth',
+              'birthDate',
               'facialImageProof',
               'legalPresenceStatus'
-              'placeOfResidence',
-              'datetimeOfProofing',
+              'residence',
+              'proofingDatetime',
               'sediURL'
             ],
             'properties':
@@ -189,14 +189,14 @@ def test_sedi_schema():
               'givenName': {'description': 'Given Name', 'type': 'string'},
               'middleName': {'description': 'Middle Name(s)', 'type': 'string'},
               'familyName': {'description': 'Family Name', 'type': 'string'},
-              'dateOfBirth': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+              'birthDate': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
               'facialImageProof': {'description': 'Image typed media block SAID',
                                  'type': 'string'},
               'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen',
                                     'type': 'string'},
-              'placeOfResidence':
+              'residence':
               {
-                'description': 'Place of residence detail',
+                'description': 'Residence detail',
                 'type': 'object',
                 'required':
                 [
@@ -217,7 +217,7 @@ def test_sedi_schema():
                   'country': {'description': 'Country name', 'type': 'string'}
                 }
               },
-              'datetimeOfProofing': {'description': 'Datetime of proofing RFC-3339/ISO-8601', 'type': 'string'},
+              'proofingDatetime': {'description': 'Proofing session datetime RFC-3339/ISO-8601', 'type': 'string'},
               'sediURL': {'description': 'URL to obtain SEDI', 'type': 'string'}
             },
             'additionalProperties': False}
@@ -499,10 +499,10 @@ def test_core_identity():
             "givenName": "Guy",  # given name first name(s)
             "middleName":"Marty McFly",  # middle name(s) other names
             "familyName": "Brown",  # last name family name
-            "dateOfBirth": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
+            "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
             "facialImageProof": "",  # SAID of typed media block containing image
             "legalPresenceStatus": "citizen",  # Class or type of legal presence
-            "placeOfResidence": \
+            "residence": \
             {
                 "street": "157 E 300 N",
                 "city": "Beaver",
@@ -511,7 +511,7 @@ def test_core_identity():
                 "postcode": "84713",
                 "country": "United States",
             },
-            "datetimeOfProofing": "2026-09-01T09:30:00.000000+00:00",
+            "proofingDatetime": "2026-09-01T09:30:00.000000+00:00",
             "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
         }
     }
@@ -532,10 +532,10 @@ def test_core_identity():
             "givenName": "Gal",  # given name first name(s)
             "middleName":"Parker",  # middle name(s) other names
             "familyName": "Brown",  # last name family name
-            "dateOfBirth": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
+            "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
             "facialImageProof": "",  # SAID of typed media block containing image
             "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
-            "placeOfResidence": \
+            "residence": \
             {
                 "street": "157 E 300 N",
                 "city": "Beaver",
@@ -544,7 +544,7 @@ def test_core_identity():
                 "postcode": "84713",
                 "country": "United States",
             },
-            "datetimeOfProofing": "2026-09-02T09:45:00.000000+00:00",
+            "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
             "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
         }
     }
