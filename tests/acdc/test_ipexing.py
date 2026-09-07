@@ -868,7 +868,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
-    """Grant rejects malformed graph closure and violated leaf edge semantics."""
+    """Grant rejects malformed graph closure and false leaf edge semantics."""
     with openHby(name="ipex-v2-bad-grant-graph-semantics",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -878,6 +878,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        handler = exc.routes["/ipex/grant"]
 
         baseChild = acdcmap(israid=issuer.pre,
                             attribute=dict(d="", role="member"),
@@ -972,7 +973,8 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                         wrongE1EOrigin,
                         [wrongE1EChild])
 
-        # Unsupported leaf operators fail closed instead of being treated as no-op.
+        # Recognized but unevaluated operators are well-formed leaves whose
+        # relation is unsatisfied, instead of malformed graph input.
         notChild = acdcmap(israid=issuer.pre,
                            attribute=dict(d="", role="member"),
                            iseaid=issuer.pre)
@@ -983,6 +985,10 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the NOT-operator DAG",
                         notOrigin,
                         [notChild])
+        assert handler._evaluateLeafEdge(notOrigin.sad["e"]["holder"],
+                                         nodes={notChild.said: {"serder": notChild}},
+                                         nserder=notOrigin,
+                                         inheritedSchema=None) is False
 
         diChild = acdcmap(israid=issuer.pre,
                           attribute=dict(d="", role="member"),
@@ -994,6 +1000,10 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the DI2I-operator DAG",
                         diOrigin,
                         [diChild])
+        assert handler._evaluateLeafEdge(diOrigin.sad["e"]["holder"],
+                                         nodes={diChild.said: {"serder": diChild}},
+                                         nserder=diOrigin,
+                                         inheritedSchema=None) is False
 
         # List-valued leaf operators are not supported
         listOpChild = acdcmap(israid=issuer.pre,

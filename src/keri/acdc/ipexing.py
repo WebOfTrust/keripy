@@ -646,8 +646,10 @@ class IpexHandler:
         Returns:
             bool | None: ``True`` when the leaf edge semantics are satisfied,
                 ``False`` when the leaf is well-formed but its relation or
-                schema constraints do not match, or ``None`` when the leaf
-                shape itself is malformed and verification must fail closed.
+                schema constraints do not match, including recognized operators
+                that this verifier cannot yet evaluate, or ``None`` when the
+                leaf shape itself is malformed and verification must fail
+                closed.
         """
         # Reject unknown leaf labels before we inspect the reference.
         for label in group:
@@ -680,9 +682,10 @@ class IpexHandler:
         # check directly or, for E1E, add an issuee-to-issuee constraint.
         dop = recognizedOp if recognizedOp in DelegativeEdgeOps else None
 
-        # Unsupported leaf operators fail closed instead of being ignored.
+        # Recognized but unevaluated leaf operators fail as unsatisfied
+        # relations instead of malformed input.
         if recognizedOp == "NOT" or dop == "DI2I":
-            return None
+            return False
 
         # Start from a passing state, then knock the edge down to False if
         # any required relation check fails.
