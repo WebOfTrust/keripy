@@ -21,6 +21,7 @@ from keri.acdc import regcept, blindate, update, acdcmap
 
 
 # see test_sedi_schema() for generating and testing
+IarSchemaSaid = 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd'
 IarSchema = \
 {
   '$id': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
@@ -415,6 +416,7 @@ def test_core_identity():
         Creeate a set of rip events for vacuous registrys
         Create list of rids (registry id as rip event said )
     """
+    kind = Kinds.json
 
     salt = b'sediacdcworksalt'  # base salt
     salter = Salter(raw=salt)
@@ -640,6 +642,104 @@ def test_core_identity():
 
     iarValidator.validate(guyIarMad)  # raises error if invalid
 
+    mapper = Mapper(mad=guyIarMad, makify=True, saidive=True, kind=kind)
+    guyIarMadSaid = mapper.said
+    assert  guyIarMadSaid == 'EHUvkvosEnx6AYOs1WiS8KW0WiiP_cAwUnHxUUTU58TT'
+    iarValidator.validate(mapper.mad)  # raises error if invalid
+
+    guyIarAttBareMad = \
+    {
+        "d": "",  # SAID
+        "i": guy,  # citizens SEDI managment AID (SMAID)
+        "givenName": "Guy",  # given name first name(s)
+        "middleName":"Marty McFly",  # middle name(s) other names
+        "familyName": "Brown",  # last name family name
+        "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
+        "facialImageProof": "",  # SAID of typed media block containing image
+        "legalPresenceStatus": "citizen",  # Class or type of legal presence
+        "residence": \
+        {
+            "street": "157 E 300 N",
+            "city": "Beaver",
+            "county": "Beaver",
+            "state": "Utah",
+            "postcode": "84713",
+            "country": "United States",
+        },
+        "proofingDatetime": "2026-09-01T09:30:00.000000+00:00",
+        "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
+    }
+
+    mapper = Mapper(mad=guyIarAttBareMad, makify=True, saidive=True, kind=kind)
+    guyIarAttMad = mapper.mad
+    assert guyIarAttMad['i'] == guy
+    guyIarAttMadSaid = mapper.said
+    assert  guyIarAttMadSaid == 'EIAwt2gUPLL-BydfSx8ftkFrUk39G7seAm4l7DKLFFdl'
+
+    assert guyIarAttMad == \
+    {
+        'd': 'EIAwt2gUPLL-BydfSx8ftkFrUk39G7seAm4l7DKLFFdl',
+        'i': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+        'givenName': 'Guy',
+        'middleName': 'Marty McFly',
+        'familyName': 'Brown',
+        'birthDate': '2002-08-22T00:00:00.000000+00:00',
+        'facialImageProof': '',
+        'legalPresenceStatus': 'citizen',
+        'residence':
+        {
+            'street': '157 E 300 N',
+            'city': 'Beaver',
+            'county': 'Beaver',
+            'state': 'Utah',
+            'postcode': '84713',
+            'country': 'United States'
+        },
+        'proofingDatetime': '2026-09-01T09:30:00.000000+00:00',
+        'sediURL': 'https://example.com/sedi/here'
+    }
+
+
+    guySerderIar = acdcmap(sue, uuid=challenge, schema=IarSchemaSaid,
+                         attribute=guyIarAttMad, kind=kind)
+    iarValidator.validate(guySerderIar.sad)  # raises error if invalid
+
+    assert guySerderIar.sad['a'] == guyIarAttMad
+    assert guySerderIar.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAALT.',
+        't': 'acm',
+        'd': 'EMawJqscda9bfW1_R0mMTtO9mkKzyotYvGpfqkDsPSjg',
+        'u': '0ABzZWRpYWNkY3dvcmtzYWx0',
+        'i': 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-',
+        's': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
+        'a':
+        {
+            'd': 'EIAwt2gUPLL-BydfSx8ftkFrUk39G7seAm4l7DKLFFdl',
+            'i': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+            'givenName': 'Guy',
+            'middleName': 'Marty McFly',
+            'familyName': 'Brown',
+            'birthDate': '2002-08-22T00:00:00.000000+00:00',
+            'facialImageProof': '',
+            'legalPresenceStatus': 'citizen',
+            'residence':
+            {
+                'street': '157 E 300 N',
+                          'city': 'Beaver',
+                          'county': 'Beaver',
+                          'state': 'Utah',
+                          'postcode': '84713',
+                          'country': 'United States'
+            },
+            'proofingDatetime': '2026-09-01T09:30:00.000000+00:00',
+            'sediURL': 'https://example.com/sedi/here'
+        }
+    }
+    assert guySerderIar.said == 'EMawJqscda9bfW1_R0mMTtO9mkKzyotYvGpfqkDsPSjg'
+    assert guySerderIar.iseaid == guy
+
+
     # Gal's Identity Assurance Receipt (iar) ACDC
     # issued signed (not anchored) by proofing agent
     galIarMad = \
@@ -653,7 +753,7 @@ def test_core_identity():
         "a":
         {
             "d": "",  # SAID
-            "i": guy,  # citizens SEDI managment AID (SMAID)
+            "i": gal,  # citizens SEDI managment AID (SMAID)
             "givenName": "Gal",  # given name first name(s)
             "middleName":"Parker",  # middle name(s) other names
             "familyName": "Brown",  # last name family name
@@ -675,6 +775,69 @@ def test_core_identity():
     }
 
     iarValidator.validate(galIarMad)  # raises error if invalid
+
+    galIarAttBareMad = \
+    {
+        "d": "",  # SAID
+        "i": gal,  # citizens SEDI managment AID (SMAID)
+        "givenName": "Gal",  # given name first name(s)
+        "middleName":"Parker",  # middle name(s) other names
+        "familyName": "Brown",  # last name family name
+        "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
+        "facialImageProof": "",  # SAID of typed media block containing image
+        "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
+        "residence": \
+        {
+            "street": "157 E 300 N",
+            "city": "Beaver",
+            "county": "Beaver",
+            "state": "Utah",
+            "postcode": "84713",
+            "country": "United States",
+        },
+        "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
+        "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
+    }
+    mapper = Mapper(mad=galIarAttBareMad, makify=True, saidive=True, kind=kind)
+    galIarAttMad = mapper.mad
+    galSerderIar = acdcmap(sue, uuid=challenge, schema=IarSchemaSaid,
+                           attribute=galIarAttMad, kind=kind)
+    iarValidator.validate(galSerderIar.sad)  # raises error if invalid
+
+    assert galSerderIar.sad['a'] == galIarAttMad
+    assert galSerderIar.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAALO.',
+        't': 'acm',
+        'd': 'EGmdkJIzwURe6XrEMHPjaKzuflt3YYtptc4G8ORxWPqr',
+        'u': '0ABzZWRpYWNkY3dvcmtzYWx0',
+        'i': 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-',
+        's': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
+        'a':
+        {
+            'd': 'EGrLfrJGwHHPVpHQMU2-bfzntCesFU_Q8rK7nbDBcTPz',
+            'i': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+            'givenName': 'Gal',
+            'middleName': 'Parker',
+            'familyName': 'Brown',
+            'birthDate': '2002-11-01T00:00:00.000000+00:00',
+            'facialImageProof': '',
+            'legalPresenceStatus': 'citizen',
+            'residence':
+            {
+                'street': '157 E 300 N',
+                'city': 'Beaver',
+                'county': 'Beaver',
+                'state': 'Utah',
+                'postcode': '84713',
+                'country': 'United States'
+            },
+            'proofingDatetime': '2026-09-02T09:45:00.000000+00:00',
+            'sediURL': 'https://example.com/sedi/here'
+        }
+    }
+    assert galSerderIar.said == 'EGmdkJIzwURe6XrEMHPjaKzuflt3YYtptc4G8ORxWPqr'
+    assert galSerderIar.iseaid == gal
 
 
     # Challenge Nonce Seal anchored in KEL of SMAID
