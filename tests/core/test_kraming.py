@@ -6080,10 +6080,14 @@ def test_tsgs_current_when_latest_event_is_non_establishment(mockHelpingNowUTC):
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
             assert [s.index for s in receiverHby.db.kramPMKS.get(keys=partialKey)] == [0]
 
-            assert kramer.intake(mkMsg, delivered([allSigers[1]])) is not None, \
+            kwa = delivered([allSigers[1]])
+            assert kramer.intake(mkMsg, kwa) is not None, \
                 "the second endorsement meets the threshold and releases the message"
-            assert sorted(s.index for s in
-                          receiverHby.db.kramPMKS.get(keys=partialKey)) == [0, 1]
+            assert sorted(s.index for s in kwa['sigers']) == [0, 1]
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
+            assert receiverHby.db.kramPMKS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPMSK.get(keys=partialKey) is None
+            assert receiverHby.db.kramMSGC.get(keys=partialKey) is not None
 
 
 def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC):
@@ -6119,13 +6123,12 @@ def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC
             cf.put(KRAM_INTEGRATION_CONFIG)
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
-            def deliver(hab, msg, chosen):
+            def delivered(hab, chosen):
                 """One member's endorsement, naming the sender's current est event."""
                 kever = receiverHby.db.kevers[hab.pre]
-                return kramer.intake(msg, dict(tsgs=[(Prefixer(qb64=hab.pre),
-                                                      Number(num=kever.lastEst.s),
-                                                      Diger(qb64=kever.lastEst.d),
-                                                      chosen)]))
+                return dict(tsgs=[(Prefixer(qb64=hab.pre),
+                                   Number(num=kever.lastEst.s),
+                                   Diger(qb64=kever.lastEst.d), chosen)])
 
             stamp = helping.nowIso8601()
 
@@ -6138,7 +6141,7 @@ def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC
                 indexed=True)
             key = (senderHab.pre, msg.said)
 
-            assert deliver(senderHab, msg, [sigers[0]]) is None
+            assert kramer.intake(msg, delivered(senderHab, [sigers[0]])) is None
             assert [s.index for s in receiverHby.db.kramPMKS.get(key)] == [0]
 
             Parser(version=V2).parse(
@@ -6149,9 +6152,14 @@ def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC
             assert anchored.sner.num == 1 and anchored.serder.ilk == Ilks.ixn
             assert anchored.lastEst.s == 0
 
-            assert deliver(senderHab, msg, [sigers[1]]) is not None, \
+            kwa = delivered(senderHab, [sigers[1]])
+            assert kramer.intake(msg, kwa) is not None, \
                 "anchoring changes no key, so the second endorsement still counts"
-            assert sorted(s.index for s in receiverHby.db.kramPMKS.get(key)) == [0, 1]
+            assert sorted(s.index for s in kwa['sigers']) == [0, 1]
+            assert receiverHby.db.kramPMKM.get(key) is None
+            assert receiverHby.db.kramPMKS.get(key) == []
+            assert receiverHby.db.kramPMSK.get(key) is None
+            assert receiverHby.db.kramMSGC.get(key) is not None
 
             # A rotation between deliveries: the keys did change, so the escrow drops.
             rotMsg = query(pre=rotHab.pre, route="ksn",
@@ -6162,7 +6170,7 @@ def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC
                 indexed=True)
             rotKey = (rotHab.pre, rotMsg.said)
 
-            assert deliver(rotHab, rotMsg, [rotSigers[0]]) is None
+            assert kramer.intake(rotMsg, delivered(rotHab, [rotSigers[0]])) is None
             assert [s.index for s in receiverHby.db.kramPMKS.get(rotKey)] == [0]
 
             Parser(version=V2).parse(
@@ -6171,6 +6179,9 @@ def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC
                 kvy=crossKvy)
             assert receiverHby.db.kevers[rotHab.pre].lastEst.s == 1
 
-            assert deliver(rotHab, rotMsg, [rotSigers[1]]) is None, \
+            assert kramer.intake(rotMsg, delivered(rotHab, [rotSigers[1]])) is None, \
                 "rotating invalidates what was gathered under the old keys"
-            assert [s.index for s in receiverHby.db.kramPMKS.get(rotKey)] == [0]
+            assert receiverHby.db.kramPMKM.get(rotKey) is None
+            assert receiverHby.db.kramPMKS.get(rotKey) == []
+            assert receiverHby.db.kramPMSK.get(rotKey) is None
+            assert receiverHby.db.kramMSGC.get(rotKey) is not None

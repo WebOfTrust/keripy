@@ -282,9 +282,31 @@ class Exchanger:
             if not diger.verify(ser=essr):
                 raise ValidationError(f"essr diger={diger.qb64} is invalid against content")
 
+        if evidenceVerifier is None:
+            acceptedExtras = ([], [], [])
+        else:
+            acceptedExtras = evidenceVerifier(
+                serder=serder,
+                tsgs=validExtraTsgs,
+                cigars=validExtraCigars,
+                sourceSeals=validExtraSourceSeals,
+                invalid=invalidExtra,
+            )
+            if acceptedExtras is None:
+                logger.error("exn evidence for route %s failed behavior verification. said=%s",
+                             route, serder.said)
+                logger.debug("Exn Event Body=\n%s\n", serder.pretty())
+                return False
+
+        acceptedTsgs, acceptedCigars, acceptedSourceSeals = acceptedExtras
+        tsgs = validSenderTsgs + acceptedTsgs
+        cigars = validSenderCigars + acceptedCigars
+        sourceSeals = validSenderSourceSeals + acceptedSourceSeals
+
         # Perform behavior specific verification, think IPEX chaining requirements
+        verifier = getattr(behavior, "verify", None)
         try:
-            if not behavior.verify(serder=serder, **kwa):
+            if verifier is not None and not verifier(serder=serder, **kwa):
                 logger.error("exn event for route %s failed behavior verification. said=%s", route, serder.said)
                 logger.debug("Event=\n%s\n", serder.pretty())
                 return False
@@ -300,31 +322,6 @@ class Exchanger:
                         serder.said, ex)
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             return None
-
-        except AttributeError:
-            logger.debug("Behavior for %s missing or does not have verify for said %s", route, serder.said)
-            logger.debug("Exn Event Body=\n%s\n", serder.pretty())
-
-        if evidenceVerifier is None:
-            acceptedExtras = ([], [], [])
-        else:
-            acceptedExtras = evidenceVerifier(
-                serder=serder,
-                tsgs=validExtraTsgs,
-                cigars=validExtraCigars,
-                sourceSeals=validExtraSourceSeals,
-                invalid=invalidExtra,
-            )
-            if acceptedExtras is None:
-                logger.error("exn evidence for route %s failed behavior verification. said=%s",
-                             route, serder.said)
-                logger.debug("Exn Event Body=\n%s\n", serder.pretty())
-                return
-
-        acceptedTsgs, acceptedCigars, acceptedSourceSeals = acceptedExtras
-        tsgs = validSenderTsgs + acceptedTsgs
-        cigars = validSenderCigars + acceptedCigars
-        sourceSeals = validSenderSourceSeals + acceptedSourceSeals
 
         # Always persist events
         self.logEvent(serder, ptds, tsgs, cigars, essrs,
@@ -438,8 +435,8 @@ class Exchanger:
                 self.hby.db.ecigs.rem(keys=(dig,))
                 self.hby.db.ests.trim(keys=(dig, ""))
                 result = self.processEvent(serder=serder, tsgs=tsgs, cigars=cigars,
-                                  ptds=pathed,
-                                  essrs=essrs, ssts=sourceSeals, nests=nests)
+                                           ptds=pathed,
+                                           essrs=essrs, ssts=sourceSeals, nests=nests)
 
             except MissingSignatureError as ex:
                 for prefixer, seqner, ssaider, sigers in tsgs:

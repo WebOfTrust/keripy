@@ -940,17 +940,16 @@ class IpexHandler:
             bsqs = nest.get("bsqs", []) if isinstance(nest, dict) else nest.bsqs
             bsss = nest.get("bsss", []) if isinstance(nest, dict) else nest.bsss
 
-            # The parser gives us primitive tuples. Rebuild those as the
-            # canonical BlindState / BoundState data records before handing
-            # them back to Blinder.
+            # Reparse the proof with Blinder's canonical casts. The parser
+            # supplies a Diger for d, but Blinder uses a Noncer with .nonce.
             proofs = []
             for proof in bsqs:
-                data = proof if isinstance(proof, BlindState) else BlindState(*proof)
-                proofs.append(Blinder(data=data))
+                proofs.append(Blinder(clan=BlindState,
+                                      qb64=b''.join(item.qb64b for item in proof)))
 
             for proof in bsss:
-                data = proof if isinstance(proof, BoundState) else BoundState(*proof)
-                proofs.append(Blinder(data=data))
+                proofs.append(Blinder(clan=BoundState,
+                                      qb64=b''.join(item.qb64b for item in proof)))
 
             # The proof group must disclose exactly one blinded state for the registry's root event.
             if len(proofs) != 1:

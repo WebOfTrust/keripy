@@ -817,7 +817,8 @@ def test_verify_fails_closed_on_invalid_stored_evidence(mockHelpingNowUTC):
             serializeMessage(receiverHby, exn.said, framed=True)
 
 
-def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC):
+@pytest.mark.parametrize("verificationError", [False, True])
+def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC, verificationError):
     """Exchanger escrow rows do not bypass evidence selection on replay."""
     kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
 
@@ -826,6 +827,8 @@ def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC):
 
         @staticmethod
         def verify(serder, **kwa):
+            if verificationError:
+                raise AttributeError("verifier failure")
             return True
 
         @staticmethod
@@ -912,6 +915,23 @@ def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC):
                                        kvy=receiverHby.kvy,
                                        local=True)
         exchanger.processEscrow()
+
+        if verificationError:
+            # A verifier error must not be treated as an absent verifier,
+            # either during escrow replay or on a fresh complete delivery.
+            with pytest.raises(AttributeError, match="verifier failure"):
+                exchanger.processEvent(exn, tsgs=[senderGroup, endorserGroup],
+                                       cigars=validCigar, ssts=[validSeal])
+            assert receiverHby.db.exns.get(keys=(exn.said,)) is None
+            assert receiverHby.db.epse.get(keys=(exn.said,)) is None
+            assert receiverHby.db.epsd.get(keys=(exn.said,)) is None
+            assert list(receiverHby.db.esigs.getTopItemIter(
+                keys=(exn.said, ""))) == []
+            assert receiverHby.db.ecigs.get(keys=(exn.said,)) == []
+            assert list(receiverHby.db.ests.getTopItemIter(
+                keys=(exn.said, ""))) == []
+            assert not any(cue.get("kin") == "saved" for cue in exchanger.cues)
+            return
 
         assert receiverHby.db.exns.get(keys=(exn.said,)) is not None
         assert len(list(receiverHby.db.esigs.getTopItemIter(
