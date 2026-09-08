@@ -361,7 +361,7 @@ def test_intake():
         with openDB(name="test_intake_dis", temp=True) as db:
             kramer = Kramer(db, cf)
             serder = reply(pre=TEST_PRE, route="/test",
-                                    data=dict(a=1), pvrsn=Vrsn_2_0)
+                                    data=dict(a=1))
 
             result = kramer.intake(serder)
             assert result is serder  # passthrough, same object
@@ -1429,8 +1429,9 @@ def test_asr(mockHelpingNowUTC):
 def test_transactioned(mockHelpingNowUTC):
     """Test processMsg with transactioned messages (xip/exn, kramTMSC cache).
 
-    Covers: seed xip via kramit directly, exn via processMsg, missing xip
-    cache, exchange window test, multi-key accumulation in transactioned path.
+    Covers: seed xip via kramit directly, exn via processMsg, bare
+    transactioned exn openers, cross-sender replies that recover xdt by xid,
+    exchange window test, and multi-key accumulation in transactioned path.
     """
 
     # Step 1: Setup
@@ -1474,6 +1475,7 @@ def test_transactioned(mockHelpingNowUTC):
             stamp = helping.nowIso8601()
             skPrefixer = Prefixer(qb64=skHab.pre)
             mkPrefixer = Prefixer(qb64=mkHab.pre)
+            receiverPrefixer = Prefixer(qb64=receiverHab.pre)
 
 
             # Step 2: Test with seeded xip via kramit directly
@@ -1498,6 +1500,8 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # xip's xdt == its own dt
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(xip.said,)).dts == stamp
 
 
             # Step 3: exn with exchange ID via processMsg
@@ -1525,9 +1529,11 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # inherited from xip's xdt
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(xip.said,)).dts == stamp
 
 
-            # Step 4: Missing xip cache
+            # Step 4: Bare v2 transactional exn opener (no prior) seeds its own xdt
 
             fakeXid = "E" + "B" * 43  # fabricated xip SAID with no kramTMSC entry
             msg3 = exchange(sender=skHab.pre,
@@ -1543,16 +1549,44 @@ def test_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(lsgs=[(skPrefixer, sigers)])
 
-            # kramit can't find xip's xdt, returns None, processMsg returns
-            kwa["serder"] = msg3
-            kvy.processMsg(kwa)
-
-            # Assert no kramTMSC entry for the exn
+            result = kramer.kramit(msg3, kwa)
+            assert result is not None
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, fakeXid, msg3.said))
-            assert cache is None
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.xdt == stamp
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(fakeXid,)).dts == stamp
 
 
-            # Step 5: Exchange window test
+            # Step 5: Another sender can answer the same thread by xid alone
+            msg4 = exchange(sender=receiverHab.pre,
+                            receiver=skHab.pre,
+                            xid=fakeXid,
+                            prior=msg3.said,
+                            route="/test/exchange",
+                            attributes=dict(n='5e'),
+                            stamp=stamp,
+                            version=V2, 
+                            kind=Kinds.json)
+
+            sigers = receiverHab.mgr.sign(ser=msg4.raw,
+                                          verfers=receiverHab.kever.verfers,
+                                          indexed=True)
+            kwa = dict(lsgs=[(receiverPrefixer, sigers)])
+
+            result = kramer.kramit(msg4, kwa)
+            assert result is not None
+            cache = receiverHby.db.kramTMSC.get(
+                keys=(receiverHab.pre, fakeXid, msg4.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.xdt == stamp
+            # Assert that KramXDT entry created for xip's SAID
+            assert receiverHby.db.kramXDT.get(keys=(fakeXid,)).dts == stamp
+
+
+            # Step 6: Exchange window test
 
             # Seed a kramTMSC entry with an old xdt directly in the database
             # so the exn's mdt (now) is outside the exchange window
@@ -1564,32 +1598,33 @@ def test_transactioned(mockHelpingNowUTC):
                 xl=300000, pxl=300000)
             receiverHby.db.kramTMSC.pin(keys=(skHab.pre, oldXipSaid, oldXipSaid),
                                     val=seedRecord)
+            receiverHby.db.kramXDT.pin(keys=(oldXipSaid,), val=Dater(dts=oldXdt))
 
-            msg4 = exchange(sender=skHab.pre,
+            msg5 = exchange(sender=skHab.pre,
                             receiver=receiverHab.pre,
                             xid=oldXipSaid,
                             route="/test/exchange",
-                            attributes=dict(n='5e'),
+                            attributes=dict(n='5f'),
                             stamp=stamp,
                             **EXN_KWA)
 
-            sigers = skHab.mgr.sign(ser=msg4.raw,
+            sigers = skHab.mgr.sign(ser=msg5.raw,
                                     verfers=skHab.kever.verfers,
                                     indexed=True)
             kwa = dict(lsgs=[(skPrefixer, sigers)])
 
             # mdt passes standard timeliness, but
             # xdt=10min ago, mdt=now: xdt + xl = 5min ago < now -> fails
-            kwa["serder"] = msg4
+            kwa["serder"] = msg5
             kvy.processMsg(kwa)
 
             # Assert no kramTMSC entry (exchange window failed)
             cache = receiverHby.db.kramTMSC.get(
-                keys=(skHab.pre, oldXipSaid, msg4.said))
+                keys=(skHab.pre, oldXipSaid, msg5.said))
             assert cache is None
 
 
-            # Step 6: Seed xip for multi-key sender
+            # Step 7: Seed xip for multi-key sender
 
             mkXip = exchept(sender=mkHab.pre,
                             receiver=receiverHab.pre,
@@ -1608,7 +1643,7 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
 
 
-            # Step 7: Multi-key accumulation in transactioned path
+            # Step 8: Multi-key accumulation in transactioned path
 
             mkExn = exchange(sender=mkHab.pre,
                              receiver=receiverHab.pre,
@@ -5731,3 +5766,182 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
             assert receiverHby.db.kramPMKS.get(keys=partialKey) == []
             assert receiverHby.db.kramPMSK.get(keys=partialKey) is None
+
+
+def test_tsgs_current_when_latest_event_is_non_establishment(mockHelpingNowUTC):
+    """A tsg is current when it names the last establishment event, not the last event.
+
+    A TransIdxSigGroup references the establishment event that established the signing
+    keys, so currency is decided against ``kever.lastEst``. Both auth paths are here
+    because all four currency comparisons share that reference: assk accepts a
+    single-key sender whose latest event is an ixn, and asmk accumulates a multi-key
+    sender to threshold across two deliveries.
+    """
+    salt1 = Salter(raw=b'0123456789abcdej').qb64
+    salt2 = Salter(raw=b'0123456789abcdek').qb64
+    salt3 = Salter(raw=b'0123456789abcdel').qb64
+
+    with (openHby(name="ixnSender", base="test", salt=salt1) as senderHby,
+          openHby(name="ixnMulti", base="test", salt=salt2) as multiHby,
+          openHby(name="ixnReceiver", base="test", salt=salt3) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="ixnSender", isith='1', icount=1,
+                                      transferable=True, version=V2, kind=Kinds.cesr)
+        multiHab = multiHby.makeHab(name="ixnMulti", isith='2', icount=3,
+                                    transferable=True, version=V2, kind=Kinds.cesr)
+        receiverHby.makeHab(name="ixnReceiver", isith='1', icount=1,
+                            transferable=True, version=V2, kind=Kinds.cesr)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+
+        for hab in (senderHab, multiHab):
+            Parser(version=V2).parse(ims=bytearray(hab.msgOwnEvent(sn=0, framed=True,
+                                                                   gvrsn=V2)),
+                                     kvy=crossKvy)
+            assert hab.pre in crossKvy.kevers
+            # Anchor something, exactly as an issuer does. The KEL advances; the keys
+            # do not, so lastEst still names the inception.
+            Parser(version=V2).parse(
+                ims=bytearray(hab.interact(framed=True, version=V2, kind=Kinds.cesr,
+                                           gvrsn=V2)),
+                kvy=crossKvy)
+            kever = receiverHby.db.kevers[hab.pre]
+            assert kever.sner.num == 1 and kever.serder.ilk == Ilks.ixn
+            assert kever.lastEst.s == 0 and kever.lastEst.d != kever.serder.said
+
+        with openCF(name="ixnKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            assert kramer.enabled
+
+            stamp = helping.nowIso8601()
+
+            # assk: the single-key sender's signature names the inception, which is
+            # still its current establishment event.
+            skKever = receiverHby.db.kevers[senderHab.pre]
+            msg = query(pre=senderHab.pre, route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre, n='ixn01'),
+                        stamp=stamp, pvrsn=Vrsn_2_0)
+            sigers = senderHab.mgr.sign(ser=msg.raw, verfers=skKever.verfers,
+                                        indexed=True)
+            kwa = dict(tsgs=[(Prefixer(qb64=senderHab.pre),
+                              Number(num=skKever.lastEst.s),
+                              Diger(qb64=skKever.lastEst.d), sigers)])
+            assert kramer.intake(msg, kwa) is not None, \
+                "an issuer that has anchored can still authenticate"
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said)) is not None
+
+            # asmk: the multi-key sender accumulates across deliveries while its
+            # latest event is an ixn.
+            mkKever = receiverHby.db.kevers[multiHab.pre]
+            mkMsg = query(pre=multiHab.pre, route="ksn",
+                          query=dict(i=multiHab.pre, src=multiHab.pre, n='ixn02'),
+                          stamp=stamp, pvrsn=Vrsn_2_0)
+            allSigers = multiHab.mgr.sign(ser=mkMsg.raw, verfers=mkKever.verfers,
+                                          indexed=True)
+            partialKey = (multiHab.pre, mkMsg.said)
+
+            def delivered(chosen):
+                return dict(tsgs=[(Prefixer(qb64=multiHab.pre),
+                                   Number(num=mkKever.lastEst.s),
+                                   Diger(qb64=mkKever.lastEst.d), chosen)])
+
+            assert kramer.intake(mkMsg, delivered([allSigers[0]])) is None, \
+                "one of two is not a threshold, so it waits"
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            assert [s.index for s in receiverHby.db.kramPMKS.get(keys=partialKey)] == [0]
+
+            assert kramer.intake(mkMsg, delivered([allSigers[1]])) is not None, \
+                "the second endorsement meets the threshold and releases the message"
+            assert sorted(s.index for s in
+                          receiverHby.db.kramPMKS.get(keys=partialKey)) == [0, 1]
+
+
+def test_partial_multisig_survives_an_anchor_during_collection(mockHelpingNowUTC):
+    """An interaction event during signature collection does not drop the escrow.
+
+    Keys change only at establishment events, so the key state pin is ``kever.lastEst``.
+    Both halves are here because the pin has a job to do: an ixn between two deliveries
+    leaves the escrow able to reach threshold, and a rotation between two still drops it.
+    See #1661.
+    """
+    salt1 = Salter(raw=b'0123456789abcdem').qb64
+    salt2 = Salter(raw=b'0123456789abcden').qb64
+    salt3 = Salter(raw=b'0123456789abcdeo').qb64
+
+    with (openHby(name="anchorSender", base="test", salt=salt1) as senderHby,
+          openHby(name="rotateSender", base="test", salt=salt2) as rotHby,
+          openHby(name="anchorReceiver", base="test", salt=salt3) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="anchorSender", isith='2', icount=3,
+                                      transferable=True, version=V2, kind=Kinds.cesr)
+        rotHab = rotHby.makeHab(name="rotateSender", isith='2', icount=3,
+                                transferable=True, version=V2, kind=Kinds.cesr)
+        receiverHby.makeHab(name="anchorReceiver", isith='1', icount=1,
+                            transferable=True, version=V2, kind=Kinds.cesr)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        for hab in (senderHab, rotHab):
+            Parser(version=V2).parse(
+                ims=bytearray(hab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)), kvy=crossKvy)
+            assert hab.pre in crossKvy.kevers
+
+        with openCF(name="anchorKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            def deliver(hab, msg, chosen):
+                """One member's endorsement, naming the sender's current est event."""
+                kever = receiverHby.db.kevers[hab.pre]
+                return kramer.intake(msg, dict(tsgs=[(Prefixer(qb64=hab.pre),
+                                                      Number(num=kever.lastEst.s),
+                                                      Diger(qb64=kever.lastEst.d),
+                                                      chosen)]))
+
+            stamp = helping.nowIso8601()
+
+            # An ixn between deliveries: the keys did not change, so collection continues.
+            msg = query(pre=senderHab.pre, route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre, n='anch01'),
+                        stamp=stamp, pvrsn=Vrsn_2_0)
+            sigers = senderHab.mgr.sign(
+                ser=msg.raw, verfers=receiverHby.db.kevers[senderHab.pre].verfers,
+                indexed=True)
+            key = (senderHab.pre, msg.said)
+
+            assert deliver(senderHab, msg, [sigers[0]]) is None
+            assert [s.index for s in receiverHby.db.kramPMKS.get(key)] == [0]
+
+            Parser(version=V2).parse(
+                ims=bytearray(senderHab.interact(framed=True, version=V2, kind=Kinds.cesr,
+                                                 gvrsn=V2)),
+                kvy=crossKvy)
+            anchored = receiverHby.db.kevers[senderHab.pre]
+            assert anchored.sner.num == 1 and anchored.serder.ilk == Ilks.ixn
+            assert anchored.lastEst.s == 0
+
+            assert deliver(senderHab, msg, [sigers[1]]) is not None, \
+                "anchoring changes no key, so the second endorsement still counts"
+            assert sorted(s.index for s in receiverHby.db.kramPMKS.get(key)) == [0, 1]
+
+            # A rotation between deliveries: the keys did change, so the escrow drops.
+            rotMsg = query(pre=rotHab.pre, route="ksn",
+                           query=dict(i=rotHab.pre, src=rotHab.pre, n='anch02'),
+                           stamp=stamp, pvrsn=Vrsn_2_0)
+            rotSigers = rotHab.mgr.sign(
+                ser=rotMsg.raw, verfers=receiverHby.db.kevers[rotHab.pre].verfers,
+                indexed=True)
+            rotKey = (rotHab.pre, rotMsg.said)
+
+            assert deliver(rotHab, rotMsg, [rotSigers[0]]) is None
+            assert [s.index for s in receiverHby.db.kramPMKS.get(rotKey)] == [0]
+
+            Parser(version=V2).parse(
+                ims=bytearray(rotHab.rotate(framed=True, version=V2, kind=Kinds.cesr,
+                                            gvrsn=V2)),
+                kvy=crossKvy)
+            assert receiverHby.db.kevers[rotHab.pre].lastEst.s == 1
+
+            assert deliver(rotHab, rotMsg, [rotSigers[1]]) is None, \
+                "rotating invalidates what was gathered under the old keys"
+            assert [s.index for s in receiverHby.db.kramPMKS.get(rotKey)] == [0]

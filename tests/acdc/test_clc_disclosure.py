@@ -55,7 +55,7 @@ and it is the right altitude for a first worked example. keripy is midway throug
 a deliberate v1->v2 reorganization. ACDC v1 -- and its v1 IPEX handlers in
 keri.vc.protocoling -- stays in keri.vc; the new keri.acdc subpackage is the v2
 home, with keri.acdc.messaging filled in (the v2 message builders these examples
-use) and the other modules -- keri.acdc.ipexing, registring, registraring,
+use) and the other modules -- keri.acdc.ipexing, regeventing, registraring,
 scheming, ... -- still placeholder stubs awaiting migration. The v1
 keri.vc.protocoling handlers do not speak v2 messaging, so this example does NOT
 route through them; doing so would only mislead a reader about how v2 IPEX works.

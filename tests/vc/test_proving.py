@@ -24,9 +24,9 @@ def test_proving(mockHelpingNowIso8601):
 
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
-    with openHby(name="sid", base="test", salt=sidSalt, version=Vrsn_1_0) as sidHby:
-        sidHab = sidHby.makeHab(name="test", version=Vrsn_1_0, kind=Kinds.json)
-        assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
+    with openHby(name="sid", base="test", salt=sidSalt) as sidHby:
+        sidHab = sidHby.makeHab(name="test")
+        assert sidHab.pre == 'EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M'
         sed = dict()
         sed["$id"] = ""
         sed["$schema"] = "http://json-schema.org/draft-07/schema#"
@@ -49,7 +49,7 @@ def test_proving(mockHelpingNowIso8601):
             d="",
             i="EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
-            issuanceDate="2021-06-27T21:26:21.233257+00:00",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00"
         )
 
         cache = CacheResolver(db=sidHby.db)
@@ -61,17 +61,16 @@ def test_proving(mockHelpingNowIso8601):
                             version=Vrsn_1_0, kind=Kinds.json)
 
         msg = sidHab.endorse(serder=creder, framed=False, gvrsn=Vrsn_1_0)
-        assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_by'
-                       b'xSYUw3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8'
-                       b'dDjI3","s":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a'
-                       b'":{"d":"EO-mlywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"'
-                       b'2021-06-27T21:26:21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6'
-                       b'AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
-                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABEIaGMMW'
-                       b'JFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAA'
-                       b'AEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAAmfpF4BjM'
-                       b'S3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3oxH45Y3kIvZg67u2DyxtUqVi'
-                       b'xVzRhOOTnMAB_SowI')
+        assert msg == (b'{"v":"ACDC10JSON000195_","d":"EKsYqaq9drhThMwDXqZtcFGHwTZI9T0ezj'
+                       b'lAAXOv4Z63","i":"EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M","'
+                       b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
+                       b'lywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"2021-06-27T21:26'
+                       b':21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh'
+                       b'0nc","lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:'
+                       b'26:21.233257+00:00"}}-VA0-FABEChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDV'
+                       b'VI6KNGL3M0AAAAAAAAAAAAAAAAAAAAAAAEChqfw9-5A5qMrZ8_YgOAJm8iKMbTAU'
+                       b'vfDVVI6KNGL3M-AABAADOILQFYV77NiqXYdcGZPN_y-Zu-1aFR5SEOpAJWMM9p1t'
+                       b'R1diZHEZ5IyH5ZtHB7vOOmi8gXSMclgkBbC217pkO')
 
         creder = SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
@@ -220,7 +219,7 @@ def test_credential(mockHelpingNowIso8601):
         d="",
         LEI="254900OPPU84GM83MG36",
         personLegalName="John Doe",
-        engagementContextRole="Project Manager",
+        engagementContextRole="Project Manager"
     )
 
     # test source chaining with labeled edge
@@ -252,7 +251,7 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
     d = dict(
         LEI="254900OPPU84GM83MG36",
         personLegalName="John Doe",
-        engagementContextRole="Project Manager",
+        engagementContextRole="Project Manager"
     )
 
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
@@ -279,15 +278,15 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
 
 
 def test_credential_parsator():
-    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
-        assert hab.pre == 'EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o'
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        assert hab.pre == 'ELiB9P2peJvXDQbfYoFPf2gxdN7lmiC-dQB0NG_9qiqz'
 
         regery = Regery(hby=hby, name="sid", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True, version=Vrsn_1_0, kind=Kinds.json)
 
         credSubject = dict(
             d="",
-            LEI="254900OPPU84GM83MG36",
+            LEI="254900OPPU84GM83MG36"
         )
 
         creder = credential(issuer=hab.pre,

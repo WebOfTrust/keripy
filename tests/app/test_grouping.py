@@ -820,12 +820,11 @@ def test_multisig_incept_legacy_special_exn_uses_explicit_v1_version(mockHelping
 
 
 def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (_, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Version)
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True)
         innerSerder = SerderKERI(raw=icp)
-        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
-                                     kind=Kinds.json)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp)
 
         assert exn.ked["r"] == '/multisig/icp'
         data = exn.ked["a"]
@@ -835,7 +834,7 @@ def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNo
         assert data["icp"] == innerSerder.said
         assert "e" not in exn.ked
 
-        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+        results = Parser().parse(ims=bytearray(exn.raw + atc),
                                                  framed=True,
                                                  processive=False)
         assert len(results) == 1

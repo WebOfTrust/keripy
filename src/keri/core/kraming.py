@@ -20,7 +20,7 @@ from hio.base import doing
 from hio.help import ogler
 
 
-from .coring import Verser, Prefixer, Diger
+from .coring import Verser, Prefixer, Diger, Dater, Number
 from .indexing import Siger
 from .eventing import verifySigs
 
@@ -69,8 +69,10 @@ Fields:
 
 Key state ref and tholder are derivable from the sender's kever
 (current key state) and are not included here. Callers that need
-them should construct directly from kever.sner, kever.serder.said,
-and kever.tholder.
+them should construct directly from kever.lastEst.s, kever.lastEst.d,
+and kever.tholder. Signing keys change only at establishment events,
+so the key state ref names the last establishment event rather than
+the last event of any kind.
 """
 
 
@@ -455,8 +457,8 @@ class Kramer:
                 exist (``kramit`` ensures this before calling).
         """
         tsgs = kwa.get('tsgs', [])
-        cur_sn = kever.sner.num
-        cur_said = kever.serder.said
+        cur_sn = kever.lastEst.s
+        cur_said = kever.lastEst.d
         for prefixer, number, sdiger, sigers in tsgs:
             if prefixer.qb64 != senderId:
                 continue
@@ -552,8 +554,8 @@ class Kramer:
         if not tsgs:
             return stale_tsgs
 
-        cur_sn = kever.sner.num
-        cur_said = kever.serder.said
+        cur_sn = kever.lastEst.s
+        cur_said = kever.lastEst.d
         new_tsgs = []
         for quad in tsgs:
             prefixer, number, sdiger, sigers = quad
@@ -608,8 +610,8 @@ class Kramer:
             if not kwa['lsgs']:
                 kwa.pop('lsgs', None)
 
-        curSn = kever.sner.num
-        curSaid = kever.serder.said
+        curSn = kever.lastEst.s
+        curSaid = kever.lastEst.d
         if kwa.get('tsgs'):
             newTsgs = []
             for quad in kwa['tsgs']:
@@ -694,8 +696,8 @@ class Kramer:
         for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 != senderId:
                 continue
-            if (number.sn != kever.sner.num or
-                    sdiger.qb64 != kever.serder.said):
+            if (number.sn != kever.lastEst.s or
+                    sdiger.qb64 != kever.lastEst.d):
                 continue
             for siger in sigers:
                 pool.add(siger.qb64)
@@ -1093,8 +1095,8 @@ class Kramer:
 
                 # Key state change detection:
                 # Compare stored key state ref against current kever state
-                currentKeyState = (kever.sner,
-                                   Diger(qb64=kever.serder.said))
+                currentKeyState = (Number(num=kever.lastEst.s),
+                                   Diger(qb64=kever.lastEst.d))
                 storedKeyState = self.db.kramPMSK.get(key)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
@@ -1248,8 +1250,8 @@ class Kramer:
                         return msg
 
                     # Threshold not met, store partials for accumulation
-                    currentKeyState = (kever.sner,
-                                       Diger(qb64=kever.serder.said))
+                    currentKeyState = (Number(num=kever.lastEst.s),
+                                       Diger(qb64=kever.lastEst.d))
                     self.db.kramPMKM.put(key, msg)
                     for sig in sigResult.sigers:
                         self.db.kramPMKS.add(key, sig)
@@ -1326,8 +1328,8 @@ class Kramer:
                 # Key state change detection:
                 # Compare stored key state ref against current kever state.
                 # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
-                currentKeyState = (kever.sner,
-                                   Diger(qb64=kever.serder.said))
+                currentKeyState = (Number(num=kever.lastEst.s),
+                                   Diger(qb64=kever.lastEst.d))
                 storedKeyState = self.db.kramPMSK.get(partialKey)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
@@ -1406,16 +1408,31 @@ class Kramer:
                         case Ilks.xip:
                             xdts = msg.ked.get('dt', None)
                         case Ilks.exn:
-                            # x field value to fetch any existing cache entry with a matching AID.XID and copy its xdt
-                            # value. When no existing cache entry is found, then drop the event and exit.
+                            # First try the sender-scoped transactional cache (TMSC).
+                            # This is the fast path when the same sender has
+                            # already contributed earlier messages in the thread.
                             existingCache = next(self.db.kramTMSC.getTopItemIter((senderId, exId)), None)
 
                             if existingCache is not None:
-                                keys, cacheRecord = existingCache
+                                _, cacheRecord = existingCache
                                 xdts = cacheRecord.xdt
                             else:
-                                # No existing cache entry found, drop the event and exit
-                                return None
+                                # If the current sender has no row yet (ie no prior message)
+                                # fall back to the Exchange Opener Datetime cache (XDT) 
+                                # and use the xid for this exchange to find the 
+                                # opener's xdt
+                                threadDater = self.db.kramXDT.get(keys=(exId,))
+                                if threadDater is not None:
+                                    xdts = threadDater.dts
+                                # A bare transactional exn with no prior opens
+                                # a new thread, so its own mdt becomes the xdt.
+                                elif not msg.ked.get('p'):
+                                    xdts = mdts
+                                else:
+                                    # Replies with neither a sender-local cache
+                                    # row nor a thread-wide xid record cannot be
+                                    # tied to any known transaction.
+                                    return None
                         case _:
                             # Should never be reaching this case
                             raise KramError("Unexpected transactioned message type while kraming.")
@@ -1464,6 +1481,9 @@ class Kramer:
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.kramTMSC.pin(key, mcr)
+                        # Keep the xid-level opener time in sync so later
+                        # replies from any participant can recover this thread.
+                        self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
                         return msg
 
                     elif authType == AuthTypes.AttachedSignatureSingleKey:
@@ -1479,6 +1499,9 @@ class Kramer:
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.kramTMSC.pin(key, mcr)
+                        # Single-key transactional replies also refresh the
+                        # thread-wide xid lookup for later participants.
+                        self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
                         return msg
 
                 elif authType == AuthTypes.AttachedSignatureMultiKey:
@@ -1494,14 +1517,27 @@ class Kramer:
                         case Ilks.xip:
                             xdts = msg.ked.get('dt', None)
                         case Ilks.exn:
-                            existingCache = next(
-                                self.db.kramTMSC.getTopItemIter((senderId, exId)),
-                                None)
+                            # Reuse any sender-local transactional row first
+                            # before consulting the xid-level thread record.
+                            existingCache = next(self.db.kramTMSC.getTopItemIter((senderId, exId)), None)
                             if existingCache is not None:
-                                keys, cacheRecord = existingCache
+                                _, cacheRecord = existingCache
                                 xdts = cacheRecord.xdt
                             else:
-                                return None  # no existing cache, drop
+                                # Multi-key replies may arrive from a different
+                                # sender than the opener, so recover xdt from
+                                # the thread-wide xid index when needed.
+                                threadDater = self.db.kramXDT.get(keys=(exId,))
+                                if threadDater is not None:
+                                    xdts = threadDater.dts
+                                # A bare transactional exn still opens its own
+                                # thread even on the multi-key auth path.
+                                elif not msg.ked.get('p'):
+                                    xdts = mdts
+                                else:
+                                    # Without either cache source, this reply
+                                    # cannot be placed inside a known exchange.
+                                    return None
                         case _:
                             raise KramError(
                                 "Unexpected transactioned message type "
@@ -1525,6 +1561,9 @@ class Kramer:
                         mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.kramTMSC.pin(key, mcr)
+                    # Record the shared opener time once the transaction row is
+                    # accepted so later cross-sender replies reuse the same xdt.
+                    self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
 
                     # Check if threshold is immediately satisfied
                     sigIndices = [sig.index for sig in sigResult.sigers]
@@ -1534,8 +1573,8 @@ class Kramer:
 
                     # Threshold not met, store partials for accumulation.
                     # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
-                    currentKeyState = (kever.sner,
-                                       Diger(qb64=kever.serder.said))
+                    currentKeyState = (Number(num=kever.lastEst.s),
+                                       Diger(qb64=kever.lastEst.d))
                     self.db.kramPMKM.put(partialKey, msg)
                     for sig in sigResult.sigers:
                         self.db.kramPMKS.add(partialKey, sig)
@@ -2153,6 +2192,11 @@ class Kramer:
 
                 # Remove non Auth Partials
                 self._remNonAuthAttachments((aid, mid))
+
+                # Drop the xid-level opener record only after the last
+                # transaction-cache row for that thread has been pruned.
+                if not any(rxid == xid for (_, rxid, _), _ in self.db.kramTMSC.getTopItemIter()):
+                    self.db.kramXDT.rem(keys=(xid,))
 
                 pruned = True
 

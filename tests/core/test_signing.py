@@ -1373,3 +1373,32 @@ if __name__ == "__main__":
     test_roundtrip()
     test_streamer()
 
+
+
+def test_encrypter_wraps_every_seed_algorithm_signer_supports():
+    """An encrypted key store must be able to hold any key Signer can make.
+
+    Encrypter.encrypt picked its cipher code from a two-branch check that named Ed25519_Seed
+    and nothing else, so a P-256 identifier could be incepted into a plain key store and not
+    into an encrypted one -- and heti's lockbox, like any passcode-protected store, is
+    encrypted. The sealed box is over the seed's fully qualified qb64, so the algorithm
+    travels inside the cipher and one cipher code covers them all.
+    """
+    from keri.core.signing import Encrypter, Decrypter, SeedCodes, Signer
+    from keri.core.coring import MtrDex
+
+    seed = Signer(code=MtrDex.Ed25519_Seed)  # the decryption key pair is always Ed25519
+    encrypter = Encrypter(verkey=seed.verfer.qb64b)
+    decrypter = Decrypter(seed=seed.qb64b)
+
+    assert MtrDex.ECDSA_256r1_Seed in SeedCodes, "P-256 must be wrappable, not just Ed25519"
+
+    for seed_code in sorted(SeedCodes):
+        signer = Signer(code=seed_code, transferable=True)
+        cipher = encrypter.encrypt(prim=signer)
+        assert cipher.code == MtrDex.X25519_Cipher_Seed
+
+        recovered = decrypter.decrypt(cipher=cipher, transferable=True)
+        assert recovered.code == seed_code, "the algorithm must survive the round trip"
+        assert recovered.qb64 == signer.qb64
+        assert recovered.verfer.qb64 == signer.verfer.qb64

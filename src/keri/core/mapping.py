@@ -125,8 +125,8 @@ class Mapper:
         byteCount (int): number of bytes in .count quadlets/triplets given cold
         size (int):  Number of bytes of field map serialization in text
                 domain (qb64b)
-        strict (bool): True means labels must match strict formal limitations
-                            labels must be valid attribute names,
+        strict (bool): True means labels must match strict format limitation
+                            where labels must be valid attribute names,
                             i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                             which usually serialize more compactly
                        False means labels may be any utf-8 text

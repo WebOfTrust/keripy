@@ -10,11 +10,12 @@ from hio.help import decking, ogler
 
 from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
                       Kinds, Version, versify,
-                      ValidationError, MissingSignatureError)
+                      ValidationError, MissingChainError,
+                      MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
                     Noncer, Sadder, Serder, SerderKERI, Texter,
-                    Saids, Codens, FirstSeen, Parser,
+                    Saids, Codens, BlindState, BoundState, FirstSeen, Parser,
                     messagize,
                     verifySigs)
 from ..db import fetchTsgs
@@ -75,6 +76,12 @@ class Exchanger:
             ptds (list[bytes]): pathed Cesr Streams
             essrs (list[Texter]): ESSR streams as Texters
             kwa: optional parsed V2 nested substreams under ``nests``
+
+        Returns:
+            bool | None: ``True`` when the exchange verified and was persisted,
+                ``False`` when behavior verification failed permanently, or
+                ``None`` when the message was escrowed for retry because it is
+                waiting on external evidence such as TEL proof material.
 
         """
         ptds = ptds if ptds is not None else []
@@ -174,7 +181,18 @@ class Exchanger:
             if not behavior.verify(serder=serder, **kwa):
                 logger.error("exn event for route %s failed behavior verification. said=%s", route, serder.said)
                 logger.debug(f"Event=\n%s\n", serder.pretty())
-                return
+                return False
+        except MissingChainError as ex:
+            # Registry-backed IPEX grants may arrive before the disclosee has
+            # fetched the issuer's TEL history from observers. Keep those
+            # messages in exchange escrow and cue the app to fetch proof data.
+            if self.escrowPSEvent(serder=serder, tsgs=tsgs or [], pathed=ptds,
+                                  nests=nests):
+                self.cues.append(dict(kin="proof", said=serder.said))
+            logger.info("Escrowed exchange awaiting proof evidence: said=%s reason=%s",
+                        serder.said, ex)
+            logger.debug("Exchange message body=\n%s\n", serder.pretty())
+            return None
 
         except AttributeError:
             logger.debug("Behavior for %s missing or does not have verify for said %s", route, serder.said)
@@ -190,6 +208,8 @@ class Exchanger:
         except AttributeError:
             logger.debug("Behavior for %s missing or does not have handle for SAID=%s", route, serder.said)
             logger.debug("Event=\n%s\n", serder.pretty())
+
+        return True
 
     def processEscrow(self):
         """ Process all escrows for `exn` messages"""
@@ -258,8 +278,8 @@ class Exchanger:
                 essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
                 nests = loadParsedNestedSubstreams(self.hby, dig)
 
-                self.processEvent(serder=serder, tsgs=tsgs, ptds=pathed,
-                                  essrs=essrs, nests=nests)
+                result = self.processEvent(serder=serder, tsgs=tsgs, ptds=pathed,
+                                           essrs=essrs, nests=nests)
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.TRACE):
@@ -278,6 +298,11 @@ class Exchanger:
                 else:
                     logger.error("Exchange partially signed unescrowed: %s", ex.args[0])
             else:
+                if result is None:
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.trace("Exchange proof unescrow still pending: said=%s", serder.said)
+                    continue
+
                 saved = self.hby.db.exns.get(keys=(dig,)) is not None
                 self.hby.db.epse.rem(dig)
                 self.hby.db.epsd.rem(dig)
@@ -789,8 +814,16 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
         raise ValueError("Unsupported mixed signature groups for nested substream serialization")
 
     bonds = []
-    for name in ("sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs"):
+    for name in ("sscs", "ssts", "tdcs"):
         bonds.extend(parsed.get(name) or [])
+    # Parsed blind-state proof groups come back as plain tuples of primitive
+    # instances, but messagize() expects namedtuple bond records when it
+    # reserializes the nested node into storage.
+    bonds.extend(item if isinstance(item, BlindState) else BlindState(*item)
+                 for item in (parsed.get("bsqs") or []))
+    bonds.extend(item if isinstance(item, BoundState) else BoundState(*item)
+                 for item in (parsed.get("bsss") or []))
+    bonds.extend(parsed.get("tmqs") or [])
     for item in parsed.get("frcs") or []:
         bonds.append(item if isinstance(item, FirstSeen) else FirstSeen(*item))
 

@@ -646,9 +646,17 @@ class Parser:
                         logger.exception("Kevery msg non-extraction error: %s", ex)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.error("Kevery msg non-extraction error: %s", ex)
-                finally:
-                    result = True
-                    break
+
+                # Not a finally block. These two statements are unconditional work that
+                # follows the try, not cleanup: the except above already catches every
+                # Exception, so the Exception and success paths both reach here either way.
+                # In a finally, the break silently discards anything still propagating --
+                # which for a BaseException that except Exception does not catch
+                # (KeyboardInterrupt, SystemExit, asyncio.CancelledError) meant an
+                # interrupted parse returned result=True and reported success. Python 3.14
+                # warns on this (PEP 765) and a later version makes it an error.
+                result = True
+                break
             else:
                 result = exts
                 break

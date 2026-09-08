@@ -88,7 +88,6 @@ def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environme
     counter_caps = [entry[1] for entry in captures if entry[0] == "counter"]
     assert counter_caps == [Vrsn_1_0, Version]
 
-
 def test_postman(seeder, witnessPorter):
     with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
@@ -166,11 +165,10 @@ def test_postman(seeder, witnessPorter):
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test")
 
-
 def test_forward_handler():
-    with openHab(name="sender", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
-         openHab(name="recp", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recpHby, recpHab), \
-         openHab(name="recp2", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recp2Hby, recp2Hab):
+    with openHab(name="sender", transferable=True, temp=True) as (hby, hab), \
+         openHab(name="recp", transferable=True, temp=True) as (recpHby, recpHab), \
+         openHab(name="recp2", transferable=True, temp=True) as (recp2Hby, recp2Hab):
 
         mbx = Mailboxer(temp=True)
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
@@ -179,7 +177,7 @@ def test_forward_handler():
         inner_exn = exchange(route="/echo",
                                            attributes=dict(msg="hello"),
                                            sender=hab.pre,
-                                           version=Vrsn_1_0, kind=Kinds.json)
+                                     version=Vrsn_1_0, kind=Kinds.json)
         inner_atc = hab.endorse(inner_exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc[:inner_exn.size]
 
@@ -190,7 +188,8 @@ def test_forward_handler():
                                             modifiers=dict(pre=recpHab.pre,
                                                            topic="echo"),
                                             attributes={},
-                                            embeds=dict(evt=evt))
+                                            embeds=dict(evt=evt),
+                                            version=Vrsn_1_0, kind=Kinds.json)
         pather = Pather(path=["evt"])
         forwarder.handle(serder=fwd, attachments=[(pather, inner_atc)])
 
@@ -214,7 +213,7 @@ def test_forward_handler():
         inner_exn2 = exchange(route="/delegate",
                                             attributes=dict(msg="delegate"),
                                             sender=hab.pre,
-                                            version=Vrsn_1_0, kind=Kinds.json)
+                                     version=Vrsn_1_0, kind=Kinds.json)
         inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc2[:inner_exn2.size]
 
@@ -225,7 +224,8 @@ def test_forward_handler():
                                              modifiers=dict(pre=recpHab.pre,
                                                             topic="delegate"),
                                              attributes={},
-                                             embeds=dict(evt=evt2))
+                                             embeds=dict(evt=evt2),
+                                            version=Vrsn_1_0, kind=Kinds.json)
 
         forwarder.handle(serder=fwd2, attachments=[(Pather(path=["evt"]), inner_atc2)])
 
@@ -238,7 +238,7 @@ def test_forward_handler():
         inner_exn3 = exchange(route="/echo",
                                             attributes=dict(msg="other"),
                                             sender=hab.pre,
-                                            version=Vrsn_1_0, kind=Kinds.json)
+                                     version=Vrsn_1_0, kind=Kinds.json)
         inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc3[:inner_exn3.size]
 
@@ -249,7 +249,8 @@ def test_forward_handler():
                                              modifiers=dict(pre=recp2Hab.pre,
                                                             topic="echo"),
                                              attributes={},
-                                             embeds=dict(evt=evt3))
+                                             embeds=dict(evt=evt3),
+                                            version=Vrsn_1_0, kind=Kinds.json)
         forwarder.handle(serder=fwd3, attachments=[(Pather(path=["evt"]), inner_atc3)])
 
         recp1_echo = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
@@ -262,14 +263,14 @@ def test_forward_handler():
         inner_exnA = exchange(route="/echo",
                                          attributes=dict(msg="A"),
                                         sender=hab.pre,
-                                        version=Vrsn_1_0, kind=Kinds.json)
+                                     version=Vrsn_1_0, kind=Kinds.json)
         inner_atcA = hab.endorse(inner_exnA, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcA[:inner_exnA.size]
 
         inner_exnB = exchange(route="/echo",
                                          attributes=dict(msg="B"),
                                         sender=hab.pre,
-                                        version=Vrsn_1_0, kind=Kinds.json)
+                                     version=Vrsn_1_0, kind=Kinds.json)
         inner_atcB = hab.endorse(inner_exnB, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcB[:inner_exnB.size]
 
@@ -281,7 +282,8 @@ def test_forward_handler():
                                                                  topic="multi"),
                                                   attributes={},
                                                   embeds=dict(evtA=evtA,
-                                                              evtB=evtB))
+                                                              evtB=evtB),
+                                            version=Vrsn_1_0, kind=Kinds.json)
         patherA = Pather(path=["evtA"])
         patherB = Pather(path=["evtB"])
         forwarder.handle(serder=fwd_multi, attachments=[(patherA, inner_atcA), (patherB, inner_atcB)])
@@ -298,7 +300,6 @@ def test_forward_handler():
         forwarder.handle(serder=fwd, attachments=[])
         count_after = len(list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo")))
         assert count_after == count_before
-
 
 def test_essr_stream(seeder, unused_tcp_port):
     with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
@@ -408,7 +409,6 @@ def test_essr_stream(seeder, unused_tcp_port):
         assert serder.ked["t"] == Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test", i=39)
-
 
 def test_essr_mbx(seeder, witnessPorter):
     with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
