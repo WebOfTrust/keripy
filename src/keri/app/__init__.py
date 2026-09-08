@@ -4,19 +4,22 @@ KERI
 keri.app package
 
 """
+# ruff: noqa: F401
+
 import sys
 
 
 IS_PYODIDE = "emscripten" in sys.platform
 
 if IS_PYODIDE:
-    from .habbing import (openHby, openHab, Habery, Signator, HaberyDoer, SIGNER,
-                          BaseHab, Hab, SignifyHab, SignifyGroupHab, GroupHab)
+    from .habbing import (openHby, openHab, Habery, Signator, HaberyDoer,
+                          SIGNER, BaseHab, Hab, SignifyHab, SignifyGroupHab,
+                          GroupHab)
     from .basekeeping import (PubLot, PreSit, PrePrm, PubSet, riKey,
-                              Creator, RandyCreator, SaltyCreator,
-                              Creatory, Initage, Manager, ManagerDoer, Algos)
-    from .oobiing import (OobiResource, OobiRequestHandler,
-                          oobiRequestExn, Oobiery, Authenticator, Result)
+                              Creator, RandyCreator, SaltyCreator, Creatory,
+                              Initage, Manager, ManagerDoer, Algos)
+    from .oobiing import (OobiResource, OobiRequestHandler, oobiRequestExn,
+                          Oobiery, Authenticator, Result)
     from .organizing import BaseOrganizer, Organizer, IdentifierOrganizer
     from .signing import serialize, signPaths, transSeal
     from .webkeeping import WebKeeper

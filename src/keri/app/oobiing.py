@@ -2,6 +2,8 @@
 """
 keri.kli.common.oobiing module
 """
+# ruff: noqa: E402
+
 import datetime
 import json
 import logging
@@ -30,8 +32,9 @@ from ..recording import OobiRecord, WellKnownAuthN
 if IS_PYODIDE:
     import re
 
-    OOBI_RE = re.compile('\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z',
-                         re.IGNORECASE)
+    OOBI_RE = re.compile(
+        '\\A/oobi/(?P<cid>[^/]+)/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?\\Z',
+        re.IGNORECASE)
     DOOBI_RE = re.compile('\\A/oobi/(?P<said>[^/]+)\\Z', re.IGNORECASE)
     WOOBI_RE = re.compile('\\A/.well-known/keri/oobi/(?P<cid>[^/]+)\\Z')
     OOBI_AID_HEADER = "KERI-AID"
@@ -322,12 +325,15 @@ class Oobiery:
             clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
             cues (decking.Deck): outbound cues from processing oobis"""
 
+        if IS_PYODIDE and clienter is None:
+            raise ConfigurationError("Oobiery requires injected clienter on Pyodide")
+
         self.hby = hby
         self.rvy = rvy
         if self.rvy is not None:
             self.registerReplyRoutes(self.rvy.rtr)
 
-        self.clienter = clienter or Clienter()
+        self.clienter = clienter if clienter is not None else Clienter()
         self.org = Organizer(hby=self.hby)
         self.version = version if version is not None else self.hby.version
 
@@ -672,6 +678,9 @@ class Authenticator:
         Parameters:
             hby (Habery): Identifier database environment
             clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests"""
+        if IS_PYODIDE and clienter is None:
+            raise ConfigurationError("Authenticator requires injected clienter on Pyodide")
+
         self.hby = hby
         self.clienter = clienter if clienter is not None else Clienter()
         self.clients = dict()

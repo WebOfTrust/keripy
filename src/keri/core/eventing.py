@@ -22,7 +22,8 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
                       TraitDex, Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
-                      Roles, Schemes, Ilks, versify, Kinds)
+                      Roles, Schemes, Ilks, versify, Kinds,
+                      ConfigurationError)
 
 from ..help import helping, Reb64
 
@@ -38,11 +39,14 @@ from .indexing import Siger
 from .serdering import SerderKERI
 
 from ..db import dgKey, snKey
-if "emscripten" not in sys.platform:
-    from ..db import Baser
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
                          LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)
+
+IS_PYODIDE = "emscripten" in sys.platform
+
+if not IS_PYODIDE:
+    from ..db import Baser  # noqa: E402
 
 
 logger = ogler.getLogger()
@@ -4170,6 +4174,8 @@ class Kevery:
                 and timestamps."""
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
+            if IS_PYODIDE:
+                raise ConfigurationError("Kevery requires an injected db on Pyodide")
             db = Baser(reopen=True)  # default name = "main"
         self.db = db
         self.rvy = rvy

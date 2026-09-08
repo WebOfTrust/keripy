@@ -202,6 +202,10 @@ def test_oobiery(unused_tcp_port_factory):
 
 
 def test_oobiery_parser_version_uses_explicit_or_habery_default():
+    class Clienter(doing.DoDoer):
+        def __bool__(self):
+            return False
+
     with openHby(name="oobi-default") as hby:
         oobiery = Oobiery(hby=hby)
         assert oobiery.version == Version
@@ -213,9 +217,12 @@ def test_oobiery_parser_version_uses_explicit_or_habery_default():
         assert oobiery.parser.version == Vrsn_1_0
 
     with openHby(name="oobi-v1") as hby:
-        oobiery = Oobiery(hby=hby, version=Vrsn_1_0)
+        clienter = Clienter()
+        oobiery = Oobiery(hby=hby, version=Vrsn_1_0, clienter=clienter)
         assert oobiery.version == Vrsn_1_0
         assert oobiery.parser.version == Vrsn_1_0
+        assert oobiery.clienter is clienter
+        assert Authenticator(hby=hby, clienter=clienter).clienter is clienter
 
 
 def test_loaded_v1_endpoint_replies_use_stored_reply_framing():

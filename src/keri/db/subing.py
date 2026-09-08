@@ -3,7 +3,7 @@
 KERI
 keri.db.subing module
 
-Provide variety of mixin classes for LMDB sub-dbs with various behaviors.
+Provide mixin classes for named subdatabases with various behaviors.
 Takes of advantage of multiple inheritance to enable mixtures of behaviors
 with minimal code duplication (more DRY).
 
@@ -101,30 +101,34 @@ from collections.abc import Iterable
 from hio.help import ogler
 
 from ..help import helping
-if "emscripten" not in sys.platform:
-    from .dbing import LMDBer
-
 if TYPE_CHECKING:
     from ..core import coring, scheming, serdering, signing
+
+IS_PYODIDE = "emscripten" in sys.platform
+
+if IS_PYODIDE:
+    from .webdbing import WebDBer as DBer
+else:
+    from .dbing import LMDBer as DBer
 
 logger = ogler.getLogger()
 
 
 class SuberBase():
     """
-    Base class for Sub DBs of LMDBer
+    Base class for named subdatabases of DBer
     Provides common methods for subclasses
     Do not instantiate but use a subclass
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         verify (bool): True means reverify when ._des from db when applicable
             False means do not reverify. Default False"""
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: LMDBer, *,
+    def __init__(self, db: DBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
@@ -132,8 +136,8 @@ class SuberBase():
                        **kwa):
         """
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -378,16 +382,16 @@ class SuberBase():
 
 class Suber(SuberBase):
     """
-    Subclass of SuberBase with no LMDB duplicates (i.e. multiple values at same key)."""
+    Subclass of SuberBase with one value at each key."""
 
-    def __init__(self, db: LMDBer, *,
+    def __init__(self, db: DBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
         """Initialze instance
 
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key. Set to False
@@ -397,8 +401,8 @@ class Suber(SuberBase):
                 False means do not reverify. Default False
 
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key"""
+            db (DBer): base db
+            subkey (str): named subdatabase key"""
         super(Suber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
@@ -488,8 +492,8 @@ class OnSuberBase(SuberBase):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                              False (default) means do not enable duplicates at
                              each key. Default False
@@ -775,8 +779,8 @@ class OnSuber(OnSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                              False (default) means do not enable duplicates at
                              each key. Set to False
@@ -796,8 +800,8 @@ class B64SuberBase(SuberBase):
     Automatically joins and splits along separator to Iterable (tuple) of Base64
 
      Attributes:
-         db (LMDBer): base LMDB db
-         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
          sep (str): separator for combining keys tuple of strs into key bytes
                     for db key and also used to convert val iterator to val bytes
                     Must not be Base64 character.
@@ -806,8 +810,8 @@ class B64SuberBase(SuberBase):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                              False (default) means do not enable duplicates at
                              each key
@@ -913,8 +917,8 @@ class B64Suber(B64SuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                              False (default) means do not enable duplicates at
                              each key. Set to False
@@ -941,8 +945,8 @@ class CesrSuberBase(SuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1006,8 +1010,8 @@ class CesrSuber(CesrSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1033,8 +1037,8 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                              False (default) means do not enable duplicates at
                              each key. Set to False
@@ -1054,8 +1058,8 @@ class CatCesrSuberBase(CesrSuberBase):
     ._ser override .put .set input value to be instance that is serialized
 
      Attributes:
-         db (LMDBer): base LMDB db
-         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
          sep (str): separator for combining keys tuple of strs into key bytes
          klas (Iterable): of Class references to subclasses of CESR compatible
              , each of to Type[coring.Matter etc]"""
@@ -1067,8 +1071,8 @@ class CatCesrSuberBase(CesrSuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1146,8 +1150,8 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of CESR compatible
             , each of to Type[coring.Matter etc]"""
@@ -1155,8 +1159,8 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1180,7 +1184,7 @@ class IoSetSuber(SuberBase):
     The set of values is an ordered set using insertion order. Any given value
     may appear only once in the set (not a list).
 
-    This works similarly to the IO value duplicates for the LMDBer class with a
+    This works similarly to the IO value duplicates for the DBer class with a
     sub db  of LMDB (dupsort==True) but without its size limitation of 511 bytes
     for each value when dupsort==True.
     Here the key is augmented with a hidden numbered suffix that provides a
@@ -1190,17 +1194,17 @@ class IoSetSuber(SuberBase):
     of the set elements.
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes"""
-    def __init__(self, db: LMDBer, *,
+    def __init__(self, db: DBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False, **kwa):
         """Initialize instance
 
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1553,8 +1557,8 @@ class B64IoSetSuber(B64SuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                              False (default) means do not enable duplicates at
                              each key. Set to False
@@ -1591,8 +1595,8 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
      Attributes:
-         db (LMDBer): base LMDB db
-         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
          sep (str): separator for combining keys tuple of strs into key bytes
          klas (Iterable): of Class references to subclasses of CESR compatible
              , each of to Type[coring.Matter etc]"""
@@ -1600,8 +1604,8 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1638,16 +1642,16 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of Matter, each
             of to Type[coring.Matter]"""
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1675,8 +1679,8 @@ class SignerSuber(CesrSuber):
     def __init__(self, *pa, klas: Type[signing.Signer] | None = None, **kwa):
         """
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             klas (Type[coring.Matter]): Class reference to subclass of Matter"""
         from ..core import signing
 
@@ -1893,8 +1897,8 @@ class SerderSuberBase(SuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1944,8 +1948,8 @@ class SerderSuber(SerderSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -1984,8 +1988,8 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
      Attributes:
-         db (LMDBer): base LMDB db
-         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
          sep (str): separator for combining keys tuple of strs into key bytes
          klas (Iterable): of Class references to subclasses of CESR compatible
              , each of to Type[coring.Matter etc]"""
@@ -1993,8 +1997,8 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -2017,8 +2021,8 @@ class SchemerSuber(SerderSuberBase, Suber):
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key
@@ -2043,20 +2047,20 @@ class SchemerSuber(SerderSuberBase, Suber):
 
 class DupSuber(SuberBase):
     """
-    Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
+    Named subdatabase of DBer. Subclass of SuberBase that supports multiple entries at
     each key (duplicates) with dupsort==True
 
     Do not use if  serialized value is greater than 511 bytes.
     This is a limitation of dupsort==True sub dbs in LMDB"""
 
-    def __init__(self, db: Type[LMDBer], *,
+    def __init__(self, db: Type[DBer], *,
                        subkey: str='docs.',
                        dupsort: bool=True,
                        **kwa):
         """
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True (forced default) means enable duplicates at each key
                 False  means do not enable duplicates at each key"""
         super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
@@ -2241,8 +2245,8 @@ class CatCesrDupSuber(CatCesrSuberBase, DupSuber):
         """Initialize Instance
 
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True (forced default) means enable duplicates at each key
                 False  means do not enable duplicates at each key
             sep (str): separator to convert keys iterator to key bytes for db key
@@ -2512,8 +2516,8 @@ class B64IoDupSuber(B64SuberBase, IoDupSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key. Set to True
@@ -2945,8 +2949,8 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key. Set to True
@@ -2980,7 +2984,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     The set of values is an ordered set using insertion order. Any given value
     may appear only once in the set (not a list).
 
-    This works similarly to the IO value duplicates for the LMDBer class with a
+    This works similarly to the IO value duplicates for the DBer class with a
     sub db  of LMDB (dupsort==True) but without its size limitation of 511 bytes.
 
     Here the key is augmented with a hidden numbered suffix that provides a
@@ -3499,6 +3503,21 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
+    def getBackIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+        """Iterates backwards over set values for all ordinals <= on at keys.
+
+        Matches the OnIoDupSuber reverse KEL lookup contract.
+
+        Returns:
+            vals (Iterator[str]): deserialized values in reverse insertion order.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): base key; empty means whole db.
+            on (int): highest ordinal to include, default 0.
+        """
+        yield from self.getAllBackIter(keys=keys, on=on)
+
+
     def getAllBackIter(self, keys: str|bytes|memoryview|Iterable = "",
                             on: int|None=None):
         """Iterates backwards over all set values for all on <= on at key.
@@ -3601,8 +3620,8 @@ class B64OnIoSetSuber(B64SuberBase, OnIoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
                 each key. Set to False

@@ -3,16 +3,21 @@
 KERI
 keri.db Package
 """
+# ruff: noqa: E402, F401
+
 import sys
+
 
 IS_PYODIDE = "emscripten" in sys.platform
 
 if IS_PYODIDE:
-    from . import koming, subing, webdbing
-    from .basebasing import BaserBase, statedict, onKey, snKey, dgKey, fetchTsgs
+    from . import basebasing, koming, subing, webdbing
+    from .basebasing import (BaserBase, statedict, fetchTsgs, onKey, snKey,
+                             dgKey)
     from .webdbing import WebDBer
 else:
     from . import basing, dbing, escrowing, koming, subing, webdbing
+
     from .basing import Baser, BaserDoer, openDB, reopenDB, statedict
     from .dbing import (LMDBer, clearDatabaserDir, openLMDB, onKey,
                         snKey, fnKey, dgKey, dtKey, splitKey, splitOnKey,

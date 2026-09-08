@@ -3,6 +3,8 @@
 KERI
 keri.app.habbing module
 """
+# ruff: noqa: E402
+
 from contextlib import contextmanager
 from math import ceil
 import sys
@@ -177,6 +179,13 @@ class Habery:
         self.temp = temp
         self.version = version
 
+        if IS_PYODIDE:
+            missing = [name for name, value in (("ks", ks), ("db", db), ("cf", cf))
+                       if value is None]
+            if missing:
+                raise ConfigurationError(
+                    f"Habery requires injected {', '.join(missing)} on Pyodide")
+
         self.ks = ks if ks is not None else Keeper(name=self.name,
                                                            base=self.base,
                                                            temp=self.temp,
@@ -286,9 +295,12 @@ class Habery:
         try:
             self.mgr = Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
                                        algo=algo, salt=salt, tier=tier)
-        except AuthError as ex:
-            self.close()
-            raise ex
+        except AuthError:
+            asyncStores = any(callable(getattr(store, "aclose", None))
+                              for store in (self.ks, self.db))
+            if not asyncStores:
+                self.close()
+            raise
 
         self._signator = Signator(db=self.db, mgr=self.mgr, temp=self.temp, ks=self.ks, cf=self.cf,
                                   rtr=self.rtr, kvy=self.kvy, psr=self.psr, rvy=self.rvy,

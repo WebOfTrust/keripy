@@ -30,6 +30,10 @@ class FakeStorageHandle:
         self.local[key] = value
 
     async def sync(self):
+        if gate := self.backend.sync_gates.get(self.namespace):
+            entered, release = gate
+            entered.set()
+            await release.wait()
         self.backend.persisted[self.namespace] = dict(self.local)
 
 
@@ -38,6 +42,7 @@ class FakeStorageBackend:
 
     def __init__(self):
         self.persisted = {}
+        self.sync_gates = {}
 
     async def open(self, namespace):
         return FakeStorageHandle(self, namespace)
@@ -56,6 +61,28 @@ def test_webkeeper_manager_persistence():
         backend = FakeStorageBackend()
         keeper = WebKeeper(name="manager", storageOpener=backend.open)
         await keeper.reopen(clear=True)
+        assert keeper.name == "manager"
+        expected = {
+            f"manager:{name}."
+            for name in (
+                "gbls",
+                "pris",
+                "prxs",
+                "nxts",
+                "smids",
+                "rmids",
+                "pres",
+                "prms",
+                "sits",
+                "pubs",
+            )
+        }
+        assert set(backend.persisted) == expected
+        assert set(keeper.stores) == {namespace.split(":", 1)[1]
+                                      for namespace in expected}
+        assert keeper.version is None
+        assert await keeper.flush() == len(expected)
+        assert await keeper.flush() == 0
 
         raw = b"0123456789abcdef"
         salt = Salter(raw=raw).qb64
@@ -65,6 +92,29 @@ def test_webkeeper_manager_persistence():
         signature = manager.sign(ser=b"persisted", verfers=verfers)[0].qb64
 
         await keeper.aclose()
+
+        # Temporary keepers cannot expose or clear same-name persistent keys.
+        first = WebKeeper(name="manager", temp=True,
+                          storageOpener=backend.open)
+        await first.reopen()
+        assert first.name == "manager"
+        assert first.gbls.get("salt") is None
+        assert first.pris.get(verfers[0].qb64b) is None
+        first.gbls.pin("first", "temporary")
+        await first.flush()
+        second = WebKeeper(name="manager", temp=True,
+                           storageOpener=backend.open)
+        await second.reopen()
+        assert second.gbls.get("first") is None
+        second.gbls.pin("second", "temporary")
+        await second.flush()
+        await first.aclose()
+        assert second.gbls.get("second") == "temporary"
+        await first.reopen()
+        assert first.gbls.get("first") is None
+        assert first.gbls.get("second") is None
+        await first.aclose()
+        await second.aclose()
 
         keeper = WebKeeper(name="manager", storageOpener=backend.open)
         await keeper.reopen()
@@ -90,6 +140,21 @@ def test_webkeeper_reopen_flushes_pending_state():
         await keeper.reopen()
         assert keeper.gbls.get("item") == "value"
 
+        keeper.gbls.pin("before-close", "first")
+        entered = asyncio.Event()
+        release = asyncio.Event()
+        backend.sync_gates["reopen:gbls."] = (entered, release)
+        closer = asyncio.create_task(keeper.aclose())
+        await entered.wait()
+        keeper.gbls.pin("during-close", "second")
+        release.set()
+        await closer
+
+        backend.sync_gates.clear()
+        await keeper.reopen()
+        assert keeper.gbls.get("before-close") == "first"
+        assert keeper.gbls.get("during-close") == "second"
+
         await keeper.aclose(clear=True)
 
     asyncio.run(run())
@@ -103,7 +168,7 @@ def test_webkeeper_sync_close_without_event_loop():
 
     keeper.close()
     assert not keeper.opened
-    assert keeper.db is None
+    assert keeper.stores == []
 
     asyncio.run(keeper.reopen())
     assert keeper.gbls.get("item") == "value"

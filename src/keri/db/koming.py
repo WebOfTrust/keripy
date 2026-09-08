@@ -3,6 +3,8 @@
 KERI
 keri.db.koming module
 """
+from __future__ import annotations
+
 import json
 import sys
 from dataclasses import dataclass
@@ -15,10 +17,12 @@ import msgpack
 
 from ..help import helping
 
-if "emscripten" in sys.platform:
-    from .webdbing import WebDBer as LMDBer
+IS_PYODIDE = "emscripten" in sys.platform
+
+if IS_PYODIDE:
+    from .webdbing import WebDBer as DBer
 else:
-    from .dbing import LMDBer
+    from .dbing import LMDBer as DBer
 
 logger = ogler.getLogger()
 
@@ -26,15 +30,15 @@ logger = ogler.getLogger()
 class KomerBase:
     """
     KomerBase is a base class for Komer (Keyspace Object Mapper) subclasses that
-    each use a dataclass as the object mapped via serialization to an dber LMDB
-    database subclass.
+    each use a dataclass as the object mapped via serialization to a database
+    backend.
     Each Komer .schema is a dataclass class reference that is used to define
     the fields in each database entry. The base class is not meant to be instantiated.
     Use an instance of one of the subclasses instead.
 
     Attributes:
-        db (LMDBer): instance of LMDB database manager class
-        sdb (lmdb._Database): instance of named sub db lmdb for this Komer
+        db (DBer): instance of database manager class
+        sdb: instance of named subdatabase for this Komer
         schema (Type[dataclass]): class reference of dataclass subclass
         kind (str): serialization/deserialization type from coring.Serials
         serializer (types.MethodType): serializer method
@@ -42,7 +46,7 @@ class KomerBase:
         sep (str): separator for combining keys tuple of strs into key bytes"""
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: LMDBer, *,
+    def __init__(self, db: DBer, *,
                  subkey: str = 'docs.',
                  klas: type[dataclass],  # class not instance
                  kind: str|None = None,
@@ -51,9 +55,9 @@ class KomerBase:
                  **kwa):
         """
         Parameters:
-            db (LMDBer): base db
+            db (DBer): base db
             klas (type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str): named subdatabase key
             kind (str): serialization/deserialization type
             dupsort (bool): True means enable duplicates at each key
                 False (default) means do not enable duplicates at
@@ -298,7 +302,7 @@ class Komer(KomerBase):
     deserializes) dataclass to/from database entry at key made from keys"""
 
     def __init__(self,
-                 db: LMDBer, *,
+                 db: DBer, *,
                  subkey: str = 'docs.',
                  klas: type[dataclass],  # class not instance
                  kind: str | None = None,
@@ -306,9 +310,9 @@ class Komer(KomerBase):
         """Initialize instance
 
         Parameters:
-            db (LMDBer): base db
+            db (DBer): base db
             klas (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str): named subdatabase key
             kind (str): serialization/deserialization type"""
         super(Komer, self).__init__(db=db, subkey=subkey, klas=klas,
                                     kind=kind, dupsort=False, **kwa)
@@ -418,7 +422,7 @@ class IoSetKomer(KomerBase):
     The set of values is an ordered set using insertion order. Any given value
     may appear only once in the set (not a list).
 
-    This works similarly to the IO value duplicates for the LMDBer class with a
+    This works similarly to the IO value duplicates for the DBer class with a
     sub db  of LMDB (dupsort==True) but without its size limitation of 511 bytes
     for each value when dupsort==True.
     Here the key is augmented with a hidden numbered suffix that provides a
@@ -428,24 +432,24 @@ class IoSetKomer(KomerBase):
     of the set elements.
 
     Attributes:
-        db (LMDBer): instance of LMDB database manager class
-        sdb (lmdb._Database): instance of named sub db lmdb for this Komer
+        db (DBer): instance of database manager class
+        sdb: instance of named subdatabase for this Komer
         schema (Type[dataclass]): class reference of dataclass subclass
         kind (str): serialization/deserialization type from coring.Serials
         serializer (types.MethodType): serializer method
         deserializer (types.MethodType): deserializer method
         sep (str): separator for combining keys tuple of strs into key bytes"""
     def __init__(self,
-             db: LMDBer, *,
+             db: DBer, *,
              subkey: str = 'recs.',
              klas: type[dataclass],  # class not instance
              kind: str | None = None,
              **kwa):
         """
         Parameters:
-            db (LMDBer): base db
+            db (DBer): base db
             clas (type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str): named subdatabase key
             kind (str): serialization/deserialization type"""
         super(IoSetKomer, self).__init__(db=db, subkey=subkey, klas=klas,
                                        kind=kind, dupsort=False, **kwa)
@@ -630,16 +634,16 @@ class DupKomer(KomerBase):
     Do not use if Komer dataclass instance serializes to greater than 511 bytes.
     This is a limitation of dupsort==True sub dbs in LMDB"""
     def __init__(self,
-             db: LMDBer, *,
+             db: DBer, *,
              subkey: str = 'recs.',
              klas: type[dataclass],  # class not instance
              kind: str | None = None,
              **kwa):
         """
         Parameters:
-            db (LMDBer): base db
+            db (DBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subkey (str):  LMDB sub database key
+            subkey (str): named subdatabase key
             kind (str): serialization/deserialization type"""
         super(DupKomer, self).__init__(db=db, subkey=subkey, klas=klas,
                                        kind=kind, dupsort=True, **kwa)

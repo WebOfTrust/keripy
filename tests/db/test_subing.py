@@ -2979,6 +2979,10 @@ def test_on_ioset_suber():
         assert [val for val in niosuber.getAllBackIter(keys3, on=2)] == \
         ['w','x','y','z','l','j','k']
 
+        assert list(niosuber.getBackIter(keys3, on=2)) == ['w', 'x', 'y', 'z', 'l', 'j', 'k']
+        assert list(niosuber.getBackIter(keys3)) == ['l', 'j', 'k']
+        assert list(niosuber.getBackIter(('missing',), on=2)) == []
+
 
         # Test last back iter
         # whole db

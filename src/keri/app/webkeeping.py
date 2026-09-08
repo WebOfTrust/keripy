@@ -6,6 +6,7 @@ Browser-safe keeper backed by WebDBer storage.
 """
 
 import asyncio
+from uuid import uuid4
 
 from ..core import Cipher, Prefixer, Number
 from ..db import (WebDBer, Suber, CryptSignerSuber, CesrSuber,
@@ -22,7 +23,6 @@ class WebKeeper(WebDBer):
     Attributes:
         name (str): storage namespace differentiator
         temp (bool): True means clear persisted data on close
-        db (WebDBer): browser storage backend
         env (WebEnv): named store opener used by Subers
         opened (bool): True when the browser stores are open
         gbls (Suber): global parameters keyed by parameter label
@@ -57,8 +57,8 @@ class WebKeeper(WebDBer):
             raise RuntimeError("WebKeeper uses async open; use await reopen().")
 
         self.name = name
+        self._storageName = f"__keripy_temp__:{name}:{uuid4().hex}" if temp else name
         self.temp = temp
-        self.db = None
         self.env = None
         self.opened = False
         self._storageOpener = storageOpener
@@ -82,8 +82,8 @@ class WebKeeper(WebDBer):
         opener = self._storageOpener
 
         try:
-            self.db = await WebDBer.open(
-                name=self.name,
+            db = await WebDBer.open(
+                name=self._storageName if self.temp else self.name,
                 stores=[
                     'gbls.',
                     'pris.',
@@ -98,6 +98,7 @@ class WebKeeper(WebDBer):
                 ],
                 clear=clear,
                 storageOpener=opener,
+                versioned=False,
             )
         except RuntimeError as ex:
             if opener is None:
@@ -108,7 +109,7 @@ class WebKeeper(WebDBer):
                 ) from ex
             raise
 
-        self.env = self.db.env
+        WebDBer.__init__(self, name=self.name, stores=db._stores)
 
         self.gbls = Suber(db=self, subkey='gbls.')
         self.pris = CryptSignerSuber(db=self, subkey='pris.')
@@ -158,7 +159,7 @@ class WebKeeper(WebDBer):
         This synchronous path runs the flush to completion. Callers inside an
         active event loop must use ``await aclose()``.
         """
-        if not self.opened or self.db is None:
+        if not self.opened:
             return
 
         try:
@@ -171,13 +172,11 @@ class WebKeeper(WebDBer):
                 "use await aclose()."
             )
 
-        db = self.db
         if clear or self.temp:
-            db.clear()
-        asyncio.run(db.flush())
-        db.close()
+            self.clear()
+        asyncio.run(self.flush())
+        WebDBer.close(self)
 
-        self.db = None
         self.env = None
         self.opened = False
 
@@ -189,16 +188,14 @@ class WebKeeper(WebDBer):
 
     async def aclose(self, *, clear=False):
         """Close the keeper and wait for pending writes to flush."""
-        if not self.opened or self.db is None:
+        if not self.opened:
             return
 
-        db = self.db
         if clear or self.temp:
-            db.clear()
-        await db.flush()
-        db.close()
+            self.clear()
+        await self.flush()
+        WebDBer.close(self)
 
-        self.db = None
         self.env = None
         self.opened = False
 

@@ -1,14 +1,22 @@
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.db.basebasing module
+
+Backend-independent KERI database behavior shared by native and browser basers.
+"""
+
 import importlib
 from collections import namedtuple
+
 import semver
 from ordered_set import OrderedSet as oset
-
 from hio.help import ogler
 
 from keri import __version__
 from ..help import helping
-from ..kering import (MissingEntryError, SerializeError, ConfigurationError,
-                      ValidationError, Version)
+from ..kering import (MissingEntryError, DatabaseError, SerializeError,
+                      ConfigurationError, ValidationError, Version)
 
 logger = ogler.getLogger()
 
@@ -98,6 +106,47 @@ def dgKey(pre, dig):
     return (b'%s.%s' %  (pre, dig))
 
 
+def _strip_prerelease(version_str):
+    """Strip prerelease and build metadata from a semver string.
+
+    Semver compares alphanumeric prerelease identifiers lexicographically,
+    so 'dev4' > 'dev10' (because '4' > '1'). Stripping prerelease ensures
+    dev releases within the same version cycle compare as equal.
+    See: https://github.com/WebOfTrust/keripy/issues/820
+    """
+    ver = semver.VersionInfo.parse(version_str)
+    return str(semver.Version(ver.major, ver.minor, ver.patch))
+
+
+MIGRATIONS = [
+    ("0.6.8", ["hab_data_rename"]),
+    ("1.0.0", ["add_key_and_reg_state_schemas"]),
+    ("1.2.0", ["rekey_habs"]),
+]
+
+
+# ToDo XXXX maybe
+'''
+class komerdict(dict):
+    """
+    Subclass of dict that has db as attribute and employs read through cache
+    from db Baser.stts of kever states to reload kever from state in database
+    when not found in memory as dict item.
+
+    add method that answers is a given pre a group hab pre .localGroup(pre)
+
+    Todo add wrapper decorator to update attributes
+    on class that injects instance attributes when class is instanced
+    one of the injected parameters is function that that maps returned Komer to
+    object class
+    parameters are subdb (must be Komer) and function that maps retrieved dataclass
+    record  from dataabase to class instance. if no mapping function then just
+    return the dataclass record as value.
+    """
+
+'''
+
+
 class statedict(dict):
     """
     Subclass of dict that has db as attribute and employs read through cache
@@ -152,56 +201,51 @@ class statedict(dict):
         else:
             return self.__getitem__(k)
 
-def _strip_prerelease(version_str):
-    """Strip prerelease and build metadata from a semver string.
-
-    Semver compares alphanumeric prerelease identifiers lexicographically,
-    so 'dev4' > 'dev10' (because '4' > '1'). Stripping prerelease ensures
-    dev releases within the same version cycle compare as equal.
-    See: https://github.com/WebOfTrust/keripy/issues/820
-    """
-    ver = semver.VersionInfo.parse(version_str)
-    return str(semver.Version(ver.major, ver.minor, ver.patch))
-
-
-MIGRATIONS = [
-    ("0.6.8", ["hab_data_rename"]),
-    ("1.0.0", ["add_key_and_reg_state_schemas"]),
-    ("1.2.0", ["rekey_habs"])
-]
 
 class BaserBase:
-    """
-    Base class for Baser and WebBaser.
+    """Backend-independent KERI database state and replay behavior."""
 
-    BaserBase provides minimal, non‑persistent structures like
-    prefixes, groups, kevers and db as well as common functions.
-
-    Attributes:
-        - prefixes (oset): set of local prefix identifiers (`prefixes`)
-        - groups (oset): set of group identifiers (`groups`)
-        - _kevers (statedict): in‑memory mapping of prefix to Kever
-        - db: db where `_kevers.db` points back to this instance so that kever
-          lookups and read‑through caching work correctly
-
-    This class must be initialized *before* any LMDB‑backed components
-    so that reload() has valid in‑memory targets to populate.
-    """
-
-    def __init__(self, **kwa):
-
-        self.prefixes = oset()  # should change to hids for hab ids
-        self.groups = oset()  # group hab ids
+    def __init__(self):
+        self.prefixes = oset()
+        self.groups = oset()
         self._kevers = statedict()
-        self._kevers.db = self  # assign db for read through cache of kevers
+        self._kevers.db = self
 
     @property
     def kevers(self):
-        """
-        Returns .db.kevers
-        """
+        """Return the read-through Kever cache."""
         return self._kevers
 
+    def reload(self):
+        """
+        Reload stored prefixes and Kevers from .habs
+
+        """
+        # Check migrations to see if this database is up to date.  Error otherwise
+        if not self.current:
+            raise DatabaseError(f"Database migrations must be run. DB version {self.version}; current {__version__}")
+
+        removes = []
+        for keys, data in self.habs.getTopItemIter():
+            if (ksr := self.states.get(keys=data.hid)) is not None:
+                try:
+                    from ..core.eventing import Kever
+                    kever = Kever(state=ksr,
+                                           db=self,
+                                           local=True)
+                except MissingEntryError:  # no kel event for keystate
+                    removes.append(keys)  # remove from .habs
+                    continue
+                self.kevers[kever.prefixer.qb64] = kever
+                self.prefixes.add(kever.prefixer.qb64)
+                if data.mid:  # group hab
+                    self.groups.add(data.hid)
+
+            elif data.mid is None:  # in .habs but no corresponding key state and not a group so remove
+                removes.append(keys)  # no key state or KEL event for .hab record
+
+        for keys in removes:  # remove bare .habs records
+            self.habs.rem(keys=keys)
 
     def migrate(self):
         """ Run all migrations required
@@ -258,7 +302,6 @@ class BaserBase:
 
         self.version = __version__
 
-
     def _trimAllEscrows(self):
         """Trim all escrow databases via low-level .trim().
 
@@ -283,7 +326,6 @@ class BaserBase:
         if total > 0:
             print(f"Cleared {total} escrow entries before migration")
 
-
     def clearEscrows(self):
         """
         Clear all escrows
@@ -302,13 +344,15 @@ class BaserBase:
     def current(self):
         """ Current property determines if we are at the current database migration state.
 
-         If the database version matches the library version return True
-         If the current database version is behind the current library version, check for migrations
-            - If there are migrations to run, return False
-            - If there are no migrations to run, reset database version to library version and return True
-         If the current database version is ahead of the current library version, raise exception
+        If the database version matches the library version return True
+        If the current database version is behind the current library version, check for migrations
 
-         """
+           - If there are migrations to run, return False
+           - If there are no migrations to run, reset database version to library version and return True
+
+        If the current database version is ahead of the current library version, raise exception
+
+        """
         if self.version == __version__:
             return True
 
@@ -327,7 +371,6 @@ class BaserBase:
 
         # We have migrations to run
         return False
-
 
     def complete(self, name=None):
         """ Returns list of tuples of migrations completed with date of completion
@@ -412,6 +455,7 @@ class BaserBase:
             yield msg
 
 
+
     def cloneEvtMsg(self, pre, fn, dig, gvrsn=Version, *, version=None):
         """
         Clones Event as Serialized CESR Message with Body and attached Foot
@@ -474,6 +518,7 @@ class BaserBase:
                              Diger(qb64=rdig),
                              rigers))
 
+
         # get authorizer (delegator/issuer) source seal event couple if any
         bonds = []
         if couple := self.aess.get(keys=keys):
@@ -486,9 +531,11 @@ class BaserBase:
 
         bonds.append(FirstSeen(f=Number(num=fn), dt=dater))
 
+
         msg = messagize(serder=serder, sigers=sigers, wigers=wigers,
                         cigars=cigars, rsgs=rsgs, bonds=bonds, gvrsn=gvrsn)
         return msg
+
 
 
     def cloneDelegation(self, kever, gvrsn=Version, *, version=None):
@@ -516,16 +563,15 @@ class BaserBase:
             for dmsg in self.clonePreIter(pre=kever.delpre, fn=0, gvrsn=gvrsn):
                 yield dmsg
 
-
     def fetchAllSealingEventByEventSeal(self, pre, seal, sn=0):
         """
         Search through a KEL for the event that contains a specific anchored
         SealEvent type of provided seal but in dict form and is also fully
-        witnessed. Searchs from sn forward (default = 0).Searches all events in
+        witnessed. Searches from sn forward (default = 0). Searches all events in
         KEL of pre including disputed and/or superseded events.
         Returns the Serder of the first event with the anchored SealEvent seal,
-            None if not found
 
+            None if not found
 
         Parameters:
             pre (bytes|str): identifier of the KEL to search
@@ -549,10 +595,8 @@ class BaserBase:
                         return srdr
         return None
 
-
     # use alias here until can change everywhere for  backwards compatibility
     findAnchoringSealEvent = fetchAllSealingEventByEventSeal  # alias
-
 
     def fetchLastSealingEventByEventSeal(self, pre, seal, sn=0):
         """
@@ -565,8 +609,8 @@ class BaserBase:
 
         Returns:
             srdr (Serder): instance of the first event with the matching
-                           anchoring SealEvent seal,
-                        None if not found
+                anchoring SealEvent seal,
+                None if not found
 
         Parameters:
             pre (bytes|str): identifier of the KEL to search
@@ -591,6 +635,7 @@ class BaserBase:
         return None
 
 
+
     def fetchLastSealingEventBySeal(self, pre, seal, sn=0):
         """Only searches last event at any sn therefore does not search
         any disputed or superseded events.
@@ -598,6 +643,7 @@ class BaserBase:
         an anchored Seal with same Seal type as provided seal but in dict form.
         Searchs from sn forward (default = 0).
         Returns the Serder of the first found event with the anchored Seal seal,
+
             None if not found
 
         Parameters:
@@ -618,7 +664,6 @@ class BaserBase:
                         return srdr
         return None
 
-
     def signingMembers(self, pre: str):
         """ Find signing members of a multisig group aid.
 
@@ -636,7 +681,6 @@ class BaserBase:
 
         return habord.smids
 
-
     def rotationMembers(self, pre: str):
         """ Find rotation members of a multisig group aid.
 
@@ -652,7 +696,6 @@ class BaserBase:
             return None
 
         return habord.rmids
-
 
     def fullyWitnessed(self, serder):
         """ Verify the witness threshold on the event
@@ -671,7 +714,6 @@ class BaserBase:
         toad = kever.toader.num
 
         return not len(wigers) < toad
-
 
     def resolveVerifiers(self, pre=None, sn=0, dig=None):
         """
@@ -713,7 +755,6 @@ class BaserBase:
 
         return tholder, verfers
 
-
     def getEvtPreIter(self, pre, sn=0):
         """
         Returns iterator of event messages without attachments
@@ -737,7 +778,6 @@ class BaserBase:
                 continue  # skip this event
 
             yield serder  # event as Serder
-
 
     def getEvtLastPreIter(self, pre, sn=0):
         """

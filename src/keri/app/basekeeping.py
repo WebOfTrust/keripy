@@ -3,39 +3,21 @@
 KERI
 keri.app.basekeeping module
 
-Terminology:
-    salt is 128 bit 16 char random bytes used as root entropy to derive seed or secret
-    private key same as seed or secret for key pair
-    seed or secret or private key is crypto suite length dependent random bytes
-    public key
-
-Example usage::
-
-    txn.put(
-                did.encode(),
-                json.dumps(certifiable_data).encode("utf-8")
-            )
-    raw_data = txn.get(did.encode())
-    if raw_data is None:
-        return None
-    return json.loads(raw_data)
-
-    ked = json.loads(raw[:size].decode("utf-8"))
-    raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
+Backend-independent key management shared by native and browser keepers.
 """
-import math
 from collections import namedtuple, deque
 from dataclasses import dataclass, asdict, field
+import sys
 
 import pysodium
 from hio.base import doing
 
-from ..kering import ClosedError, AuthError, DecryptError
-from ..core import (Prefixer, Diger, Tholder,
-                    Signer, Salter,
+from ..kering import ClosedError, AuthError, DecryptError, ConfigurationError
+from ..core import (Prefixer, Diger, Signer, Salter,
                     Encrypter, Decrypter, Tiers, MtrDex)
 from ..help import nowIso8601
+
+IS_PYODIDE = "emscripten" in sys.platform
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
@@ -133,10 +115,7 @@ class Creator:
     def __init__(self, **kwa):
         """
         Setup Creator.
-
-        Parameters:
-
-        """
+            """
 
     def create(self, **kwa):
         """
@@ -184,10 +163,7 @@ class RandyCreator(Creator):
     def __init__(self, **kwa):
         """
         Setup Creator.
-
-        Parameters:
-
-        """
+            """
         super(RandyCreator, self).__init__(**kwa)
 
     def create(self, codes=None, count=1, code=MtrDex.Ed25519_Seed,
@@ -200,6 +176,9 @@ class RandyCreator(Creator):
             count is count of key pairs to create is codes not provided
             code is derivation code to use for count key pairs if codes not provided
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
+
+        Returns:
+            list[Signer]: signers created from the requested derivation codes
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -278,6 +257,9 @@ class SaltyCreator(Creator):
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
             temp is Boolean True means use temp stretch otherwise use time set
                  by tier for streching
+
+        Returns:
+            list[Signer]: signers created from the requested derivation codes
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -357,7 +339,7 @@ class Manager:
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
-        ks: key store instance for storing public and private keys
+        ks (Keeper): key store LMDB database instance for storing public and private keys
         encrypter (Encrypter): instance for encrypting secrets. Public
             encryption key is derived from aeid (public signing key)
         decrypter (Decrypter): instance for decrypting secrets. Private
@@ -408,7 +390,7 @@ class Manager:
         Setup Manager.
 
         Parameters:
-            ks: key store instance
+            ks (Keeper): key store instance (LMDB)
             seed (str): qb64 private-signing key (seed) for the aeid from which
                 the private decryption key may be derived. If aeid stored in
                 database is not empty then seed may required to do any key
@@ -420,7 +402,8 @@ class Manager:
                 another device from the device that runs the Manager.
                 Currently only code MtrDex.Ed25519_Seed is supported.
 
-        Parameters: Passthrough to .setup for later initialization
+        Parameters:
+            Passthrough to .setup for later initialization
             aeid (str): qb64 of non-transferable identifier prefix for
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
@@ -436,8 +419,9 @@ class Manager:
             tier (str): default security tier (Tierage) for root salt
         """
         if ks is None:
+            if IS_PYODIDE:
+                raise ConfigurationError("Manager requires injected ks on Pyodide")
             from .keeping import Keeper
-
             ks = Keeper(reopen=True)
         self.ks = ks
         self.encrypter = None
@@ -741,6 +725,9 @@ class Manager:
             not be rotatable. This makes the identifier non-transferable in effect
             even when the identifier prefix is transferable.
 
+        Returns:
+            tuple: ``(verfers, digers)`` for the inception event
+
         """
         # get root defaults to initialize key sequence
         if rooted and algo is None:  # use root algo from db as default
@@ -921,6 +908,9 @@ class Manager:
             not be rotatable. This makes the identifier non-transferable in effect
             even when the identifier prefix is transferable.
 
+        Returns:
+            tuple: ``(verfers, digers)`` for the rotation event
+
         """
         # Secret to decrypt here
         if (pp := self.ks.prms.get(pre)) is None:
@@ -1079,6 +1069,9 @@ class Manager:
         checks for pris for pubs in db is not raises error
         then signs ser with eah pub
         returns list of sigers indexed else list of cigars if not
+
+        Returns:
+            list: signatures as Sigers when indexed is True, otherwise Cigars
         """
         signers = []
 
@@ -1097,7 +1090,6 @@ class Manager:
             # if indices provided use indices to compute kidxes
             # otherwise default is all the keys from the .new key list so use
             # .nxt to comput number of keys to generate kidxes for paths
-            paths = []
             # use paths to generate signers
 
         if pubs:
@@ -1214,7 +1206,7 @@ class Manager:
             plain = pysodium.crypto_box_seal_open(qb64, pubkey, prikey)  # qb64b
 
         if plain == qb64:
-            raise ValueError(f"Unable to decrypt.")
+            raise ValueError("Unable to decrypt.")
 
         return plain
 
@@ -1345,9 +1337,6 @@ class Manager:
                 if iridx == 0:
                     old = PubLot()  # defaults ok
                 else:
-                    osigners = csigners
-                    osith = "{:x}".format(max(1, math.ceil(len(osigners) / 2)))
-                    ost = Tholder(sith=osith).sith
                     old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps = PreSit(old=old)  # .new and .nxt are default
                 if not self.ks.sits.pin(pre, val=ps):
@@ -1422,8 +1411,11 @@ class Manager:
             erase (bool): True means erase old private keys made stale by
                 advancement when advance is True otherwise ignore
 
+        Returns:
+            tuple: ``(verfers, digers)`` for the replayed key state
+
         """
-        if (pp := self.ks.prms.get(pre)) is None:
+        if self.ks.prms.get(pre) is None:
             raise ValueError("Attempt to replay nonexistent pre={}.".format(pre))
 
         if (ps := self.ks.sits.get(pre)) is None:
@@ -1524,7 +1516,7 @@ class ManagerDoer(doing.Doer):
     def __init__(self, manager, **kwa):
         """
         Parameters:
-           manager (Manager): instance
+            manager (Manager): instance
         """
         super(ManagerDoer, self).__init__(**kwa)
         self.manager = manager
