@@ -122,6 +122,23 @@ class Exchanger:
         tsgs = list(tsgs or [])
         cigars = list(cigars or [])
 
+        # Freeze foreign last-establishment references before sender escrow
+        # can return, so replay retains the evidence and its original keys.
+        missing = [(prefixer, None) for prefixer in unresolvedLsgs]
+        for prefixer, sigers in lsgs:
+            if prefixer.qb64 == sender:
+                continue
+            kever = self.kevers.get(prefixer.qb64)
+            if kever is None:
+                missing.append((prefixer, None))
+                continue
+            tsgs.append((prefixer,
+                         Number(sn=kever.lastEst.s),
+                         Diger(qb64=kever.lastEst.d),
+                         sigers))
+        if missing:
+            self._raiseMissingKeyState(serder, missing)
+
         # A seal couple implies the sender AID. Store both attachment forms as
         # an explicit sealing AID and historical event reference.
         sourceSeals = [(Prefixer(qb64=sender), number, diger)
@@ -130,7 +147,6 @@ class Exchanger:
 
         senderTsgs = [tsg for tsg in tsgs if tsg[0].qb64 == sender]
         extraTsgs = [tsg for tsg in tsgs if tsg[0].qb64 != sender]
-        extraLsgs = [lsg for lsg in lsgs if lsg[0].qb64 != sender]
         senderSourceSeals = [seal for seal in sourceSeals
                              if seal[0].qb64 == sender]
         extraSourceSeals = [seal for seal in sourceSeals
@@ -211,7 +227,7 @@ class Exchanger:
             # Do not escrow unsupported foreign-only evidence as missing sender
             # authentication on routes without an evidence policy.
             if (evidenceVerifier is None and
-                    (extraTsgs or extraLsgs or extraCigars or unresolvedLsgs)):
+                    (extraTsgs or extraCigars)):
                 msg = (f"Skipped evidence not from aid={sender} route={route} "
                        f"for exn evt={serder.said}")
                 logger.info(msg)
@@ -232,7 +248,7 @@ class Exchanger:
         # evidence, which routes without an evidence policy must reject before
         # persistence.
         if (evidenceVerifier is None and
-                (extraTsgs or extraLsgs or extraCigars or unresolvedLsgs)):
+                (extraTsgs or extraCigars)):
             msg = (f"Skipped evidence not from aid={sender} route={route} "
                    f"for exn evt={serder.said}")
             logger.info(msg)
@@ -247,10 +263,8 @@ class Exchanger:
              hby=self.hby,
              serder=serder,
              tsgs=extraTsgs,
-             lsgs=extraLsgs,
              cigars=extraCigars,
              sourceSeals=extraSourceSeals,
-             unresolved=unresolvedLsgs,
          )
         if missingExtra:
             self._raiseMissingKeyState(serder, missingExtra)
@@ -355,6 +369,9 @@ class Exchanger:
 
         """
         dig = serder.said
+        if self.hby.db.exns.get(keys=(dig,)) is not None:
+            return False
+
         cigars = cigars or []
         sourceSeals = sourceSeals or []
         for prefixer, seqner, ssaider, sigers in tsgs:
@@ -931,19 +948,16 @@ def nesting(paths, acc, val):
         return acc
 
 
-def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
-                      sourceSeals=None, unresolved=None):
+def verifyAttachments(hby, serder, *, tsgs=None, cigars=None,
+                      sourceSeals=None):
     """Cryptographically verify exchange authentication attachments.
 
     Parameters:
         hby (Habery): database environment with signer key state
         serder (Serder): exchange message signed or sealed by the attachments
         tsgs (list): transferable signature groups with establishment references
-        lsgs (list): transferable signature groups without establishment references
         cigars (list): non-transferable signatures
         sourceSeals (list): source seal triples
-        unresolved (list): signer prefixes whose attachments could not be
-            reconstructed without their KEL
 
     Returns:
         tuple: Valid transferable signature groups, non-transferable signatures,
@@ -951,23 +965,10 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
             coordinates.
     """
     tsgs = list(tsgs or [])
-    lsgs = lsgs or []
     cigars = cigars or []
     sourceSeals = sourceSeals or []
-    unresolved = unresolved or []
     invalid = False
-    missing = [(prefixer, None) for prefixer in unresolved]
-
-    for prefixer, sigers in lsgs:
-        if prefixer.qb64 not in hby.kevers:
-            missing.append((prefixer, None))
-            continue
-
-        kever = hby.kevers[prefixer.qb64]
-        tsgs.append((prefixer,
-                     Number(sn=kever.lastEst.s),
-                     Diger(qb64=kever.lastEst.d),
-                     sigers))
+    missing = []
 
     validTsgs = []
     for prefixer, number, diger, sigers in tsgs:
@@ -986,7 +987,7 @@ def verifyAttachments(hby, serder, *, tsgs=None, lsgs=None, cigars=None,
             missing.append((prefixer, number))
             continue
 
-        if sdig != diger.qb64:
+        if sdig != diger.qb64 or not aserder.estive:
             invalid = True
             continue
 

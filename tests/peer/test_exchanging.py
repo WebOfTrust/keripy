@@ -12,7 +12,7 @@ from keri import Kinds, Vrsn_1_0, Vrsn_2_0
 from keri.kering import MissingSignatureError
 from keri.core import (Salter, Counter, Dater, Texter, Kevery, Kramer,
                        Diger, Prefixer, Number,
-                       SealSource, SerderKERI, Parser, messagize,
+                       SealEvent, SealSource, SerderKERI, Parser, messagize,
                        MtrDex, Codens, exchange)
 
 from keri.app import (Notifier, Counselor, Multiplexor,
@@ -665,9 +665,6 @@ def test_missing_foreign_key_state_requests_kel_before_persistence(
                     salt=b'fedcba9876543210', **kwa) as (receiverHby, _):
         senderIcp = sender.msgOwnEvent(sn=0, framed=True,
                                        gvrsn=Vrsn_2_0)
-        Parser(version=Vrsn_2_0).parse(ims=bytearray(senderIcp),
-                                       kvy=receiverHby.kvy,
-                                       local=True)
 
         exchanger = Exchanger(hby=receiverHby,
                               handlers=[EvidenceHandler()])
@@ -686,6 +683,21 @@ def test_missing_foreign_key_state_requests_kel_before_persistence(
         )
         senderGroup = group(sender, missingTsg)
         endorserGroup = group(endorser, missingTsg)
+
+        # Neither KEL is known. Do not lose the unresolved endorsement by
+        # putting only the sender's signatures in exchange escrow.
+        with pytest.raises(MissingSignatureError):
+            exchanger.processEvent(
+                missingTsg, tsgs=[senderGroup],
+                lsgs=[(endorser.kever.prefixer, endorserGroup[3])])
+        assert receiverHby.db.epse.get(keys=(missingTsg.said,)) is None
+        assert list(receiverHby.db.esigs.getTopItemIter(
+            keys=(missingTsg.said, ""))) == []
+        assert exchanger.cues.popleft() == dict(
+            kin="query", q=dict(r="logs", pre=endorser.pre))
+
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(senderIcp),
+                                       kvy=receiverHby.kvy, local=True)
 
         with pytest.raises(MissingSignatureError):
             exchanger.processEvent(
@@ -818,7 +830,9 @@ def test_verify_fails_closed_on_invalid_stored_evidence(mockHelpingNowUTC):
 
 
 @pytest.mark.parametrize("verificationError", [False, True])
-def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC, verificationError):
+@pytest.mark.parametrize("lastEstGroup", [False, True])
+def test_escrow_replay_persists_only_verified_evidence(
+        mockHelpingNowUTC, verificationError, lastEstGroup):
     """Exchanger escrow rows do not bypass evidence selection on replay."""
     kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
 
@@ -899,8 +913,10 @@ def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC, verifi
 
         with pytest.raises(MissingSignatureError):
             exchanger.processEvent(exn,
-                                   tsgs=[senderGroup, endorserGroup,
-                                         invalidGroup],
+                                   tsgs=[senderGroup, invalidGroup] +
+                                        ([] if lastEstGroup else [endorserGroup]),
+                                   lsgs=[(endorser.kever.prefixer, endorserGroup[3])]
+                                        if lastEstGroup else [],
                                    cigars=validCigar + invalidCigar,
                                    ssts=[validSeal, invalidSeal])
 
@@ -908,6 +924,11 @@ def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC, verifi
         assert len(list(receiverHby.db.esigs.getTopItemIter(
             keys=(exn.said, endorser.pre, "")))) == 1
         assert len(receiverHby.db.ecigs.get(keys=(exn.said,))) == 2
+
+        if lastEstGroup:
+            endorserRot = endorser.rotate(framed=True, gvrsn=Vrsn_2_0, **kwa)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(endorserRot),
+                                           kvy=receiverHby.kvy, local=True)
 
         senderIcp = sender.msgOwnEvent(sn=0, framed=True,
                                        gvrsn=Vrsn_2_0)
@@ -945,7 +966,7 @@ def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC, verifi
             keys=(exn.said, endorser.pre))
         assert [(number.sn, diger.qb64)
                 for number, diger in sourceSeals] == [
-            (endorser.kever.sn, endorser.kever.serder.said),
+            (validSeal[1].sn, validSeal[2].qb64),
         ]
         assert receiverHby.db.ests.get(
             keys=(exn.said, receiver.pre)) == []
@@ -964,13 +985,13 @@ def test_escrow_replay_persists_only_verified_evidence(mockHelpingNowUTC, verifi
                         in parsed[0].tsgs}
         number, diger, sigers = replayGroups[endorser.pre]
         assert (number.sn, diger.qb64, len(sigers)) == (
-            endorser.kever.lastEst.s,
-            endorser.kever.lastEst.d,
+            endorserGroup[1].sn,
+            endorserGroup[2].qb64,
             1,
         )
         assert [(prefixer.qb64, number.sn, diger.qb64)
                 for prefixer, number, diger in parsed[0].ssts] == [
-            (endorser.pre, endorser.kever.sn, endorser.kever.serder.said),
+            (endorser.pre, validSeal[1].sn, validSeal[2].qb64),
         ]
         assert [(cigar.verfer.qb64, cigar.qb64)
                 for cigar in parsed[0].cigars] == [
@@ -1141,6 +1162,24 @@ def test_complete_redelivery_replaces_temporary_evidence(mockHelpingNowUTC):
         verify(receiverHby, exn)
 
         before = serializeMessage(receiverHby, exn.said, framed=True)
+        # A rejected wire delivery must not change accepted evidence.
+        invalidSenderGroup = (*senderGroup[:3],
+                              sender.sign(ser=b"different message", indexed=True))
+        invalidSeal = (endorser.kever.prefixer, Number(sn=0), endorserGroup[2])
+        invalidCigars = cigarEndorser.sign(ser=b"different message", indexed=False)
+        replay = messagize(exn, tsgs=[invalidSenderGroup],
+                            cigars=invalidCigars, bonds=[SealEvent(*invalidSeal)],
+                            framed=True, gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=replay, kvy=receiverHby.kvy,
+                                       exc=exchanger)
+        assert receiverHby.db.epse.get(keys=(exn.said,)) is None
+        assert serializeMessage(receiverHby, exn.said, framed=True) == before
+        assert len(list(receiverHby.db.esigs.getTopItemIter(
+            keys=(exn.said, "")))) == 1
+        assert receiverHby.db.ecigs.get(keys=(exn.said,)) == []
+        assert list(receiverHby.db.ests.getTopItemIter(
+            keys=(exn.said, ""))) == []
+
         receiverHby.db.epse.put(keys=(exn.said,), val=exn)
         receiverHby.db.epsd.put(
             keys=(exn.said,),

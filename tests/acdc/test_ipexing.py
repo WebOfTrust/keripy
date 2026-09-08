@@ -1172,6 +1172,31 @@ def test_ipex_v2_dispatch_linear_and_spurn():
             keys=(rejectedApply.said, ""))) == []
         assert recorder.items == []
 
+        # Foreign last-establishment groups must still reach route policy
+        # after the sender's signatures have accumulated in exchange escrow.
+        partialSender = hby.makeHab(name="partial-sender", isith="2", icount=3)
+        partialApply, _ = ipexApply(
+            hab=partialSender, recp=hab.pre,
+            message="Foreign evidence remains forbidden after escrow",
+            attrs=dict(role="member"),
+            modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]),
+        )
+        senderGroup = group(partialSender, partialApply)
+        endorserGroup = group(endorser, partialApply)
+        for index in (0, 1):
+            with pytest.raises(MissingSignatureError):
+                exc.processEvent(
+                    partialApply,
+                    tsgs=[(*senderGroup[:3], [senderGroup[3][index]])],
+                    lsgs=[(endorser.kever.prefixer, endorserGroup[3])]
+                         if index == 0 else [],
+                )
+        exc.processEscrow()
+        assert hby.db.exns.get(keys=(partialApply.said,)) is None
+        assert hby.db.epse.get(keys=(partialApply.said,)) is None
+        assert recorder.items == []
+        exc.cues.clear()
+
         rejectedCigarApply, _ = ipexApply(
             hab=hab,
             recp=hab.pre,
@@ -3550,7 +3575,13 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 retryGrant = messagize(
                     retryGrantExn,
                     sigers=[senderSigs[0], senderSigs[2]],
-                    tsgs=[sigGroup(endorserHab, endorserSigs)],
+                    # An interaction is a valid source seal but cannot supply
+                    # establishment keys for an optional signature group.
+                    tsgs=[sigGroup(endorserHab, endorserSigs),
+                          (endorserHab.kever.prefixer,
+                           Number(sn=endorserHab.kever.sn),
+                           Diger(qb64=endorserHab.kever.serder.said),
+                           endorserSigs)],
                     lsgs=[(recipientHab.kever.prefixer, recipientSigs),
                           (unknownEndorserHab.kever.prefixer,
                            unknownEndorserSigs)],
