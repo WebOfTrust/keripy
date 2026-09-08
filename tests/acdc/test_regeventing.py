@@ -720,7 +720,7 @@ if __name__ == "__main__":
     test_V12_smt_root_anchor_refused_by_name()
     test_V13_seal_reference_without_seal_retryable()
     test_V14_substitution_sibling_registry_refused()
-    test_V15_acdc_rd_mismatch_refused()
+    test_acdc_issuer_mismatch_refused()
     test_V15b_acdc_issuer_mismatch_refused()
     test_V16_rdless_acdc_oneway_binding()
     test_V16b_blinded_head_undisclosed_binds_nothing()
