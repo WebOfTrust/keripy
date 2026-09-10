@@ -580,6 +580,12 @@ class Baser(LMDBer):
             subkey 'essrs.'
             Multiple values per key.
 
+        .esrc is named subDB instance of CatCesrIoSetSuber
+            (klas=(Number, Diger)) for exchange message sender source-seal
+            couples.
+            subkey 'esrc.'
+            Multiple values per key.
+
         .chas is named subDB instance of CesrIoSetSuber (klas=Diger) for
             accepted signed 12-word challenge response exn messages. Keyed by
             prefix of signer.
@@ -1105,6 +1111,9 @@ class Baser(LMDBer):
 
         self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
 
+        self.esrc = subing.CatCesrIoSetSuber(db=self, subkey="esrc.",
+                                             klas=(coring.Number, coring.Diger))
+
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
@@ -1584,7 +1593,7 @@ class Baser(LMDBer):
                 # This is the list of set based databases that are not created as part of event processing.
                 # for now we are just copying them from self to copy without worrying about being able to
                 # reprocess them.  We need a more secure method in the future
-                sets = ["esigs", "ecigs", "epath", "enst", "chas", "reps", "wkas", "meids", "maids"]
+                sets = ["esigs", "ecigs", "epath", "enst", "esrc", "chas", "reps", "wkas", "meids", "maids"]
                 for name in sets:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)

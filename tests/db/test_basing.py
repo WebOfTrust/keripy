@@ -68,6 +68,7 @@ def test_baser():
     # (the v1.3.5 bug fixed in PR #1538).
     assert isinstance(baser.essrs, CesrIoSetSuber)
     assert baser.essrs.klas is Texter
+    assert isinstance(baser.esrc, CatCesrIoSetSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -98,6 +99,7 @@ def test_baser():
     assert isinstance(baser.pses, IoDupSuber)
     assert isinstance(baser.dels, OnIoDupSuber)
     assert isinstance(baser.ldes, OnIoDupSuber)
+    assert isinstance(baser.esrc, CatCesrIoSetSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -1908,7 +1910,7 @@ def test_clean_baser():
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
         assert state.f == '6'
-        assert natHab.db.env.stat()['entries'] <= 102 #68
+        assert natHab.db.env.stat()['entries'] <= 103 #68
 
         # test reopenDB with reuse  (because temp)
         with reopenDB(db=natHab.db, reuse=True):
@@ -1918,7 +1920,7 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
-            assert natHab.db.env.stat()['entries'] <= 102 #68
+            assert natHab.db.env.stat()['entries'] <= 103 #68
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)

@@ -15,11 +15,11 @@ from hio.help import ogler
 from .. import Kinds, Protocols
 from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
                       MisbindingError, MissingAnchorError, MissingChainError,
-                      MisdigestError, MisregistryError, MissequenceError,
-                      RootSealError, UnverifiedBlindError, ValidationError,
-                      Vrsn_2_0, sniff)
+                      MissingSenderKeyStateError, MisdigestError,
+                      MisregistryError, MissequenceError, RootSealError,
+                      UnverifiedBlindError, ValidationError, Vrsn_2_0, sniff)
 from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
-                    Number, Saider, Schemer, Serdery, Texter, exchange, messagize)
+                    Number, Saider, Schemer, SealSource, Serdery, Texter, exchange, messagize)
 from ..peer import cloneMessage
 
 logger = ogler.getLogger()
@@ -31,7 +31,7 @@ Ipex = Ipexage(apply="apply", offer="offer", agree="agree",
 PreviousRoutes = {
     Ipex.offer: (Ipex.apply,),
     Ipex.agree: (Ipex.offer,),
-    Ipex.grant: (Ipex.agree,),
+    Ipex.grant: (Ipex.apply, Ipex.agree),
     Ipex.admit: (Ipex.grant,),
     Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
 }
@@ -203,17 +203,13 @@ def _normalizeNodeStream(stream, attachment=None):
     return _normalizeNestedStream(raw[:serder.size] + atc)
 
 
-def _validSingleDagList(value, itemtype, *, allow_empty=False):
+def _validSingleDagList(value, itemtype):
     """Validate one of the single-item list fields used by single-DAG IPEX.
 
     Parameters:
         value: Candidate wire value for a single-DAG field such as ``o`` or
             ``ax``.
         itemtype (type): Required Python type for each outer-list entry.
-        allow_empty (bool): When True, ``[]`` is accepted in addition to a
-            one-item list. This is used only for today's unanchored ``ax``
-            behavior.
-
     Returns:
         bool: True when ``value`` matches the current single-DAG wire shape,
             False otherwise.
@@ -224,15 +220,13 @@ def _validSingleDagList(value, itemtype, *, allow_empty=False):
     if not isinstance(value, list):
         return False
 
-    # We currently only support one DAG (until Multi DAG), so at most one entry is allowed.
-    # `allow_empty=True` is used only for today's unanchored `ax=[]` behavior;
-    # every other caller requires exactly one entry in the outer list.
-    if len(value) > 1 or (not allow_empty and len(value) != 1):
+    # We currently only support one DAG (until Multi DAG), so exactly one entry is required.
+    if len(value) != 1:
         return False
 
     # The inner item type differs by field:
     # - `o` carries one origin SAID string
-    # - `ax` carries zero or one booleans
+    # - `ax` carries one boolean
     return all(isinstance(item, itemtype) for item in value)
 
 
@@ -283,7 +277,7 @@ def _validDisclosurePath(value):
     return True
 
 
-def _sign(hab, serder, *, nests=None, gvrsn=None):
+def _sign(hab, serder, *, nests=None, anchor=False, gvrsn=None):
     """Sign and messagize an outer IPEX exchange with optional nested streams.
 
     Parameters:
@@ -291,6 +285,8 @@ def _sign(hab, serder, *, nests=None, gvrsn=None):
         serder (Serder): Outer exchange serder to sign.
         nests (list[bytes | bytearray] | None): Optional nested substreams to
             append in the outer attachment section.
+        anchor (bool): True creates a permitted KEL event sealing
+            ``serder.said`` and attaches its source-seal couple to the exchange.
         gvrsn (Versionage | None): Optional CESR genus version override for the
             attachment and nesting groups.
 
@@ -300,7 +296,30 @@ def _sign(hab, serder, *, nests=None, gvrsn=None):
     """
     gvrsn = gvrsn if gvrsn is not None else Vrsn_2_0
     nests = nests if nests else None
+    source = None
 
+    if anchor:
+        # Only transferable identifiers can append the KEL event that carries the seal.
+        if not hab.kever.prefixer.transferable:
+            raise ValueError("anchored IPEX exchanges require a transferable sender")
+
+        kwa = dict(data=[dict(d=serder.said)],
+                   kind=hab.kever.serder.kind,
+                   version=hab.kever.serder.pvrsn,
+                   gvrsn=gvrsn)
+
+        anc = None
+        if hab.kever.estOnly:
+            # Establishment Only KELs reject interactions, so advance key state with a rotation.
+            anc = hab.rotate(**kwa)
+        else:
+            # Normal KELs use a cheaper interaction that leaves key state unchanged.
+            anc = hab.interact(**kwa)
+
+        aserder = _streamSerder(anc)
+        source = SealSource(s=aserder.snh, d=aserder.said)
+
+    # Sign after anchoring so an Establishment Only rotation's new keys and lastEst are used.
     if hab.kever.prefixer.transferable:
         sigers = hab.sign(ser=serder.raw, indexed=True)
         tsgs = [(hab.kever.prefixer,
@@ -309,6 +328,7 @@ def _sign(hab, serder, *, nests=None, gvrsn=None):
                  sigers)]
         return messagize(serder=serder,
                          tsgs=tsgs,
+                         bonds=source,
                          nests=nests,
                          framed=False,
                          gvrsn=gvrsn)
@@ -316,6 +336,7 @@ def _sign(hab, serder, *, nests=None, gvrsn=None):
     cigars = hab.sign(ser=serder.raw, indexed=False)
     return messagize(serder=serder,
                      cigars=cigars,
+                     bonds=source,
                      nests=nests,
                      framed=False,
                      gvrsn=gvrsn)
@@ -323,6 +344,8 @@ def _sign(hab, serder, *, nests=None, gvrsn=None):
 
 class IpexHandler:
     """Verify and handle the linear V2 IPEX `exn` workflow."""
+
+    acceptsSscs = True
 
     def __init__(self, resource, hby, notifier, rgy=None):
         """Create a handler for one IPEX route.
@@ -342,7 +365,7 @@ class IpexHandler:
         self.notifier = notifier
         self.rgy = rgy
 
-    def verify(self, serder, attachments=None, nests=None):
+    def verify(self, serder, attachments=None, nests=None, sscs=None):
         """Validate the verb, prior link, and single-response rule.
 
         Parameters:
@@ -352,6 +375,7 @@ class IpexHandler:
             nests (list | None): Parsed V2 nested artifacts. In the current
                 single-DAG workflow ``offer`` may carry a metadata DAG subset
                 and ``grant`` may carry the final disclosed DAG.
+            sscs (list | None): Sender source-seal couples retained after KRAM.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -361,8 +385,11 @@ class IpexHandler:
             MissingChainError: When a grant's issuer-auth proof needs TEL
                 evidence that is not yet available locally and the exchange
                 should be retried from escrow later.
+            MissingSenderKeyStateError: When a required sender anchor refers
+                to KEL evidence that is not yet available locally.
         """
         nests = nests if nests is not None else []
+        sscs = sscs if sscs is not None else []
         q = serder.ked.get("q")
         attrs = serder.ked["a"]
         dig = serder.ked["p"]
@@ -378,10 +405,10 @@ class IpexHandler:
 
         # Stage 1: every inbound IPEX message must at least carry an attrs map
         # with a human message and a query/modifier map. `ax` is the only shared
-        # optional list field and remains syntax-only for this ticket.
+        # optional list field.
         if not isinstance(attrs, dict) or "m" not in attrs or not isinstance(q, dict):
             return False
-        if "ax" in attrs and not _validSingleDagList(attrs["ax"], bool, allow_empty=True):
+        if "ax" in attrs and not _validSingleDagList(attrs["ax"], bool):
             return False
 
         # Stage 2: apply/offer carry disclose-paths. The wire shape is now one
@@ -421,6 +448,7 @@ class IpexHandler:
 
         # Stage 3: opener flows validate directly from the message itself,
         # while replies must first resolve and validate their prior exchange.
+        pserder = None
         if not dig:
             if verb == Ipex.apply:
                 # Apply is always a thread opener, so it must provide both
@@ -437,10 +465,54 @@ class IpexHandler:
                 return False
         elif verb == Ipex.apply:
             return False
-        elif not self._verifyReplyChain(verb=verb, serder=serder, dig=dig):
-            return False
+        else:
+            # Retrieve prior serder
+            pserder = self._verifyReplyChain(verb=verb, serder=serder, dig=dig)
+            if pserder is None:
+                return False
 
-        # Stage 4: offer may disclose only a reachable metadata subgraph,
+        # Stage 4: enforce the anchoring negotiation and verify direct sender
+        # KEL anchors on the messages that make the binding commitments.
+        messageAx = attrs.get("ax", [False])
+        messageRequiresAnchor = messageAx[0] is True
+        priorRequiresAnchor = False
+        if pserder is not None:
+            priorAx = pserder.ked.get("a", {}).get("ax", [False])
+            priorRequiresAnchor = priorAx[0] is True
+
+            if verb in (Ipex.agree, Ipex.grant, Ipex.admit):
+                # Binding replies must exactly preserve the negotiated state.
+                if messageRequiresAnchor != priorRequiresAnchor:
+                    return False
+            elif verb == Ipex.offer:
+                # An offer may initiate anchoring, but may not drop it.
+                if priorRequiresAnchor and not messageRequiresAnchor:
+                    return False
+
+        if (verb in (Ipex.agree, Ipex.grant, Ipex.admit)
+                and (messageRequiresAnchor or priorRequiresAnchor)):
+            if not sscs:
+                return False
+
+            number, diger = sscs[-1]
+            prefix = serder.pre.encode("utf-8")
+            eventSaid = self.hby.db.kels.getLast(keys=prefix, on=number.sn)
+            if eventSaid is None:
+                raise MissingSenderKeyStateError(
+                    f"missing sender KEL event at sn={number.sn} for {serder.pre}")
+            if eventSaid != diger.qb64:
+                return False
+
+            event = self.hby.db.evts.get(keys=(prefix, diger.qb64b))
+            if event is None:
+                raise MissingSenderKeyStateError(
+                    f"missing sender KEL event body at sn={number.sn} for {serder.pre}")
+            if not any(isinstance(seal, Mapping)
+                       and seal.get("d") == serder.said
+                       for seal in (event.seals or [])):
+                return False
+
+        # Stage 5: offer may disclose only a reachable metadata subgraph,
         # while grant must disclose one fully closed reachable DAG rooted at
         # the message's `a.o[0]`.
         if verb == Ipex.offer and nests:
@@ -453,7 +525,7 @@ class IpexHandler:
             if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
                 return False
 
-            # Stage 5: after the disclosed graph shape is accepted, each walked
+            # Stage 6: after the disclosed graph shape is accepted, each walked
             # registry-backed node must vet its own node-local proof group.
             if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
                 return False
@@ -500,40 +572,40 @@ class IpexHandler:
             dig (str): SAID of the prior message named by ``serder.ked["p"]``.
 
         Returns:
-            bool: True when the reply points to an allowed prior message, keeps
-                sender/receiver roles consistent, and does not duplicate an
-                existing response; False otherwise.
+            Serder | None: The accepted prior when the reply points to an
+                allowed message, keeps sender/receiver roles consistent, and
+                does not duplicate an existing response; otherwise None.
         """
         pserder, _ = cloneMessage(self.hby, said=dig)
         if pserder is None:
-            return False
+            return None
 
         # Replies must point at the allowed prior verb in the linear IPEX chain.
         proute = pserder.ked["r"]
         pparts = proute.split("/")
         if len(pparts) != 3 or pparts[:2] != ["", "ipex"]:
-            return False
+            return None
         pverb = pparts[2]
         if pverb not in PreviousRoutes[verb]:
-            return False
+            return None
         if verb == Ipex.spurn and pverb == Ipex.grant and pserder.ked.get("p", ""):
-            return False
+            return None
 
         # Replies must target the prior sender and come from the prior receiver
         if serder.ked.get("ri", "") != pserder.ked.get("i", ""):
-            return False
+            return None
         preceiver = pserder.ked.get("ri", "")
         if not preceiver:
-            return False
+            return None
         if serder.ked.get("i", "") != preceiver:
-            return False
+            return None
         if serder.ked.get("x", "") != pserder.ked.get("x", ""):
-            return False
+            return None
 
         if self.response(pserder) is not None:
-            return False
+            return None
 
-        return True
+        return pserder
 
     def _walkGraph(self, origin, nests, *, closed):
         """Walk the disclosed origin DAG and return the visited node order.
@@ -1011,7 +1083,7 @@ class IpexHandler:
 
         return None
 
-    def handle(self, serder, attachments=None, nests=None):
+    def handle(self, serder, attachments=None, nests=None, sscs=None):
         """Emit a notifier record for an accepted IPEX message.
 
         Parameters:
@@ -1020,6 +1092,7 @@ class IpexHandler:
                 current notifier path.
             nests (list | None): Parsed V2 nested artifacts, unused by the
                 notifier path.
+            sscs (list | None): Sender source-seal couples, unused after verify.
 
         Returns:
             None
@@ -1031,7 +1104,7 @@ class IpexHandler:
             m=attrs["m"],
         ))
 
-def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gvrsn=None):
+def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gvrsn=None, *, ax=None):
     """Create a signed V2 IPEX ``apply`` exchange.
 
     Parameters:
@@ -1045,6 +1118,8 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
         modifiers (dict | None): Query-section fields for ``q``. ``apply``
             requires an explicit single-DAG disclosure plan at
             ``modifiers["dp"]``.
+        ax (list[bool] | None): Single-DAG anchoring requirement. None omits
+            the field; otherwise exactly one boolean is required.
 
     Returns:
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
@@ -1057,6 +1132,10 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
         raise TypeError("attrs must be a dict when provided")
 
     data = dict(attrs) if attrs is not None else {}
+
+    # ax should be passed as a separate parameter, not in the attrs
+    if "ax" in data:
+        raise ValueError("use the ax parameter instead of attrs['ax']")
     data["m"] = message
     mods = dict(modifiers) if modifiers else {}
 
@@ -1065,9 +1144,11 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
             or not _validDisclosurePath(mods["dp"][0])):
         raise ValueError("modifiers['dp'] is required and must carry one disclose-path list per DAG")
 
-    # Validate ax field, must be a list of booleans, is allowed to be empty
-    if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
-        raise ValueError("attrs['ax'] must be [] or a one-item list of booleans")
+    # Validate ax and add it to the body
+    if ax is not None:
+        if not _validSingleDagList(ax, bool):
+            raise ValueError("ax must be a one-item list of booleans")
+        data["ax"] = ax
 
     # Build the body
     serder = exchange(
@@ -1093,7 +1174,7 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
 
 
 def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
-          kind=None, gvrsn=None, modifiers=None, attrs=None):
+          kind=None, gvrsn=None, modifiers=None, attrs=None, *, ax=None):
     """Create a signed V2 IPEX ``offer`` exchange.
 
     Parameters:
@@ -1115,6 +1196,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         gvrsn (Versionage | None): Optional CESR genus version override.
         modifiers (dict | None): Optional query-section fields for ``q``.
         attrs (dict | None): Optional extra payload fields.
+        ax (list[bool] | None): Single-DAG anchoring requirement. None omits
+            the field; otherwise exactly one boolean is required.
 
     Returns:
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
@@ -1144,6 +1227,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         else:
             xid = ""
     data = dict(attrs) if attrs is not None else {}
+    if "ax" in data:
+        raise ValueError("use the ax parameter instead of attrs['ax']")
     data["m"] = message
 
     # Retrieve dp from modifiers if present. When the offer answers an apply,
@@ -1165,9 +1250,23 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     if apply is None and not mods["dp"][0]:
         raise ValueError("offer-first modifiers['dp'] must include at least one disclosure-path entry")
 
-    # Validate the ax field if present. It must be a list of booleans
-    if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
-        raise ValueError("attrs['ax'] must be [] or a one-item list of booleans")
+    # Validate ax if present
+    if ax is not None:
+        if not _validSingleDagList(ax, bool):
+            raise ValueError("ax must be a one-item list of booleans")
+        data["ax"] = ax
+
+    # If prior apply is present, validate ax consistency between the offer and the prior
+    if apply is not None:
+
+        # Retrieve the ax field of the prior
+        applyAx = apply.ked.get("a", {}).get("ax", [False])
+        offerAx = data.get("ax", [False])
+        applyRequiresAnchor = applyAx[0] is True
+        offerRequiresAnchor = offerAx[0] is True
+
+        if applyRequiresAnchor and not offerRequiresAnchor:
+            raise ValueError("offer must echo the prior apply's anchoring requirement")
 
     # Offer may either negotiate only via dp, name a metadata root SAID, or
     # carry a full metadata DAG whose shape mirrors the later grant DAG.
@@ -1240,6 +1339,14 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
         xid = pxid
     else:
         xid = ""
+
+    data = dict(m=message)
+    
+    offerAx = offer.ked.get("a", {}).get("ax", [False])
+    offerRequiresAnchor = offerAx[0] is True
+    if offerRequiresAnchor:
+        data["ax"] = [True]
+
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,
@@ -1247,18 +1354,19 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
         prior=offer.said,
         route="/ipex/agree",
         stamp=dt,
-        attributes=dict(m=message),
+        attributes=data,
         pvrsn=Vrsn_2_0,
         gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
         kind=kind if kind is not None else hab.kever.serder.kind,
     )
-    atc = bytearray(_sign(hab=hab, serder=serder, gvrsn=gvrsn))
+    atc = bytearray(_sign(hab=hab, serder=serder,
+                          anchor=offerRequiresAnchor, gvrsn=gvrsn))
     del atc[:serder.size]
     return serder, atc
 
 
 def grant(hab, recp, message, origin, artifacts=None, agree=None,
-          dt=None, kind=None, gvrsn=None, attrs=None):
+          dt=None, kind=None, gvrsn=None, attrs=None, *, apply=None, ax=None):
     """Create a signed V2 IPEX ``grant`` exchange with nested disclosure artifacts.
 
     Parameters:
@@ -1274,34 +1382,55 @@ def grant(hab, recp, message, origin, artifacts=None, agree=None,
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
         attrs (dict | None): Optional extra payload fields.
+        apply (Serder | None): Optional prior ``apply`` for a direct
+            apply-to-grant flow. Mutually exclusive with ``agree``.
+        ax (list[bool] | None): Single-DAG anchoring requirement. None omits
+            the field; otherwise exactly one boolean is required.
 
     Returns:
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
-    prior = agree.said if agree is not None else ""
-    if agree is None:
+    # Make sure there is only one prior
+    if agree is not None and apply is not None:
+        raise ValueError("agree and apply are mutually exclusive grant priors")
+
+    previous = agree if agree is not None else apply
+    prior = previous.said if previous is not None else ""
+    
+    if previous is None:
         if not recp:
-            raise ValueError("recp is required when no prior agree is provided")
+            raise ValueError("recp is required when no prior exchange is provided")
         xid = Diger(ser=Noncer().qb64b).qb64
     else:
-        if not agree.ked.get("ri", ""):
+        if not previous.ked.get("ri", ""):
             raise ValueError("prior exchange has no explicit receiver")
-        if hab.pre != agree.ked["ri"]:
+        if hab.pre != previous.ked["ri"]:
             raise ValueError("sender does not match prior exchange receiver")
-        if recp != agree.ked["i"]:
+        if recp != previous.ked["i"]:
             raise ValueError("recp does not match prior exchange sender")
-        pxid = agree.ked.get("x", "")
+        pxid = previous.ked.get("x", "")
         if pxid:
             xid = pxid
         else:
             xid = ""
     data = dict(attrs) if attrs is not None else {}
+    if "ax" in data:
+        raise ValueError("use the ax parameter instead of attrs['ax']")
     data["m"] = message
 
-    # Validate ax field, it must be a list of bool, it's allowed to be empty
-    if "ax" in data and not _validSingleDagList(data["ax"], bool, allow_empty=True):
-        raise ValueError("attrs['ax'] must be [] or a one-item list of booleans")
+    if ax is not None:
+        if not _validSingleDagList(ax, bool):
+            raise ValueError("ax must be a one-item list of booleans")
+        data["ax"] = ax
+
+    grantAx = data.get("ax", [False])
+    grantRequiresAnchor = grantAx[0] is True
+    if previous is not None:
+        previousAx = previous.ked.get("a", {}).get("ax", [False])
+        previousRequiresAnchor = previousAx[0] is True
+        if grantRequiresAnchor != previousRequiresAnchor:
+            raise ValueError("grant must echo the prior exchange's anchoring requirement")
 
     # Grant mirrors offer framing: a.o[0] names the origin node, and any later
     # nests are more disclosed ACDC nodes from that same origin DAG.
@@ -1326,7 +1455,8 @@ def grant(hab, recp, message, origin, artifacts=None, agree=None,
         gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
         kind=kind if kind is not None else hab.kever.serder.kind,
     )
-    atc = bytearray(_sign(hab=hab, serder=serder, nests=nests, gvrsn=gvrsn))
+    atc = bytearray(_sign(hab=hab, serder=serder, nests=nests,
+                          anchor=grantRequiresAnchor, gvrsn=gvrsn))
     del atc[:serder.size]
     return serder, atc
 
@@ -1360,6 +1490,12 @@ def admit(hab, message, grant, recp=None, dt=None, kind=None, gvrsn=None):
         xid = pxid
     else:
         xid = ""
+    grantAx = grant.ked.get("a", {}).get("ax", [False])
+    grantRequiresAnchor = grantAx[0] is True
+    data = dict(m=message)
+    if grantRequiresAnchor:
+        data["ax"] = [True]
+
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,
@@ -1367,12 +1503,13 @@ def admit(hab, message, grant, recp=None, dt=None, kind=None, gvrsn=None):
         prior=grant.said,
         route="/ipex/admit",
         stamp=dt,
-        attributes=dict(m=message),
+        attributes=data,
         pvrsn=Vrsn_2_0,
         gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
         kind=kind if kind is not None else hab.kever.serder.kind,
     )
-    atc = bytearray(_sign(hab=hab, serder=serder, gvrsn=gvrsn))
+    atc = bytearray(_sign(hab=hab, serder=serder,
+                          anchor=grantRequiresAnchor, gvrsn=gvrsn))
     del atc[:serder.size]
     return serder, atc
 

@@ -11,11 +11,11 @@ from hio.help import decking, ogler
 from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
                       Kinds, Version, versify,
                       ValidationError, MissingChainError,
-                      MissingSignatureError)
+                      MissingSenderKeyStateError, MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
                     Noncer, Sadder, Serder, SerderKERI, Texter,
-                    Saids, Codens, BlindState, BoundState, FirstSeen, Parser,
+                    Saids, Codens, BlindState, BoundState, FirstSeen, Parser, SealSource,
                     messagize,
                     verifySigs)
 from ..db import fetchTsgs
@@ -61,7 +61,8 @@ class Exchanger:
 
         self.routes[handler.resource] = handler
 
-    def processEvent(self, serder, tsgs=None, cigars=None, ptds=None, essrs=None, **kwa):
+    def processEvent(self, serder, tsgs=None, cigars=None, ptds=None, essrs=None,
+                     sscs=None, **kwa):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
         Parameters:
@@ -75,6 +76,7 @@ class Exchanger:
             cigars (list): of Cigar instances of attached non-trans sigs
             ptds (list[bytes]): pathed Cesr Streams
             essrs (list[Texter]): ESSR streams as Texters
+            sscs (list): sender source-seal couples
             kwa: optional parsed V2 nested substreams under ``nests``
 
         Returns:
@@ -86,6 +88,7 @@ class Exchanger:
         """
         ptds = ptds if ptds is not None else []
         essrs = essrs if essrs is not None else []
+        sscs = sscs if sscs is not None else []
         route = serder.ked["r"]
         sender = serder.ked["i"]
         nests = kwa.get("nests")
@@ -103,7 +106,7 @@ class Exchanger:
 
                 if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < snumber.sn:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
-                                          nests=nests):
+                                          nests=nests, sscs=sscs):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
                     logger.info(msg)
@@ -116,7 +119,7 @@ class Exchanger:
 
                 if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
-                                          nests=nests):
+                                          nests=nests, sscs=sscs):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = (f"Not enough signatures in idx={indices} route={route} "
                            f"for evt = {serder.said} receiver={serder.ked.get('rp', '')}")
@@ -141,7 +144,7 @@ class Exchanger:
                     raise MissingSignatureError(msg)
         else:
             self.escrowPSEvent(serder=serder, tsgs=[], pathed=ptds,
-                               nests=nests)
+                               nests=nests, sscs=sscs)
             msg = (
                 f"Failure satisfying exn, no cigs or sigs for evt = {serder.said} "
                 f"on route {route} receiver = {serder.ked.get('rp', '')}")
@@ -161,6 +164,9 @@ class Exchanger:
                 attachments.append((np, pattach))
 
         kwa["attachments"] = attachments
+        # Preserve legacy handler signatures unless a behavior opts into sscs.
+        if sscs and getattr(behavior, "acceptsSscs", False):
+            kwa["sscs"] = sscs
         if nests and (route.startswith("/multisig") or route.startswith("/ipex")):
             kwa["nests"] = nests
         if essrs:
@@ -187,9 +193,22 @@ class Exchanger:
             # fetched the issuer's TEL history from observers. Keep those
             # messages in exchange escrow and cue the app to fetch proof data.
             if self.escrowPSEvent(serder=serder, tsgs=tsgs or [], pathed=ptds,
-                                  nests=nests):
+                                  nests=nests, sscs=sscs):
                 self.cues.append(dict(kin="proof", said=serder.said))
             logger.info("Escrowed exchange awaiting proof evidence: said=%s reason=%s",
+                        serder.said, ex)
+            logger.debug("Exchange message body=\n%s\n", serder.pretty())
+            return None
+
+        except MissingSenderKeyStateError as ex:
+            if self.escrowPSEvent(serder=serder, tsgs=tsgs or [], pathed=ptds,
+                                  nests=nests, sscs=sscs):
+                number, _ = sscs[-1]
+                self.cues.append(dict(
+                    kin="query",
+                    q=dict(r="logs", pre=serder.pre, sn=number.snh),
+                ))
+            logger.info("Escrowed exchange awaiting sender KEL evidence: said=%s reason=%s",
                         serder.said, ex)
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             return None
@@ -199,7 +218,7 @@ class Exchanger:
             logger.debug("Exn Event Body=\n%s\n", serder.pretty())
 
         # Always persist events
-        self.logEvent(serder, ptds, tsgs, cigars, essrs, nests=nests)
+        self.logEvent(serder, ptds, tsgs, cigars, essrs, nests=nests, sscs=sscs)
         self.cues.append(dict(kin="saved", said=serder.said))
 
         # Execute any behavior specific handling, not sure if this should be different than verify
@@ -215,7 +234,7 @@ class Exchanger:
         """ Process all escrows for `exn` messages"""
         self.processEscrowPartialSigned()
 
-    def escrowPSEvent(self, serder, tsgs, pathed, nests=None):
+    def escrowPSEvent(self, serder, tsgs, pathed, nests=None, sscs=None):
         """ Escrow event that does not have enough signatures.
 
         Parameters:
@@ -223,6 +242,7 @@ class Exchanger:
             tsgs (list): quadlet of prefixer seqner, saider, sigers
             pathed (list): list of bytes of attached paths
             nests (list | None): parsed V2 nested substreams to preserve
+            sscs (list | None): sender source-seal couples to preserve
 
         """
         dig = serder.said
@@ -236,6 +256,8 @@ class Exchanger:
         if nests:
             self.hby.db.enst.pin(keys=(dig,),
                                  vals=[bytes(serializeParsedSubstream(nest)) for nest in nests])
+        if sscs:
+            self.hby.db.esrc.pin(keys=(dig,), vals=sscs)
         return self.hby.db.epse.put(keys=(dig,), val=serder)
 
     def processEscrowPartialSigned(self):
@@ -277,9 +299,10 @@ class Exchanger:
                 pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
                 essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
                 nests = loadParsedNestedSubstreams(self.hby, dig)
+                sscs = self.hby.db.esrc.get(keys=(dig,))
 
                 result = self.processEvent(serder=serder, tsgs=tsgs, ptds=pathed,
-                                           essrs=essrs, nests=nests)
+                                           essrs=essrs, nests=nests, sscs=sscs)
 
             except MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.TRACE):
@@ -293,6 +316,7 @@ class Exchanger:
                 if not saved:
                     self.hby.db.epath.rem(keys=(dig,))
                     self.hby.db.enst.rem(keys=(dig,))
+                    self.hby.db.esrc.rem(keys=(dig,))
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Exchange partially signed unescrowed: %s", ex.args[0])
                 else:
@@ -310,18 +334,21 @@ class Exchanger:
                 if not saved:
                     self.hby.db.epath.rem(keys=(dig,))
                     self.hby.db.enst.rem(keys=(dig,))
+                    self.hby.db.esrc.rem(keys=(dig,))
                     logger.info("Exchanger unescrow rejected exchange: said=%s", serder.said)
                     continue
                 logger.info("Exchanger unescrow succeeded in valid exchange: creder=%s", serder.said)
                 logger.debug("Event=\n%s\n", serder.pretty())
 
-    def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None, nests=None):
+    def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None,
+                 nests=None, sscs=None):
         dig = serder.said
         pdig = serder.ked['p']
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
         essrs = essrs or []
+        sscs = sscs or []
 
         for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
             quadkeys = (serder.said, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
@@ -337,6 +364,8 @@ class Exchanger:
                                  vals=[bytes(serializeParsedSubstream(nest)) for nest in nests])
         for texter in essrs:
             self.hby.db.essrs.add(keys=(dig,), val=texter)
+        for source in sscs:
+            self.hby.db.esrc.add(keys=(dig,), val=source)
         if pdig:
             self.hby.db.erpy.pin(keys=(pdig,), val=diger)
 
@@ -682,21 +711,25 @@ def serializeMessage(hby, said, framed=False):
     tsgs, cigars = verify(hby=hby, serder=exn)
     pathed = hby.db.epath.get(keys=(exn.said,))
     nests = hby.db.enst.get(keys=(exn.said,))
+    sources = [SealSource(s=number, d=diger)
+               for number, diger in hby.db.esrc.get(keys=(exn.said,))]
 
     if exn.pvrsn.major >= Vrsn_2_0.major and not pathed:
         return messagize(serder=exn,
                          tsgs=tsgs or None,
                          cigars=cigars or None,
+                         bonds=sources or None,
                          nests=[bytearray(nest.encode("utf-8") if hasattr(nest, "encode") else nest)
                                 for nest in nests] or None,
                          framed=framed,
                          gvrsn=exn.gvrsn if exn.gvrsn else exn.pvrsn)
 
     aims = bytearray()
-    if tsgs or cigars:
+    if tsgs or cigars or sources:
         # Authenticator attachments via messagize; framed=True so we can append
         # pathed embeds after (pathed material is outside messagize support).
         full = messagize(exn, tsgs=tsgs or None, cigars=cigars or None,
+                         bonds=sources or None,
                          framed=True, gvrsn=Vrsn_1_0)
         aims.extend(full[exn.size:])
 
