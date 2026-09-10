@@ -1058,7 +1058,7 @@ def anchorApproval(delegator, delegate):
     seal to it on its own trunk; ``app.delegating.Anchorer`` does this in production.
     The delegate's own Habery accepts its ``dip`` before that happens -- the
     ``locallyOwned`` arm of the three-way local-source exemption at
-    ``core/eventing.py:3287-3289`` returns from ``validateDelegation`` with no seal
+    ``core/eventing.py:3269-3271`` returns from ``validateDelegation`` with no seal
     lookup at all -- so a fixture that skips this call still yields a Kever with
     ``delpre`` set. That state is exactly what a DI2I check must not mistake for
     authority, and it is what the ``unapproved`` hab below is for.
@@ -1451,18 +1451,20 @@ def test_verifier_unimplemented_operator_rejects_diagnosably(seeder):
 
 
 def test_verifier_di2i_delegated_issuer_edge(seeder):
-    """DI2I: the near issuer must BE the far issuee, or be a *direct* delegate of it.
+    """DI2I: the near issuer must BE the far issuee, or be a delegated AID of it.
 
     ACDC spec-body.md L1194: the near ACDC's issuer must be "either the Issuee AID or a
-    delegated AID" of the far node's issuee -- singular. Direct delegates only, per #1559:
-    GLEIF issues the QVI credential once through an expensive multisig ceremony, and the
-    QVI then delegates to subgroup AIDs that perform routine issuance. The requirement is
-    "any number of children, zero grandchildren" -- a subgroup must not be able to
-    delegate onward and mint new issuers. A transitive reading would actively defeat that,
-    so there is no walk here and no depth bound to disagree about.
+    delegated AID" of the far node's issuee. A delegated AID is one at any depth, so the
+    chain is climbed rather than probed one hop deep. Reading it as direct-only would
+    forbid a controller from horizontally scaling through two layers of delegated AIDs,
+    and would force a second operator for every other depth.
 
-    The rows below are the full matrix: satisfied by delegation, satisfied by identity
-    (DI2I is a superset of I2I), and the five ways it must fail.
+    Depth belongs to the delegator, expressed with the DND config trait in the inception
+    event of the delegate it wants to be a leaf. The `bounded`/`beyond` pair below is that
+    mechanism: `bounded` may issue, and nothing under `bounded` may.
+
+    The rows are the full matrix -- satisfied at three depths and by identity (DI2I is a
+    superset of I2I), and the six ways it must fail.
     """
     with openHby(name="di2i", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as hby, \
             openHby(name="stranger", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as strangerHby:
@@ -1477,37 +1479,79 @@ def test_verifier_di2i_delegated_issuer_edge(seeder):
         sub = hby.makeHab(name="sub", delpre=qvi.pre, version=Vrsn_1_0, kind=Kinds.json)
         anchorApproval(qvi, sub)
 
+        # grand, great: approved delegates two and three hops below qvi.
+        grand = hby.makeHab(name="grand", delpre=sub.pre, version=Vrsn_1_0,
+                            kind=Kinds.json)
+        anchorApproval(sub, grand)
+        great = hby.makeHab(name="great", delpre=grand.pre, version=Vrsn_1_0,
+                            kind=Kinds.json)
+        anchorApproval(grand, great)
+
+        # bounded: an approved delegate of qvi that qvi made a leaf, by putting DND in the
+        # inception event it approved. beyond: what bounded delegates anyway. A delegating
+        # seal may be anchored in an interaction event, which needs no approval from
+        # anyone above, so bounded can mint beyond unilaterally -- DND is what makes the
+        # result worthless rather than what stops it being created.
+        bounded = hby.makeHab(name="bounded", delpre=qvi.pre, DnD=True,
+                              version=Vrsn_1_0, kind=Kinds.json)
+        anchorApproval(qvi, bounded)
+        beyond = hby.makeHab(name="beyond", delpre=bounded.pre, version=Vrsn_1_0,
+                             kind=Kinds.json)
+        anchorApproval(bounded, beyond)
+        # further: one hop under beyond, so the DND violation sits in the middle of a
+        # chain rather than at the hop the climb starts from.
+        further = hby.makeHab(name="further", delpre=beyond.pre, version=Vrsn_1_0,
+                              kind=Kinds.json)
+        anchorApproval(beyond, further)
+
         # unapproved: claims qvi as delegator, but qvi never anchored the approval.
+        # under: an approval-complete delegate of unapproved, so the only defect in its
+        # chain to qvi is the hop above it.
         unapproved = hby.makeHab(name="unapproved", delpre=qvi.pre, version=Vrsn_1_0,
                                  kind=Kinds.json)
+        under = hby.makeHab(name="under", delpre=unapproved.pre, version=Vrsn_1_0,
+                            kind=Kinds.json)
+        anchorApproval(unapproved, under)
+
+        # mid, leaf: sub never anchored mid, and mid did anchor leaf. So leaf's chain to
+        # qvi is sound at the hop it starts from and at the hop it ends at, and broken in
+        # between.
+        mid = hby.makeHab(name="mid", delpre=sub.pre, version=Vrsn_1_0, kind=Kinds.json)
+        leaf = hby.makeHab(name="leaf", delpre=mid.pre, version=Vrsn_1_0, kind=Kinds.json)
+        anchorApproval(mid, leaf)
 
         # rogue: an approved delegate -- but of gar, not of the far node's issuee.
         rogue = hby.makeHab(name="rogue", delpre=gar.pre, version=Vrsn_1_0,
                             kind=Kinds.json)
         anchorApproval(gar, rogue)
 
-        # grand: an approved delegate of sub, i.e. qvi's grandchild.
-        grand = hby.makeHab(name="grand", delpre=sub.pre, version=Vrsn_1_0,
-                            kind=Kinds.json)
-        anchorApproval(sub, grand)
-
         stranger = strangerHby.makeHab(name="stranger", version=Vrsn_1_0, kind=Kinds.json)
 
         assert gar.kever.delpre is None
         assert sub.kever.delpre == qvi.pre
-        assert unapproved.kever.delpre == qvi.pre
-        assert rogue.kever.delpre == gar.pre
         assert grand.kever.delpre == sub.pre
+        assert great.kever.delpre == grand.pre
+        assert bounded.kever.delpre == qvi.pre
+        assert hby.kevers[bounded.pre].doNotDelegate
+        assert beyond.kever.delpre == bounded.pre
+        assert further.kever.delpre == beyond.pre
+        assert unapproved.kever.delpre == qvi.pre
+        assert under.kever.delpre == unapproved.pre
+        assert mid.kever.delpre == sub.pre
+        assert leaf.kever.delpre == mid.pre
+        assert rogue.kever.delpre == gar.pre
         assert stranger.pre not in hby.kevers
 
         # Every dip in this Habery was accepted through the locallyOwned arm of the
-        # three-way local-source exemption (core/eventing.py:3287-3289), which returns from
-        # validateDelegation before any seal lookup -- so none of them has an .aess entry,
-        # approved or not. `delpre` is set for all of them and .aess is empty for all of
-        # them: neither field distinguishes sub from unapproved. The only thing that does
-        # is whether the delegator anchored an approval seal on its own trunk, which is
-        # what the check has to go and look at.
-        for hab in (sub, unapproved, rogue, grand):
+        # three-way local-source exemption (core/eventing.py:3269-3271), which returns from
+        # validateDelegation before any seal lookup -- and therefore before its DND refusal
+        # at :3287 too. So none of them has an .aess entry, approved or not, and beyond is
+        # here at all only because of that exemption. `delpre` is set for all of them: it
+        # distinguishes neither sub from unapproved nor grand from beyond. The only things
+        # that do are the approval seals on the delegators' trunks and the DND trait, both
+        # of which the check has to go and look at.
+        for hab in (sub, grand, great, bounded, beyond, further, unapproved, under, mid,
+                    leaf, rogue):
             assert hby.db.aess.get(keys=(hab.pre, hab.kever.lastEst.d)) is None
 
         regery = Regery(hby=hby, name="di2i", temp=True)
@@ -1515,12 +1559,14 @@ def test_verifier_di2i_delegated_issuer_edge(seeder):
         qvireg = setupRegistry(qvi, regery, "qvi")
         subreg = setupRegistry(sub, regery, "sub")
         grandreg = setupRegistry(grand, regery, "grand")
+        beyondreg = setupRegistry(beyond, regery, "beyond")
 
         verfer = Verifier(hby=hby, reger=regery.reger)
         garIssue = makeIssueAndSave(verfer, regery, gar, garreg)
         qviIssue = makeIssueAndSave(verfer, regery, qvi, qvireg)
         subIssue = makeIssueAndSave(verfer, regery, sub, subreg)
         grandIssue = makeIssueAndSave(verfer, regery, grand, grandreg)
+        beyondIssue = makeIssueAndSave(verfer, regery, beyond, beyondreg)
 
         # Far node: the QVI credential, gar -> qvi. Its issuee is the AID whose delegates
         # a DI2I edge to it authorizes.
@@ -1549,15 +1595,25 @@ def test_verifier_di2i_delegated_issuer_edge(seeder):
         qviIssue(byQvi)
         assert verfer.reger.saved.get(keys=byQvi.saidb) is not None
 
-        # 5 -- the direct-only requirement, end to end. grand is an approved delegate of an
-        # approved delegate of the far issuee. If this credential is saved, the
-        # implementation is transitive and "zero grandchildren" is not enforced.
+        # 3 -- depth. grand is an approved delegate of an approved delegate of the far
+        # issuee, and qvi left it room by putting DND in neither. If this credential is not
+        # saved, the relation is direct-only and a two-layer hierarchy cannot issue.
         byGrand = makeCred(grand, grandreg, issuee=le.pre, claim="issued by grandchild",
                            source=di2iEdge(far.said))
         grandIssue(byGrand)
-        assert verfer.reger.saved.get(keys=byGrand.saidb) is None
+        assert verfer.reger.saved.get(keys=byGrand.saidb) is not None
 
-        # 6 -- an untargeted far node has no issuee, so "delegate of the issuee" is
+        # 4 -- the bound, end to end, and the reason the walk re-checks DND rather than
+        # inheriting the KEL layer's answer. beyond's whole chain to qvi is anchored; the
+        # single thing wrong with it is that qvi told bounded not to delegate. A
+        # disinterested validator never accepts beyond's dip at all, so without this check
+        # a witness-hosted Verifier would honour a chain a watcher-fed one refuses.
+        byBeyond = makeCred(beyond, beyondreg, issuee=le.pre, claim="issued past the bound",
+                            source=di2iEdge(far.said))
+        beyondIssue(byBeyond)
+        assert verfer.reger.saved.get(keys=byBeyond.saidb) is None
+
+        # 5 -- an untargeted far node has no issuee, so "delegate of the issuee" is
         # undefined and there is nothing for the operator to bind to. Resolved through
         # .iseaid so an aggregate ('A') far node reaches the same guard instead of crashing
         # on a None attribute section.
@@ -1573,26 +1629,28 @@ def test_verifier_di2i_delegated_issuer_edge(seeder):
         # The remaining rows vary only the near ACDC's issuer, which is the single input
         # DI2I constrains, so they call .verifyChain directly instead of minting a
         # credential and a registry apiece. A None state is exactly what processCredential
-        # turns into "escrow, do not save" -- cases 5 and 6 above pin that wiring.
+        # turns into "escrow, do not save" -- cases 4 and 5 above pin that wiring.
         assert verfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
         assert verfer.verifyChain(far.said, "DI2I", issuer=qvi.pre) is not None
+        assert verfer.verifyChain(far.said, "DI2I", issuer=grand.pre) is not None
 
-        # 3 -- not delegated at all: delpre is None.
+        # 6 -- three hops down, with every hop anchored and none of them bounded. Depth is
+        # the delegator's to choose and it chose not to cap this arm.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=great.pre) is not None
+
+        # 7 -- not delegated at all: delpre is None.
         assert verfer.verifyChain(far.said, "DI2I", issuer=gar.pre) is None
 
-        # 4 -- delegated, but by someone other than the far issuee. An implementation that
+        # 8 -- delegated, but by someone other than the far issuee. An implementation that
         # checked the truthy `Kever.delegated` flag, or merely that .aess had an entry,
-        # would accept this one.
+        # would accept this one. The climb ends at gar, which has no delegator.
         assert verfer.verifyChain(far.said, "DI2I", issuer=rogue.pre) is None
 
-        # 5 at unit level -- the grandchild again, isolated from the issuance flow.
-        assert verfer.verifyChain(far.said, "DI2I", issuer=grand.pre) is None
-
-        # 7 -- the near issuer's KEL is absent from .kevers. Must return None rather than
+        # 9 -- the near issuer's KEL is absent from .kevers. Must return None rather than
         # raise KeyError, which would escape _processEscrow's typed arm and abort the pass.
         assert verfer.verifyChain(far.said, "DI2I", issuer=stranger.pre) is None
 
-        # 8 -- THE trap. unapproved.delpre == qvi.pre right here in .kevers, so a check
+        # 10 -- THE trap. unapproved.delpre == qvi.pre right here in .kevers, so a check
         # written as `kevers[issuer].delpre == farIssuee` accepts it. But qvi anchored
         # nothing: the dip was accepted only because this Habery owns it. Nothing was ever
         # delegated. See test_verifier_di2i_requires_anchored_delegation for why this
@@ -1602,6 +1660,21 @@ def test_verifier_di2i_delegated_issuer_edge(seeder):
         # ... and no repair happened, because there was no seal to find.
         assert hby.db.aess.get(keys=(unapproved.pre, unapproved.kever.lastEst.d)) is None
 
+        # 11 -- and the defect is not laundered by another hop. under's own delegation is
+        # anchored, so a walk that confirmed only the hop it started at would accept it.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=under.pre) is None
+
+        # 12 -- nor by hops on both sides of it. leaf's chain is anchored at the bottom and
+        # at the top, and unanchored at the hop between; a walk that confirmed only its
+        # endpoints would accept it. Every hop has to answer.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=leaf.pre) is None
+
+        # 13 -- and DND likewise is asked of every hop's delegator, not just the first.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=further.pre) is None
+
+        # bounded itself is unaffected: DND bounds what it may delegate, not what it may do.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=bounded.pre) is not None
+
     """End Test"""
 
 
@@ -1610,7 +1683,7 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
 
     ``Kevery.validateDelegation`` short-circuits with *no seal lookup whatsoever* when the
     event is locally owned, locally membered, or locally witnessed
-    (``core/eventing.py:3287-3289``), and the comment above it says so outright: "Witness
+    (``core/eventing.py:3269-3271``), and the comment above it says so outright: "Witness
     accepts without waiting for delegation seal to be anchored in delegator's KEL."
     ``setupWitness`` co-locates a credential ``Verifier`` in that same Habery. So a DI2I
     check written as ``kevers[issuer].delpre == farIssuee`` would let an operator running a
@@ -1737,7 +1810,6 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
     """End Test"""
 
 
-
 def test_verifier_di2i_survives_an_unapproved_delegated_rotation(seeder):
     """The delegation relation is fixed at inception and does not move afterwards.
 
@@ -1746,7 +1818,7 @@ def test_verifier_di2i_survives_an_unapproved_delegated_rotation(seeder):
     near issuer a delegated AID of the far node's issuee -- is settled once, by the
     delegator anchoring the `dip`, and no later event can change or renew it.
 
-    An earlier version of ._isApprovedDelegate keyed on ``kever.lastEst.d`` instead,
+    An earlier version of ._isDelegatedAID keyed on ``kever.lastEst.d`` instead,
     which asked a different question: is the delegate's *current* establishment event
     approved. That is a real question, but it belongs to the KEL layer, which already
     refuses an unanchored `drt` for every validator that is not exempted by the
@@ -1809,6 +1881,9 @@ def test_verifier_di2i_survives_an_unapproved_delegated_rotation(seeder):
         # An interaction event on top changes nothing either.
         sub.interact()
         assert subverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+
+    """End Test"""
+
 
 def test_verifier_escrow_pass_survives_argless_exception(seeder):
     """One poisoned escrow entry must not abort the whole escrow pass.
