@@ -1012,17 +1012,16 @@ class IpexHandler:
             bsqs = nest.get("bsqs", []) if isinstance(nest, dict) else nest.bsqs
             bsss = nest.get("bsss", []) if isinstance(nest, dict) else nest.bsss
 
-            # The parser gives us primitive tuples. Rebuild those as the
-            # canonical BlindState / BoundState data records before handing
-            # them back to Blinder.
+            # Reparse the proof with Blinder's canonical casts. The parser
+            # supplies a Diger for d, but Blinder uses a Noncer with .nonce.
             proofs = []
             for proof in bsqs:
-                data = proof if isinstance(proof, BlindState) else BlindState(*proof)
-                proofs.append(Blinder(data=data))
+                proofs.append(Blinder(clan=BlindState,
+                                      qb64=b''.join(item.qb64b for item in proof)))
 
             for proof in bsss:
-                data = proof if isinstance(proof, BoundState) else BoundState(*proof)
-                proofs.append(Blinder(data=data))
+                proofs.append(Blinder(clan=BoundState,
+                                      qb64=b''.join(item.qb64b for item in proof)))
 
             # The proof group must disclose exactly one blinded state for the registry's root event.
             if len(proofs) != 1:
@@ -1065,6 +1064,29 @@ class IpexHandler:
                 return False
 
         return True
+
+    def verifyEvidence(self, serder, *, tsgs=None, cigars=None, sourceSeals=None,
+                       invalid=False):
+        """Select verified non-sender evidence accepted by this IPEX route.
+
+        The caller removes invalid attachments before this method runs. A grant
+        retains the valid subset without assigning it an ACDC or DAG role.
+        Other verbs reject non-sender evidence or any invalid attachment.
+        """
+        tsgs = tsgs if tsgs is not None else []
+        cigars = cigars if cigars is not None else []
+        sourceSeals = sourceSeals if sourceSeals is not None else []
+
+        verb = serder.ked["r"].rsplit("/", 1)[-1]
+        if verb == Ipex.grant:
+            # Grant evidence is optional, so retain the valid subset despite
+            # invalid extras.
+            return tsgs, cigars, sourceSeals
+
+        if tsgs or cigars or sourceSeals or invalid:
+            return None
+
+        return [], [], []
 
     def response(self, serder):
         """Look up the recorded response to a prior IPEX exchange.
