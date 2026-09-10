@@ -1051,7 +1051,7 @@ DI2I_SALT = Salter(raw=b'0123456789abcdef').qb64
 OPTIONAL_ISSUEE_SCHEMA = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
 
-def anchorApproval(delegator, delegate):
+def anchorApproval(delegator, delegate, version=Vrsn_1_0, kind=Kinds.json):
     """Approve `delegate`'s latest establishment event by anchoring its seal.
 
     A ``dip`` becomes *validated* delegation only once the delegator anchors an event
@@ -1066,8 +1066,8 @@ def anchorApproval(delegator, delegate):
     kever = delegate.kever
     seal = SealEvent(i=kever.prefixer.qb64, s=kever.serder.snh,
                      d=kever.serder.said)._asdict()
-    delegator.interact(data=[seal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                       gvrsn=Vrsn_1_0)
+    delegator.interact(data=[seal], framed=True, version=version, kind=kind,
+                       gvrsn=version)
 
 
 def setupRegistry(hab, regery, name):
@@ -1287,10 +1287,14 @@ def test_verifier_list_valued_operator(seeder):
 def test_verifier_nonconflicting_operators_compose(seeder):
     """A non-delegative operator composes with the delegative winner, not overridden.
 
-    ACDC spec-body.md L1186 scopes latest-wins to "the conflicting Operators". I2I,
-    NI2I and DI2I all constrain the near ACDC's *issuer* relative to the far node's
-    issuee, so they conflict with one another. E1E constrains the near *issuee*, so it
-    conflicts with none of them and must be conjoined (AND).
+    ACDC spec-body.md L1186 scopes latest-wins to "the conflicting Operators" and does
+    not define conflict, so what follows is keripy's reading of it rather than a rule the
+    spec states: I2I, NI2I and DI2I all constrain the near ACDC's *issuer* relative to the
+    far node's issuee, so they conflict with one another, while E1E constrains the near
+    *issuee* and is therefore conjoined (AND). A second implementation could read :1186
+    differently -- I2I and DI2I are simultaneously satisfiable, so a reader may judge them
+    non-conflicting and conjoin them too. Settling that is a spec question, tracked
+    separately from this operator's depth.
 
     Collapsing the whole list to a single operator drops the constraint that loses,
     which is a silent weakening: ``["E1E", "I2I"]`` from a producer requiring both
@@ -1735,9 +1739,9 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
 
         # The witness accepts sub's dip as a local (protected) source, because it is a
         # designated witness of it -- reached without any cooperation from qvi. A remote
-        # source would be refused as a misfit event precisely because the witness is local
-        # to it (core/eventing.py:2842-2851), so this is the only way in, and it is the way
-        # a real witness pool takes.
+        # source would be refused with MisfitEventSourceError precisely because the witness
+        # is local to it, so this is the only way in, and it is the way a real witness pool
+        # takes.
         wit.psr.parse(ims=bytearray(sub.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
         assert sub.pre in witHby.kevers
         assert witHby.kevers[sub.pre].delpre == qvi.pre   # delpre claims qvi delegated it
@@ -1748,11 +1752,22 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
         subReceipt = wit.witness(serder=witHby.kevers[sub.pre].serder, framed=True,
                                  version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
-        # Give the witness everything except qvi's approval: qvi's KEL up to but not
-        # including it, qvi's registry TEL, and the far node's TEL.
         witreg = Regery(hby=witHby, name="wit", temp=True)
         witkvy = Kevery(db=witHby.db, lax=False, local=False)
         wittvy = Tevery(reger=witreg.reger, db=witHby.db, local=False)
+        witverfer = Verifier(hby=witHby, reger=witreg.reger)
+
+        # Right here the Habery is in the state the delegator-KEL guard exists for: it
+        # holds the delegate, because it witnesses it, and has never seen the delegator at
+        # all. That is a witness's ordinary condition, not a contrived one. The climb reads
+        # the delegator's Kever to check DND, so without its own guard this is a KeyError
+        # on hostile input rather than a refusal -- and KeyError is not a type
+        # processCredential's callers handle.
+        assert qvi.pre not in witHby.kevers
+        assert witverfer._isDelegatedAID(sub.pre, qvi.pre) is False
+
+        # Give the witness everything except qvi's approval: qvi's KEL up to but not
+        # including it, qvi's registry TEL, and the far node's TEL.
         qviMsgs = [bytearray(msg) for msg
                    in qviHby.db.clonePreIter(pre=qvi.pre, version=Vrsn_1_0)]
         assert len(qviMsgs) == approvalSn + 1  # the approval is the last event
@@ -1763,7 +1778,6 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
         for msg in qvireg.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=far.said):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=witkvy, tvy=wittvy)
 
-        witverfer = Verifier(hby=witHby, reger=witreg.reger)
         witverfer.processCredential(far, prefixer=qvi.kever.prefixer, seqner=farSeqner,
                                     saider=farSaider)
         # The far node really is saved here. Without this the assertion below would pass
@@ -1881,6 +1895,56 @@ def test_verifier_di2i_survives_an_unapproved_delegated_rotation(seeder):
         # An interaction event on top changes nothing either.
         sub.interact()
         assert subverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+
+    """End Test"""
+
+
+def test_verifier_di2i_climbs_v2_and_native_cesr_kels(seeder):
+    """The delegation climb is serialization-independent, at v2 and in native CESR.
+
+    Everything the climb reads -- ``Kever.delpre``, ``Kever.doNotDelegate``, the ``dip``
+    at ``(pre, pre)``, and the delegator's anchoring seal -- is decoded state rather than
+    bytes, so the same verdicts must hold whatever the KEL is serialized as. Worth pinning
+    rather than assuming: the DI2I matrix above is v1 JSON throughout, which is the one
+    point in the variant space where a serialization-sensitive bug would be invisible.
+
+    Unit level on purpose. v2 registry management is stubbed (``keri/acdc/registering.py``
+    and siblings), and ``Regery.makeRegistry`` is v1-only -- ``vcp`` is a v1 ilk -- so a v2
+    far node cannot be issued and .verifyChain cannot be reached end to end at v2 yet.
+    Nothing in the climb touches a registry, so exercising ._isDelegatedAID directly loses
+    no coverage of what this branch changes.
+    """
+    for kind in (Kinds.json, Kinds.cesr):
+        with openHby(name="v2di2i", salt=DI2I_SALT, temp=True, version=Vrsn_2_0) as hby:
+            kwa = dict(version=Vrsn_2_0, kind=kind)
+            qvi = hby.makeHab(name="qvi", **kwa)
+            sub = hby.makeHab(name="sub", delpre=qvi.pre, **kwa)
+            anchorApproval(qvi, sub, version=Vrsn_2_0, kind=kind)
+            grand = hby.makeHab(name="grand", delpre=sub.pre, **kwa)
+            anchorApproval(sub, grand, version=Vrsn_2_0, kind=kind)
+
+            bounded = hby.makeHab(name="bounded", delpre=qvi.pre, DnD=True, **kwa)
+            anchorApproval(qvi, bounded, version=Vrsn_2_0, kind=kind)
+            beyond = hby.makeHab(name="beyond", delpre=bounded.pre, **kwa)
+            anchorApproval(bounded, beyond, version=Vrsn_2_0, kind=kind)
+
+            unapproved = hby.makeHab(name="unapproved", delpre=qvi.pre, **kwa)
+
+            # The v2 dip really is v2, and really is retrievable where the climb looks for
+            # it -- `i` equals `d` for a digest-prefixed inception, so (pre, pre) resolves.
+            dip = hby.db.evts.get(keys=(sub.pre, sub.pre))
+            assert dip is not None
+            assert dip.ilk == Ilks.dip
+            assert dip.pvrsn == Vrsn_2_0
+            assert dip.kind == kind
+
+            verfer = Verifier(hby=hby, reger=Regery(hby=hby, name="v2di2i", temp=True).reger)
+            assert verfer._isDelegatedAID(sub.pre, qvi.pre) is True
+            assert verfer._isDelegatedAID(grand.pre, qvi.pre) is True    # depth
+            assert verfer._isDelegatedAID(bounded.pre, qvi.pre) is True  # DND binds below
+            assert verfer._isDelegatedAID(beyond.pre, qvi.pre) is False  # ... and only below
+            assert verfer._isDelegatedAID(unapproved.pre, qvi.pre) is False
+            assert verfer._isDelegatedAID(qvi.pre, qvi.pre) is False     # no self-loop
 
     """End Test"""
 

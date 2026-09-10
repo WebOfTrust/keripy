@@ -478,8 +478,9 @@ class Verifier:
             # Resolved through .iseaid rather than .attrib['i'] so an aggregate ('A') far
             # node works: .attrib is None there, so `'i' in creder.attrib` would raise
             # TypeError. Deliberately not routed through the .reger.subjs lookup the I2I
-            # branch below uses either -- saveCredential only indexes subjects out of the
-            # attribute section, so that index is attributive-only by construction.
+            # branch below uses either: subjs is an index of credentials this validator
+            # happens to have saved, so gating on it would make the edge's meaning depend
+            # on the local store rather than on the delegation.
             farIssuee = creder.iseaid
             if farIssuee is None:  # untargeted far node: no issuee to be a delegate of
                 return None
@@ -549,8 +550,8 @@ class Verifier:
         would never have accepted. Without this, a witness-hosted Verifier would honor a
         chain that a watcher-fed one refuses -- identical bytes, opposite verdicts, which
         is precisely what reading the anchor instead of `delpre` exists to prevent. The
-        trait is inception-only and Kever.config runs once, so a delegator's answer here
-        never moves.
+        trait is read from the delegator's inception event and Kever.config runs once, so a
+        delegator's answer here never moves.
 
         The climb needs no depth bound and gets none: a delegated AID's prefix is a digest
         of the `dip` that carries its `di`, so a cycle in the chain would require a hash
@@ -576,6 +577,17 @@ class Verifier:
         here: a validator that has accepted the delegate's KEL should not then refuse the
         credentials that delegate issued, and DI2I asks the same question the KEL layer
         already answered.
+
+        That asymmetry has a consequence worth stating plainly, because it sits in tension
+        with the DND paragraph above. A validator that evaluated an edge before an
+        intermediate's anchoring event was superseded keeps a pinned .aess entry and goes
+        on accepting; one that first evaluates it afterwards walks the KEL, does not find
+        the superseded anchor, and refuses. Same bytes, verdicts that differ by when the
+        validator first looked. It is not introduced here -- it is fetchDelegatingEvent's
+        documented first-seen behavior, and it is identical at one hop -- but this is the
+        first caller to reach it from the credential layer, so it is no longer only the KEL
+        layer's to own. Answering it belongs with superseding recovery, not with an edge
+        operator second-guessing the KEL its own validator accepted.
 
         Retirement of a delegate is deliberately not modelled. It is key-state based: a
         retired delegate rotates to keys it cannot sign with, so it issues nothing further
