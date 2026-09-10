@@ -1453,7 +1453,8 @@ class Blinder(Structor):
             raw (bytes|None): random crypto material as salt used to generate uuid
             salt (str|None): qb64 of 128 bit random salt used to generate uuid
             sn (int): sequence number of blindable update message. Converted to
-                Number.huge which is qb64 (24 char) used to generate uuid
+                Number.snh which is hex str no leading zeros, used as the
+                derivation path to generate uuid
             tier (str|None): used to generate uuid
             acdc (str): qb64 said of associated acdc (trans event acdc).
                 Allows empty str for placeholder
@@ -1500,8 +1501,8 @@ class Blinder(Structor):
                 used to create uuid when provided uuid is None
                 and raw is none
             sn (int): sequence number of blindable update message. Converted to
-                Number.huge which is qb64 (24 char)
-                used to create uuid when provided uuid is None
+                Number.snh which is hex str no leading zeros, used as the
+                derivation path to create uuid when provided uuid is None
             tier (str|None): used to create uuid when provided uuid is None
             bound (bool): True means use BoundState
                 False means use BlindState default
