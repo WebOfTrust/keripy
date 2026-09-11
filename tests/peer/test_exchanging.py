@@ -117,6 +117,51 @@ def test_essrs():
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
+def test_v1_handler_does_not_receive_sender_source_couples():
+    # Model a legacy handler whose contract predates the sscs argument.
+    class Handler:
+        resource = "/test/v1-source"
+
+        def __init__(self):
+            self.verified = False
+            self.handled = False
+
+        def verify(self, serder, attachments=None):
+            self.verified = True
+            return True
+
+        def handle(self, serder, attachments=None):
+            self.handled = True
+
+    with openHby(name="v1-source", base="test") as hby:
+        # Build an actual V1 message so dispatch follows the legacy path.
+        hab = hby.makeHab(name="sender", version=Vrsn_1_0)
+        handler = Handler()
+        serder = exchange(sender=hab.pre,
+                          receiver=hab.pre,
+                          route=handler.resource,
+                          attributes={},
+                          pvrsn=Vrsn_1_0,
+                          gvrsn=Vrsn_1_0,
+                          kind=Kinds.json)
+
+        # Attach a normal transferable signature group for authentication.
+        sigers = hab.sign(ser=serder.raw, indexed=True)
+        tsgs = [(hab.kever.prefixer,
+                 Number(sn=hab.kever.lastEst.s),
+                 Diger(qb64=hab.kever.lastEst.d),
+                 sigers)]
+
+        # Include source evidence that this handler must not receive as a keyword.
+        sscs = [(Number(sn=hab.kever.sn), Diger(qb64=hab.kever.serder.said))]
+
+        # Both calls succeeding proves verify and handle kept their V1 signatures.
+        exc = Exchanger(hby=hby, handlers=[handler])
+        assert exc.processEvent(serder=serder, tsgs=tsgs, sscs=sscs) is True
+        assert handler.verified is True
+        assert handler.handled is True
+
+
 def test_hab_exchange(mockHelpingNowUTC):
     kwa = dict(version=TEST_VERSION, kind=Kinds.json)
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:

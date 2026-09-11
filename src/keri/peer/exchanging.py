@@ -171,6 +171,12 @@ class Exchanger:
          missingSenderSourceSeals) = verifyAttachments(
             hby=self.hby, serder=serder, sourceSeals=senderSourceSeals)
         if missingSenderSourceSeals:
+            # IPEX uses sender seals as required workflow evidence, so retain
+            # the complete message until the referenced sender KEL arrives.
+            if getattr(behavior, "acceptsSscs", False):
+                self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
+                                   cigars=cigars, sourceSeals=sourceSeals,
+                                   nests=nests)
             self._raiseMissingKeyState(serder, missingSenderSourceSeals)
 
         validSenderTsgs = []
@@ -316,6 +322,12 @@ class Exchanger:
         tsgs = validSenderTsgs + acceptedTsgs
         cigars = validSenderCigars + acceptedCigars
         sourceSeals = validSenderSourceSeals + acceptedSourceSeals
+
+        # Only opted-in V2 handlers receive the validated sender seal couples;
+        # legacy handlers keep their existing verify and handle signatures.
+        if validSenderSourceSeals and getattr(behavior, "acceptsSscs", False):
+            kwa["sscs"] = [(number, diger)
+                           for _, number, diger in validSenderSourceSeals]
 
         # Perform behavior specific verification, think IPEX chaining requirements
         verifier = getattr(behavior, "verify", None)
