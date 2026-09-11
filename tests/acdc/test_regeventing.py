@@ -47,9 +47,11 @@ STAMP3 = '2025-10-01T18:06:10.988921+00:00'
 # The verify path itself never sees it (that absence is row V23).
 SALT = Salter(raw=b'0123456789abcdef').qb64
 
-# The ACDC specification's BLID conformance vectors (spec-body.md ~:2166-2170
-# placeholder, ~:2209-2213 issued).  Lineage caveat: the spec's worked examples
-# were synced from keripy, so these defend against drift, not shared error.
+# The ACDC specification's BLID conformance vectors, from Blinded State Disclosure >
+# Blinded Attribute Block Placeholder Calculation Example (placeholder) and > Blinded
+# Attribute Block ACDC State Calculation Example (issued).  Lineage caveat: the spec's
+# worked examples were synced from keripy, so these defend against drift, not shared
+# error.
 SPEC_PLACEHOLDER_UUID = "aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8"
 SPEC_PLACEHOLDER_BLID = "ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J"
 SPEC_ISSUED_UUID = "aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzB"
