@@ -13,4 +13,6 @@ from .credentialing import (Regery, RegeryDoer, BaseRegistry,
                             sendCredential, sendArtifacts, sendRegistry)
 from .verifying import Verifier
 from .eventing import (incept, rotate, issue, revoke, backerIssue, backerRevoke,
-                       Tever, Tevery, Reger, openReger, buildProof, messagize)
+                       Tever, Tevery, Reger, openReger, buildProof, messagize,
+                       isEdgeGroup, walkEdgeSection, edgesOf,
+                       EdgeGroupLabels, MaxEdgeGroupDepth)
