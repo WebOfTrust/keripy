@@ -18,10 +18,10 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Roles, Ilks, Kinds,
+from ..kering import (Version, Roles, Ilks, Kinds,
                       MissingEntryError)
 from ..recording import TopicsRecord
-from ..core import (Kevery, parsing, routing, coring, serdering,
+from ..core import (Kevery, parsing, routing, serdering,
                     Counter, receipt, Codens)
 from ..db import BaserDoer
 from ..end import loadEnds as loadEndingEnds
@@ -40,11 +40,9 @@ logger = ogler.getLogger()
 
 
 def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
-                 keypath=None, certpath=None, cafilepath=None):
+                 keypath=None, certpath=None, cafilepath=None, **kwa):
     """
-    Setup witness controller and doers
-
-    """
+    Setup witness controller and doers"""
     host = "0.0.0.0"
     if platform.system() == "Windows":
         host = "127.0.0.1"
@@ -54,14 +52,14 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     # make hab
     hab = hby.habByName(name=alias)
     if hab is None:
-        hab = hby.makeHab(name=alias, transferable=False)
+        hab = hby.makeHab(name=alias, transferable=False, **kwa)
 
     from ..vdr import Reger,Verifier  # dynamic import because of circular import
 
-    reger = Reger(name=hab.name, db=hab.db, temp=False)
+    reger = Reger(name=hab.name, db=hab.db, temp=hby.temp)
     verfer = Verifier(hby=hby, reger=reger)
 
-    mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
+    mbx = mbx if mbx is not None else Mailboxer(name=alias, base=hby.base, temp=hby.temp)
     forwarder = ForwardHandler(hby=hby, mbx=mbx)
     exchanger = Exchanger(hby=hby, handlers=[forwarder])
     clienter = Clienter()
@@ -74,6 +72,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = Kevery(db=hby.db,
+                cf=hby.cf,
+                enableKram=True,
                 lax=True,
                 local=False,
                 rvy=rvy,
@@ -88,16 +88,17 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                  cues=cues)
 
     tvy.registerReplyRoutes(router=rvy.rtr)
+    parser_version = kwa.get("version", hby.version)
     parser = parsing.Parser(framed=True,
                             kvy=kvy,
                             tvy=tvy,
                             exc=exchanger,
                             rvy=rvy,
-                            version=Vrsn_1_0)
+                            version=parser_version)
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
-    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
+    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids, version=parser_version)
     app.add_route("/receipts", receiptEnd)
     queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
@@ -130,16 +131,20 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 def createHttpServer(host, port, app, keypath=None, certpath=None, cafilepath=None):
     """
     Create an HTTP or HTTPS server depending on whether TLS key material is present
+
     Parameters:
-        host(str)          : host to bind to for this server, or None for default of '0.0.0.0', all ifaces
-        port (int)         : port to listen on for all HTTP(s) server instances
-        app (Any)          : WSGI application instance to pass to the http.Server instance
-        keypath (string)   : the file path to the TLS private key
-        certpath (string)  : the file path to the TLS signed certificate (public key)
+        host (str): host to bind to for this server, or None for default of
+            '0.0.0.0', all ifaces
+        port (int): port to listen on for all HTTP(s) server instances
+        app (Any): WSGI application instance to pass to the http.Server
+            instance
+        keypath (string): the file path to the TLS private key
+        certpath (string): the file path to the TLS signed certificate
+            (public key)
         cafilepath (string): the file path to the TLS CA certificate chain file
+
     Returns:
-        hio.core.http.Server
-    """
+        hio.core.http.Server"""
     if keypath is not None and certpath is not None and cafilepath is not None:
         servant = tcp.ServerTls(certify=False,
                                 keypath=keypath,
@@ -153,9 +158,7 @@ def createHttpServer(host, port, app, keypath=None, certpath=None, cafilepath=No
 
 
 class WitnessStart(doing.DoDoer):
-    """ Doer to print witness prefix after initialization
-
-    """
+    """ Doer to print witness prefix after initialization"""
 
     def __init__(self, hab, parser, kvy, tvy, rvy, exc, cues=None, replies=None, responses=None, queries=None, **opts):
         self.hab = hab
@@ -178,9 +181,7 @@ class WitnessStart(doing.DoDoer):
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
+            tock (float): injected initial tock value"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -202,7 +203,9 @@ class WitnessStart(doing.DoDoer):
 
         Usage:
             add result of doify on this method to doers list
-        """
+
+        Returns:
+            generator: doifiable Doist compatible generator method"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -223,8 +226,7 @@ class WitnessStart(doing.DoDoer):
             tock (float): injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -249,13 +251,12 @@ class WitnessStart(doing.DoDoer):
             g.opts
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth: injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+            tock: injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -288,11 +289,11 @@ class Indirector(doing.DoDoer):
 
     Attributes:
         .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
+                True means completed
+                Otherwise incomplete. Incompletion maybe due to close or abort.
 
-        .opts is dict of injected options for its generator .do
-        .doers is list of Doers or Doer like generator functions
+            .opts is dict of injected options for its generator .do
+            .doers is list of Doers or Doer like generator functions
 
     Attributes:
         hab (Habitat: local controller's context
@@ -308,11 +309,10 @@ class Indirector(doing.DoDoer):
         tock (float): desired time in seconds between runs or until next run,
             non negative, zero means run asap
 
-
     Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
         .__call__ makes instance callable
-            Appears as generator function that returns generator
+        Appears as generator function that returns generator
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -321,31 +321,26 @@ class Indirector(doing.DoDoer):
         .close is close context method
         .abort is abort context method
 
-
     Hidden:
         ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
+        associated Tymist instance that returns Tymist .tyme. when called.
 
-        ._tock is hidden attribute for .tock property
-
-    """
+        ._tock is hidden attribute for .tock property"""
 
     def __init__(self, hab, client, direct=True, doers=None, **kwa):
         """
         Initialize instance.
 
         Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
-            doers is list of doers (do generator instances, functions or methods)
+            tymist: Tymist instance
+            tock: float seconds initial value of .tock
+            doers: list of doers (do generator instances, functions or methods)
 
         Parameters:
-            hab is Habitat instance of local controller's context
-            client is TCP Client instance
-            direct is Boolean, True means direwct mode process cured receipts
-                               False means indirect mode don't process cue'ed receipts
-
-        """
+            hab: Habitat instance of local controller's context
+            client: TCP Client instance
+            direct: Boolean, True means direwct mode process cured receipts
+                False means indirect mode don't process cue'ed receipts"""
         self.hab = hab
         self.client = client  # use client for both rx and tx
         self.direct = True if direct else False
@@ -357,7 +352,7 @@ class Indirector(doing.DoDoer):
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
-                                     version=Vrsn_1_0)
+                                     version=self.hab.psr.version)
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo),
                       doing.doify(self.escrowDo)])
@@ -371,8 +366,7 @@ class Indirector(doing.DoDoer):
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
-        Updates winds .tymer .tymth
-        """
+        Updates winds .tymer .tymth"""
         super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
 
@@ -387,13 +381,15 @@ class Indirector(doing.DoDoer):
             g.opts
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth: injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+            tock: injected initial tock value
 
         Usage:
             add result of doify on this method to doers list
-        """
+
+        Returns:
+            generator: doifiable Doist compatible generator method"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -414,13 +410,12 @@ class Indirector(doing.DoDoer):
             g.opts
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth: injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+            tock: injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -442,13 +437,12 @@ class Indirector(doing.DoDoer):
             g.opts
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth: injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+            tock: injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -459,8 +453,7 @@ class Indirector(doing.DoDoer):
 
     def sendMessage(self, msg, label=""):
         """
-        Sends message msg and loggers label if any
-        """
+        Sends message msg and loggers label if any"""
         self.client.tx(msg)  # send to remote
         logger.debug("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
@@ -482,11 +475,11 @@ class MailboxDirector(doing.DoDoer):
 
     Attributes:
         .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
+                True means completed
+                Otherwise incomplete. Incompletion maybe due to close or abort.
 
-        .opts is dict of injected options for its generator .do
-        .doers is list of Doers or Doer like generator functions
+            .opts is dict of injected options for its generator .do
+            .doers is list of Doers or Doer like generator functions
 
     Attributes:
         hby (Habitat: local controller's context
@@ -498,11 +491,10 @@ class MailboxDirector(doing.DoDoer):
         rep (Respondant): Respondant for reply messages
         cues (Deck): Queue for new actions to schedule shared between the Revery, Kevery (and Kever), and Tevery (and Tever)
 
-
     Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
         .__call__ makes instance callable
-            Appears as generator function that returns generator
+        Appears as generator function that returns generator
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -511,32 +503,27 @@ class MailboxDirector(doing.DoDoer):
         .close is close context method
         .abort is abort context method
 
-
     Hidden:
         ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
+        associated Tymist instance that returns Tymist .tyme. when called.
 
-        ._tock is hidden attribute for .tock property
-
-    """
+        ._tock is hidden attribute for .tock property"""
 
     def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None,
-                 tvy=None, witnesses=True, **kwa):
+                 tvy=None, witnesses=True, version=None, gvrsn=None, kind=None, **kwa):
         """
         Initialize instance.
 
         Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
-            doers is list of doers (do generator instances, functions or methods)
+            tymist: Tymist instance
+            tock: float seconds initial value of .tock
+            doers: list of doers (do generator instances, functions or methods)
 
         Parameters:
-            hab is Habitat instance of local controller's context
-            client is TCP Client instance
-            direct is Boolean, True means direwct mode process cured receipts
-                               False means indirect mode don't process cue'ed receipts
-
-        """
+            hab: Habitat instance of local controller's context
+            client: TCP Client instance
+            direct: Boolean, True means direwct mode process cured receipts
+                False means indirect mode don't process cue'ed receipts"""
         self.hby = hby
         self.verifier = verifier
         self.exchanger = exc
@@ -546,6 +533,9 @@ class MailboxDirector(doing.DoDoer):
         self.prefixes = oset()
         self.cues = cues if cues is not None else decking.Deck()
         self.witnesses = witnesses
+        self.version = version
+        self.gvrsn = version if gvrsn is None else gvrsn
+        self.kind = kind
 
         self.ims = ims if ims is not None else bytearray()
 
@@ -577,6 +567,7 @@ class MailboxDirector(doing.DoDoer):
         else:
             self.tvy = None
 
+        parser_version = self.version if self.version is not None else Version
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
@@ -584,25 +575,23 @@ class MailboxDirector(doing.DoDoer):
                                      exc=self.exchanger,
                                      rvy=self.rvy,
                                      vry=self.verifier,
-                                     version=Vrsn_1_0)
+                                     version=parser_version)
 
         super(MailboxDirector, self).__init__(doers=doers, **kwa)
 
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
-        Updates winds .tymer .tymth
-        """
+        Updates winds .tymer .tymth"""
         super(MailboxDirector, self).wind(tymth)
 
     def pollDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
-           doifiable Doist compatible generator method
+            doifiable Doist compatible generator method
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         # enter context
         self.wind(tymth)
         self.tock = tock
@@ -632,37 +621,34 @@ class MailboxDirector(doing.DoDoer):
         """ add mailbox pollers for every witness for this prefix identifier
 
         Parameters:
-            hab (Hab): the Hab of the prefix
-
-        """
+            hab (Hab): the Hab of the prefix"""
         for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
-                poller = Poller(hab=hab, topics=self.topics, witness=eid)
+                poller = Poller(hab=hab, topics=self.topics, witness=eid,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         if self.witnesses:
             wits = hab.kever.wits
             for wit in wits:
-                poller = Poller(hab=hab, topics=self.topics, witness=wit)
+                poller = Poller(hab=hab, topics=self.topics, witness=wit,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
     def addPoller(self, hab, witness):
-        poller = Poller(hab=hab, topics=self.topics, witness=witness)
+        poller = Poller(hab=hab, topics=self.topics, witness=witness,
+                        version=self.version, gvrsn=self.gvrsn, kind=self.kind)
         self.pollers.append(poller)
         self.extend([poller])
 
     def processPollIter(self):
         """
-        Iterate through cues and yields one or more responses for each cue.
+        Iterate through cues and yields one or more responses for each cue."""
 
-        Parameters:
-            cues is deque of cues
-
-        """
         mail = []
         for poller in self.pollers:  # get responses from all behaviors
             while poller.msgs:
@@ -684,13 +670,15 @@ class MailboxDirector(doing.DoDoer):
             g.opts
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth: injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+            tock: injected initial tock value
 
         Usage:
             add result of doify on this method to doers list
-        """
+
+        Returns:
+            generator: doifiable Doist compatible generator method"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -709,13 +697,12 @@ class MailboxDirector(doing.DoDoer):
             g.opts
 
         Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
+            tymth: injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+            tock: injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -743,11 +730,9 @@ class MailboxDirector(doing.DoDoer):
 
 class Poller(doing.DoDoer):
     """
-    Polls remote SSE endpoint for event that are KERI messages to be processed
+    Polls remote SSE endpoint for event that are KERI messages to be processed"""
 
-    """
-
-    def __init__(self, hab, witness, topics, msgs=None, retry=1000, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, retry=1000, version=None, gvrsn=None, kind=None, **kwa):
         """
         Returns doist compatible doing.Doer that polls a witness for mailbox messages
         as SSE events
@@ -756,14 +741,15 @@ class Poller(doing.DoDoer):
             hab:
             witness:
             topics:
-            msgs:
-
-        """
+            msgs:"""
         self.hab = hab
         self.pre = hab.pre
         self.witness = witness
         self.topics = topics
         self.retry = retry
+        self.version = version
+        self.gvrsn = version if gvrsn is None else gvrsn
+        self.kind = kind
         self.msgs = None if msgs is not None else decking.Deck()
         self.times = dict()
 
@@ -774,11 +760,10 @@ class Poller(doing.DoDoer):
     def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
-           doifiable Doist compatible generator method
+            doifiable Doist compatible generator method
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -805,10 +790,18 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
+            kwa = dict()
+            if self.version is not None:
+                kwa["version"] = self.version
+            if self.gvrsn is not None:
+                kwa["gvrsn"] = self.gvrsn
+            if self.kind is not None:
+                kwa["kind"] = self.kind
             if isinstance(self.hab, GroupHab):
-                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
+                                          **kwa)
             else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **kwa)
 
             createCESRRequest(msg, client, dest=self.witness)
 
@@ -855,8 +848,7 @@ class HttpEnd:
     the message as a CESR attachment HTTP header.  KEL Messages are processed and added to the database
     of the provided Habitat.
 
-    This also handles `req`, `exn` and `tel` messages that respond with a KEL replay.
-    """
+    This also handles `req`, `exn` and `tel` messages that respond with a KEL replay."""
 
     TimeoutQNF = 30
     TimeoutMBX = 5
@@ -869,9 +861,7 @@ class HttpEnd:
         Parameters
              rxbs (bytearray): output queue of bytes for message processing
              mbx (Mailboxer): Mailbox storage
-             qrycues (Deck): inbound qry response queues
-
-        """
+             qrycues (Deck): inbound qry response queues"""
         self.rxbs = rxbs if rxbs is not None else bytearray()
 
         self.mbx = mbx
@@ -882,8 +872,8 @@ class HttpEnd:
         Handles POST for KERI event messages.
 
         Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+            req (Request) Falcon HTTP request
+            rep (Response) Falcon HTTP response
 
         .. code-block:: none
 
@@ -903,8 +893,7 @@ class HttpEnd:
                200:
                   description: Mailbox query response for server sent events
                204:
-                  description: KEL or EXN event accepted.
-        """
+                  description: KEL or EXN event accepted."""
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
             return
@@ -913,17 +902,17 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = parseCesrHttpRequest(req=req)
-        sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
-        msg = bytearray(sadder.raw)
+        serder = serdering.SerderKERI(sad=cr.payload, verify=False)
+        msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         self.rxbs.extend(msg)
 
-        if sadder.proto in ("ACDC",):
+        if serder.proto in ("ACDC",):
             rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
         else:
-            ilk = sadder.ked["t"]
+            ilk = serder.sad["t"]
             if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
@@ -931,10 +920,10 @@ class HttpEnd:
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
             elif ilk in (Ilks.qry,):
-                if sadder.ked["r"] in ("mbx",):
+                if serder.sad["r"] in ("mbx",):
                     rep.set_header('Content-Type', "text/event-stream")
                     rep.status = falcon.HTTP_200
-                    rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=sadder.said)
+                    rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
                 else:
                     rep.set_header('Content-Type', "application/json")
                     rep.status = falcon.HTTP_204
@@ -944,8 +933,8 @@ class HttpEnd:
         Handles PUT for KERI mbx event messages.
 
         Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+            req (Request) Falcon HTTP request
+            rep (Response) Falcon HTTP response
 
         .. code-block:: none
 
@@ -965,8 +954,7 @@ class HttpEnd:
                200:
                   description: Mailbox query response for server sent events
                204:
-                  description: KEL or EXN event accepted.
-        """
+                  description: KEL or EXN event accepted."""
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
             return
@@ -1053,19 +1041,18 @@ class ReceiptEnd(doing.DoDoer):
      Most times a witness will be able to return its receipt for an event inband.  This API
      will provide that functionality.  When an event needs to be escrowed, this POST API
      will return a 202 and also provides a generic GET API for retrieving a receipt for any
-     event.
+     event."""
 
-     """
-
-    def __init__(self, hab, inbound=None, outbound=None, aids=None):
+    def __init__(self, hab, inbound=None, outbound=None, aids=None, version=None):
         self.hab = hab
         self.inbound = inbound if inbound is not None else decking.Deck()
         self.outbound = outbound if outbound is not None else decking.Deck()
         self.aids = aids
         self.receipts = set()
+        self.version = version if version is not None else self.hab.psr.version
         self.psr = parsing.Parser(framed=True,
                                   kvy=self.hab.kvy,
-                                  version=Vrsn_1_0)
+                                  version=self.version)
 
         super(ReceiptEnd, self).__init__(doers=[doing.doify(self.interceptDo)])
 
@@ -1074,9 +1061,7 @@ class ReceiptEnd(doing.DoDoer):
 
         Parameters:
             req (Request): Falcon HTTP request object
-            rep (Response): Falcon HTTP response object
-
-        """
+            rep (Response): Falcon HTTP response object"""
 
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
@@ -1109,13 +1094,15 @@ class ReceiptEnd(doing.DoDoer):
                 raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
                                                         f"{serder.sn}: wits={wits}")
 
-            rct = self.hab.receipt(serder)
+            rct = self.hab.receipt(serder, framed=True,
+                                   version=self.version, kind=serder.kind,
+                                   gvrsn=self.version)
 
             self.psr.parseOne(bytes(rct))
 
             rep.set_header('Content-Type', CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
-            rep.data = rct
+            rep.data = bytes(rct)
         else:
             rep.status = falcon.HTTP_202
 
@@ -1124,9 +1111,7 @@ class ReceiptEnd(doing.DoDoer):
 
         Parameters:
             req (Request): Falcon HTTP request object
-            rep (Response): Falcon HTTP response object
-
-        """
+            rep (Response): Falcon HTTP response object"""
         pre = req.get_param("pre")
         sn = req.get_param_as_int("sn")
         said = req.get_param("said")
@@ -1156,17 +1141,20 @@ class ReceiptEnd(doing.DoDoer):
                                                     f"{serder.sn}, {wits}")
         rserder = receipt(pre=pre,
                           sn=sn,
-                          said=said.decode("utf-8"))
+                          said=said.decode("utf-8"),
+                          version=self.version,
+                          gvrsn=self.version,
+                          kind=serder.kind)
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=Vrsn_1_0).qb64b)
+                               version=self.version).qb64b)
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 
         rep.set_header('Content-Type', CESR_CONTENT_TYPE)
         rep.status = falcon.HTTP_200
-        rep.data = rct
+        rep.data = bytes(rct)
 
     def interceptDo(self, tymth=None, tock=0.0, **kwa):
         """
@@ -1174,8 +1162,7 @@ class ReceiptEnd(doing.DoDoer):
             Kevery and Tevery cues deque
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         # enter context
         self.wind(tymth)
         self.tock = tock
@@ -1202,9 +1189,7 @@ class ReceiptEnd(doing.DoDoer):
 
 
 class QueryEnd:
-    """ Endpoint class for quering witness for KELs and TELs using HTTP GET
-
-     """
+    """ Endpoint class for quering witness for KELs and TELs using HTTP GET"""
 
     def __init__(self, hab, reger):
         self.hab = hab
@@ -1217,10 +1202,10 @@ class QueryEnd:
                 req (Request) Falcon HTTP request
                 rep (Response) Falcon HTTP response
 
-            Query Parameters:
+                Query Parameters:
                 typ (string): The type of event data to query for. Accepted values are:
-                - 'kel': Retrieve KEL events for a specified 'pre'.
-                - 'tel': Retrieve TEL events  based on 'reg' or 'vcid'.
+                    - 'kel': Retrieve KEL events for a specified 'pre'.
+                    - 'tel': Retrieve TEL events  based on 'reg' or 'vcid'.
 
                 pre (string, optional): For 'kel' queries, the specific 'pre' to query.
                 sn (int, optional): For "kel" queries. If provided, returns events with seq-num >= sn.
@@ -1228,16 +1213,14 @@ class QueryEnd:
                 reg (string, optional): For 'tel' queries, registry pre. Required if vcid not provided.
                 vcid (string, optional): For 'tel' queries, credential said. Required if reg not provided.
 
-            Response:
-                - 200 OK: Returns event data in "application/cesr" format.
-                - 400 Bad Request: Returned if required query parameters are missing or if an invalid `typ` is specified.
+                Response:
+                    - 200 OK: Returns event data in "application/cesr" format.
+                    - 400 Bad Request: Returned if required query parameters are missing or if an invalid `typ` is specified.
 
-            Example:
-                - /query?typ=kel&pre=ELZ1KBCFOmdj1RPu6kMUnzgMBTl4YsHfpw7wIGvLgW5W
-                - /query?typ=kel&pre=ELZ1KBCFOmdj1RPu6kMUnzgMBTl4YsHfpw7wIGvLgW5W&sn=5
-                - /query?typ=tel&reg=EHrbPfpRLU9wpFXTzGY-LIo2FjMiljjEnt238eWHb7yZ&vcid=EO5y0jMXS5XKTYBKjCUPmNKPr1FWcWhtKwB2Go2ozvr0
-
-        """
+                Example:
+                    - /query?typ=kel&pre=ELZ1KBCFOmdj1RPu6kMUnzgMBTl4YsHfpw7wIGvLgW5W
+                    - /query?typ=kel&pre=ELZ1KBCFOmdj1RPu6kMUnzgMBTl4YsHfpw7wIGvLgW5W&sn=5
+                    - /query?typ=tel&reg=EHrbPfpRLU9wpFXTzGY-LIo2FjMiljjEnt238eWHb7yZ&vcid=EO5y0jMXS5XKTYBKjCUPmNKPr1FWcWhtKwB2Go2ozvr0"""
 
         typ = req.get_param("typ")
 
@@ -1253,6 +1236,7 @@ class QueryEnd:
             evnts = bytearray()
 
             sn = req.get_param_as_int("sn")
+            vrsn = self.hab.kevers[pre].serder.pvrsn if pre in self.hab.kevers else Version
             if sn is not None: ## query for event with seq-num >= sn
                 dig = self.hab.db.kels.getLast(keys=pre, on=sn)
                 if dig is None:
@@ -1260,12 +1244,12 @@ class QueryEnd:
                 for dig in self.hab.db.kels.getAllIter(keys=pre, on=sn):
                     try:
                         dig = dig.encode("utf-8")
-                        msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig)
+                        msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig, version=vrsn)
                     except Exception:
                         continue  # skip this event
                     evnts.extend(msg)
             else:
-                for msg in self.hab.db.clonePreIter(pre=pre):
+                for msg in self.hab.db.clonePreIter(pre=pre, version=vrsn):
                     evnts.extend(msg)
 
 

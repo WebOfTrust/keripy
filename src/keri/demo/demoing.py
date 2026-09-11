@@ -13,22 +13,26 @@ from hio.core.tcp import clienting, serving
 
 from .. import help
 from ..app import habbing, directing
+from ..kering import Kinds, Version
 
 logger = help.ogler.getLogger()
 
 
 def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
-                        indirect=False, remotePre=""):
+                        indirect=False, remotePre="", version=Version,
+                        kind=Kinds.json):
     """
     Setup and return doers list to run controller
     """
 
     # setup habery with resources
-    hby = habbing.Habery(name=name, base="demo", temp=True, free=True)
+    hby = habbing.Habery(name=name, base="demo", temp=True, free=True,
+                         version=version)
     hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
 
     # make hab
-    hab = hby.makeHab(name=name, secrecies=secrecies)
+    hab = hby.makeHab(name=name, secrecies=secrecies,
+                      version=version, kind=kind)
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -42,11 +46,14 @@ def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
     clientDoer = clienting.ClientDoer(client=client)
 
     if name == 'bob':
-        director = BobDirector(hab=hab, client=client, tock=0.125)
+        director = BobDirector(hab=hab, client=client, tock=0.125,
+                               version=version, kind=kind)
     elif name == "sam":
-        director = SamDirector(hab=hab, client=client, tock=0.125)
+        director = SamDirector(hab=hab, client=client, tock=0.125,
+                               version=version, kind=kind)
     elif name == 'eve':
-        director = EveDirector(hab=hab, client=client, tock=0.125)
+        director = EveDirector(hab=hab, client=client, tock=0.125,
+                               version=version, kind=kind)
     else:
         raise ValueError("Invalid director name={}.".format(name))
 
@@ -77,9 +84,11 @@ class BobDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -94,6 +103,7 @@ class BobDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -120,29 +130,29 @@ class BobDirector(directing.Director):
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # Interaction event
+            msg = self.hab.interact(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Interaction event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             # create a bunch of out of order messages to test out of order escrow
             msgs = []
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact())  # Interaction event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact())  # Interaction event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact())
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.interact(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Interaction event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.interact(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Interaction event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))  # Rotation event
+            msgs.append(self.hab.interact(framed=True, version=self.version, kind=self.kind, gvrsn=self.version))
 
             msgs.reverse()  # reverse the order
 
@@ -179,9 +189,11 @@ class SamDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -196,6 +208,7 @@ class SamDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -223,57 +236,57 @@ class SamDirector(directing.Director):
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # Interaction Event
+            msg = self.hab.interact(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # Interaction Event
+            msg = self.hab.interact(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True, version=self.version, kind=self.kind, gvrsn=self.version)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
@@ -304,9 +317,11 @@ class CamDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -321,6 +336,7 @@ class CamDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -349,7 +365,8 @@ class CamDirector(directing.Director):
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
-            msg = self.hab.query(self.remotePre, src=self.remotePre, route="logs")  # Query for remote pre Event
+            msg = self.hab.query(self.remotePre, src=self.remotePre, route="logs",
+                                 version=self.version, kind=self.kind, gvrsn=self.version)  # Query for remote pre Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
@@ -382,9 +399,11 @@ class EveDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -399,6 +418,7 @@ class EveDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 

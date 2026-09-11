@@ -84,7 +84,8 @@ class GrantDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context
@@ -132,7 +133,7 @@ class GrantDoer(doing.DoDoer):
         sender = self.hab
         if isinstance(self.hab, GroupHab):
             sender = self.hab.mhab
-            wexn, watc = multisigExn(self.hab, exn=msg)
+            wexn, watc = multisigExn(self.hab, exn=msg, version=Vrsn_1_0)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
@@ -157,7 +158,7 @@ class GrantDoer(doing.DoDoer):
                 credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
                 postman.send(serder=source, attachment=atc)
 
-            atc = exchanging.serializeMessage(self.hby, exn.said)
+            atc = exchanging.serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)

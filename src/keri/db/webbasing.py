@@ -8,14 +8,10 @@ Browser-safe plain-value DBer backed by PyScript storage.
 from __future__ import annotations
 
 import asyncio
-import semver
-import importlib
-from collections import namedtuple
+from uuid import uuid4
 
 from hio.base import doing
 from hio.help import ogler
-
-from ordered_set import OrderedSet as oset
 
 from keri import __version__
 
@@ -26,28 +22,13 @@ from ..recording import (KeyStateRecord, EventSourceRecord,
                          MsgCacheRecord, WellKnownAuthN,
                          TopicsRecord)
 
-from ..kering import (MissingEntryError, ValidationError,
-                      ConfigurationError, DatabaseError, Vrsn_1_0)
+from ..kering import Version
 
 from .webdbing import WebDBer
 
-try:
-    from .basing import BaserBase
-except ImportError: 
-    BaserBase = None
+from .basebasing import BaserBase
 
 logger = ogler.getLogger()
-
-
-# --- Duplicated from dbing.py / basing.py to avoid lmdb import ---
-
-def _strip_prerelease(version_str):
-    """Strip prerelease and build metadata from a semver string.
-
-    See: https://github.com/WebOfTrust/keripy/issues/820
-    """
-    ver = semver.VersionInfo.parse(version_str)
-    return str(semver.Version(ver.major, ver.minor, ver.patch))
 
 
 class WebBaser(WebDBer, BaserBase):
@@ -65,47 +46,52 @@ class WebBaser(WebDBer, BaserBase):
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
-            reopen (bool): True means database will be reopened by this init
+            reopen (bool): True is unsupported; use await reopen().
 
 
         """
+        if reopen:
+            raise RuntimeError("WebBaser uses async open; use await reopen().")
+
         SubDbNames = ["aess.", "bsss.", "bsqs.", "ccigs.", "cdel.", "cfld.", "chas.",
             "cgms.", "coobi.", "cons.", "ctyp.", "dees.", "dels.", "dpwe.", "dpub.",
             "dtss.", "dune.", "eans.", "ecigs.", "ends.", "eoobi.", "epath.", "epse.",
-            "epsd.", "erpy.", "esigs.", "esrs.", "essrs.", "exns.", "evts.", "fels.", "fons.",
+            "epsd.", "erpy.", "esigs.", "esrs.", "essrs.", "exns.", "enst.", "evts.", "fels.", "fons.",
             "frcs.", "gdee.", "gdwe.", "gpse.", "habs.", "hbys.", "iimgs.", "icigs.",
             "ifld.", "imgs.", "kels.", "kdts.", "knas.", "ksns.", "lans.", "ldes.",
             "locs.", "maids.", "meids.", "mfes.", "mfa.", "migs.", "moobi.", "msgc.",
             "names.", "obvs.", "oobis.", "ooes.", "pdes.", "pmkm.", "pmks.", "pmsk.",
             "pses.", "ptds.", "pwes.", "qnfs.", "rcts.", "reps.", "rpes.", "rmfa.",
             "roobi.", "rpys.", "scgs.", "schema.", "sdts.", "sids.", "sigs.", "sscs.",
-            "ssgs.", "ssts.", "stts.", "tdcs.", "tmsc.", "tmqs.", "trqs.", "tsgs.", "udes.",
+            "ssts.", "stts.", "tdcs.", "tmsc.", "tmqs.", "trqs.", "tsgs.", "udes.",
             "ures.", "uwes.", "vrcs.", "vres.", "vers.", "wigs.", "wits.", "wkas.",
-            "witm.", "woobi.", "wwas."
+            "witm.", "woobi.", "wwas.", "xdt."
         ]
         self.SubDbNames = SubDbNames
 
         self.name = name
+        self._storageName = f"__keripy_temp__:{name}:{uuid4().hex}" if temp else name
         self._version = None
         self.opened = False
 
         self.temp = temp
+        self._closeTask = None
+        self._clearPending = False
+        self._cleanLock = asyncio.Lock()
 
         BaserBase.__init__(self)
 
     async def reopen(self, clear=False, storageOpener=None):
         """Open or re-open the WebBaser backing store.
 
-        Creates a WebDBer instance using the baser's name and declared
-        SubDbNames, loads or initialises each SubDb's underlying store,
-        binds all SubDbs to this WebBaser via ``_bindSubDbs()``, then
-        rebuilds in-memory state (kevers, escrows) via ``reload()``.
+        Loads the baser's declared SubDbs, adopts their WebDBer state directly,
+        binds all SubDbs to this WebBaser, then rebuilds
+        in-memory state (kevers, escrows) via ``reload()``.
 
         This method must be awaited because browser storage operations are
         asynchronous.  After calling ``reopen()`` the WebBaser is fully
-        operational and ready for reads, writes, and flushes.  Calling
-        ``reopen()`` on an already-open baser replaces the existing WebDBer
-        instance and resets all SubDb bindings.
+        operational and ready for reads, writes, and flushes. Calling
+        ``reopen()`` on an already-open baser first closes it durably.
 
         Parameters:
             clear (bool): When True, all existing persisted data for this
@@ -115,13 +101,19 @@ class WebBaser(WebDBer, BaserBase):
                 the default PyScript opener.  Used to inject
                 FakeStorageBackend in CPython tests.
         """
+        from . import koming, subing
+        from ..core import coring, indexing
+
+        if self._closeTask is not None or self.opened:
+            await self.aclose()
+
         if storageOpener is not None:
             self._storageOpener = storageOpener
         opener = getattr(self, "_storageOpener", None)
 
         try:
-            self.db = await WebDBer.open(
-                name=self.name,
+            opened = await WebDBer.open(
+                name=self._storageName if self.temp else self.name,
                 stores=self.SubDbNames,
                 clear=clear,
                 storageOpener=opener,
@@ -135,156 +127,12 @@ class WebBaser(WebDBer, BaserBase):
                 ) from e
             raise
 
-        self.env = self.db.env
-        self._bindSubDbs()
-        self.reload()
-        self.opened = True
-
-
-    def close(self, *, clear: bool = False):
-        """Synchronous close. Safe to call from hio Doer.exit() and Habery.close().
-
-        Drops all in-memory state and schedules a best-effort fire-and-forget
-        flush to the browser's backing storage.  The flush is scheduled as an
-        ``asyncio`` task via ``loop.create_task()`` so it does NOT block the
-        caller.
-
-        In a browser / Pyodide environment the event loop persists for the
-        lifetime of the page, so the scheduled flush task will always complete.
-
-        In CPython tests where ``asyncio.run()`` terminates the loop when
-        the test coroutine returns, the task may be cancelled before it runs.
-        Use `aclose` instead when the caller can ``await`` and needs a
-        guaranteed flush.
-
-        When ``clear=True`` (or ``self.temp is True``), each SubDb's in-memory
-        items are emptied and marked dirty before the flush is scheduled, so
-        the cleared state is what gets persisted.
-
-        If the baser is not open the method returns immediately.
-
-        Note:
-            After close, all Suber/Komer attributes (e.g. ``self.oobis``)
-            are deleted.  Any attempt to access them will raise
-            ``AttributeError``, making accidental post-close usage fail
-            loudly instead of silently writing to an orphaned in-memory
-            SubDb.  The attributes are rebound on ``reopen()``.
-
-        Parameters:
-            clear (bool): When True, the backing storage for this WebBaser
-                is cleared.  When False (default), stored state is preserved
-                for future ``reopen()`` calls.
-        """
-        if not self.opened or self.db is None:
-            return
-
-        if clear or self.temp:
-            for subdb in self.db._stores.values():
-                subdb.items.clear()
-                subdb.dirty = True
-
-        # Capture reference before clearing self.db
-        db = self.db
-        self.db = None
-        self.env = None
-        self.opened = False
-
-        # Remove all Suber/Komer attributes so post-close writes raise
-        # AttributeError instead of silently going to an orphaned SubDb.
-        for name in getattr(self, '_subdb_names', ()):
-            try:
-                delattr(self, name)
-            except AttributeError:
-                pass
-
-        # Schedule async flush as fire-and-forget task.
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(db.flush())
-        except RuntimeError:
-            pass  # no running event loop — skip async flush
-
-
-    async def aclose(self, *, clear: bool = False):
-        """Async close with guaranteed flush — use when the caller can ``await``.
-
-        Flushes all pending in-memory writes to backing browser storage and
-        waits for the flush to complete before clearing internal references.
-        This is the preferred close path in any ``async`` context (tests,
-        wallet ``AsyncRecurDoer.recur_async()`` shutdown, etc.) because the
-        caller can be certain that all data has been persisted when the method
-        returns.
-
-        When ``clear=True`` (or ``self.temp is True``), each SubDb's in-memory
-        items are emptied and marked dirty before flushing, so the cleared
-        state is what gets persisted.
-
-        For sync callers (hio Doer.exit(), Habery.close(), openHby() context
-        manager) use :meth:`close` instead — it schedules the flush as a
-        fire-and-forget task that completes on the next event-loop tick.
-
-        If the baser is not open the method returns immediately.
-
-        Note:
-            After close, all Suber/Komer attributes (e.g. ``self.oobis``)
-            are deleted.  Any attempt to access them will raise
-            ``AttributeError``, making accidental post-close usage fail
-            loudly instead of silently writing to an orphaned in-memory
-            SubDb.  The attributes are rebound on ``reopen()``.
-
-        Parameters:
-            clear (bool): When True the backing storage for this WebBaser
-                is cleared.  When False (default) stored state is preserved
-                for future ``reopen()`` calls.
-        """
-        if not self.opened or self.db is None:
-            return
-
-        if clear or self.temp:
-            for subdb in self.db._stores.values():
-                subdb.items.clear()
-                subdb.dirty = True
-
-        await self.db.flush()
-        self.db = None
-        self.env = None
-        self.opened = False
-
-        # Remove all Suber/Komer attributes so post-close writes raise
-        # AttributeError instead of silently going to an orphaned SubDb.
-        for name in getattr(self, '_subdb_names', ()):
-            try:
-                delattr(self, name)
-            except AttributeError:
-                pass
-
-
-    def _bindSubDbs(self):
-        """
-        Bind all WebBaser sub‑databases (Subers and Komers) to this instance.
-
-        This method initializes the full set of logical sub‑databases that make up
-        the WebBaser storage schema. Each sub‑database is created with the correct
-        Suber/Komer type, serialization format, and key prefix (`subkey`).
-
-        WebBaser uses WebDBer as the underlying backend, which provides a
-        lexicographically‑sorted key/value store. Because WebDBer does not support
-        LMDB dupsort semantics, the choice of Suber class (IoSetSuber, OnIoSetSuber,
-        CatCesrIoSetSuber, etc.) determines how uniqueness, ordering, and grouping
-        are emulated in the browser environment.
-
-        This method must be called exactly once during initialization or reopen().
-        After binding, each attribute (e.g. `self.kels`, `self.sigs`, `self.states`)
-        provides the full API for interacting with that logical sub‑database.
-
-        No I/O occurs here; this method only constructs the Suber/Komer wrappers.
-        Actual persistence happens through WebDBer during flush(), reopen(), and
-        close().
-        """
-
-        from . import koming, subing
-        from ..core import coring, indexing
-
+        fresh = all(not store.items and not store.flags_persisted
+                    for store in opened._stores.values())
+        WebDBer.__init__(self, name=self.name, stores=opened._stores)
+        if fresh:
+            self.version = __version__
+            await self.flush()
         _before = set(self.__dict__)
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
@@ -299,8 +147,9 @@ class WebBaser(WebDBer, BaserBase):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
-                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcs = subing.CesrIoSetSuber(db=self,
+                                          subkey='vrcs.',
+                                          klas=indexing.Siger)
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
                              klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoSetSuber(db=self, subkey='pses.')
@@ -325,7 +174,7 @@ class WebBaser(WebDBer, BaserBase):
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
-        self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
+        self.misfits = subing.OnIoSetSuber(db=self, subkey='mfes.')
 
         # delegable events escrows. events with local delegator that need approval
         self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
@@ -348,11 +197,11 @@ class WebBaser(WebDBer, BaserBase):
         # all sad  sdts (sad datetime serializations) maps said to date-time
         self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
 
-        # all sad ssgs (sad indexed signature serializations) maps SAD quadkeys
+        # all sad tsgs (sad indexed signature serializations) maps SAD quadkeys
         # given by quadruple (diger.qb64, prefixer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
-        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
+        self.tsgs = subing.CesrIoSetSuber(db=self, subkey='tsgs.', klas=indexing.Siger)
 
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
@@ -362,7 +211,7 @@ class WebBaser(WebDBer, BaserBase):
 
         # all reply messages. Maps reply said to serialization. Replys are
         # versioned sads ( with version string) so use Serder to deserialize and
-        # use  .sdts, .ssgs, and .scgs for datetimes and signatures
+        # use  .sdts, .tsgs, and .scgs for datetimes and signatures
         # TODO: clean
         self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
 
@@ -439,6 +288,9 @@ class WebBaser(WebDBer, BaserBase):
 
         # exchange pathed attachments
         self.epath = subing.IoSetSuber(db=self, subkey="epath.")
+
+        # exchange nested child substreams
+        self.enst = subing.IoSetSuber(db=self, subkey="enst.")
 
         self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
 
@@ -591,6 +443,9 @@ class WebBaser(WebDBer, BaserBase):
         self.kramTMSC = koming.Komer(db=self, subkey='tmsc.',
                                  klas=TxnMsgCacheRecord)
 
+        self.kramXDT = subing.CesrSuber(db=self, subkey='xdt.',
+                                       klas=coring.Dater)
+
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
         self.kramPMKM = subing.SerderSuber(db=self, subkey='pmkm.')
 
@@ -652,153 +507,238 @@ class WebBaser(WebDBer, BaserBase):
         # names so close()/aclose() can null them out to prevent silent
         # writes to orphaned SubDb objects.
         self._subdb_names = set(self.__dict__) - _before
+        self.opened = True
+        self.reload()
+
+
+    def close(self, *, clear: bool = False):
+        """Synchronous close. Safe to call from hio Doer.exit() and Habery.close().
+
+        Outside a running event loop this method runs :meth:`aclose` to
+        completion. Inside a running event loop it schedules and tracks the
+        async close so the caller is not blocked.
+
+        A running-loop close is not durable when this method returns. Async
+        callers that need a durable close must await :meth:`aclose`.
+
+        When ``clear=True`` (or ``self.temp is True``), the async close empties
+        each SubDb and persists the cleared state.
+
+        If the baser is not open the method returns immediately.
+
+        Note:
+            After the async close completes, all Suber/Komer attributes (e.g.
+            ``self.oobis``) are deleted. Any attempt to access them will raise
+            ``AttributeError``, making accidental post-close usage fail
+            loudly instead of silently writing to an orphaned in-memory
+            SubDb.  The attributes are rebound on ``reopen()``.
+
+        Parameters:
+            clear (bool): When True, the backing storage for this WebBaser
+                is cleared.  When False (default), stored state is preserved
+                for future ``reopen()`` calls.
+        """
+        if self._closeTask is None and not self.opened:
+            return
+
+        self._clearPending = self._clearPending or clear or self.temp
+        if self._closeTask is not None:
+            return
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self.aclose())
+        else:
+            self.opened = False
+            self._closeTask = loop.create_task(self.aclose())
+
+
+    async def aclose(self, *, clear: bool = False):
+        """Async close with guaranteed flush — use when the caller can ``await``.
+
+        Flushes all pending in-memory writes to backing browser storage and
+        waits for the flush to complete before clearing internal references.
+        This is the preferred close path in any ``async`` context (tests,
+        wallet ``AsyncRecurDoer.recur_async()`` shutdown, etc.) because the
+        caller can be certain that all data has been persisted when the method
+        returns.
+
+        When ``clear=True`` (or ``self.temp is True``), each SubDb's in-memory
+        items are emptied and marked dirty before flushing, so the cleared
+        state is what gets persisted.
+
+        For sync callers (hio Doer.exit(), Habery.close(), openHby() context
+        manager) use :meth:`close` instead.
+
+        If the baser is not open the method returns immediately.
+
+        Note:
+            After close, all Suber/Komer attributes (e.g. ``self.oobis``)
+            are deleted.  Any attempt to access them will raise
+            ``AttributeError``, making accidental post-close usage fail
+            loudly instead of silently writing to an orphaned in-memory
+            SubDb.  The attributes are rebound on ``reopen()``.
+
+        Parameters:
+            clear (bool): When True the backing storage for this WebBaser
+                is cleared.  When False (default) stored state is preserved
+                for future ``reopen()`` calls.
+        """
+        task = self._closeTask
+        if task is None and not self.opened:
+            return
+
+        if clear or self.temp:
+            self._clearPending = True
+
+        if task is not None and task is not asyncio.current_task():
+            try:
+                await task
+            except asyncio.CancelledError:
+                self.opened = True
+                raise
+            finally:
+                if self._closeTask is task:
+                    self._closeTask = None
+            return
+
+        clearApplied = self._clearPending
+        if clearApplied:
+            self.clear()
+            self.version = __version__
+
+        try:
+            await self.flush()
+            if self._clearPending and not clearApplied:
+                self.clear()
+                self.version = __version__
+                await self.flush()
+        except asyncio.CancelledError:
+            if task is asyncio.current_task():
+                self.opened = True
+            raise
+        except Exception:
+            if task is asyncio.current_task():
+                self.opened = True
+            raise
+
+        WebDBer.close(self)
+        self.env = None
+        self.opened = False
+        self._clearPending = False
+        if task is asyncio.current_task() and self._closeTask is task:
+            self._closeTask = None
+
+        # Remove all Suber/Komer attributes so post-close writes raise
+        # AttributeError instead of silently going to an orphaned SubDb.
+        for name in getattr(self, '_subdb_names', ()):
+            try:
+                delattr(self, name)
+            except AttributeError:
+                pass
+
+    def clear(self):
+        """Clear browser records and retain the current schema version."""
+        WebDBer.clear(self)
+        self.version = __version__
 
 
     def reload(self):
-        """Rebuild in-memory Kever state from persisted habitat and key state records.
-
-        WebBaser stores KERI state across multiple SubDbs but maintains an
-        in-memory cache of active Kevers, prefixes, and group identifiers
-        for efficient event processing.  This method reconstructs that
-        cache after a ``reopen()``.
-
-        Clears all in-memory prefix, group, and kever caches, then
-        iterates habitat records in ``habs.`` via ``getTopItemIter()``.
-        For each habitat with a corresponding KeyStateRecord in ``stts.``,
-        a Kever is constructed.  On success the Kever is cached in
-        ``_kevers`` and the prefix is added to ``self.prefixes``.  Group
-        habitats (where ``hab.mid`` is set) are added to ``self.groups``.
-
-        Habitats that have no key state and are not groups, or whose Kever
-        construction raises ``MissingEntryError``, are collected as orphans
-        and removed from ``habs.`` after iteration (matching Baser
-        behaviour).
-
-        This method performs no I/O — it operates entirely on
-        already-loaded SubDbs and their in-memory views.  It is
-        automatically invoked during ``reopen()``.
-        """
-        # Version/migration check — skip if version infrastructure isn't
-        # initialised yet (fresh database with no _stores on self).
-        try:
-            if not self.current:
-                raise DatabaseError(
-                    f"Database migrations must be run. "
-                    f"DB version {self.version}; current {__version__}")
-        except AttributeError:
-            pass  # fresh WebBaser before first migrate — treat as current
-
+        """Rebuild the browser Kever caches from the active stores."""
         self.prefixes.clear()
         self.groups.clear()
         self._kevers.clear()
+        BaserBase.reload(self)
 
-        removes = []
-        for keys, data in self.habs.getTopItemIter():
-            if (ksr := self.states.get(keys=data.hid)) is not None:
-                try:
-                    from ..core.eventing import Kever
-                    kever = Kever(state=ksr, db=self, local=True)
-                except MissingEntryError:
-                    removes.append(keys)
-                    continue
-                self._kevers[kever.prefixer.qb64] = kever
-                self.prefixes.add(kever.prefixer.qb64)
-                if data.mid:
-                    self.groups.add(data.hid)
-            elif data.mid is None:
-                removes.append(keys)
 
-        for keys in removes:
-            self.habs.rem(keys=keys)
-    
+    async def clean(self, gvrsn=Version, *, version=None):
+        """Clean database by replaying events into a fresh clone and swapping data.
 
-    async def clean(self):
-        """Clean database by replaying events into a fresh clone and swapping data."""
-        from ..core import parsing
-        from ..core.eventing import Kevery
+        As with native Baser.clean, KRAM replay caches and pending messages are
+        not preserved. Cleaning KRAM state requires a separate repair policy.
+        """
+        if version is not None:
+            gvrsn = version
 
-        # 1. Create a fresh empty WebBaser clone
-        copy = WebBaser(name=f"{self.name}_clean")
-        await copy.reopen(clear=True,
-                          storageOpener=getattr(self, "_storageOpener", None))
+        async with self._cleanLock:
+            from hashlib import sha256
 
-        # 2. Replay all events into the clean DB
-        kvy = Kevery(db=copy)
-        psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
-        for msg in self.cloneAllPreIter():
-            psr.parseOne(ims=msg)
+            from ..core import parsing
+            from ..core.eventing import Kevery
 
-        # 3. Copy non-event subdbs
-        unsecured = [
-            "hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns",
-            "erpy", "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi",
-            "mfa", "rmfa", "cfld", "cons", "ccigs", "cdel", "migs",
-            "ifld", "sids", "icigs"
-        ]
-        for name in unsecured:
-            srcdb = getattr(self, name, None)
-            cpydb = getattr(copy, name, None)
-            if srcdb is None or cpydb is None:
-                continue
-            for keys, val in srcdb.getTopItemIter():
-                cpydb.put(keys=keys, val=val)
+            name = self._storageName if self.temp else self.name
+            digest = sha256(name.encode("utf-8")).hexdigest()
+            copy = WebBaser(name=f"__keripy_clean__:{digest}")
+            await copy.reopen(clear=True,
+                              storageOpener=getattr(self, "_storageOpener", None))
+            try:
+                kvy = Kevery(db=copy)
+                psr = parsing.Parser(kvy=kvy, version=gvrsn)
+                for msg in self.cloneAllPreIter(gvrsn=gvrsn):
+                    psr.parseOne(ims=msg)
 
-        # 4. Copy set-based subdbs
-        sets = ["esigs", "ecigs", "epath", "chas", "reps", "wkas", "meids", "maids"]
-        for name in sets:
-            srcdb = getattr(self, name, None)
-            cpydb = getattr(copy, name, None)
-            if srcdb is None or cpydb is None:
-                continue
-            for keys, val in srcdb.getTopItemIter():
-                cpydb.add(keys=keys, val=val)
+                unsecured = [
+                    "hbys", "schema", "states", "rpys", "eans", "tops", "cgms",
+                    "exns", "erpy", "kdts", "ksns", "knas", "oobis", "roobi",
+                    "woobi", "moobi", "mfa", "rmfa", "cfld", "cons", "ccigs",
+                    "cdel", "migs", "ifld", "sids", "icigs",
+                ]
+                for name in unsecured:
+                    srcdb = getattr(self, name, None)
+                    cpydb = getattr(copy, name, None)
+                    if srcdb is None or cpydb is None:
+                        continue
+                    for keys, val in srcdb.getTopItemIter():
+                        cpydb.put(keys=keys, val=val)
 
-        # 5. Copy imgs and iimgs
-        for keys, val in self.imgs.getTopItemIter():
-            copy.imgs.pin(keys=keys, val=val)
-        for keys, val in self.iimgs.getTopItemIter():
-            copy.iimgs.pin(keys=keys, val=val)
+                sets = [
+                    "esigs", "ecigs", "epath", "enst", "chas", "reps", "wkas",
+                    "meids", "maids",
+                ]
+                for name in sets:
+                    srcdb = getattr(self, name, None)
+                    cpydb = getattr(copy, name, None)
+                    if srcdb is None or cpydb is None:
+                        continue
+                    for keys, val in srcdb.getTopItemIter():
+                        cpydb.add(keys=keys, val=val)
 
-        # 6. Clone verified habs, names, prefixes, groups
-        for keys, val in self.habs.getTopItemIter():
-            if val.hid in copy.kevers:
-                copy.habs.put(keys=keys, val=val)
-                ns = "" if val.domain is None else val.domain
-                copy.names.put(keys=(ns, val.name), val=val.hid)
-                copy.prefixes.add(val.hid)
-                if val.mid:
-                    copy.groups.add(val.hid)
+                for keys, val in self.imgs.getTopItemIter():
+                    copy.imgs.pin(keys=keys, val=val)
+                for keys, val in self.iimgs.getTopItemIter():
+                    copy.iimgs.pin(keys=keys, val=val)
 
-        # 7. Clone ends and locs
-        for (cid, role, eid), val in self.ends.getTopItemIter():
-            exists = False
-            for scheme in ("https", "http", "tcp"):
-                lval = self.locs.get(keys=(eid, scheme))
-                if lval:
-                    exists = True
-                    copy.locs.put(keys=(eid, scheme), val=lval)
-            if exists:
-                copy.ends.put(keys=(cid, role, eid), val=val)
+                for keys, val in self.habs.getTopItemIter():
+                    if val.hid in copy.kevers:
+                        copy.habs.put(keys=keys, val=val)
+                        ns = "" if val.domain is None else val.domain
+                        copy.names.put(keys=(ns, val.name), val=val.hid)
+                        copy.prefixes.add(val.hid)
+                        if val.mid:
+                            copy.groups.add(val.hid)
 
-        # 8. Replace in-memory state with cloned data
-        self.kevers.clear()
-        for pre, kever in copy.kevers.items():
-            self.kevers[pre] = kever
-        self.prefixes.clear()
-        self.prefixes.update(copy.prefixes)
-        self.groups.clear()
-        self.groups.update(copy.groups)
+                for (cid, role, eid), val in self.ends.getTopItemIter():
+                    exists = False
+                    for scheme in ("https", "http", "tcp"):
+                        lval = self.locs.get(keys=(eid, scheme))
+                        if lval:
+                            exists = True
+                            copy.locs.put(keys=(eid, scheme), val=lval)
+                    if exists:
+                        copy.ends.put(keys=(cid, role, eid), val=val)
 
-        # 9. Swap subdb data from clone into self via WebDBer API
-        for name in self.SubDbNames:
-            src_store = copy.db._stores.get(name)
-            dst_store = self.db._stores.get(name)
-            if src_store and dst_store:
-                dst_store.items.clear()
-                dst_store.items.update(src_store.items)
-                dst_store.dirty = True
-        await self.db.flush()
-        await copy.aclose(clear=True)
+                for name in self.SubDbNames:
+                    src_store = copy._stores.get(name)
+                    dst_store = self._stores.get(name)
+                    if src_store is not None and dst_store is not None:
+                        dst_store.items.clear()
+                        dst_store.items.update(src_store.items)
+                        dst_store.dirty = True
+                self.reload()
+                await self.flush()
+            finally:
+                await copy.aclose(clear=True)
 
 
 class WebBaserDoer(doing.Doer):
@@ -809,11 +749,9 @@ class WebBaserDoer(doing.Doer):
     is async, the baser must already be opened before the Doist starts.
 
     On exit, calls the synchronous :meth:`WebBaser.close` which schedules a
-    fire-and-forget flush to IndexedDB.  In a browser/Pyodide environment
-    the event loop persists, so the flush will complete.  For guaranteed
-    flush semantics, call ``await baser.aclose()`` from an async context
-    before the Doer exits (e.g. in an ``AsyncRecurDoer.recur_async()``
-    finally block).
+    tracked flush to IndexedDB. For guaranteed flush semantics, call
+    ``await baser.aclose()`` from an async context before the Doer exits (e.g.
+    in an ``AsyncRecurDoer.recur_async()`` finally block).
 
     Typical usage::
 
@@ -821,7 +759,10 @@ class WebBaserDoer(doing.Doer):
         await baser.reopen(storageOpener=backend.open)
         doer = WebBaserDoer(baser=baser)
         doist.doers = [doer, ...]
-        await doist.ado()
+        try:
+            await doist.ado()
+        finally:
+            await baser.aclose()
     """
 
     def __init__(self, baser, **kwa):

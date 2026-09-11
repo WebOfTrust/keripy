@@ -42,7 +42,6 @@ l
 l.sort()
 l
 ['a', 'aa', 'aaa', 'b', 'ba', 'baa']
-
 """
 
 import os
@@ -69,20 +68,21 @@ MaxSuffix = int("f"*(SuffixSize), 16)
 
 def fetchTsgs(db, diger, snh=None):
     """
-    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
-    Returns:
-        tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
-            where:
-                prefixer (Prefixer): instance trans signer aid,
-                seqner (Seqner): of sn of trans signer key state est event
-                diger (Diger): of digest of trans signer key state est event
-                sigers (list): of Siger instances of indexed signatures
+    Fetch tsgs for diger from .db.tsgs. When sn then only fetch if sn <= snh
 
     Parameters:
-        db: (Cesr
+        db: database containing the ``.tsgs`` entries.
         diger (Diger): instance of said for reply SAD to which signatures
             are attached
-        snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
+        snh (str | None): 32 char zero padded lowercase hex sequence number
+            formatted as ``f"{sn:032x}"``.
+
+    Returns:
+        tsgs (list): of tsg quadruple of form ``(prefixer, seqner, diger, sigers)`` where:
+            prefixer (Prefixer): instance trans signer aid
+            seqner (Seqner): sn of trans signer key state est event
+            diger (Diger): digest of trans signer key state est event
+            sigers (list): Siger instances of indexed signatures
     """
     from ..core import coring
 
@@ -111,14 +111,12 @@ def onKey(top, on, *, sep=b'.'):
     """
     Returns:
         onkey (bytes): key formed by joining top key and hex str conversion of
-                       int ordinal number on with sep character.
+            int ordinal number on with sep character.
 
     Parameters:
         top (str | bytes): top key prefix to be joined with hex version of on using sep
         on (int): ordinal number to be converted to 32 hex bytes
-        sep (bytes): separator character for join
-
-    """
+        sep (bytes): separator character for join"""
     if hasattr(top, "encode"):
         top = top.encode("utf-8")  # convert str to bytes
     return (b'%s%s%032x' % (top, sep, on))
@@ -128,13 +126,12 @@ def snKey(pre, sn):
     """
     Returns:
         snkey (bytes): key formed by joining pre and hex str conversion of int
-                       sequence ordinal number sn with sep character b".".
+            sequence ordinal number sn with sep character b".".
 
     Parameters:
         pre (str | bytes): key prefix to be joined with hex version of on using
-                           b"." sep
-        sn (int): sequence number to be converted to 32 hex bytes
-    """
+            b"." sep
+        sn (int): sequence number to be converted to 32 hex bytes"""
     return onKey(pre, sn, sep=b'.')
 
 
@@ -142,13 +139,12 @@ def fnKey(pre, fn):
     """
     Returns:
         fnkey (bytes): key formed by joining pre and hex str conversion of int
-                       first seen ordinal number fn with sep character b".".
+            first seen ordinal number fn with sep character b".".
 
     Parameters:
         pre (str | bytes): key prefix to be joined with hex version of on using
-                           b"." sep
-        fn (int): first seen ordinal number to be converted to 32 hex bytes
-    """
+            b"." sep
+        fn (int): first seen ordinal number to be converted to 32 hex bytes"""
     return onKey(pre, fn, sep=b'.')
 
 
@@ -156,8 +152,7 @@ def dgKey(pre, dig):
     """
     Returns bytes DB key from concatenation of '.' with qualified Base64 prefix
     bytes pre and qualified Base64 bytes digest of serialized event
-    If pre or dig are str then converts to bytes
-    """
+    If pre or dig are str then converts to bytes"""
     if hasattr(pre, "encode"):
         pre = pre.encode("utf-8")  # convert str to bytes
     if hasattr(dig, "encode"):
@@ -171,9 +166,7 @@ def dtKey(pre, dts):
     bytes pre and bytes dts datetime string of extended tz aware ISO8601
     datetime of event
 
-    '2021-02-13T19:16:50.750302+00:00'
-
-    """
+    '2021-02-13T19:16:50.750302+00:00'"""
     if hasattr(pre, "encode"):
         pre = pre.encode("utf-8")  # convert str to bytes
     if hasattr(dts, "encode"):
@@ -190,9 +183,8 @@ def splitKey(key, sep=b'.'):
     Raises ValueError if key does not split into exactly two elements
 
     Parameters:
-       key is database key with split at sep
-       sep is bytes separator character. default is b'.'
-    """
+        key: database key with split at sep
+        sep: bytes separator character. default is b'.'"""
     if isinstance(key, memoryview):
         key = bytes(key)
     if hasattr(key, "encode"):  # str not bytes
@@ -211,8 +203,7 @@ def splitOnKey(key, *, sep=b'.'):
     """
     Returns list of pre and int on from key
     Accepts either bytes or str key
-    ordinal number  appears in key in hex format
-    """
+    ordinal number  appears in key in hex format"""
     if isinstance(key, memoryview):
         key = bytes(key)
     top, on = splitKey(key, sep=sep)
@@ -233,8 +224,7 @@ def splitKeyDT(key):
     Returns list of pre and dts converted to datetime from key
     dts is TZ aware Iso8601 '2021-02-13T19:16:50.750302+00:00'
 
-    Accepts either bytes or str key
-    """
+    Accepts either bytes or str key"""
     if isinstance(key, memoryview):
         key = bytes(key)
     pre, dts = splitKey(key, sep=b'|')
@@ -247,14 +237,13 @@ def splitKeyDT(key):
 def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       iokey (bytes): actual DB key after concatenating suffix as hex version
-       of insertion ordering ordinal int ion using separator sep.
+        iokey (bytes): actual DB key after concatenating suffix as hex version
+            of insertion ordering ordinal int ion using separator sep.
 
     Parameters:
         key (Union[bytes, str]): apparent effective database key (unsuffixed)
-        ion (int)): insertion ordering ordinal for set of vals
-        sep (bytes): separator character(s) for concatenating suffix
-    """
+            ion (int)): insertion ordering ordinal for set of vals
+        sep (bytes): separator character(s) for concatenating suffix"""
     if isinstance(key, memoryview):
         key = bytes(key)
     elif hasattr(key, "encode"):
@@ -268,15 +257,14 @@ def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, st
 def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       result (tuple): (key, ion) by splitting iokey at rightmost separator sep
+        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
             strip off suffix, where key is bytes apparent effective DB key and
-            ion is the insertion ordering int converted from stripped of hex
+        ion: the insertion ordering int converted from stripped of hex
             suffix
 
     Parameters:
         iokey (Union[bytes, str]): apparent effective database key (unsuffixed)
-        sep (bytes): separator character(s) for concatenating suffix
-    """
+        sep (bytes): separator character(s) for concatenating suffix"""
     if isinstance(iokey, memoryview):
         iokey = bytes(iokey)
     elif hasattr(iokey, "encode"):
@@ -290,8 +278,7 @@ def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.
 
 def clearDatabaserDir(path):
     """
-    Remove directory path
-    """
+    Remove directory path"""
     if os.path.exists(path):
         shutil.rmtree(path)
 
@@ -304,11 +291,11 @@ def openLMDB(*, cls=None, name="test", temp=True, **kwa):
     Context 'with' statements call .close on exit of 'with' block
 
     Parameters:
-        cls is Class instance of subclass instance
-        name is str name of LMDBer dirPath so can have multiple databasers
-             at different directory path names thar each use different name
-        temp is Boolean, True means open in temporary directory, clear on close
-                        Otherwise open in persistent directory, do not clear on close
+        cls: Class instance of subclass instance
+        name: str name of LMDBer dirPath so can have multiple databasers
+            at different directory path names thar each use different name
+        temp: Boolean, True means open in temporary directory, clear on close
+            Otherwise open in persistent directory, do not clear on close
 
     Usage:
 
@@ -317,9 +304,7 @@ def openLMDB(*, cls=None, name="test", temp=True, **kwa):
 
     with openDatabaser(name="gen2, cls=Baser)
 
-    wl.close(clear=True if wl.temp else False)
-
-    """
+    wl.close(clear=True if wl.temp else False)"""
     lmdber = None
     if cls is None:
         cls = LMDBer
@@ -346,9 +331,11 @@ class LMDBer(filing.Filer):
         perm is numeric os permissions for directory and/or file(s)
         filed (bool): True means .path ends in file.
                        False means .path ends in directory
+
         mode (str): file open mode if filed
         fext (str): file extension if filed
         file (File)
+
         opened is Boolean, True means directory created and if file then file
                 is opened. False otherwise
 
@@ -369,8 +356,7 @@ class LMDBer(filing.Filer):
             When this bit is set on a file it means nothing
         stat.S_IRUSR Owner has read permission.
         stat.S_IWUSR Owner has write permission.
-        stat.S_IXUSR Owner has execute permission.
-    """
+        stat.S_IXUSR Owner has execute permission."""
     HeadDirPath = os.path.join(os.path.sep, "usr", "local", "var")  # default in /usr/local/var
     TailDirPath = os.path.join("keri", "db")
     CleanTailDirPath = os.path.join("keri", "clean", "db")
@@ -381,7 +367,7 @@ class LMDBer(filing.Filer):
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
-    MaxNamedDBs = 100
+    MaxNamedDBs = 128
     MapSize = 104857600
 
     def __init__(self, readonly=False, **kwa):
@@ -404,22 +390,20 @@ class LMDBer(filing.Filer):
             mode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
             reopen (bool): True means (re)opened by this init
-                           False  means not (re)opened by this init but later
+                False  means not (re)opened by this init but later
             clear (bool): True means remove directory upon close if reopon
-                          False means do not remove directory upon close if reopen
+                False means do not remove directory upon close if reopen
             reuse (bool): True means reuse self.path if already exists
-                          False means do not reuse but remake self.path
+                False means do not reuse but remake self.path
             clean (bool): True means path uses clean tail variant
-                             False means path uses normal tail variant
+                False means path uses normal tail variant
             filed (bool): True means .path is file path not directory path
-                          False means .path is directory path not file path
+                False means .path is directory path not file path
             mode (str): File open mode when filed
             fext (str): File extension when filed
 
             readonly (bool): True means open database in readonly mode
-                                False means open database in read/write mode
-
-        """
+                False means open database in read/write mode"""
 
         self.env = None
         self._version = None
@@ -435,23 +419,22 @@ class LMDBer(filing.Filer):
 
         Parameters:
             temp (bool): assign to .temp
-                         True means open in temporary directory, clear on close
-                         False means open persistent directory, do not clear on close
+                True means open in temporary directory, clear on close
+                False means open persistent directory, do not clear on close
             headDirPath (str): optional head directory pathname for main database
-                               Default .HeadDirpath
+                Default .HeadDirpath
             perm (int): optional numeric os dir permissions for database
-                         directory and database files. Default .Perm
+                directory and database files. Default .Perm
             clear (bool): True means remove directory upon close
-                             False means do not remove directory upon close
+                False means do not remove directory upon close
             reuse (bool): True means reuse self.path if already exists
-                             False means do not reuse but remake self.path
+                False means do not reuse but remake self.path
             clean (bool): True means path uses clean tail variant
-                             False means path uses normal tail variant
+                False means path uses normal tail variant
             mode (str): file open mode when .filed
             fext (str): File extension when .filed
             readonly (bool): True means open database in readonly mode
-                                False means open database in read/write mode
-        """
+                False means open database in read/write mode"""
         exists = self.exists(name=self.name, base=self.base)
         opened = super(LMDBer, self).reopen(**kwa)
         if readonly is not None:
@@ -485,9 +468,7 @@ class LMDBer(filing.Filer):
         This value is read through cached in memory
 
         Returns:
-            str: the version of the database or None if not set in the database
-
-        """
+            str: the version of the database or None if not set in the database"""
         if self._version is None:
             self._version = self.getVer()
 
@@ -499,9 +480,7 @@ class LMDBer(filing.Filer):
         """  Set the version of the database in memory and in the __version__ key
 
         Parameters:
-            val (str): The new semver formatted version of the database
-
-        """
+            val (str): The new semver formatted version of the database"""
         if hasattr(val, "decode"):
             val = val.decode("utf-8")  # convert bytes to str
 
@@ -512,9 +491,9 @@ class LMDBer(filing.Filer):
     def close(self, clear=False):
         """
         Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
+
         Parameters:
-           clear is boolean, True means clear lmdb directory
-        """
+            clear: boolean, True means clear lmdb directory"""
         if self.env:
             try:
                 self.env.close()
@@ -530,9 +509,7 @@ class LMDBer(filing.Filer):
         """ Returns the value of the the semver formatted version in the __version__ key in this database
 
         Returns:
-            str: semver formatted version of the database
-
-        """
+            str: semver formatted version of the database"""
         with self.env.begin() as txn:
             cursor = txn.cursor()
             version = cursor.get(b'__version__')
@@ -543,9 +520,7 @@ class LMDBer(filing.Filer):
         """  Set the version of the database in the __version__ key
 
         Parameters:
-            val (str): The new semver formatted version of the database
-
-        """
+            val (str): The new semver formatted version of the database"""
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
 
@@ -566,13 +541,12 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then deletes all items in database
+                from multiple branches of the key space. If top key is
+                empty then deletes all items in database
 
         Works for both dupsort==False and dupsort==True
         Because cursor.iternext() advances cursor after returning item its safe
-        to delete the item within the iteration loop.
-        """
+        to delete the item within the iteration loop."""
         # when deleting can't use cursor.iternext() because the cursor advances
         # twice (skips one) once for iternext and once for delete.
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -601,11 +575,10 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then counts all items in database
+                from multiple branches of the key space. If top key is
+                empty then counts all items in database
 
-        Works for both dupsort==False and dupsort==True
-        """
+        Works for both dupsort==False and dupsort==True"""
         # when deleting can't use cursor.iternext() because the cursor advances
         # twice (skips one) once for iternext and once for delete.
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -625,8 +598,7 @@ class LMDBer(filing.Filer):
         """Return count of values in db, or zero otherwise
 
         Parameters:
-            db is opened named sub db with either dupsort=True or False
-        """
+            db: opened named sub db with either dupsort=True or False"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
@@ -647,22 +619,21 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator): iterator of (full key, val) tuples over a
-                branch of the db given by top key where: full key is full database
+            branch of the db given by top key where: full key is full database
                 key for val not truncated top key
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database.
+                from multiple branches of the key space. If top key is
+                empty then gets all items in database.
 
         Uses python .startswith to match which always returns True if top is
         empty string so empty will matches all keys in db .
 
         Works for both dupsort==False and dupsort==True
         Because cursor.iternext() advances cursor after returning item its safe
-        to delete the item within the iteration loop.
-        """
+        to delete the item within the iteration loop."""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if cursor.set_range(top):  # move to val at key >= key if any
@@ -682,10 +653,9 @@ class LMDBer(filing.Filer):
         Returns False if val at key already exitss
 
         Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
-            val is bytes of value to be written
-        """
+            db: opened named sub db with dupsort=False
+            key: bytes of key within sub db's keyspace
+            val: bytes of value to be written"""
         if not key:
             return False
 
@@ -701,15 +671,15 @@ class LMDBer(filing.Filer):
         """
         Write serialized bytes val to location key in db
         Overwrites existing val if any
+
         Returns:
             result (bool): True If val successfully written
-                           False otherwise
+                False otherwise
 
         Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
-            val is bytes of value to be written
-        """
+            db: opened named sub db with dupsort=False
+            key: bytes of key within sub db's keyspace
+            val: bytes of value to be written"""
         if not key:
             return False
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -726,10 +696,8 @@ class LMDBer(filing.Filer):
         Returns None if no entry at key
 
         Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
-
-        """
+            db: opened named sub db with dupsort=False
+            key: bytes of key within sub db's keyspace"""
         if not key:
             return False
         with self.env.begin(db=db, write=False, buffers=True) as txn:
@@ -742,16 +710,16 @@ class LMDBer(filing.Filer):
 
     def remVal(self, db, key):
         """Removes value at key in db.
+
         Returns:
             result (bool): True If key exists in database and item deleted
-                           False If key empty or missing from database
+                False If key empty or missing from database
 
         Raises KeyError if problem with key
 
         Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
-        """
+            db: opened named sub db with dupsort=False
+            key: bytes of key within sub db's keyspace"""
         if not key:
             return False
 
@@ -775,16 +743,15 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if successful write i.e onkey not already in db
-                           False otherwise
+                False otherwise
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which write
             val (bytes|None): to be written at onkey
-                              When None returns False
-            sep (bytes): separator character for split
-        """
+                When None returns False
+            sep (bytes): separator character for split"""
         if val is None or not key:
             return False
 
@@ -805,16 +772,15 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if successful replacement.
-                           False if val already exists at key or if key empty or
-                           val None.
+                False if val already exists at key or if key empty or
+                val None.
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which write
             val (bytes|None): to be written at onkey. when None returns False
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         if val is None or not key:
             return False
 
@@ -838,15 +804,14 @@ class LMDBer(filing.Filer):
 
         Returns:
             on (int): ordinal number of new onkey for newly appended val.
-                    Raises ValueError when unsuccessful append including when
-                    key is empty or None or val is None
+                Raises ValueError when unsuccessful append including when
+                key is empty or None or val is None
 
         Parameters:
             db (subdb): named sub db in lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             val (bytes): serialized value to append
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         # set key with on at max and then walk backwards to find last entry at key
         # if any otherwise zeroth entry at key
         if not key or val is None:
@@ -901,9 +866,7 @@ class LMDBer(filing.Filer):
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): base key
             on (int): ordinal number at which to retrieve
-            sep (bytes): separator character for split
-
-        """
+            sep (bytes): separator character for split"""
         if not key:
             return None
 
@@ -926,16 +889,14 @@ class LMDBer(filing.Filer):
 
         Returns:
             val (bytes|memoryview|None): entry at onkey = key + sep + on
-                                         None if onkey missing from db or key
-                                         empty or None
+                None if onkey missing from db or key
+                empty or None
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to retrieve
-            sep (bytes): separator character for split
-
-        """
+            sep (bytes): separator character for split"""
         if not key:
             return None
 
@@ -954,14 +915,13 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if entry at onkey removed when not None.
-                           False otherwise if no entry at onkey or key is empty.
+                False otherwise if no entry at onkey or key is empty.
 
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to delete
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         if not key:
             return False
 
@@ -980,20 +940,19 @@ class LMDBer(filing.Filer):
         When key is empty then deletes whole db.
 
         Returns:
-           result (bool): True if any entries deleted
-                          False otherwise
+            result (bool): True if any entries deleted
+                False otherwise
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key
             on (int): ordinal number at which to add to key form effective key
-                      0 means to delete all on at key
+                0 means to delete all on at key
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key:
             return self.remTop(db=db, top=b'')
 
@@ -1033,10 +992,9 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdbsubdb): named sub db of lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
-                         when key is empty then retrieves whole db
+                when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate count
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if key:  # not empty
@@ -1069,14 +1027,13 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[(tuple, int, bytes)]): iterator of triples
-                (keys, on, val)
+            (keys, on, val)
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database.
-        """
+                from multiple branches of the key space. If top key is
+                empty then gets all items in database."""
         for onkey, val in self.getTopItemIter(db=db, top=top):
             key, on = splitOnKey(onkey, sep=sep)
             yield (key, on, val)
@@ -1087,7 +1044,7 @@ class LMDBer(filing.Filer):
         numbered keys with same key  and on >= on.
         When on = 0, default, then iterates over all on at key
         When key is empty then iterates over all on for all keys, whole db.
-         Returned items are triples of (key, on, val).
+        Returned items are triples of (key, on, val).
 
         Entries are sorted by onKey(key, on) where on is ordinal number int and
         key is prefix sans on.
@@ -1099,16 +1056,15 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[(bytes, int, bytes|memoryview)]): triples of (key, on, val)
-                for onkey = key + sep + on for on >= on at key. When on is None
-                then iterates over all on at key.
+            for onkey = key + sep + on for on >= on at key. When on is None
+            then iterates over all on at key.
 
         Parameters:
             db (subdb): named sub db in lmdb
             key (bytes): base key
-                        when key is empty then retrieves whole db
+                when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if key:  # not empty
@@ -1149,16 +1105,14 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if any val in vals is added to set.
-                          False otherwise including key not in db, empty or None
-                          or vals empty or None
+                False otherwise including key not in db, empty or None
+                or vals empty or None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes|None): Apparent effective key
             vals (NonStrIterable|None): serialized values to add to set of vals at key
-            sep (bytes): separator character for split
-
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             result = False
             if not key or not vals:  # empty key or empty vals or vals None
@@ -1196,16 +1150,15 @@ class LMDBer(filing.Filer):
         The suffix is appended and stripped transparently.
 
         Returns:
-           result (bool): True if vals replaced set.
-                          False otherwise including key not in db, empty or None
-                          or vals empty or None
+            result (bool): True if vals replaced set.
+                False otherwise including key not in db, empty or None
+                or vals empty or None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes|None): Apparent effective key
             vals (NonStrIterable|None): serialized values to add to set of vals at key
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         result = False
         if not key or not vals:  # empty key or empty vals or vals None
             return result  # do not delete
@@ -1229,17 +1182,15 @@ class LMDBer(filing.Filer):
         The suffix is appended and stripped transparently.
 
         Returns:
-           result (bool): True if val added to set.
-                          False if already in set or key is empty or None or val
-                          is None
+            result (bool): True if val added to set.
+                False if already in set or key is empty or None or val
+                is None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes|None): Apparent effective key
             val (bytes|None): serialized value to add
-            sep (bytes): separator character for split
-
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             if not key or val is None:  # empty key or val is missing
                 return False
@@ -1274,16 +1225,15 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[memoryview]): iterator over insertion ordered set
-                                        items at same apparent effective key.
-                                        Empty iterator when key is empty
+                items at same apparent effective key.
+                Empty iterator when key is empty
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key. raises StopIterationError when
-                         key is empty
+                key is empty
             ion (int): starting ordinal value, default 0
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             if not key:  # empty key
                 return  # raises StopIterationError
@@ -1307,14 +1257,13 @@ class LMDBer(filing.Filer):
 
         Returns:
             last ((bytes, memoryview)): last added entry item at apparent
-                effective key if any, otherwise empty tuple if no entry at key
-                or if key empty
+            effective key if any, otherwise empty tuple if no entry at key
+            or if key empty
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key (unsuffixed)
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             last = ()
@@ -1341,13 +1290,12 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if values were deleted at key.
-                           False otherwise including key empty or None
+                False otherwise including key empty or None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes|None): Apparent effective key
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         result = False
         if not key:
             return result
@@ -1371,7 +1319,7 @@ class LMDBer(filing.Filer):
         When value is None then removes all set members at key
         When key is empty or missing returns False.
         Uses hidden ordinal key suffix for insertion ordering.
-           The suffix is suffixed and unsuffixed transparently.
+        The suffix is suffixed and unsuffixed transparently.
 
         Because the insertion order of val is not provided must perform a linear
         search over set of values.
@@ -1389,17 +1337,16 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if val at key removed when val not None
-                           or all entries at key removed when val None.
-                           False otherwise if no values at key or key is empty
-                           or val not found.
+                or all entries at key removed when val None.
+                False otherwise if no values at key or key is empty
+                or val not found.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): val(int|None): value to remove if any.
-                           None means remove all entries at onkey
+                None means remove all entries at onkey
             val (bytes|None): value to delete
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         if val is None:
             return self.remIoSet(db=db, key=key, sep=sep)
 
@@ -1434,8 +1381,7 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key
             ion (int): starting ordinal value, default 0
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             count = 0
             if not key:  # empty key
@@ -1461,20 +1407,19 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[(key,val)]): iterator of tuples (key, val) where
-                                         key is apparent key with hidden
-                                         insertion ordering suffixe removed
-                                         from effective key.
+            key is apparent key with hidden
+            insertion ordering suffixe removed
+            from effective key.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database.
+                from multiple branches of the key space. If top key is
+                empty then gets all items in database.
             sep (bytes): sep character for attached io suffix
 
         Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
-        """
+        empty string so empty will matches all keys in db."""
         for iokey, val in self.getTopItemIter(db=db, top=top):
             key, ion = unsuffix(iokey, sep=sep)
             yield (key, val)
@@ -1492,15 +1437,14 @@ class LMDBer(filing.Filer):
 
         Returns:
             last (Iterator[memoryview]): last added entry item at tuple (key, val)
-                                         at apparent effective key for all
-                                         key >= key. When key empty then iterates
-                                         over all keys in db
+                at apparent effective key for all
+                key >= key. When key empty then iterates
+                over all keys in db
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()  # create cursor to walk back
             if not key:  # start at first key if any
@@ -1537,14 +1481,13 @@ class LMDBer(filing.Filer):
 
         Returns:
             last (Iterator[memoryview]): last added entry val at apparent effective
-                        key for all key >= key. When key empty then iterates
-                        over all keys in db
+                key for all key >= key. When key empty then iterates
+                over all keys in db
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): Apparent effective key
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for key, val in self.getIoSetLastItemIterAll(db=db, key=key, sep=sep):
             yield val
 
@@ -1564,15 +1507,15 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if any val in vals is added to set.
-                           False otherwise including key not in db, empty or None
-                           or vals empty or None
+                False otherwise including key not in db, empty or None
+                or vals empty or None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes|None): base key
             on (int): ordinal number to add to key form onkey
             vals (NonStrIterable|None): serialized values to add to set of vals at
-                                    effective key if any. None returns False
+                effective key if any. None returns False
             sep (bytes): separator character for split
 
         Set of values at a given effective key preserve insertion order.
@@ -1589,8 +1532,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key:
             return False
         return self.putIoSetVals(db=db,
@@ -1604,9 +1546,9 @@ class LMDBer(filing.Filer):
         Does not replace if key is empty or None or vals is empty or None
 
         Returns:
-           result (bool): True if vals replaced set.
-                          False otherwise including key not in db, empty or None
-                          or vals empty or None
+            result (bool): True if vals replaced set.
+                False otherwise including key not in db, empty or None
+                or vals empty or None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
@@ -1631,8 +1573,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key:
             return False
         return self.pinIoSetVals(db=db, key=onKey(key, on, sep=sep), vals=vals, sep=sep)
@@ -1647,8 +1588,8 @@ class LMDBer(filing.Filer):
 
         Returns:
             on (int): ordinal number of new onkey for newly appended set of vals.
-                    Raises ValueError when unsuccessful append including when
-                    key is empty or None or vals is empty or None
+                Raises ValueError when unsuccessful append including when
+                key is empty or None or vals is empty or None
 
         Parameters:
             db (subdb): named sub db in lmdb
@@ -1662,8 +1603,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key or not vals or not helping.isNonStringIterable(vals):
             raise ValueError(f"Bad append parameter: {key=} or {vals=}")
 
@@ -1719,9 +1659,9 @@ class LMDBer(filing.Filer):
         and val is not None.
 
         Returns:
-           result (bool): True if val added to set.
-                          False if already in set or key is empty or None or val
-                          is None
+            result (bool): True if val added to set.
+                False if already in set or key is empty or None or val
+                is None
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
@@ -1736,8 +1676,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         # val of None will return False
         return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
@@ -1750,10 +1689,10 @@ class LMDBer(filing.Filer):
 
         Returns:
             ioset (Iterator): iterator over insertion ordered set of values
-                             at same apparent effective key made from key + on.
-                             Uses hidden ordinal key suffix for insertion ordering.
-                             The suffix is appended and stripped transparently.
-                             When key is empty then returns empty iterator
+                at same apparent effective key made from key + on.
+                Uses hidden ordinal key suffix for insertion ordering.
+                The suffix is appended and stripped transparently.
+                When key is empty then returns empty iterator
 
         Raises StopIteration Error when empty.
 
@@ -1766,8 +1705,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         for onkey, val in self.getIoSetItemIter(db=db,
                                          key=onKey(key, on, sep=sep),
                                          ion=ion,
@@ -1782,8 +1720,8 @@ class LMDBer(filing.Filer):
 
         Returns:
             last (tuple[tuple, int, str]): last set item triple at onkey
-                 (keys, on, val)
-                 Empty tuple () if onkey not in db or key empty.
+                (keys, on, val)
+                Empty tuple () if onkey not in db or key empty.
 
         Parameters:
             db (subdb): named sub db in lmdb
@@ -1794,8 +1732,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if last := self.getIoSetLastItem(db=db,
                                          key=onKey(key, on, sep=sep),
                                          sep=sep):
@@ -1829,22 +1766,21 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if val at onkey removed when val not None
-                           or all entries at onkey removed when val None.
-                           False otherwise if no values at onkey or key is empty
-                           or val not found.
+                or all entries at onkey removed when val None.
+                False otherwise if no values at onkey or key is empty
+                or val not found.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key. When key is empty returns False
             on (int): ordinal number at which to add to key form effective key
-            val(int|None): value to remove if any.
-                           None means remove all entries at onkey
+            val (int|None): value to remove if any.
+                None means remove all entries at onkey
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         return self.remIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
@@ -1855,20 +1791,19 @@ class LMDBer(filing.Filer):
         When key is empty then deletes whole db.
 
         Returns:
-           result (bool): True if any entries deleted
-                          False otherwise
+            result (bool): True if any entries deleted
+                False otherwise
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key
             on (int): ordinal number at which to add to key form effective key
-                      0 means to delete all on
+                0 means to delete all on
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key:
             return self.remTop(db=db, top=b'')
 
@@ -1909,8 +1844,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
 
 
@@ -1923,8 +1857,8 @@ class LMDBer(filing.Filer):
 
         Returns:
             count (int): count of set members for onkey for on >= on. When on is
-                         None then count of all on for key. When key is empty
-                         then count of all on for all key for whole db.
+                None then count of all on for key. When key is empty
+                then count of all on for all key for whole db.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
@@ -1933,8 +1867,7 @@ class LMDBer(filing.Filer):
             sep (bytes): separator character for split
 
         UUses hidden ordinal key suffix for insertion ordering which is
-        transparently suffixed and unsuffixed
-        """
+        transparently suffixed and unsuffixed"""
         if not key:
             return self.cntAll(db)
 
@@ -1966,14 +1899,14 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[(str, int, memoryview)]): iterator of triples (key, on, val)
-                where key base key, on is int, and val is entry value of
-                with insertion ordering suffix removed from effective key.
+            where key base key, on is int, and val is entry value of
+            with insertion ordering suffix removed from effective key.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database.
+                from multiple branches of the key space. If top key is
+                empty then gets all items in database.
             key (bytes): base key
             sep (bytes): separator character for split
 
@@ -1982,8 +1915,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         for onkey, val in self.getTopIoSetItemIter(db=db, top=top, sep=sep):
             key, on = splitOnKey(onkey, sep=sep)
             yield (key, on, val)
@@ -2007,9 +1939,9 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (Iterator[(key, int, bytes)]): iterator of triples
-                (key, on, val)
-                where key forms base key, on is int, and val is entry value at
-                with insertion ordering suffix removed from effective key.
+            (key, on, val)
+            where key forms base key, on is int, and val is entry value at
+            with insertion ordering suffix removed from effective key.
 
         Parameters:
             db (subdb): named sub db in lmdb
@@ -2020,8 +1952,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key:  # iterate over all on for all keys
             yield from self.getOnTopIoSetItemIter(db=db, top=b'', sep=sep)
             return
@@ -2067,8 +1998,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         if not key:
             key = b""  # all on for all keys
             for onkey, val in self.getIoSetLastItemIterAll(db=db,
@@ -2132,13 +2062,12 @@ class LMDBer(filing.Filer):
             db (subdb): named sub db in lmdb
             key (bytes): base key. When empty then whole db
             on (int|None): ordinal number at which to initiate retrieval
-                           when on is None then all on starting at greatest
+                when on is None then all on starting at greatest
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if not cursor.last():  # position cursor at last entry of set of last key
@@ -2198,13 +2127,12 @@ class LMDBer(filing.Filer):
             db (subdb): named sub db in lmdb
             key (bytes): base key. When empty then whole db
             on (int|None): ordinal number at which to initiate retrieval
-                           when on is None then all on starting at greatest
+                when on is None then all on starting at greatest
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
+        Assumes DB opened with dupsort=False"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
 
@@ -2283,8 +2211,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes):  within sub db's keyspace
-            vals (Iterable[bytes]): of values to be written
-        """
+            vals (Iterable[bytes]): of values to be written"""
         if not key:
             return False
 
@@ -2316,8 +2243,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes):  within sub db's keyspace
-            val (bytes): value to be written
-        """
+            val (bytes): value to be written"""
         if not key:
             return False
 
@@ -2342,8 +2268,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
+            key: bytes of key within sub db's keyspace"""
         if not key:
             return False
 
@@ -2367,8 +2292,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
+            key: bytes of key within sub db's keyspace"""
         if not key:
             return False
 
@@ -2394,8 +2318,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
+            key: bytes of key within sub db's keyspace"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
@@ -2415,8 +2338,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
+            key: bytes of key within sub db's keyspace"""
         if not key:
             return 0
 
@@ -2440,9 +2362,8 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            val is bytes of dup val at key to delete
-        """
+            key: bytes of key within sub db's keyspace
+            val: bytes of dup val at key to delete"""
         if not key:
             return False
 
@@ -2481,8 +2402,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
-            vals (Iterable[bytes]): of values to be written
-        """
+            vals (Iterable[bytes]): of values to be written"""
 
         result = False
         # detect if there is no key, no vals, or if the key exists but is empty
@@ -2532,8 +2452,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
-            val (bytes): value to be written unless empty
-        """
+            val (bytes): value to be written unless empty"""
         return self.putIoDupVals(db, key, [val] if val is not None else [b''])
 
 
@@ -2559,9 +2478,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key (bytes): within sub db's keyspace
-
-        """
+            key (bytes): within sub db's keyspace"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             vals = []  # list
             if not key:
@@ -2606,8 +2523,7 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
-            ion (int): starting ordinal value, default 0
-        """
+            ion (int): starting ordinal value, default 0"""
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             if not key:  # empty key
@@ -2650,8 +2566,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key (bytes): within sub db's keyspace
-        """
+            key (bytes): within sub db's keyspace"""
         if not key:
             return None
 
@@ -2687,12 +2602,11 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if key exists in db
-                           False if key not exists in db
+                False if key not exists in db
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key (bytes): within sub db's keyspace
-        """
+            key (bytes): within sub db's keyspace"""
         if not key:
             return False
 
@@ -2727,13 +2641,12 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if dup item (key, val) exists in db
-                           False otherwise
+                False otherwise
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
-            val (bytes): effective value to be deleted
-        """
+            val (bytes): effective value to be deleted"""
         if not key:
             return False
 
@@ -2773,8 +2686,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
-            key (bytes): within sub db's keyspace
-        """
+            key (bytes): within sub db's keyspace"""
         if not key:
             return 0
         with self.env.begin(db=db, write=False, buffers=True) as txn:
@@ -2799,11 +2711,10 @@ class LMDBer(filing.Filer):
 
         Returns:
             items (abc.Iterator): iterator of (full key, val) tuples of all
-            dup items  over a branch of the db given by top key where returned
-            full key is full database key for val not truncated top key.
-            Item is (key, val) with proem stripped from val stored in db.
-            If key = b'' then returns list of dup items for all keys in db.
-
+                dup items  over a branch of the db given by top key where returned
+                full key is full database key for val not truncated top key.
+                Item is (key, val) with proem stripped from val stored in db.
+                If key = b'' then returns list of dup items for all keys in db.
 
         Because cursor.iternext() advances cursor after returning item its safe
         to delete the item within the iteration loop. curson.iternext() works
@@ -2814,8 +2725,8 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             top (bytes): truncated top key, a key space prefix to get all the items
-                        from multiple branches of the key space. If top key is
-                        empty then gets all items in database
+                from multiple branches of the key space. If top key is
+                empty then gets all items in database
 
         Uses python .startswith to match which always returns True if top is
         empty string so empty will matches all keys in db .
@@ -2831,8 +2742,7 @@ class LMDBer(filing.Filer):
 
         With prepended proem ordinal must explicity check for duplicate values
         before insertion. Uses a python set for the duplicate inclusion test.
-        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-        """
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n)."""
         for top, val in self.getTopItemIter(db=db, top=top):
             val = val[33:] # strip proem
             yield (top, val)
@@ -2865,12 +2775,11 @@ class LMDBer(filing.Filer):
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
         Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
+            db: opened named sub db with dupsort=False
+            key: bytes of key within sub db's keyspace
             on (int): ordinal number at which to add
-            vals is list of bytes of values to be written
-             sep (bytes): separator character for split
-        """
+            vals: list of bytes of values to be written
+            sep (bytes): separator character for split"""
 
         result = False
         dups = set(self.getOnIoDupVals(db, key))  #get preexisting dups if any
@@ -2910,16 +2819,15 @@ class LMDBer(filing.Filer):
         with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           result (bool): True if duplicate val added at onkey idempotent
-                          False if duplicate val preexists at onkey
+            result (bool): True if duplicate val added at onkey idempotent
+                False if duplicate val preexists at onkey
 
         Parameters:
             db (SubDB): opened named sub db with dupsort=True
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to add
             val (bytes): serialized value to add at onkey as dup
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         onkey = onKey(key, on, sep=sep)
         return (self.addIoDupVal(db, key=onkey, val=val))
 
@@ -2947,8 +2855,7 @@ class LMDBer(filing.Filer):
             db (subdb): named sub db in lmdb
             key (bytes): key within sub db's keyspace plus trailing part on
             val (bytes): serialized value to append
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         val = (b'%032x.' % (0)) +  val  # prepend ordering proem
         return (self.appendOnVal(db=db, key=key, val=val, sep=sep))
 
@@ -2979,16 +2886,14 @@ class LMDBer(filing.Filer):
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           vals (list): of dup vals ot onkey when onkey present
-                        empty list if onkey not present
-
+            vals (list): of dup vals ot onkey when onkey present
+                empty list if onkey not present
 
         Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
+            db: opened named sub db with dupsort=True
+            key: bytes of key within sub db's keyspace
             on (int): ordinal number at which to retrieve
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
@@ -3043,9 +2948,7 @@ class LMDBer(filing.Filer):
             key (bytes): base key. When key is empty then returns empty iterator
             on (int): ordinal number at which to add to key form effective key
             ion (int): starting insertion ordinal value, default 0
-            sep (bytes): separator character for split
-
-        """
+            sep (bytes): separator character for split"""
         for onkey, val in self.getIoDupItemIter(db=db,
                                                 key=onKey(key, on, sep=sep),
                                                 ion=ion):
@@ -3081,8 +2984,7 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): base key within sub db's keyspace
             on (int): ordinal number to form onkey to get last from dups at onkey
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         return self.getIoDupValLast(db=db, key=onKey(key, on, sep=sep))
 
 
@@ -3099,6 +3001,7 @@ class LMDBer(filing.Filer):
         when key is empty then retrieves whole db
 
         Raises StopIteration Error when empty.
+
         Returns:
             val (Iterator[bytes]): last dup val at each onkey
 
@@ -3107,8 +3010,7 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
                 when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for key, on, val in self.getOnIoDupLastItemIter(db=db, key=key, on=on, sep=sep):
             yield (val)
 
@@ -3135,8 +3037,7 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
                 when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if key:  # not empty
@@ -3174,15 +3075,14 @@ class LMDBer(filing.Filer):
         with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           result (bool): True if onkey present so all dups at onkey deleted
-                          False if onkey not present
+            result (bool): True if onkey present so all dups at onkey deleted
+                False if onkey not present
 
         Parameters:
-            db is opened named sub db with dupsort=True
+            db: opened named sub db with dupsort=True
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to retrieve
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         return (self.delIoDupVals(db, key=onKey(key, on, sep=sep)))
 
 
@@ -3201,16 +3101,15 @@ class LMDBer(filing.Filer):
         with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           result (bool): True if duplicate val found and deleted
-                          False if duplicate val does not exist at onkey
+            result (bool): True if duplicate val found and deleted
+                False if duplicate val does not exist at onkey
 
         Parameters:
-            db is opened named sub db with dupsort=True
+            db: opened named sub db with dupsort=True
             key (bytes): key within sub db's keyspace plus trailing part on
             on (int): ordinal number at which to retrieve
             val (bytes): serialized dup value to del at onkey
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         return (self.delIoDupVal(db, key=onKey(key, on, sep=sep), val=val))
 
 
@@ -3239,8 +3138,7 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
             on (int): ordinal number at which to retrieve
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         return self.cntIoDups(db=db, key=onKey(key, on, sep=sep))
 
 
@@ -3270,8 +3168,7 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
                 when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for key, on, val in self.getOnIoDupItemBackIter(db=db, key=key, on=on, sep=sep):
             yield (val)
 
@@ -3302,8 +3199,7 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
                 when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if not cursor.last():  # pre-position cursor at last dup of last key
@@ -3356,8 +3252,7 @@ class LMDBer(filing.Filer):
 
         Uses hidden ordinal value proem for insertion ordering which is
         transparently prepended and stripped
-        Assumes DB opened with dupsort=True
-        """
+        Assumes DB opened with dupsort=True"""
         for key, on, val in self.getOnTopItemIter(db=db, top=top, sep=sep):
             val = val[33:] # strip proem
             yield (key, on, val)
@@ -3383,8 +3278,7 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
                 when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for key, on, val in self.getOnAllItemIter(db=db, key=key, on=on, sep=sep):
             val = val[33:] # strip proem
             yield (key, on, val)
@@ -3413,8 +3307,7 @@ class LMDBer(filing.Filer):
             key (bytes): key within sub db's keyspace plus trailing part on
                 when key is empty then retrieves whole db
             on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for key, on, val in self.getOnIoDupItemIterAll(db=db, key=key, on=on, sep=sep):
             yield (val)
 

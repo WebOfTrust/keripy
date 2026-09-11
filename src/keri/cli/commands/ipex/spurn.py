@@ -58,7 +58,7 @@ class SpurnDoer(doing.DoDoer):
         tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)
+        self.psr = Parser(kvy=kvy, tvy=tvy, vry=vry)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
@@ -82,7 +82,8 @@ class SpurnDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context
@@ -105,14 +106,14 @@ class SpurnDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
         spurn, _ = cloneMessage(self.hby, exn.said)
         if spurn is None:
             raise ValueError(f"Invalid spurn evt={exn.ked}, not saved")
 
         if isinstance(self.hab, GroupHab):
-            wexn, watc = multisigExn(self.hab, exn=msg)
+            wexn, watc = multisigExn(self.hab, exn=msg, version=Vrsn_1_0)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)

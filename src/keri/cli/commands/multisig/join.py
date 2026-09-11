@@ -12,10 +12,10 @@ from hio.base import doing
 from hio.help import ogler
 from prettytable import PrettyTable
 
-from ...common import Parsery, setupHby, printIdentifier
+from ...common import Parsery, setupHby, printIdentifier, parseVersion
 
 from ....kering import (TraitCodex, ConfigurationError,
-                        MissingAnchorError, Vrsn_1_0)
+                        Kinds, MissingAnchorError, Version, Vrsn_1_0)
 from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
                      Notifier, Multiplexor, Counselor, Organizer, Poster,
                      multisigInceptExn, multisigInteractExn, multisigRotateExn,
@@ -38,6 +38,8 @@ parser = argparse.ArgumentParser(description='Join group multisig inception, rot
 parser.set_defaults(handler=lambda args: join(args))
 parser.add_argument('--group', '-g', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for mailbox queries while joining, such as 1.0 or 2.0')
 
 def join(args):
     """ Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
@@ -51,8 +53,9 @@ def join(args):
     bran = args.bran
     auto = args.auto
     group = args.group
+    version = args.version
 
-    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto)
+    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto, version=version)
 
     doers = [joinDoer]
     return doers
@@ -63,7 +66,7 @@ class JoinDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, group, auto=False):
+    def __init__(self, name, base, bran, group, auto=False, version=None):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
@@ -75,7 +78,8 @@ class JoinDoer(doing.DoDoer):
                          while using the default group of "default-group"
         """
         self.group = group
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.witq = WitnessInquisitor(hby=self.hby)
@@ -85,21 +89,28 @@ class JoinDoer(doing.DoDoer):
         self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
         self.rvy = Revery(db=self.hby.db,  lax=True)
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
+        parser_kwa = dict()
+        if self.version is not None:
+            parser_kwa["version"] = self.version
+
         self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
                           rvy=self.rvy, vry=self.verifier, exc=self.exc,
-                          version=Vrsn_1_0)
+                          **parser_kwa)
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
+        self.mux = mux
         loadHandlers(exc=self.exc, mux=mux)
-        self.counselor = Counselor(hby=self.hby)
+        self.counselor = Counselor(hby=self.hby, version=self.version, kind=Kinds.json)
 
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                          verifier=self.verifier)
 
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
-                                                                                   '/delegate'])
-        self.postman = Poster(hby=self.hby)
+                                                                       '/delegate'],
+                                   **kwa)
+        self.postman = Poster(hby=self.hby, version=self.version, kind=Kinds.json)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
@@ -114,7 +125,8 @@ class JoinDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)
@@ -188,6 +200,8 @@ class JoinDoer(doing.DoDoer):
         embeds = exn.ked['e']
         oicp = SerderKERI(sad=embeds["icp"])
 
+        inits["version"] = oicp.pvrsn
+        inits["kind"] = oicp.kind
         inits["isith"] = oicp.ked["kt"]
         inits["nsith"] = oicp.ked["nt"]
 
@@ -228,12 +242,22 @@ class JoinDoer(doing.DoDoer):
             except ValueError as e:
                 return False
 
-            icp = ghab.makeOwnInception(allowPartiallySigned=True)
+            icp = ghab.msgOwnInception(allowPartiallySigned=True,
+                                       gvrsn=self.version if self.version is not None else Version)
 
             exn, ims = multisigInceptExn(ghab.mhab,
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
-                                         icp=icp)
+                                         icp=icp,
+                                         version=Vrsn_1_0,
+                                         kind=oicp.kind)
+            local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                    framed=True,
+                                                    processive=False)[0]
+            self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                  tsgs=local.tsgs, cigars=local.cigars,
+                                  essrs=local.essrs)
+            self.mux.add(local.serder)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -297,12 +321,22 @@ class JoinDoer(doing.DoDoer):
             approve = yn in ('', 'y', 'Y')
 
         if approve:
-            ixn = ghab.interact(data=data)
+            event_version = oixn.pvrsn
+            ixn = ghab.interact(data=data, framed=True, version=event_version, gvrsn=event_version)
             serder = SerderKERI(raw=ixn)
 
-            ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn)
+            ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True, gvrsn=event_version)
 
-            exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
+            exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn,
+                                           version=Vrsn_1_0,
+                                           kind=oixn.kind)
+            local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                    framed=True,
+                                                    processive=False)[0]
+            self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                  tsgs=local.tsgs, cigars=local.cigars,
+                                  essrs=local.essrs)
+            self.mux.add(local.serder)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -425,16 +459,25 @@ class JoinDoer(doing.DoDoer):
                 ghab = self.hby.joinGroupHab(pre, group=group, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
-                ghab.rotate(serder=orot, smids=smids, rmids=rmids)
+                ghab.rotate(serder=orot, smids=smids, rmids=rmids, framed=True, gvrsn=orot.pvrsn)
             except ValueError:
                 return False
 
-            rot = ghab.makeOwnEvent(allowPartiallySigned=True, sn=orot.sn)
+            rot = ghab.msgOwnEvent(allowPartiallySigned=True, sn=orot.sn, gvrsn=orot.pvrsn)
 
             exn, ims = multisigRotateExn(ghab,
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
-                                         rot=rot)
+                                         rot=rot,
+                                         version=Vrsn_1_0,
+                                         kind=orot.kind)
+            local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                    framed=True,
+                                                    processive=False)[0]
+            self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                  tsgs=local.tsgs, cigars=local.cigars,
+                                  essrs=local.essrs)
+            self.mux.add(local.serder)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -530,8 +573,8 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool: True when the reply is approved and processed, otherwise False
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -580,14 +623,16 @@ class JoinDoer(doing.DoDoer):
             self.psr.parseOne(ims=bytes(anc))
 
             # Now sign the event and parse it with our signatures
-            anc = hab.endorse(rserder)
+            anc = hab.endorse(rserder, framed=False)
             self.psr.parseOne(ims=bytes(anc))
 
             smids = hab.db.signingMembers(pre=hab.pre)
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRpyExn(ghab=hab, rpy=anc)
+                exn, atc = multisigRpyExn(ghab=hab, rpy=anc,
+                                          version=Vrsn_1_0,
+                                          kind=rserder.kind)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -611,8 +656,9 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool: True when the registry creation is approved and processed,
+                otherwise False
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -647,7 +693,7 @@ class JoinDoer(doing.DoDoer):
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers, framed=True)
             self.psr.parseOne(ims=bytes(anc))
 
             vcp = embeds["vcp"]
@@ -664,7 +710,14 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=vserder.raw, anc=anc, usage=usage)
+                exn, atc = multisigRegistryInceptExn(
+                    ghab=hab,
+                    vcp=vserder.raw,
+                    anc=anc,
+                    usage=usage,
+                    version=Vrsn_1_0,
+                    kind=vserder.kind,
+                )
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -688,8 +741,9 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool: True when the credential issuance is approved and processed,
+                otherwise False
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -745,7 +799,7 @@ class JoinDoer(doing.DoDoer):
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers, framed=True)
             self.psr.parseOne(ims=bytes(anc))
 
             iss = embeds["iss"]
@@ -767,7 +821,14 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigIssueExn(ghab=hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                exn, atc = multisigIssueExn(
+                    ghab=hab,
+                    acdc=acdc,
+                    iss=iserder.raw,
+                    anc=anc,
+                    version=Vrsn_1_0,
+                    kind=iserder.kind,
+                )
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -791,8 +852,9 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool | None: True when the revocation is approved and processed,
+                False when declined, or None when the credential SAID is invalid
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -815,9 +877,9 @@ class JoinDoer(doing.DoDoer):
 
         schemer = Schemer(raw=scraw)
 
-        hab = self.hby.habs[creder.issuer]
+        hab = self.hby.habs[creder.israid]
         if hab is None:
-            raise ValueError(f"credential issuer not a valid AID={creder.issuer}")
+            raise ValueError(f"credential issuer not a valid AID={creder.israid}")
 
         print(f"\nGroup Credential Revocation Proposed (from {senderAlias}):")
         print(f"Credential {creder.said}:")
@@ -847,7 +909,7 @@ class JoinDoer(doing.DoDoer):
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers, framed=True)
             self.psr.parseOne(ims=bytes(anc))
 
             rev = embeds["rev"]
@@ -863,7 +925,14 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRevokeExn(ghab=hab, said=creder.said, rev=rserder.raw, anc=anc)
+                exn, atc = multisigRevokeExn(
+                    ghab=hab,
+                    said=creder.said,
+                    rev=rserder.raw,
+                    anc=anc,
+                    version=Vrsn_1_0,
+                    kind=rserder.kind,
+                )
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -878,7 +947,7 @@ class JoinDoer(doing.DoDoer):
             if hab.witnesser() and 'i' in creder.attrib:
                 recp = creder.attrib['i']
                 msgs = []
-                for msg in self.hby.db.clonePreIter(pre=creder.issuer):
+                for msg in self.hby.db.clonePreIter(pre=creder.israid):
                     serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))

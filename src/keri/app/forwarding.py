@@ -12,41 +12,56 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import decking, ogler
 
-from ..kering import (Roles, Vrsn_1_0, Kinds,
+from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
                       ConfigurationError, ValidationError)
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
-                    Sadder, Counter, SerderKERI,
+                    Counter, SerderKERI,
                     MtrDex, Codens, NonTransDex)
 from ..db import dgKey
-from ..peer import exchange
+from ..peer import specialExchange
 from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
 
 
+def _exchangeVersion(version=None, kind=None):
+    """Return embedded EXN and outer framing versions for forwarding wrappers
+
+    `/fwd` and `/essr/req` still use the legacy `specialExchange` body shape, so
+    keep that embedded body at v1 while allowing the surrounding framing to
+    follow the explicit caller version or the global default
+    """
+    gvrsn = version if version is not None else Version
+    kind = kind if kind is not None else Kinds.json
+    return dict(version=Vrsn_1_0, kind=kind), gvrsn
+
+
 class Poster(doing.DoDoer):
     """
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
-    delivers them to one of the target recipient's witnesses for store and forward
-    to the intended recipient
+    delivers them to one of the target receiver's witnesses for store and forward
+    to the intended receiver
 
     """
 
-    def __init__(self, hby, mbx=None, evts=None, cues=None, **kwa):
+    def __init__(self, hby, mbx=None, evts=None, cues=None, version=None, kind=None, **kwa):
         self.hby = hby
         self.mbx = mbx
         self.evts = evts if evts is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.version = version if version is not None else getattr(hby, "version", Version)
+        self.kind = kind if kind is not None else Kinds.json
 
         doers = [doing.doify(self.deliverDo)]
         super(Poster, self).__init__(doers=doers, **kwa)
 
     def deliverDo(self, tymth=None, tock=0.0, **kwa):
         """
-        Returns:  doifiable Doist compatible generator method that processes
+        Returns:
+            doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
-                   and sends them to one of the witnesses of the recipient for
+                   and sends them to one of the witnesses of the receiver for
                    store and forward.
 
         Usage:
@@ -80,20 +95,30 @@ class Poster(doing.DoDoer):
                         for role in (Roles.controller, Roles.agent, Roles.mailbox):
                             if role in ends:
                                 if role == Roles.mailbox:
-                                    yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                                    yield from self.forward(hab,
+                                                            ends[role],
+                                                            recp=recp,
+                                                            serder=srdr,
+                                                            atc=atc,
+                                                            topic=tpc)
                                 else:
                                     yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
 
                     # otherwise send to one witness
                     elif Roles.witness in ends:
-                        yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                        yield from self.forwardToWitness(hab,
+                                                         ends[Roles.witness],
+                                                         recp=recp,
+                                                         serder=srdr,
+                                                         atc=atc,
+                                                         topic=tpc)
                     else:
                         logger.info(f"No end roles for {recp} to send evt={srdr.said}")
                         continue
                 except ConfigurationError as e:
                     logger.error(f"Error sending to {recp} with ends={ends}.  Err={e}")
                     continue
-                # Get the kever of the recipient and choose a witness
+                # Get the kever of the receiver and choose a witness
 
                 self.cues.append(dict(dest=recp, topic=tpc, said=srdr.said))
 
@@ -109,9 +134,9 @@ class Poster(doing.DoDoer):
         Parameters:
             src (str): qb64 identifier prefix of sender
             hab (Hab): Sender identifier habitat
-            dest (str) is identifier prefix qb64 of the intended recipient
+            dest (str): identifier prefix qb64 of the intended receiver
             topic (str): topic of message
-            serder (Serder) KERI event message to envelope and forward:
+            serder (Serder): KERI event message to envelope and forward
             attachment (bytes): attachment bytes
 
         """
@@ -130,6 +155,9 @@ class Poster(doing.DoDoer):
 
         Parameters:
             said (str): qb64 SAID of message to check for
+
+        Returns:
+            bool: True if the message SAID has been sent
         """
 
         for cue in self.cues:
@@ -141,7 +169,8 @@ class Poster(doing.DoDoer):
     def sendEventToDelegator(self, sender, hab, fn=0):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing
-        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
+        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb,
+                                      version=hab.kever.serder.pvrsn)
         ser = SerderKERI(raw=icp)
         del icp[:ser.size]
 
@@ -184,14 +213,19 @@ class Poster(doing.DoDoer):
         # Its not us, randomly select a mailbox and forward it on
         mbx, mailbox = random.choice(list(ends.items()))
         msg = bytearray()
-        msg.extend(introduce(hab, mbx))
+        msg.extend(introduce(hab, mbx, gvrsn=self.version))
         # create the forward message with payload embedded at `a` field
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt),
+                                   **kwa)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -217,14 +251,19 @@ class Poster(doing.DoDoer):
         # Its not us, randomly select a mailbox and forward it on
         mbx, mailbox = random.choice(list(ends.items()))
         msg = bytearray()
-        msg.extend(introduce(hab, mbx))
+        msg.extend(introduce(hab, mbx, gvrsn=self.version))
         # create the forward message with payload embedded at `a` field
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt),
+                                   **kwa)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -241,17 +280,13 @@ class Poster(doing.DoDoer):
 class StreamPoster:
     """
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
-    delivers them to one of the target recipient's witnesses for store and forward
-    to the intended recipient
+    delivers them to one of the target receiver's witnesses for store and forward
+    to the intended receiver
 
     """
 
-    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None, essr=False, **kwa):
-        if hab is not None:
-            self.hab = hab
-        else:
-            self.hab = hby.habs[src]
-
+    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None,
+                 essr=False, version=None, kind=None, **kwa):
         self.hby = hby
         self.hab = hab
         self.recp = recp
@@ -261,13 +296,16 @@ class StreamPoster:
         self.topic = topic
         self.headers = headers
         self.essr = essr
+        self.version = version if version is not None else getattr(hby, "version", Version)
+        self.kind = kind if kind is not None else Kinds.json
         self.evts = decking.Deck()
 
     def deliver(self):
         """
-        Returns:  doifiable Doist compatible generator method that processes
+        Returns:
+            doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
-                   and sends them to one of the witnesses of the recipient for
+                   and sends them to one of the witnesses of the receiver for
                    store and forward.
 
         Usage:
@@ -385,11 +423,15 @@ class StreamPoster:
 
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
-        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                           modifiers=dict(src=hab.pre, dest=ctrl))
-        ims = hab.endorse(serder=essr, pipelined=False)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
+        essr, _ = specialExchange(sender=hab.pre,
+                                  route='/essr/req',
+                                  modifiers=dict(src=hab.pre, dest=ctrl),
+                                  diger=diger,
+                                  **kwa)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=gvrsn)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                           gvrsn=Vrsn_1_0).qb64b)
+                           gvrsn=gvrsn).qb64b)
         ims.extend(texter.qb64b)
         return ims
 
@@ -406,9 +448,14 @@ class StreamPoster:
         # Its not us, randomly select a mailbox and forward it on
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
-                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=self.recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt),
+                                   **kwa)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
         return fwd, ims + atc
 
     def forward(self, hab, ends, msg, topic):
@@ -430,7 +477,7 @@ class StreamPoster:
             msg = self._essrWrapper(hab, msg, mbx)
 
         ims = bytearray()
-        ims.extend(introduce(hab, mbx))
+        ims.extend(introduce(hab, mbx, gvrsn=self.version))
         ims.extend(msg)
 
         self.messagers.append(streamMessengerFrom(hab=hab, pre=mbx, urls=mailbox, msg=bytes(ims)))
@@ -439,7 +486,7 @@ class StreamPoster:
 
 class ForwardHandler:
     """
-    Handler for forward `exn` messages used to envelope other KERI messages intended for another recipient.
+    Handler for forward `exn` messages used to envelope other KERI messages intended for another receiver.
     This handler acts as a mailbox for other identifiers and stores the messages in a local database.
 
     Example message::\n\n        {
@@ -495,15 +542,15 @@ class ForwardHandler:
         embeds = serder.ked['e']
         modifiers = serder.ked['q'] if 'q' in serder.ked else {}
 
-        recipient = modifiers["pre"]
+        receiver = modifiers["pre"]
         topic = modifiers["topic"]
-        resource = f"{recipient}/{topic}"
+        resource = f"{receiver}/{topic}"
 
         pevt = bytearray()
         for pather, atc in attachments:
             ked = pather.resolve(embeds)
-            sadder = Sadder(ked=ked, kind=Kinds.json)
-            pevt.extend(sadder.raw)
+            serder = SerderKERI(sad=ked, verify=False)
+            pevt.extend(serder.raw)
             pevt.extend(atc)
 
         if not pevt:
@@ -513,7 +560,7 @@ class ForwardHandler:
         self.mbx.storeMsg(topic=resource, msg=pevt)
 
 
-def introduce(hab, wit):
+def introduce(hab, wit, gvrsn=None):
     """ Clone and return hab KEL if lastest event has not been receipted by wit
 
     Check to see if the target witness has already provided a receipt for the latest event
@@ -522,7 +569,11 @@ def introduce(hab, wit):
 
     Parameters:
         hab (Hab): local environment for the identifier to propagate
-        wit (str): qb64 identifier prefix of the recipient of KEL if not already receipted
+        wit (str): qb64 identifier prefix of the receiver of KEL if not already receipted
+        gvrsn (Versionage or None): CESR genus version for intro stream attachments.
+            None means use each clone/reply helper's library default (``Version``).
+            Callers talking to a peer that requires a different genus should pass
+            their configured Habery/Poster version (e.g. ``Vrsn_1_0``).
 
     Returns:
         bytearray: cloned KEL of hab
@@ -535,22 +586,40 @@ def introduce(hab, wit):
     iserder = hab.kever.serder
     witPrefixer = Prefixer(qb64=wit)
     dgkey = dgKey(wit, iserder.said)
+    #decide if need to send our inception before sending receipt
+    # to remote pre of receipted event so it can process our key state
+    # to verify local signatures on our receipt. Need to send
+    # our inception if we do not have a receipt from receiver of
+    # our inception so we believe other pre cannot verify signs.
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp
-        for sprefixer, snum, sdiger, siger in hab.db.vrcs.getIter(dgkey):
-            # Receipt is from this hab if the prefix matches
-            if sprefixer.qb64 == hab.pre:
-                found = True
+        #for sprefixer, snum, sdiger, siger in hab.db.vrcs.getIter(dgkey):
+            ## Receipt is from this hab if the prefix matches
+            #if sprefixer.qb64 == hab.pre:
+                #found = True  # yes so don't pre-send own inception
+
+        # alt find in vrcsNew as preliminary to replace
+        topkeys = (wit, iserder.said)
+        for keys, siger in hab.db.vrc.getTopItemIter(keys=topkeys):
+            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+            if rpre == hab.pre:
+                found = True  # yes so don't pre-send own inception
+                break
+
     else:  # find if already rcts of own icp
         for prefixer, cigar in hab.db.rcts.getIter(dgkey):
             if prefixer.qb64.startswith(hab.pre):
-                found = True  # yes so don't send own inception
+                found = True  # yes so don't pre-send own inception
+                break
 
-    if not found:  # no receipt from remote so send own inception
-        # no vrcs or rct of own icp from remote so send own inception
-        for msg in hab.db.clonePreIter(pre=hab.pre):
+    if not found:  # no receipt from remote so pre-send own inception
+        # no vrcs or rct of own icp from remote so send own inception.
+        # Attachment genus follows caller config when provided; otherwise each
+        # helper uses its library default.
+        kwa = dict(gvrsn=gvrsn) if gvrsn is not None else {}
+        for msg in hab.db.clonePreIter(pre=hab.pre, **kwa):
             msgs.extend(msg)
-        for msg in hab.db.cloneDelegation(hab.kever):
+        for msg in hab.db.cloneDelegation(hab.kever, **kwa):
             msgs.extend(msg)
-        msgs.extend(hab.replyEndRole(cid=hab.pre))
+        msgs.extend(hab.replyEndRole(cid=hab.pre, **kwa))
     return msgs

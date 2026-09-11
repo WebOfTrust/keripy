@@ -9,37 +9,61 @@ on:
 jobs:
   wasm-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        runtime: [chrome, firefox, node]
+        include:
+          - runtime: chrome
+            runner: playwright
+            playwright_browser: chromium
+          - runtime: firefox
+            runner: playwright
+            playwright_browser: firefox
+          - runtime: node
+            runner: selenium
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
-      - uses: pyodide/pyodide-actions/install-browser@v2
-        with:
-          runner: playwright
-          browser: ${{ matrix.runtime }}
+          python-version: '3.14'
       - uses: pyodide/pyodide-actions/download-pyodide@v2
         with:
-          version: 0.27.2
+          version: 314.0.5
           to: dist
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest-pyodide playwright
-          python -m playwright install --with-deps
-      - name: Prepare test directory
+          python -m pip install \
+            playwright==1.61.0 \
+            pytest-pyodide==0.59.2 \
+            build==1.6.1 setuptools==83.0.0 wheel==0.47.0
+      - name: Prepare browser dependencies and current Keripy wheel
         run: |
-          cp src/keri/db/webdbing.py ./webdbing.py
-      - name: Run WebDBer WASM tests in Pyodide
+          curl --fail --location --retry 3 \
+            https://github.com/keri-foundation/fortweb/releases/download/runtime-source-pyodide-314-hio-0.7.20-20260910/runtime-source.tar.gz \
+            --output runtime-source.tar.gz
+          echo '394db70ecbed6e5718e6ec0afbcb43eaf6384e2ab78218e55067ec9e5d83fb34  runtime-source.tar.gz' | sha256sum --check
+          mkdir -p wheels/dependencies
+          # Reuse dependency artifacts only. Test Keripy built from this checkout.
+          tar -xzf runtime-source.tar.gz -C wheels/dependencies \
+            --wildcards --exclude='wheelhouse/keri-*' 'wheelhouse/*.whl'
+          python -m build --wheel --no-isolation --outdir wheels/current
+      - name: Install Playwright browser
+        if: matrix.runner == 'playwright'
+        run: |
+          if [ "${{ matrix.playwright_browser }}" = "chromium" ]; then
+            python -m playwright install --only-shell chromium
+          else
+            python -m playwright install ${{ matrix.playwright_browser }}
+          fi
+      - name: Run browser storage and Habery tests in Pyodide 314
         env:
           RUN_WASM_TESTS: "true"
         run: |
           pytest tests/wasm/test_webdbing_wasm.py \
             --confcutdir=tests/wasm \
+            --runner ${{ matrix.runner }} \
             --runtime ${{ matrix.runtime }} \
             --dist-dir=./dist/ \
             -v

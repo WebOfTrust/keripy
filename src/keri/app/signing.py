@@ -4,20 +4,15 @@ KERI
 keri.app.signing module
 
 """
-from .. import Vrsn_1_0
 from .habbing import GroupHab
-from ..core import Pather, Counter, Seqner, Diger, Codens
+from ..core import Pather, Seqner, Diger, SealEvent, messagize
+from ..kering import Version
 
 
 def serialize(creder, prefixer, seqner, saider):
-    craw = bytearray(creder.raw)
-    craw.extend(Counter(Codens.SealSourceTriples, count=1,
-                             version=Vrsn_1_0).qb64b)
-    craw.extend(prefixer.qb64b)
-    craw.extend(seqner.qb64b)
-    craw.extend(saider.qb64b)
-
-    return bytes(craw)
+    return bytes(messagize(creder,
+                           bonds=[SealEvent(i=prefixer, s=seqner, d=saider)],
+                           framed=True, gvrsn=Version))
 
 
 #def ratify(hab, serder, paths=None, pipelined=False):
@@ -113,11 +108,11 @@ def signPaths(hab, serder, paths):
 def transSeal(hab):
     """ Returns seal components and signing indices as appropriate for current state of Habitat
 
-    Args:
+    Parameters:
         hab (Habitat): environment that contains the information for the idenfitier prefix
 
     Returns:
-       tuple:  seal components with signing indices
+        tuple:  seal components with signing indices
 
     ToDo: NRR
        indices for both hab.smids and hab.rmids

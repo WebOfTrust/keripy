@@ -9,7 +9,7 @@ from hio.base import doing
 
 from ...common import existing, Parsery
 
-from .... import Vrsn_1_0
+from ....kering import Vrsn_1_0
 from ....app import (Notifier, Organizer, GroupHab,
                      Multiplexor, MailboxDirector,
                      WitnessInquisitor, StreamPoster,
@@ -63,7 +63,7 @@ class AdmitDoer(doing.DoDoer):
         self.tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry, version=Vrsn_1_0)
+        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
@@ -87,7 +87,8 @@ class AdmitDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context
@@ -127,12 +128,12 @@ class AdmitDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, GroupHab):
             sender = self.hab.mhab
-            wexn, watc = multisigExn(self.hab, exn=msg)
+            wexn, watc = multisigExn(self.hab, exn=msg, version=Vrsn_1_0)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
@@ -151,7 +152,7 @@ class AdmitDoer(doing.DoDoer):
             print(f"Sending admit message to {recp}")
             postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
 
-            atc = serializeMessage(self.hby, exn.said)
+            atc = serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)

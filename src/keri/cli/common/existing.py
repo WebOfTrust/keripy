@@ -10,9 +10,10 @@ from contextlib import contextmanager
 
 from ...kering import AuthError
 from ...app import Habery, Keeper
+from keri.kering import Version
 
 
-def setupHby(name, base="", bran=None, cf=None, temp=False):
+def setupHby(name, base="", bran=None, cf=None, temp=False, noPrompt=False, version=None):
     """ Create Habery off of existing directory
 
     Parameters:
@@ -21,9 +22,10 @@ def setupHby(name, base="", bran=None, cf=None, temp=False):
         bran(str): optional passcode if the Habery was created encrypted
         cf (Configer): optional configuration for loading reference data
         temp (bool): True means create database in /tmp
+        noPrompt (bool): True means not prompt. Default to False
 
     Returns:
-          Habery:  the configured habery
+        Habery:  the configured habery
 
     """
     ks = Keeper(name=name,
@@ -45,10 +47,12 @@ def setupHby(name, base="", bran=None, cf=None, temp=False):
                 bran = bran.replace("-", "")
 
             retries += 1
-            hby = Habery(name=name, base=base, bran=bran, cf=cf, free=True)
+            hby = Habery(name=name, base=base, bran=bran, cf=cf, free=True, version=version if version is not None else Version)
             break
         except (AuthError, ValueError) as e:
             print(e)
+            if noPrompt:
+                raise e
             if retries >= 3:
                 raise AuthError("too many attempts")
             print("Valid passcode required, try again...")

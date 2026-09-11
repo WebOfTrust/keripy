@@ -19,7 +19,7 @@ def handler(args):
     """
     List local LMDB database migrations and their completion status
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
     lister = ListDoer(args)

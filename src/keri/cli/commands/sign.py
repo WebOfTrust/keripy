@@ -23,7 +23,7 @@ def handler(args):
     """
     Sign arbitrary data
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
     kwa = dict(args=args)

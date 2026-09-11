@@ -11,7 +11,7 @@ from typing import Type
 
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Ilks, MissingChainError,
+from ..kering import (Ilks, MissingChainError,
                       MissingRegistryError, MissingSchemaError,
                       ValidationError, FailedSchemaValidationError,
                       MissingChainError, RevokedChainError)
@@ -32,6 +32,19 @@ class Verifier:
     TimeoutMRE = 3600  # seconds to timeout missing registry escrows
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
     TimeoutBCE = 3600  # seconds to timeout missing issuer escrows
+
+    # Unary edge operators this verifier recognizes. A token outside this set is not an
+    # operator to this verifier and is skipped when resolving a list-valued `o` (see
+    # .verifyChain). DI2I and NOT are recognized but unimplemented: they are listed so
+    # they fail closed diagnosably instead of being dropped and silently defaulting.
+    # E1E is a keripy extension not yet in the spec's normative operator table.
+    UnaryOps = ('I2I', 'NI2I', 'DI2I', 'E1E', 'NOT')
+
+    # The delegative subset of .UnaryOps: each constrains the near ACDC's issuer
+    # relative to the far node's issuee, so they are mutually exclusive and a list
+    # containing several is a conflict resolved latest-wins. Operators outside this
+    # subset constrain something else and compose with the winner instead.
+    DelegativeOps = ('I2I', 'NI2I', 'DI2I')
 
     def __init__(self, hby, reger=None, creds=None, cues=None, expiry=36000000000):
         """
@@ -66,7 +79,7 @@ class Verifier:
         """
         self.tvy = Tevery(reger=self.reger, db=self.hby.db, local=False)
         self.psr = Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
-                                  version=Vrsn_1_0)
+                                  version=self.hby.version)
         self.resolver = CacheResolver(db=self.hby.db)
 
         self.inited = True
@@ -111,7 +124,7 @@ class Verifier:
 
         if regk not in self.tevers:  # registry event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):
-                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid, issr=creder.issuer)))
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid, issr=creder.israid)))
             raise MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state = self.tevers[regk].vcState(vcid)
@@ -161,12 +174,57 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.issuer)
+                try:
+                    state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
+                except ValidationError as ex:
+                    # .verifyChain knows the far node but not the near credential that
+                    # carried the edge, and the escrow handler logs only the exception.
+                    # Re-raise with the near SAID and edge label so an operator triaging
+                    # a stream can tell which credential to fix, matching the shape of
+                    # the MissingChainError messages below.
+                    raise ValidationError(f"Failure to verify credential {creder.said} "
+                                          f"chain {label}({nodeSaid}): {ex}") from ex
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
                     raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
+
+                # Enforce the edge's declared far-node schema ('s'). Per ACDC (S.
+                # Smith, issue #1534) the edge 's' is a schema the far node must
+                # *satisfy*, not a SAID that must equal the far node's own schema
+                # SAID. The far node already validated against its own schema (it is
+                # saved, per verifyChain above), so an edge declaring that same
+                # schema needs no further check. When the edge declares a *different*
+                # schema, the far node must additionally satisfy it: if it does, the
+                # near side is legitimately requiring a backwards-compatible (e.g.
+                # upgraded) schema without the far node being reissued; if it does
+                # not, the edge schema is not backwards compatible and the far node
+                # must be reissued. Handled here rather than in verifyChain so the
+                # missing-schema case can escrow and cue a schema query, exactly as
+                # the near ACDC's own schema does above.
+                nodeSchema = node['s'] if 's' in node else None
+                if nodeSchema is not None:
+                    farCreder = self.reger.creds.get(keys=nodeSaid)
+                    if farCreder.schema != nodeSchema:
+                        scraw = self.resolver.resolve(nodeSchema)
+                        if not scraw:  # edge schema not cached yet -- transient
+                            if self.escrowMSE(creder, prefixer, seqner, saider):
+                                self.cues.append(dict(kin="query",
+                                                      q=dict(r="schema", said=nodeSchema)))
+                            raise MissingSchemaError("edge schema {} for credential {} "
+                                                     "chain {}({}) not in cache"
+                                                     .format(nodeSchema, creder.said,
+                                                             label, nodeSaid))
+                        try:
+                            Schemer(raw=scraw).verify(farCreder.raw)
+                        except ValidationError as ex:  # far node fails the edge schema
+                            self.escrowMCE(creder, prefixer, seqner, saider)
+                            self.cues.append(dict(kin="proof", said=nodeSaid))
+                            raise MissingChainError("Credential {} chain {}({}) far node "
+                                                    "does not satisfy edge schema {}: {}"
+                                                    .format(creder.said, label, nodeSaid,
+                                                            nodeSchema, ex))
 
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.dt)
@@ -284,16 +342,19 @@ class Verifier:
                 self.processCredential(creder, prefixer, seqner, saider)
 
             except etype as ex:
+                # Log the exception, not ex.args[0]: an exception raised with no
+                # arguments has an empty args tuple, so indexing it would raise
+                # IndexError from inside this handler and abort the whole pass.
                 if logger.isEnabledFor(logging.TRACE):
-                    logger.trace("Verifier unescrow failed: %s\n", ex.args[0])
-                    logger.exception("Verifier unescrow failed: %s\n", ex.args[0])
+                    logger.trace("Verifier unescrow failed: %s\n", ex)
+                    logger.exception("Verifier unescrow failed: %s\n", ex)
             except Exception as ex:  # log diagnostics errors etc
                 # error other than missing sigs so remove from PA escrow
                 db.rem(said)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Verifier unescrowed: %s", ex.args[0])
+                    logger.exception("Verifier unescrowed: %s", ex)
                 else:
-                    logger.error("Verifier unescrowed: %s", ex.args[0])
+                    logger.error("Verifier unescrowed: %s", ex)
             else:
                 db.rem(said)
                 logger.info("Verifier: unescrow succeeded in valid group op: creder=%s", creder.said)
@@ -312,7 +373,7 @@ class Verifier:
         self.reger.logCred(creder, prefixer, seqner, saider)
 
         schema = creder.schema.encode("utf-8")
-        issuer = creder.issuer.encode("utf-8")
+        issuer = creder.israid.encode("utf-8")
 
         # Look up indicies
         saider = Saider(qb64=creder.said)
@@ -320,26 +381,35 @@ class Verifier:
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
 
-        if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
-            subject = creder.attrib["i"].encode("utf-8")
+        # Resolve the issuee via .iseaid so aggregate ('acg') credentials index
+        # their subject too: for them .attrib is None and the issuee lives at
+        # .sad["A"][1]["i"]. For attributive creds .iseaid == .attrib["i"].
+        if creder.iseaid is not None:
+            subject = creder.iseaid.encode("utf-8")
             self.reger.subjs.add(keys=subject, val=saider)
 
     def query(self, pre, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
         """ Returns query message for querying registry
         """
 
-        serder = query(regk=regk, vcid=vcid, dt=dt, dta=dta,
-                                dtb=dtb, **kwa)
+        serder = query(pre=pre, regk=regk, vcid=vcid, dt=dt, dta=dta,
+                       dtb=dtb, **kwa)
         hab = self.hby.habs[pre]
-        return hab.endorse(serder, last=True)
+        return hab.endorse(serder, last=True, framed=False, gvrsn=serder.pvrsn)
 
-    def verifyChain(self, nodeSaid, op, issuer):
+    def verifyChain(self, nodeSaid, op, issuer, issuee=None):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
             nodeSaid: (str): qb64 SAID of node credential
-            op(str): edge operator
-            issuer (str) qb64 AID of issuer
+            op (str|list|None): edge operator, or a list of unary operators, in which
+                case the latest recognized one takes precedence. None, an empty list,
+                or a value containing no recognized operator applies the default:
+                I2I for a targeted far node, NI2I for an untargeted one.
+            issuer (str) qb64 AID of the issuer of the near (edge-bearing) ACDC
+            issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
+                required by the identity operators (E1E). None when the near ACDC is
+                untargeted.
 
         Returns:
             Serder: transaction event state notification message
@@ -349,24 +419,64 @@ class Verifier:
         if said is None:
             return None
 
-        creder = self.reger.creds.get(keys=nodeSaid)
+        creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        if op not in ['I2I', 'DI2I', 'NI2I']:
-            op = 'I2I' if 'i' in creder.attrib else 'NI2I'
+        # `o` is either a single unary operator or a list of them. Latest-wins applies
+        # only "among the conflicting Operators" (ACDC spec-body.md L1186), so the list
+        # is resolved in two parts: the delegative operators constrain the same thing
+        # (the near issuer relative to the far issuee) and therefore conflict, so the
+        # latest of those wins; E1E constrains the near issuee instead, so it does not
+        # conflict with them and composes (AND) rather than overriding or being
+        # overridden. Tokens this verifier does not recognize are skipped.
+        ops = op if isinstance(op, (list, tuple)) else [op]
+        ops = [cand for cand in ops if cand in self.UnaryOps]
+        op = next((cand for cand in reversed(ops) if cand in self.DelegativeOps), None)
 
-        if op != 'NI2I':
-            if 'i' not in creder.attrib:
+        if not ops:  # absent, empty, or nothing recognized: apply the default rule
+            # A far node is targeted (I2I) iff it has an issuee, else untargeted (NI2I).
+            # Resolve via .iseaid so an aggregate ('acg') far node -- whose issuee is at
+            # .sad["A"][1]["i"] and whose .attrib is None -- coerces the same as an
+            # attributive one (#1529).
+            op = 'I2I' if creder.iseaid is not None else 'NI2I'
+
+        # Recognized but unimplemented operators fail closed with a diagnosable error
+        # rather than being silently dropped from the effective list. Deliberately not
+        # a MissingChainError: the chain is present and retrying cannot help, so
+        # escrowing would promise a retry that can never succeed.
+        if 'NOT' in ops:
+            raise ValidationError(f"Unsupported edge operator NOT on edge to node "
+                                  f"{nodeSaid}; NOT validation is not implemented")
+
+        if op == 'DI2I':
+            raise ValidationError(f"Unsupported edge operator DI2I on edge to node "
+                                  f"{nodeSaid}; DI2I validation is not implemented")
+
+        if 'E1E' in ops:
+            # Identity relation (discussion #1515): the issuee AID of the near ACDC
+            # (the one carrying this edge) MUST equal the issuee AID of the far node.
+            # Unlike the delegative I2I, this says nothing about the issuer, so the
+            # common SEDI case -- both credentials issued by a third party to the same
+            # subject, issuer != issuee -- is valid (and is exactly what I2I rejects).
+            # Resolve the far issuee via .iseaid so an aggregate node (A[1].i) works too.
+            farIssuee = creder.iseaid
+            if farIssuee is None or issuee is None or issuee != farIssuee:
                 return None
 
-            iss = self.reger.subjs.get(keys=creder.attrib['i'])
+        if op is not None and op != 'NI2I':
+            # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
+            # node (issuee at .sad["A"][1]["i"]) resolves identically to an
+            # attributive one (.attrib["i"]). None means an untargeted far node,
+            # which cannot satisfy a targeted (I2I/DI2I) edge.
+            farIssuee = creder.iseaid
+            if farIssuee is None:
+                return None
+
+            iss = self.reger.subjs.get(keys=farIssuee)
             if iss is None:
                 return None
 
-            if op == 'I2I' and issuer != creder.attrib['i']:
+            if op == 'I2I' and issuer != farIssuee:
                 return None
-
-            if op == "DI2I":
-                raise NotImplementedError()
 
         if creder.regid not in self.tevers:
             return None

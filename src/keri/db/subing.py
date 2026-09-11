@@ -3,7 +3,7 @@
 KERI
 keri.db.subing module
 
-Provide variety of mixin classes for LMDB sub-dbs with various behaviors.
+Provide mixin classes for named subdatabases with various behaviors.
 Takes of advantage of multiple inheritance to enable mixtures of behaviors
 with minimal code duplication (more DRY).
 
@@ -91,41 +91,44 @@ Cesr
 CatCesr
 Serder
 etc.
-
-
 """
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Type, Union
 from collections.abc import Iterable
 
 from hio.help import ogler
 
 from ..help import helping
-from .dbing import LMDBer
-
 if TYPE_CHECKING:
     from ..core import coring, scheming, serdering, signing
+
+IS_PYODIDE = "emscripten" in sys.platform
+
+if IS_PYODIDE:
+    from .webdbing import WebDBer as DBer
+else:
+    from .dbing import LMDBer as DBer
 
 logger = ogler.getLogger()
 
 
 class SuberBase():
     """
-    Base class for Sub DBs of LMDBer
+    Base class for named subdatabases of DBer
     Provides common methods for subclasses
     Do not instantiate but use a subclass
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         verify (bool): True means reverify when ._des from db when applicable
-                       False means do not reverify. Default False
-    """
+            False means do not reverify. Default False"""
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: LMDBer, *,
+    def __init__(self, db: DBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
@@ -133,16 +136,15 @@ class SuberBase():
                        **kwa):
         """
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                False means do not reverify. Default False"""
         super(SuberBase, self).__init__()  # for multi inheritance
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
@@ -160,21 +162,19 @@ class SuberBase():
         by partial keys by appending separator to end of partial key
 
         Returns:
-           key (bytes): each element of keys is joined by .sep. If topive then
-                        last char of key is .sep
+            key (bytes): each element of keys is joined by .sep. If topive then
+                last char of key is .sep
 
         Parameters:
-           keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): db key or
-                        Iterable of (str|bytes|memoryview) to form key.
-           topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of topive value
-
-        """
+            keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): db key or
+                Iterable of (str|bytes|memoryview) to form key.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of topive value"""
         if hasattr(keys, "encode"):  # str
             return keys.encode()
         if isinstance(keys, memoryview):  # memoryview of bytes
@@ -193,12 +193,10 @@ class SuberBase():
         at separator .sep.
 
         Returns:
-           keys (tuple[str]): makes tuple by splitting key at sep
+            keys (tuple[str]): makes tuple by splitting key at sep
 
         Parameters:
-           key (str|bytes|memoryview): db key.
-
-        """
+            key (str|bytes|memoryview): db key."""
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         if hasattr(key, "decode"):  # bytes
@@ -209,9 +207,9 @@ class SuberBase():
     def _ser(self, val: str | bytes | memoryview):
         """
         Serialize value to bytes to store in db
+
         Parameters:
-            val (str | bytes | memoryview): encodable as bytes
-        """
+            val (str | bytes | memoryview): encodable as bytes"""
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # return bytes
         return (val.encode() if hasattr(val, "encode") else val)
@@ -220,9 +218,9 @@ class SuberBase():
     def _des(self, val: bytes | memoryview):
         """
         Deserialize val to str
+
         Parameters:
-            val (bytes | memoryview): decodable as str
-        """
+            val (bytes | memoryview): decodable as str"""
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
         return (val.decode() if hasattr(val, "decode") else val)
@@ -233,8 +231,8 @@ class SuberBase():
         Enables removal of whole branches of db key space.
 
         Returns:
-           result (bool): True if val at key exists so delete successful.
-                          False otherwise
+            result (bool): True if val at key exists so delete successful.
+                False otherwise
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts that may be
@@ -253,8 +251,7 @@ class SuberBase():
                 partial ending in sep regardless of top value
 
         Uses python .startswith() to match keyspace since str.startswith('')
-        always returns True so empty str will match all keys in db.
-        """
+        always returns True so empty str will match all keys in db."""
         return self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive))
 
     remTop = trim  # alias for convenience
@@ -286,8 +283,7 @@ class SuberBase():
                 partial branch ending in .sep regardless of topive value.
 
         Uses python .startswith() to match keyspace since str.startswith('')
-        always returns True so empty str will match all keys in db.
-        """
+        always returns True so empty str will match all keys in db."""
         return self.db.cntTop(db=self.sdb, top=self._tokey(keys, topive=topive))
 
 
@@ -297,9 +293,7 @@ class SuberBase():
         specifically.
 
         Returns:
-            cnt (int): count of all entries in sdb
-
-        """
+            cnt (int): count of all entries in sdb"""
         return self.db.cntAll(db=self.sdb)
 
     cnt = cntAll  # migration alias for backward compt
@@ -322,9 +316,9 @@ class SuberBase():
 
         Returns:
             items (Iterator[tuple[key,val]]): (key, val) tuples of each item
-            over the all the items in subdb whose key startswith key made from
-            keys. Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb
+                over the all the items in subdb whose key startswith key made from
+                keys. Keys may be keyspace prefix to return branches of key space.
+                When keys is empty then returns all items in subdb
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key
@@ -344,8 +338,7 @@ class SuberBase():
                 partial branch ending in .sep regardless of topive value.
 
         Uses python .startswith() to match keyspace since str.startswith('')
-        always returns True so empty str will match all keys in db.
-        """
+        always returns True so empty str will match all keys in db."""
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
@@ -358,11 +351,11 @@ class SuberBase():
 
         Returns:
             items (Iterator[tuple[key,val]]): (key, val) tuples of each item
-            over the all the items in subdb whose key startswith key made from
-            keys. Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb.
-            This is meant to return full parts of items in both keyspace and
-            valuespace which may be useful in debugging or testing.
+                over the all the items in subdb whose key startswith key made from
+                keys. Keys may be keyspace prefix to return branches of key space.
+                When keys is empty then returns all items in subdb.
+                This is meant to return full parts of items in both keyspace and
+                valuespace which may be useful in debugging or testing.
 
         Parameters:
             keys (str|bytes|memoryview|Iteratable): of key parts that may be
@@ -381,8 +374,7 @@ class SuberBase():
                 partial ending in sep regardless of top value
 
         Uses python .startswith() to match keyspace since str.startswith('')
-        always returns True so empty str will match all keys in db.
-        """
+        always returns True so empty str will match all keys in db."""
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
@@ -390,29 +382,27 @@ class SuberBase():
 
 class Suber(SuberBase):
     """
-    Subclass of SuberBase with no LMDB duplicates (i.e. multiple values at same key).
-    """
+    Subclass of SuberBase with one value at each key."""
 
-    def __init__(self, db: LMDBer, *,
+    def __init__(self, db: DBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
         """Initialze instance
 
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
+                False (default) means do not enable duplicates at
+                each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
 
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
-        """
+            db (DBer): base db
+            subkey (str): named subdatabase key"""
         super(Suber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
@@ -425,8 +415,7 @@ class Suber(SuberBase):
 
         Returns:
             result (bool): True If successful, False otherwise, such as key
-                              already in database.
-        """
+                already in database."""
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=self._ser(val)))
@@ -440,8 +429,7 @@ class Suber(SuberBase):
             val (bytes): value
 
         Returns:
-            result (bool): True If successful. False otherwise.
-        """
+            result (bool): True If successful. False otherwise."""
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=self._ser(val)))
@@ -455,15 +443,13 @@ class Suber(SuberBase):
 
         Returns:
             data (str):  decoded as utf-8
-            None if no entry at keys
+                None if no entry at keys
 
         Usage:
             Use walrus operator to catch and raise missing entry
             if (data := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use data here
-
-        """
+            raise ExceptionHere
+            use data here"""
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
         return (self._des(val) if val is not None else None)
 
@@ -476,10 +462,9 @@ class Suber(SuberBase):
 
         Returns:
             result (bool): True if key exists so delete successful.
-                          False if key empty or missing from db
+                False if key empty or missing from db
 
-        Raises KeyError if key to big or otherwise bad
-        """
+        Raises KeyError if key to big or otherwise bad"""
         return(self.db.remVal(db=self.sdb, key=self._tokey(keys)))
 
 
@@ -489,9 +474,7 @@ class Suber(SuberBase):
         specifically.
 
         Returns:
-            cnt (int): count of all entries in sdb
-
-        """
+            cnt (int): count of all entries in sdb"""
         # for non-collective non-on subers cnt is cntAll
         return self.db.cntAll(db=self.sdb)
 
@@ -504,23 +487,20 @@ class OnSuberBase(SuberBase):
     by ordinals such as first seen or sequence number.
 
     Each key consistes of top key joined with .sep to ordinal tail
-    Works with dupsort==True or False
-
-    """
+    Works with dupsort==True or False"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Default False
+                             False (default) means do not enable duplicates at
+                             each key. Default False
             sep (str): separator to convert keys iterator to key bytes for db key
                        Default '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                           False means do not reverify. Default False"""
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
@@ -538,8 +518,7 @@ class OnSuberBase(SuberBase):
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
             val (str|bytes|memoryview|None): serialized value to put
-                                            When  None returns False
-        """
+                When  None returns False"""
         if val is None:
             return False
         return (self.db.putOnVal(db=self.sdb,
@@ -561,8 +540,7 @@ class OnSuberBase(SuberBase):
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
             val (str|bytes|memoryview|None): serialized value to pin
-                                             when None returns False
-        """
+                when None returns False"""
         if val is None:
             return False
         return (self.db.pinOnVal(db=self.sdb,
@@ -585,8 +563,7 @@ class OnSuberBase(SuberBase):
                 combined with serialized exposed on tail and sep to form key
                 if key empty then raises ValueError
             val (str|bytes|memoryview): serialized value to append
-                                        If None then raises ValueError
-        """
+                If None then raises ValueError"""
         return (self.db.appendOnVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=self._ser(val),
@@ -605,8 +582,7 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
-            on (int): ordinal number used with onKey(key ,on) to form key.
-        """
+            on (int): ordinal number used with onKey(key ,on) to form key."""
         if (item := self.db.getOnItem(db=self.sdb,
                                 key=self._tokey(keys),
                                 on=on,
@@ -627,8 +603,7 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
-            on (int): ordinal number used with onKey(key ,on) to form key.
-        """
+            on (int): ordinal number used with onKey(key ,on) to form key."""
         val = self.db.getOnVal(db=self.sdb,
                                 key=self._tokey(keys),
                                 on=on,
@@ -648,8 +623,7 @@ class OnSuberBase(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
-            on (int): ordinal number used with onKey(key ,on) to form key.
-        """
+            on (int): ordinal number used with onKey(key ,on) to form key."""
         return (self.db.remOn(db=self.sdb,
                                      key=self._tokey(keys),
                                      on=on,
@@ -663,13 +637,12 @@ class OnSuberBase(SuberBase):
 
         Returns:
             result (bool): True if onkey with dup val exists so rem successful.
-                           False otherwise
+                False otherwise
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When key is empty then remove all entries in whole db
-            on (int): base key. None means all on for key
-        """
+            on (int): base key. None means all on for key"""
         return self.db.remOnAll(db=self.sdb,
                                       key=self._tokey(keys),
                                       on=on,
@@ -692,8 +665,7 @@ class OnSuberBase(SuberBase):
                 combined with serialized exposed on tail and sep to form top key
                 When keys is empty then counts whole database including
                 duplicates if any.
-            on (int): ordinal number used with onKey(key,on) to form key.
-        """
+            on (int): ordinal number used with onKey(key,on) to form key."""
         if not keys:
             return 0
 
@@ -719,8 +691,7 @@ class OnSuberBase(SuberBase):
                 combined with serialized exposed on tail and sep to form top key
                 When keys is empty then counts whole database including
                 duplicates if any.
-            on (int): ordinal number used with onKey(key,on) to form key.
-        """
+            on (int): ordinal number used with onKey(key,on) to form key."""
         return (self.db.cntOnAll(db=self.sdb,
                                      key=self._tokey(keys),
                                      on=on,
@@ -736,18 +707,16 @@ class OnSuberBase(SuberBase):
 
         Returns:
             items (Iterator[(tuple, int, str)]): iterator of triples
-                (keys, on, val)
-                where keys forms base key, on is int, and val is entry value at
-                with insertion ordering suffix removed from effective key.
+            (keys, on, val)
+            where keys forms base key, on is int, and val is entry value at
+            with insertion ordering suffix removed from effective key.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as truncated top key,
                 to get a key space prefix to get all the items
                 from multiple branches of the key space.
                 If top key is empty then gets all items in database.
-            on (int): ordinal number used with onKey(pre,on) to form key.
-
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         for key, on, val in (self.db.getOnTopItemIter(db=self.sdb,
                                                         top=self._tokey(keys),
                                                         sep=self.sep.encode())):
@@ -762,16 +731,15 @@ class OnSuberBase(SuberBase):
 
         Returns:
             items (Iterator[(key, on, val)]): triples of key, on, val with same
-                key but increments of on >= on i.e. all onkey beginning with on
+            key but increments of on >= on i.e. all onkey beginning with on
 
         Parameters:
             keys (str|bytes|memoryview|iterator): keys as prefix to be
                 combined with serialized on exposed on tail and sep to form actual key
             on (int): ordinal number used with onKey(pre,on) to form key at at
-                           which to initiate retrieval.
-                           When on==0 then all on for key
-            sep (bytes): separator character for split
-        """
+                which to initiate retrieval.
+                When on==0 then all on for key
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllItemIter(db=self.sdb,
                                                        key=self._tokey(keys),
                                                        on=on,
@@ -783,7 +751,7 @@ class OnSuberBase(SuberBase):
         """
         Returns:
             items (Iterator[bytes]): of val with same key but increments of
-                                on >= on i.e. all key.on beginning with on
+                on >= on i.e. all key.on beginning with on
 
         Parameters:
             keys (str | bytes | memoryview | iterator): keys as prefix to be
@@ -791,9 +759,8 @@ class OnSuberBase(SuberBase):
                 When keys is empty then retrieves whole database including
                 duplicates if any
             on (int): ordinal number used with onKey(pre,on) to form key at at
-                      which to initiate retrieval
-            sep (bytes): separator character for split
-        """
+                which to initiate retrieval
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllItemIter(db=self.sdb,
                                                        key=self._tokey(keys),
                                                        on=on,
@@ -807,23 +774,20 @@ class OnSuber(OnSuberBase, Suber):
     numbered exposed tail.
     Each key consistes of pre joined with .sep to ordinal tail
 
-    Assumes dupsort==False
-
-    """
+    Assumes dupsort==False"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                           False means do not reverify. Default False"""
         super(OnSuber, self).__init__(*pa, **kwa)
 
 
@@ -836,30 +800,26 @@ class B64SuberBase(SuberBase):
     Automatically joins and splits along separator to Iterable (tuple) of Base64
 
      Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
-        sep (str): separator for combining keys tuple of strs into key bytes
-            for db key and also used to convert val iterator to val bytes
-            Must not be Base64 character.
-            default is self.Sep == '.'
-
-    """
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
+         sep (str): separator for combining keys tuple of strs into key bytes
+                    for db key and also used to convert val iterator to val bytes
+                    Must not be Base64 character.
+         default: self.Sep == '.'"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                             False (default) means do not enable duplicates at
+                             each key
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
                        Must not be Base64 character.
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-
-        """
+                           False means do not reverify. Default False"""
         super(B64SuberBase, self).__init__(*pa, **kwa)
         if helping.Reb64.match(self.sep.encode()):
             raise ValueError("Invalid sep={self.sep}, must not be Base64 char.")
@@ -872,14 +832,12 @@ class B64SuberBase(SuberBase):
         joins with .sep and converts to val bytes and returns.
 
         Returns:
-           val (bytes): each element of vals is joined by .sep.
+            val (bytes): each element of vals is joined by .sep.
 
         Parameters:
-           vals (str | bytes | memoryview | Iterable[str | bytes]): db val or
-                        Iterable of (str | bytes | memoryview) to form val.
-                        Note, join of bytes sep works with memoryview.
-
-        """
+            vals (str | bytes | memoryview | Iterable[str | bytes]): db val or
+                Iterable of (str | bytes | memoryview) to form val.
+                Note, join of bytes sep works with memoryview."""
         if hasattr(vals, "encode"):  # str
             val = vals.encode("utf-8")
             if not (helping.Reb64.match(val)):
@@ -908,12 +866,10 @@ class B64SuberBase(SuberBase):
         at separator .sep.
 
         Returns:
-           vals (tuple[str]): makes tuple by splitting val at .sep
+            vals (tuple[str]): makes tuple by splitting val at .sep
 
         Parameters:
-           val (bytes | memoryview): db Base64 val.
-
-        """
+            val (bytes | memoryview): db Base64 val."""
         if isinstance(val, memoryview):  # memoryview of bytes
             val = bytes(val)
         if hasattr(val, "decode"):  # bytes
@@ -927,12 +883,10 @@ class B64SuberBase(SuberBase):
         When val is Iterable then joins each elements with .sep returns val bytes
 
         Returns:
-           val (bytes): .sep join of each Base64 bytes in val
+            val (bytes): .sep join of each Base64 bytes in val
 
         Parameters:
-           val (Union[Iterable, bytes]): of Base64 bytes
-
-        """
+            val (Union[Iterable, bytes]): of Base64 bytes"""
         if not helping.isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
         return (self._toval(val))
@@ -944,12 +898,10 @@ class B64SuberBase(SuberBase):
         .qb64b  concatenation in order of each instance in .klas
 
         Returns:
-           vals (tuple): subclass instances
+            vals (tuple): subclass instances
 
         Parameters:
-           val (Union[bytes, memoryview]):  of concatenation of .qb64b
-
-        """
+            val (Union[bytes, memoryview]):  of concatenation of .qb64b"""
         return self._tovals(val)
 
 
@@ -960,25 +912,22 @@ class B64Suber(B64SuberBase, Suber):
 
     .sep must not be Base64 character.
 
-    Assumes dupsort==False
-
-    """
+    Assumes dupsort==False"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
                        also used to convert val iterator to val bytes
                        Must not be Base64 character.
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                           False means do not reverify. Default False"""
         super(B64Suber, self).__init__(*pa, **kwa)
 
 
@@ -987,9 +936,7 @@ class CesrSuberBase(SuberBase):
     instance such as Matter, Indexer, Counter with .qb64b property when provided
     as fully qualified serialization
     Automatically serializes and deserializes from qb64b to/from CESR instance
-    ._ser override .put .set input value to be instance that is serialized
-
-    """
+    ._ser override .put .set input value to be instance that is serialized"""
 
     def __init__(self,
                  *pa,
@@ -998,22 +945,21 @@ class CesrSuberBase(SuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
+
         Parameters:
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
                 Indexer or Counter or any ducktyped class of Matter
             strict (bool): True means enforce val in ._ser matches .klas
-                           False means do not enforce. Default False
-
-        """
+                False means do not enforce. Default False"""
         if klas is None:
             from ..core import coring
             klas = coring.Matter
@@ -1035,8 +981,7 @@ class CesrSuberBase(SuberBase):
             bytes: serialized qb64b bytes suitable for db storage.
 
         Raises:
-            TypeError: wrong instance class when strict.
-        """
+            TypeError: wrong instance class when strict."""
         if self.strict and not isinstance(val, self.klas):
             raise TypeError(f"Expected {self.klas}, got {type(val)}.")
         return val.qb64b
@@ -1045,9 +990,9 @@ class CesrSuberBase(SuberBase):
     def _des(self, val: memoryview | bytes):
         """
         Deserialize val to str
+
         Parameters:
-            val (memoryview | bytes): convertable to coring.matter
-        """
+            val (memoryview | bytes): convertable to coring.matter"""
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
         return self.klas(qb64b=val)  # qb64b parameter accepts str
@@ -1060,25 +1005,22 @@ class CesrSuber(CesrSuberBase, Suber):
     as fully qualified serialization.
     Extends Suber to support val that are ducktyped CESR serializable .qb64 .qb64b
     subclasses such as coring.Matter, coring.Indexer, coring.Counter.
-    Automatically serializes and deserializes from qb64b to/from CESR instances
-
-    """
+    Automatically serializes and deserializes from qb64b to/from CESR instances"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
-        """
+                Indexer or Counter or any ducktyped class of Matter"""
         super(CesrSuber, self).__init__(*pa, **kwa)
 
 
@@ -1090,22 +1032,20 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
 
     Each key consistes of pre joined with .sep to ordinal suffix
 
-    Assumes dupsort==False
-    """
+    Assumes dupsort==False"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                           False means do not reverify. Default False"""
         super(CesrOnSuber, self).__init__(*pa, **kwa)
 
 
@@ -1118,12 +1058,11 @@ class CatCesrSuberBase(CesrSuberBase):
     ._ser override .put .set input value to be instance that is serialized
 
      Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
-        sep (str): separator for combining keys tuple of strs into key bytes
-        klas (Iterable): of Class references to subclasses of CESR compatible
-                , each of to Type[coring.Matter etc]
-    """
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
+         sep (str): separator for combining keys tuple of strs into key bytes
+         klas (Iterable): of Class references to subclasses of CESR compatible
+             , each of to Type[coring.Matter etc]"""
 
     def __init__(self,
                  *pa,
@@ -1132,24 +1071,22 @@ class CatCesrSuberBase(CesrSuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Iterable|Type[coring.Matter]|None): of Class references to
-                    subclasses of CESR compatible Type[coring.Matter etc]Class
-                    reference to subclass of Matter or Indexer or Counter or
-                    any ducktyped class of Matter
-                    None is replaced with default Matter
+                subclasses of CESR compatible Type[coring.Matter etc]Class
+                reference to subclass of Matter or Indexer or Counter or
+                any ducktyped class of Matter
+                None is replaced with default Matter
             strict (bool): True means enforce val in ._ser matches .klas
-                           False means do not enforce. Default False
-
-        """
+                False means do not enforce. Default False"""
         if klas is None:
             from ..core import coring
             klas = (coring.Matter, )  # set default to tuple of single Matter
@@ -1169,17 +1106,15 @@ class CatCesrSuberBase(CesrSuberBase):
         or ValueError/TypeError is raised.
 
         Parameters:
-           val (Union[Iterable, coring.Matter]): of subclass instances.
-               Non-iterables are wrapped as a one-item tuple.
+            val (Union[Iterable, coring.Matter]): of subclass instances.
+                Non-iterables are wrapped as a one-item tuple.
 
         Returns:
-           bytes: concatenation of serialized qb64b values in order.
+            bytes: concatenation of serialized qb64b values in order.
 
         Raises:
-           ValueError: when strict and tuple arity does not match .klas.
-           TypeError: wrong slot class when strict.
-
-        """
+            ValueError: when strict and tuple arity does not match .klas.
+            TypeError: wrong slot class when strict."""
         if not helping.isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
 
@@ -1197,12 +1132,10 @@ class CatCesrSuberBase(CesrSuberBase):
         .qb64b  concatenation in order of each instance in .klas
 
         Returns:
-           vals (tuple): subclass instances
+            vals (tuple): subclass instances
 
         Parameters:
-           val (Union[bytes, memoryview]):  of concatenation of .qb64b
-
-        """
+            val (Union[bytes, memoryview]):  of concatenation of .qb64b"""
         if not isinstance(val, bytearray):  # is memoryview or bytes
             val = bytearray(val)  # convert so may strip
         return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
@@ -1217,32 +1150,29 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of CESR compatible
-                , each of to Type[coring.Matter etc]
-    """
+            , each of to Type[coring.Matter etc]"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Iterable|Type[coring.Matter]|None): of Class references to
-                    subclasses of CESR compatible Type[coring.Matter etc]Class
-                    reference to subclass of Matter or Indexer or Counter or
-                    any ducktyped class of Matter
-                    None is replaced with default Matter
-
-        """
+                subclasses of CESR compatible Type[coring.Matter etc]Class
+                reference to subclass of Matter or Indexer or Counter or
+                any ducktyped class of Matter
+                None is replaced with default Matter"""
         super(CatCesrSuber, self).__init__(*pa, **kwa)
 
 
@@ -1254,7 +1184,7 @@ class IoSetSuber(SuberBase):
     The set of values is an ordered set using insertion order. Any given value
     may appear only once in the set (not a list).
 
-    This works similarly to the IO value duplicates for the LMDBer class with a
+    This works similarly to the IO value duplicates for the DBer class with a
     sub db  of LMDB (dupsort==True) but without its size limitation of 511 bytes
     for each value when dupsort==True.
     Here the key is augmented with a hidden numbered suffix that provides a
@@ -1264,28 +1194,26 @@ class IoSetSuber(SuberBase):
     of the set elements.
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
-        sep (str): separator for combining keys tuple of strs into key bytes
-    """
-    def __init__(self, db: LMDBer, *,
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes"""
+    def __init__(self, db: DBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False, **kwa):
         """Initialize instance
 
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
-        """
+                Indexer or Counter or any ducktyped class of Matter"""
         super(IoSetSuber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
@@ -1297,14 +1225,12 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             vals (str|bytes|memoryview|NonStrIterable|None): serialized values to add
-                                        to set of vals at onkey if any.
-                                        When not NonStrIterable converts to iterable.
-                                        Empty iterable or None returns False
+                to set of vals at onkey if any.
+                When not NonStrIterable converts to iterable.
+                Empty iterable or None returns False
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return (self.db.putIoSetVals(db=self.sdb,
@@ -1322,14 +1248,12 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             vals (str|bytes|memoryview|Iterable|None): serialized value to replace
-                                        Value at onkey.
-                                        None means empty iterable.
-                                        Empty iterable or None returns False
+                Value at onkey.
+                None means empty iterable.
+                Empty iterable or None returns False
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return (self.db.pinIoSetVals(db=self.sdb,
@@ -1348,15 +1272,13 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts to be
-                    combined in order to form key
+                combined in order to form key
             val (str|bytes|memoryview|None): value to add
-                                             When val None returns False
+                When val None returns False
 
         Returns:
             result (bool): True means unique value added among duplications,
-                            False means duplicate of same value already exists.
-
-        """
+                False means duplicate of same value already exists."""
         return (self.db.addIoSetVal(db=self.sdb,
                                     key=self._tokey(keys),
                                     val=self._ser(val),
@@ -1373,13 +1295,12 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                                                    in order to form key
+                in order to form key
             ion (int): offset into set to start the count (0 based offset)
 
         Returns:
             vals (list[str]):  each item in list is str
-                          empty list if no entry at keys
-        """
+                empty list if no entry at keys"""
         # use iter so can more efficiently ._des(val)
         return [(self._tokeys(key), self._des(val)) for key, val in
                     self.db.getIoSetItemIter(db=self.sdb,
@@ -1398,13 +1319,12 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                                                    in order to form key
+                in order to form key
             ion (int): offset into set to start the count (0 based offset)
 
         Returns:
             vals (list[str]):  each item in list is str
-                          empty list if no entry at keys
-        """
+                empty list if no entry at keys"""
         # use iter so can more efficiently ._des(val)
         return [self._des(val) for key, val in
                     self.db.getIoSetItemIter(db=self.sdb,
@@ -1423,15 +1343,13 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                                                  in order to form key
+                in order to form key
             ion (int): offset into set to start the count (0 based offset)
 
         Returns:
             items (Iterator[str]): entries in set at key for ion >= ion.
 
-        Raises StopIteration when done
-
-        """
+        Raises StopIteration when done"""
         for key, val in self.db.getIoSetItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             ion=ion,
@@ -1449,13 +1367,11 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                                                  in order to form key
+                in order to form key
             ion (int): offset into set to start the count (0 based offset)
 
         Returns:
-            vals (Iterator[str]):  str values. Raises StopIteration when done
-
-        """
+            vals (Iterator[str]):  str values. Raises StopIteration when done"""
         for key, val in self.db.getIoSetItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             ion=ion,
@@ -1473,13 +1389,11 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                                                  in order to form key
+                in order to form key
 
         Returns:
             last ((str, str)|None): (key, val) tuple or empty tuple if no entry
-                                   at keys or keys is empty
-
-        """
+            at keys or keys is empty"""
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
             key, val = last
             return (self._tokeys(key), self._des(val))
@@ -1495,12 +1409,10 @@ class IoSetSuber(SuberBase):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                                                  in order to form key
+                in order to form key
 
         Returns:
-            val (str):  value str, None if no entry at keys
-
-        """
+            val (str):  value str, None if no entry at keys"""
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
             key, val = last
             return self._des(val)
@@ -1521,10 +1433,8 @@ class IoSetSuber(SuberBase):
                 if val is None then remove all values at key
 
         Returns:
-           result (bool): True if effective key with val exists so rem successful.
-                           False otherwise
-
-        """
+            result (bool): True if effective key with val exists so rem successful.
+                False otherwise"""
         return self.db.remIoSetVal(db=self.sdb,
                                    key=self._tokey(keys),
                                    val=self._ser(val) if val is not None else val,
@@ -1543,8 +1453,7 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
                 in order to form key
-            ion (int): offset into set to start the count (0 based offset)
-        """
+            ion (int): offset into set to start the count (0 based offset)"""
         if not keys:
             return self.db.cntAll(db=self.sdb)
 
@@ -1578,7 +1487,7 @@ class IoSetSuber(SuberBase):
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
                 In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+            key: empty string it matches all keys in db with startswith.
 
             topive (bool): True means treat as partial key tuple from top branch of
                 key space given by partial keys. Resultant key ends in .sep
@@ -1589,8 +1498,7 @@ class IoSetSuber(SuberBase):
                 partial ending in sep regardless of top value
 
         Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
-        """
+        empty string so empty will matches all keys in db."""
         for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
@@ -1612,9 +1520,7 @@ class IoSetSuber(SuberBase):
                 in order to form key. Iterates over all keys when key empty.
 
         Returns:
-            vals (Iterator[str]):  value str
-
-        """
+            vals (Iterator[str]):  value str"""
         for val in self.db.getIoSetLastIterAll(db=self.sdb, key=self._tokey(keys)):
             yield self._des(val)
 
@@ -1635,9 +1541,7 @@ class IoSetSuber(SuberBase):
                 in order to form key. Iterates over all keys when key empty.
 
         Returns:
-            items (Iterator[(str, str)]):  (key, val) tuples
-
-        """
+            items (Iterator[(str, str)]):  (key, val) tuples"""
         for key, val in self.db.getIoSetLastItemIterAll(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), self._des(val))
 
@@ -1648,25 +1552,22 @@ class B64IoSetSuber(B64SuberBase, IoSetSuber):
     hidden ion suffix in keyspace. Using IoSet removes 511 byte limitation of
     duplicates (dupsort=True).
 
-    Assumes dupsort==False
-
-    """
+    Assumes dupsort==False"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator for combining keys tuple of strs into key bytes
-                   for db key and also used to convert val iterator to val bytes
-                   Must not be Base64 character.
-                   default is self.Sep == '.'
+                       for db key and also used to convert val iterator to val bytes
+                       Must not be Base64 character.
+                       default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                           False means do not reverify. Default False"""
         super(B64IoSetSuber, self).__init__(*pa, **kwa)
 
 
@@ -1694,29 +1595,26 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
      Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
-        sep (str): separator for combining keys tuple of strs into key bytes
-        klas (Iterable): of Class references to subclasses of CESR compatible
-                , each of to Type[coring.Matter etc]
-    """
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
+         sep (str): separator for combining keys tuple of strs into key bytes
+         klas (Iterable): of Class references to subclasses of CESR compatible
+             , each of to Type[coring.Matter etc]"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
-                Indexer or Counter or any ducktyped class of Matter
-
-        """
+                Indexer or Counter or any ducktyped class of Matter"""
         super(CesrIoSetSuber, self).__init__(*pa, **kwa)
 
 
@@ -1744,33 +1642,28 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
     Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        db (DBer): base database
+        sdb: instance of named subdatabase for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of Matter, each
-                of to Type[coring.Matter]
-
-
-    """
+            of to Type[coring.Matter]"""
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Iterable|Type[coring.Matter]|None): of Class references to
-                    subclasses of CESR compatible Type[coring.Matter etc]Class
-                    reference to subclass of Matter or Indexer or Counter or
-                    any ducktyped class of Matter
-                    None is replaced with default Matter
-
-        """
+                subclasses of CESR compatible Type[coring.Matter etc]Class
+                reference to subclass of Matter or Indexer or Counter or
+                any ducktyped class of Matter
+                None is replaced with default Matter"""
         super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
 
 
@@ -1782,15 +1675,13 @@ class SignerSuber(CesrSuber):
 
     Assumes that last or only element of db key from keys for all entries is the qb64
     of a public key for the associated Verfer instance. This allows returned
-    Signer instance to have its .transferable property set correctly.
-    """
+    Signer instance to have its .transferable property set correctly."""
     def __init__(self, *pa, klas: Type[signing.Signer] | None = None, **kwa):
         """
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
-            klas (Type[coring.Matter]): Class reference to subclass of Matter
-        """
+            db (DBer): base db
+            subkey (str): named subdatabase key
+            klas (Type[coring.Matter]): Class reference to subclass of Matter"""
         from ..core import signing
 
         if klas is None:
@@ -1808,7 +1699,7 @@ class SignerSuber(CesrSuber):
 
         Returns:
             val (Signer):  transferable determined by key which is verfer
-            None if no entry at keys
+                None if no entry at keys
 
         Parameters:
             keys (Union[str, iterable]): key strs to be combined in order to
@@ -1818,10 +1709,8 @@ class SignerSuber(CesrSuber):
         Usage:
             Use walrus operator to catch and raise missing entry
             if (signer := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use signer here
-
-        """
+            raise ExceptionHere
+            use signer here"""
         key = self._tokey(keys)  # keys maybe string or tuple
         val = self.db.getVal(db=self.sdb, key=key)
         keys = self._tokeys(key)  # verkey is last split if any
@@ -1856,8 +1745,7 @@ class SignerSuber(CesrSuber):
                 partial ending in sep regardless of top value
 
         Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
-        """
+        empty string so empty will matches all keys in db."""
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
@@ -1877,8 +1765,7 @@ class CryptSignerSuber(SignerSuber):
 
     Assumes that last or only element of db key from keys for all entries is the qb64
     of a public key for the associated Verfer instance. This allows returned
-    Signer instance to have its .transferable property set correctly.
-    """
+    Signer instance to have its .transferable property set correctly."""
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter,
             encrypter: signing.Encrypter = None):
@@ -1893,8 +1780,7 @@ class CryptSignerSuber(SignerSuber):
 
         Returns:
             result (bool): True If successful, False otherwise, such as key
-                              already in database.
-        """
+                already in database."""
         if encrypter:
             val = encrypter.encrypt(prim=val)  # returns Cipher instance
         return (self.db.putVal(db=self.sdb,
@@ -1914,8 +1800,7 @@ class CryptSignerSuber(SignerSuber):
             encrypter (signing.Encrypter): optional
 
         Returns:
-            result (bool): True If successful. False otherwise.
-        """
+            result (bool): True If successful. False otherwise."""
         if encrypter:
             val = encrypter.encrypt(prim=val)  # returns Cipher instance
         return (self.db.setVal(db=self.sdb,
@@ -1932,7 +1817,7 @@ class CryptSignerSuber(SignerSuber):
 
         Returns:
             val (Signer):  transferable determined by key which is verfer
-            None if no entry at keys
+                None if no entry at keys
 
         Parameters:
             keys (Union[str, iterable]): key strs to be combined in order to
@@ -1944,10 +1829,8 @@ class CryptSignerSuber(SignerSuber):
         Usage:
             Use walrus operator to catch and raise missing entry
             if (signer := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use signer here
-
-        """
+            raise ExceptionHere
+            use signer here"""
         key = self._tokey(keys)  # keys maybe string or tuple
         val = self.db.getVal(db=self.sdb, key=key)
         if val is None:
@@ -1968,9 +1851,9 @@ class CryptSignerSuber(SignerSuber):
 
         Returns:
             items (Iterator): of tuples (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
+                subdb whose key startswith key made from keys. Keys may be keyspace
+                prefix to return branches of key space. When keys is empty then
+                returns all items in subdb
 
         decrypter (signing.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
@@ -1989,8 +1872,7 @@ class CryptSignerSuber(SignerSuber):
                 partial ending in sep regardless of top value
 
         Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
-        """
+        empty string so empty will matches all keys in db."""
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
@@ -2008,27 +1890,25 @@ class SerderSuberBase(SuberBase):
     """
     Sub class of SuberBase where data is serialized Serder Subclass instance
     given by .klas
-    Automatically serializes and deserializes using .klas Serder methods
-    """
+    Automatically serializes and deserializes using .klas Serder methods"""
 
     def __init__(self, *pa,
                  klas: Type[serdering.Serder] | None = None,
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
 
-        Overridden Parameters:
-            klas (Type[serdering.Serder]): Class reference to subclass of Serder
-        """
+            Overridden Parameters:
+            klas (Type[serdering.Serder]): Class reference to subclass of Serder"""
         if klas is None:
             from ..core import serdering
             klas = serdering.SerderKERI
@@ -2040,18 +1920,18 @@ class SerderSuberBase(SuberBase):
     def _ser(self, val: serdering.Serder):
         """
         Serialize value to bytes to store in db
+
         Parameters:
-            val (serdering.Serder): instance Serder subclass like SerderKERI
-        """
+            val (serdering.Serder): instance Serder subclass like SerderKERI"""
         return val.raw
 
 
     def _des(self, val: (str | memoryview | bytes)):
         """
         Deserialize val to str
+
         Parameters:
-            val (Union[str, memoryview, bytes]): convertable to coring.matter
-        """
+            val (Union[str, memoryview, bytes]): convertable to coring.matter"""
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
         elif hasattr(val, "encode"):  # str
@@ -2063,23 +1943,21 @@ class SerderSuber(SerderSuberBase, Suber):
     """
     Sub class of SerderSuberBase, Suber where data is serialized Serder Subclass
     instance given by .klas
-    Automatically serializes and deserializes using .klas Serder methods
-    """
+    Automatically serializes and deserializes using .klas Serder methods"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-            klas (Type[serdering.Serder]): Class reference to subclass of Serder
-        """
+                False means do not reverify. Default False
+            klas (Type[serdering.Serder]): Class reference to subclass of Serder"""
         super(SerderSuber, self).__init__(*pa, **kwa)
 
 
@@ -2110,29 +1988,25 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
      Attributes:
-        db (LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
-        sep (str): separator for combining keys tuple of strs into key bytes
-        klas (Iterable): of Class references to subclasses of CESR compatible
-                , each of to Type[coring.Matter etc]
-
-    """
+         db (DBer): base database
+         sdb: instance of named subdatabase for this Suber
+         sep (str): separator for combining keys tuple of strs into key bytes
+         klas (Iterable): of Class references to subclasses of CESR compatible
+             , each of to Type[coring.Matter etc]"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-            klas (Type[serdering.Serder]): Class reference to subclass of Serder
-
-        """
+                False means do not reverify. Default False
+            klas (Type[serdering.Serder]): Class reference to subclass of Serder"""
         super(SerderIoSetSuber, self).__init__(*pa, **kwa)
 
 
@@ -2140,30 +2014,28 @@ class SchemerSuber(SerderSuberBase, Suber):
     """
     Sub class of SerderSuberBase and Suber where data is serialized Schemer instance
     Schemer ser/des is ducktype of Serder using .raw
-    Automatically serializes and deserializes using Schemer methods
-    """
+    Automatically serializes and deserializes using Schemer methods"""
 
     def __init__(self, *pa,
                  klas: Type[scheming.Schemer] | None = None,
                  **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
+                False (default) means do not enable duplicates at
+                each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
                 of Serder
 
-        Overridden Parameters:
+            Overridden Parameters:
             klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
-                of Serder  intercepts passed in klas and forces it to Schemer
-        """
+                of Serder  intercepts passed in klas and forces it to Schemer"""
         from ..core import scheming
 
         if klas is None:
@@ -2175,24 +2047,22 @@ class SchemerSuber(SerderSuberBase, Suber):
 
 class DupSuber(SuberBase):
     """
-    Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
+    Named subdatabase of DBer. Subclass of SuberBase that supports multiple entries at
     each key (duplicates) with dupsort==True
 
     Do not use if  serialized value is greater than 511 bytes.
-    This is a limitation of dupsort==True sub dbs in LMDB
-    """
+    This is a limitation of dupsort==True sub dbs in LMDB"""
 
-    def __init__(self, db: Type[LMDBer], *,
+    def __init__(self, db: Type[DBer], *,
                        subkey: str='docs.',
                        dupsort: bool=True,
                        **kwa):
         """
         Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True (forced default) means enable duplicates at each key
-                            False  means do not enable duplicates at each key
-        """
+                False  means do not enable duplicates at each key"""
         super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
 
 
@@ -2214,9 +2084,7 @@ class DupSuber(SuberBase):
         Returns:
             result (bool): True If successful, False otherwise.
 
-        Apparently always returns True (how .put works with dupsort=True)
-
-        """
+        Apparently always returns True (how .put works with dupsort=True)"""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putVals(db=self.sdb,
@@ -2236,9 +2104,7 @@ class DupSuber(SuberBase):
             vals (str | bytes | memoryview | Iterable): str or bytes values
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         key = self._tokey(keys)
         self.db.delVals(db=self.sdb, key=key)  # delete all values
         if not helping.isNonStringIterable(vals):  # not iterable
@@ -2263,9 +2129,7 @@ class DupSuber(SuberBase):
 
         Returns:
             result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
-
-        """
+                False means duplicte of same value already exists."""
         return (self.db.addVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=self._ser(val)))
@@ -2281,9 +2145,7 @@ class DupSuber(SuberBase):
 
         Returns:
             vals (list):  each item in list is str
-                          empty list if no entry at keys
-
-        """
+                empty list if no entry at keys"""
         return [self._des(val) for val in
                         self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
 
@@ -2296,9 +2158,7 @@ class DupSuber(SuberBase):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            val (str):  value else None if no value at key
-
-        """
+            val (str):  value else None if no value at key"""
         val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
         return self._des(val) if val is not None else val
 
@@ -2314,9 +2174,7 @@ class DupSuber(SuberBase):
                 combined in order to form key
 
         Returns:
-            iterator:  vals each of str. Raises StopIteration when done
-
-        """
+            iterator:  vals each of str. Raises StopIteration when done"""
         for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
             yield self._des(val)
 
@@ -2328,8 +2186,7 @@ class DupSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be
                 combined in order to form key. When keys empty then count all
-                entires in db.
-        """
+                entires in db."""
         if not keys:
             return self.db.cntAll(db=self.sdb)
         return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
@@ -2342,12 +2199,10 @@ class DupSuber(SuberBase):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (str|bytes|memoryview|None):  instance of dup val at key to delete
-                              if val is None, default, then remove all values at key
+                if val is None, default, then remove all values at key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
+            result (bool): True if key exists so delete successful. False otherwise"""
         if val is None:
             return (self.db.delVals(db=self.sdb,
                                 key=self._tokey(keys)))
@@ -2367,13 +2222,11 @@ class CesrDupSuber(CesrSuberBase, DupSuber):
     DupSuber supports multiple entries at each key (duplicates) with dupsort==True
 
     Do not use if  serialized value is greater than 511 bytes.
-    This is a limitation of dupsort==True sub dbs in LMDB
-    """
+    This is a limitation of dupsort==True sub dbs in LMDB"""
     def __init__(self, *pa, **kwa):
         """Initialize Instance
-        Inherited Parameters:
 
-        """
+        Inherited Parameters:"""
         super(CesrDupSuber, self).__init__(*pa, **kwa)
 
 
@@ -2387,27 +2240,24 @@ class CatCesrDupSuber(CatCesrSuberBase, DupSuber):
     DupSuber supports multiple entries at each key (duplicates) with dupsort==True
 
     Do not use if  serialized value is greater than 511 bytes.
-    This is a limitation of dupsort==True sub dbs in LMDB
-    """
+    This is a limitation of dupsort==True sub dbs in LMDB"""
     def __init__(self, *pa, **kwa):
         """Initialize Instance
 
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True (forced default) means enable duplicates at each key
-                            False  means do not enable duplicates at each key
+                False  means do not enable duplicates at each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
+                False means do not reverify. Default False
             klas (Iterable|Type[coring.Matter]|None): of Class references to
-                    subclasses of CESR compatible Type[coring.Matter etc]Class
-                    reference to subclass of Matter or Indexer or Counter or
-                    any ducktyped class of Matter
-                    None is replaced with default Matter
-
-        """
+                subclasses of CESR compatible Type[coring.Matter etc]Class
+                reference to subclass of Matter or Indexer or Counter or
+                any ducktyped class of Matter
+                None is replaced with default Matter"""
         super(CatCesrDupSuber, self).__init__(*pa, **kwa)
 
 
@@ -2438,13 +2288,10 @@ class IoDupSuber(DupSuber):
 
     With prepended proem ordinal must explicity check for duplicate values
     before insertion. Uses a python set for the duplicate inclusion test.
-    Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-    """
+    Set inclusion scales with O(1) whereas list inclusion scales with O(n)."""
     def __init__(self, *pa, **kwa):
         """
-        Inherited Parameters:
-
-        """
+        Inherited Parameters:"""
         super(IoDupSuber, self).__init__(*pa, **kwa)
 
 
@@ -2459,9 +2306,7 @@ class IoDupSuber(DupSuber):
             vals (Iterable): of str serializations
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putIoDupVals(db=self.sdb,
@@ -2480,9 +2325,7 @@ class IoDupSuber(DupSuber):
             vals (Iterable): str serializations
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         key = self._tokey(keys)
         self.db.delIoDupVals(db=self.sdb, key=key)  # delete all values
         if not helping.isNonStringIterable(vals):  # not iterable
@@ -2505,9 +2348,7 @@ class IoDupSuber(DupSuber):
 
         Returns:
             result (bool): True means unique value added among duplications,
-                            False means duplicate of same value already exists.
-
-        """
+                False means duplicate of same value already exists."""
         return (self.db.addIoDupVal(db=self.sdb,
                                     key=self._tokey(keys),
                                     val=self._ser(val)))
@@ -2523,9 +2364,7 @@ class IoDupSuber(DupSuber):
 
         Returns:
             vals (Iterable):  each item in list is str
-                          empty list if no entry at keys
-
-        """
+                empty list if no entry at keys"""
         return ([self._des(val) for val in
                     self.db.getIoDupVals(db=self.sdb, key=self._tokey(keys))])
 
@@ -2543,9 +2382,7 @@ class IoDupSuber(DupSuber):
         Returns:
             items (Iterator[str]): entries in dups at key for ion >= ion.
 
-        Raises StopIteration when done
-
-        """
+        Raises StopIteration when done"""
         for key, val in self.db.getIoDupItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             ion=ion):
@@ -2564,9 +2401,7 @@ class IoDupSuber(DupSuber):
             ion (int): offset into set to start the count (0 based offset)
 
         Returns:
-            vals (Iterator):  str values. Raises StopIteration when done
-
-        """
+            vals (Iterator):  str values. Raises StopIteration when done"""
         for key, val in self.db.getIoDupItemIter(db=self.sdb,
                                                  key=self._tokey(keys),
                                                  ion=ion):
@@ -2582,9 +2417,7 @@ class IoDupSuber(DupSuber):
             keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            val (str):  value str, None if no entry at keys
-
-        """
+            val (str):  value str, None if no entry at keys"""
         val = self.db.getIoDupValLast(db=self.sdb, key=self._tokey(keys))
         return (self._des(val) if val is not None else val)
 
@@ -2599,14 +2432,12 @@ class IoDupSuber(DupSuber):
             keys (str | bytes | memoryview | Iterable): of key parts to be
                 combined in order to form key
             val (str|bytes|memoryview|None):  value at key to delete.
-                        Subclass ._ser method may accept different value types
-                        if val is None then remove all values at key
+                Subclass ._ser method may accept different value types
+                if val is None then remove all values at key
 
         Returns:
-           result (bool): True if key with dup val exists so rem successful.
-                           False otherwise
-
-        """
+            result (bool): True if key with dup val exists so rem successful.
+                False otherwise"""
         if val is None:
             return self.db.delIoDupVals(db=self.sdb, key=self._tokey(keys))
 
@@ -2623,8 +2454,7 @@ class IoDupSuber(DupSuber):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts to be combined
-                in order to form key. When empty counts all entries in db.
-        """
+                in order to form key. When empty counts all entries in db."""
         if not keys:
             return self.db.cntAll(db=self.sdb)
 
@@ -2643,10 +2473,10 @@ class IoDupSuber(DupSuber):
 
         Returns:
             items (Iterator): of (key, val) tuples over the all the items in
-            subdb whose key startswith key made from keys and val has its hidden
-            dup ordinal proem removed.
-            Keys may be keyspace prefix in order to return branches of key space.
-            When keys is empty then returns all items in subdb.
+                subdb whose key startswith key made from keys and val has its hidden
+                dup ordinal proem removed.
+                Keys may be keyspace prefix in order to return branches of key space.
+                When keys is empty then returns all items in subdb.
 
         Parameters:
             keys (str | bytes | memoryview | Iterable): key or key parts that
@@ -2656,7 +2486,7 @@ class IoDupSuber(DupSuber):
                 Either append "" to end of keys Iterable to ensure get properly
                 separated top branch key or use top=True.
                 In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+            key: empty string it matches all keys in db with startswith.
 
             topive (bool): True means treat as partial key tuple from top branch of
                 key space given by partial keys. Resultant key ends in .sep
@@ -2667,8 +2497,7 @@ class IoDupSuber(DupSuber):
                 partial ending in sep regardless of top value
 
         Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
-        """
+        empty string so empty will matches all keys in db."""
 
         for key, val in self.db.getTopIoDupItemIter(db=self.sdb,
                                          top=self._tokey(keys, topive=topive)):
@@ -2682,25 +2511,22 @@ class B64IoDupSuber(B64SuberBase, IoDupSuber):
     duplicates with leading value proem. Proem + .sep joined value and must fit
     in 511 bytes of keyspace as duplicate
 
-    Assumes dupsort==True
-
-    """
+    Assumes dupsort==True"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to True
+                False (default) means do not enable duplicates at
+                each key. Set to True
             sep (str): separator for combining keys tuple of strs into key bytes
-                   for db key and also used to convert val iterator to val bytes
-                   Must not be Base64 character.
-                   default is self.Sep == '.'
+                for db key and also used to convert val iterator to val bytes
+                Must not be Base64 character.
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                False means do not reverify. Default False"""
         super(B64IoDupSuber, self).__init__(*pa, **kwa)
 
 
@@ -2742,13 +2568,10 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
     With prepended proem ordinal must explicity check for duplicate values
     before insertion. Uses a python set for the duplicate inclusion test.
-    Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-    """
+    Set inclusion scales with O(1) whereas list inclusion scales with O(n)."""
     def __init__(self, *pa, **kwa):
         """
-        Inherited Parameters:
-
-        """
+        Inherited Parameters:"""
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
@@ -2764,9 +2587,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             vals (Iterable): of str serializations
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         if not helping.isNonStringIterable(vals):  # not NonStrIterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoDupVals(db=self.sdb,
@@ -2789,9 +2610,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             vals (Iterable): str serializations
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
+            result (bool): True If successful, False otherwise."""
         key = self._tokey(keys)
         self.db.delOnIoDups(db=self.sdb,
                                key=key,
@@ -2821,9 +2640,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
         Returns:
             result (bool): True means unique value added among duplications,
-                            False means duplicate of same value already exists.
-
-        """
+                False means duplicate of same value already exists."""
         return (self.db.addOnIoDupVal(db=self.sdb,
                                     key=self._tokey(keys),
                                     on=on,
@@ -2840,8 +2657,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         Parameters:
             keys (str | bytes | memoryview | Iterable): top keys as prefix to be
                 combined with serialized on suffix and sep to form key
-            val (str | bytes | memoryview): serialization
-        """
+            val (str | bytes | memoryview): serialization"""
         return (self.db.appendOnIoDupVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=self._ser(val),
@@ -2857,9 +2673,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
 
         Returns:
-            vals (list[str]):  values if any else empty tuuple
-
-        """
+            vals (list[str]):  values if any else empty tuuple"""
         return [self._des(val) for val in
                         self.db.getOnIoDupVals(db=self.sdb,
                                                   key=self._tokey(keys),
@@ -2879,8 +2693,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
-            ion (int): starting insertion ordinal value, default 0
-        """
+            ion (int): starting insertion ordinal value, default 0"""
         for key, on, val in self.db.getOnIoDupItemIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   on=on,
@@ -2902,9 +2715,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             ion (int): starting insertion ordinal value, default 0
 
         Returns:
-            vals (Iterator[bytes]):  deserialized val of dups at onkey
-
-        """
+            vals (Iterator[bytes]):  deserialized val of dups at onkey"""
         for key, on, val in self.db.getOnIoDupItemIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   on=on,
@@ -2924,9 +2735,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
         Returns:
             last (str):  value str, None if no entry at effective key made from
-                         keys and on
-
-        """
+                keys and on"""
 
         val = self.db.getOnIoDupLast(db=self.sdb, key=self._tokey(keys), on=on)
         return (self._des(val) if val is not None else val)
@@ -2944,14 +2753,12 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
             on (int): ordinal number used with onKey(pre,on) to form key.
             val (str|bytes|memoryview|None):  value at key to delete. Subclass ._ser method may
-                        accept different value types
-                        if val is None then remove all values at key
+                accept different value types
+                if val is None then remove all values at key
 
         Returns:
-           result (bool): True if onkey with dup val exists so rem successful.
-                           False otherwise
-
-        """
+            result (bool): True if onkey with dup val exists so rem successful.
+                False otherwise"""
         if val is not None:
             return self.db.delOnIoDupVal(db=self.sdb,
                                        key=self._tokey(keys),
@@ -2975,8 +2782,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         Parameters:
             keys (str | bytes | memoryview | Iterable): of key parts to be
                 combined in order to form key
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         if not keys:
             return self.db.cntAll(db=self.sdb)
 
@@ -2996,18 +2802,16 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
         Returns:
             items (Iterator[(tuple, int, str)]): iterator of triples
-                (keys, on, val)
-                where keys forms base key, on is int, and val is entry value at
-                with insertion ordering suffix removed from effective key.
+            (keys, on, val)
+            where keys forms base key, on is int, and val is entry value at
+            with insertion ordering suffix removed from effective key.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as truncated top key,
                 to get a key space prefix to get all the items
                 from multiple branches of the key space.
                 If top key is empty then gets all items in database.
-            on (int): ordinal number used with onKey(pre,on) to form key.
-
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         for keys, on, val in (self.db.getOnTopIoDupItemIter(db=self.sdb,
                                                         top=self._tokey(keys),
                                                         sep=self.sep.encode())):
@@ -3023,15 +2827,14 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
         Returns:
             items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
-                  deserialized val)
+            deserialized val)
 
         Parameters:
             keys (str | bytes | memoryview | iterator): keys as prefix to be
                 combined with serialized on suffix and sep to form onkey
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnIoDupItemIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
@@ -3052,8 +2855,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                 combined with serialized on suffix and sep to form onkey
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for val in (self.db.getOnIoDupIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
@@ -3070,8 +2872,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                 combined with serialized on suffix and sep to form key
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for val in (self.db.getOnIoDupLastValIter(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
@@ -3089,8 +2890,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                 combined with serialized on suffix and sep to form key
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnIoDupLastItemIter(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
@@ -3100,15 +2900,14 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         """
         Returns:
             items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
-                  deserialized val) in reverse order
+            deserialized val) in reverse order
 
         Parameters:
             keys (str | bytes | memoryview | iterator): keys as prefix to be
                 combined with serialized on suffix and sep to form onkey
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnIoDupItemBackIter(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
@@ -3125,8 +2924,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                 combined with serialized on suffix and sep to form onkey
                 When keys is empty then retrieves whole database including duplicates
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for val in (self.db.getOnIoDupValBackIter(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
@@ -3146,25 +2944,22 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
     OnIoDupSuber adds the convenience methods from OnSuberBase to OnIoDupSuber
     for those cases where the keyspace has a trailing ordinal part.
 
-    Assumes dupsort==True
-
-    """
+    Assumes dupsort==True"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to True
+                False (default) means do not enable duplicates at
+                each key. Set to True
             sep (str): separator for combining keys tuple of strs into key bytes
-                   for db key and also used to convert val iterator to val bytes
-                   Must not be Base64 character.
-                   default is self.Sep == '.'
+                for db key and also used to convert val iterator to val bytes
+                Must not be Base64 character.
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                False means do not reverify. Default False"""
         super(B64OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
@@ -3189,7 +2984,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     The set of values is an ordered set using insertion order. Any given value
     may appear only once in the set (not a list).
 
-    This works similarly to the IO value duplicates for the LMDBer class with a
+    This works similarly to the IO value duplicates for the DBer class with a
     sub db  of LMDB (dupsort==True) but without its size limitation of 511 bytes.
 
     Here the key is augmented with a hidden numbered suffix that provides a
@@ -3228,13 +3023,11 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     To insure set semantics (i.e. no duplicate values in set) using a suffix
     ordinal insertions must explicity check for duplicate set values
     before insertion.  A python set is used for the inclusion test.
-    Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-    """
+    Set inclusion scales with O(1) whereas list inclusion scales with O(n)."""
     def __init__(self, *pa, **kwa):
         """Initialize instance
 
-        Inherited Parameters:
-        """
+        Inherited Parameters:"""
         super(OnIoSetSuber, self).__init__(*pa, **kwa)
 
 
@@ -3253,11 +3046,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form onkey.
             vals (str|bytes|memoryview|NonStrIterable|None): serialized values
-                                to add to set of vals at onkey if any.
-                                When not NonStrIterable converts to iterable.
-                                Empty iterable or None returns False
-
-        """
+                to add to set of vals at onkey if any.
+                When not NonStrIterable converts to iterable.
+                Empty iterable or None returns False"""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoSetVals(db=self.sdb,
@@ -3282,10 +3073,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form onkey.
             vals (NonStrIterable|None): serialized values to replace set of vals at
-                                        onkey if any. None means empty iterable.
-                                        When not NonStrIterable converts to iterable.
-                                        Empty iterable returns False
-        """
+                onkey if any. None means empty iterable.
+                When not NonStrIterable converts to iterable.
+                Empty iterable returns False"""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.pinOnIoSetVals(db=self.sdb,
@@ -3306,9 +3096,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             vals (NonStrIterable|None): values to append
-                                        None means empty iterable.
-                                        Empty iterable raises ValueError
-        """
+                None means empty iterable.
+                Empty iterable raises ValueError"""
         if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return (self.db.appendOnIoSetVals(db=self.sdb,
@@ -3327,14 +3116,13 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             result (bool): True means unique value added to set,
-                            False means value already in set.
+                False means value already in set.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form onkey.
             val (str|bytes|memoryview|None): value to add.
-                                             when None returns False
-        """
+                when None returns False"""
         return (self.db.addOnIoSetVal(db=self.sdb,
                                       key=self._tokey(keys),
                                       on=on,
@@ -3355,8 +3143,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
-            on (int): ordinal number used with onKey(key ,on) to form key.
-        """
+            on (int): ordinal number used with onKey(key ,on) to form key."""
         return [(self._tokeys(key), on, self._des(val)) for key, on, val in
                     self.db.getOnIoSetItemIter(db=self.sdb,
                                                key=self._tokey(keys),
@@ -3377,9 +3164,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When key is empty then returns empty iterator
             on (int): ordinal number tail used with onKey(pre,on) to form key.
-            ion (int): starting insertion ordinal value, default 0
-
-        """
+            ion (int): starting insertion ordinal value, default 0"""
         return [self._des(val) for key, on, val in
                     self.db.getOnIoSetItemIter(db=self.sdb,
                                                key=self._tokey(keys),
@@ -3399,8 +3184,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
-            ion (int): starting insertion ordinal value, default 0
-        """
+            ion (int): starting insertion ordinal value, default 0"""
         for key, on, val in self.db.getOnIoSetItemIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   on=on,
@@ -3421,8 +3205,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
-            ion (int): starting insertion ordinal value, default 0
-        """
+            ion (int): starting insertion ordinal value, default 0"""
         for key, on, val in self.db.getOnIoSetItemIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   on=on,
@@ -3437,13 +3220,12 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             last (tuple[tuple, int, str]): last set item triple at onkey
-                 (keys, on, val)
-                 Empty tuple () if onkey not in db or key empty.
+                (keys, on, val)
+                Empty tuple () if onkey not in db or key empty.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         if last := self.db.getOnIoSetLastItem(db=self.sdb,
                                    key=self._tokey(keys),
                                    on=on,
@@ -3460,12 +3242,11 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             last (str|None):  value str, None if no entry at effective key made from
-                         keys and on
+                keys and on
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         if last := self.db.getOnIoSetLastItem(db=self.sdb,
                                               key=self._tokey(keys),
                                               on=on,
@@ -3486,8 +3267,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         entry at onkey = keys + sep + on if any in db.
 
         Returns:
-           result (bool): True if onkey with dup val exists so rem successful.
-                           False otherwise
+            result (bool): True if onkey with dup val exists so rem successful.
+                False otherwise
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
@@ -3495,8 +3276,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
             val (str|bytes|memoryview|None):  value at key to remove.
                 Subclass ._ser method may accept different value types
-                if val is None then remove all values at key
-        """
+                if val is None then remove all values at key"""
         return self.db.remOnIoSetVal(db=self.sdb,
                                         key=self._tokey(keys),
                                         on=on,
@@ -3512,13 +3292,12 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             result (bool): True if onkey with dup val exists so rem successful.
-                           False otherwise
+                False otherwise
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When key is empty then remove all entries in whole db
-            on (int): base key. None means all on for key
-        """
+            on (int): base key. None means all on for key"""
         return self.db.remOnAllIoSet(db=self.sdb,
                                       key=self._tokey(keys),
                                       on=on,
@@ -3531,14 +3310,13 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             count (int): count values in set at effective onkey from insertion
-                         ordering offset ion.
+                ordering offset ion.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key.
                 When empty counts whole db.
             on (int): ordinal number used with onKey(pre,on) to form key.
-            ion (int): starting insertion ordinal offset into set, default 0.
-        """
+            ion (int): starting insertion ordinal offset into set, default 0."""
         if not keys:
             return self.db.cntOnAllIoSet(db=self.sdb)
 
@@ -3556,13 +3334,12 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             count (int): count of set members for onkey for on >= on. When on is
-                         None then count of all on for key. When key is empty
-                         then count of all on for all key for whole db.
+                None then count of all on for key. When key is empty
+                then count of all on for all key for whole db.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
-            on (int): ordinal number used with onKey(pre,on) to form key.
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         return (self.db.cntOnAllIoSet(db=self.sdb,
                                       key=self._tokey(keys),
                                       on=on,
@@ -3581,18 +3358,16 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             items (Iterator[(tuple, int, str)]): iterator of triples
-                (keys, on, val)
-                where keys forms base key, on is int, and val is entry value at
-                with insertion ordering suffix removed from effective key.
+            (keys, on, val)
+            where keys forms base key, on is int, and val is entry value at
+            with insertion ordering suffix removed from effective key.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as truncated top key,
                 to get a key space prefix to get all the items
                 from multiple branches of the key space.
                 If top key is empty then gets all items in database.
-            on (int): ordinal number used with onKey(pre,on) to form key.
-
-        """
+            on (int): ordinal number used with onKey(pre,on) to form key."""
         for keys, on, val in (self.db.getOnTopIoSetItemIter(db=self.sdb,
                                                         top=self._tokey(keys),
                                                         sep=self.sep.encode())):
@@ -3608,18 +3383,16 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             items (Iterator[(tuple, int, str)]): iterator of triples
-                (keys, on, val)
-                where keys forms base key, on is int, and val is entry value at
-                with insertion ordering suffix removed from effective key.
+            (keys, on, val)
+            where keys forms base key, on is int, and val is entry value at
+            with insertion ordering suffix removed from effective key.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 from which to make onkey = key + sep + on
                 If keys is empty then gets all items in database.
             on (int): ordinal number used with onKey(pre,on) to form key.
-                When on is None then iterates all on at key,
-
-        """
+                When on is None then iterates all on at key,"""
         for keys, on, val in (self.db.getOnAllIoSetItemIter(db=self.sdb,
                                                             key=self._tokey(keys),
                                                             on=on,
@@ -3643,8 +3416,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
                 When on ==0 then iterates over all items of all sets for all on
                 for all key >= key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetItemIter(db=self.sdb,
                                                             key=self._tokey(keys),
                                                             on=on,
@@ -3667,9 +3439,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 When keys is empty then retrieves whole database including all
                 set items
             on (int|None): ordinal number used with onKey(pre,on) to form key.
-                           When None then all on for all key >= key
-            sep (bytes): separator character for split
-        """
+                When None then all on for all key >= key
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetLastItemIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
@@ -3691,8 +3462,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 When keys is empty then retrieves whole database including all
                 set values
             on (int): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetLastItemIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
@@ -3717,21 +3487,35 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             item (Iterator[(tuple, int, str)]): triples of (keys, on, val)
-                in backwards order
+            in backwards order
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 keys empty means whole db
 
             on (int|None): ordinal number used with onKey(pre,on) to form key.
-                           None means iterate over all on for key
-            sep (bytes): separator character for split
-        """
+                None means iterate over all on for key
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetItemBackIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
                                                         sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
+
+
+    def getBackIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+        """Iterates backwards over set values for all ordinals <= on at keys.
+
+        Matches the OnIoDupSuber reverse KEL lookup contract.
+
+        Returns:
+            vals (Iterator[str]): deserialized values in reverse insertion order.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): base key; empty means whole db.
+            on (int): highest ordinal to include, default 0.
+        """
+        yield from self.getAllBackIter(keys=keys, on=on)
 
 
     def getAllBackIter(self, keys: str|bytes|memoryview|Iterable = "",
@@ -3752,8 +3536,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str | bytes | memoryview | Iterable): key(s) made into base key
             on (int|None): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetItemBackIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
@@ -3777,15 +3560,14 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             lastitem (Iterator[(tuple, int, str)]): triples of (keys, on, val)
-                in backwards order
+            in backwards order
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 keys empty means whole db
             on (int|None): ordinal number used with onKey(pre,on) to form key.
-                           None means iterate over all on for key
-            sep (bytes): separator character for split
-        """
+                None means iterate over all on for key
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetLastItemBackIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
@@ -3811,8 +3593,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int|None): ordinal number used with onKey(pre,on) to form key.
-            sep (bytes): separator character for split
-        """
+            sep (bytes): separator character for split"""
         for keys, on, val in (self.db.getOnAllIoSetLastItemBackIter(db=self.sdb,
                                                         key=self._tokey(keys),
                                                         on=on,
@@ -3834,23 +3615,20 @@ class B64OnIoSetSuber(B64SuberBase, OnIoSetSuber):
     OnIoSetSuber adds the convenience methods from OnSuberBase to OnIoSetSuber
     for those cases where the keyspace has a trailing ordinal part.
 
-    Assumes dupsort==False
-
-    """
+    Assumes dupsort==False"""
 
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+            db (DBer): base db
+            subkey (str): named subdatabase key
             dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key. Set to False
+                False (default) means do not enable duplicates at
+                each key. Set to False
             sep (str): separator for combining keys tuple of strs into key bytes
-                   for db key and also used to convert val iterator to val bytes
-                   Must not be Base64 character.
-                   default is self.Sep == '.'
+                for db key and also used to convert val iterator to val bytes
+                Must not be Base64 character.
+                default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                           False means do not reverify. Default False
-        """
+                False means do not reverify. Default False"""
         super(B64OnIoSetSuber, self).__init__(*pa, **kwa)

@@ -11,7 +11,7 @@ from hio.base import doing
 
 from ..common import Parsery, setupHby
 
-from ...kering import Vrsn_1_0, Vrsn_2_0
+from ...kering import Vrsn_1_0
 from ...app import HaberyDoer
 from ...core import Parser
 
@@ -55,7 +55,8 @@ class ImportDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context

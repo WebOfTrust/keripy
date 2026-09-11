@@ -10,6 +10,7 @@ from .....app import (GroupHab, Notifier, MailboxDirector,
                       Poster, multisigRegistryInceptExn)
 from .....app.grouping import loadHandlers
 
+from .....kering import Vrsn_1_0
 from .....core import SerderKERI, SealEvent
 from .....peer import Exchanger
 from .....vdr import Regery, Registrar
@@ -17,7 +18,7 @@ from .....vdr import Regery, Registrar
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a new credential registry', 
+parser = argparse.ArgumentParser(description='Initialize a new credential registry',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: registryIncept(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
@@ -122,7 +123,8 @@ class RegistryInceptor(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)
@@ -146,9 +148,9 @@ class RegistryInceptor(doing.DoDoer):
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         if self.estOnly:
-            anc = hab.rotate(data=[rseal])
+            anc = hab.rotate(data=[rseal], framed=True)
         else:
-            anc = hab.interact(data=[rseal])
+            anc = hab.interact(data=[rseal], framed=True)
 
         aserder = SerderKERI(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
@@ -162,7 +164,8 @@ class RegistryInceptor(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage)
+                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage,
+                                                     version=Vrsn_1_0)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

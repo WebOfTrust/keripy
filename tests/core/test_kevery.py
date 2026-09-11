@@ -4,15 +4,15 @@ import pytest
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0, ValidationError
+from keri.kering import Vrsn_1_0, ValidationError, Kinds
 from keri.core import (Salter, Parser, Diger, SerderKERI,
                        Counter, Kever, Kevery, Codens,
                        incept, rotate, interact)
 from keri.app import openHby
 from keri.db import openDB
 
-
 logger = ogler.getLogger()
+
 
 
 def test_kevery():
@@ -21,6 +21,8 @@ def test_kevery():
     Key Event Verifier Factory
     """
     logger.setLevel("ERROR")
+
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     #  create signers
     raw = b"ABCDEFGH01234567"
@@ -34,7 +36,7 @@ def test_kevery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -60,7 +62,7 @@ def test_kevery():
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -78,7 +80,7 @@ def test_kevery():
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
-                        sn=2)
+                        sn=2, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -94,7 +96,7 @@ def test_kevery():
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3)
+                          sn=3, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -110,7 +112,7 @@ def test_kevery():
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=4)
+                          sn=4, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -128,7 +130,7 @@ def test_kevery():
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
-                        sn=5)
+                        sn=5, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -144,7 +146,7 @@ def test_kevery():
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=6)
+                          sn=6, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -162,7 +164,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
-                        sn=7)
+                        sn=7, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -178,7 +180,7 @@ def test_kevery():
         # Event 8 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=8)
+                          sn=8, **kwa)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -196,7 +198,7 @@ def test_kevery():
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8, **kwa)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -245,7 +247,7 @@ def test_witness_state():
     """
 
     # with basing.openDB(name="controller") as bobDB, keeping.openKS(name="controller") as bobKS:
-    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as hby:
 
         wits = [
             "BAMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ",
@@ -261,12 +263,12 @@ def test_witness_state():
         ]
 
         hab = hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
-                              wits=[wits[0], wits[1]])
+                              wits=[wits[0], wits[1]], version=Vrsn_1_0, kind=Kinds.json)
 
         wit0 = hab.kvy.fetchWitnessState(hab.pre, 0)
         assert [w.qb64 for w in wit0] == [wits[0], wits[1]]
 
-        ixn0 = hab.interact()
+        ixn0 = hab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert ixn0 == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EMrHSIByF9uIw9rM9rdSWxLQ'
                 b'IQiKloH-S5T8UO2Cq3xh","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"1","p":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUUBXEYL'
@@ -275,7 +277,7 @@ def test_witness_state():
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
-        rot1 = hab.rotate()
+        rot1 = hab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert rot1 == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EF3IIBRGoGr5Mq35UBuhmfiA'
                 b'SkBAOc-sM5f8BUQisi6-","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"2","p":"EMrHSIByF9uIw9rM9rdSWxLQIQiKloH-S5T8UO2Cq3'
@@ -286,7 +288,7 @@ def test_witness_state():
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
-        rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:])
+        rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert rot2 == (b'{"v":"KERI10JSON00021a_","t":"rot","d":"EEmrPqJNzOC2DvZx--TCbB5o'
                 b'pQ0Ewp7yXrzqAesXwwQ4","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"3","p":"EF3IIBRGoGr5Mq35UBuhmfiASkBAOc-sM5f8BUQisi'
@@ -301,10 +303,10 @@ def test_witness_state():
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
         for _ in range(5):
-            hab.interact()
+            hab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert hab.kever.sn == 8
 
-        hab.rotate(cuts=[wits[8], wits[9]], adds=wits[2:5])
+        hab.rotate(cuts=[wits[8], wits[9]], adds=wits[2:5], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert hab.kever.sn == 9
 
         wit4 = hab.kvy.fetchWitnessState(hab.pre, 4)
@@ -335,34 +337,34 @@ def test_stale_event_receipts():
     Bam is verifying the key events with receipts from Bob
     """
     # openHby default temp=True
-    with (openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as bobHby,
-            openHby(name="bam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as bamHby,
-            openHby(name="wes", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wesHby,
-            openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wanHby,
-            openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wilHby):
+    with (openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as bobHby,
+            openHby(name="bam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as bamHby,
+            openHby(name="wes", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wesHby,
+            openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wanHby,
+            openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wilHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BCuDiSPCTq-qBBFDHkhf1_kmysrH8KSsFvoaOSgEbx-X'
 
         # setup Wan's habitat nontrans
-        wanHab = wanHby.makeHab(name="wan", isith='1', icount=1, transferable=False,)
+        wanHab = wanHby.makeHab(name="wan", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wanHab.pre == 'BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'
 
         # setup Wil's habitat nontrans
-        wilHab = wilHby.makeHab(name="wil", isith='1', icount=1, transferable=False,)
+        wilHab = wilHby.makeHab(name="wil", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wilHab.pre == 'BEXrSXVksXpnfno_Di6RBX2Lsr9VWRAihjLhowfjNOQQ'
 
         # setup Bob's transferable habitat with wil, wes and wan as witnesses
         awits = [wesHab, wilHab, wanHab]
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
-                                wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2,)
+                                wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EEM3_Vvu1R__sWolUiPQ8Mk97GQ1xsGbC9kqEfsFL1aO'
 
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
 
         # Pass incept to witnesses, receipted event to bam
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
         assert bobHab.pre not in bamKvy.kevers
 
@@ -371,21 +373,21 @@ def test_stale_event_receipts():
             Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
             assert bobHab.pre in witHab.kevers
             iserder = SerderKERI(raw=bytearray(bobIcp))
-            msg = witHab.receipt(serder=iserder)
+            msg = witHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bobHab.pre in bamKvy.kevers
 
         # Rotate, pass to witnesses, send receipts from Wes and Wan to Bam
-        rot0 = bobHab.rotate(toad=2)
+        rot0 = bobHab.rotate(toad=2, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = Kevery(db=witHab.db, lax=False, local=False)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
             iserder = SerderKERI(raw=bytearray(rot0))
-            msg = witHab.receipt(serder=iserder)
+            msg = witHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
@@ -397,14 +399,14 @@ def test_stale_event_receipts():
         assert len(wigers) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
-        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
+        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = Kevery(db=witHab.db)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=kvy, local=True)
             iserder = SerderKERI(raw=bytearray(rot1))
-            msg = witHab.receipt(serder=iserder)
+            msg = witHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
@@ -415,7 +417,7 @@ def test_stale_event_receipts():
         kvy = Kevery(db=wilHab.db)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
         iserder = SerderKERI(raw=bytearray(rot0))
-        msg = wilHab.receipt(serder=iserder)
+        msg = wilHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1

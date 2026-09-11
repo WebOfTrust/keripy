@@ -15,7 +15,7 @@ from hio.help import Hict, ogler
 
 from ..kering import (ShortageError, ExtractionError,
                       ColdStartError, sniff, Colds)
-from ..core import Sadder, SerderKERI
+from ..core import SerderKERI
 from ..end import designature
 from ..help import nowUTC
 
@@ -178,7 +178,7 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     cnt = 0
     while ims:  # extract and deserialize message from ims
         try:
-            serder = Sadder(raw=ims)
+            serder = SerderKERI(raw=ims)
         except ShortageError as ex:  # need more bytes
             raise ExtractionError("unable to extract a valid message to send as HTTP")
         else:  # extracted successfully

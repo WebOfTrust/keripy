@@ -8,9 +8,10 @@ routes:
 """
 from hio.help import ogler
 
-from keri.kering import Roles
+from keri.kering import Roles, Vrsn_1_0, Kinds
 
-from keri.core import Salter, Diger, SealEvent, MtrDex, messagize, bare
+from keri.core import (Salter, Diger, Prefixer, Number, SealEvent, MtrDex,
+                       messagize, bare)
 
 
 logger = ogler.getLogger()
@@ -93,6 +94,7 @@ def test_bare():
     serderE = bare(route="/to/the/moon",
                    data=data,
                    stamp=stamp,
+                   version=Vrsn_1_0, kind=Kinds.json,
                    )
 
     assert serderE.raw == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8xapaMhP4I_0yi'
@@ -114,15 +116,23 @@ def test_bare():
     seal = SealEvent(i=preC,
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderE, sigers=[sigerC], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
-                    b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
-                    b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                    b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
-                    b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhWqp6wC08no2iWhgFYTaUg'
-                    b'rasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2'
-                    b'DXfrEaqN7zhqTEhkeDZ2z-AABAAACsAGVg747fc-61v64LuAa6WbfCKjKgH6Xo0t'
-                    b'1wz2X7E51I_aWCTSU3KIhqkZirj7aYK__AIy_UvC8Tub7APwH')
+
+    tsgs = [(Prefixer(qb64=preC),
+             Number(sn=0),
+             Diger(qb64='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+             [sigerC])]
+
+    #msg = messagize(serderE, sigers=[sigerC], source=seal, framed=True, gvrsn=Vrsn_1_0)
+    msg = messagize(serderE, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3b'
+                   b'QL8xapaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+0'
+                   b'0:00","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFY'
+                   b'TaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYA'
+                   b'fSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhW'
+                   b'qp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAACsAGVg74'
+                   b'7fc-61v64LuAa6WbfCKjKgH6Xo0t1wz2X7E51I_aWCTSU3KIhqkZirj7aYK_'
+                   b'_AIy_UvC8Tub7APwH')
 
     # create endorsed bar with trans endorser
     # create trans key pair for endorser
@@ -138,16 +148,23 @@ def test_bare():
     seal = SealEvent(i=preE,
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderE, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
-                b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
-                b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
-                b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMrwi0a-Zblpqe5Hg7w7iz9JCKn'
-                b'MgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2'
-                b'DXfrEaqN7zhqTEhkeDZ2z-AABAAAqSbIUsv723owtCsHk4ltmzhf0leA4BXxJiC3'
-                b'ZBD3jZzbVPwxKTv8cY1z-RnpS6gW1xgeL__Lb0Cr4p8ZisvEI')
 
+    tsgs = [(Prefixer(qb64=preE),
+             Number(sn=0),
+             Diger(qb64='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+             [sigerE])]
+
+    #msg = messagize(serderE, sigers=[sigerE], source=seal, framed=True, gvrsn=Vrsn_1_0)
+    msg = messagize(serderE, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3b'
+                   b'QL8xapaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+0'
+                   b'0:00","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFY'
+                   b'TaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYA'
+                   b'fSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMrwi0a'
+                   b'-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAAqSbIUsv7'
+                   b'23owtCsHk4ltmzhf0leA4BXxJiC3ZBD3jZzbVPwxKTv8cY1z-RnpS6gW1xge'
+                   b'L__Lb0Cr4p8ZisvEI')
 
     # create endorsed bar with nontrans endorser
     # create nontrans key pair for endorder
@@ -158,7 +175,7 @@ def test_bare():
 
     cigarE = signerE.sign(ser=serderE.raw)  # no index so Cigar
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderE.raw)
-    msg = messagize(serderE, cigars=[cigarE])
+    msg = messagize(serderE, cigars=[cigarE], framed=True, gvrsn=Vrsn_1_0)
     assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
                     b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
                     b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'

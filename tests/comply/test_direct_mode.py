@@ -2,8 +2,9 @@
 
 import os
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.core import (Kevery, Salter, SealEvent, Parser, MtrDex,
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds
+from keri.core import (Kevery, Salter, Prefixer, Diger, SealEvent, Number,
+                       Parser, MtrDex,
                        incept, rotate, interact, messagize, receipt)
 
 from keri.app import Manager, openKS
@@ -29,6 +30,7 @@ def test_direct_mode_with_manager():
     # set of secrets (seeds for private keys)
     valSalt = Salter(raw=b'1123456789abcdea').qb64
 
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger, \
          openKS(name="controller") as coeKpr, openKS(name="validator") as valKpr:
@@ -50,7 +52,7 @@ def test_direct_mode_with_manager():
         # Controller Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeVerfers[0].qb64],
                            ndigs=[coeDigers[0].qb64],
-                           code=MtrDex.Blake3_256)
+                           code=MtrDex.Blake3_256, **kwa)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
         coepre = coeSerder.ked["i"]
@@ -60,7 +62,7 @@ def test_direct_mode_with_manager():
         sigers = coeMgr.sign(ser=coeSerder.raw, verfers=coeVerfers)
 
         #  create serialized message
-        cmsg = messagize(coeSerder, sigers=sigers)
+        cmsg = messagize(coeSerder, sigers=sigers, framed=True, gvrsn=Vrsn_1_0)
 
         # create own Controller Kever in  Controller's Kevery
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
@@ -75,7 +77,7 @@ def test_direct_mode_with_manager():
 
         valSerder = incept(keys=[valVerfers[0].qb64],
                            ndigs=[valDigers[0].qb64],
-                           code=MtrDex.Blake3_256)
+                           code=MtrDex.Blake3_256, **kwa)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
         valpre = valSerder.ked["i"]
@@ -86,7 +88,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(valSerder.raw, verfers=valVerfers)  # return Siger if index
 
         #  create serialized message
-        vmsg = messagize(valSerder, sigers=sigers)
+        vmsg = messagize(valSerder, sigers=sigers, framed=True, gvrsn=Vrsn_1_0)
 
         # create own Validator Kever in  Validator's Kevery
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -108,7 +110,7 @@ def test_direct_mode_with_manager():
         # create trans receipt by attaching siger to recipt msg
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, **kwa)
 
         # sign controller's event not receipt
         # look up event to sign from validator's kever for coe
@@ -121,8 +123,14 @@ def test_direct_mode_with_manager():
         #assert counter.qb64 == '-AAB'
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
 
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # attach signatures
-        rmsg = messagize(reserder, sigers=sigers, seal=seal)
+        #rmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert len(rmsg) == 353
 
         # process own validator receipt in validator's Kevery so have copy in own log
@@ -141,26 +149,35 @@ def test_direct_mode_with_manager():
 
         # check if validator's Kever in controller's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        val_prefixer, est_num, est_diger, sig = result[0]
 
-        assert val_prefixer.qb64 == valKever.prefixer.qb64
-        assert est_num.num == valKever.sn
-        assert est_diger.qb64 == valKever.serder.said
-        assert sig.qb64b == sigers[0].qb64b
+        # vrcsNew replace old form
+        topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                                coeKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
 
+        assert rpre == valKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == valKever.sn
+        assert rdig == valKever.serder.said
+        assert rsiger0.qb64b == sigers[0].qb64b
 
         # create receipt to escrow use invalid digest and sequence number so not in controller's db
         fake = reserder.said  # some other digest
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=10,
-                           said=fake)
+                           said=fake, **kwa)
         # sign event not receipt
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
+
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers, seal=seal)
+        #vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        vmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
 
         Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
@@ -185,7 +202,7 @@ def test_direct_mode_with_manager():
         # create trans receipt
         reserder = receipt(pre=valK.prefixer.qb64,
                            sn=valK.sn,
-                           said=valK.serder.said, )
+                           said=valK.serder.said, **kwa)
         # sign validator's event not receipt
         # look up event to sign from controller's kever for validator
         valIcpDig = coeKevery.db.kels.getLast(keys=valpre, on=vsn)
@@ -193,8 +210,16 @@ def test_direct_mode_with_manager():
         assert valIcpDig == valK.serder.saidb
         s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
         sigers = coeMgr.sign(ser=s.raw, verfers=coeVerfers)  # return Siger if index
+
+        tsgs = [(Prefixer(qb64=coepre),
+                 Number(sn=coeKever.lastEst.s),
+                 Diger(qb64=coeKever.lastEst.d),
+                 sigers)]
+
         # create receipt message
-        cmsg = messagize(reserder, sigers=sigers, seal=seal)
+        #cmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        cmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
+
         # controller process own receipt in own Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -204,14 +229,26 @@ def test_direct_mode_with_manager():
         # valKevery.process(ims=cmsg)  # controller process validator's inception and receipt
 
         #  check if receipt quadruple from controller in validator's receipt database
-        result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
-                                                dig=valKever.serder.said))
-        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        #result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
+                                                #dig=valKever.serder.said))
+        #rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
 
-        assert rct_prefixer.qb64 == coeKever.prefixer.qb64
-        assert rct_num.num == coeKever.sn
-        assert rct_est_diger.qb64 == coeKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b
+        #assert rct_prefixer.qb64 == coeKever.prefixer.qb64
+        #assert rct_num.num == coeKever.sn
+        #assert rct_est_diger.qb64 == coeKever.serder.said
+        #assert rct_siger.qb64b == sigers[0].qb64b
+
+        # vrcsNew replace old form
+        topkeys = (valKever.prefixer.qb64, valKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                                 valKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
+
+        assert rpre == coeKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == coeKever.sn
+        assert rdig == coeKever.serder.said
+        assert rsiger0.qb64b == sigers[0].qb64b
 
         # Controller Event 1 Rotation Transferable
         csn += 1
@@ -222,14 +259,14 @@ def test_direct_mode_with_manager():
                            keys=[coeVerfers[0].qb64],
                            dig=coeKever.serder.said,
                            ndigs=[coeDigers[0].qb64],
-                           sn=csn)
+                           sn=csn, **kwa)
         coe_event_digs.append(coeSerder.said)
 
         # sign serialization
         sigers = coeMgr.sign(coeSerder.raw, verfers=coeVerfers)  # returns sigers
 
         #  create serialized message
-        cmsg = messagize(coeSerder, sigers=sigers)
+        cmsg = messagize(coeSerder, sigers=sigers, framed=True, gvrsn=Vrsn_1_0)
 
         # update controller's key event verifier state
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
@@ -253,7 +290,7 @@ def test_direct_mode_with_manager():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, **kwa)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
         coeRotDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -261,8 +298,15 @@ def test_direct_mode_with_manager():
         assert coeRotDig == coeK.serder.saidb
         s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
+
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # validator create receipt message
-        vmsg = messagize(reserder, sigers=sigers, seal=seal)
+        #vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        vmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
 
         # validator process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -273,14 +317,26 @@ def test_direct_mode_with_manager():
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         # check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        #result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
+                                                #dig=coeKever.serder.said))
+        #rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
 
-        assert rct_prefixer.qb64 == valKever.prefixer.qb64
-        assert rct_num.num == valKever.sn
-        assert rct_est_diger.qb64 == valKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b
+        #assert rct_prefixer.qb64 == valKever.prefixer.qb64
+        #assert rct_num.num == valKever.sn
+        #assert rct_est_diger.qb64 == valKever.serder.said
+        #assert rct_siger.qb64b == sigers[0].qb64b
+
+        # vrcsNew replace old form
+        topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                       coeKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
+
+        assert rpre == valKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == valKever.sn
+        assert rdig == valKever.serder.said
+        assert rsiger0.qb64b == sigers[0].qb64b
 
         # Next Event 2 Controller Interaction
         csn += 1  # do not increment esn
@@ -288,14 +344,14 @@ def test_direct_mode_with_manager():
         assert cesn == 1
         coeSerder = interact(pre=coeKever.prefixer.qb64,
                              dig=coeKever.serder.said,
-                             sn=csn)
+                             sn=csn, **kwa)
         coe_event_digs.append(coeSerder.said)
 
         # sign serialization
         sigers = coeMgr.sign(coeSerder.raw, verfers=coeVerfers)
 
         # create msg
-        cmsg = messagize(coeSerder, sigers=sigers)
+        cmsg = messagize(coeSerder, sigers=sigers, framed=True, gvrsn=Vrsn_1_0)
 
         # update controller's key event verifier state
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
@@ -319,7 +375,7 @@ def test_direct_mode_with_manager():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, **kwa)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
         coeIxnDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -327,8 +383,15 @@ def test_direct_mode_with_manager():
         assert coeIxnDig == coeK.serder.saidb
         s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
+
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers, seal=seal)
+        #vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        vmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
 
         # validator process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -339,14 +402,26 @@ def test_direct_mode_with_manager():
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         #  check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        #result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
+                                                #dig=coeKever.serder.said))
+        #rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
 
-        assert rct_prefixer.qb64 == valKever.prefixer.qb64
-        assert rct_num.num == valKever.sn
-        assert rct_est_diger.qb64 == valKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b
+        #assert rct_prefixer.qb64 == valKever.prefixer.qb64
+        #assert rct_num.num == valKever.sn
+        #assert rct_est_diger.qb64 == valKever.serder.said
+        #assert rct_siger.qb64b == sigers[0].qb64b
+
+        # vrcsNew replace old form
+        topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                       coeKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
+
+        assert rpre == valKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == valKever.sn
+        assert rdig == valKever.serder.said
+        assert rsiger0.qb64b == sigers[0].qb64b
 
 
         #  verify final controller event state

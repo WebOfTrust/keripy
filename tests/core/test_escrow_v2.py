@@ -1,0 +1,1841 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.core.test_escrow_v2 module
+
+V2 (default Version) twins of test_escrow.py. Keep V1 KEL escrow coverage in
+test_escrow.py, which is hard-pinned to Vrsn_1_0 + JSON.
+
+"""
+import os
+import time
+import datetime
+
+import pytest
+
+from hio.help import ogler
+
+from keri.kering import MisfitEventSourceError
+
+from keri.core import (Salter, Saider, Prefixer,
+                       Number, Diger, Kevery, eventing, parsing,
+                       MtrDex, NumDex, SealSource, messagize,
+                       incept, interact, rotate, delcept)
+
+from keri.db import dgKey, snKey, openDB
+from keri.app import keeping
+
+logger = ogler.getLogger()
+
+
+
+def test_partial_signed_escrow():
+    """
+    Test partially signed escrow
+
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = Kevery(db=db)
+
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
+
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+
+        pre = srdr.ked["i"]
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=[sigers[0]], framed=True)
+
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+
+        # verify Kevery process is idempotent to previously escrowed events
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+
+        time.sleep(0.001)
+        # verify Kevery process partials escrow is idempotent to previously escrowed events
+        # assuming not stale but nothing else has changed
+        kvy.processEscrowPartialSigs()
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+
+        # Send message again but with signature from other siger
+        # send duplicate message with all three sigs
+        msg = messagize(srdr, sigers=[sigers[0], sigers[2]], framed=True)
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert pre in kvy.kevers  # event accepted
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+        sigers = kvy.db.sigs.get(keys=(pre, srdr.said))  #  but sigs is more
+        assert len(sigers) == 2
+
+        # get DTS set by escrow date time stamp on event
+        edater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+
+        time.sleep(0.001)
+        # verify Kevery process partials escrow now unescrows correctly given
+        # two signatures and assuming not stale
+        kvy.processEscrowPartialSigs()
+        assert pre in kvy.kevers  # event now accepted via escrow
+        kvr = kvy.kevers[pre]  # kever created so event was validated
+        assert kvr.prefixer.qb64 == pre
+        assert kvr.serder.said == srdr.said  # key state updated so event was validated
+        # escrows now empty
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 0
+
+        # get DTS set by first seen event acceptance date time stamp
+        adater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        # assert (adater.datetime - edater.datetime) > datetime.timedelta()
+
+        # send duplicate message with all three sigs
+        # Re-sign to get all 3 original signatures
+        allsigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        msg = messagize(srdr, sigers=allsigers, framed=True)
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        sigers = kvy.db.sigs.get(keys=(pre, srdr.said))
+        assert len(sigers) == 3
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 0  # escrow stays gone
+
+        # get DTS after partial last sig should not change dts from first accepted
+        pdater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+        assert pdater.dts == adater.dts
+
+        # get first seen
+        fsdig = kvy.db.fels.get(keys=pre, on=0)
+        assert fsdig == srdr.saidb.decode("utf-8")
+
+        # create interaction event for
+        srdr = interact(pre=kvr.prefixer.qb64,
+                        dig=kvr.serder.said,
+                        sn=kvr.sn+1,
+                        data=[])
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=kvr.verfers)
+
+        msg = messagize(srdr, sigers=[sigers[1]], framed=True)
+
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.sn == 0  # key state not updated
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+
+        # add another sig
+        msg = messagize(srdr, sigers=[sigers[0]], framed=True)
+
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.sn == 0  # key state not updated
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+        sigers = kvy.db.sigs.get(keys=(pre, srdr.said))  #  but sigs is more
+        assert len(sigers) == 2
+
+        # Process partials but stale escrow  despite two sigs set Timeout to 0
+        kvy.TimeoutPSE = 0  # forces all escrows to be stale
+        time.sleep(0.001)
+        kvy.processEscrowPartialSigs()
+        assert kvr.sn == 0  # key state not updated
+        # escrows now empty
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 0
+
+        # Now reset timeout so not zero
+        kvy.TimeoutPSE = 3600
+
+        # resend events to load escrow
+        msg = messagize(srdr, sigers=[sigers[1]], framed=True)
+
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.sn == 0  # key state not updated
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+
+        # add another sig
+        msg = messagize(srdr, sigers=[sigers[0]], framed=True)
+
+        # apply msg to Kevery to process
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.sn == 0  # key state not updated
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
+
+        # get DTS set by escrow date time stamp on event
+        edater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+
+        time.sleep(0.001)
+        # Process partials but now escrow not stale
+        kvy.processEscrowPartialSigs()
+        assert kvr.serder.said == srdr.said  # key state updated so event was validated
+        assert kvr.sn == 1  # key state successfully updated
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 0  # escrow gone
+
+        # get DTS set by first seen event acceptance date time stamp
+        adater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (adater.datetime - edater.datetime) > datetime.timedelta()
+
+        # send duplicate message but add last sig
+        msg = messagize(srdr, sigers=[sigers[1]], framed=True)
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        sigers = kvy.db.sigs.get(keys=(pre, srdr.said))  #  but sigs is more
+        assert len(sigers) == 2
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
+        assert len(escrows) == 0  # escrow stays gone
+
+        # get DTS after partial last sig should not change dts from first accepted
+        pdater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+        assert pdater.dts == adater.dts
+
+        # get first seen
+        fsdig = kvy.db.fels.get(keys=pre, on=1)
+        assert fsdig == srdr.saidb.decode("utf-8")
+
+        # Create rotation event
+        # get current keys as verfers and next digests as digers
+        sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
+        #  2 of first 3 and 1 of last 2
+        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
+
+        srdr = rotate(pre=kvr.prefixer.qb64,
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=kvr.serder.said,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=kvr.sn+1,
+                      data=[])
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        # apply msg to Kevery
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.serder.said == srdr.said  # key state updated so event was validated
+
+        # Create rotation event
+        # get current keys as verfers and next digests as digers
+        sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
+        #  2 of first 3 and 1 of last 2
+        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
+
+        srdr = rotate(pre=kvr.prefixer.qb64,
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=kvr.serder.said,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=kvr.sn+1,
+                      data=[])
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=[sigers[0], sigers[3]], framed=True)
+
+        # apply msg to Kevery
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.serder.said != srdr.said  # key state not updated
+
+        time.sleep(0.001)
+        # process escrow
+        kvy.processEscrowPartialSigs()
+        assert kvr.serder.said != srdr.said  # key state not updated
+
+        msg = messagize(srdr, sigers=[sigers[1]], framed=True)
+
+        # apply msg to Kevery
+        psr.parse(ims=bytearray(msg), kvy=kvy)
+        # kvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.serder.said != srdr.said  # key state not updated
+
+        # get DTS set by escrow date time stamp on event
+        edater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+
+        time.sleep(0.001)
+        # process escrow
+        kvy.processEscrowPartialSigs()
+        assert kvr.serder.said == srdr.said  # key state updated
+
+        # get DTS set by first seen event acceptance date time stamp
+        adater = kvy.db.dtss.get(keys=dgKey(pre, srdr.saidb))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (adater.datetime - edater.datetime) > datetime.timedelta()
+
+        # get first seen
+        fsdig = kvy.db.fels.get(keys=pre, on=3)
+        assert fsdig == srdr.saidb.decode("utf-8")
+
+    assert not os.path.exists(ks.path)
+    assert not os.path.exists(db.path)
+
+    """End Test"""
+
+
+def test_missing_delegator_escrow():
+    """
+    Test missing delegator escrow
+
+    bod is the delegator
+    del is the delegate
+    wat is the watcher
+    """
+
+    bobSalt = Salter(raw=b'0123456789abcdef').qb64
+    delSalt = Salter(raw=b'abcdef0123456789').qb64
+    watSalt = Salter(raw=b'wxyzabcdefghijkl').qb64
+
+    psr = parsing.Parser()
+
+    with (openDB(name="bob") as bobDB,
+          keeping.openKS(name="bob") as bobKS,
+          openDB(name="del") as delDB,
+          keeping.openKS(name="del") as delKS,
+          openDB(name="wat") as watDB, \
+          keeping.openKS(name="wat") as watKS          ):
+
+        # Init key pair managers
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
+        watMgr = keeping.Manager(ks=watKS, salt=watSalt)
+
+        # Init Keverys
+        bobKvy = Kevery(db=bobDB)
+        delKvy = Kevery(db=delDB)
+        watKvy = Kevery(db=watDB)
+
+        # Setup Wat with own inception event
+        verfers, digers = watMgr.incept(stem='wat', temp=True)  # algo default salty and rooted
+
+        watSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                         ndigs=[diger.qb64 for diger in digers],
+                         code=MtrDex.Blake3_256)
+
+        watPre = watSrdr.pre
+        watMgr.move(old=verfers[0].qb64, new=watPre)  # move key pair label to prefix
+        # Setup wat's prefixes so wat's KEL will be Kever.locallyOwned()
+        watDB.prefixes.add(watPre)
+        assert watPre in watDB.prefixes
+        # setup wat's on kel
+        sigers = watMgr.sign(ser=watSrdr.raw, verfers=verfers)
+        msg = messagize(watSrdr, sigers=sigers, framed=True)
+        watIcpMsg = msg  # save for later
+
+        # apply msg to wats's Kevery
+        psr.parse(ims=bytearray(watIcpMsg), kvy=watKvy, local=True)
+        watK = watKvy.kevers[watPre]
+        assert watK.prefixer.qb64 == watPre
+        assert watK.serder.said == watSrdr.said
+
+        # Setup Bob with own inception event
+        verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
+        bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                         ndigs=[diger.qb64 for diger in digers],
+                         code=MtrDex.Blake3_256)
+
+        bobPre = bobSrdr.pre
+        bobMgr.move(old=verfers[0].qb64, new=bobPre)  # move key pair label to prefix
+        # Setup Bob's prefixes so bob's KEL will be Kever.locallyOwned() and
+        # Del's KEL will be Kever.locallyDelegated()
+        bobDB.prefixes.add(bobPre)
+        assert bobPre in bobDB.prefixes
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
+        msg = messagize(bobSrdr, sigers=sigers, framed=True)
+
+        bobIcpMsg = msg  # save for later
+
+        # apply msg to bob's Kevery
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=bobKvy, local=True)
+        bobK = bobKvy.kevers[bobPre]
+        assert bobK.prefixer.qb64 == bobPre
+        assert bobK.serder.said == bobSrdr.said
+        assert bobK.sn == 0
+
+        # apply msg to del's Kevery so he knows about the AID
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
+        assert bobK.prefixer.qb64 in delKvy.kevers
+        delBobK = delKvy.kevers[bobPre]  # bobs kever in dels kevery
+        assert delBobK.sn == 0
+
+        # Setup Del's inception event assuming that Bob's next event will be
+        # an ixn delegating event
+        verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
+        delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
+                          delpre=bobPre,
+                          ndigs=[diger.qb64 for diger in digers])
+
+        delPre = delSrdr.pre
+        delMgr.move(old=verfers[0].qb64, new=delPre)  # move key pair label to prefix
+        # Setup Del's prefixes so Del's KEL will be Kever.locallyOwned()
+        delDB.prefixes.add(delPre)
+        assert delPre in delDB.prefixes
+
+        # Now create delegating event for Bob
+        seal = eventing.SealEvent(i=delPre,
+                                  s=delSrdr.ked["s"],
+                                  d=delSrdr.said)
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
+                           dig=bobK.serder.said,
+                           sn=bobK.sn+1,
+                           data=[seal._asdict()])
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
+
+        msg = messagize(bobSrdr, sigers=sigers, framed=True)
+        bobIxnMsg1 = msg  # delegating event with attachments
+
+        # apply msg to bob's Kevery
+        psr.parse(ims=bytearray(bobIxnMsg1), kvy=bobKvy, local=True)
+        assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
+        assert bobK.sn == 1
+
+        # apply msg to del's Kevery so he knows about the delegating event
+        psr.parse(ims=bytearray(bobIxnMsg1), kvy=delKvy, local=True)
+        assert delBobK.serder.said == bobSrdr.said
+        assert delBobK.sn == 1
+
+        # now create Del's delegated inception event msg
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+
+        seqner = Number(num=bobK.sn)
+        bond = SealSource(s=seqner, d=Saider(qb64=bobSrdr.said))
+        delIcpMsg = messagize(delSrdr, sigers=sigers, bonds=[bond], framed=True)
+
+        # apply Del's delegated inception event message to bob's Kevery
+        # because the attachment includes valid source seal then the Delegables
+        # escrow is bypassed and is validated and shows up in AES
+        psr.parse(ims=bytearray(delIcpMsg), kvy=bobKvy, local=True)
+        # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert delPre in bobKvy.kevers  # successfully validated
+        bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
+        assert bobDelK.delegated
+        assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
+        result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rnumber, rdiger = result
+        assert isinstance(rnumber, Number)
+        assert isinstance(rdiger, Diger)
+        assert rnumber.num == seqner.num
+        assert rdiger.qb64b == bobSrdr.saidb
+
+        # apply Del's inception msg to Del's Kevery
+        # Because locallyOwned by delegate event does not validate delegation
+        # and ignores the attached source seal
+        psr.parse(ims=bytearray(delIcpMsg), kvy=delKvy, local=True)
+        assert delPre in delKvy.kevers
+        delK = delKvy.kevers[delPre]
+        # no AES entry for del's own delegated event when locallyOwned
+        assert not delKvy.db.aess.get(keys=(delPre, delSrdr.said))
+
+        # apply Del's delegated inception event message to wats's Kevery as remote
+        # because the attachment includes valid source seal but wat does not
+        # yet have Bob's delegating event entry. The event goes into partial
+        # delegated event escrow
+        psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
+        assert not bobPre in watKvy.kevers
+        assert not delPre in watKvy.kevers
+        escrows = watKvy.db.pdes.get(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        # Now apply Bob's incept to wat's kvy and process escrow
+        psr.parse(ims=bytearray(bobIcpMsg), kvy=watKvy, local=False)
+        assert bobPre in watKvy.kevers
+        watBobK = watKvy.kevers[bobPre]
+        assert watBobK.sn == 0
+        watKvy.processEscrows()
+        assert not delPre in watKvy.kevers
+        escrows = watKvy.db.pdes.get(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0] == delSrdr.said  # escrow entry for event
+
+        # Now apply Bob's ixn to wat's kvy and process escrow
+        psr.parse(ims=bytearray(bobIxnMsg1), kvy=watKvy, local=False)
+        watKvy.processEscrows()
+        escrows = watKvy.db.pdes.get(keys=delPre, on=delSrdr.sn)
+        assert len(escrows) == 0
+        assert watBobK.sn == 1
+
+        assert delPre in watKvy.kevers  # successfully validated
+        watDelK = watKvy.kevers[delPre]  # delK in wats kevery
+        assert watDelK.delegated
+        assert watDelK.serder.said == delSrdr.said  # key state updated so event was validated
+        result = watKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rnumber, rdiger = result
+        assert rnumber.num == seqner.num
+        assert rdiger.qb64b == bobSrdr.saidb
+
+
+        # Setup Del rotation event
+        verfers, digers = delMgr.rotate(pre=delPre, temp=True)
+
+        delSrdr = eventing.deltate(pre=bobDelK.prefixer.qb64,
+                                   keys=[verfer.qb64 for verfer in verfers],
+                                   dig=bobDelK.serder.said,
+                                   sn=bobDelK.sn+1,
+                                   ndigs=[diger.qb64 for diger in digers])
+
+        # Now create delegating interaction event
+        seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
+                                  s=delSrdr.ked["s"],
+                                  d=delSrdr.said)
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
+                           dig=bobK.serder.said,
+                           sn=bobK.sn+1,
+                           data=[seal._asdict()])
+
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
+
+        msg = messagize(bobSrdr, sigers=sigers, framed=True)
+
+        bobIxnMsg2 = msg
+
+        # apply bobs IXN msg to bob's Kevery
+        psr.parse(ims=bytearray(bobIxnMsg2), kvy=bobKvy, local=True)
+        assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
+        assert bobK.sn == 2
+
+        # apply msg to del's Kevery
+        psr.parse(ims=bytearray(bobIxnMsg2), kvy=delKvy, local=True)
+        assert delBobK.serder.said == bobSrdr.said
+        assert delBobK.sn == 2
+
+        # apply msg to wat's Kevery
+        psr.parse(ims=bytearray(bobIxnMsg2), kvy=watKvy, local=True)
+        assert watBobK.serder.said == bobSrdr.said
+        assert watBobK.sn == 2
+
+        # now create msg from Del's delegated rotation event
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+        seqner = Number(num=bobK.sn)
+        bond = SealSource(s=seqner, d=Saider(qb64=bobSrdr.said))
+        delRotMsg = messagize(delSrdr, sigers=sigers, bonds=[bond], framed=True)
+
+        # apply Del's delegated Rotation event message to del's Kevery
+        psr.parse(ims=bytearray(delRotMsg), kvy=delKvy, local=True)
+        assert delK.delegated
+        assert delK.serder.said == delSrdr.said
+        assert not delKvy.db.aess.get(keys=(delPre, delSrdr.said))
+
+        # apply Del's delegated Rotation event message to bob's Kevery
+        psr.parse(ims=bytearray(delRotMsg), kvy=bobKvy, local=True)
+        assert bobDelK.delegated
+        assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
+        result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rnumber, rdiger = result
+        assert rnumber.num == seqner.num
+        assert rdiger.qb64b == bobSrdr.saidb
+
+        # apply Del's delegated Rotation event message to wats's Kevery
+        psr.parse(ims=bytearray(delRotMsg), kvy=watKvy, local=True)
+        assert watDelK.delegated
+        assert watDelK.serder.said == delSrdr.said  # key state updated so event was validated
+        result = watKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert result is not None
+        rnumber, rdiger = result
+        assert rnumber.num == seqner.num
+        assert rdiger.qb64b == bobSrdr.saidb
+
+
+
+    assert not os.path.exists(delKS.path)
+    assert not os.path.exists(delDB.path)
+    assert not os.path.exists(bobKS.path)
+    assert not os.path.exists(bobDB.path)
+
+    """End Test"""
+
+
+def test_misfit_escrow():
+    """
+    Test misfit escrow
+
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with openDB(name="misfit", temp=True) as db, keeping.openKS(name="misfit") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = Kevery(db=db)
+
+        # Create inception event for a locally owned AID
+        verfers, digers = mgr.incept(stem='mis', temp=True)
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+
+        pre = srdr.pre
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        # Mark prefix as locally owned so Kever.locallyOwned() is True
+        db.prefixes.add(pre)
+        assert pre in db.prefixes
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        # Apply inception as local so event is accepted and Kever exists
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert pre in kvy.kevers
+        kever = kvy.kevers[pre]
+
+        # Build a valid interaction event for the same AID
+        srdr2 = interact(pre=kever.prefixer.qb64,
+                         dig=kever.serder.said,
+                         sn=kever.sn + 1,
+                         data=[])
+
+        sigers2 = mgr.sign(ser=srdr2.raw, verfers=kever.verfers)
+        msg2 = messagize(srdr2, sigers=sigers2, framed=True)
+
+        # Parse the second event as non-local; this should trigger misfit escrow.
+        # Parser swallows ValidationError subclasses (including MisfitEventSourceError),
+        # so we assert via escrow side effects instead of expecting the exception.
+        psr.parse(ims=bytearray(msg2), kvy=kvy, local=False)
+
+        dgkey = dgKey(srdr2.preb, srdr2.saidb)
+
+        # Misfit index contains the event SAID
+        assert db.misfits.cnt(keys=(srdr2.pre, srdr2.snh)) == 1
+        misfit_vals = db.misfits.get(keys=(srdr2.pre, srdr2.snh))
+        assert misfit_vals == [srdr2.said]
+
+        # Event and signatures are stored in common escrow DBs
+        stored = db.evts.get(keys=(srdr2.preb, srdr2.saidb))
+        assert stored is not None
+        assert stored.saidb == srdr2.saidb
+
+        sigs = db.sigs.get(keys=(srdr2.preb, srdr2.saidb))
+        assert sigs is not None
+        assert [siger.qb64b for siger in sigs] == [siger.qb64b for siger in sigers2]
+
+        # Datetime stamp and event source record are stored
+        dater = db.dtss.get(keys=dgkey)
+        assert dater is not None
+
+        esr = db.esrs.get(keys=dgkey)
+        assert esr is not None
+        assert not esr.local
+
+
+def test_misfit_escrow_delegated():
+    """
+    Test misfit escrow for a delegated event with attached source seal.
+
+    Remote (local=False) delegated inception for a delegate whose delegator
+    is local should be escrowed as a misfit and recorded in .udes.
+    """
+    salt = Salter(raw=b'fedcba9876543210').qb64
+    psr = parsing.Parser()
+
+    with openDB(name="misfit-del", temp=True) as db, keeping.openKS(name="misfit-del") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = Kevery(db=db)
+
+        # Create a local delegator AID and mark it as local
+        delg_verfers, delg_digers = mgr.incept(stem='delg', temp=True)
+        delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
+                           ndigs=[diger.qb64 for diger in delg_digers],
+                           code=MtrDex.Blake3_256)
+        delg_pre = delg_srdr.pre
+        mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
+        db.prefixes.add(delg_pre)
+        assert delg_pre in db.prefixes
+
+        # Create delegated inception event (dip) for a new delegatee AID
+        del_verfers, del_digers = mgr.incept(stem='del', temp=True)
+        dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
+                           delpre=delg_pre,
+                           ndigs=[diger.qb64 for diger in del_digers])
+        del_pre = dip_srdr.pre
+        mgr.move(old=del_verfers[0].qb64, new=del_pre)
+
+        # Build message: delegated inception with controller sigs and a source seal
+        sigers = mgr.sign(ser=dip_srdr.raw, verfers=del_verfers)
+        seqner = Number(num=0)
+        saider = Saider(qb64=delg_srdr.said)
+        bond = SealSource(s=seqner, d=saider)
+        msg = messagize(dip_srdr, sigers=sigers, bonds=[bond], framed=True)
+
+        # Parse as non-local; this should trigger delegated misfit escrow.
+        # Parser swallows ValidationError subclasses (including MisfitEventSourceError),
+        # so we assert via escrow side effects instead of expecting the exception.
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=False)
+
+        dgkey = dgKey(dip_srdr.preb, dip_srdr.saidb)
+
+        # Misfit index entry for delegated event
+        assert db.misfits.cnt(keys=(dip_srdr.pre, dip_srdr.snh)) == 1
+
+        # Event and signatures stored
+        stored = db.evts.get(keys=(dip_srdr.preb, dip_srdr.saidb))
+        assert stored is not None
+        assert stored.saidb == dip_srdr.saidb
+
+        sigs = db.sigs.get(keys=(dip_srdr.preb, dip_srdr.saidb))
+        assert sigs is not None
+        assert [siger.qb64b for siger in sigs] == [siger.qb64b for siger in sigers]
+
+        # .udes contains (Number, Saider) tuple for the delegated misfit
+        uval = db.udes.get(keys=dgkey)
+        assert uval is not None
+        num, src = uval
+        assert isinstance(num, Number)
+        assert num.num == seqner.num
+        assert src.qb64 == delg_srdr.said
+
+    """End Test"""
+
+
+def test_misfit_escrow_valSigsWigsDel():
+    """
+    Unit-style test that calls Kever.valSigsWigsDel with local=False for a
+    locally owned AID to trigger misfit escrow.
+    """
+    salt = Salter(raw=b'1234567890abcdef').qb64
+
+    with openDB(name="misfit-unit", temp=True) as db, keeping.openKS(name="misfit-unit") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = Kevery(db=db)
+
+        # Create and accept a local inception event
+        verfers, digers = mgr.incept(stem='unit', temp=True)
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+        pre = srdr.pre
+        mgr.move(old=verfers[0].qb64, new=pre)
+        db.prefixes.add(pre)
+        assert pre in db.prefixes
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        psr = parsing.Parser()
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert pre in kvy.kevers
+        kever = kvy.kevers[pre]
+
+        # Build a valid interaction event and its signatures
+        ixn = interact(pre=kever.prefixer.qb64,
+                       dig=kever.serder.said,
+                       sn=kever.sn + 1,
+                       data=[])
+        ixn_sigers = mgr.sign(ser=ixn.raw, verfers=kever.verfers)
+
+        tholder = kever.tholder
+        toader = kever.toader
+        wits = kever.wits
+        wigers = []
+
+        # Call valSigsWigsDel directly with local=False to force misfit escrow
+        with pytest.raises(MisfitEventSourceError):
+            kever.valSigsWigsDel(serder=ixn,
+                                 sigers=ixn_sigers,
+                                 verfers=kever.verfers,
+                                 tholder=tholder,
+                                 wigers=wigers,
+                                 toader=toader,
+                                 wits=wits,
+                                 delsner=None,
+                                 delsger=None,
+                                 eager=False,
+                                 local=False)
+
+        dgkey = dgKey(ixn.preb, ixn.saidb)
+
+        # Misfit and common escrow DBs should have been updated
+        assert db.misfits.cnt(keys=(ixn.pre, ixn.snh)) == 1
+        assert db.evts.get(keys=(ixn.preb, ixn.saidb)) is not None
+        assert db.sigs.get(keys=(ixn.preb, ixn.saidb)) is not None
+        assert db.dtss.get(keys=dgkey) is not None
+        esr = db.esrs.get(keys=dgkey)
+        assert esr is not None
+        assert not esr.local
+
+
+def test_misfit_escrow_kevery():
+    """
+    Kevery-level test that calls Kevery.escrowMFEvent directly and asserts that
+    misfit escrow side effects are written to the DB (misfits, evts, sigs, dtss,
+    esrs, and .udes for delegated-like metadata).
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+
+    with openDB(name="misfit-kvy", temp=True) as db, keeping.openKS(name="misfit-kvy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = Kevery(db=db)
+
+        # Create a simple inception event and its signatures
+        verfers, digers = mgr.incept(stem='kvy', temp=True)
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        # Delegation-like seal metadata for .udes: use sn=0 and the event's own digest
+        delnum = Number(num=0)
+        diger = Diger(qb64=srdr.said)
+
+        # Call Kevery.escrowMFEvent directly with local=False to simulate a misfit
+        kvy.escrowMFEvent(serder=srdr,
+                          sigers=sigers,
+                          wigers=None,
+                          number=delnum,
+                          diger=diger,
+                          local=False)
+
+        dgkey = dgKey(srdr.preb, srdr.saidb)
+
+        # Misfit index is populated
+        assert db.misfits.cnt(keys=(srdr.pre, srdr.snh)) == 1
+        misfit_vals = db.misfits.get(keys=(srdr.pre, srdr.snh))
+        assert misfit_vals == [srdr.said]
+
+        # Core escrow tables populated
+        stored = db.evts.get(keys=(srdr.preb, srdr.saidb))
+        assert stored is not None
+        assert stored.saidb == srdr.saidb
+
+        sigs = db.sigs.get(keys=dgkey)
+        assert sigs is not None
+        assert [siger.qb64b for siger in sigs] == [siger.qb64b for siger in sigers]
+
+        dater = db.dtss.get(keys=dgkey)
+        assert dater is not None
+
+        esr = db.esrs.get(keys=dgkey)
+        assert esr is not None
+        assert not esr.local
+
+        # .udes contains the (Number, Diger) tuple written by Kevery.escrowMFEvent
+        uval = db.udes.get(keys=dgkey)
+        assert uval is not None
+        num, src = uval
+        assert isinstance(num, Number)
+        assert num.num == delnum.num
+        assert src.qb64 == diger.qb64
+
+
+def test_delegated_partial_signed_escrow_udes():
+    """
+    Test delegated partial-signature escrow writes (Number, Diger) into .udes.
+
+    We create a delegated inception (dip) with a SealSourceCouples attachment
+    referencing a local delegator event but deliberately under-sign it so that
+    it is escrowed via Kever.escrowPSEvent (PSE escrow), not accepted.
+    """
+    salt = Salter(raw=b'567890abcdef1234').qb64
+    psr = parsing.Parser()
+
+    with openDB(name="pse-del", temp=True) as db, keeping.openKS(name="pse-del") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = Kevery(db=db)
+
+        # Create a local delegator AID and mark it as local
+        delg_verfers, delg_digers = mgr.incept(stem='pse-delg', temp=True)
+        delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
+                           ndigs=[diger.qb64 for diger in delg_digers],
+                           code=MtrDex.Blake3_256)
+        delg_pre = delg_srdr.pre
+        mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
+        db.prefixes.add(delg_pre)
+        assert delg_pre in db.prefixes
+
+        # Accept delegator inception locally so its KEL exists
+        sigers_delg = mgr.sign(ser=delg_srdr.raw, verfers=delg_verfers)
+        msg = messagize(delg_srdr, sigers=sigers_delg, framed=True)
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert delg_pre in kvy.kevers
+        delg_kever = kvy.kevers[delg_pre]
+
+        # Create delegated inception event (dip) for a new delegatee AID, with multi-sig threshold
+        del_verfers, del_digers = mgr.incept(icount=2, ncount=2, stem='pse-del', temp=True)
+        dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
+                           delpre=delg_pre,
+                           isith='2',
+                           nsith='2',
+                           ndigs=[diger.qb64 for diger in del_digers])
+        del_pre = dip_srdr.pre
+        mgr.move(old=del_verfers[0].qb64, new=del_pre)
+
+        # Build message: delegated inception with only one controller sig (under-signed)
+        sigers = mgr.sign(ser=dip_srdr.raw, verfers=del_verfers)
+        assert len(sigers) >= 2
+        seqner = Number(num=delg_kever.sn)
+        saider = Saider(qb64=delg_srdr.said)
+        bond = SealSource(s=seqner, d=saider)
+        msg = messagize(dip_srdr, sigers=[sigers[0]], bonds=[bond], framed=True)
+
+        # Parse as local; this should not be a misfit but a partial-signature escrow.
+        # Parser swallows MissingSignatureError, so assert via escrow side effects.
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+
+        dgkey = dgKey(dip_srdr.preb, dip_srdr.saidb)
+
+        # PSE index contains the event SAID
+        escrows = db.pses.get(keys=dip_srdr.pre, on=dip_srdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == dip_srdr.saidb
+
+        # .udes contains (Number, Saider) tuple for the delegated PSE escrow
+        uval = db.udes.get(keys=dgkey)
+        assert uval is not None
+        num, src = uval
+        assert isinstance(num, Number)
+        assert num.num == seqner.num
+        assert src.qb64 == delg_srdr.said
+
+
+def test_out_of_order_escrow():
+    """
+    Test out of order escrow
+
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with openDB(name="edy", temp=True) as db, keeping.openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = Kevery(db=db)
+
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
+
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        icpmsg = bytearray(msg)  # save copy for later
+
+        # create interaction event
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = srdr.said
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        ixnRawmsg = messagize(srdr, sigers=sigers, framed=True)
+
+        ixnmsg = bytearray(ixnRawmsg)  # save copy for later
+
+        # Create rotation event
+        # get current keys as verfers and next digests as digers
+        sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
+        #  2 of first 3 and 1 of last 2
+        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
+
+        srdr = rotate(pre=pre,
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=ixndig,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=2,
+                      data=[])
+
+        rotdig = srdr.said
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        rotmsg = bytearray(msg)  # save copy for later
+
+        # apply rotation msg to Kevery to process
+        psr.parse(ims=bytearray(rotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig  #  escrow entry for event
+
+        # verify Kevery process is idempotent to previously escrowed events
+        psr.parse(ims=bytearray(rotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig #  escrow entry for event
+
+        # verify Kevery process out of order escrow is idempotent to previously escrowed events
+        # assuming not stale but nothing else has changed
+        kvy.processEscrowOutOfOrders()
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig   #  escrow entry for event
+
+        # apply ixn msg to Kevery to process
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        # assert len(escrows) == 1
+        assert escrows[0] == ixndig   #  escrow entry for event
+
+        # verify Kevery process is idempotent to previously escrowed events
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig #  escrow entry for event
+
+        # verify Kevery process out of order escrow is idempotent to previously escrowed events
+        # assuming not stale but nothing else has changed
+        kvy.processEscrowOutOfOrders()
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig    #  escrow entry for event
+
+        # Process partials but stale escrow  set Timeout to 0
+        kvy.TimeoutOOE = 0  # forces all escrows to be stale
+        time.sleep(0.001)
+        kvy.processEscrowOutOfOrders()
+        assert pre not in kvy.kevers  # key state not updated
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 0  # escrow gone
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 0
+
+        # Now reset timeout so not zero and rsend events to reload escrow
+        kvy.TimeoutOOE = 3600
+
+        # re-apply rotation msg to Kevery to process
+        psr.parse(ims=bytearray(rotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig  #  escrow entry for event
+
+        # re-apply ixn msg to Kevery to process
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig  #  escrow entry for event
+        # re-apply inception msg to Kevery to process
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(icpmsg))  # process local copy of msg
+        assert pre in kvy.kevers  # event accepted
+        kvr = kvy.kevers[pre]
+        assert kvr.serder.said == icpdig  # key state updated so event was validated
+        assert kvr.sn == 0  # key state successfully updated
+        # verify escrows not changed
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig  #  escrow entry for event
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig  #  escrow entry for event
+
+        # Process out of order escrow
+        # assuming not stale but nothing else has changed
+        kvy.processEscrowOutOfOrders()
+        assert kvr.serder.said == rotdig  # key state updated so event was validated
+        assert kvr.sn == 2  # key state successfully updated
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 0  # escrow gone
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
+        assert len(escrows) == 0
+
+
+    assert not os.path.exists(ks.path)
+    assert not os.path.exists(db.path)
+
+    """End Test"""
+
+
+def test_ooes_missing_db_entries_escrow_cleanup():
+    """
+    Test missing records (evt, sigs, dts) of out of
+    order escrow cleanup
+    """
+
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    psr = parsing.Parser()
+
+    with openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = Kevery(db=db)
+
+        # create a simple 1-key inception
+        verfers, digers = mgr.incept(icount=1, ncount=1, stem='A', temp=True)
+
+        icp = incept(
+            keys=[verfers[0].qb64],
+            isith="1",
+            nsith="1",
+            ndigs=[digers[0].qb64],
+            code=MtrDex.Blake3_256
+        )
+        pre = icp.ked["i"]
+        icpdig = icp.said
+        mgr.move(old=verfers[0].qb64, new=pre)
+
+        sigers = mgr.sign(ser=icp.raw, verfers=verfers)
+        msg = messagize(icp, sigers=sigers, framed=True)
+        icpmsg = msg
+
+        # valid interaction event
+        ixn = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = ixn.said
+
+        sigers = mgr.sign(ser=ixn.raw, verfers=verfers)
+        msg = messagize(ixn, sigers=sigers, framed=True)
+        ixnmsg = msg
+
+        # apply interaction first → goes to OOES
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
+
+        # find dgkey for this escrowed event
+        dgkey = dgKey(pre, ixndig)
+
+        # missing DTS → OOES must remove entry
+        db.dtss.rem(keys=dgkey)
+        kvy.processEscrowOutOfOrders()
+        assert db.ooes.get(keys=pre, on=1) == []  # cleaned up
+
+        # reload interaction event into OOES
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
+
+        # missing EVT → OOES must remove entry
+        assert db.evts.rem(keys=(pre, ixndig)) == True
+        kvy.processEscrowOutOfOrders()
+        assert db.ooes.get(keys=pre, on=1) == []  # cleaned up
+
+        # reload interaction event into OOES
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
+
+        # missing SIGS → OOES must remove entry
+        db.sigs.rem(keys=dgkey)
+        kvy.processEscrowOutOfOrders()
+        assert db.ooes.get(keys=pre, on=1) == []  # cleaned up
+
+        # reload interaction event into OOES
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
+
+        # apply inception msg
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy)
+        assert pre in kvy.kevers
+        kvr = kvy.kevers[pre]
+        assert kvr.serder.said == icpdig
+        assert kvr.sn == 0
+
+        # process OOES
+        kvy.processEscrowOutOfOrders()
+        assert kvr.serder.said == ixndig  # key state updated so event was validated
+        assert kvr.sn == 1  # key state successfully updated
+        escrows = db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 0
+
+    """End Test"""
+
+
+def test_unverified_receipt_escrow():
+    """
+    Test unverified receipt escrow
+
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = Kevery(db=db)
+
+        # create witness identifiers
+        verfers, digers = mgr.incept(ncount=0, stem="wit0",
+                                         transferable=False, temp=True)
+        wit0Verfer = verfers[0]
+        wit0pre = wit0Verfer.qb64
+
+        verfers, digers = mgr.incept(ncount=0, stem="wit1",
+                                         transferable=False, temp=True)
+        wit1Verfer = verfers[0]
+        wit1pre = wit1Verfer.qb64
+
+        assert wit1pre != wit0pre
+        assert wit1pre <  wit0pre  # means wit1 escrow will get serviced first
+
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
+
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        icpmsg = msg
+
+        # create receipt(s) of inception message
+        reserder = eventing.receipt(pre=pre, sn=0, said=srdr.said)
+        # sign event not receipt with wit0
+        wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
+        wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
+
+        msg = messagize(reserder, cigars=[wit0Cigar, wit1Cigar], framed=True)
+
+        rcticpmsg = msg
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre
+        escrows = kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))  # so escrowed receipts
+        assert len(escrows) == 2
+        diger, prefixer, cigar = escrows[0]
+        assert diger.qb64 == srdr.said
+        assert prefixer.qb64 == wit0pre
+        assert cigar.qb64 == wit0Cigar.qb64
+        diger, prefixer, cigar = escrows[1]
+        assert diger.qb64 == srdr.said
+        assert prefixer.qb64 == wit1pre
+        assert cigar.qb64 == wit1Cigar.qb64
+
+        # create interaction event
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = srdr.said
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        ixnmsg = msg
+
+        # create receipt(s) of interaction message
+        reserder = eventing.receipt(pre=pre, sn=1, said=srdr.said)
+        # sign event not receipt with wit0
+        wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
+        wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
+
+        msg = messagize(reserder, cigars=[wit0Cigar, wit1Cigar], framed=True)
+
+        rctixnmsg = msg
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre
+        escrows = kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))  # so escrowed receipts
+        assert len(escrows) == 2
+        diger, prefixer, cigar = escrows[0]
+        assert diger.qb64 == srdr.said
+        assert prefixer.qb64 == wit0pre
+        assert cigar.qb64 == wit0Cigar.qb64
+        diger, prefixer, cigar = escrows[1]
+        assert diger.qb64 == srdr.said
+        assert prefixer.qb64 == wit1pre
+        assert cigar.qb64 == wit1Cigar.qb64
+
+        # Create rotation event
+        # get current keys as verfers and next digests as digers
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
+        sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
+        #  2 of first 3 and 1 of last 2
+        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+
+        srdr = rotate(pre=pre,
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=ixndig,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=2,
+                      data=[])
+
+        rotdig = srdr.said
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        rotmsg = msg
+
+        # create receipt(s) of rotation message
+        reserder = eventing.receipt(pre=pre, sn=2, said=srdr.said)
+        # sign event not receipt with wit0
+        wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
+        wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
+
+        msg = messagize(reserder, cigars=[wit0Cigar, wit1Cigar], framed=True)
+
+        rctrotmsg = msg
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
+        assert pre not in kvy.kevers  # no events yet for pre
+        escrows = kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))  # so escrowed receipts
+        assert len(escrows) == 2
+        diger, prefixer, cigar = escrows[0]
+        assert diger.qb64 == srdr.said
+        assert prefixer.qb64 == wit0pre
+        assert cigar.qb64 == wit0Cigar.qb64
+        diger, prefixer, cigar = escrows[1]
+        assert diger.qb64 == srdr.said
+        assert prefixer.qb64 == wit1pre
+        assert cigar.qb64 == wit1Cigar.qb64
+
+        # Process out of unverified but stale escrow  set Timeout to 0
+        kvy.TimeoutURE = 0  # forces all escrows to be stale
+        time.sleep(0.001)
+        kvy.processEscrowUnverNonTrans()
+        assert pre not in kvy.kevers  # key state not updated
+        # check escrows removed
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 0
+
+        # Now reset timeout so not zero and resend receipts to reload escrow
+        kvy.TimeoutURE = 3600
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
+        psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
+        psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre
+        # assert Ure escrows are back
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 2
+
+        # apply inception msg to Kevery to process
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(icpmsg))  # process local copy of msg
+        assert pre in kvy.kevers  # event accepted
+        kvr = kvy.kevers[pre]
+        assert kvr.serder.said == icpdig  # key state updated so event was validated
+        assert kvr.sn == 0  # key state successfully updated
+
+        # apply ixn msg to Kevery to process
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert kvr.serder.said == ixndig  # key state updated so event was validated
+        assert kvr.sn == 1  # key state successfully updated
+
+        # apply rotation msg to Kevery to process
+        psr.parse(ims=bytearray(rotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
+        assert kvr.serder.said == rotdig  # key state updated so event was validated
+        assert kvr.sn == 2  # key state successfully updated
+
+        # assert Ure escrows have not changed
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 2
+
+        # verify Kevery process unverified receipt escrow i
+        # assuming not stale but nothing else has changed
+        kvy.processEscrowUnverNonTrans()
+        # check escrows removed
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 0
+
+        # verify receipts from db in insertion order
+        receipts = kvy.db.rcts.get(keys=dgKey(pre, icpdig))
+        assert len(receipts) == 2
+        # receipts[0] should be wit0 (inserted first), receipts[1] should be wit1 (inserted second)
+        rctPrefixer0, rctCigar0 = receipts[0]
+        assert rctPrefixer0.qb64 == wit0pre
+        rctPrefixer1, rctCigar1 = receipts[1]
+        assert rctPrefixer1.qb64 == wit1pre
+
+        receipts = kvy.db.rcts.get(keys=dgKey(pre, ixndig))
+        assert len(receipts) == 2
+        rctPrefixer0, rctCigar0 = receipts[0]
+        assert rctPrefixer0.qb64 == wit0pre
+        rctPrefixer1, rctCigar1 = receipts[1]
+        assert rctPrefixer1.qb64 == wit1pre
+
+        receipts = kvy.db.rcts.get(keys=dgKey(pre, rotdig))
+        assert len(receipts) == 2
+        rctPrefixer0, rctCigar0 = receipts[0]
+        assert rctPrefixer0.qb64 == wit0pre
+        rctPrefixer1, rctCigar1 = receipts[1]
+        assert rctPrefixer1.qb64 == wit1pre
+
+    assert not os.path.exists(ks.path)
+    assert not os.path.exists(db.path)
+
+    """End Test"""
+
+
+def test_unverified_trans_receipt_escrow():
+    """
+    Test unverified transferable receipt escrow
+
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64  # init Salter
+    psr = parsing.Parser()
+
+    # init event DB and keep DB
+    with openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = Kevery(db=db)
+
+
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
+
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256)
+
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        icpmsg = msg
+
+        # create receipter (validator) inception keys 2 of 3
+        rverfers, rdigers = mgr.incept(icount=3, ncount=3, stem='ray', temp=True)
+        rsith = '2'
+
+        # create recepter's inception event
+        rsrdr = incept(keys=[verfer.qb64 for verfer in rverfers],
+                       isith=rsith,
+                       nsith=rsith,
+                       ndigs=[diger.qb64 for diger in rdigers],
+                       code=MtrDex.Blake3_256)
+
+        rpre = rsrdr.ked["i"]
+        ricpdig = rsrdr.said
+
+        mgr.move(old=rverfers[0].qb64, new=rpre)  # move receipter key pair label to prefix
+
+        rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
+
+        msg = messagize(rsrdr, sigers=rsigers, framed=True)
+
+        ricpmsg = msg
+
+
+        # create transferable receipt of inception message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, )
+        rcticpmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True)
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre  (receipted)
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.vres.get(snKey(pre, 0))  # so escrowed receipts
+        assert len(escrows) == 3
+        diger, sprefixer, snumber, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
+        assert diger.qb64 == srdr.said
+        assert sprefixer.qb64 == rpre
+        assert snumber.sn == 0
+        assert sdiger.qb64 == rsrdr.said
+        assert siger.qb64 == resigers[0].qb64
+
+
+        # create interaction event
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = srdr.said
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        ixnmsg = msg
+
+        # Create rotation event of receipter
+        # get current keys as verfers and next digests as digers
+        rverfers, rdigers = mgr.rotate(pre=rpre, ncount=3, temp=True)
+
+        rsrdr = rotate(pre=rpre,
+                       keys=[verfer.qb64 for verfer in rverfers],
+                       isith=rsith,
+                       dig=ricpdig,
+                       nsith=rsith,
+                       ndigs=[diger.qb64 for diger in rdigers],
+                       sn=1,
+                       data=[])
+
+        rrotdig = rsrdr.said
+
+        rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
+
+        msg = messagize(rsrdr, sigers=rsigers, framed=True)
+
+        rrotmsg = msg
+
+        # create receipt(s) of interaction message with receipter rotation message
+        # create chit receipt(s) of interaction message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=1, said=ixndig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, )
+        rctixnmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True)
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.vres.get(snKey(pre, 1))  # so escrowed receipts
+        assert len(escrows) == 3
+        diger, sprefixer, snumber, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
+        assert diger.qb64 == srdr.said
+        assert sprefixer.qb64 == rpre
+        assert snumber.sn == 1
+        assert sdiger.qb64 == rsrdr.said
+        assert siger.qb64 == resigers[0].qb64
+
+        # Create rotation event or receipted
+        # get current keys as verfers and next digests as digers
+        sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
+        #  2 of first 3 and 1 of last 2
+        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+        verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
+
+        srdr = rotate(pre=pre,
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=ixndig,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=2,
+                      data=[])
+
+        rotdig = srdr.said
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = messagize(srdr, sigers=sigers, framed=True)
+
+        rotmsg = msg
+
+        # create receipt(s) of rotation message with rotation message of receipter
+        # create chit receipt(s) of interaction message
+        seal = eventing.SealEvent(i=rpre,
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.said)
+        reserder = eventing.receipt(pre=pre, sn=2, said=rotdig)
+        # sign event not receipt
+        resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, )
+        rctrotmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True)
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+
+        escrows = kvy.db.vres.get(snKey(pre, 2))  # so escrowed receipts
+        assert len(escrows) == 3
+        diger, sprefixer, snumber, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
+        assert diger.qb64 == srdr.said
+        assert sprefixer.qb64 == rpre
+        assert snumber.sn == 1
+        assert sdiger.qb64 == rsrdr.said
+        assert siger.qb64 == resigers[0].qb64
+
+        # Process out of unverified but stale escrow  set Timeout to 0
+        kvy.TimeoutVRE = 0  # forces all escrows to be stale
+        time.sleep(0.001)
+        kvy.processEscrowUnverTrans()
+        assert pre not in kvy.kevers  # key state not updated
+        assert rpre not in kvy.kevers  # key state not updated for receipter
+        # check escrows removed
+        assert len(kvy.db.vres.get(snKey(pre, 0))) == 0
+        assert len(kvy.db.vres.get(snKey(pre, 1))) == 0
+        assert len(kvy.db.vres.get(snKey(pre, 2))) == 0
+
+        # Now reset timeout so not zero and resend receipts to reload escrow
+        kvy.TimeoutVRE = 3600
+
+        # Process receipt by kvy
+        psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
+        psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
+        psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # no events yet for pre
+        assert rpre not in kvy.kevers  # no events yet for rpre (receipter)
+        # check escrows are back
+        assert len(kvy.db.vres.get(snKey(pre, 0))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 2))) == 3
+
+        # apply inception msg to Kevery to process
+        psr.parse(ims=bytearray(icpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(icpmsg))  # process local copy of msg
+        assert pre in kvy.kevers  # event accepted
+        kvr = kvy.kevers[pre]
+        assert kvr.serder.said == icpdig  # key state updated so event was validated
+        assert kvr.sn == 0  # key state successfully updated
+
+        # apply ixn msg to Kevery to process
+        psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert kvr.serder.said == ixndig  # key state updated so event was validated
+        assert kvr.sn == 1  # key state successfully updated
+
+        # apply rotation msg to Kevery to process
+        psr.parse(ims=bytearray(rotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
+        assert kvr.serder.said == rotdig  # key state updated so event was validated
+        assert kvr.sn == 2  # key state successfully updated
+
+        # check escrows have not changed
+        assert len(kvy.db.vres.get(snKey(pre, 0))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 2))) == 3
+
+        # verify Kevery process unverified trans receipt escrow
+        kvy.processEscrowUnverTrans()
+        # check escrows have not changed because no receipter events
+        assert len(kvy.db.vres.get(snKey(pre, 0))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 2))) == 3
+
+        # apply inception msg of receipter to Kevery to process
+        psr.parse(ims=bytearray(ricpmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(ricpmsg))  # process local copy of msg
+        assert rpre in kvy.kevers  # rpre (receipter) accepted
+        rkvr = kvy.kevers[rpre]
+        assert rkvr.serder.said == ricpdig  # key state updated so event was validated
+        assert rkvr.sn == 0  # key state successfully updated
+
+        # verify Kevery process unverified trans receipt escrow
+        kvy.processEscrowUnverTrans()
+        # check escrows have changed for receipts by receipter inception
+        assert len(kvy.db.vres.get(snKey(pre, 0))) == 0
+        assert len(kvy.db.vres.get(snKey(pre, 1))) == 3
+        assert len(kvy.db.vres.get(snKey(pre, 2))) == 3
+
+        # apply rotation msg of receipter to Kevery to process
+        psr.parse(ims=bytearray(rrotmsg), kvy=kvy)
+        # kvy.process(ims=bytearray(rrotmsg))  # process local copy of msg
+        assert rkvr.serder.said == rrotdig  # key state updated so event was validated
+        assert rkvr.sn == 1  # key state successfully updated
+
+        # verify Kevery process unverified trans receipt escrow
+        kvy.processEscrowUnverTrans()
+        # check escrows have changed for receipts by receipter inception
+        assert len(kvy.db.vres.get(snKey(pre, 0))) == 0
+        assert len(kvy.db.vres.get(snKey(pre, 1))) == 0
+        assert len(kvy.db.vres.get(snKey(pre, 2))) == 0
+
+        # verify receipts
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 0
+        #assert rctDiger.qb64 == ricpdig
+
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
+
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
+
+        # vrcsNew verify receipts
+        topkeys = (pre, icpdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 0
+        assert rctdig == ricpdig
+
+        topkeys = (pre, ixndig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+        topkeys = (pre, rotdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+
+
+    assert not os.path.exists(ks.path)
+    assert not os.path.exists(db.path)
+
+    """End Test"""
+
+
+if __name__ == "__main__":
+    test_partial_signed_escrow()
+    test_missing_delegator_escrow()
+    test_misfit_escrow()
+    test_misfit_escrow_delegated()
+    test_misfit_escrow_valSigsWigsDel()
+    test_misfit_escrow_kevery()
+    test_delegated_partial_signed_escrow_udes()
+    test_out_of_order_escrow()
+    test_ooes_missing_db_entries_escrow_cleanup()
+    test_unverified_receipt_escrow()
+    test_unverified_trans_receipt_escrow()

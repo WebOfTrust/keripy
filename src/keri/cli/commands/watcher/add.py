@@ -96,7 +96,8 @@ class AddDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context
@@ -118,7 +119,8 @@ class AddDoer(doing.DoDoer):
             serder = SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 
-        for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
+        for msg in self.hab.db.clonePreIter(pre=self.hab.pre,
+                                            version=self.hab.kever.serder.pvrsn):
             serder = SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 

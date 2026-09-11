@@ -7,18 +7,19 @@ Browser-safe plain-value DBer backed by PyScript storage.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Awaitable, Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any, Union
-from ordered_set import OrderedSet as oset
-from sortedcontainers import SortedDict
 
 try:
     from pyscript import storage
 except ImportError:  # pragma: no cover
     storage = None
 
+from ordered_set import OrderedSet as oset
+from sortedcontainers import SortedDict
 
 # The following are necessary to define in this file 
 # to prevent non wasm compatible imports (importing from dbing)
@@ -51,7 +52,7 @@ def splitKey(key, sep=b'.'):
     Raises ValueError if key does not split into exactly two elements
 
     Parameters:
-       key is database key with split at sep
+        key is database key with split at sep
        sep is bytes separator character. default is b'.'
     """
     if isinstance(key, memoryview):
@@ -84,7 +85,7 @@ def splitOnKey(key, *, sep=b'.'):
 def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       iokey (bytes): actual DB key after concatenating suffix as hex version
+        iokey (bytes): actual DB key after concatenating suffix as hex version
        of insertion ordering ordinal int ion using separator sep.
 
     Parameters:
@@ -105,7 +106,7 @@ def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, st
 def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       result (tuple): (key, ion) by splitting iokey at rightmost separator sep
+        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
             strip off suffix, where key is bytes apparent effective DB key and
             ion is the insertion ordering int converted from stripped of hex
             suffix
@@ -188,19 +189,21 @@ class WebEnv:
 
         Parameters:
             key: Subdb name as bytes or UTF-8 text.
-            dupsort: Requested duplicate flag. Applied only when the named
-                store has not yet persisted its dupsort metadata.
+            dupsort: Must be False; duplicate-sorted stores are unsupported.
 
         Returns:
             The stable `SubDb` handle for the requested store.
 
         Raises:
             KeyError: If the store was not declared when the DBer was opened.
+            ValueError: If the requested or persisted dupsort flag is True.
         """
         name = self.owner._storify(key)
         if name not in self.owner._stores:
             raise KeyError(f"Store not configured in WebDBer: {name}")
         subdb = self.owner._stores[name]
+        if dupsort or subdb.dupsort:
+            raise ValueError("WebDBer does not support dupsort=True")
         if not subdb.opened:
             if not subdb.flags_persisted:
                 subdb.dupsort = bool(dupsort)
@@ -232,6 +235,7 @@ class WebDBer:
         self._stores = stores
         self.stores = list(stores)
         self._version = None
+        self._flushLock = asyncio.Lock()
 
     @classmethod
     async def open(
@@ -241,6 +245,7 @@ class WebDBer:
         *,
         clear: bool = False,
         storageOpener: Callable[[str], Awaitable[Any]] | None = None,
+        versioned: bool = True,
     ) -> "WebDBer":
         """
         Open a storage-backed WebDBer instance with a fixed set of stores.
@@ -252,6 +257,7 @@ class WebDBer:
                 loading them into memory, including per-store metadata.
             storageOpener: Async callable that returns a storage handle for a
                 namespace. Defaults to `pyscript.storage`.
+            versioned: When `True`, declare the shared version metadata store.
 
         Returns:
             A storage-backed `WebDBer` ready for sync CRUD and async `flush()`.
@@ -266,7 +272,8 @@ class WebDBer:
 
         opened: dict[str, SubDb] = {}
         all_store_names = [cls._storify(store) for store in stores]
-        if cls._storify(_META_STORE) not in all_store_names:
+        if (versioned and
+                cls._storify(_META_STORE) not in all_store_names):
             all_store_names.append(cls._storify(_META_STORE))
         for store_name in all_store_names:
             namespace = f"{name}:{store_name}"
@@ -306,26 +313,41 @@ class WebDBer:
         """
         Persist dirty stores to their backing storage handles.
 
-        Stores are synced one at a time. If sync fails partway through,
-        already-synced stores will have dirty=False and will NOT be
-        re-flushed on retry. This is acceptable because browser IndexedDB
-        is BASE (not ACID) and keripy's KEL verification model recovers
-        from lost unflushed writes on startup via KEL cleaning.
+        Stores are synced one at a time. The method repeats until no store is
+        dirty, so writes made while a sync is pending are persisted before the
+        method returns. If a sync fails or is cancelled, that store remains
+        dirty for retry.
 
         Returns:
             The number of stores whose serialized payload and metadata
             were synced.
         """
-        count = 0
+        async with self._flushLock:
+            count = 0
+            while True:
+                dirty = [subdb for subdb in self._stores.values()
+                         if subdb.dirty]
+                if not dirty:
+                    return count
+
+                for subdb in dirty:
+                    subdb.handle[_RECORDS_KEY] = _serialize_records(subdb.items)
+                    subdb.handle[_META_KEY] = _serialize_meta(
+                        {"dupsort": subdb.dupsort})
+                    subdb.dirty = False
+                    try:
+                        await subdb.handle.sync()
+                    except BaseException:
+                        subdb.dirty = True
+                        raise
+                    count += 1
+
+    def clear(self):
+        """Clear all store data and mark each store for persistence."""
         for subdb in self._stores.values():
-            if not subdb.dirty:
-                continue
-            subdb.handle[_RECORDS_KEY] = _serialize_records(subdb.items)
-            subdb.handle[_META_KEY] = _serialize_meta({"dupsort": subdb.dupsort})
-            await subdb.handle.sync()
-            subdb.dirty = False
-            count += 1
-        return count
+            subdb.items.clear()
+            subdb.dirty = True
+        self._version = None
 
     @property
     def version(self):
@@ -394,16 +416,10 @@ class WebDBer:
             val: Serialized bytes value to store.
 
         Returns:
-            `True` when the value is inserted. `False` when `key` already exists.
-
-        Raises:
-            KeyError: If `key` is empty.
+            `True` when inserted. `False` when `key` is empty or already exists.
         """
         if not key:
-            raise KeyError(
-                f"Key: `{key}` is either empty, too big (for lmdb), "
-                "or wrong DUPFIXED size. ref) lmdb.BadValsizeError"
-            )
+            return False
 
         if key in db.items:
             return False
@@ -422,22 +438,16 @@ class WebDBer:
             val: Serialized bytes value to store.
 
         Returns:
-            `True` after the write succeeds.
-
-        Raises:
-            KeyError: If `key` is empty.
+            `True` after the write succeeds. `False` when `key` is empty.
         """
         if not key:
-            raise KeyError(
-                f"Key: `{key}` is either empty, too big (for lmdb), "
-                "or wrong DUPFIXED size. ref) lmdb.BadValsizeError"
-            )
+            return False
 
         db.items[key] = val
         db.dirty = True
         return True
 
-    def getVal(self, db: SubDb, key: bytes) -> bytes | None:
+    def getVal(self, db: SubDb, key: bytes) -> bytes | bool | None:
         """
         Return the stored value at `key`.
 
@@ -447,15 +457,10 @@ class WebDBer:
 
         Returns:
             Stored bytes value, or `None` when `key` is missing.
-
-        Raises:
-            KeyError: If `key` is empty.
+            `False` when `key` is empty.
         """
         if not key:
-            raise KeyError(
-                f"Key: `{key}` is either empty, too big (for lmdb), "
-                "or wrong DUPFIXED size. ref) lmdb.BadValsizeError"
-            )
+            return False
 
         return db.items.get(key)
 
@@ -849,6 +854,9 @@ class WebDBer:
         """
         Iterate over `(key, val)` pairs whose keys start with `top`.
 
+        Snapshot matching records so callers may delete entries during iteration,
+        as with an LMDB read transaction.
+
         Parameters:
             db: Named subdb handle returned by `env.open_db`.
             top (bytes): prefix bytes used to select a branch of the keyspace. Empty
@@ -857,17 +865,12 @@ class WebDBer:
         Returns:
             Iterator of `(key, val)` tuples in lexical key order.
         """
-        prefix = top
-
-        if not prefix:
-            for key, val in db.items.items():
-                yield key, val
-            return
-
-        for key in list(db.items.irange(minimum=prefix)):
-            if not key.startswith(prefix):
+        items = []
+        for key in db.items.irange(minimum=top):
+            if not key.startswith(top):
                 break
-            yield key, db.items[key]
+            items.append((key, db.items[key]))
+        yield from items
 
     def remTop(self, db: SubDb, top: bytes = b"") -> bool:
         """
@@ -1010,7 +1013,7 @@ class WebDBer:
         The suffix is appended and stripped transparently.
 
         Returns:
-           result (bool): True if vals replaced set.
+            result (bool): True if vals replaced set.
                           False otherwise including key not in db, empty or None
                           or vals empty or None
 
@@ -1052,7 +1055,7 @@ class WebDBer:
         The suffix is appended and stripped transparently.
 
         Returns:
-           result (bool): True if val added to set.
+            result (bool): True if val added to set.
                           False if already in set or key is empty or None or val
                           is None
 
@@ -1123,15 +1126,19 @@ class WebDBer:
         if not key:
             return iter(())
 
-        # Snapshot keys via list() to allow safe delete-during-iteration
+        # Get the prefix
         iokey = suffix(key, ion, sep=sep)
-        for iokey in list(db.items.irange(minimum=iokey)):
+
+        # Iterate through items from the starting key
+        items = []
+        for iokey in db.items.irange(minimum=iokey):
             ckey, cion = unsuffix(iokey, sep=sep)
             # Stop when we leave this IoSet
             if ckey != key:
                 break
             
-            yield (ckey, db.items[iokey])
+            items.append((ckey, db.items[iokey]))
+        yield from items
 
 
     def getIoSetLastItem(self, db, key, *, sep=b'.'):
@@ -1385,25 +1392,27 @@ class WebDBer:
         # State for tracking last item per apparent key
         last = None
         currKey = None
+        lasts = []
 
         # Iterate forward through the DB
         for iokey in items.irange(startKey, None):
             # Split into (apparent_key, ordinal)
             apparent, ion = unsuffix(iokey, sep=sep)
 
-            # If we moved to a new apparent key, yield the previous one
+            # If we moved to a new apparent key, collect the previous one
             if currKey is not None and apparent != currKey:
                 if last is not None:
-                    yield last
+                    lasts.append(last)
                 last = None
 
             # Update tracking
             currKey = apparent
             last = (apparent, items[iokey])
 
-        # Yield the final group
+        # Collect the final group before yielding the snapshot
         if last is not None:
-            yield last
+            lasts.append(last)
+        yield from lasts
 
 
     def getIoSetLastIterAll(self, db, key=b'', *, sep=b'.'):
@@ -1485,7 +1494,7 @@ class WebDBer:
         Does not replace if key is empty or None or vals is empty or None
 
         Returns:
-           result (bool): True if vals replaced set.
+            result (bool): True if vals replaced set.
                           False otherwise including key not in db, empty or None
                           or vals empty or None
 
@@ -1589,6 +1598,7 @@ class WebDBer:
                     f"Failed appending {val=} at {key=} {on=} offset {ion=}."
                 )
             items[iokey] = val
+            db.dirty = True
 
         return on
 
@@ -1599,7 +1609,7 @@ class WebDBer:
         and val is not None.
 
         Returns:
-           result (bool): True if val added to set.
+            result (bool): True if val added to set.
                           False if already in set or key is empty or None or val
                           is None
 
@@ -1735,7 +1745,7 @@ class WebDBer:
         When key is empty then deletes whole db.
 
         Returns:
-           result (bool): True if any entries deleted
+            result (bool): True if any entries deleted
                           False otherwise
 
         Parameters:
@@ -1778,6 +1788,7 @@ class WebDBer:
         result = False
         for iokey in toDelete:
             del items[iokey]
+            db.dirty = True
             result = True
 
         return result
@@ -1931,6 +1942,7 @@ class WebDBer:
         startOnkey = onKey(key, on, sep=sep)
         startIokey = suffix(startOnkey, ion=0, sep=sep)
 
+        records = []
         for iokey in items.irange(minimum=startIokey):
             # Extract (onkey, ion)
             onkey, ion = unsuffix(iokey, sep=sep)
@@ -1942,8 +1954,8 @@ class WebDBer:
             if ckey != key:
                 break
 
-            # Yield LMDB‑accurate triple
-            yield (ckey, con, items[iokey])
+            records.append((ckey, con, items[iokey]))
+        yield from records
 
 
     def getOnAllIoSetLastItemIter(self, db, key=b'', on=0, *, sep=b'.'):
@@ -1990,6 +2002,7 @@ class WebDBer:
 
         last = None
         currentOn = None
+        lasts = []
 
         for iokey in items.irange(minimum=startIokey):
             # Extract (conkey, cion)
@@ -2002,18 +2015,19 @@ class WebDBer:
             if ckey != key:
                 break
 
-            # If ON changes, yield the last item of the previous ON
+            # If ON changes, collect the last item of the previous ON
             if currentOn is not None and con != currentOn:
-                yield last
+                lasts.append(last)
                 last = None
 
             # Update tracking
             currentOn = con
             last = (ckey, con, items[iokey])
 
-        # After iteration, yield the last ON-group's last item
+        # Collect the last ON-group before yielding the snapshot
         if last:
-            yield last
+            lasts.append(last)
+        yield from lasts
 
 
     def getOnAllIoSetItemBackIter(self, db, key=b"", on=None, *, sep=b'.'):
@@ -2069,7 +2083,6 @@ class WebDBer:
         iokey = suffix(onkey, ion=MaxON, sep=sep)
 
         # Collect all matching entries up to this bound
-        candidates = []
         for ciokey in items.irange(maximum=iokey, reverse=True):
             conkey, cion = unsuffix(ciokey, sep=sep)
             ckey, con = splitOnKey(conkey, sep=sep)
@@ -2263,11 +2276,13 @@ def _iterOnItems(
     start = onKey(key, on, sep=sep) if key else b""
 
     # Fixed-width ordinal suffixes make lexical order match ordinal order.
+    items = []
     for okey in db.items.irange(minimum=start):
         ckey, cn = splitOnKey(okey, sep=sep)
         if key and ckey != key:
             break
-        yield ckey, cn, db.items[okey]
+        items.append((ckey, cn, db.items[okey]))
+    yield from items
 
 
 def _deserialize_records(raw: Any) -> dict[bytes, bytes]:

@@ -8,7 +8,7 @@ from hio.help import ogler
 from ...common import existing
 from ...common.parsing import Parsery
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Vrsn_1_0
 
 from ....app import (MailboxDirector, HaberyDoer, GroupHab, Counselor,
                      Multiplexor, Organizer, Poster, Notifier,
@@ -130,7 +130,7 @@ class CredentialIssuer(doing.DoDoer):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
-             name:
+            name:
              registryName:
              schema:
              edges:
@@ -216,7 +216,7 @@ class CredentialIssuer(doing.DoDoer):
 
 
         Parameters:
-             tymth (function): injected function wrapper closure returned by .tymen() of
+            tymth (function): injected function wrapper closure returned by .tymen() of
                  Tymist instance. Calling tymth() returns associated Tymist .tyme.
              tock (float): injected initial tock value
         """
@@ -234,10 +234,10 @@ class CredentialIssuer(doing.DoDoer):
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if registry.estOnly:
-            anc = hab.rotate(data=[rseal])
+            anc = hab.rotate(data=[rseal], framed=True)
 
         else:
-            anc = hab.interact(data=[rseal])
+            anc = hab.interact(data=[rseal], framed=True)
 
         aserder = SerderKERI(raw=anc)
         self.credentialer.issue(self.creder, iserder)
@@ -252,7 +252,8 @@ class CredentialIssuer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                exn, atc = multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc,
+                                            version=Vrsn_1_0)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

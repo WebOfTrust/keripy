@@ -16,12 +16,15 @@ from hio.core import http
 from hio.base import doing
 from hio.help import decking
 
-from keri.kering import Schemes
-from keri.core import SerderKERI, Salter
+from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks, Roles
+from keri.core import SerderKERI, Salter, Kevery, Parser
 from keri.db import basing
 from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       QueryEnd, Mailboxer, Receiptor,
-                      setupWitness, createHttpServer, openHab, openHby)
+                      setupWitness, createHttpServer, openHab, openHby,
+                      ReceiptEnd, CESR_CONTENT_TYPE, CESR_DESTINATION_HEADER)
+from keri.app.httping import CESR_ATTACHMENT_HEADER
+
 
 
 def test_mailbox_iter():
@@ -110,11 +113,11 @@ def test_mailbox_multiple_iter():
 
 
 def test_qrymailbox_iter():
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
-        icp = hab.makeOwnInception()
+        icp = hab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         icpSrdr = SerderKERI(raw=icp)
-        qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
+        qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx", version=Vrsn_1_0, kind=Kinds.json)
         srdr = SerderKERI(raw=qry)
 
         cues = decking.Deck()
@@ -161,16 +164,102 @@ def test_qrymailbox_iter():
             next(mbi)
 
 
-def test_wit_query_ends(seeder):
+def test_qrymailbox_iter_v2():
+    topics = {"/receipt": 0, "/challenge": 1, "/multisig": 0}
+
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        assert hab.pre == 'EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M'
+        icp = hab.msgOwnInception(framed=True)
+        icpSrdr = SerderKERI(raw=icp)
+        qry = hab.query(pre=hab.pre, src=hab.pre, route="mbx", query={"topics": topics},
+                        kind=Kinds.json)
+        srdr = SerderKERI(raw=qry)
+        assert srdr.pvrsn == Vrsn_2_0
+        assert srdr.gvrsn == Vrsn_2_0
+        assert srdr.kind == Kinds.json
+        assert srdr.ked["t"] == Ilks.qry
+        assert srdr.ked["i"] == hab.pre
+        assert srdr.ked["r"] == "mbx"
+        assert srdr.ked["q"]["i"] == hab.pre
+        assert srdr.ked["q"]["src"] == hab.pre
+        assert srdr.ked["q"]["topics"] == topics
+        
+        cf = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                }
+            }
+        }
+
+        hby.cf.put(cf)
+        kvy = Kevery(db=hby.db, cf=hby.cf, enableKram=True, lax=False, local=False)
+        assert kvy.kramer.enabled is True
+        Parser().parse(ims=bytearray(qry), kvy=kvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, srdr.said))
+        assert cache is not None
+        assert cache.mdt == srdr.stamp
+        assert cache.d == 1000
+
+        cues = decking.Deck()
+        mbx = Mailboxer(temp=True)
+        mb = QryRpyMailboxIterable(mbx=mbx, cues=cues, said=srdr.said, retry=1000)
+
+        mbi = iter(mb)
+        assert mb.iter is None
+
+        #  No cued query response, empty iter
+        val = next(mbi)
+        assert val == b''
+        assert mb.iter is None
+
+        # A cue with the wrong said still returns nothing and recues the cue
+        cues.append(dict(kin="stream", serder=icpSrdr))
+        val = next(mbi)
+        assert val == b''
+        assert len(cues) == 1
+        assert mb.iter is None
+        cues.popleft()
+
+        cues.append(dict(kin="stream", pre=hab.pre, serder=srdr, topics=topics))
+        val = next(mbi)
+        assert val == b''
+        assert len(cues) == 0
+        assert mb.iter is not None
+
+        # And now it behaves just like a standard MailboxIterable
+        val = next(mbi)
+        assert val == b'retry: 1000\n\n'
+
+        # Store a message for the iter
+        msg = dict(i=hab.pre, t="rct")
+        mbx.storeMsg(topic=f"{hab.pre}/receipt", msg=json.dumps(msg).encode("utf-8"))
+        val = next(mbi)
+        assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: '
+                       b'{"i": "EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M", '
+                       b'"t": "rct"}\n\n')
+
+        mb.iter.TimeoutMBX = 0  # Force the iter to timeout
+        with pytest.raises(StopIteration):
+            next(mbi)
+
+
+def test_wit_query_ends(seeder, witnessPorter):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        witnessPorts, witnessUrls = witnessPorter("wes")
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"])
         # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
         wesReger = next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer))
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls)
 
         app = falcon.App()
         query_endpoint = QueryEnd(wesHab, reger=wesReger)
@@ -214,13 +303,13 @@ class QueryTestDoer(doing.Doer):
 
         palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True)
 
-        assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
+        assert palHab.pre == "ECF_sIdpuhOhnEw9zV6cq6ZWLKGJbjH052_xiJT7Uh6z"
 
         witDoer.msgs.append(dict(pre=palHab.pre))
         while not witDoer.cues:
             yield self.tock
 
-        msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
+        msg = next(wesHab.db.clonePreIter(pre=palHab.pre, version=palHab.kever.serder.pvrsn))
 
 
         # Test valid KEL query with 'pre'
@@ -298,6 +387,91 @@ def test_createHttpServer(monkeypatch):
     assert isinstance(server, MockHttpServer)
     assert isinstance(server.servant, MockServerTls)
 
+
+def test_receipt_end_returns_bytes_for_v1_receipt():
+    with openHby(name="receipt-wit", version=Vrsn_1_0) as witHby, \
+            openHby(name="receipt-cam", version=Vrsn_1_0) as camHby:
+        wit = witHby.makeHab(name="wit", transferable=False, version=Vrsn_1_0, kind=Kinds.json)
+        cam = camHby.makeHab(name="cam", transferable=True, wits=[wit.pre],
+                             toad=1, icount=1, ncount=1,
+                             isith="1", nsith="1", version=Vrsn_1_0, kind=Kinds.json)
+
+        serder, _, _ = cam.getOwnEvent(sn=0)
+        msg = cam.msgOwnEvent(sn=0, framed=True, gvrsn=serder.pvrsn)
+
+        ims = bytearray(msg)
+        serder = SerderKERI(raw=ims)
+        del ims[:serder.size]
+
+        app = falcon.App()
+        app.add_route("/receipts", ReceiptEnd(hab=wit))
+        client = testing.TestClient(app)
+
+        res = client.simulate_post("/receipts",
+                                   body=serder.raw,
+                                   headers={
+                                       "Content-Type": CESR_CONTENT_TYPE,
+                                       CESR_ATTACHMENT_HEADER: bytes(ims).decode("utf-8"),
+                                       CESR_DESTINATION_HEADER: wit.pre,
+                                   })
+
+        assert res.status_code == 200
+        assert isinstance(res.content, bytes)
+        rserder = SerderKERI(raw=res.content)
+        assert rserder.pvrsn == Vrsn_1_0
+        assert rserder.ked["t"] == Ilks.rct
+
+
+def test_mailbox_query_honors_explicit_v1_kwargs():
+    with openHby(name="mailbox-query", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
+
+        msg = hab.query(pre=hab.pre,
+                        src=hab.pre,
+                        route="mbx",
+                        query=dict(topics={"/receipt": 0}),
+                        version=Vrsn_1_0, kind=Kinds.json)
+
+        serder = SerderKERI(raw=msg)
+        assert serder.pvrsn == Vrsn_1_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["q"]["topics"] == {"/receipt": 0}
+
+
+def test_follow_on_events_honor_explicit_v1_kwargs():
+    with openHby(name="v1-follow-ons", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
+
+        rot = hab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        rserder = SerderKERI(raw=rot)
+        assert rserder.pvrsn == Vrsn_1_0
+        assert rserder.kind == Kinds.json
+
+        ixn = hab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        iserder = SerderKERI(raw=ixn)
+        assert iserder.pvrsn == Vrsn_1_0
+        assert iserder.kind == Kinds.json
+
+
+def test_end_role_reply_defaults_to_v2_attachments_for_v1_hab():
+    """Omitted gvrsn keeps default (``Version``) attachment framing on a v1 reply body."""
+    with openHby(name="v1-end-role", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
+
+        msg = hab.makeEndRole(eid=hab.pre, role=Roles.mailbox)
+        serder = SerderKERI(raw=msg)
+        assert serder.pvrsn == Vrsn_1_0
+        assert serder.kind == Kinds.json
+        atc = bytes(msg[serder.size:])
+        assert atc.startswith(b"-C")  # default AttachmentGroup framing
+        assert not atc.startswith(b"-V")  # not v1 attachment group
+
+        # Local v1-only parser needs explicit v1 attachments.
+        msg_v1 = hab.makeEndRole(eid=hab.pre, role=Roles.mailbox, gvrsn=Vrsn_1_0)
+        hab.psr.parse(ims=bytearray(msg_v1))
+        loaded = hab.loadEndRole(cid=hab.pre, eid=hab.pre, role=Roles.mailbox,
+                                 gvrsn=Vrsn_1_0)
+        assert loaded
 
 
 

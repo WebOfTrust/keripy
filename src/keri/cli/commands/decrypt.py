@@ -24,7 +24,7 @@ def handler(args):
     """
     Verify signatures on arbitrary data
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
     kwa = dict(args=args)

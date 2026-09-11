@@ -4,21 +4,38 @@ tests delegation primaily from keri.core.eventing
 
 """
 import os
+from functools import partial
 
 from hio.help import ogler
 
 from keri.core import (Salter, Kevery, Parser, SerderKERI,
                        Number, NumDex, receipt, messagize)
 
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds
 from keri.app import openHby
+from keri.app.habbing import BaseHab
 
 from keri.db import dgKey, snKey
 
 logger = ogler.getLogger()
 
 
-def test_indexed_witness_replay():
+def _pin_hab_msgs_v1(hab):
+    """Force v1 on Hab message helpers when global defaults use ``Version``."""
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+    hab.receipt = partial(BaseHab.receipt, hab, gvrsn=Vrsn_1_0, **kwa)
+    hab.reply = partial(BaseHab.reply, hab, gvrsn=Vrsn_1_0, **kwa)
+    hab.query = partial(BaseHab.query, hab, gvrsn=Vrsn_1_0, **kwa)
+    hab.witness = partial(BaseHab.witness, hab, gvrsn=Vrsn_1_0, **kwa)
+    hab.msgOwnInception = partial(BaseHab.msgOwnInception, hab, gvrsn=Vrsn_1_0)
+    hab.msgOwnEvent = partial(BaseHab.msgOwnEvent, hab, gvrsn=Vrsn_1_0)
+    hab.processCues = partial(BaseHab.processCues, hab, gvrsn=Vrsn_1_0,
+                              version=Vrsn_1_0, kind=Kinds.json)
+    hab.processCuesIter = partial(BaseHab.processCuesIter, hab, gvrsn=Vrsn_1_0,
+                                  version=Vrsn_1_0, kind=Kinds.json)
+
+
+def test_indexed_witness_replay_v1():
     """
     Test event validation logic with witnesses
 
@@ -31,40 +48,46 @@ def test_indexed_witness_replay():
     """
     salt = Salter(raw=b'abcdef0123456789').qb64
 
-    with openHby(name="cam", base="test", salt=salt) as camHby, \
-         openHby(name="van", base="test", salt=salt) as vanHby, \
-         openHby(name="wes", base="test", salt=salt) as wesHby, \
-         openHby(name="wak", base="test", salt=salt) as wokHby, \
-         openHby(name="wam", base="test", salt=salt) as wamHby, \
-         openHby(name="wil", base="test", salt=salt) as wilHby:
+    with openHby(name="cam", base="test", salt=salt, version=Vrsn_1_0) as camHby, \
+         openHby(name="van", base="test", salt=salt, version=Vrsn_1_0) as vanHby, \
+         openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby, \
+         openHby(name="wak", base="test", salt=salt, version=Vrsn_1_0) as wokHby, \
+         openHby(name="wam", base="test", salt=salt, version=Vrsn_1_0) as wamHby, \
+         openHby(name="wil", base="test", salt=salt, version=Vrsn_1_0) as wilHby:
+
+        kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
         # witnesses first so can setup inception event for cam
         wsith = '1'
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
-        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wesHab)
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wokHab)
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
         wokKvy = Kevery(db=wokHab.db, lax=False, local=False)
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wamHab)
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wamKvy = Kevery(db=wamHab.db, lax=False, local=False)
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
-        wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False)
+        wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wilHab)
         assert not wilHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wilKvy = Kevery(db=wilHab.db, lax=False, local=False)
@@ -72,7 +95,8 @@ def test_indexed_witness_replay():
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = '2'  # hex str of threshold int
-        camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
+        camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits, **kwa)
+        _pin_hab_msgs_v1(camHab)
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.berfers) == len(wits)
         for werfer in camHab.iserder.berfers:
@@ -86,7 +110,8 @@ def test_indexed_witness_replay():
 
         # setup Van's habitat trans multisig
         vsith = '2'  # two of three signing threshold
-        vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
+        vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3, **kwa)
+        _pin_hab_msgs_v1(vanHab)
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
         vanKvy = Kevery(db=vanHab.db, lax=False, local=False)
@@ -96,7 +121,7 @@ def test_indexed_witness_replay():
         camWitHabs = [wesHab, wokHab, wamHab]
 
         # Create Cam inception and send to each of Cam's witnesses
-        camIcpMsg = camHab.makeOwnInception()
+        camIcpMsg = camHab.msgOwnInception(framed=True)
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -122,8 +147,9 @@ def test_indexed_witness_replay():
         assert len(wigers) == 3
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
-                          said=camHab.kever.serder.said)
-        camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers)
+                          said=camHab.kever.serder.said, **kwa)
+        camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True,
+                                    gvrsn=Vrsn_1_0)
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -144,7 +170,7 @@ def test_indexed_witness_replay():
         assert vcKvr.wits == wits
 
         # Create Cam ixn and send to each of Cam's witnesses
-        camIxnMsg = camHab.interact()
+        camIxnMsg = camHab.interact(framed=True, gvrsn=Vrsn_1_0, **kwa)
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -170,8 +196,9 @@ def test_indexed_witness_replay():
         assert len(wigers) == 3
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
-                          said=camHab.kever.serder.said)
-        camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers)
+                          said=camHab.kever.serder.said, **kwa)
+        camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True,
+                                    gvrsn=Vrsn_1_0)
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -191,8 +218,8 @@ def test_indexed_witness_replay():
         # Cam replace Wok with Wil as a witness.
         # Cam update Wil all event witnessed events for Cam by replay
         # Cam update itself with Wil receipts including Wils inception
-        camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 2038
+        camReplayMsg = camHab.replay(version=Vrsn_1_0)
+        assert len(camReplayMsg) == 2038  # 1998 pre-v1-Seqner-fix
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
@@ -203,7 +230,8 @@ def test_indexed_witness_replay():
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
-        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
+        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre],
+                                  framed=True, gvrsn=Vrsn_1_0, **kwa)
         assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
         assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 2
@@ -237,8 +265,9 @@ def test_indexed_witness_replay():
         assert len(wigers) == 3
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
-                          said=camHab.kever.serder.said)
-        camRotWitRctMsg = messagize(serder=rserder, wigers=wigers)
+                          said=camHab.kever.serder.said, **kwa)
+        camRotWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True,
+                                    gvrsn=Vrsn_1_0)
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -279,7 +308,7 @@ def test_indexed_witness_replay():
     """End Test"""
 
 
-def test_nonindexed_witness_receipts():
+def test_nonindexed_witness_receipts_v1():
     """
     Test event validation logic with witnesses on incept message
 
@@ -292,40 +321,46 @@ def test_nonindexed_witness_receipts():
     """
     salt = Salter(raw=b'abcdef0123456789').qb64
 
-    with openHby(name="cam", base="test", salt=salt) as camHby, \
-         openHby(name="van", base="test", salt=salt) as vanHby, \
-         openHby(name="wes", base="test", salt=salt) as wesHby, \
-         openHby(name="wak", base="test", salt=salt) as wokHby, \
-         openHby(name="wam", base="test", salt=salt) as wamHby, \
-         openHby(name="wil", base="test", salt=salt) as wilHby:
+    with openHby(name="cam", base="test", salt=salt, version=Vrsn_1_0) as camHby, \
+         openHby(name="van", base="test", salt=salt, version=Vrsn_1_0) as vanHby, \
+         openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby, \
+         openHby(name="wak", base="test", salt=salt, version=Vrsn_1_0) as wokHby, \
+         openHby(name="wam", base="test", salt=salt, version=Vrsn_1_0) as wamHby, \
+         openHby(name="wil", base="test", salt=salt, version=Vrsn_1_0) as wilHby:
+
+        kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
         # witnesses first so can setup inception event for cam
         wsith =  '1'  # hex str
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
-        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wesHab)
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wokHab)
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
         wokKvy = Kevery(db=wokHab.db, lax=False, local=False)
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wamHab)
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wamKvy = Kevery(db=wamHab.db, lax=False, local=False)
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
-        wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False)
+        wilHab = wilHby.makeHab(name='wil', isith=wsith, icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wilHab)
         assert not wilHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
         wilKvy = Kevery(db=wilHab.db, lax=False, local=False)
@@ -333,7 +368,8 @@ def test_nonindexed_witness_receipts():
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = '2'  # hex str of threshold int
-        camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits,)
+        camHab = camHby.makeHab(name='cam', isith=csith, icount=3, toad=2, wits=wits, **kwa)
+        _pin_hab_msgs_v1(camHab)
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.berfers) == len(wits)
         for werfer in camHab.iserder.berfers:
@@ -347,7 +383,8 @@ def test_nonindexed_witness_receipts():
 
         # setup Van's habitat trans multisig
         vsith = '2'  # two of three signing threshold
-        vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3)
+        vanHab = vanHby.makeHab(name='van', isith=vsith, icount=3, **kwa)
+        _pin_hab_msgs_v1(vanHab)
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
         vanKvy = Kevery(db=vanHab.db, lax=False, local=False)
@@ -357,7 +394,7 @@ def test_nonindexed_witness_receipts():
         camWitHabs = [wesHab, wokHab, wamHab]
 
         # Create Cam inception and send to each of Cam's witnesses
-        camIcpMsg = camHab.makeOwnInception()
+        camIcpMsg = camHab.msgOwnInception(framed=True)
         rctMsgs = []  # list of receipts from each witness
         for i, kvy in enumerate(camWitKvys):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=kvy, local=True)
@@ -416,7 +453,7 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.wits == wits
 
         # Create Cam ixn and send to each of Cam's witnesses
-        camIxnMsg = camHab.interact()
+        camIxnMsg = camHab.interact(framed=True, gvrsn=Vrsn_1_0, **kwa)
         rctMsgs = []  # list of receipts from each witness
         for i, kvy in enumerate(camWitKvys):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(camIxnMsg), kvy=kvy, local=True)
@@ -474,8 +511,8 @@ def test_nonindexed_witness_receipts():
         # Cam replace Wok with Wil as a witness.  But first setup Wil:
         #    Cam update Wil all event witnessed events for Cam by replay
         #    Cam update itself with Wil receipts including Wils inception
-        camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 2038
+        camReplayMsg = camHab.replay(version=Vrsn_1_0)
+        assert len(camReplayMsg) == 2038  # 1998 pre-v1-Seqner-fix
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
 
         assert camHab.pre in wilKvy.kevers
@@ -487,7 +524,8 @@ def test_nonindexed_witness_receipts():
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
-        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
+        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre],
+                                  framed=True, gvrsn=Vrsn_1_0, **kwa)
         assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
         assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 2
@@ -576,36 +614,40 @@ def test_out_of_order_witnessed_events():
     # Bam is verifying the key state for Bob from Wes
 
     default_salt = Salter(raw=b'0123456789abcdef').qb64
-    with openHby(name="wes", base="test", salt=default_salt) as wesHby, \
-         openHby(name="bob", base="test", salt=default_salt) as bobHby, \
-         openHby(name="bam", base="test", salt=default_salt) as bamHby:
+    with openHby(name="wes", base="test", salt=default_salt, version=Vrsn_1_0) as wesHby, \
+         openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby, \
+         openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby:
+
+        kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name='wes', isith='1', icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith='1', icount=1, transferable=False, **kwa)
+        _pin_hab_msgs_v1(wesHab)
         assert wesHab.pre == 'BCuDiSPCTq-qBBFDHkhf1_kmysrH8KSsFvoaOSgEbx-X'
 
-        bobHab = bobHby.makeHab(name='bob', isith='1', icount=1, wits=[wesHab.pre])
+        bobHab = bobHby.makeHab(name='bob', isith='1', icount=1, wits=[wesHab.pre], **kwa)
+        _pin_hab_msgs_v1(bobHab)
         assert bobHab.pre == 'EDroh9lTel0P1YQaiL7shXG63SRSzKSDek7PaceOs6bY'
 
         # Create Bob's icp, pass to Wes and generate receipt.
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
-        wesHab.receipt(serder=iserder)
+        wesHab.receipt(serder=iserder, framed=True)
 
         # Rotate and get Bob's rot, pass to Wes and generate receipt.
-        bobHab.rotate()
-        bobRotMsg = bobHab.makeOwnEvent(sn=1)
+        bobHab.rotate(framed=True, gvrsn=Vrsn_1_0, **kwa)
+        bobRotMsg = bobHab.msgOwnEvent(sn=1, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobRotMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[bobHab.pre].sn == 1
         bobRot = SerderKERI(raw=bobRotMsg)
-        wesHab.receipt(serder=bobRot)
+        wesHab.receipt(serder=bobRot, framed=True)
 
         # Get the receipted rotation event and pass, out of order to Bam
         msgs = bytearray()
-        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=1):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=1, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
@@ -618,7 +660,8 @@ def test_out_of_order_witnessed_events():
 
         # Pass the icp to Bam, process escrows and see if the fully
         # receipted event lands in Bam's Kevery
-        msg = wesHby.db.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb)
+        msg = wesHby.db.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb,
+                                    version=bobHab.kever.serder.pvrsn)
 
         Parser(version=Vrsn_1_0).parse(ims=msg, kvy=bamKvy)
         bamKvy.processEscrows()
@@ -631,6 +674,6 @@ def test_out_of_order_witnessed_events():
 
 
 if __name__ == "__main__":
-    test_indexed_witness_replay()
-    test_nonindexed_witness_receipts()
+    test_indexed_witness_replay_v1()
+    test_nonindexed_witness_receipts_v1()
     test_out_of_order_witnessed_events()

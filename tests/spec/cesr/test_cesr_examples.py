@@ -207,7 +207,7 @@ def test_cesr_examples():
 
 
 
-    serder = acdcmap(issuer=deb, schema=schema, attribute=attribute, issuee=cal, compactify=True)
+    serder = acdcmap(israid=deb, schema=schema, attribute=attribute, iseaid=cal, compactify=True)
     assert serder.sad == \
     {
         'v': 'ACDCCAACAAJSONAADx.',
@@ -231,7 +231,7 @@ def test_cesr_examples():
         "p": paths,
     }
 
-    serder = acdcmap(issuer=deb, schema=schema, attribute=attribute, issuee=cal)
+    serder = acdcmap(israid=deb, schema=schema, attribute=attribute, iseaid=cal)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAAIe.",
@@ -270,6 +270,11 @@ def test_cesr_examples():
     }
 
     sad = serder.sad
+
+    path = ''  # empty path
+    pather = Pather(path=path)
+    assert pather.qb64 == '4AAA'
+    assert pather.resolve(sad=sad) == sad
 
     path = '-'
     pather = Pather(path=path)

@@ -26,7 +26,7 @@ def handler(args):
     """
     Generate a cryptographically random challenge phrase
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
     kwa = dict(args=args)

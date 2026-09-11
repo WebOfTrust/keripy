@@ -7,6 +7,7 @@ VC TEL  support
 """
 import logging
 from dataclasses import asdict
+from types import SimpleNamespace
 from ordered_set import OrderedSet as oset
 from math import ceil
 from  ordered_set import OrderedSet as oset
@@ -14,30 +15,28 @@ from  ordered_set import OrderedSet as oset
 from hio.help import decking, ogler
 
 from ..kering import (Kinds, Ilks, versify,
-                    Version,  Vrsn_1_0,
+                    Version,  Vrsn_1_0, Vrsn_2_0,
                     MissingWitnessSignatureError, MissingAnchorError,
                     ValidationError, OutOfOrderError,
                     LikelyDuplicitousError, MissingEntryError, MissingAnchorError,
                     UntrustedKeyStateSource,UnverifiedReplyError,
-                    OutOfOrderTxnStateError, MissingRegistryError)
+                    OutOfOrderTxnStateError, MissingRegistryError, smell)
 
-from ..core import (SerderKERI, Salter, Prefixer, Verfer,
-                    Number, Saider, Seqner,
-                    Diger, Dater, SealEvent,
+from ..core import (Salter, SealEvent, SealSource,
                     TraitDex, MtrDex, ample, verifySigs,
-                    query as queryCore)
+                    query as queryCore, messagize as coreMessagize)
 
 from ..db import (Baser, Broker, Komer, LMDBer,
                   Suber, OnSuber, CatCesrSuber, IoDupSuber,
                   CesrDupSuber, OnIoDupSuber, SerderSuber,
                   CesrIoSetSuber, CatCesrIoSetSuber, CesrSuber,
-                  openLMDB, dgKey, snKey, dgKey, snKey)
+                  openLMDB, dgKey, snKey)
 
 
 from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
                     Seqner, SerderACDC, SerderKERI,
-                    Siger, CtrDex_1_0, Codens)
+                    Siger, Codens)
 
 from ..help import helping
 
@@ -64,20 +63,18 @@ def incept(
     Utility function to create a Registry inception event
 
     Parameters:
-         pre (str): issuer identifier prefix qb64
-         toad (Union(int,str)): int or str hex of backer threshold
-         baks (list): the initial list of backers prefixes for VCs in the Registry
-         nonce (str): qb64 encoded ed25519 random seed of credential registry
-         cnfg (list): is list of strings TraitDex of configuration traits
+        pre (str): issuer identifier prefix qb64
+            toad (Union(int,str)): int or str hex of backer threshold
+        baks (list): the initial list of backers prefixes for VCs in the Registry
+        nonce (str): qb64 encoded ed25519 random seed of credential registry
+        cnfg (list): is list of strings TraitDex of configuration traits
 
-         version (Versionage): the API version
-         kind (str): the event type
-         code (str): default code for Prefixer
+        version (Versionage): the API version
+        kind (str): the event type
+        code (str): default code for Prefixer
 
     Returns:
-        Serder: Event message Serder
-
-    """
+        Serder: Event message Serder"""
 
     vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 0
@@ -152,9 +149,7 @@ def rotate(
         kind (str): the event type
 
     Returns:
-        Serder: event message Serder
-
-    """
+        Serder: event message Serder"""
 
     if sn < 1:
         raise ValueError("Invalid sn = {} for vrt.".format(sn))
@@ -244,9 +239,7 @@ def issue(
         dt (str): ISO 8601 formatted date string of issuance date
 
     Returns:
-        Serder: event message Serder
-
-    """
+        Serder: event message Serder"""
 
     vs = versify(pvrsn=version, kind=kind, size=0)
     ked = dict(v=vs,  # version string
@@ -286,9 +279,7 @@ def revoke(
         dt (str): ISO 8601 formatted date string of revocation date
 
     Returns:
-        Serder: event message Serder
-
-    """
+        Serder: event message Serder"""
 
     vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 1
@@ -337,9 +328,7 @@ def backerIssue(
         dt (str): ISO 8601 formatted date string of issuance date
 
     Returns:
-        Serder: event message Serder
-
-    """
+        Serder: event message Serder"""
 
     vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 0
@@ -385,15 +374,13 @@ def backerRevoke(
         regk (str): qb64 AID of credential registry
         regsn (int): sequence number of anchoring registry TEL event
         regd (str): digest qb64 of anchoring registry TEL event
-        dig (str) digest of previous event qb64
+            dig (str) digest of previous event qb64
         version (Versionage): the API version
         kind (str): the event type
         dt (str): ISO 8601 formatted date string of issuance date
 
     Returns:
-        Serder: event message Serder
-
-    """
+        Serder: event message Serder"""
 
     vs = versify(pvrsn=version, kind=kind, size=0)
     isn = 1
@@ -444,7 +431,7 @@ def state(pre,
         ri (str): qb64 AID of credential registry
         eilk (str): message type (ilk) oflatest event
         a (dict): key event anchored seal data
-        dts (str) ISO 8601 formated current datetime
+            dts (str) ISO 8601 formated current datetime
         toad (int): int of witness threshold
         wits (list): list of witness prefixes qb64
         cnfg (list): list of strings TraitDex of configuration traits
@@ -472,9 +459,7 @@ def state(pre,
             "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
             "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
             "c": ["EO"],
-        }
-
-    """
+        }"""
     #vs = versify(version=version, kind=kind, size=0)
 
     if sn < 0:
@@ -565,8 +550,7 @@ def vcstate(vcpre,
            },
            "dt": "2021-01-01T00:00:00.000000+00:00",
            "et": "bis"
-        }
-    """
+        }"""
 
     if sn < 0:
         raise ValueError("Negative sn = {} in key state.".format(sn))
@@ -603,7 +587,8 @@ def query(regk,
           dtb=None,
           stamp=None,
           version=Version,
-          kind=Kinds.json
+          kind=Kinds.json,
+          pre=""
           ):
     """ Returns serder of credentialquery (qry) event message.
 
@@ -614,21 +599,22 @@ def query(regk,
         regk (str): qb64 AID of credential registry
         vcid (str): qb64 SAID of credential
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the query
+            handler (behavior) to processs the query
         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs reply message to query if any.
+            handler (behavior) to processs reply message to query if any.
         dt (str): ISO 8601 formatted datetime query
         dta (str): ISO 8601 formatted datetime after query
         dtb (str): ISO 8601 formatted datetime before query
         stamp (str): ISO 8601 formatted current datetime of query message
         version (Versionage): the API version
         kind (str): the event type
+        pre (str): qb64 identifier prefix of the querying AID
 
     Returns:
-        Serder: query event message Serder
-
-    """
+        Serder: query event message Serder"""
     qry = dict(i=vcid, ri=regk)
+    if version >= Vrsn_2_0:
+        qry["src"] = pre
 
     if dt is not None:
         qry["dt"] = dt
@@ -640,6 +626,7 @@ def query(regk,
         qry["dtb"] = dt
 
     return queryCore(route=route,
+                          pre=pre,
                           replyRoute=replyRoute,
                           query=qry,
                           stamp=stamp,
@@ -664,8 +651,8 @@ class Tever:
         .reg is regerence to Registry instance that manages VC LMDB database
         .regk is fully qualified base64 identifier prefix of own Registry if any
         .local is Boolean
-            True means only process msgs for own events if .regk
-            False means only process msgs for not own events if .regk
+        True means only process msgs for own events if .regk
+        False means only process msgs for not own events if .regk
         .version is version of current event state
         .prefixer is prefixer instance fParemtersor current event state
         .sn is sequence number int
@@ -674,9 +661,7 @@ class Tever:
         .baks is list of qualified qb64 aids for backers
         .cuts is list of qualified qb64 aids for backers cut from prev wits list
         .adds is list of qualified qb64 aids for backers added to prev wits list
-        .noBackers is boolean trait True means do not allow backers
-
-    """
+        .noBackers is boolean trait True means do not allow backers"""
     NoRegistrarBackers = False
 
     def __init__(self, cues=None, rsr=None, serder=None, seqner=None, saider=None,
@@ -704,9 +689,7 @@ class Tever:
                 if .regk
 
         Returns:
-            Tever:  instance representing credential Registry
-
-        """
+            Tever:  instance representing credential Registry"""
 
         if not (rsr or serder):
             raise ValueError("Missing required arguments. Need state or serder")
@@ -755,9 +738,7 @@ class Tever:
         Reload Tever attributes (aka its state) from state serder
 
         Parameters:
-            rsr (RegStateRecord): instance of key stat notice 'ksn' message body
-
-        """
+            rsr (RegStateRecord): instance of key stat notice 'ksn' message body"""
 
         ked = asdict(rsr)
 
@@ -783,10 +764,7 @@ class Tever:
         (REL)
 
         Returns:
-            rsr: (RegStateRecord): instance for this Tever
-
-
-        """
+            rsr: (RegStateRecord): instance for this Tever"""
 
         cnfg = []
         if self.noBackers:
@@ -807,6 +785,7 @@ class Tever:
                       toad=self.toad,
                       wits=self.baks,
                       cnfg=cnfg,
+                      version=self.version,
                       #kind=kind
                       )
                 )
@@ -818,9 +797,7 @@ class Tever:
         local attributes with initial values.
 
         Parameters:
-            serder (Serder): registry inception event (vcp)
-
-        """
+            serder (Serder): registry inception event (vcp)"""
 
         ked = serder.ked
         self.pre = ked["ii"]  # which is not the AID of the serder in ked["i"]
@@ -861,10 +838,7 @@ class Tever:
         Parameters:
             serder (Serder): credential registry inception event `vcp`
             noBackers (bool): override flag for specifying a registry with no additional backers
-                              beyond the controlling KEL's witnesses
-
-
-        """
+                beyond the controlling KEL's witnesses"""
         # assign traits
         self.noBackers = (True if (noBackers if noBackers is not None
                                    else self.NoRegistrarBackers)
@@ -892,9 +866,7 @@ class Tever:
             saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
-                from which public key may be derived.
-
-        """
+                from which public key may be derived."""
 
         ked = serder.ked
         ilk = ked["t"]
@@ -957,9 +929,7 @@ class Tever:
             int: calculated backer threshold
             list: new list of backers after applying cuts and adds to previous list
             list: list of backer adds processed from event
-            list: list of backer cuts processed from event
-
-        """
+            list: list of backer cuts processed from event"""
 
         ked = serder.ked
         ilk = ked["t"]
@@ -1046,9 +1016,7 @@ class Tever:
             sn (int): event sequence event
             bigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
-                from which public key may be derived.
-
-        """
+                from which public key may be derived."""
 
         ked = serder.ked
         vcpre = ked["i"]
@@ -1113,9 +1081,7 @@ class Tever:
             sn (int): event sequence event
             bigers (list): of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
-                from which public key may be derived.
-
-        """
+                from which public key may be derived."""
 
         ked = serder.ked
         vcpre = ked["i"]
@@ -1181,11 +1147,10 @@ class Tever:
         Returns None if never issued from this Registry
 
         Parameters:
-          vci (str):  qb64 VC identifier
+            vci (str):  qb64 VC identifier
 
         Returns:
-            status (Serder): transaction event state notification message
-        """
+            status (Serder): transaction event state notification message"""
         digs = []
         for _, _, dig in self.reger.tels.getAllItemIter(keys=vci.encode("utf-8")):
             digs.append(dig)
@@ -1223,6 +1188,7 @@ class Tever:
                        eilk=vcilk,
                        ra=ra,
                        a=dict(s=seqner.sn, d=saider.qb64),
+                       version=self.version,
                        )
 
     def vcSn(self, vci):
@@ -1231,12 +1197,10 @@ class Tever:
         Returns None if never issued from this Registry
 
         Parameters:
-          vci (str):  qb64 VC identifier
+            vci (str):  qb64 VC identifier
 
         Returns:
-            int: current TEL sequence number of credential or None if not found
-
-        """
+            int: current TEL sequence number of credential or None if not found"""
         cnt = self.reger.tels.cntAll(keys=vci)
 
         return None if cnt == 0 else cnt - 1
@@ -1253,8 +1217,7 @@ class Tever:
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): is optional list of Siger instance of indexed backer sigs
-            baks (list): is optional list of qb64 non-trans identifiers of backers
-        """
+            baks (list): is optional list of qb64 non-trans identifiers of backers"""
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
 
@@ -1290,7 +1253,7 @@ class Tever:
             serder (Serder): instance of event
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event said from controlling KEL.
-            bigers (list)  Siger instances of indexed witness signatures.
+            bigers (list): Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
 
@@ -1299,9 +1262,7 @@ class Tever:
                 derive werfers for bigers
 
         Returns:
-            list: unique validated signature verified members of inputed bigers
-
-        """
+            list: unique validated signature verified members of inputed bigers"""
         for bak in baks:
             print("BAK :", bak)
         berfers = [Verfer(qb64=bak) for bak in baks]
@@ -1347,10 +1308,8 @@ class Tever:
             saider (Saider): digest of anchoring event
 
         Returns:
-             bool: True is anchoring event exists in database and seal is valid against
-                   TEL event.
-
-        """
+            bool: True is anchoring event exists in database and seal is valid against
+                TEL event."""
 
         if seqner is None or saider is None:
             return False
@@ -1390,9 +1349,7 @@ class Tever:
             serder (Serder): instance of  event
             seqner (Seqner): sequence number for anchor seal
             saider (Saider): digest of anchor
-            bigers (list): Siger instance of indexed witness sigs
-
-        """
+            bigers (list): Siger instance of indexed witness sigs"""
         dgkey = dgKey(serder.preb, serder.saidb)
         number = Number(num=seqner.sn)
         diger = Diger(qb64=saider.qb64)
@@ -1415,9 +1372,7 @@ class Tever:
             baks (list): qb64 of new backers
 
         Returns:
-            bool: True if escrow is successful, False otherwith (eg. already escrowed)
-
-        """
+            bool: True if escrow is successful, False otherwith (eg. already escrowed)"""
         key = dgKey(serder.preb, serder.saidb)
         if seqner and saider:
             number = Number(num=seqner.sn)
@@ -1441,9 +1396,7 @@ class Tever:
             ked (dict):  event dict
 
         Returns:
-            list:  qb64 of current list of backers for state at ked
-
-        """
+            list:  qb64 of current list of backers for state at ked"""
         rega = ked["ra"]
         regi = rega["i"]
         regd = rega["d"]
@@ -1481,11 +1434,8 @@ class Tevery:
         db (Baser):  local LMDB identifier database
         reger (Reger): local LMDB credential database
         local (bool): True means only process msgs for own events if .regk
-                        False means only process msgs for not own events if .regk
-        cues (Deck): notices generated from processing events
-
-
-    """
+            False means only process msgs for not own events if .regk
+        cues (Deck): notices generated from processing events"""
 
     TimeoutTSN = 3600
 
@@ -1496,11 +1446,8 @@ class Tevery:
             reger (Reger): local LMDB credential database
             db (Baser):  local LMDB identifier database
             local (bool): True means only process msgs for own events if .regk
-                        False means only process msgs for not own events if .regk
-            cues (Deck): notices generated from processing events
-
-
-        """
+                False means only process msgs for not own events if .regk
+            cues (Deck): notices generated from processing events"""
         self.db = db if db is not None else Baser(reopen=True)  # default name = "main"
         self.rvy = rvy
         self.reger = reger if reger is not None else Reger()
@@ -1510,19 +1457,19 @@ class Tevery:
 
     @property
     def tevers(self):
-        """ Returns .reger.tevers read through cache of credential registries """
+        """ Returns .reger.tevers read through cache of credential registries"""
 
         return self.reger.tevers
 
     @property
     def kevers(self):
-        """ Returns .db.kevers read through cache of key event logs """
+        """ Returns .db.kevers read through cache of key event logs"""
 
         return self.db.kevers
 
     @property
     def registries(self):
-        """ Returns .reger.registries """
+        """ Returns .reger.registries"""
 
         return self.reger.registries
 
@@ -1537,9 +1484,7 @@ class Tevery:
             serder (Serder): event to process
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event digest from controlling KEL.
-            wigers (list): optional list of Siger instances of attached witness indexed sigs
-
-        """
+            wigers (list): optional list of Siger instances of attached witness indexed sigs"""
         ked = serder.ked
         try:  # see if code of pre is supported and matches size of pre
             Prefixer(qb64b=serder.preb)
@@ -1641,9 +1586,7 @@ class Tevery:
             sigers (list): Siger instances of attached controller indexed sigs
             cigars (list): Siger instances of non-transferable signatures
 
-        ToDo: Need to verify sigers or cigars on query
-
-        """
+        ToDo: Need to verify sigers or cigars on query"""
         ked = serder.ked
 
         ilk = ked["t"]
@@ -1692,9 +1635,7 @@ class Tevery:
         """ Register the routes for processing messages embedded in `rpy` event messages
 
         Parameters:
-            router(Router): reply message router
-
-        """
+            router (Router): reply message router"""
         router.addRoute("/tsn/registry/{aid}", self, suffix="RegistryTxnState")
         router.addRoute("/tsn/credential/{aid}", self, suffix="CredentialTxnState")
 
@@ -1750,9 +1691,7 @@ class Tevery:
                    ],
                    "c": []
                  }
-             }
-
-         """
+             }"""
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 
@@ -1882,9 +1821,7 @@ class Tevery:
                   "dt": "2021-01-01T00:00:00.000000+00:00",
                   "et": "bis"
                  }
-             }
-
-         """
+             }"""
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 
@@ -1992,8 +1929,7 @@ class Tevery:
             serder (Serder): event messate
 
         Returns:
-            str: qb64 registry identifier
-        """
+            str: qb64 registry identifier"""
         ilk = serder.ked["t"]
 
         if ilk in (Ilks.vcp, Ilks.vrt):
@@ -2019,10 +1955,7 @@ class Tevery:
         Parameters:
             serder (Serder): serder of event message
             seqner (Seqner): sequence number of anchoring TEL event
-            saider (Diger) digest of anchoring TEL event
-
-
-        """
+                saider (Diger) digest of anchoring TEL event"""
         key = dgKey(serder.preb, serder.saidb)
         self.reger.tvts.put(keys=key, val=serder.raw)
         number = Number(num=seqner.sn)
@@ -2033,7 +1966,7 @@ class Tevery:
                      "event = %s", serder.ked)
 
     def processEscrows(self):
-        """ Loop through escrows and process and events that may now be finalized """
+        """ Loop through escrows and process and events that may now be finalized"""
 
         try:
             self.processEscrowAnchorless()
@@ -2063,9 +1996,7 @@ class Tevery:
            2. deserialize event out of tvts
            3. read anchor information out of .ancs
            4. perform process event
-           5. Remove event digest from oots if processed successfully or a non-out-of-order event occurs.
-
-        """
+           5. Remove event digest from oots if processed successfully or a non-out-of-order event occurs."""
         for pre, sn, digb in self.reger.oots.getAllItemIter(): # (pre, snb, digb) in self.reger.getOotItemIter()
             pre = pre[0]
             try:
@@ -2123,9 +2054,7 @@ class Tevery:
            3. load backer signatures out of tibs
            4. read anchor information out of ancs
            5. perform process event
-           6. Remove event digest from oots if processed successfully or a non-anchorless event occurs.
-
-        """
+           6. Remove event digest from oots if processed successfully or a non-anchorless event occurs."""
         for pre, sn, digb in self.reger.taes.getAllItemIter():
             pre = pre[0]
             try:
@@ -2181,8 +2110,7 @@ class rbdict(dict):
 
     Subclass of dict that has db and reger as attributes and employs read
     through cache from db Reger.stts of registry states to reload tever from
-    state in database when not found in memory as dict item.
-    """
+    state in database when not found in memory as dict item."""
     __slots__ = ('db', 'reger')  # no .__dict__ just for db reference
 
     def __init__(self, *pa, **kwa):
@@ -2232,9 +2160,7 @@ class rbdict(dict):
             default: default value to return if not found
 
         Returns:
-            tever: converted from underlying dict or database
-
-        """
+            tever: converted from underlying dict or database"""
         if not super(rbdict, self).__contains__(k):
             return default
         else:
@@ -2246,9 +2172,7 @@ def openReger(name="test", **kwa):
 
     Parameters:
         name (str): registry database name
-        **kwa (dict) keyword arguments to pass to LMDB
-
-    """
+            **kwa (dict): keyword arguments to pass to LMDB"""
     return openLMDB(cls=Reger, name=name, **kwa)
 
 
@@ -2260,60 +2184,57 @@ class Reger(LMDBer):
 
 
         .tvts is named sub DB whose values are serialized TEL events
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            Only one value per DB key is allowed
-        .tels is named sub DB of transaction event log tables that map sequence
-            numbers to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifier prefix plus sequence number of tel event
-            Only one value per DB key is allowed
-        .tibs is named sub DB implemented as CesrDupSuber with klas=Siger
-            for indexed backer signatures of event.
-            Backers always have nontransferable identifier prefixes.
-            The index is the offset of the backer into the backer list
-            of the anchored management event wrt the receipted event.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event.
-            Multiple values per key in lexicographic order.
-        .oots is named subDB instance of OnIoDupSuber for of out of order escrowed event tables
-            that a composite key of the form <pre><sep><on> to serialized event digests.
-            Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            Only one value per DB key is allowed
-        .baks is named subDB instance of IoDupSuber which represents an
-            ordered list of backers at given point in management TEL.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
-        .twes is named subDB instance of OnIoDupSuber for partially witnessed escrowed event tables
-            that map key composites of the form <pre><sep><on> to serialized event digests.
-            Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifier prefix plus sequence number of tel event
-            Only one value per DB key is allowed
-        .taes is named subDB instance of OnIoDupSuber for anchorless escrowed event tables that map
-            a composite key of the form <pre><sep><on> to serialized event digest.
-            Values are digests used to lookup event in .tvts sub DB
-            DB is keyed by identifier prefix plus sequence number of tel event
-            Only one value per DB key is allowed
-        .ancs is a named sub DB of anchors to KEL events.  Quadlet
-            Each quadruple is concatenation of  four fully qualified items
-            of validator. These are: transferable prefix, plus latest establishment
+        dgKey
+        DB: keyed by identifier prefix plus digest of serialized event
+                Only one value per DB key is allowed
+            .tels is named sub DB of transaction event log tables that map sequence
+                numbers to serialized event digests.
+                snKey
+                Values are digests used to lookup event in .tvts sub DB
+        DB: keyed by identifier prefix plus sequence number of tel event
+                Only one value per DB key is allowed
+            .tibs is named sub DB implemented as CesrDupSuber with klas=Siger
+                for indexed backer signatures of event.
+                Backers always have nontransferable identifier prefixes.
+                The index is the offset of the backer into the backer list
+                of the anchored management event wrt the receipted event.
+                dgKey
+        DB: keyed by identifier prefix plus digest of serialized event.
+                Multiple values per key in lexicographic order.
+            .oots is named subDB instance of OnIoDupSuber for of out of order escrowed event tables
+                that a composite key of the form <pre><sep><on> to serialized event digests.
+                Values are digests used to lookup event in .tvts sub DB
+        DB: keyed by identifier prefix plus sequence number of key event
+                Only one value per DB key is allowed
+            .baks is named subDB instance of IoDupSuber which represents an
+                ordered list of backers at given point in management TEL.
+                dgKey
+        DB: keyed by identifier prefix plus digest of serialized event
+                More than one value per DB key is allowed
+            .twes is named subDB instance of OnIoDupSuber for partially witnessed escrowed event tables
+                that map key composites of the form <pre><sep><on> to serialized event digests.
+                Values are digests used to lookup event in .tvts sub DB
+        DB: keyed by identifier prefix plus sequence number of tel event
+                Only one value per DB key is allowed
+            .taes is named subDB instance of OnIoDupSuber for anchorless escrowed event tables that map
+                a composite key of the form <pre><sep><on> to serialized event digest.
+                Values are digests used to lookup event in .tvts sub DB
+        DB: keyed by identifier prefix plus sequence number of tel event
+                Only one value per DB key is allowed
+            .ancs is a named sub DB of anchors to KEL events.  Quadlet
+                Each quadruple is concatenation of  four fully qualified items
+        of validator. These are: transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
             plus indexed event signature.
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            Only one value per DB key is allowed
+        DB: keyed by identifier prefix plus digest of serialized event
+                Only one value per DB key is allowed
 
-        .regs is named subDB instance of Komer that maps registry names to registry keys
-            key is habitat name str
-            value is serialized RegistryRecord dataclass
-
-
-    """
+            .regs is named subDB instance of Komer that maps registry names to registry keys
+        key: habitat name str
+        value: serialized RegistryRecord dataclass"""
     TailDirPath = "keri/reg"
     AltTailDirPath = ".keri/reg"
     TempPrefix = "keri_reg_"
@@ -2328,11 +2249,11 @@ class Reger(LMDBer):
                 differentiating each instance by name
 
             temp (boolean,): assign to .temp
-                True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
+                    True then open in temporary directory, clear on close
+                    Othewise then open persistent directory, do not clear on close
 
-            headDirPath (Optional(str)): head directory pathname for main database
-                If not provided use default .HeadDirpath
+                headDirPath (Optional(str)): head directory pathname for main database
+                    If not provided use default .HeadDirpath
 
             mode (int): numeric os dir permissions for database directory
             reopen (boolean,): IF True then database will be reopened by this init
@@ -2346,9 +2267,7 @@ class Reger(LMDBer):
         Attempting to put the same (key,value) pair a second time does
         not add another copy.
 
-        Duplicates are inserted in lexocographic order by value, insertion order.
-
-        """
+        Duplicates are inserted in lexocographic order by value, insertion order."""
 
         self.registries = oset()
         self._tevers = rbdict()
@@ -2361,17 +2280,14 @@ class Reger(LMDBer):
     @property
     def tevers(self):
         """ Returns ._tevers
-        tevers getter
-        """
+        tevers getter"""
         return self._tevers
 
     def reopen(self, **kwa):
         """ Open sub databases
 
         Parameters:
-            **kwa (dict): keyword arguments passed to super.reopen
-
-        """
+            **kwa (dict): keyword arguments passed to super.reopen"""
         super(Reger, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
@@ -2404,11 +2320,11 @@ class Reger(LMDBer):
         self.cancs = CatCesrSuber(db=self, subkey='cancs.',
                                          klas=(Prefixer, Number, Diger))
 
-        # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
+        # all sad path tsgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, number.qb64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
         # signature.
-        self.spsgs = CesrIoSetSuber(db=self, subkey='ssgs.', klas=Siger)
+        self.spsgs = CesrIoSetSuber(db=self, subkey='tsgs.', klas=Siger)
 
         # all sad path scgs  (sad pathed non-indexed signature serializations) maps
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
@@ -2462,18 +2378,20 @@ class Reger(LMDBer):
 
         return self.env
 
-    def cloneCreds(self, saids, db):
+    def cloneCreds(self, saids, db, gvrsn=Version, *, version=None):
         """ Returns fully expanded credential with chained credentials attached.
 
         Parameters:
-           saids (list): of Saider objects:
-           db (Baser): baser object to load schema
+            saids (list): of Saider objects:
+            db (Baser): baser object to load schema
+            gvrsn (Versionage): CESR genus version for TEL attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
-            list: fully hydrated credentials with full chains provided
-
-        """
+            list: fully hydrated credentials with full chains provided"""
         from ..app import serialize
+        if version is not None:
+            gvrsn = version
         creds = []
         for saider in saids:
             key = saider.qb64
@@ -2485,12 +2403,12 @@ class Reger(LMDBer):
             status = self.tevers[regk].vcState(saider.qb64)
             schemer = db.schema.get(creder.schema)
 
-            iss = bytearray(self.cloneTvtAt(creder.said, sn=0))
+            iss = bytearray(self.cloneTvtAt(creder.said, sn=0, gvrsn=gvrsn))
             iserder = SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
             del iss[0:iserder.size]
             if status.et in [Ilks.rev, Ilks.brv]:
-                rev = bytearray(self.cloneTvtAt(creder.said, sn=1))
+                rev = bytearray(self.cloneTvtAt(creder.said, sn=1, gvrsn=gvrsn))
                 rserder = SerderKERI(raw=rev)
                 revatc = bytes(rev[rserder.size:])
                 del rev[0:rserder.size]
@@ -2504,7 +2422,7 @@ class Reger(LMDBer):
                     continue
 
                 chainSaids.append(Saider(qb64=p["n"]))
-            chains = self.cloneCreds(chainSaids, db)
+            chains = self.cloneCreds(chainSaids, db, gvrsn=gvrsn)
 
             cred = dict(
                 sad=creder.sad,
@@ -2513,7 +2431,7 @@ class Reger(LMDBer):
                 issatc=issatc.decode("utf-8"),
                 rev=rserder.sad if status.et in [Ilks.rev, Ilks.brv] else None,
                 revatc=revatc.decode("utf-8") if status.et in [Ilks.rev, Ilks.brv] else None,
-                pre=creder.issuer,
+                pre=creder.israid,
                 schema=schemer.sed,
                 chains=chains,
                 status=asdict(status),
@@ -2524,30 +2442,30 @@ class Reger(LMDBer):
                 )
             )
 
-            ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
-            if ctr.code == CtrDex_1_0.AttachmentGroup:
-                ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
+            ctr = Counter(qb64b=iss, strip=True, version=gvrsn)
+            if ctr.name == Codens.AttachmentGroup:
+                ctr = Counter(qb64b=iss, strip=True, version=gvrsn)
 
-            if ctr.code == CtrDex_1_0.SealSourceCouples:
+            if ctr.name == Codens.SealSourceCouples:
                 Number(qb64b=iss, strip=True)
                 saider = Saider(qb64b=iss)
 
-                anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
+                anc = db.cloneEvtMsg(pre=creder.israid, fn=0, dig=saider.qb64b)
                 aserder = SerderKERI(raw=anc)
                 ancatc = bytes(anc[aserder.size:])
                 cred['anc'] = aserder.sad
                 cred['ancatc'] = ancatc.decode("utf-8"),
 
             if status.et in [Ilks.rev, Ilks.brv]:
-                ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
-                if ctr.code == CtrDex_1_0.AttachmentGroup:
-                    ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
+                ctr = Counter(qb64b=rev, strip=True, version=gvrsn)
+                if ctr.name == Codens.AttachmentGroup:
+                    ctr = Counter(qb64b=rev, strip=True, version=gvrsn)
 
-                if ctr.code == CtrDex_1_0.SealSourceCouples:
+                if ctr.name == Codens.SealSourceCouples:
                     Number(qb64b=rev, strip=True)
                     saider = Saider(qb64b=rev)
 
-                    anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
+                    anc = db.cloneEvtMsg(pre=creder.israid, fn=0, dig=saider.qb64b)
                     aserder = SerderKERI(raw=anc)
                     ancatc = bytes(anc[aserder.size:])
                     cred['revanc'] = aserder.sad
@@ -2564,9 +2482,7 @@ class Reger(LMDBer):
             creder (Creder): that contains the credential to process
             prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
             number (Number): sequence number of event anchoring credential
-            diger (Diger): digest of anchoring event for credential
-
-        """
+            diger (Diger): digest of anchoring event for credential"""
         key = creder.said
         self.cancs.pin(keys=key, val=[prefixer, number, diger])
         self.creds.put(keys=key, val=creder)
@@ -2580,9 +2496,7 @@ class Reger(LMDBer):
         at the location of the specified root.
 
         Parameters:
-            said(str or bytes): qb64 SAID of credential
-
-        """
+            said (str or bytes): qb64 SAID of credential"""
 
         creder = self.creds.get(keys=(said,))
         if creder is None:
@@ -2590,7 +2504,7 @@ class Reger(LMDBer):
         prefixer, number, saider = self.cancs.get(keys=(said,))
         return creder, prefixer, number, saider
 
-    def clonePreIter(self, pre, fn=0):
+    def clonePreIter(self, pre, fn=0, gvrsn=Version, *, version=None):
         """ Iterator of first seen event messages
 
         Returns iterator of first seen event messages with attachments for the
@@ -2600,58 +2514,57 @@ class Reger(LMDBer):
         Parameters:
             pre (bytes): qb64 identifier prefix of registry state TEL
             fn (int): first seen ordinal
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
-            iterator: bytearray per serializeed event msg
-
-        """
+            iterator: bytearray per serializeed event msg"""
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
+        if version is not None:
+            gvrsn = version
         for _, fn, dig in self.tels.getAllItemIter(keys=pre, on=fn):
-            msg = self.cloneTvt(pre, dig)
+            msg = self.cloneTvt(pre, dig, gvrsn=gvrsn)
             yield msg
 
-    def cloneTvtAt(self, pre, sn=0):
+    def cloneTvtAt(self, pre, sn=0, gvrsn=Version, *, version=None):
+        if version is not None:
+            gvrsn = version
         snkey = snKey(pre, sn)
         dig = self.tels.get(keys=pre, on=sn)
-        return self.cloneTvt(pre, dig)
+        return self.cloneTvt(pre, dig, gvrsn=gvrsn)
 
-    def cloneTvt(self, pre, dig):
-        msg = bytearray()  # message
-        atc = bytearray()  # attachments
-        dgkey = dgKey(pre, dig)  # get message
-        if not (raw := self.tvts.get(keys=dgkey)):
+    def cloneTvt(self, pre, dig, gvrsn=Version, *, version=None):
+        if version is not None:
+            gvrsn = version
+        if not (raw := self.tvts.get(keys=dgKey(pre, dig))):
             raise MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw.encode("utf-8"))
 
-        # add indexed backer signatures to attachments
-        if tibs := self.tibs.get(keys=(pre, dig)):
-            atc.extend(Counter(Codens.WitnessIdxSigs, count=len(tibs),
-                                    version=Vrsn_1_0).qb64b)
-            for tib in tibs:
-                atc.extend(tib.qb64b)
+        # Preserve exact stored body bytes. Do not Serder-parse: the version
+        # size field may not match (clone fixtures / legacy rows), and messagize
+        # only needs .raw / .pvrsn / .gvrsn / .pretty().
+        rawb = raw.encode("utf-8") if hasattr(raw, "encode") else bytes(raw)
+        tibs = self.tibs.get(keys=(pre, dig))
+        couple = self.ancs.get(keys=dgKey(pre, dig))
 
-        # add authorizer (delegator/issure) source seal event couple to attachments
-        couple = self.ancs.get(keys=dgkey)
+        if not tibs and couple is None:
+            return bytearray(rawb)
+
+        _, pvrsn, _, _, body_gvrsn = smell(rawb)
+        serder = SimpleNamespace(raw=rawb,
+                                 pvrsn=pvrsn,
+                                 gvrsn=body_gvrsn if body_gvrsn is not None else pvrsn,
+                                 pretty=lambda: rawb[:80].decode(
+                                     "utf-8", errors="replace"))
+
+        seal = None
         if couple is not None:
             number, diger = couple
-            seqner = Seqner(sn=number.sn)
-            saider = Saider(qb64=diger.qb64)
-            atc.extend(Counter(Codens.SealSourceCouples, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(seqner.qb64b)
-            atc.extend(saider.qb64b)
+            seal = SealSource(s=number, d=diger)
 
-        # prepend pipelining counter to attachments
-        if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
-        pcnt = Counter(Codens.AttachmentGroup, count=(len(atc) // 4),
-                            version=Vrsn_1_0).qb64b
-        msg.extend(pcnt)
-        msg.extend(atc)
-        return msg
+        return coreMessagize(serder, wigers=tibs or None, bonds=seal,
+                             framed=False, gvrsn=gvrsn)
 
     def sources(self, db, creder):
         """ Returns raw bytes of any source ('e') credential that is in our database
@@ -2661,9 +2574,7 @@ class Reger(LMDBer):
             creder (Creder): root credential
 
         Returns:
-            list: credential sources as resolved from `e` in creder.crd
-
-        """
+            list: credential sources as resolved from `e` in creder.crd"""
         chains = creder.edge if creder.edge is not None else {}
         saids = []
         for key, source in chains.items():
@@ -2679,11 +2590,10 @@ class Reger(LMDBer):
         for said in saids:
             screder, prefixer, number, saider = self.cloneCred(said=said)
 
-            atc = bytearray(Counter(Codens.SealSourceTriples, count=1,
-                                         version=Vrsn_1_0).qb64b)
-            atc.extend(prefixer.qb64b)
-            atc.extend(number.qb64b)
-            atc.extend(saider.qb64b)
+            msg = coreMessagize(screder,
+                                bonds=[SealEvent(i=prefixer, s=number, d=saider)],
+                                framed=True, gvrsn=screder.pvrsn)
+            atc = bytearray(msg[screder.size:])
 
             sources.append((screder, atc))
             sources.extend(self.sources(db, screder))
@@ -2691,7 +2601,7 @@ class Reger(LMDBer):
         return sources
 
 
-def buildProof(prefixer, seqner, diger, sigers):
+def buildProof(prefixer, seqner, diger, sigers, creder, framed=True):
     """
     Create CESR proof attachment from the quadlet of seal plus signatures on the credential
 
@@ -2700,42 +2610,29 @@ def buildProof(prefixer, seqner, diger, sigers):
         seqner (Seqner) is the sequence number of the event used to sign the credential
         diger (Diger) is the digest of the event used to sign the credential
         sigers (list) are the cryptographic signatures on the credential
+        creder (SerderACDC): credential whose protocol version drives attachment encoding
+        framed (bool): True means bare attachments; False wraps AttachmentGroup
 
     """
-
-    prf = bytearray()
-    prf.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                            version=Vrsn_1_0).qb64b)
-    prf.extend(prefixer.qb64b)
-    prf.extend(seqner.qb64b)
-    prf.extend(diger.qb64b)
-
-    prf.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                            version=Vrsn_1_0).qb64b)
-    for siger in sigers:
-        prf.extend(siger.qb64b)
-
-    return prf
+    msg = coreMessagize(creder, tsgs=[(prefixer, seqner, diger, sigers)],
+                        framed=framed, gvrsn=creder.pvrsn)
+    return bytearray(msg[creder.size:])
 
 
-def messagize(creder, proof):
-    """ Create a CESR message format with proof attachment for credential
+def messagize(creder, prefixer, seqner, diger, sigers, framed=False):
+    """Create a CESR message with proof attachment for credential via core messagize.
 
-    Parameters
+    Parameters:
         creder (Creder): instance of credential
-        proof (str): CESR proof attachment
+        prefixer (Prefixer): identifier of the issuer of the credential
+        seqner (Seqner): sequence number of the event used to sign the credential
+        diger (Diger): digest of the event used to sign the credential
+        sigers (list): cryptographic signatures on the credential
+        framed (bool): True means bare attachments; False wraps AttachmentGroup
 
     Returns:
         bytearray: serialized credential with attached proof
 
     """
-
-    craw = bytearray(creder.raw)
-    if len(proof) % 4:
-        raise ValueError("Invalid attachments size={}, nonintegral"
-                         " quadlets.".format(len(proof)))
-    craw.extend(Counter(Codens.AttachmentGroup, count=(len(proof) // 4),
-                             version=Vrsn_1_0).qb64b)
-    craw.extend(proof)
-
-    return craw
+    return coreMessagize(creder, tsgs=[(prefixer, seqner, diger, sigers)],
+                         framed=framed, gvrsn=creder.pvrsn)

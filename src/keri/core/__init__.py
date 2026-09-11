@@ -12,9 +12,9 @@ from .coring import (sizeify, dumps, loads, MtrDex, SmallVrzDex, LargeVrzDex,
                      Diger, Prefixer, Noncer, Saider, Sadder, Tholder, Dicter,
                      Saids, TraitDex, Versage, Sizage, MapDom, IceMapDom)
 from .counting import (GenDex, ProGen, CtrDex_1_0, CtrDex_2_0, QTDex_1_0,
-                       UniDex_1_0, SUDex_1_0, MUDex_1_0, CtrDex_2_0, UniDex_2_0,
-                        SUDex_2_0, MUDex_2_0, CodeNames, SealDex_2_0, Codens,
-                        Codenage, Cizage, Counter)
+                       UniDex_1_0, SUDex_1_0, MUDex_1_0, BUDex_1_0, CtrDex_2_0,
+                       UniDex_2_0, SUDex_2_0, MUDex_2_0, BUDex_2_0,
+                       CodeNames, SealDex_2_0, Codens, Codenage, Cizage, Counter)
 from .eventing import (simple, ample, deWitnessCouple, deReceiptCouple,
                        deSourceCouple, deReceiptTriple, deTransReceiptQuadruple,
                        deTransReceiptQuintuple, verifySigs, validateSigs,
@@ -30,13 +30,19 @@ from .routing import Router, Revery, Route, compile_uri_template
 from .scheming import CacheResolver, JSONSchema, Schemer
 from .serdering import FieldDom, Serdery, Serder, SerderKERI, SerderACDC
 from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
-                      Encrypter, Decrypter, Streamer)
+                      Encrypter, Decrypter, Streamer, SeedCodeByVerferCode)
 from .structing import (SealDigest, SealRoot, SealSource, SealEvent, SealLast,
                         SealBack, SealKind, BlindState, BoundState, TypeMedia,
-                        StateEstEvent, StateEvent, Castage, Structor, Sealer,
+                        StateEstEvent, StateEvent,
+                        Castage, Structor, Sealer,
                         Blinder, Mediar, CodenToClans, ClanToCodens,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
-                        SealEvent, SealKind, BlindState, BoundState, EClanDom,
-                        ECastDom, EmptyClanDom, EmptyCastDom, AClanDom,
-                        ACastDom, SClanDom, SCastDom, SealClanDom, SealCastDom,
-                        BSClanDom, BSCastDom, TMClanDom, TMCastDom)
+                        SealEvent, SealKind,
+                        BlindState, BoundState,
+                        FirstSeen, TransReceipts, TransSigs,TransLastSigs,
+                        EmptyClanDom, EmptyCastDom, EClanDom, ECastDom,
+                        SealClanDom, SealCastDom, SClanDom, SCastDom,
+                        BlindStateClanDom, BlindStateCastDom, BSClanDom, BSCastDom,
+                        TypeMediaClanDom, TypeMediaCastDom, TMClanDom, TMCastDom,
+                        FirstSeenClanDom, FirstSeenCastDom, FSClanDom, FSCastDom,
+                        AllClanDom, AllCastDom, AClanDom, ACastDom,)

@@ -5,7 +5,10 @@ tests.db.test_webdbing module
 """
 
 import asyncio
+import subprocess
+import sys
 from dataclasses import asdict, dataclass
+from typing import get_type_hints
 
 import pytest
 
@@ -25,7 +28,7 @@ try:
     )
     from keri.db import webdbing as webdbing_module
 except ImportError:
-    from keri.db.webdbing import (  # standalone import for Pyodide
+    from webdbing import (  # standalone import for Pyodide
         WebDBer,
         _META_KEY,
         _META_STORE,
@@ -38,24 +41,21 @@ except ImportError:
         onKey,
         splitOnKey,
     )
-    import keri.db.webdbing as webdbing_module
+    import webdbing as webdbing_module
 
 try:
-    from keri.db import subing, koming, dgKey, snKey
+    from keri.db import subing, koming
 except ImportError:
     subing = None
     koming = None
 
 try:
-    from keri.core import serdering, coring, signing, indexing
-    from keri import versify, Kinds
-    from keri.recording import EventSourceRecord
-    from keri import core
+    from keri.db import LMDBer
 except ImportError:
-    # Pyodide fallback
-    from keri.core import serdering
+    LMDBer = None
 
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
+needslmdb = pytest.mark.skipif(LMDBer is None, reason="requires native keri")
 
 
 class FakeStorageHandle:
@@ -75,12 +75,17 @@ class FakeStorageHandle:
     def __setitem__(self, key, value):
         self._local[key] = value
 
-    def clear(self):
-        """Remove all keys from the local storage buffer."""
-        self._local.clear()
-
     async def sync(self):
-        self.backend.persisted[self.namespace] = dict(self._local)
+        snapshot = dict(self._local)
+        if sequence := self.backend.sync_sequences.get(self.namespace):
+            entered, release = sequence.pop(0)
+            entered.set()
+            await release.wait()
+        if gate := self.backend.sync_gates.get(self.namespace):
+            entered, release = gate
+            entered.set()
+            await release.wait()
+        self.backend.persisted[self.namespace] = snapshot
 
 
 class FakeStorageBackend:
@@ -88,6 +93,8 @@ class FakeStorageBackend:
 
     def __init__(self):
         self.persisted = {}
+        self.sync_gates = {}
+        self.sync_sequences = {}
 
     async def open(self, namespace):
         return FakeStorageHandle(self, namespace)
@@ -104,6 +111,93 @@ async def _open_fake_dber(*, name="test-webdber", stores=None,
         storageOpener=backend.open,
     )
     return dber, backend
+
+
+@needslmdb
+def test_shared_wrapper_type_hints_resolve_native_backend():
+    """Shared wrapper annotations resolve to the selected native backend."""
+    constructors = (
+        koming.KomerBase,
+        koming.Komer,
+        koming.IoSetKomer,
+        koming.DupKomer,
+        subing.SuberBase,
+        subing.Suber,
+        subing.IoSetSuber,
+        subing.DupSuber,
+    )
+
+    hints = [get_type_hints(klas.__init__) for klas in constructors]
+    assert hints[0]["db"] is LMDBer
+    assert hints[4]["db"] is LMDBer
+
+
+@pytest.mark.skipif("emscripten" in sys.platform,
+                    reason="requires a CPython subprocess")
+def test_browser_import_and_missing_storage_contract():
+    """Browser imports isolate native modules and require explicit stores."""
+    script = r'''
+import sys
+import typing
+
+import pysodium
+
+sys.platform = "emscripten"
+
+from keri.app import Habery, Oobiery, Authenticator
+from keri.app.basekeeping import Manager
+from keri.core.eventing import Kevery
+from keri.db import koming, subing
+from keri.db.webdbing import WebDBer
+from keri.kering import ConfigurationError
+
+
+def expect_configuration_error(call, expected):
+    try:
+        call()
+    except ConfigurationError as ex:
+        assert expected in str(ex), str(ex)
+    else:
+        raise AssertionError("expected ConfigurationError")
+
+
+sentinel = object()
+expect_configuration_error(
+    lambda: Habery(db=sentinel, cf=sentinel), "injected ks")
+expect_configuration_error(Kevery, "injected db")
+expect_configuration_error(Manager, "injected ks")
+expect_configuration_error(lambda: Oobiery(hby=sentinel), "injected clienter")
+expect_configuration_error(lambda: Authenticator(hby=sentinel), "injected clienter")
+
+constructors = (
+    koming.KomerBase,
+    koming.Komer,
+    koming.IoSetKomer,
+    koming.DupKomer,
+    subing.SuberBase,
+    subing.Suber,
+    subing.IoSetSuber,
+    subing.DupSuber,
+)
+hints = [typing.get_type_hints(klas.__init__) for klas in constructors]
+assert hints[0]["db"] is WebDBer
+assert hints[4]["db"] is WebDBer
+
+blocked = sorted(
+    name for name in sys.modules
+    if name == "lmdb" or name.startswith("falcon")
+    or name.startswith("hio.core.tcp")
+)
+assert blocked == [], blocked
+'''
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_open_declares_stores_and_clear():
@@ -160,7 +254,7 @@ def test_open_requires_storage_backend():
 
 
 def test_open_db_flag_persistence():
-    """Test dupsort latching is stable in-process and persists across reopen."""
+    """Plain-store flags persist; unsupported duplicate stores fail on open."""
     async def _go():
         backend = FakeStorageBackend()
         dber, _ = await _open_fake_dber(stores=["bags.", "docs."],
@@ -170,20 +264,41 @@ def test_open_db_flag_persistence():
         assert bags.flags()["dupsort"] is False
         assert bags.dirty is True
 
-        same = dber.env.open_db("bags.", dupsort=True)
+        same = dber.env.open_db("bags.")
         assert same is bags
         assert same.flags()["dupsort"] is False
 
-        docs = dber.env.open_db("docs.", dupsort=True)
-        assert docs.flags()["dupsort"] is True
+        for name in ("bags.", "docs."):
+            with pytest.raises(ValueError, match="does not support dupsort"):
+                dber.env.open_db(name, dupsort=True)
+        docs = dber.env.open_db("docs.")
+        assert docs.flags()["dupsort"] is False
         assert await dber.flush() == 2
 
         reopened, _ = await _open_fake_dber(stores=["bags.", "docs."],
                                             backend=backend)
-        bags_reopened = reopened.env.open_db("bags.", dupsort=True)
+        bags_reopened = reopened.env.open_db("bags.")
         docs_reopened = reopened.env.open_db("docs.", dupsort=False)
         assert bags_reopened.flags()["dupsort"] is False
-        assert docs_reopened.flags()["dupsort"] is True
+        assert docs_reopened.flags()["dupsort"] is False
+        with pytest.raises(ValueError, match="does not support dupsort"):
+            reopened.env.open_db("bags.", dupsort=True)
+        if subing is not None:
+            with pytest.raises(ValueError, match="does not support dupsort"):
+                subing.DupSuber(db=reopened, subkey="bags.")
+            with pytest.raises(ValueError, match="does not support dupsort"):
+                koming.DupKomer(db=reopened, subkey="docs.", klas=dict)
+        assert await reopened.flush() == 0
+
+        backend.persisted["legacy:docs."] = {
+            _META_KEY: _serialize_meta({"dupsort": True}),
+            _RECORDS_KEY: _serialize_records({b"key": b"value"}),
+        }
+        legacy, _ = await _open_fake_dber(name="legacy", stores=["docs."],
+                                          backend=backend)
+        with pytest.raises(ValueError, match="does not support dupsort"):
+            legacy.env.open_db("docs.")
+        assert await legacy.flush() == 0
 
     asyncio.run(_go())
 
@@ -195,20 +310,20 @@ def test_open_db_metadata_only_flush():
         dber, _ = await _open_fake_dber(name="meta-only", stores=["docs."],
                                         clear=True, backend=backend)
 
-        docs = dber.env.open_db("docs.", dupsort=True)
-        assert docs.flags()["dupsort"] is True
+        docs = dber.env.open_db("docs.")
+        assert docs.flags()["dupsort"] is False
         assert docs.dirty is True
         assert await dber.flush() == 1
         assert docs.dirty is False
         assert _deserialize_meta(
-            backend.persisted["meta-only:docs."][_META_KEY]) == {"dupsort": True}
+            backend.persisted["meta-only:docs."][_META_KEY]) == {"dupsort": False}
         assert _deserialize_records(
             backend.persisted["meta-only:docs."][_RECORDS_KEY]) == {}
 
         reopened, _ = await _open_fake_dber(name="meta-only", stores=["docs."],
                                             backend=backend)
         docs_reopened = reopened.env.open_db("docs.", dupsort=False)
-        assert docs_reopened.flags()["dupsort"] is True
+        assert docs_reopened.flags()["dupsort"] is False
 
     asyncio.run(_go())
 
@@ -217,11 +332,10 @@ def test_clear_resets_metadata():
     """Test clear=True drops persisted dupsort metadata and allows relatching."""
     async def _go():
         backend = FakeStorageBackend()
-        dber, _ = await _open_fake_dber(name="clear-meta", stores=["docs."],
-                                        clear=True, backend=backend)
-
-        docs = dber.env.open_db("docs.", dupsort=True)
-        assert await dber.flush() == 1
+        backend.persisted["clear-meta:docs."] = {
+            _META_KEY: _serialize_meta({"dupsort": True}),
+            _RECORDS_KEY: _serialize_records({b"key": b"value"}),
+        }
 
         cleared, _ = await _open_fake_dber(name="clear-meta", stores=["docs."],
                                            clear=True, backend=backend)
@@ -231,8 +345,9 @@ def test_clear_resets_metadata():
 
         reopened, _ = await _open_fake_dber(name="clear-meta", stores=["docs."],
                                             backend=backend)
-        docs_reopened = reopened.env.open_db("docs.", dupsort=True)
+        docs_reopened = reopened.env.open_db("docs.")
         assert docs_reopened.flags()["dupsort"] is False
+        assert reopened.cntAll(docs_reopened) == 0
 
     asyncio.run(_go())
 
@@ -351,20 +466,19 @@ def test_val_crud():
     asyncio.run(_go())
 
 
-def test_empty_key_errors():
+def test_empty_key_returns_false():
     """Test LMDB-compatible empty-key validation."""
     async def _go():
         dber, _ = await _open_fake_dber(stores=["docs."], clear=True)
         docs = dber.env.open_db("docs.")
 
-        with pytest.raises(KeyError, match="empty"):
-            dber.putVal(docs, b"", b"val")
-        with pytest.raises(KeyError, match="empty"):
-            dber.setVal(docs, b"", b"val")
-        with pytest.raises(KeyError, match="empty"):
-            dber.getVal(docs, b"")
-
+        await dber.flush()
+        assert dber.putVal(docs, b"", b"val") is False
+        assert dber.setVal(docs, b"", b"val") is False
+        assert dber.getVal(docs, b"") is False
         assert dber.remVal(docs, b"") is False
+        assert dber.cntAll(docs) == 0
+        assert await dber.flush() == 0
 
     asyncio.run(_go())
 
@@ -395,6 +509,54 @@ def test_prefix_iteration():
         assert list(dber.getTopItemIter(docs, b"ac")) == [(b"ac.4", b"white")]
         assert list(dber.getTopItemIter(docs, b"z")) == []
         assert dber.cntAll(docs) == 5
+
+        removed = []
+        for key, val in dber.getTopItemIter(docs, b"a."):
+            removed.append((key, val))
+            assert dber.remVal(docs, key)
+        assert removed == [(b"a.1", b"blue"), (b"a.2", b"green")]
+
+        removed = []
+        for key, val in dber.getTopItemIter(docs):
+            removed.append((key, val))
+            assert dber.remVal(docs, key)
+        assert removed == [(b"ac.4", b"white"), (b"b.1", b"red"),
+                           (b"bc.3", b"black")]
+        assert dber.cntAll(docs) == 0
+
+    asyncio.run(_go())
+
+
+@pytest.mark.parametrize("method, kwa", [
+    ("getTopItemIter", {}),
+    ("getTopItemIter", {"top": b"a."}),
+    ("getOnAllItemIter", {}),
+    ("getOnAllItemIter", {"key": onKey(b"a", 0)}),
+    ("getIoSetItemIter", {"key": onKey(b"a", 0)}),
+    ("getIoSetLastItemIterAll", {}),
+    ("getIoSetLastItemIterAll", {"key": onKey(b"a", 0)}),
+    ("getOnAllIoSetItemIter", {}),
+    ("getOnAllIoSetItemIter", {"key": b"a"}),
+    ("getOnAllIoSetLastItemIter", {}),
+    ("getOnAllIoSetLastItemIter", {"key": b"a"}),
+])
+def test_forward_iteration_preserves_read_view(method, kwa):
+    """An active iterator retains its records when the live store changes."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["docs."], clear=True)
+        docs = dber.env.open_db("docs.")
+        for on in range(3):
+            for ion in range(3):
+                key = onKey(onKey(b"a", on), ion)
+                assert dber.putVal(docs, key, f"{on}:{ion}".encode())
+
+        expected = list(getattr(dber, method)(docs, **kwa))
+        assert len(expected) >= 3
+        items = getattr(dber, method)(docs, **kwa)
+        assert next(items) == expected[0]
+        assert dber.remTop(docs)
+        assert dber.putVal(docs, onKey(onKey(b"a", 2), 2), b"changed")
+        assert list(items) == expected[1:]
 
     asyncio.run(_go())
 
@@ -490,6 +652,70 @@ def test_flush_dirty_counting():
         assert dber.setVal(docs, b"doc.2", b"white") is True
         assert await dber.flush() == 1
         assert await dber.flush() == 0
+
+        entered = asyncio.Event()
+        release = asyncio.Event()
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="concurrent-flush", stores=["docs."], backend=backend)
+        docs = dber.env.open_db("docs.")
+        await dber.flush()
+        assert dber.setVal(docs, b"doc.1", b"first") is True
+        backend.sync_gates["concurrent-flush:docs."] = (entered, release)
+
+        flusher = asyncio.create_task(dber.flush())
+        await entered.wait()
+        assert dber.setVal(docs, b"doc.2", b"second") is True
+        release.set()
+        assert await flusher == 2
+        assert not docs.dirty
+
+        backend.sync_gates.clear()
+        assert await dber.flush() == 0
+        reopened, _ = await _open_fake_dber(
+            name="concurrent-flush", stores=["docs."], backend=backend)
+        reopened_docs = reopened.env.open_db("docs.")
+        assert reopened.getVal(reopened_docs, b"doc.1") == b"first"
+        assert reopened.getVal(reopened_docs, b"doc.2") == b"second"
+
+    asyncio.run(_go())
+
+
+def test_concurrent_flushes_preserve_latest_write():
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="overlap", stores=["docs."], backend=backend)
+        docs = dber.env.open_db("docs.")
+        await dber.flush()
+        assert dber.setVal(docs, b"key", b"old") is True
+
+        entered_a = asyncio.Event()
+        release_a = asyncio.Event()
+        entered_b = asyncio.Event()
+        release_b = asyncio.Event()
+        backend.sync_sequences["overlap:docs."] = [
+            (entered_a, release_a),
+            (entered_b, release_b),
+        ]
+
+        flush_a = asyncio.create_task(dber.flush())
+        await entered_a.wait()
+        assert dber.setVal(docs, b"key", b"new") is True
+        flush_b = asyncio.create_task(dber.flush())
+        await asyncio.sleep(0)
+
+        if entered_b.is_set():
+            release_b.set()
+        release_a.set()
+        await entered_b.wait()
+        release_b.set()
+        await asyncio.gather(flush_a, flush_b)
+
+        reopened, _ = await _open_fake_dber(
+            name="overlap", stores=["docs."], backend=backend)
+        reopened_docs = reopened.env.open_db("docs.")
+        assert reopened.getVal(reopened_docs, b"key") == b"new"
 
     asyncio.run(_go())
 
@@ -2761,7 +2987,7 @@ def test_ioset_suber_contract():
 def test_on_ioset_suber_contract():
     """Test IoSetSuber wrapper operating against WebDBer."""
     async def _go():
-        dber, _ = await _open_fake_dber(
+        dber, backend = await _open_fake_dber(
             name="ioset-suber-contract",
             stores=["vals."],
             clear=True,
@@ -3180,6 +3406,10 @@ def test_on_ioset_suber_contract():
         assert [val for val in onios.getAllBackIter(keys3, on=2)] == \
         ['w','x','y','z','l','j','k']
 
+        assert list(onios.getBackIter(keys3, on=2)) == ['w', 'x', 'y', 'z', 'l', 'j', 'k']
+        assert list(onios.getBackIter(keys3)) == ['l', 'j', 'k']
+        assert list(onios.getBackIter(('missing',), on=2)) == []
+
 
         # Test last back iter
         # whole db
@@ -3221,6 +3451,28 @@ def test_on_ioset_suber_contract():
 
         assert [val for val in onios.getAllLastBackIter(keys3, on=2)] == \
         ['w', 'y', 'l']
+
+        # Append and removal must persist when the store was already flushed.
+        await dber.flush()
+        assert onios.append(keys=keys3, vals=["persisted"]) == 5
+        await dber.flush()
+        dber.close()
+        dber, _ = await _open_fake_dber(
+            name="ioset-suber-contract", stores=["vals."], backend=backend)
+        onios = subing.OnIoSetSuber(db=dber, subkey="vals.")
+        assert onios.get(keys=keys3, on=5) == ["persisted"]
+
+        assert onios.remAll(keys=keys3, on=2)
+        await dber.flush()
+        dber.close()
+        dber, _ = await _open_fake_dber(
+            name="ioset-suber-contract", stores=["vals."], backend=backend)
+        onios = subing.OnIoSetSuber(db=dber, subkey="vals.")
+        assert list(onios.getAllIter(keys3)) == ['k', 'j', 'l', 'z', 'y']
+        assert onios.get(keys=keys0) == vals0
+        assert not onios.remAll(keys=keys3, on=2)
+        assert await dber.flush() == 0
+        dber.close()
 
 
         """Done Test"""

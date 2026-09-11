@@ -11,39 +11,113 @@ from hio.base import doing, tyming
 from hio.core import http
 
 from keri import help
+from keri.app import forwarding as forwarding_module
 from keri.core import (Salter, Pather, Prefixer,
-                       Bexter, Kevery, Parser, SerderKERI)
-from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes
+                       Bexter, Kevery, Parser, SerderKERI, exchange)
+from keri.kering import Vrsn_1_0, Version, Ilks, Roles, Schemes, Kinds
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
                       openHab, openHby, setupWitness)
 
-from keri.peer import exchanging
+from keri.peer import specialExchange, Exchanger
 from keri.spac import payloading
 
 
-def test_postman(seeder):
-    with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
-            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            openHby(name="repTest", temp=True) as recpHby:
 
+def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environment_or_explicit_version(monkeypatch):
+    captures = []
+    real_special_exchange = forwarding_module.specialExchange
+
+    class FakeCounter:
+        def __init__(self, *args, gvrsn=None, **kwargs):
+            captures.append(("counter", gvrsn))
+            self.qb64b = b""
+
+    def capture_special_exchange(*args, **kwargs):
+        captures.append(("specialExchange", kwargs["route"], kwargs["version"], kwargs["kind"]))
+        return real_special_exchange(*args, **kwargs)
+
+    with openHab(name="sender", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+            openHab(name="recp", transferable=False, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (_, recpHab):
+
+        monkeypatch.setattr(forwarding_module, "specialExchange", capture_special_exchange)
+        monkeypatch.setattr(forwarding_module, "Counter", FakeCounter)
+
+        original_endorse = hab.endorse
+
+        def capture_endorse(serder, *args, gvrsn=None, **kwargs):
+            if serder.ked["r"] in ("/fwd", "/essr/req"):
+                captures.append(("endorse", serder.ked["r"], gvrsn))
+            return original_endorse(serder, *args, gvrsn=gvrsn, **kwargs)
+
+        monkeypatch.setattr(hab, "endorse", capture_endorse)
+
+        exn = exchange(route="/echo",
+                       attributes=dict(msg="test"),
+                       sender=hab.pre,
+                       version=Vrsn_1_0, kind=Kinds.json)
+        atc = original_endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
+        del atc[:exn.size]
+
+        default_stream = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo", essr=True)
+        explicit_stream = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo",
+                                       essr=True, version=Version, kind=Kinds.json)
+
+        default_stream.createForward(hab, ends={recpHab.pre: {}}, serder=exn, atc=atc, topic="echo")
+        default_stream._essrWrapper(hab, bytearray(b"payload"), recpHab.pre)
+        explicit_stream.createForward(hab, ends={recpHab.pre: {}}, serder=exn, atc=atc, topic="echo")
+        explicit_stream._essrWrapper(hab, bytearray(b"payload"), recpHab.pre)
+
+    special_caps = [entry for entry in captures if entry[0] == "specialExchange"]
+    assert [(route, version, kind) for _, route, version, kind in special_caps] == [
+        ("/fwd", Vrsn_1_0, Kinds.json),
+        ("/essr/req", Vrsn_1_0, Kinds.json),
+        ("/fwd", Vrsn_1_0, Kinds.json),
+        ("/essr/req", Vrsn_1_0, Kinds.json),
+    ]
+
+    endorse_caps = [entry for entry in captures if entry[0] == "endorse"]
+    assert [(route, gvrsn) for _, route, gvrsn in endorse_caps] == [
+        ("/fwd", Vrsn_1_0),
+        ("/essr/req", Vrsn_1_0),
+        ("/fwd", Version),
+        ("/essr/req", Version),
+    ]
+
+    counter_caps = [entry[1] for entry in captures if entry[0] == "counter"]
+    assert counter_caps == [Vrsn_1_0, Version]
+
+def test_postman(seeder, witnessPorter):
+    with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
+            openHby(name="repTest", temp=True, version=Vrsn_1_0) as recpHby:
+
+        witnessPorts, witnessUrls = witnessPorter("wes")
         mbx = Mailboxer(name="wes", temp=True)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        wesDoers = setupWitness(alias="wes",
+                                hby=wesHby,
+                                mbx=mbx,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"],
+                                version=Vrsn_1_0, kind=Kinds.json)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
 
-        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
+        recpHab = recpHby.makeHab(name="repTest",
+                                  transferable=True,
+                                  wits=[wesHab.pre],
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
-        recpIcp = recpHab.makeOwnEvent(sn=0)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder)
+        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         kvy = Kevery(db=hab.db)
         Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
@@ -53,10 +127,17 @@ def test_postman(seeder):
 
         pman = Poster(hby=hby)
 
-        exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test"), sender=hab.pre)
-        atc = hab.endorse(exn, last=False)
+        exn = exchange(route="/echo",
+                                     attributes=dict(msg="test"),
+                                     sender=hab.pre,
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del atc[:exn.size]
-        pman.send(src=hab.pre, dest=recpHab.pre, topic="echo", serder=exn, attachment=atc)
+        pman.send(src=hab.pre,
+                  dest=recpHab.pre,
+                  topic="echo",
+                  serder=exn,
+                  attachment=atc)
 
         doers = wesDoers + [pman]
         limit = 1.0
@@ -84,7 +165,6 @@ def test_postman(seeder):
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test")
 
-
 def test_forward_handler():
     with openHab(name="sender", transferable=True, temp=True) as (hby, hab), \
          openHab(name="recp", transferable=True, temp=True) as (recpHby, recpHab), \
@@ -94,19 +174,22 @@ def test_forward_handler():
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
 
         # Happy path: single embed
-        inner_exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="hello"), sender=hab.pre)
-        inner_atc = hab.endorse(inner_exn, last=False)
+        inner_exn = exchange(route="/echo",
+                                           attributes=dict(msg="hello"),
+                                           sender=hab.pre,
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        inner_atc = hab.endorse(inner_exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc[:inner_exn.size]
 
         evt = bytearray(inner_exn.raw)
         evt.extend(inner_atc)
-        fwd, _ = exchanging.exchange(
-            route='/fwd',
-            modifiers=dict(pre=recpHab.pre, topic="echo"),
-            payload={},
-            embeds=dict(evt=evt),
-            sender=hab.pre,
-        )
+        fwd, _ = specialExchange(sender=hab.pre,
+                                            route='/fwd',
+                                            modifiers=dict(pre=recpHab.pre,
+                                                           topic="echo"),
+                                            attributes={},
+                                            embeds=dict(evt=evt),
+                                            version=Vrsn_1_0, kind=Kinds.json)
         pather = Pather(path=["evt"])
         forwarder.handle(serder=fwd, attachments=[(pather, inner_atc)])
 
@@ -127,19 +210,23 @@ def test_forward_handler():
 
         # Topic/recipient routing isolation
         # Same recipient, different topic
-        inner_exn2, _ = exchanging.exchange(route="/delegate", payload=dict(msg="delegate"), sender=hab.pre)
-        inner_atc2 = hab.endorse(inner_exn2, last=False)
+        inner_exn2 = exchange(route="/delegate",
+                                            attributes=dict(msg="delegate"),
+                                            sender=hab.pre,
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc2[:inner_exn2.size]
 
         evt2 = bytearray(inner_exn2.raw)
         evt2.extend(inner_atc2)
-        fwd2, _ = exchanging.exchange(
-            route='/fwd',
-            modifiers=dict(pre=recpHab.pre, topic="delegate"),
-            payload={},
-            embeds=dict(evt=evt2),
-            sender=hab.pre,
-        )
+        fwd2, _ = specialExchange(sender=hab.pre,
+                                             route='/fwd',
+                                             modifiers=dict(pre=recpHab.pre,
+                                                            topic="delegate"),
+                                             attributes={},
+                                             embeds=dict(evt=evt2),
+                                            version=Vrsn_1_0, kind=Kinds.json)
+
         forwarder.handle(serder=fwd2, attachments=[(Pather(path=["evt"]), inner_atc2)])
 
         echo_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
@@ -148,19 +235,22 @@ def test_forward_handler():
         assert len(delegate_msgs) == 1
 
         # Different recipient, same topic
-        inner_exn3, _ = exchanging.exchange(route="/echo", payload=dict(msg="other"), sender=hab.pre)
-        inner_atc3 = hab.endorse(inner_exn3, last=False)
+        inner_exn3 = exchange(route="/echo",
+                                            attributes=dict(msg="other"),
+                                            sender=hab.pre,
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc3[:inner_exn3.size]
 
         evt3 = bytearray(inner_exn3.raw)
         evt3.extend(inner_atc3)
-        fwd3, _ = exchanging.exchange(
-            route='/fwd',
-            modifiers=dict(pre=recp2Hab.pre, topic="echo"),
-            payload={},
-            embeds=dict(evt=evt3),
-            sender=hab.pre,
-        )
+        fwd3, _ = specialExchange(sender=hab.pre,
+                                             route='/fwd',
+                                             modifiers=dict(pre=recp2Hab.pre,
+                                                            topic="echo"),
+                                             attributes={},
+                                             embeds=dict(evt=evt3),
+                                            version=Vrsn_1_0, kind=Kinds.json)
         forwarder.handle(serder=fwd3, attachments=[(Pather(path=["evt"]), inner_atc3)])
 
         recp1_echo = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
@@ -170,23 +260,30 @@ def test_forward_handler():
 
         # Multiple attachments in one call
         # Two embeds in a single /fwd: both must appear in the stored blob
-        inner_exnA, _ = exchanging.exchange(route="/echo", payload=dict(msg="A"), sender=hab.pre)
-        inner_atcA = hab.endorse(inner_exnA, last=False)
+        inner_exnA = exchange(route="/echo",
+                                         attributes=dict(msg="A"),
+                                        sender=hab.pre,
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        inner_atcA = hab.endorse(inner_exnA, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcA[:inner_exnA.size]
 
-        inner_exnB, _ = exchanging.exchange(route="/echo", payload=dict(msg="B"), sender=hab.pre)
-        inner_atcB = hab.endorse(inner_exnB, last=False)
+        inner_exnB = exchange(route="/echo",
+                                         attributes=dict(msg="B"),
+                                        sender=hab.pre,
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        inner_atcB = hab.endorse(inner_exnB, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcB[:inner_exnB.size]
 
         evtA = bytearray(inner_exnA.raw); evtA.extend(inner_atcA)
         evtB = bytearray(inner_exnB.raw); evtB.extend(inner_atcB)
-        fwd_multi, _ = exchanging.exchange(
-            route='/fwd',
-            modifiers=dict(pre=recpHab.pre, topic="multi"),
-            payload={},
-            embeds=dict(evtA=evtA, evtB=evtB),
-            sender=hab.pre,
-        )
+        fwd_multi, _ = specialExchange(sender=hab.pre,
+                                                  route='/fwd',
+                                                  modifiers=dict(pre=recpHab.pre,
+                                                                 topic="multi"),
+                                                  attributes={},
+                                                  embeds=dict(evtA=evtA,
+                                                              evtB=evtB),
+                                            version=Vrsn_1_0, kind=Kinds.json)
         patherA = Pather(path=["evtA"])
         patherB = Pather(path=["evtB"])
         forwarder.handle(serder=fwd_multi, attachments=[(patherA, inner_atcA), (patherB, inner_atcB)])
@@ -204,24 +301,25 @@ def test_forward_handler():
         count_after = len(list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo")))
         assert count_after == count_before
 
+def test_essr_stream(seeder, unused_tcp_port):
+    with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+            openHab(name="recp", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recpHby, recpHab):
 
-def test_essr_stream(seeder):
-    with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
-            openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
-
+        httpPort = unused_tcp_port
         app = falcon.App()
         httpEnd = HttpEnd(rxbs=recpHab.psr.ims)
         app.add_route("/", httpEnd)
-        server = http.Server(port=5555, app=app)
+        server = http.Server(port=httpPort, app=app)
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0),
+                                          kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.makeOwnEvent(sn=0)
+        icp = hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
@@ -229,11 +327,13 @@ def test_essr_stream(seeder):
         msgs = bytearray()
         msgs.extend(recpHab.makeEndRole(eid=recpHab.pre,
                                         role=Roles.controller,
-                                        stamp=help.nowIso8601()))
+                                        stamp=help.nowIso8601(), version=Vrsn_1_0,
+                                        kind=Kinds.json, gvrsn=Vrsn_1_0))
 
-        msgs.extend(recpHab.makeLocScheme(url='http://127.0.0.1:5555',
+        msgs.extend(recpHab.makeLocScheme(url=f'http://127.0.0.1:{httpPort}',
                                           scheme=Schemes.http,
-                                          stamp=help.nowIso8601()))
+                                          stamp=help.nowIso8601(), version=Vrsn_1_0,
+                                          kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         postman = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)
@@ -241,8 +341,11 @@ def test_essr_stream(seeder):
         # Test chunking
         saids = []
         for i in range(0, 40):
-            exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test", i=i), sender=hab.pre)
-            atc = hab.endorse(exn, last=False)
+            exn = exchange(route="/echo",
+                                         attributes=dict(msg="test", i=i),
+                                         sender=hab.pre,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+            atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
             del atc[:exn.size]
 
             postman.send(exn, atc)
@@ -307,28 +410,30 @@ def test_essr_stream(seeder):
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test", i=39)
 
+def test_essr_mbx(seeder, witnessPorter):
+    with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
+            openHby(name="repTest", temp=True, version=Vrsn_1_0) as recpHby:
 
-def test_essr_mbx(seeder):
-    with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
-            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            openHby(name="repTest", temp=True) as recpHby:
-
+        witnessPorts, witnessUrls = witnessPorter("wes")
         mbx = Mailboxer(name="wes", temp=True)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], version=Vrsn_1_0, kind=Kinds.json)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
 
-        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
+        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], version=Vrsn_1_0, kind=Kinds.json)
 
-        recpIcp = recpHab.makeOwnEvent(sn=0)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder)
+        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         kvy = Kevery(db=hab.db)
         Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
@@ -337,7 +442,7 @@ def test_essr_mbx(seeder):
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.makeOwnEvent(sn=0)
+        icp = hab.msgOwnEvent(sn=0, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
@@ -347,8 +452,11 @@ def test_essr_mbx(seeder):
         # Test chunking
         saids = []
         for i in range(0, 15):
-            exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test", i=i), sender=hab.pre)
-            atc = hab.endorse(exn, last=False)
+            exn = exchange(route="/echo",
+                                         attributes=dict(msg="test", i=i),
+                                         sender=hab.pre,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+            atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
             del atc[:exn.size]
 
             postman.send(exn, atc)
@@ -391,7 +499,7 @@ def test_essr_mbx(seeder):
         assert pad.bext == ""
 
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
-        exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
+        exchanger = Exchanger(hby=hby, handlers=[forwarder])
         parser = Parser(framed=True,
                                 kvy=wesHby.kvy,
                                 exc=exchanger,

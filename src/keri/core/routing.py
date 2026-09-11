@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.core.routing module
-
 """
 
 import datetime
@@ -23,9 +22,7 @@ class Router:
     """Reply message router
 
     Reply message router that accepts registration of route `r` handlers and dispatches
-    reply messages to the appropriate handler.
-
-    """
+    reply messages to the appropriate handler."""
 
     defaultResourceFunc = "processReply"
 
@@ -33,9 +30,7 @@ class Router:
         """Initialized instance with optiona list of existing routes
 
         Parameters:
-            routes (list): preregistered routes for this router
-
-        """
+            routes (list): preregistered routes for this router"""
         self.routes = routes if routes is not None else list()
 
     def addRoute(self, routeTemplate, resource, suffix=None):
@@ -45,11 +40,9 @@ class Router:
         Parameters:
             routeTemplate (str): a route template to use for the resource
             resource (object): the resource instance to associate with the route template
-            suffix(str, optional): Optional responder name suffix for this route. If a suffix is provided,
-              Router will map reply routes to processReply{suffix}().  In this way, multiple closely-related routes
-              can be mapped to the same resource.
-
-        """
+            suffix (str, optional): Optional responder name suffix for this route. If a suffix is provided,
+                Router will map reply routes to processReply{suffix}().  In this way, multiple closely-related routes
+                can be mapped to the same resource."""
 
         fields, regex = compile_uri_template(routeTemplate)
         self.routes.append(
@@ -63,11 +56,7 @@ class Router:
             serder:
             diger:
             cigars:
-            tsgs:
-
-        Returns:
-
-        """
+            tsgs:"""
         ked = serder.ked
         # Dispatch based on route
         r = ked["r"]
@@ -98,9 +87,7 @@ class Router:
 
         Returns:
             Route: the Route object with the resource that is registered to process this rpy message
-            re.Match:  the regular expression match that contains the grouping of matched parameters.
-
-        """
+            re.Match:  the regular expression match that contains the grouping of matched parameters."""
         for r in self.routes:
             if res := r.regex.search(route):
                 return r, res
@@ -116,11 +103,9 @@ class Router:
             serder (Serder): reply event message
             diger (Diger): instance from said of reply serder
             route (str): route ('r') of the event message
-            cigars (Optional(list)): list of non-transferable signature tuples
-            tsgs (Optional(list)): list of transferable signature tuples
-            **kwargs (dict) additional keyword args
-
-        """
+                cigars (Optional(list)): list of non-transferable signature tuples
+                tsgs (Optional(list)): list of transferable signature tuples
+                **kwargs (dict): additional keyword args"""
 
         raise ConfigurationError(
             f"Resource registered for route {route} in {Ilks.rpy}"
@@ -140,8 +125,7 @@ class Revery:
             db:
             cues:
             lax:
-            local:
-        """
+            local:"""
         self.db = db
         self.rtr = rtr if rtr is not None else Router()
         self.cues = cues if cues is not None else decking.Deck()
@@ -151,8 +135,7 @@ class Revery:
     @property
     def prefixes(self):
         """
-        Returns .db.prefixes
-        """
+        Returns .db.prefixes"""
         return self.db.prefixes
 
     def processReply(self, serder, cigars=None, tsgs=None, **kwa):
@@ -164,11 +147,11 @@ class Revery:
         Parameters:
             serder (Serder): instance of reply message
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
+                number is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
@@ -176,18 +159,18 @@ class Revery:
         Latest-Seen-Signed Pairwise comparison of new update reply compared to
         old already accepted reply from same source for same route (same data).
         Accept new reply (update) if new reply is later than old reply where:
-            1) Later means date-time-stamp of new is greater than old
-        If non-trans signer then also (AND)
-            2) Later means sn (sequence number) of last (if forked) Est evt that
-               provides keys for signature(s) of new is greater than or equal to
-               sn of last Est evt that provides keys for signature(s) of new.
+
+            1. Later means date-time-stamp of new is greater than old.
+            2. If non-trans signer, later also means the sn (sequence number)
+               of the last (if forked) Est evt that provides keys for
+               signature(s) of new is greater than or equal to the sn of the
+               last Est evt that provides keys for signature(s) of new.
 
         If nontrans and last Est Evt is not yet accepted then escrow.
         If nontrans and partially signed then escrow.
 
         Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
-        """
+        i.e. route is address of buffer with route specific handler of escrow."""
         # verify said of reply via Serder (handles protocol/ilk-specific multi-SAID logic)
         if not serder.verify():
             raise ValidationError(f"Invalid said for reply msg={serder.ked}.")
@@ -210,11 +193,11 @@ class Revery:
             route (str): reply route
             aid (str): identifier prefix qb64 of authorizing attributable ID
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
+                number is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
@@ -222,29 +205,26 @@ class Revery:
         Latest-Seen-Signed Pairwise comparison of new update reply compared to
         old already accepted reply from same source for same route (same data).
         Accept new reply (update) if new reply is later than old reply where:
-            1) If transferable: Later is True
-                 A) If sn (sequence number) of last (if forked) Est evt that provides
-                 keys for signature(s) of new is greater than sn of last Est evt
-                 that provides keys for signature(s) of old.
 
-                 Or
+                        1. If transferable, later is true when either:
 
-                 B) If sn of new equals sn of old And date-time-stamp of new is
-                    greater than old
+                                - the sn (sequence number) of the last (if forked) Est evt that
+                                    provides keys for signature(s) of new is greater than the sn
+                                    of the last Est evt that provides keys for signature(s) of old.
+                                - the sn of new equals the sn of old and the date-time-stamp of
+                                    new is greater than old.
 
-            2) Else If non-transferable: Later it True
-                 If date-time-stamp of new is greater than old
+                        2. If non-transferable, later is true if the date-time-stamp of
+                             new is greater than old.
 
-            4) Else Later is False
+                        3. Otherwise, later is false.
 
 
         If nontrans and last Est Evt is not yet accepted then escrow.
         If nontrans and partially signed then escrow.
 
         Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
-
-        """
+        i.e. route is address of buffer with route specific handler of escrow."""
         # BADA logic.
         accepted = False  # flag to raise UnverifiedReplyError not accepted
         cigars = cigars if cigars is not None else []
@@ -313,7 +293,7 @@ class Revery:
             accepted = True
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
-        for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
+        for prefixer, snumber, sdiger, sigers in tsgs:  # iterate over each tsg
             if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
                     logger.debug(
@@ -334,22 +314,22 @@ class Revery:
                 continue  # skip invalid signature is not from aid
 
             if osaider:  # check if later logic  sn > or sn == and dt >
-                if otsgs := fetchTsgs(db=self.db.ssgs, diger=osaider):
+                if otsgs := fetchTsgs(db=self.db.tsgs, diger=osaider):
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
-                    if seqner.sn < osqr.sn:  # sn earlier
+                    if snumber.sn < osqr.sn:  # sn earlier
                         logger.info(
                             "Revery: skipped stale key state sig "
                             "from %s sn=%s<%s on reply said=%s",
                             aid,
-                            seqner.sn,
+                            snumber.sn,
                             osqr.sn,
                             serder.said,
                         )
                         logger.debug("event=\n%s\n", serder.pretty())
                         continue  # skip if sn earlier
 
-                    if seqner.sn == osqr.sn:  # sn same so check datetime
+                    if snumber.sn == osqr.sn:  # sn same so check datetime
                         if odater:
                             if dater.datetime <= odater.datetime:
                                 logger.info(
@@ -362,7 +342,7 @@ class Revery:
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.kels.getLast(keys=spre, on=seqner.sn)
+            sdig = self.db.kels.getLast(keys=spre, on=snumber.sn)
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
@@ -376,8 +356,8 @@ class Revery:
                     dater=dater,
                     route=route,
                     prefixer=prefixer,
-                    seqner=seqner,
-                    ssaider=ssaider,
+                    snumber=snumber,
+                    sdiger=sdiger,
                     sigers=sigers,
                 )
                 self.cues.append(dict(kin="query", q=dict(pre=spre)))
@@ -386,22 +366,22 @@ class Revery:
             # retrieve last event itself of signer given sdig
             sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
-            if sserder.said != ssaider.qb64:  # signer's dig not match est evt
+            if sserder.said != sdiger.qb64:  # signer's dig not match est evt
                 raise ValidationError(
                     f"Bad trans indexed sig group at sn = "
-                    f"{seqner.sn} for reply = {serder.ked}."
+                    f"{snumber.sn} for reply = {serder.ked}."
                 )
             # verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError(
                     f"Invalid reply from signer={spre}, no "
-                    f"keys at signer's est. event sn={seqner.sn}."
+                    f"keys at signer's est. event sn={snumber.sn}."
                 )
 
             # fetch any escrowed sigs, extract just the siger from each quad
             # want sn in numerical order so use hex
-            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
-            esigers = self.db.ssgs.get(keys=quadkeys)
+            quadkeys = (saider.qb64, prefixer.qb64, f"{snumber.sn:032x}", sdiger.qb64)
+            esigers = self.db.tsgs.get(keys=quadkeys)
             sigers.extend(esigers)
             sigers, valid = validateSigs(
                 serder=serder, sigers=sigers, verfers=sverfers, tholder=sserder.tholder
@@ -415,20 +395,20 @@ class Revery:
                     saider=saider,
                     dater=dater,
                     prefixer=prefixer,
-                    seqner=seqner,
-                    diger=ssaider,
+                    seqner=snumber,
+                    diger=sdiger,
                     sigers=sigers,
                 )
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
-                # remove stale signatures .ssgs for this saider
+                # remove stale signatures .tsgs for this saider
                 # this ensures that zeroth tsg is authoritative
                 for prr, snr, dgr, _ in fetchTsgs(
-                    db=self.db.ssgs, diger=saider, snh=seqner.snh
+                    db=self.db.tsgs, diger=saider, snh=snumber.snh
                 ):
-                    if (snr.sn < seqner.sn) or (
-                        snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64
+                    if (snr.sn < snumber.sn) or (
+                        snr.sn == snumber.sn and dgr.qb64 != sdiger.qb64
                     ):
-                        self.db.ssgs.trim(
+                        self.db.tsgs.trim(
                             keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, "")
                         )
 
@@ -441,8 +421,8 @@ class Revery:
                     dater=dater,
                     route=route,
                     prefixer=prefixer,
-                    seqner=seqner,
-                    ssaider=ssaider,
+                    snumber=snumber,
+                    sdiger=sdiger,
                     sigers=sigers,
                 )
 
@@ -471,13 +451,11 @@ class Revery:
             saider (Diger): instance from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             cigar (Cigar): instance that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             prefixer (Prefixer): is pre of trans endorser
             seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
             diger (Diger): is digest of trans endorser's est evt for keys for sigs
-            sigers (list): of indexed sigs from trans endorser's key from est evt
-
-        """
+            sigers (list): of indexed sigs from trans endorser's key from est evt"""
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
@@ -485,25 +463,23 @@ class Revery:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
         if sigers:  # want sn in numerical order so use hex
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
-            self.db.ssgs.put(keys=quadkeys, vals=sigers)
+            self.db.tsgs.put(keys=quadkeys, vals=sigers)
 
     def removeReply(self, saider):
         """Remove Reply SAD artifacts given by saider.
 
         Parameters:
-            saider (Diger): instance from said in serder (SAD)
-
-        """
+            saider (Diger): instance from said in serder (SAD)"""
         if saider:
             keys = (saider.qb64,)
 
-            self.db.ssgs.trim(keys=(saider.qb64, ""))  # remove whole branch
+            self.db.tsgs.trim(keys=(saider.qb64, ""))  # remove whole branch
             self.db.scgs.rem(keys=keys)
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
 
     def escrowReply(
-        self, *, serder, saider, dater, route, prefixer, seqner, ssaider, sigers
+        self, *, serder, saider, dater, route, prefixer, snumber, sdiger, sigers
     ):
         """Escrow reply by route
 
@@ -513,18 +489,16 @@ class Revery:
             dater (Dater): instance from date-time in serder (SAD)
             route (str): reply route
             prefixer (Prefixer): is pre of trans endorser
-            seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
-            ssaider (Saider) is said of trans endorser's est evt for keys for sigs
-            sigers (list): is indexed sigs from trans endorser's key from est evt
-
-        """
+            snumber (Number): is sequence number of trans endorser's est evt for keys for sigs
+                sdiger (Diger) is said of trans endorser's est evt for keys for sigs
+            sigers (list): is indexed sigs from trans endorser's key from est evt"""
         if not sigers:
             return  # nothing to escrow
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
-        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
-        self.db.ssgs.put(keys=quadkeys, vals=sigers)
+        quadkeys = (saider.qb64, prefixer.qb64, f"{snumber.sn:032x}", sdiger.qb64)
+        self.db.tsgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route,), vals=[saider])
 
     def processEscrowReply(self):
@@ -533,12 +507,10 @@ class Revery:
         Escrows are keyed by reply route and val is reply said
 
         triple (prefixer, seqner, diger)
-        quadruple (prefixer, seqner, diger, siger)
-
-        """
+        quadruple (prefixer, seqner, diger, siger)"""
         for (route,), diger in self.db.rpes.getTopItemIter():
             try:
-                tsgs = fetchTsgs(db=self.db.ssgs, diger=diger)
+                tsgs = fetchTsgs(db=self.db.tsgs, diger=diger)
 
                 keys = (diger.qb64,)
                 dater = self.db.sdts.get(keys=keys)
@@ -602,23 +574,19 @@ class Route:
     the properties are created by using the Falcon compile route utility method
 
     Properties:
-        .regex(re): compiled url template regex
-        .fields(set): field names for matches in regex
-        .resource(object): the handler for this route
-        .suffix(Optional(str)): a suffix to be applied to the handler method
-
-    """
+        .regex (re): compiled url template regex
+        .fields (set): field names for matches in regex
+        .resource (object): the handler for this route
+            .suffix(Optional(str)): a suffix to be applied to the handler method"""
 
     def __init__(self, regex, fields, resource, suffix=None):
         """Initialize instance of route
 
         Parameters:
-            regex(re): compiled url template regex
-            fields(set): field names for matches in regex
-            resource(object): the handler for this route
-            suffix(Optional(str)): a suffix to be applied to the handler method
-
-        """
+            regex (re): compiled url template regex
+            fields (set): field names for matches in regex
+            resource (object): the handler for this route
+                suffix(Optional(str)): a suffix to be applied to the handler method"""
         self.regex = regex
         self.fields = fields
         self.resource = resource
@@ -649,13 +617,12 @@ def compile_uri_template(template):
     Also, note that if the template contains a trailing slash character,
     it will be stripped in order to normalize the routing logic.
 
-    Args:
-        template(str): The template to compile. Note that field names are
+    Parameters:
+        template (str): The template to compile. Note that field names are
             restricted to ASCII a-z, A-Z, and the underscore character.
 
     Returns:
-        tuple: (template_field_names, template_regex)
-    """
+        tuple: (template_field_names, template_regex)"""
 
     if not isinstance(template, str):
         raise TypeError("uri_template is not a string")

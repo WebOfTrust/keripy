@@ -1,4 +1,4 @@
-ARG BASE=python:3.13.2-alpine3.20
+ARG BASE=python:3.14.6-alpine3.24
 
 FROM ${BASE} AS builder
 
@@ -23,7 +23,7 @@ RUN python -m venv venv
 
 ENV PATH=/keripy/venv/bin:${PATH}
 
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools
 RUN mkdir /keripy/src
 
 COPY requirements.txt setup.py ./

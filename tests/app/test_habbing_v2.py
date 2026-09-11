@@ -6,17 +6,16 @@ tests.app.apping module
 import pytest
 
 import os
-import platform
-import shutil
+import uuid
 
 from hio.base import doing
 
 from keri.kering import (ConfigurationError, MissingEntryError,
-                         Vrsn_1_0, Roles, Schemes)
+                         Kinds, Roles, Schemes, Vrsn_2_0)
 
 from keri.help import helping
 
-from keri.core import (Kevery, Salter, Seqner, Number,
+from keri.core import (Kramer, Kevery, Salter, Seqner, Number,
                        Diger, Dater, Parser, SerderKERI,
                        Tiers, MtrDex, NumDex)
 
@@ -25,6 +24,43 @@ from keri.app import (Configer, ConfigerDoer, Habery,
                       openHab, openHby, Algos)
 
 from keri.db import Baser, BaserDoer
+
+TEST_VERSION = Vrsn_2_0
+KRAM_V2_SUITE_CONFIG = {
+    "kram": {
+        "enabled": True,
+        "denials": [],
+        "caches": {
+            "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+        }
+    }
+}
+
+
+def _merge_kram_config(conf=None):
+    merged = dict(conf or {})
+    merged["kram"] = dict(
+        enabled=KRAM_V2_SUITE_CONFIG["kram"]["enabled"],
+        denials=list(KRAM_V2_SUITE_CONFIG["kram"]["denials"]),
+        caches={"~": list(KRAM_V2_SUITE_CONFIG["kram"]["caches"]["~"])},
+    )
+    return merged
+
+
+def _attach_kram_spy(hby):
+    calls = []
+    kramer = Kramer(db=hby.db, cf=hby.cf, cues=hby.kvy.cues)
+    assert kramer.enabled
+
+    original_intake = kramer.intake
+
+    def intake(serder, kwa=None):
+        calls.append((serder.ilk, serder.ked.get("r")))
+        return original_intake(serder, kwa)
+
+    kramer.intake = intake
+    hby.kvy.kramer = kramer
+    return calls
 
 
 def test_habery():
@@ -340,8 +376,7 @@ def test_habery():
 
     """End Test"""
 
-
-def test_make_load_hab_with_habery():
+def test_make_load_hab_with_habery_v2():
     """
     Test creation methods for Hab instances with Habery
     """
@@ -349,10 +384,10 @@ def test_make_load_hab_with_habery():
         _ = Hab()  # defaults
 
     name = "sue"
-    suePre = 'ELF1S0jZkyQx8YtHaPLu-qyFmrkcykAiEW8twS-KPSO1'  # with temp=True
+    suePre = 'EKEcyrSUVv8Cqpa4y4BRjO4LsoxzqOGAd4Nag03HYv_V'  # with temp=True
 
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True on openHab
-        hab = hby.makeHab(name=name)
+        hab = hby.makeHab(name=name, kind=Kinds.cesr)
         assert isinstance(hab, Hab)
         assert hab.pre in hby.habs
         assert id(hby.habByName(hab.name)) == id(hab)
@@ -384,34 +419,17 @@ def test_make_load_hab_with_habery():
     assert not os.path.exists(hby.ks.path)
 
     # create not temp and then reload from not temp
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
-            os.remove('/usr/local/var/keri/cf/hold/test.json')
-        if os.path.exists('/usr/local/var/keri/db/hold/test'):
-            shutil.rmtree('/usr/local/var/keri/db/hold/test')
-        if os.path.exists('/usr/local/var/keri/ks/hold/test'):
-            shutil.rmtree('/usr/local/var/keri/ks/hold/test')
-
-    base = "hold"
-    suePre = 'EAxe215BJ4Iy9r0mfoMEGVmHW8A4Avk3RYBC1A1_DZam'  # with temp=False
-    bobPre = 'ENya5E5pvc6MVCe75huDK0QQhE4_64J55vCn4aKdXhR9'  # with temp=False
+    base = f"hold-v2-{uuid.uuid4().hex}"
+    suePre = 'EEthprUZGcz6_jX5h04BR_ACNiuN9WifQv1VV9ep6KYS'  # with temp=False
+    bobPre = 'EMaiUz76PInYC_V68dag8Ku3_FRLvGrQi7glZPntPEej'  # with temp=False
 
     with openHby(base=base, temp=False, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
 
-        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
-        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
-        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", base, "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", base, "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", base, "test"))
 
-        sueHab = hby.makeHab(name='Sue')
+        sueHab = hby.makeHab(name='Sue', kind=Kinds.cesr)
         assert isinstance(sueHab, Hab)
         assert sueHab.pre in hby.habs
         assert id(hby.habByName(sueHab.name)) == id(sueHab)
@@ -424,7 +442,7 @@ def test_make_load_hab_with_habery():
         assert sueHab.pre in hby.kevers
         assert sueHab.pre in hby.prefixes
 
-        bobHab = hby.makeHab(name='Bob')
+        bobHab = hby.makeHab(name='Bob', kind=Kinds.cesr)
         assert isinstance(bobHab, Hab)
         assert bobHab.pre in hby.habs
         assert id(hby.habByName(bobHab.name)) == id(bobHab)
@@ -448,11 +466,10 @@ def test_make_load_hab_with_habery():
     assert os.path.exists(hby.ks.path)
 
     # test load from database
-    base = "hold"
     with openHby(base=base, temp=False) as hby:  # default is temp=True
-        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
-        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
-        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", base, "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", base, "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", base, "test"))
 
         assert hby.inited
         assert len(hby.habs) == 2
@@ -483,32 +500,14 @@ def test_make_load_hab_with_habery():
 
     """End Test"""
 
-
-def test_hab_rotate_with_witness():
+def test_hab_rotate_with_witness_v2():
     """
     Reload from disk and rotate hab with witness
     """
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "phil-test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "phil-test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "phil-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "phil-test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "phil-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "phil-test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/test/phil-test.json'):
-            os.remove('/usr/local/var/keri/cf/test/phil-test.json')
-        if os.path.exists('/usr/local/var/keri/db/test/phil-test'):
-            shutil.rmtree('/usr/local/var/keri/db/test/phil-test')
-        if os.path.exists('/usr/local/var/keri/ks/test/phil-test'):
-            shutil.rmtree('/usr/local/var/keri/ks/test/phil-test')
-
-    name = "phil-test"
+    name = f"phil-test-v2-{uuid.uuid4().hex}"
 
     with openHby(name=name, base="test", temp=False) as hby:
-        hab = hby.makeHab(name=name, icount=1, wits=["BANkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
+        hab = hby.makeHab(name=name, icount=1, wits=["BANkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"], kind=Kinds.cesr)
         oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
@@ -523,7 +522,7 @@ def test_hab_rotate_with_witness():
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
-        hab.rotate(ncount=3)
+        hab.rotate(ncount=3, framed=True, kind=Kinds.cesr)
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
@@ -533,37 +532,21 @@ def test_hab_rotate_with_witness():
     assert not os.path.exists(hby.db.path)
     assert not os.path.exists(hby.ks.path)
 
-
-def test_habery_reinitialization():
+def test_habery_reinitialization_v2():
     """Test Reinitializing Habery and its Habs
     """
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "bob-test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "bob-test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "bob-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "bob-test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "bob-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "bob-test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/test/bob-test.json'):
-            os.remove('/usr/local/var/keri/cf/test/bob-test.json')
-        if os.path.exists('/usr/local/var/keri/db/test/bob-test'):
-            shutil.rmtree('/usr/local/var/keri/db/test/bob-test')
-        if os.path.exists('/usr/local/var/keri/ks/test/bob-test'):
-            shutil.rmtree('/usr/local/var/keri/ks/test/bob-test')
+    name = f"bob-test-v2-{uuid.uuid4().hex}"
+    base = f"test-v2-{uuid.uuid4().hex}"
+    salt = Salter(raw=b'0123456789abcdef').qb64
 
-    name = "bob-test"
-
-    with openHby(name=name, base="test", temp=False, clear=True) as hby:
-        hab = hby.makeHab(name=name, icount=1)
+    with openHby(name=name, base=base, temp=False, clear=True, salt=salt) as hby:
+        hab = hby.makeHab(name=name, icount=1, kind=Kinds.cesr)
         oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
         odig = hab.kever.serder.said
 
-    with openHby(name=name, base="test", temp=False) as hby:
+    with openHby(name=name, base=base, temp=False, salt=salt) as hby:
 
         assert opre in hby.db.kevers  # read through cache
         assert opre in hby.db.prefixes
@@ -576,7 +559,7 @@ def test_habery_reinitialization():
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
-        hab.rotate()
+        hab.rotate(framed=True, kind=Kinds.cesr)
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
@@ -595,7 +578,6 @@ def test_habery_reinitialization():
     assert not os.path.exists(hby.ks.path)
 
     """End Test"""
-
 
 def test_habery_signatory():
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
@@ -621,8 +603,576 @@ def test_habery_signatory():
         assert len(hby.habs) == 0
         assert len(hby.prefixes) == 0
 
+def test_namespaced_habs(tmp_path):
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test", kind=Kinds.cesr)
+        assert hab.pre == "EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y"
 
-def test_habery_reconfigure(mockHelpingNowUTC):
+        found = hby.habByName("test")
+        assert found.pre == "EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y"
+
+        assert len(hby.habs) == 1
+        assert len(hby.prefixes) == 1
+
+        nshab = hby.makeHab(name="test2", ns="agent", kind=Kinds.cesr)
+        assert nshab.pre == "EIckH-QT2ryk7v8nawLc49t3LPa8gfW9_HSReXH9Ob5B"
+
+        assert len(hby.habs) == 2
+        assert len(hby.prefixes) == 2
+
+        found = hby.habByName(name="test2")
+        assert found is None
+        found = hby.habByName(name="test2", ns="agent")
+        assert found.pre == "EIckH-QT2ryk7v8nawLc49t3LPa8gfW9_HSReXH9Ob5B"
+        found = hby.habByName(name="test", ns="agent")
+        assert found is None
+
+        # Test a '.' in Hab name
+        nshab = hby.makeHab(name="test.3", ns="agent", kind=Kinds.cesr)
+        assert nshab.pre == "EGSfrlMbT3cD1TYtybQT0AIL2z66WgHLmd2i9HC0WYO0"
+
+        assert len(hby.habs) == 3
+        assert len(hby.prefixes) == 3
+
+        # '.' characters not allowed in namespace names
+        with pytest.raises(ConfigurationError):
+            hby.makeHab(name="test", ns="agent.5", kind=Kinds.cesr)
+
+    hby.close()
+
+    # Test Reload of Namespace habs
+    name = "ns-test"
+    headDirPath = str(tmp_path)
+    with openHby(name=name, base="test", temp=False, clear=True, headDirPath=headDirPath) as hby:
+        hab = hby.makeHab(name=name, icount=1, kind=Kinds.cesr)
+        opre = hab.pre
+        hab = hby.makeHab(name="test.1", icount=1, kind=Kinds.cesr)
+        o2pre = hab.pre
+        nshab = hby.makeHab(name="test", ns="agent", kind=Kinds.cesr)
+        atpre = nshab.pre
+        nshab = hby.makeHab(name="test2", ns="agent", kind=Kinds.cesr)
+        at2pre = nshab.pre
+        nshab = hby.makeHab(name="test", ns="controller", kind=Kinds.cesr)
+        ctpre = nshab.pre
+
+    with openHby(name=name, base="test", temp=False, headDirPath=headDirPath) as hby:
+        for pre in [opre, o2pre, atpre, at2pre, ctpre]:
+            assert pre in hby.db.kevers  # read through cache
+            assert pre in hby.db.prefixes
+
+        assert len(hby.habs) == 5
+        assert len(hby.db.prefixes) == 5
+
+        found = hby.habByName(name=name)
+        assert found.pre == opre
+        found = hby.habByName(name="test.1")
+        assert found.pre == o2pre
+        found = hby.habByName(name="test", ns="agent")
+        assert found.pre == atpre
+        found = hby.habByName(name="test2", ns="agent")
+        assert found.pre == at2pre
+        found = hby.habByName(name="test", ns="controller")
+        assert found.pre == ctpre
+
+    hby.close(clear=True)
+    hby.cf.close(clear=True)
+
+def test_join_group_hab_persists_group_name_on_reload(tmp_path):
+    hby_name = "multisig-join"
+    group_name = "test_group_4"
+    group_pre = Salter(raw=b'fedcba9876543210').signer(transferable=False).verfer.qb64
+    headDirPath = str(tmp_path)
+
+    hby = None
+    try:
+        with openHby(name=hby_name, base="test", temp=False,
+                     headDirPath=headDirPath,
+                     salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+            mhab = hby.makeHab(name="member1", kind=Kinds.cesr)
+            other = hby.makeHab(name="member2", kind=Kinds.cesr)
+
+            group = hby.joinGroupHab(pre=group_pre,
+                                     group=group_name,
+                                     mhab=mhab,
+                                     smids=[mhab.pre, other.pre])
+
+            assert group.name == group_name
+            assert hby.db.habs.get(keys=group_pre).name == group_name
+
+            qryMsg = group.query(pre=other.pre, src=mhab.pre,
+                                 kind=Kinds.cesr)
+            qrySerder = SerderKERI(raw=bytes(qryMsg))
+            assert qrySerder.kind == Kinds.cesr
+            assert qrySerder.pvrsn == TEST_VERSION
+            assert qrySerder.gvrsn == TEST_VERSION
+            assert qrySerder.ked["i"] == mhab.pre
+            assert qrySerder.ked["q"]["i"] == other.pre
+
+        with openHby(name=hby_name, base="test", temp=False,
+                     headDirPath=headDirPath,
+                     salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+            found = hby.habByName(name=group_name)
+            assert found is not None
+            assert found.pre == group_pre
+            assert found.name == group_name
+            assert hby.db.habs.get(keys=group_pre).name == group_name
+
+    finally:
+        if hby is not None:
+            hby.close(clear=True)
+            hby.cf.close(clear=True)
+
+def test_get_own_event_v2():
+    """Test Hab.getOwnEvent: happy path sn=0 and sn=1, delegated duple, error path missing event."""
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test", kind=Kinds.cesr)
+        assert hab.pre == "EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y"
+
+        # Happy path: inception at sn=0
+        serder, sigs, duple = hab.getOwnEvent(sn=0)
+        assert serder.sad["t"] == "icp"
+        assert serder.sad["s"] == "0"
+        assert serder.sad["i"] == hab.pre
+        assert len(sigs) >= 1
+        assert duple is None
+
+        # Happy path: rotation at sn=1
+        hab.rotate(framed=True, kind=Kinds.cesr)
+        serder, sigs, duple = hab.getOwnEvent(sn=1)
+        assert serder.sad["t"] == "rot"
+        assert serder.sad["s"] == "1"
+        assert serder.sad["i"] == hab.pre
+        assert len(sigs) >= 1
+        assert duple is None  # rotation has no authorizer seal
+
+    # Happy path: delegated hab with authorizer seal (duple is not None)
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        delHab = hby.makeHab(name="delegator", kind=Kinds.cesr)
+        delHab.interact(data=[], framed=True, kind=Kinds.cesr)  # anchoring event at sn=1
+        anchorSner = Number(num=delHab.kever.sn, code=NumDex.Huge)
+        anchorSaider = Diger(qb64b=delHab.kever.serder.saidb)
+
+        subHab = hby.makeHab(name="delegate", delpre=delHab.pre, kind=Kinds.cesr)
+        hby.db.aess.pin(keys=(subHab.pre, subHab.kever.serder.saidb), val=(anchorSner, anchorSaider))
+
+        serder, sigs, duple = subHab.getOwnEvent(sn=0)
+        assert serder.sad["t"] == "dip"
+        assert serder.sad["i"] == subHab.pre
+        assert duple is not None
+        sner, saider = duple
+        assert sner.sn == delHab.kever.sn
+        assert saider.qb64 == delHab.kever.serder.said
+
+    # Error path: missing event at sn (no event at sn=1 for inception-only hab)
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="other", kind=Kinds.cesr)
+        with pytest.raises(MissingEntryError) as exc_info:
+            hab.getOwnEvent(sn=1)
+        assert hab.pre in str(exc_info.value)
+        assert "1" in str(exc_info.value)
+
+def test_msg_own_event_v2():
+    """Test Hab.msgOwnEvent: sn=0 vs msgOwnInception, sn=1 after rotate."""
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test", kind=Kinds.cesr)
+        assert hab.pre == "EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y"
+
+        # msgOwnEvent(sn=0) equals msgOwnInception()
+        msg0 = hab.msgOwnEvent(sn=0, framed=True)
+        msg_icp = hab.msgOwnInception(framed=True)
+        assert msg0 == msg_icp
+        assert len(msg0) > 0
+        assert msg0.startswith(b'-FA50OKERICAACAAXicp')
+        serder = SerderKERI(raw=bytes(msg0))
+        assert serder.kind == Kinds.cesr
+        assert serder.pvrsn == TEST_VERSION
+        assert serder.gvrsn == TEST_VERSION
+
+        # msgOwnEvent(sn=1) after rotate
+        hab.rotate(framed=True, kind=Kinds.cesr)
+        msg1 = hab.msgOwnEvent(sn=1, framed=True)
+        assert len(msg1) > 0
+        serder = SerderKERI(raw=bytes(msg1))
+        assert serder.kind == Kinds.cesr
+        assert serder.pvrsn == TEST_VERSION
+        assert serder.gvrsn == TEST_VERSION
+        assert serder.sad["t"] == "rot"
+        assert serder.sad["s"] == "1"
+
+def test_msg_other_event_v2():
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test", kind=Kinds.cesr)
+        assert hab.pre == "EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y"
+
+        hab.rotate(framed=True, kind=Kinds.cesr)
+        hab.rotate(framed=True, kind=Kinds.cesr)
+
+        msg = hab.msgOtherEvent(hab.pre, sn=1, framed=True)
+        assert msg == (b'-FBF0OKERICAACAAXrotEDDT3jv_w4UbM3fLmaYCrHi5SRDh-RuQuYy'
+                       b'OwXxE5paHEKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_Y'
+                       b'MAABEKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRnX_YMAAB'
+                       b'-JALDGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXPMAAB'
+                       b'-JALEOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7AxMAAA'
+                       b'-JAA-JAA-JAA-JAA-KAWAADu3ryaSQRio9t5jZeyJhIxzz7J1b'
+                       b'Lic1hae0YfT8CY260s2XK0OabTxxMqiqwnopIRiiITRyTnpnHMg'
+                       b'VvOjIwE')
+        assert SerderKERI(raw=bytes(msg)).kind == Kinds.cesr
+
+        msg = hab.msgOtherEvent(hab.pre, sn=2, framed=True)
+        assert msg == (b'-FBF0OKERICAACAAXrotEJaRBZeJDVLomRAe7PSGVuJzX_55KpJXC'
+                       b'au2YC0ryu09EKE46DAAP2zNmvUL-dYUpE6p8VOvuMWKGnhPWzKRn'
+                       b'X_YMAACEDDT3jv_w4UbM3fLmaYCrHi5SRDh-RuQuYyOwXxE5paH'
+                       b'MAAB-JALDPjsUEx6Nqby9-yUO1DtExQ81CRYdvpwQZufBRzBM5'
+                       b'ykMAAB-JALEIraDaPWlGBU9DnwCaNQ2XVaX8zQQFhnkj8Ir4R5'
+                       b'R-YhMAAA-JAA-JAA-JAA-JAA-KAWAAAtgT4IoliK0lt1v25zG'
+                       b'KQOkEV0ZHo-j6bwhtQmXqHWZJ2HrCz6QwElzLOZ4I1rxj403j'
+                       b'D4Z4i7khli1tApWOUK')
+        assert SerderKERI(raw=bytes(msg)).kind == Kinds.cesr
+
+def test_hab_by_pre():
+    with openHby() as hby:
+        # Create two habs in the default namespace
+        hab1 = hby.makeHab(name="test1", kind=Kinds.cesr)
+        hab2 = hby.makeHab(name="test2", kind=Kinds.cesr)
+
+        # Create two habs in namespace "one"
+        hab3 = hby.makeHab(name="test1", ns="one", kind=Kinds.cesr)
+        hab4 = hby.makeHab(name="test2", ns="one", kind=Kinds.cesr)
+
+        # Create two habs in namespace "two"
+        hab5 = hby.makeHab(name="test1", ns="two", kind=Kinds.cesr)
+        hab6 = hby.makeHab(name="test2", ns="two", kind=Kinds.cesr)
+
+        # Only habs in default namespace are in hby.habs
+        assert hab1.pre in hby.habs
+        assert hab2.pre in hby.habs
+        assert hab3.pre in hby.habs
+        assert hab4.pre in hby.habs
+        assert hab5.pre in hby.habs
+        assert hab6.pre in hby.habs
+
+        assert hby.habByPre("EKEcyrSUVv8Cqpa4y4BRjO4LsoxzqOGAd4Nag03HYv_V") is None
+
+        assert hby.habByPre(pre=hab1.pre) == hab1
+        assert hby.habByPre(pre=hab2.pre) == hab2
+        assert hby.habByPre(pre=hab3.pre) == hab3
+        assert hby.habByPre(pre=hab4.pre) == hab4
+        assert hby.habByPre(pre=hab5.pre) == hab5
+        assert hby.habByPre(pre=hab6.pre) == hab6
+
+def _exercise_postman_endsfor_v2(*, enable_kram=False):
+    with openHby(name="test", temp=True, salt=Salter(raw=b'0123456789abcdef').qb64) as hby, \
+            openHby(name="wes", temp=True, salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHab(name="agent", temp=True, salt=b'0123456789abcdef', kind=Kinds.cesr) as (agentHby, agentHab):
+
+        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False, kind=Kinds.cesr)
+        assert not wesHab.kever.prefixer.transferable
+        # create non-local kevery for Wes to process nonlocal msgs
+        wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
+
+        wits = [wesHab.pre]
+        hab = hby.makeHab(name='cam', isith="1", icount=1, toad=1, wits=wits, kind=Kinds.cesr)
+        assert hab.kever.prefixer.transferable
+        assert len(hab.iserder.berfers) == len(wits)
+        for werfer in hab.iserder.berfers:
+            assert werfer.qb64 in wits
+        assert hab.kever.wits == wits
+        assert hab.kever.toader.num == 1
+        assert hab.kever.sn == 0
+
+        if enable_kram:
+            hby.cf.put(_merge_kram_config(hby.cf.get()))
+            habKramCalls = _attach_kram_spy(hby)
+            assert hby.kvy.kramer is not None
+        else:
+            habKramCalls = []
+            assert hby.kvy.kramer is None
+
+        kvy = Kevery(db=hab.db, lax=False, local=False)
+        icpMsg = hab.msgOwnInception(framed=True)
+        rctMsgs = []  # list of receipts from each witness
+        Parser().parse(ims=bytearray(icpMsg), kvy=wesKvy, local=True)
+        assert wesKvy.kevers[hab.pre].sn == 0  # accepted event
+        assert len(wesKvy.cues) >= 1  # assunmes includes queued receipt cue
+        # better to find cue in cues and confirm exactly
+        rctMsg = wesHab.processCues(wesKvy.cues, kind=Kinds.cesr)  # process cue returns rct msg
+        assert len(rctMsg) == 528
+        rctMsgs.append(rctMsg)
+
+        for msg in rctMsgs:  # process rct msgs from all witnesses
+            Parser().parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert wesHab.pre in kvy.kevers
+
+        agentIcpMsg = agentHab.msgOwnInception(framed=True)
+        Parser().parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
+        assert agentHab.pre in kvy.kevers
+
+        msgs = bytearray()
+        msgs.extend(wesHab.makeEndRole(eid=wesHab.pre,
+                                       role=Roles.controller,
+                                       stamp=helping.nowIso8601(),
+                                       kind=Kinds.cesr))
+
+        msgs.extend(wesHab.makeLocScheme(url='http://127.0.0.1:8888',
+                                         scheme=Schemes.http,
+                                         stamp=helping.nowIso8601(),
+                                         kind=Kinds.cesr))
+        wesHab.psr.parse(ims=bytearray(msgs))
+
+        # Set up
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    kind=Kinds.cesr))
+
+        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:7777',
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      kind=Kinds.cesr))
+        hab.psr.parse(ims=msgs)
+
+        msgs = bytearray()
+        msgs.extend(agentHab.makeEndRole(eid=agentHab.pre,
+                                         role=Roles.controller,
+                                         stamp=helping.nowIso8601(),
+                                         kind=Kinds.cesr))
+
+        msgs.extend(agentHab.makeLocScheme(url='http://127.0.0.1:6666',
+                                           scheme=Schemes.http,
+                                           stamp=helping.nowIso8601(),
+                                           kind=Kinds.cesr))
+
+        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
+                                    role=Roles.agent,
+                                    stamp=helping.nowIso8601(),
+                                    kind=Kinds.cesr))
+
+        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
+                                    role=Roles.mailbox,
+                                    stamp=helping.nowIso8601(),
+                                    kind=Kinds.cesr))
+
+        agentHab.psr.parse(ims=bytearray(msgs))
+        hab.psr.parse(ims=bytearray(msgs))
+
+        ends = hab.endsFor(hab.pre)
+        assert ends == {
+            'agent': {
+                agentHab.pre: {'http': 'http://127.0.0.1:6666'}},
+            'controller': {
+                hab.pre: {'http': 'http://127.0.0.1:7777'}},
+            'mailbox': {
+                agentHab.pre: {'http': 'http://127.0.0.1:6666'}},
+            'witness': {
+                wesHab.pre: {'http': 'http://127.0.0.1:8888'}}
+        }
+
+        if enable_kram:
+            assert len(habKramCalls) == 8
+            assert habKramCalls.count(("rpy", "/end/role/add")) == 5
+            assert habKramCalls.count(("rpy", "/loc/scheme")) == 3
+
+
+def test_postman_endsfor_v2():
+    _exercise_postman_endsfor_v2(enable_kram=False)
+
+
+def test_postman_endsfor_v2_with_kram(mockHelpingNowUTC):
+    _exercise_postman_endsfor_v2(enable_kram=True)
+
+
+def test_rotate_preserves_toad():
+    """Test that rotating without specifying toad preserves the prior toad value.
+
+    Reproduces issue #962: rotation was silently recalculating toad via ample()
+    instead of preserving the inception-time value.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+
+    with (openHby(name="wit0", temp=True,
+                          salt=Salter(raw=b'witsalt000000000').qb64) as w0Hby,
+          openHby(name="wit1", temp=True,
+                          salt=Salter(raw=b'witsalt000000001').qb64) as w1Hby,
+          openHby(name="wit2", temp=True,
+                          salt=Salter(raw=b'witsalt000000002').qb64) as w2Hby,
+          openHby(name="toad-test", temp=True, salt=salt) as hby):
+
+        # Create 3 non-transferable witness prefixes
+        wits = []
+        for wHby, wname in [(w0Hby, "wit0"), (w1Hby, "wit1"), (w2Hby, "wit2")]:
+            wHab = wHby.makeHab(name=wname, isith="1", icount=1,
+                                transferable=False, kind=Kinds.cesr)
+            wits.append(wHab.pre)
+
+        # Incept with toad=2 (not the ample default of 3 for 3 witnesses)
+        hab = hby.makeHab(name="toad-test", isith="1", icount=1,
+                          ncount=1, nsith="1", toad=2, wits=wits, kind=Kinds.cesr)
+
+        assert hab.kever.toader.num == 2
+        assert len(hab.kever.wits) == 3
+        assert hab.kever.sn == 0
+
+        # Rotate WITHOUT specifying toad — should preserve toad=2
+        hab.rotate(framed=True, kind=Kinds.cesr)
+        assert hab.kever.sn == 1
+        assert hab.kever.toader.num == 2  # must stay 2, not recalculate to ample(3)
+
+def test_failed_rotation_rollback():
+    """Test that a failed rotation does not mutate key store state.
+
+    Reproduces issue #819: kli rotate with invalid parameters persists key
+    state to DB (via Manager.rotate) before event validation, leaving the
+    key store out of sync with the KEL when validation fails.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+
+    with openHby(name="rollback-test", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="rollback-test", isith="1", icount=1,
+                          ncount=1, nsith="1", kind=Kinds.cesr)
+
+        assert hab.kever.sn == 0
+        pre = hab.pre
+
+        # Snapshot key state before attempting rotation
+        ps_before = hab.mgr.ks.sits.get(pre)
+        old_pubs_new = list(ps_before.new.pubs)
+        old_pubs_nxt = list(ps_before.nxt.pubs)
+        old_ridx = ps_before.new.ridx
+
+        # Attempt rotation with isith too high for the number of keys.
+        # This should fail during event creation (eventing.rotate raises
+        # ValueError when tholder.size > len(keys)).
+        with pytest.raises(ValueError):
+            hab.rotate(isith="2", framed=True, kind=Kinds.cesr)
+
+        # Key store state must be unchanged after the failed rotation
+        ps_after = hab.mgr.ks.sits.get(pre)
+        assert list(ps_after.new.pubs) == old_pubs_new
+        assert list(ps_after.nxt.pubs) == old_pubs_nxt
+        assert ps_after.new.ridx == old_ridx
+
+        # KEL sequence number must also be unchanged
+        assert hab.kever.sn == 0
+
+        # A subsequent valid rotation must still succeed
+        hab.rotate(framed=True, kind=Kinds.cesr)
+        assert hab.kever.sn == 1
+
+def test_cues_v2():
+    """
+    Test BaseHab.processCuesIter and GroupHab.processCuesIter cue handlers.
+
+    Covers all implemented kins:
+        receipt, replay, reply, witness, query,
+        notice, noticeBadCloneFN, keyStateSaved, stream, invalid,
+        remoteMemberedSig (GroupHab only)
+    """
+    with openHby(name="cam", temp=True,
+                         salt=Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
+         openHby(name="wes", temp=True,
+                         salt=Salter(raw=b'wesweswesweswesx').qb64) as wesHby, \
+         openHby(name="bob", temp=True,
+                         salt=Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
+
+        # shared habs
+        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False, kind=Kinds.cesr)
+        assert not wesHab.kever.prefixer.transferable
+
+        camHab = camHby.makeHab(name='cam', isith="1", icount=1,
+                                toad=1, wits=[wesHab.pre], kind=Kinds.cesr)
+        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1, kind=Kinds.cesr)
+
+        wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
+        camKvy = Kevery(db=camHab.db, lax=False, local=False)
+
+        # parse cam's inception into wes so wes has cam's key state
+        icpMsg = camHab.msgOwnInception(framed=True)
+        Parser().parse(ims=bytearray(icpMsg),
+                                                kvy=wesKvy, local=True)
+        assert camHab.pre in wesKvy.kevers
+        assert wesHab.pre in wesKvy.kevers[camHab.pre].wits
+
+        # receipt
+        assert any(c["kin"] == "receipt" for c in wesKvy.cues)
+        rctMsg = wesHab.processCues(wesKvy.cues, kind=Kinds.cesr)
+        assert len(rctMsg) > 0
+        Parser().parse(ims=bytearray(rctMsg),
+                                                kvy=camKvy, local=False)
+        assert wesHab.pre in camKvy.kevers
+
+        # replay
+        kvy = Kevery(db=camHab.db, lax=False, local=True)
+        replay_payload = bytearray(b"fake-replay-msgs")
+        kvy.cues.push(dict(kin="replay", msgs=replay_payload))
+        assert camHab.processCues(kvy.cues, kind=Kinds.cesr) == replay_payload
+
+        # reply
+        kvy.cues.push(dict(kin="reply",
+                           route="/end/role/add",
+                           data=dict(cid=camHab.pre,
+                                     role=Roles.controller,
+                                     eid=camHab.pre)))
+        rpyMsg = camHab.processCues(kvy.cues, kind=Kinds.cesr)
+        assert len(rpyMsg) > 0
+        rpySerder = SerderKERI(raw=bytes(rpyMsg))
+        assert rpySerder.kind == Kinds.cesr
+        assert rpySerder.pvrsn == TEST_VERSION
+        assert rpySerder.gvrsn == TEST_VERSION
+        assert rpySerder.ked["i"] == camHab.pre
+
+        # witness
+        # drain incidental cues from parsing above, then push witness cue
+        while wesKvy.cues:
+            wesKvy.cues.pull()
+        wesKvy.cues.push(dict(kin="witness", serder=camHab.iserder))
+        assert len(wesHab.processCues(wesKvy.cues, kind=Kinds.cesr)) > 0
+
+        # query
+        kvy.cues.push(dict(kin="query", pre=bobHab.pre, src=camHab.pre))
+        qryMsg = camHab.processCues(kvy.cues, kind=Kinds.cesr)
+        assert len(qryMsg) > 0
+        qrySerder = SerderKERI(raw=bytes(qryMsg))
+        assert qrySerder.kind == Kinds.cesr
+        assert qrySerder.pvrsn == TEST_VERSION
+        assert qrySerder.gvrsn == TEST_VERSION
+        assert qrySerder.ked["i"] == camHab.pre
+        assert qrySerder.ked["q"]["i"] == bobHab.pre
+
+        # notice
+        kvy.cues.push(dict(kin="notice", serder=camHab.iserder))
+        assert camHab.processCues(kvy.cues, kind=Kinds.cesr) == b""
+        assert not kvy.cues
+
+        # noticeBadCloneFN
+        kvy.cues.push(dict(kin="noticeBadCloneFN",
+                           serder=camHab.iserder,
+                           fn=7,
+                           firner=Seqner(sn=5),
+                           dater=Dater()))
+        assert camHab.processCues(kvy.cues, kind=Kinds.cesr) == b""
+        assert not kvy.cues
+
+        # keyStateSaved
+        ksn = {"i": camHab.pre, "s": "0", "d": camHab.kever.serder.said}
+        kvy.cues.push(dict(kin="keyStateSaved", ksn=ksn))
+        assert camHab.processCues(kvy.cues, kind=Kinds.cesr) == b""
+        assert not kvy.cues
+
+        # stream
+        kvy.cues.push(dict(kin="stream",
+                           serder=camHab.iserder,
+                           pre=bobHab.pre,
+                           src=camHab.pre,
+                           topics={"/receipt": 0, "/replay": 0}))
+        assert camHab.processCues(kvy.cues, kind=Kinds.cesr) == b""
+        assert not kvy.cues
+
+        # invalid
+        kvy.cues.push(dict(kin="invalid", serder=camHab.iserder))
+        assert camHab.processCues(kvy.cues, kind=Kinds.cesr) == b""
+        assert not kvy.cues
+
+def _exercise_habery_reconfigure_v2(*, enable_kram=False):
     """
     Test   .reconfigure method using .cf for config file
 
@@ -657,11 +1207,11 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         wsith = '1'
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False, kind=Kinds.cesr)
         assert not wesHab.kever.prefixer.transferable
 
         # setup Wok's habitat nontrans
-        wokHab = wokHby.makeHab(name="wok", isith=wsith, icount=1, transferable=False)
+        wokHab = wokHby.makeHab(name="wok", isith=wsith, icount=1, transferable=False, kind=Kinds.cesr)
         assert not wokHab.kever.prefixer.transferable
 
         # setup Tam's config
@@ -669,19 +1219,31 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         iurls = [f"tcp://localhost:5621/?role={Roles.peer}&name={pname}"]
         assert tamHby.cf.get() == {}
         conf = dict(dt=helping.nowIso8601(), tam=dict(dt=helping.nowIso8601(), curls=curls), iurls=iurls)
+        if enable_kram:
+            conf = _merge_kram_config(conf)
         tamHby.cf.put(conf)
 
-        assert tamHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
-                                   'tam': {
-                                       'dt': '2021-01-01T00:00:00.000000+00:00',
-                                       'curls': ['tcp://localhost:5620/']
-                                   },
-                                   'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
+        expected = {'dt': '2021-01-01T00:00:00.000000+00:00',
+                    'tam': {
+                        'dt': '2021-01-01T00:00:00.000000+00:00',
+                        'curls': ['tcp://localhost:5620/']
+                    },
+                    'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
+        if enable_kram:
+            expected = _merge_kram_config(expected)
+        assert tamHby.cf.get() == expected
+
+        if enable_kram:
+            tamKramCalls = _attach_kram_spy(tamHby)
+            assert tamHby.kvy.kramer is not None
+        else:
+            tamKramCalls = []
+            assert tamHby.kvy.kramer is None
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre]
         tsith = '1'  # hex str of threshold int
-        tamHab = tamHby.makeHab(name=cname, isith=tsith, icount=3, toad=2, wits=wits)
+        tamHab = tamHby.makeHab(name=cname, isith=tsith, icount=3, toad=2, wits=wits, kind=Kinds.cesr)
         assert tamHab.kever.prefixer.transferable
         assert len(tamHab.iserder.berfers) == len(wits)
         for werfer in tamHab.iserder.berfers:
@@ -700,7 +1262,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         assert locer.url == 'tcp://localhost:5620/'
 
         # setup Wat's habitat nontrans
-        watHab = watHby.makeHab(name="wat", isith=wsith, icount=1, transferable=False, )
+        watHab = watHby.makeHab(name="wat", isith=wsith, icount=1, transferable=False, kind=Kinds.cesr)
         assert not watHab.kever.prefixer.transferable
 
         # setup Nel's config
@@ -718,7 +1280,7 @@ def test_habery_reconfigure(mockHelpingNowUTC):
                                    'iurls': ['tcp://localhost:5620/?role=peer&name=tam']}
 
         # setup Nel's habitat nontrans
-        nelHab = nelHby.makeHab(name=pname, isith=wsith, icount=1, transferable=False)
+        nelHab = nelHby.makeHab(name=pname, isith=wsith, icount=1, transferable=False, kind=Kinds.cesr)
         assert not nelHab.kever.prefixer.transferable
         # create non-local parer for Nel to process non-local msgs
 
@@ -732,6 +1294,10 @@ def test_habery_reconfigure(mockHelpingNowUTC):
         assert not ender.name
         locer = nelHab.db.locs.get(keys=(nelHab.pre, Schemes.tcp))
         assert locer.url == 'tcp://localhost:5621/'
+
+        if enable_kram:
+            assert tamKramCalls == [("rpy", "/end/role/add"),
+                                    ("rpy", "/loc/scheme")]
 
     assert not os.path.exists(nelHby.cf.path)
     assert not os.path.exists(nelHby.db.path)
@@ -751,515 +1317,156 @@ def test_habery_reconfigure(mockHelpingNowUTC):
     """Done Test"""
 
 
-def test_namespaced_habs():
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
-        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+def test_habery_reconfigure_v2(mockHelpingNowUTC):
+    _exercise_habery_reconfigure_v2(enable_kram=False)
 
-        found = hby.habByName("test")
-        assert found.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
-        assert len(hby.habs) == 1
-        assert len(hby.prefixes) == 1
+def test_habery_reconfigure_v2_with_kram(mockHelpingNowUTC):
+    _exercise_habery_reconfigure_v2(enable_kram=True)
 
-        nshab = hby.makeHab(name="test2", ns="agent")
-        assert nshab.pre == "EErXOolQNmKrTMKfXdQ1sj8YsgZZe4wMXZwsX-j1V6Dd"
 
-        assert len(hby.habs) == 2
-        assert len(hby.prefixes) == 2
 
-        found = hby.habByName(name="test2")
-        assert found is None
-        found = hby.habByName(name="test2", ns="agent")
-        assert found.pre == "EErXOolQNmKrTMKfXdQ1sj8YsgZZe4wMXZwsX-j1V6Dd"
-        found = hby.habByName(name="test", ns="agent")
-        assert found is None
+def test_incept_with_ecdsa_256r1_uses_that_curve():
+    """A hab incepted with icode=ECDSA_256r1_Seed signs with a P-256 key."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
 
-        # Test a '.' in Hab name
-        nshab = hby.makeHab(name="test.3", ns="agent")
-        assert nshab.pre == "EG5FUOzW_KKVB8JGlNGoZAADDC8cZ6Jt079nLEaFnYcg"
 
-        assert len(hby.habs) == 3
-        assert len(hby.prefixes) == 3
+def test_rotation_preserves_the_inception_key_algorithm():
+    """Rotating a P-256 identifier keeps it on P-256.
 
-        # '.' characters not allowed in namespace names
-        with pytest.raises(ConfigurationError):
-            hby.makeHab(name="test", ns="agent.5")
-
-    hby.close()
-
-    # Test Reload of Namespace habs
-    name = "ns-test"
-    with openHby(name=name, base="test", temp=False, clear=True) as hby:
-        hab = hby.makeHab(name=name, icount=1)
-        opre = hab.pre
-        hab = hby.makeHab(name="test.1", icount=1)
-        o2pre = hab.pre
-        nshab = hby.makeHab(name="test", ns="agent")
-        atpre = nshab.pre
-        nshab = hby.makeHab(name="test2", ns="agent")
-        at2pre = nshab.pre
-        nshab = hby.makeHab(name="test", ns="controller")
-        ctpre = nshab.pre
-
-    with openHby(name=name, base="test", temp=False) as hby:
-        for pre in [opre, o2pre, atpre, at2pre, ctpre]:
-            assert pre in hby.db.kevers  # read through cache
-            assert pre in hby.db.prefixes
-
-        assert len(hby.habs) == 5
-        assert len(hby.db.prefixes) == 5
-
-        found = hby.habByName(name=name)
-        assert found.pre == opre
-        found = hby.habByName(name="test.1")
-        assert found.pre == o2pre
-        found = hby.habByName(name="test", ns="agent")
-        assert found.pre == atpre
-        found = hby.habByName(name="test2", ns="agent")
-        assert found.pre == at2pre
-        found = hby.habByName(name="test", ns="controller")
-        assert found.pre == ctpre
-
-    hby.close(clear=True)
-    hby.cf.close(clear=True)
-
-
-def test_join_group_hab_persists_group_name_on_reload():
-    hby_name = "multisig-join"
-    group_name = "test_group_4"
-    group_pre = Salter(raw=b'fedcba9876543210').signer(transferable=False).verfer.qb64
-
-    with openHby(name=hby_name, base="test", temp=False, clear=True,
-                         salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        mhab = hby.makeHab(name="member1")
-        other = hby.makeHab(name="member2")
-
-        group = hby.joinGroupHab(pre=group_pre,
-                                 group=group_name,
-                                 mhab=mhab,
-                                 smids=[mhab.pre, other.pre])
-
-        assert group.name == group_name
-        assert hby.db.habs.get(keys=group_pre).name == group_name
-
-    with openHby(name=hby_name, base="test", temp=False,
-                         salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        found = hby.habByName(name=group_name)
-        assert found is not None
-        assert found.pre == group_pre
-        assert found.name == group_name
-        assert hby.db.habs.get(keys=group_pre).name == group_name
-
-    hby.close(clear=True)
-    hby.cf.close(clear=True)
-
-
-def test_make_other_event():
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
-        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
-
-        hab.rotate()
-        hab.rotate()
-
-        msg = hab.makeOtherEvent(hab.pre, sn=1)
-        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EGnFNzw2UJKpQZYJj_xhcFYW'
-                       b'E7prFWFBbghgcMuJ4VeM","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
-                       b'V8dDjI3","s":"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
-                       b'I3","kt":"1","k":["DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP"'
-                       b'],"nt":"1","n":["EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax"],'
-                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAAC2DAJCt6KLh442NsGVLE0pYKvL'
-                       b'-3MVh-kWcBWWqpVmXbhlQ3oGHD5h4jUY7Trw2jFvsQyC4A_1kJpmNP1AgXcM')
-
-        msg = hab.makeOtherEvent(hab.pre, sn=2)
-        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EJCaUsmfvR35xZxpenqEWCtX'
-                       b'sXnD_efjlvvRd1hEvu5d","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
-                       b'V8dDjI3","s":"2","p":"EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4V'
-                       b'eM","kt":"1","k":["DPjsUEx6Nqby9-yUO1DtExQ81CRYdvpwQZufBRzBM5yk"'
-                       b'],"nt":"1","n":["EIraDaPWlGBU9DnwCaNQ2XVaX8zQQFhnkj8Ir4R5R-Yh"],'
-                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAADGsMs4ifEPuBH9vApQTnJyGCXm'
-                       b'p8Sc4CcESKA-q5O0O5CmpCbSrA29UpqZnfvUagrwm8w3M1a1WJKy64OQYXIG')
-
-
-def test_get_own_event():
-    """Test Hab.getOwnEvent: happy path sn=0 and sn=1, delegated duple, error path missing event."""
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
-        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
-
-        # Happy path: inception at sn=0
-        serder, sigs, duple = hab.getOwnEvent(sn=0)
-        assert serder.sad["t"] == "icp"
-        assert serder.sad["s"] == "0"
-        assert serder.sad["i"] == hab.pre
-        assert len(sigs) >= 1
-        assert duple is None
-
-        # Happy path: rotation at sn=1
-        hab.rotate()
-        serder, sigs, duple = hab.getOwnEvent(sn=1)
-        assert serder.sad["t"] == "rot"
-        assert serder.sad["s"] == "1"
-        assert serder.sad["i"] == hab.pre
-        assert len(sigs) >= 1
-        assert duple is None  # rotation has no authorizer seal
-
-    # Happy path: delegated hab with authorizer seal (duple is not None)
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        delHab = hby.makeHab(name="delegator")
-        delHab.interact(data=[])  # anchoring event at sn=1
-        anchorSner = Number(num=delHab.kever.sn, code=NumDex.Huge)
-        anchorSaider = Diger(qb64b=delHab.kever.serder.saidb)
-
-        subHab = hby.makeHab(name="delegate", delpre=delHab.pre)
-        hby.db.aess.pin(keys=(subHab.pre, subHab.kever.serder.saidb), val=(anchorSner, anchorSaider))
-
-        serder, sigs, duple = subHab.getOwnEvent(sn=0)
-        assert serder.sad["t"] == "dip"
-        assert serder.sad["i"] == subHab.pre
-        assert duple is not None
-        sner, saider = duple
-        assert sner.sn == delHab.kever.sn
-        assert saider.qb64 == delHab.kever.serder.said
-
-    # Error path: missing event at sn (no event at sn=1 for inception-only hab)
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="other")
-        with pytest.raises(MissingEntryError) as exc_info:
-            hab.getOwnEvent(sn=1)
-        assert hab.pre in str(exc_info.value)
-        assert "1" in str(exc_info.value)
-
-
-def test_make_own_event():
-    """Test Hab.makeOwnEvent: sn=0 vs makeOwnInception, sn=1 after rotate."""
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
-        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
-
-        # makeOwnEvent(sn=0) equals makeOwnInception()
-        msg0 = hab.makeOwnEvent(sn=0)
-        msg_icp = hab.makeOwnInception()
-        assert msg0 == msg_icp
-        assert len(msg0) > 0
-        assert msg0.startswith(b'{"v":"KERI10JSON')
-
-        # makeOwnEvent(sn=1) after rotate
-        hab.rotate()
-        msg1 = hab.makeOwnEvent(sn=1)
-        assert len(msg1) > 0
-        serder = SerderKERI(raw=bytes(msg1))
-        assert serder.sad["t"] == "rot"
-        assert serder.sad["s"] == "1"
-
-
-def test_hab_by_pre():
-    with openHby() as hby:
-        # Create two habs in the default namespace
-        hab1 = hby.makeHab(name="test1")
-        hab2 = hby.makeHab(name="test2")
-
-        # Create two habs in namespace "one"
-        hab3 = hby.makeHab(name="test1", ns="one")
-        hab4 = hby.makeHab(name="test2", ns="one")
-
-        # Create two habs in namespace "two"
-        hab5 = hby.makeHab(name="test1", ns="two")
-        hab6 = hby.makeHab(name="test2", ns="two")
-
-        # Only habs in default namespace are in hby.habs
-        assert hab1.pre in hby.habs
-        assert hab2.pre in hby.habs
-        assert hab3.pre in hby.habs
-        assert hab4.pre in hby.habs
-        assert hab5.pre in hby.habs
-        assert hab6.pre in hby.habs
-
-        assert hby.habByPre("EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3") is None
-
-        assert hby.habByPre(pre=hab1.pre) == hab1
-        assert hby.habByPre(pre=hab2.pre) == hab2
-        assert hby.habByPre(pre=hab3.pre) == hab3
-        assert hby.habByPre(pre=hab4.pre) == hab4
-        assert hby.habByPre(pre=hab5.pre) == hab5
-        assert hby.habByPre(pre=hab6.pre) == hab6
-
-
-def test_postman_endsfor():
-    with openHby(name="test", temp=True, salt=Salter(raw=b'0123456789abcdef').qb64) as hby, \
-            openHby(name="wes", temp=True, salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            openHab(name="agent", temp=True, salt=b'0123456789abcdef') as (agentHby, agentHab):
-
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
-        assert not wesHab.kever.prefixer.transferable
-        # create non-local kevery for Wes to process nonlocal msgs
-        wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
-
-        wits = [wesHab.pre]
-        hab = hby.makeHab(name='cam', isith="1", icount=1, toad=1, wits=wits, )
-        assert hab.kever.prefixer.transferable
-        assert len(hab.iserder.berfers) == len(wits)
-        for werfer in hab.iserder.berfers:
-            assert werfer.qb64 in wits
-        assert hab.kever.wits == wits
-        assert hab.kever.toader.num == 1
-        assert hab.kever.sn == 0
-
-        kvy = Kevery(db=hab.db, lax=False, local=False)
-        icpMsg = hab.makeOwnInception()
-        rctMsgs = []  # list of receipts from each witness
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg), kvy=wesKvy, local=True)
-        assert wesKvy.kevers[hab.pre].sn == 0  # accepted event
-        assert len(wesKvy.cues) >= 1  # assunmes includes queued receipt cue
-        # better to find cue in cues and confirm exactly
-        rctMsg = wesHab.processCues(wesKvy.cues)  # process cue returns rct msg
-        assert len(rctMsg) == 626
-        rctMsgs.append(rctMsg)
-
-        for msg in rctMsgs:  # process rct msgs from all witnesses
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kvy, local=True)
-        assert wesHab.pre in kvy.kevers
-
-        agentIcpMsg = agentHab.makeOwnInception()
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
-        assert agentHab.pre in kvy.kevers
-
-        msgs = bytearray()
-        msgs.extend(wesHab.makeEndRole(eid=wesHab.pre,
-                                       role=Roles.controller,
-                                       stamp=helping.nowIso8601()))
-
-        msgs.extend(wesHab.makeLocScheme(url='http://127.0.0.1:8888',
-                                         scheme=Schemes.http,
-                                         stamp=helping.nowIso8601()))
-        wesHab.psr.parse(ims=bytearray(msgs))
-
-        # Set up
-        msgs.extend(hab.makeEndRole(eid=hab.pre,
-                                    role=Roles.controller,
-                                    stamp=helping.nowIso8601()))
-
-        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:7777',
-                                      scheme=Schemes.http,
-                                      stamp=helping.nowIso8601()))
-        hab.psr.parse(ims=msgs)
-
-        msgs = bytearray()
-        msgs.extend(agentHab.makeEndRole(eid=agentHab.pre,
-                                         role=Roles.controller,
-                                         stamp=helping.nowIso8601()))
-
-        msgs.extend(agentHab.makeLocScheme(url='http://127.0.0.1:6666',
-                                           scheme=Schemes.http,
-                                           stamp=helping.nowIso8601()))
-
-        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
-                                    role=Roles.agent,
-                                    stamp=helping.nowIso8601()))
-
-        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
-                                    role=Roles.mailbox,
-                                    stamp=helping.nowIso8601()))
-
-        agentHab.psr.parse(ims=bytearray(msgs))
-        hab.psr.parse(ims=bytearray(msgs))
-
-        ends = hab.endsFor(hab.pre)
-        assert ends == {
-            'agent': {
-                'EBErgFZoM3PBQNTpTuK9bax_U8HLJq1Re2RM1cdifaTJ': {'http': 'http://127.0.0.1:6666'}},
-            'controller': {
-                'EGadHcyW9IfVIPrFUAa_I0z4dF8QzQAvUvfaUTJk8Jre': {'http': 'http://127.0.0.1:7777'}},
-            'mailbox': {
-                'EBErgFZoM3PBQNTpTuK9bax_U8HLJq1Re2RM1cdifaTJ': {'http': 'http://127.0.0.1:6666'}},
-            'witness': {
-                'BN8t3n1lxcV0SWGJIIF46fpSUqA7Mqre5KJNN3nbx3mr': {'http': 'http://127.0.0.1:8888'}}
-        }
-
-
-def test_rotate_preserves_toad():
-    """Test that rotating without specifying toad preserves the prior toad value.
-
-    Reproduces issue #962: rotation was silently recalculating toad via ample()
-    instead of preserving the inception-time value.
+    The next-key commitment used to be generated with the Ed25519 default no matter what
+    icode said, so an identifier incepted on P-256 changed algorithm at its first rotation
+    and nothing reported it. A verifier holding a certificate over the old key could not
+    survive that, so it is a silent break rather than a visible one.
     """
     salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256rot", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256rot", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
 
-    with (openHby(name="wit0", temp=True,
-                          salt=Salter(raw=b'witsalt000000000').qb64) as w0Hby,
-          openHby(name="wit1", temp=True,
-                          salt=Salter(raw=b'witsalt000000001').qb64) as w1Hby,
-          openHby(name="wit2", temp=True,
-                          salt=Salter(raw=b'witsalt000000002').qb64) as w2Hby,
-          openHby(name="toad-test", temp=True, salt=salt) as hby):
-
-        # Create 3 non-transferable witness prefixes
-        wits = []
-        for wHby, wname in [(w0Hby, "wit0"), (w1Hby, "wit1"), (w2Hby, "wit2")]:
-            wHab = wHby.makeHab(name=wname, isith="1", icount=1,
-                                transferable=False)
-            wits.append(wHab.pre)
-
-        # Incept with toad=2 (not the ample default of 3 for 3 witnesses)
-        hab = hby.makeHab(name="toad-test", isith="1", icount=1,
-                          ncount=1, nsith="1", toad=2, wits=wits)
-
-        assert hab.kever.toader.num == 2
-        assert len(hab.kever.wits) == 3
-        assert hab.kever.sn == 0
-
-        # Rotate WITHOUT specifying toad — should preserve toad=2
         hab.rotate()
         assert hab.kever.sn == 1
-        assert hab.kever.toader.num == 2  # must stay 2, not recalculate to ample(3)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
 
+
+def test_repeated_rotation_stays_on_the_same_curve():
+    """The algorithm survives more than one rotation, not just the first."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256rot3", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256rot3", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        for expected_sn in (1, 2, 3):
+            hab.rotate()
+            assert hab.kever.sn == expected_sn
+            assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+
+def test_signatures_verify_after_rotating_a_p256_identifier():
+    """The rotated key is usable, not merely labelled with the right code."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="p256sig", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="p256sig", icode=MtrDex.ECDSA_256r1_Seed,
+                          wits=[], toad=0)
+        hab.rotate()
+        data = b"an assertion signed after rotation"
+        siger = hab.sign(ser=data, indexed=True)[0]
+        assert hab.kever.verfers[0].verify(siger.raw, data)
+
+
+def test_incept_with_secp256k1_also_carries_forward():
+    """The fix is about carrying the algorithm forward, not about P-256 specifically."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="k1", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="k1", icode=MtrDex.ECDSA_256k1_Seed,
+                          wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256k1
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256k1
+
+
+def test_ed25519_remains_the_default_and_is_unaffected():
+    """The default path is untouched: no icode still means Ed25519, before and after rotation."""
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="ed", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="ed", wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+
+def test_explicit_ncode_overrides_the_icode_default_at_inception():
+    """ncode is separable from icode, for a caller that means to pre-commit a different curve.
+
+    Rotating then lands on the pre-committed algorithm, which is what the next-key commitment
+    said all along -- an intentional change of algorithm rather than a silent one.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="mixed", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="mixed", icode=MtrDex.ECDSA_256r1_Seed,
+                          ncode=MtrDex.Ed25519_Seed, wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+
+def test_explicit_ncode_on_rotate_changes_the_next_commitment():
+    """A caller may steer the algorithm at rotation, and the change lands one rotation later.
+
+    Rotation replays the keys already pre-committed, so ncode governs the keys committed
+    *for next time*: the curve changes at the following rotation, not this one.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="steer", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="steer", wits=[], toad=0)
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+        hab.rotate(ncode=MtrDex.ECDSA_256r1_Seed)
+        assert hab.kever.verfers[0].code == MtrDex.Ed25519
+
+        hab.rotate()
+        assert hab.kever.verfers[0].code == MtrDex.ECDSA_256r1
+
+
+def test_seed_code_mapping_covers_every_algorithm_signer_supports():
+    """The inverse map is kept complete by a test rather than by memory.
+
+    Signer derives a verfer code from a seed code; rotation needs the inverse. A new algorithm
+    added to Signer without a matching entry here would silently fall back to Ed25519, which is
+    the exact failure this whole change exists to remove.
+    """
+    from keri.core.signing import SeedCodeByVerferCode
+    from keri.core import Signer
+
+    seed_codes = [MtrDex.Ed25519_Seed, MtrDex.ECDSA_256r1_Seed, MtrDex.ECDSA_256k1_Seed]
+    for seed_code in seed_codes:
+        for transferable in (True, False):
+            signer = Signer(code=seed_code, transferable=transferable)
+            verfer_code = signer.verfer.code
+            assert verfer_code in SeedCodeByVerferCode, (
+                f"Signer produces verfer code {verfer_code} from seed code {seed_code}, "
+                f"but the inverse map has no entry for it"
+            )
+            assert SeedCodeByVerferCode[verfer_code] == seed_code
 
 if __name__ == "__main__":
-    pass
     test_habery()
-    # pytest.main(['-vv', 'test_habbing.py::test_habery_reconfigure'])
-
-
-def test_failed_rotation_rollback():
-    """Test that a failed rotation does not mutate key store state.
-
-    Reproduces issue #819: kli rotate with invalid parameters persists key
-    state to DB (via Manager.rotate) before event validation, leaving the
-    key store out of sync with the KEL when validation fails.
-    """
-    salt = Salter(raw=b'0123456789abcdef').qb64
-
-    with openHby(name="rollback-test", temp=True, salt=salt) as hby:
-        hab = hby.makeHab(name="rollback-test", isith="1", icount=1,
-                          ncount=1, nsith="1")
-
-        assert hab.kever.sn == 0
-        pre = hab.pre
-
-        # Snapshot key state before attempting rotation
-        ps_before = hab.mgr.ks.sits.get(pre)
-        old_pubs_new = list(ps_before.new.pubs)
-        old_pubs_nxt = list(ps_before.nxt.pubs)
-        old_ridx = ps_before.new.ridx
-
-        # Attempt rotation with isith too high for the number of keys.
-        # This should fail during event creation (eventing.rotate raises
-        # ValueError when tholder.size > len(keys)).
-        with pytest.raises(ValueError):
-            hab.rotate(isith="2")
-
-        # Key store state must be unchanged after the failed rotation
-        ps_after = hab.mgr.ks.sits.get(pre)
-        assert list(ps_after.new.pubs) == old_pubs_new
-        assert list(ps_after.nxt.pubs) == old_pubs_nxt
-        assert ps_after.new.ridx == old_ridx
-
-        # KEL sequence number must also be unchanged
-        assert hab.kever.sn == 0
-
-        # A subsequent valid rotation must still succeed
-        hab.rotate()
-        assert hab.kever.sn == 1
-
-
-def test_cues():
-    """
-    Test BaseHab.processCuesIter and GroupHab.processCuesIter cue handlers.
-
-    Covers all implemented kins:
-        receipt, replay, reply, witness, query,
-        notice, noticeBadCloneFN, keyStateSaved, stream, invalid,
-        remoteMemberedSig (GroupHab only)
-    """
-    with openHby(name="cam", temp=True,
-                         salt=Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
-         openHby(name="wes", temp=True,
-                         salt=Salter(raw=b'wesweswesweswesx').qb64) as wesHby, \
-         openHby(name="bob", temp=True,
-                         salt=Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
-
-        # shared habs
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
-        assert not wesHab.kever.prefixer.transferable
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1,
-                                toad=1, wits=[wesHab.pre])
-        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1)
-
-        wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
-        camKvy = Kevery(db=camHab.db, lax=False, local=False)
-
-        # parse cam's inception into wes so wes has cam's key state
-        icpMsg = camHab.makeOwnInception()
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg),
-                                                kvy=wesKvy, local=True)
-        assert camHab.pre in wesKvy.kevers
-        assert wesHab.pre in wesKvy.kevers[camHab.pre].wits
-
-        # receipt
-        assert any(c["kin"] == "receipt" for c in wesKvy.cues)
-        rctMsg = wesHab.processCues(wesKvy.cues)
-        assert len(rctMsg) > 0
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(rctMsg),
-                                                kvy=camKvy, local=False)
-        assert wesHab.pre in camKvy.kevers
-
-        # replay
-        kvy = Kevery(db=camHab.db, lax=False, local=True)
-        replay_payload = bytearray(b"fake-replay-msgs")
-        kvy.cues.push(dict(kin="replay", msgs=replay_payload))
-        assert camHab.processCues(kvy.cues) == replay_payload
-
-        # reply
-        kvy.cues.push(dict(kin="reply",
-                           route="/end/role/add",
-                           data=dict(cid=camHab.pre,
-                                     role=Roles.controller,
-                                     eid=camHab.pre)))
-        assert len(camHab.processCues(kvy.cues)) > 0
-
-        # witness
-        # drain incidental cues from parsing above, then push witness cue
-        while wesKvy.cues:
-            wesKvy.cues.pull()
-        wesKvy.cues.push(dict(kin="witness", serder=camHab.iserder))
-        assert len(wesHab.processCues(wesKvy.cues)) > 0
-
-        # query
-        kvy.cues.push(dict(kin="query", pre=bobHab.pre, src=camHab.pre))
-        assert len(camHab.processCues(kvy.cues)) > 0
-
-        # notice
-        kvy.cues.push(dict(kin="notice", serder=camHab.iserder))
-        assert camHab.processCues(kvy.cues) == b""
-        assert not kvy.cues
-
-        # noticeBadCloneFN
-        kvy.cues.push(dict(kin="noticeBadCloneFN",
-                           serder=camHab.iserder,
-                           fn=7,
-                           firner=Seqner(sn=5),
-                           dater=Dater()))
-        assert camHab.processCues(kvy.cues) == b""
-        assert not kvy.cues
-
-        # keyStateSaved
-        ksn = {"i": camHab.pre, "s": "0", "d": camHab.kever.serder.said}
-        kvy.cues.push(dict(kin="keyStateSaved", ksn=ksn))
-        assert camHab.processCues(kvy.cues) == b""
-        assert not kvy.cues
-
-        # stream
-        kvy.cues.push(dict(kin="stream",
-                           serder=camHab.iserder,
-                           pre=bobHab.pre,
-                           src=camHab.pre,
-                           topics={"/receipt": 0, "/replay": 0}))
-        assert camHab.processCues(kvy.cues) == b""
-        assert not kvy.cues
-
-        # invalid
-        kvy.cues.push(dict(kin="invalid", serder=camHab.iserder))
-        assert camHab.processCues(kvy.cues) == b""
-        assert not kvy.cues
+    test_make_load_hab_with_habery_v2()
+    test_hab_rotate_with_witness_v2()
+    test_habery_reinitialization_v2()
+    test_habery_signatory()
+    test_namespaced_habs()
+    test_join_group_hab_persists_group_name_on_reload()
+    test_get_own_event_v2()
+    test_msg_own_event_v2()
+    test_msg_other_event_v2()
+    test_hab_by_pre()
+    test_postman_endsfor_v2()
+    test_rotate_preserves_toad()
+    test_failed_rotation_rollback()
+    test_cues_v2()
+    test_habery_reconfigure_v2()
