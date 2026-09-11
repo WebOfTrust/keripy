@@ -68,9 +68,10 @@ this example does NOT close, beyond the shared registry/B (see the partition tes
 cross-verifier join key, removable only by the Merkle-INCLUSION variant (panel
 PRV-F3); (b) even with per-context AID strings, a real deployment that witnesses the
 M holder AIDs on a shared witness pool / endpoint / mailbox re-links them via KEL
-discovery metadata (spec L2891; panel PRV-F2). The independent-AID and
-independent-registry/herd variants (spec 15.4) raise the technical bar further and are
-a deliberate follow-on (tick 6sjz), not this example.
+discovery metadata (ACDC, Bulk-issued Private ACDCs > Independent AID Bulk Issued
+ACDCs; panel PRV-F2). The independent-AID and independent-registry/herd variants
+(same section) raise the technical bar further and are a deliberate follow-on
+(tick 6sjz), not this example.
 
 A note on altitude. Like the sibling examples, this one models the credential graph,
 the bulk derivation, the blinded aggregate, and the registry state at the
@@ -124,7 +125,8 @@ VERIFIERS = (ALCOVE, DISPENSARY, SPORTSBOOK)
 
 
 # ===========================================================================
-# Phase 1: the bulk-issuance derivation primitive (ACDC spec 15.4).
+# Phase 1: the bulk-issuance derivation primitive (ACDC, Bulk-issued Private
+# ACDCs > Basic Bulk Issuance Procedure).
 # ===========================================================================
 # The shared secret salt for Alice's bulk sets -- known to the Issuer (State) and the
 # Issuee (Alice), never handed to a verifier. In a real flow it is transported to Alice
@@ -137,7 +139,8 @@ BULK_SIZE = 5
 
 
 class _BulkNonces:
-    """Deterministic per-copy nonce derivation for a bulk-issued set (ACDC spec 15.4).
+    """Deterministic per-copy nonce derivation for a bulk-issued set (ACDC,
+    Bulk-issued Private ACDCs > Basic Bulk Issuance Procedure).
 
     Every nonce for every copy is derived from ONE shared secret salt by argon2id
     (Salter.stretch) at a hierarchical path keyed on the copy index k, then wrapped as a
@@ -166,36 +169,42 @@ class _BulkNonces:
     def v(self, k):
         """Copy k's blinding factor v_k, derived at the path "k.".
 
-        SPEC-FIDELITY / INTEROP NOTE (ACDC review panel SPC-F1, 2026-07-23). ACDC
-        spec 15.4 is self-contradictory on this path: L2799 derives the top-level u_k
-        at path "k", and L2811 says v_k "is not the top-level UUID ... but an entirely
-        different UUID" YET states its derivation path is also "k". Since Salter.stretch
-        is a pure function of (salt, path), a spec-literal reading yields v_k == u_k,
-        violating the spec's own "entirely different" requirement. This example resolves
-        the contradiction by deriving v_k at the DISTINCT path "k." so v_k != u_k as the
-        spec intends. A spec-literal implementation (path "k") would compute a different
-        v_k, hence a different b_k and aggregate B, and its bulk-membership proofs would
-        NOT cross-verify with this one -- so ACDC 15.4 must be corrected to pin v_k's
-        path unambiguously (proposed fix: "k."). Until then, this path is a keripy-local
-        convention, not a ratified interop invariant.
+        The specification pins this path. ACDC (Bulk-issued Private ACDCs > Basic
+        Bulk Issuance Procedure) requires v_k to be derived at a path distinct from
+        the top-level u_k's path "k", and names it: "The derivation path for v_k
+        from the shared secret salt is therefore `k.`". That section is still in the
+        Annex, so it is not yet normative; kswg-acdc-specification#207 proposes
+        moving it out.
+
+        HISTORY (ACDC review panel SPC-F1, 2026-07-23). The specification used to
+        give both u_k and v_k the path "k" while also requiring v_k to be "an
+        entirely different UUID". Since Salter.stretch is a pure function of
+        (salt, path), a literal reading yielded v_k == u_k and contradicted that
+        requirement. This example derived v_k at the distinct path "k." to resolve
+        it, and flagged the ambiguity as a cross-verification hazard; the spec was
+        then corrected to pin that same path, so what was a keripy-local convention
+        is now what the specification says.
         """
         return self._nonce(f"{k}.")
 
 
 def _blind_said(v, d):
-    """b_k = H(v_k + d_k): the blinded commitment to copy k's SAID (spec 15.4).
+    """b_k = H(v_k + d_k): the blinded commitment to copy k's SAID (ACDC,
+    Bulk-issued Private ACDCs > Basic Bulk Issuance Procedure).
 
     Concatenation (not XOR) because CESR crypto-agility means SAIDs and nonces are
     variable length. A commitment to b_k discloses nothing about d_k until v_k is
     revealed, so the list of b_k can be published while the SAIDs stay hidden.
 
-    SPEC-FIDELITY / INTEROP NOTE (panel SPC-F2). Spec 15.4 (L2813-2824) pins
+    SPEC-FIDELITY / INTEROP NOTE (panel SPC-F2). ACDC (Bulk-issued Private ACDCs >
+    Basic Bulk Issuance Procedure), where b_k and B are defined, pins
     concatenation-over-XOR and the ordered structure but does NOT pin (a) which digest
     code H uses nor (b) whether the concatenation "+" / C is over qb64 TEXT or raw
     bytes -- both change b_k and B. This example pins the concrete choice: concatenate
     the qb64 TEXT of v_k and d_k and digest with Blake3-256 (the Diger default). A
     signify-ts impl that concatenated raw bytes or used another digest code would not
-    cross-verify; ACDC 15.4 should pin H and the concatenation domain explicitly.
+    cross-verify. kswg-acdc-specification#204 proposes pinning both and is still open,
+    so this remains a keripy-local choice.
     """
     return Diger(ser=(v + d).encode()).qb64
 
@@ -213,7 +222,8 @@ def _bulk_aggregate(vs, ds):
 
 
 def _verify_membership(d, v, blist, B):
-    """The verifier's per-copy membership check (spec 15.4).
+    """The verifier's per-copy membership check (ACDC, Bulk-issued Private ACDCs >
+    Basic Bulk Issuance Procedure).
 
     Given the disclosed copy SAID d_k, its blinding factor v_k, the published blinded
     list [b_k], and the committed aggregate B, confirm (1) the list commits to B
@@ -440,7 +450,8 @@ def _sedi_id_set(kind, nonces=None):
     vs = [nonces.v(k) for k in range(BULK_SIZE)]
     ds = [c.said for c in copies]
     blist, B = _bulk_aggregate(vs, ds)
-    # The single issuance-proof commitment to B (spec 15.4): a blindable update whose
+    # The single issuance-proof commitment to B (ACDC, Bulk-issued Private ACDCs >
+    # Basic Bulk Issuance Procedure): a blindable update whose
     # blinded state binds "this set (identified by B) is issued". Reuses the existing
     # sn-keyed Blinder -- there is ONE shared registry per set, so no copy-index blinder
     # is needed. (A real Issuer also anchors the rip seal in its KEL; omitted at this
