@@ -682,8 +682,10 @@ def test_partial_disclosure_compaction_JSON():
     # the private attribute section withheld. This is the direction the spec's
     # Chain-Link Confidentiality flow uses: the terms are shown first so the
     # verifier (Disclosee) can agree to them, and the private attributes stay
-    # hidden until, and unless, that agreement is made (spec-body.md lines 256,
-    # 741). Hiding the terms while exposing the attributes would invert that.
+    # hidden until, and unless, that agreement is made (ACDC, Schema Section >
+    # Composable JSON Schema, and Aggregate Section > Inclusion proof via
+    # aggregated list digest (AGID)). Hiding the terms while exposing the
+    # attributes would invert that.
     disclosedRule = expanded.sad['r']                # the full rule block
     # Verifier recomputes the disclosed block's SAID and confirms it is the very
     # section the compact ACDC commits to under 'r'.
@@ -725,7 +727,8 @@ def test_partial_disclosure_compaction_JSON():
     # both a 'grades' block and an 'address' block, so the holder can reveal one
     # and withhold the other. The disclosable unit is the block, not the field:
     # street/number/zip inside 'address' are disclosed together; to hide just the
-    # zip it would have to be its own nested block (spec-body.md line 692).
+    # zip it would have to be its own nested block (ACDC, Aggregate Section >
+    # Selectively disclosable Aggregate of attribute blocks).
     multi = dict(d='', u=NONCES[7], i=BOB, name="Bob Student",
                  grades=dict(d='', u=NONCES[8], math=4, english=3),
                  address=dict(d='', u=NONCES[9], street="Main", number=5, zip="90210"))
@@ -982,7 +985,9 @@ def test_blindable_registry_correlation_minimizing_JSON():
     and that the updates belong to it (the 'rd', sequence number, and prior link
     are all in the clear) -- but what each update commits to (the state, and which
     ACDC it concerns) is blinded. The spec calls the resulting disclosure
-    "correlation-minimizing" (spec-body.md line 91).
+    "correlation-minimizing" (ACDC Structure, the `u`-field section -- titled
+    "Universally Unique Identifier (UUID) Fields" in 1.0 and "Unique Entropy (UE)
+    Fields" on the v1.1 branch).
 
     Each update's blinded state is protected by its own "blind": a nonce derived
     by a deterministic key-derivation over the secret salt and that event's
@@ -1006,7 +1011,8 @@ def test_blindable_registry_correlation_minimizing_JSON():
     sequence number => new blind) even without a state change, so a previously
     disclosed blind no longer matches the head and cannot be reused as a standing
     proof of current state. Re-blinding is issuer-provided and issuer-timed
-    (spec-body.md lines 2131, 2135): a holder cannot compel it, and it costs one
+    (ACDC, Registry Message Types and Fields > Blinded State Disclosure): a
+    holder cannot compel it, and it costs one
     registry event per presentation, so it MAY or MAY NOT be used. This test does
     not rely on it -- the guarantees above follow from per-event blind
     independence alone.
