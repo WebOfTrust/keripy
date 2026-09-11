@@ -495,6 +495,19 @@ class IpexHandler:
                 return False
 
             number, diger = sscs[-1]
+            kever = self.hby.db.kevers.get(serder.pre)
+            if kever is None:
+                raise MissingSenderKeyStateError(
+                    f"missing current sender key state for {serder.pre}")
+
+            lastEst = kever.lastEst
+            if number.sn < lastEst.s:   # Reject if reference is older thant the current key state
+                return False
+            
+            # Check matching sn and diger
+            if number.sn == lastEst.s and diger.qb64 != lastEst.d:
+                return False
+
             prefix = serder.pre.encode("utf-8")
             eventSaid = self.hby.db.kels.getLast(keys=prefix, on=number.sn)
             if eventSaid is None:
@@ -507,6 +520,10 @@ class IpexHandler:
             if event is None:
                 raise MissingSenderKeyStateError(
                     f"missing sender KEL event body at sn={number.sn} for {serder.pre}")
+            
+            # If reference has a higher sn, check that it is an interaction event, otherwise reject
+            if number.sn > lastEst.s and event.ilk != Ilks.ixn:
+                return False
             if not any(isinstance(seal, Mapping)
                        and seal.get("d") == serder.said
                        for seal in (event.seals or [])):

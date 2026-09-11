@@ -592,6 +592,66 @@ def test_ipex_v2_establishment_only_anchor_construction():
         assert hby.db.exns.get(keys=(grantExn.said,)) is not None
 
 
+def test_ipex_v2_rejects_anchor_before_current_establishment():
+    """A source event before the sender's current lastEst is stale."""
+    kramConfig = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+            },
+        },
+    }
+
+    with (openHby(name="ipex-v2-stale-anchor",
+                  base="test",
+                  version=Vrsn_2_0) as hby,
+          openCF(name="ipex-v2-stale-anchor", base="test", temp=True) as cf):
+        grantor = hby.makeHab(name="grantor")
+        recipient = hby.makeHab(name="recipient")
+        acdc = acdcmap(israid=grantor.pre,
+                       attribute=dict(d="", role="member"),
+                       iseaid=recipient.pre)
+
+        # The builder creates an interaction after the current establishment
+        # event and points the grant's source couple at that interaction.
+        grantExn, grantAtc = ipexGrant(hab=grantor,
+                                       recp=recipient.pre,
+                                       message="Anchor predates rotation",
+                                       origin=acdc,
+                                       ax=[True])
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(grantExn.raw) + grantAtc,
+            framed=False,
+            processive=False)[0]
+        anchorSn = parsed.sscs[0][0].sn
+
+        # Rotating before first delivery advances lastEst beyond the event that
+        # anchored the grant, making that source reference stale.
+        grantor.rotate(gvrsn=Vrsn_2_0)
+        assert anchorSn < grantor.kever.lastEst.s
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        cf.put(kramConfig)
+        kvy = Kevery(db=hby.db,
+                     lax=False,
+                     local=False,
+                     kramer=Kramer(db=hby.db, cf=cf),
+                     exc=exc)
+
+        # KRAM can authenticate the historical seal, but IPEX must reject it
+        # because it is no longer based on the current sender key state.
+        ims = bytearray(grantExn.raw) + grantAtc
+        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(grantExn.said,)) is None
+        assert recorder.items == []
+
+
 def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
     """Two parties exchange anchored IPEX messages through their own KRAMs."""
     # Enable KRAM so each receiving party applies replay and timing checks before
