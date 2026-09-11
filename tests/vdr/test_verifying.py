@@ -1048,11 +1048,11 @@ def setupOperatorFixture(ian, ianHby, ianreg, ianiss):
 def test_verifier_list_valued_operator(seeder):
     """A list-valued `o` is a spec-legal spelling and MUST NOT fall to the default.
 
-    ACDC spec-body.md L1186: "When more than one unary Operator is applied to a given
-    Edge, then the value of the Operator, `o`, field is a list of those unary
-    Operators. When multiple unary Operators appear in the list, and there is a
-    conflict between Operators, the latest Operator among the conflicting Operators
-    in the list takes precedence."
+    ACDC spec, Edge Section > Edge > Operator, `o` field: "When more than one unary
+    Operator is applied to a given Edge, then the value of the Operator, `o`, field
+    is a list of those unary Operators. When multiple unary Operators appear in the
+    list, and there is a conflict between Operators, the latest Operator among the
+    conflicting Operators in the list takes precedence."
 
     Previously ``op not in ['I2I','DI2I','NI2I','E1E']`` was tested against the list
     itself, which never matches, so every list form silently fell through to the
@@ -1173,10 +1173,10 @@ def test_verifier_list_valued_operator(seeder):
                                      saider=Diger(qb64=ian.kever.serder.said))
         assert "DI2I" in str(excinfo.value)
 
-        # NOT is normative (spec L1195: the far node's validity is inverted) and
-        # unimplemented here. It must fail closed like DI2I rather than being skipped
-        # as an unrecognized token -- otherwise an edge asserting "this node must be
-        # INVALID" would be accepted as valid.
+        # NOT is normative (the unary Operator table: the far node's validity is
+        # inverted) and unimplemented here. It must fail closed like DI2I rather than
+        # being skipped as an unrecognized token -- otherwise an edge asserting "this
+        # node must be INVALID" would be accepted as valid.
         chainSad = dict(d='', node=dict(n=far.said, o=["NOT"]))
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
         subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="not operator")
@@ -1203,10 +1203,11 @@ def test_verifier_list_valued_operator(seeder):
 def test_verifier_nonconflicting_operators_compose(seeder):
     """A non-delegative operator composes with the delegative winner, not overridden.
 
-    ACDC spec-body.md L1186 scopes latest-wins to "the conflicting Operators". I2I,
-    NI2I and DI2I all constrain the near ACDC's *issuer* relative to the far node's
-    issuee, so they conflict with one another. E1E constrains the near *issuee*, so it
-    conflicts with none of them and must be conjoined (AND).
+    ACDC spec, Edge Section > Edge > Operator, `o` field, scopes latest-wins to "the
+    conflicting Operators". I2I, NI2I and DI2I all constrain the near ACDC's *issuer*
+    relative to the far node's issuee, so they conflict with one another. E1E
+    constrains the near *issuee*, so it conflicts with none of them and must be
+    conjoined (AND).
 
     Collapsing the whole list to a single operator drops the constraint that loses,
     which is a silent weakening: ``["E1E", "I2I"]`` from a producer requiring both
