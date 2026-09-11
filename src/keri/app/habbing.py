@@ -152,6 +152,11 @@ class Habery:
         dependency-injected stores are not yet open (e.g. in an async context),
         ``setup`` must be called explicitly once they have been opened.
 
+        Callers that inject async stores own their lifecycle. They must await
+        each store's ``aclose`` on shutdown and if opening or setup fails,
+        including when this constructor raises before returning a Habery.
+        Use an async cleanup guard around both store opening and construction.
+
         Parameters:
             name (str): Alias name for the shared environment, databases, and
                 config file.
@@ -233,6 +238,11 @@ class Habery:
         This separation allows dependency injection of database instances that
         may be opened asynchronously after ``__init__``.  The first successful
         call performs vacuous (initial) database setup.
+
+        On ``AuthError``, synchronous stores are closed here. If either store
+        has ``aclose``, the caller must await cleanup of the injected stores.
+        This preserves the authentication error without calling a synchronous
+        close from a running event loop.
 
         Parameters:
             seed (str | None): qb64 private signing key (seed) for the
@@ -767,6 +777,10 @@ class Habery:
 
     def close(self, clear=False):
         """Close all managed resources (keystore, database, config file).
+
+        This is the synchronous lifecycle path. Callers that inject async
+        stores must await their ``aclose`` methods and close the config file
+        themselves. This method does not wait for async persistence.
 
         Parameters:
             clear (bool): When ``True``, remove the resource directories in
