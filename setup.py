@@ -68,7 +68,7 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='~=3.14.7',
+    python_requires='~=3.14.0',
     install_requires=[
                         'lmdb==2.3.0',
                         'pysodium==0.7.18',
