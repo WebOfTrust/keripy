@@ -100,7 +100,11 @@ class GrantDoer(doing.DoDoer):
         acdc = serialize(creder, prefixer, seqner, saider)
 
         if self.recp is None:
-            recp = creder.attrib['i'] if 'i' in creder.attrib else None
+            # Default the recipient to the issuee, resolved via .iseaid so an
+            # aggregate ('acg') credential works here too: its .attrib is None
+            # and its issuee lives at .sad["A"][1]["i"]. Same defect as the one
+            # sendArtifacts had, one step earlier on the same grant path.
+            recp = creder.iseaid
         elif self.recp in self.hby.kevers:
             recp = self.recp
         else:
