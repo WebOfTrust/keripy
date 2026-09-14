@@ -886,8 +886,9 @@ class JoinDoer(doing.DoDoer):
         print(f"    Type: {schemer.sed['title']}")
         print(f"    Issued By: {hab.name} ({hab.pre})")
 
-        if "i" in creder.attrib:
-            isse = creder.attrib['i']
+        # Resolve via .iseaid so an aggregate ('acg') credential names its issuee here too (#1529).
+        isse = creder.iseaid
+        if isse is not None:
             contact = self.org.get(isse)
             if contact is not None and "alias" in contact:
                 print(f"    Issued To: {contact['alias']} ({isse})")
@@ -944,8 +945,9 @@ class JoinDoer(doing.DoDoer):
                 yield self.tock
 
             print(f"Credential {creder.said} revoked.")
-            if hab.witnesser() and 'i' in creder.attrib:
-                recp = creder.attrib['i']
+            # Same resolution for the issuee this revocation is streamed to (#1529).
+            recp = creder.iseaid
+            if hab.witnesser() and recp is not None:
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.israid):
                     serder = SerderKERI(raw=msg)
