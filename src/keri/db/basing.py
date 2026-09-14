@@ -580,6 +580,14 @@ class Baser(LMDBer):
             subkey 'essrs.'
             Multiple values per key.
 
+        .ests is named subDB instance of CatCesrIoSetSuber
+            (klas=(Number, Diger)) for resolved exchange source seals.
+            subkey 'ests.'
+            Key: exchange message SAID and sealing AID.
+            Value: sealing KEL event sequence number and SAID.
+            Multiple values per key are allowed. The exchange message in
+            ``exns`` remains the acceptance marker.
+
         .chas is named subDB instance of CesrIoSetSuber (klas=Diger) for
             accepted signed 12-word challenge response exn messages. Keyed by
             prefix of signer.
@@ -779,7 +787,8 @@ class Baser(LMDBer):
             Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
             parser kwa key 'trqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramTSGS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key trans last sig group attachments. Each group is
@@ -789,7 +798,27 @@ class Baser(LMDBer):
             Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
             parser kwa key 'tsgs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
+
+        .kramULGS is named subDB instance of CesrIoSetSuber (klas=Prefixer) for
+            foreign last signature groups that KRAM could not resolve when a
+            partial message was received.
+            subkey 'ulgs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID.
+            Values identify unresolved foreign signer prefixes. Multiple values
+            per key are allowed.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
+
+        .kramCIGS is named subDB instance of CatCesrIoSetSuber
+            (klas=(Verfer, Cigar)) for foreign nontransferable signatures on
+            partially signed multi-key messages.
+            subkey 'cigs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID.
+            Multiple values per key are allowed.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramSSCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen seal couple attachments from issuing or
@@ -798,7 +827,8 @@ class Baser(LMDBer):
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Number, Diger) tuple. Sourced from parser kwa key 'sscs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramSSTS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key source seal triple attachments from issued or
@@ -808,7 +838,8 @@ class Baser(LMDBer):
             Value is (Prefixer, Number, Diger) tuple. Sourced from parser kwa
             key 'ssts'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramFRCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen replay couple attachments.
@@ -816,7 +847,8 @@ class Baser(LMDBer):
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Number, Dater) tuple. Sourced from parser kwa key 'frcs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramTDCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key typed digest seal couple attachments.
@@ -824,7 +856,8 @@ class Baser(LMDBer):
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Verser, Diger) tuple. Sourced from parser kwa key 'tdcs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramPTDS is named subDB instance of IoSetSuber for KRAM partially signed
             multi-key pathed stream attachments.
@@ -833,7 +866,8 @@ class Baser(LMDBer):
             Value is raw bytes of pathed CESR stream. Sourced from parser kwa
             key 'ptds'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramBSQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key blind state quadruple attachments.
@@ -842,7 +876,8 @@ class Baser(LMDBer):
             Value is (Diger, Noncer, Noncer, Labeler) tuple. Sourced from
             parser kwa key 'bsqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramBSSS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key bound state sextuple attachments.
@@ -851,7 +886,8 @@ class Baser(LMDBer):
             Value is (Diger, Noncer, Noncer, Labeler, Number, Noncer) tuple.
             Sourced from parser kwa key 'bsss'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
         .kramTMQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key type media quadruple attachments.
@@ -860,7 +896,8 @@ class Baser(LMDBer):
             Value is (Diger, Noncer, Labeler, Texter) tuple. Sourced from
             parser kwa key 'tmqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
+            KRAM removes entries after it forwards the message, detects a sender
+            key-state change, or prunes the incomplete message.
 
     Properties:
         kevers (statedict): read through cache of kevers of states for KELs in db
@@ -1105,6 +1142,10 @@ class Baser(LMDBer):
 
         self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
 
+        # resolved exchange source seals indexed by message and sealing AID
+        self.ests = subing.CatCesrIoSetSuber(db=self, subkey="ests.",
+                                             klas=(coring.Number, coring.Diger))
+
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
@@ -1300,6 +1341,14 @@ class Baser(LMDBer):
         self.kramTSGS = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
                                                   klas=(coring.Prefixer, coring.Number,
                                                         coring.Diger, indexing.Siger))
+
+        # ulgs: foreign last signature groups unresolved at receipt
+        self.kramULGS = subing.CesrIoSetSuber(db=self, subkey='ulgs.',
+                                             klas=coring.Prefixer)
+
+        # cigs: foreign nontransferable signatures (verfer, cigar)
+        self.kramCIGS = subing.CatCesrIoSetSuber(
+            db=self, subkey='cigs.', klas=(coring.Verfer, coring.Cigar))
 
         # sscs: first seen seal couples (number, diger) issuing or delegating
         self.kramSSCS = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
@@ -1584,11 +1633,15 @@ class Baser(LMDBer):
                 # This is the list of set based databases that are not created as part of event processing.
                 # for now we are just copying them from self to copy without worrying about being able to
                 # reprocess them.  We need a more secure method in the future
-                sets = ["esigs", "ecigs", "epath", "enst", "chas", "reps", "wkas", "meids", "maids"]
+                evidence = ["esigs", "ecigs", "epath", "enst", "essrs", "ests"]
+                accepted = {said for (said,), _ in self.exns.getTopItemIter()}
+                sets = evidence + ["chas", "reps", "wkas", "meids", "maids"]
                 for name in sets:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)
                     for keys, val in srcdb.getTopItemIter():
+                        if name in evidence and keys[0] not in accepted:
+                            continue
                         cpydb.add(keys=keys, val=val)
 
                 # Copy imgs (blinded media for remote identifiers)
