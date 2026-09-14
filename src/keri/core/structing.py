@@ -65,8 +65,8 @@ SealLast = namedtuple("SealLast", 'i')
 SealBack = namedtuple("SealBack", 'bi d')
 
 # Kind Digest Seal for typed versioned digests : duple (t, d)
-# t = type of digest as (Verser)
-# d = SAID digest qb64 of transaction event (Diger)
+# t = type of digest as (Verser)moo
+# d = digest or nonce using custom derivation given by type field (Noncer)
 # use TypedDigestSealCouples count code for CESR Native
 SealKind = namedtuple("SealKind", 't d')
 
@@ -235,9 +235,9 @@ class SealCastDom(IceMapDom):
                                       d=Castage(Diger))  # SealEvent class reference triple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBack class reference
+                                    d=Castage(Diger))  # SealBack class reference
     SealKind: NamedTuple = SealKind(t=Castage(Verser),
-                                        d=Castage(Diger))  # SealKind class reference
+                                    d=Castage(Noncer))  # SealKind class reference
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -428,9 +428,9 @@ class AllCastDom(IceMapDom):
                                       d=Castage(Diger))  # SealEvent class reference triple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBack class reference
+                                    d=Castage(Diger))  # SealBack class reference
     SealKind: NamedTuple = SealKind(t=Castage(Verser),
-                                        d=Castage(Diger))  # SealKind class reference
+                                    d=Castage(Noncer))  # SealKind class reference
     BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),

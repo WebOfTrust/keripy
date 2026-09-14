@@ -68,7 +68,7 @@ def test_structor_doms():
         'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
                                  d=Castage(kls=Diger, ipn=None)),
         'SealKind': SealKind(t=Castage(kls=Verser, ipn=None),
-                                 d=Castage(kls=Diger, ipn=None)),
+                                 d=Castage(kls=Noncer, ipn=None)),
     }
 
 
@@ -148,7 +148,7 @@ def test_structor_doms():
         'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
                                  d=Castage(kls=Diger, ipn=None)),
         'SealKind': SealKind(t=Castage(kls=Verser, ipn=None),
-                                 d=Castage(kls=Diger, ipn=None)),
+                                 d=Castage(kls=Noncer, ipn=None)),
         'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
                                  u=Castage(kls=Noncer, ipn='nonce'),
                                  td=Castage(kls=Noncer, ipn='nonce'),
