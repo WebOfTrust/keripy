@@ -225,8 +225,8 @@ class CounterCodex_2_0(IceMapDom):
     BigWitnessIdxSigs: str = '--L'  # Big Witness Indexed Signature(s) of qb64.
     NonTransReceiptCouples: str = '-M'  # NonTrans Receipt Couple(s), pre+cig.
     BigNonTransReceiptCouples: str = '--M'  # Big NonTrans Receipt Couple(s), pre+cig.
-    TransReceiptIdxSigGroups: str = '-N'  # Trans Receipt Indexed Signature Groups(s), pre+snu+dig+ControllerIdxSigs of qb64.
-    BigTransReceiptIdxSigGroups: str = '--N'  # Big Trans Receipt Indexed Signature Groups(s)(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    NonceSealSingles: str = '-N'  # Nonce Seal Single(s), nonce as sealed data, nonce or dig.
+    BigNonceSealSingles: str = '--N'  # Big Nonce Seal Single(s), nonce as sealed data, nonce or dig.
     FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
     PathedMaterialCouples: str = '-P'  # Pathed Material couples. path+text

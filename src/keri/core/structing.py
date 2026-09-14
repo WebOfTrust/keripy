@@ -27,6 +27,11 @@ from .signing import Tiers, Salter
 # to check if dict of seal matches fields of associted namedtuple
 # if tuple(sealdict) == SealEvent._fields:
 
+# Nonce Seal: uniple (d,)
+# d = nonce or digest qb64 as data
+# use NonceSealSingles as count code for CESR native
+SealNonce = namedtuple("SealNonce", 'd')
+
 # Digest Seal: uniple (d,)
 # d = digest qb64 of data  (usually SAID)
 # use DigestSealSingles as count code for CESR native
@@ -108,14 +113,6 @@ TypeMedia = namedtuple("TypeMedia", 'd u mt mv')
 # dt = date time stamp str of RFC-3339 profile of ISO-8601 (Dater)
 # use FirstSeenReplayCouples count code for CESR native
 FirstSeen = namedtuple("FirstSeen", 'f, dt')
-
-## Transferable Receipts
-## ri = AID pre qb64 of receiptor (Prefixer)
-## n = sn of receipted event as lowercase hex string snh no leading zeros, (Number)
-## d = SAID digest qb64 of receipted event (Diger)
-## rss = receiptor indexed signatures qb64 list[Siger]
-## use TransReceiptIdxSigGroups count code for CESR native
-#TransReceipts = namedtuple("TransReceipts", 'i, n, d, rss')
 
 # Transferable Signatures
 # i = AID pre qb64 of signer (Prefixer)
