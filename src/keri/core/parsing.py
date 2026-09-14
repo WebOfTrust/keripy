@@ -49,7 +49,7 @@ class MsgParseDom:
     sigers: list[Siger] = field(default_factory=list)  # ControllerIdxSigs
     wigers: list[Siger] = field(default_factory=list)  # WitnessIdxSigs
     cigars: list[Cigar] = field(default_factory=list)  # NonTransReceiptCouples cigar with verfer from (pre+sig)
-    rsgs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+    #rsgs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
     tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [sigers])
     lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
@@ -135,9 +135,9 @@ class Parser:
     Methods[2][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples2"
     Methods[2][0][Codens.BigNonTransReceiptCouples] = "_NonTransReceiptCouples2"
 
-    Methods[1][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups1"
-    Methods[2][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
-    Methods[2][0][Codens.BigTransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
+    #Methods[1][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups1"
+    #Methods[2][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
+    #Methods[2][0][Codens.BigTransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
 
     Methods[1][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups1"
     Methods[2][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups2"
@@ -944,7 +944,6 @@ class Parser:
             sigers (list[Siger]): ControllerIdxSigs
             wigers (list[Siger]): WitnessIdxSigs
             cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-            rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
             tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
             lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
             frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
@@ -1339,7 +1338,6 @@ class Parser:
             sigers (list[Siger]): ControllerIdxSigs
             wigers (list[Siger]): WitnessIdxSigs
             cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-            rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
             tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
             lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
             frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
@@ -1415,7 +1413,7 @@ class Parser:
                     if exts['cigars']:  # cigars
                         kvy.processAttachedReceiptCouples(**exts)
 
-                    if exts['rsgs']:  # rsgs  TransReceiptIdxSigGroups (was trqs)
+                    if exts['tsgs']:  # tsgs  TransIdxSigGroups (was trqs)
                         kvy.processAttachedReceiptSigGroups(**exts)
 
                 except AttributeError as ex:
@@ -1425,7 +1423,7 @@ class Parser:
                     raise ValidationError(msg) from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-                if not (exts['cigars'] or exts['wigers'] or exts['tsgs'] or exts['rsgs']):
+                if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):
                     msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
                     logger.info(msg)
                     logger.debug("Receipt body=\n%s\n", serder.pretty())
