@@ -55,7 +55,7 @@ class MsgParseDom:
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
     sscs:   list[SealSource] = field(default_factory=list)  # SealSourceCouples (number, diger) sealing or sealed event
     ssts:   list[SealEvent] = field(default_factory=list)  # SealSourceTriples (prefixer, number, diger) sealing or sealed event
-    tdcs:   list[SealKind] = field(default_factory=list)  # TypedDigestSealCouples SealKind (verser, diger)
+    tdcs:   list[SealKind] = field(default_factory=list)  # TypedDigestSealCouples SealKind (verser, noncer)
     bsqs:   list[BlindState] = field(default_factory=list)  # BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
     bsss:   list[BoundState] = field(default_factory=list)  # BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
     tmqs:   list[TypeMedia] = field(default_factory=list)  # TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
@@ -950,7 +950,7 @@ class Parser:
             frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
             sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
             ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
-            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, noncer)
             bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
             bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
             tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
@@ -1345,7 +1345,7 @@ class Parser:
             frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
             sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
             ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
-            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, noncer)
             bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
             bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
             tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
@@ -2312,7 +2312,7 @@ class Parser:
                     another already extracted group.
 
         Returns:
-            tdcs (list[tuple]): [(verser, diger)]"""
+            tdcs (list[tuple]): [(verser, noncer)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2325,8 +2325,8 @@ class Parser:
         tdcs = []
         while gims:   # extract each attached group and strip from gims
             verser = self.extract(ims=gims, klas=Verser, cold=cold)
-            diger = self.extract(ims=gims, klas=Diger, cold=cold)
-            tdcs.append((verser, diger))
+            noncer = self.extract(ims=gims, klas=Noncer, cold=cold)
+            tdcs.append((verser, noncer))
         try:
             exts.tdcs.extend(tdcs)
         except KeyError:

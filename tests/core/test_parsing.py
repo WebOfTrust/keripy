@@ -2052,7 +2052,7 @@ def test_parser_v2_basic():
         aims = Mediar.enclose([mediar]) #enclose defaults to V2
         msgs.extend(aims)
 
-        # add TypedDigestSealCouples
+        # add TypedDigestSealCouples tdcs
         verser = Verser(proto='OCSR')
         assert verser.qb64 == 'YOCSRCAA'
         crew = SealKind(t=verser.qb64, d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
