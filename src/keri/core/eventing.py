@@ -32,7 +32,7 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Matter, Prefixer,
 from .counting import Counter, Codens
 from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
                         BoundState, TypeMedia, FirstSeen, StateEstEvent,
-                        TransSigs, TransLastSigs, TransReceipts, AClanDom)
+                        TransSigs, TransLastSigs, AClanDom)
 from .indexing import Siger
 from .serdering import SerderKERI
 

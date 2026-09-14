@@ -77,7 +77,7 @@ def test_codexes_tags():
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
         'NonTransReceiptCouples': '-C',
-        'TransReceiptIdxSigGroups': '-D',
+        #'TransReceiptIdxSigGroups': '-D',
         'FirstSeenReplayCouples': '-E',
         'TransIdxSigGroups': '-F',
         'SealSourceCouples': '-G',
@@ -100,7 +100,7 @@ def test_codexes_tags():
 
     assert  asdict(QTDex_1_0) == \
     {
-        'TransReceiptIdxSigGroups': '-D',
+        #'TransReceiptIdxSigGroups': '-D',
         'PathedMaterialCouples': '-L',
         'BigPathedMaterialCouples': '--L',
         'GenericGroup': '-T',
@@ -472,7 +472,6 @@ def test_counter_class():
                     '-A': 'ControllerIdxSigs',
                     '-B': 'WitnessIdxSigs',
                     '-C': 'NonTransReceiptCouples',
-                    '-D': 'TransReceiptIdxSigGroups',
                     '-E': 'FirstSeenReplayCouples',
                     '-F': 'TransIdxSigGroups',
                     '-G': 'SealSourceCouples',
@@ -570,7 +569,7 @@ def test_counter_class():
                     '-A': Cizage(hs=2, ss=2, fs=4),
                     '-B': Cizage(hs=2, ss=2, fs=4),
                     '-C': Cizage(hs=2, ss=2, fs=4),
-                    '-D': Cizage(hs=2, ss=2, fs=4),
+                    #'-D': Cizage(hs=2, ss=2, fs=4),
                     '-E': Cizage(hs=2, ss=2, fs=4),
                     '-F': Cizage(hs=2, ss=2, fs=4),
                     '-G': Cizage(hs=2, ss=2, fs=4),
