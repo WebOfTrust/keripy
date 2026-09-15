@@ -718,7 +718,7 @@ class IpexHandler:
 
         return nodes, order
 
-    def _evaluateLeafEdge(self, group, *, nodes, nserder, inheritedSchema):
+    def _evaluateLeafEdge(self, group, *, nodes, nserder, inheritedPins=()):
         """Evaluate one disclosed leaf edge against its referenced far node.
 
         Parameters:
@@ -729,8 +729,8 @@ class IpexHandler:
                 during the origin-graph walk.
             nserder (Serder): Serder for the current near node whose edge block
                 is being evaluated.
-            inheritedSchema (str | Mapping | None): Optional schema pin passed
-                down from a parent edge group.
+            inheritedPins (tuple): Schema pins in force from enclosing edge
+                groups, every one of which the far node must satisfy.
 
         Returns:
             bool | None: ``True`` when the leaf edge semantics are satisfied,
@@ -803,10 +803,31 @@ class IpexHandler:
             elif dop == "I2I" and nserder.israid != fserder.iseaid:
                 matched = False
 
-        # A leaf may pin the far node's schema directly, otherwise it
-        # inherits the schema pin from its parent group.
-        edgeSchema = group["s"] if "s" in group else inheritedSchema
-        if matched and edgeSchema is not None:
+        # Every schema pin in force on this leaf: those inherited from enclosing
+        # groups first, then the leaf's own. Conjunction, not override -- an
+        # inherited pin is a floor, so a leaf carrying its own `s` must satisfy both
+        # and cannot release itself from a constraint its group placed. This is the
+        # rule settled for edge `s` on issue #1534: when the pinned schema differs
+        # from the far node's own, both validations must pass, and a pin one level
+        # out is no weaker a commitment than a pin on the edge.
+        pins = tuple(inheritedPins)
+        if "s" in group:
+            pins = pins + (group["s"],)
+
+        farSchema = fserder.schema if pins else None
+        if isinstance(farSchema, Mapping):
+            farSchemaId = farSchema.get("$id")
+        elif isinstance(farSchema, str):
+            farSchemaId = farSchema
+        else:
+            farSchemaId = None
+        if pins and not isinstance(farSchemaId, str):
+            return None
+
+        for edgeSchema in pins:
+            if not matched:
+                break
+
             edgeSchemer = None
             if isinstance(edgeSchema, str):
                 edgeSchemaId = edgeSchema
@@ -824,16 +845,6 @@ class IpexHandler:
             else:
                 return None
 
-            farSchema = fserder.schema
-            if isinstance(farSchema, Mapping):
-                farSchemaId = farSchema.get("$id")
-            elif isinstance(farSchema, str):
-                farSchemaId = farSchema
-            else:
-                return None
-            if not isinstance(farSchemaId, str):
-                return None
-
             # A direct schema SAID match is enough. Otherwise load or build
             # the schema and verify the far node against it.
             if edgeSchemaId != farSchemaId:
@@ -848,7 +859,7 @@ class IpexHandler:
 
         return matched
 
-    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, inheritedSchema):
+    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, inheritedPins=()):
         """Evaluate one disclosed edge group and reduce its child results.
 
         Parameters:
@@ -861,8 +872,8 @@ class IpexHandler:
             nested (bool): ``True`` when ``group`` is a nested edge group and
                 therefore allows group-only labels like ``s``; ``False`` for a
                 top-level edge section.
-            inheritedSchema (str | Mapping | None): Optional schema pin passed
-                down from the parent edge group.
+            inheritedPins (tuple): Schema pins in force from enclosing edge
+                groups, every one of which the far node must satisfy.
 
         Returns:
             bool | None: ``True`` when the group is well-formed and its child
@@ -881,8 +892,12 @@ class IpexHandler:
         if not isinstance(groupOp, str) or groupOp not in EdgeGroupOps:
             return None
 
-        # Nested groups can pin one schema for every child below them.
-        nextSchema = group.get("s", inheritedSchema) if nested else inheritedSchema
+        # Nested groups can pin one schema for every child below them. A group's own
+        # pin is added to those already in force rather than replacing them, so a
+        # nested group cannot relax what its parent required.
+        nextPins = tuple(inheritedPins)
+        if nested and "s" in group:
+            nextPins = nextPins + (group["s"],)
         results = []
         for label, node in group.items():
             if label in labels:
@@ -895,13 +910,13 @@ class IpexHandler:
                 matched = self._evaluateLeafEdge(node,
                                                  nodes=nodes,
                                                  nserder=nserder,
-                                                 inheritedSchema=nextSchema)
+                                                 inheritedPins=nextPins)
             else:
                 matched = self._evaluateGroupEdge(node,
                                                   nodes=nodes,
                                                   nserder=nserder,
                                                   nested=True,
-                                                  inheritedSchema=nextSchema)
+                                                  inheritedPins=nextPins)
             if matched is None:
                 return None
             results.append(matched)
@@ -952,13 +967,13 @@ class IpexHandler:
                     matched = self._evaluateLeafEdge(edge,
                                                      nodes=nodes,
                                                      nserder=nserder,
-                                                     inheritedSchema=None)
+                                                     inheritedPins=())
                 else:
                     matched = self._evaluateGroupEdge(edge,
                                                       nodes=nodes,
                                                       nserder=nserder,
                                                       nested=False,
-                                                      inheritedSchema=None)
+                                                      inheritedPins=())
                 if matched is not True:
                     return False
 

@@ -197,9 +197,34 @@ class Verifier:
             # m-ary Operator checked; every Edge found, at any depth, is validated.
             # This is the AND aggregation -- the spec default -- and .verifyGroup
             # rejects any group asking for something else.
+            # Schema pins in force at each walked path. An Edge-group MAY carry `s`,
+            # a schema every edge below it must satisfy -- a keripy extension (ACDC
+            # reserves [d, u, o, w] on a group, spec-body.md:1076-1083) that the v2
+            # IPEX path already honours and inherits (acdc/ipexing.py:875). Only
+            # nested groups carry one, matching that path, which reads no pin from the
+            # Edge Section itself. The walk is pre-order, so a parent's entry is
+            # always present before its children are reached.
+            pins = {}
+
             for path, node, group in walkEdgeSection(edge):
                 if group:
                     self.verifyGroup(node, path, creder)
+                    inherited = pins[path[:-1]] if path else ()
+                    own = ()
+                    if path and 's' in node:
+                        pin = node['s']
+                        if not isinstance(pin, str):
+                            # A pin this verifier cannot resolve to a schema SAID must
+                            # not be dropped: dropping it accepts the far nodes the pin
+                            # exists to exclude. v1 resolves by SAID, so the inline
+                            # schema-document form the v2 path accepts is not usable
+                            # here. Permanent, so not an escrow.
+                            raise ValidationError(f"Edge-group schema pin at "
+                                                  f"{'.'.join(path)} in credential "
+                                                  f"{creder.said} is not a schema SAID: "
+                                                  f"{type(pin).__name__}")
+                        own = (pin,)
+                    pins[path] = inherited + own
                     continue
 
                 label = '.'.join(path)  # dotted path so nested edges are locatable
@@ -238,8 +263,13 @@ class Verifier:
                 # must be reissued. Handled here rather than in verifyChain so the
                 # missing-schema case can escrow and cue a schema query, exactly as
                 # the near ACDC's own schema does above.
-                nodeSchema = node['s'] if 's' in node else None
-                if nodeSchema is not None:
+                # Every pin in force here, enclosing groups first, then the edge's
+                # own. Conjunction, not override: an inherited pin is a floor, so an
+                # edge carrying its own `s` must satisfy both and cannot release
+                # itself from a constraint its group placed. This is the #1534 rule
+                # ("two schema validations must be performed and both must be valid")
+                # applied one level out.
+                for nodeSchema in pins[path[:-1]] + ((node['s'],) if 's' in node else ()):
                     farCreder = self.reger.creds.get(keys=nodeSaid)
                     if farCreder.schema != nodeSchema:
                         scraw = self.resolver.resolve(nodeSchema)

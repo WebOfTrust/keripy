@@ -2033,7 +2033,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         def evaluate(op):
             edge = dict(d="", n=listOpChild.said, o=op)
             return handler._evaluateLeafEdge(edge, nodes=nodes, nserder=listOpOrigin,
-                                             inheritedSchema=None)
+                                             inheritedPins=())
 
         assert evaluate(["NI2I"]) is True
         assert evaluate(["I2I", "NI2I"]) is True       # latest of the conflicting pair
@@ -2164,7 +2164,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert handler._evaluateLeafEdge(notOrigin.sad["e"]["holder"],
                                          nodes={notChild.said: {"serder": notChild}},
                                          nserder=notOrigin,
-                                         inheritedSchema=None) is False
+                                         inheritedPins=()) is False
 
         diChild = acdcmap(israid=issuer.pre,
                           attribute=dict(d="", role="member"),
@@ -2179,7 +2179,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert handler._evaluateLeafEdge(diOrigin.sad["e"]["holder"],
                                          nodes={diChild.said: {"serder": diChild}},
                                          nserder=diOrigin,
-                                         inheritedSchema=None) is False
+                                         inheritedPins=()) is False
 
         # A list-valued leaf operator is spec-legal (spec-body.md:1186) and is
         # covered as an acceptance case in
@@ -2236,6 +2236,34 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the incompatible-schema DAG",
                         badSchemaOrigin,
                         [badSchemaChild])
+
+        # An inherited group pin is a floor, not a default: a member carrying its own
+        # compatible `s` must still satisfy the pin its group placed. Composing by
+        # override would let any member release itself from a constraint the Issuer
+        # put on the whole group. This is the #1534 rule ("two schema validations
+        # must be performed and both must be valid") applied one level out.
+        floorCompatSchema = dict(baseChild.sad["s"])
+        floorCompatSchema["title"] = "ACM Default Schema (compatible, group floor)"
+        floorCompatSchemer = Schemer(sed=floorCompatSchema)
+        hby.db.schema.pin(floorCompatSchemer.said, floorCompatSchemer)
+
+        floorChild = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="member"),
+                             iseaid=issuer.pre)
+        floorOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=dict(d="",
+                                        u=Noncer().qb64,
+                                        reports=dict(d="",
+                                                     s=incompatSchemer.said,
+                                                     member=dict(d="",
+                                                                 n=floorChild.said,
+                                                                 o="I2I",
+                                                                 s=floorCompatSchemer.said))),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the group-floor-escaping DAG",
+                        floorOrigin,
+                        [floorChild])
 
 
 def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
