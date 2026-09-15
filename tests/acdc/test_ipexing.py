@@ -1973,6 +1973,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        handler = exc.routes["/ipex/grant"]
 
         def assert_accepted(message, origin, artifacts, prefixes):
             plan = [[origin.sad["s"]["$id"], "/", []]]
@@ -2069,6 +2070,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
 
         # Case 4: a leaf edge may omit `o`. The V2 edge shape allows that, and
         # IPEX does not infer an I2I/NI2I default when the operator is absent.
+        # ~7kev  revisit this laxity once keripy #1556 settles the default rule
         noOpChild = acdcmap(israid=issuer.pre,
                             attribute=dict(d="", role="member"),
                             iseaid=subject.pre)
@@ -2095,6 +2097,41 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         listOpOrigin,
                         [listOpChild],
                         ["/e/holder/_/"])
+
+        # Case 6: `o` may be a list. "When more than one unary Operator is applied
+        # to a given Edge, then the value of the Operator, `o`, field is a list of
+        # those unary Operators" (ACDC spec, Edge Section > Edge > Operator, `o`
+        # field), so the list is the spec's own spelling and not an error. This one resolves to NI2I, which the near
+        # issuer/far issuee pair below does not satisfy under I2I.
+        listOpChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        listOpOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=_edge("holder", listOpChild, op=["NI2I"]),
+                               iseaid=subject.pre)
+        assert_accepted("Here is the list-valued leaf-operator DAG",
+                        listOpOrigin,
+                        [listOpChild],
+                        ["/e/holder/_/"])
+
+        # Latest-wins among the conflicting (delegative) operators, and composition
+        # with E1E, asserted directly on the evaluator rather than through six more
+        # grants. The far node here is issued by issuer to issuer, and the near node
+        # by issuer to subject, so I2I holds on the far pair and E1E does not.
+        nodes = {listOpChild.said: {"serder": listOpChild}}
+
+        def evaluate(op):
+            edge = dict(d="", n=listOpChild.said, o=op)
+            return handler._evaluateLeafEdge(edge, nodes=nodes, nserder=listOpOrigin,
+                                             inheritedSchema=None)
+
+        assert evaluate(["NI2I"]) is True
+        assert evaluate(["I2I", "NI2I"]) is True       # latest of the conflicting pair
+        assert evaluate(["NI2I", "I2I"]) is True       # I2I wins, and holds here
+        assert evaluate(["I2I", "E1E"]) is False       # E1E composes and fails
+        assert evaluate([]) is True                    # empty: no constraint, as absent
+        assert evaluate(["NI2I", "BOGUS"]) is None     # unevaluable, fails closed
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
