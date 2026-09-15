@@ -612,12 +612,27 @@ def test_core_identity():
     assert structor.crew._asdict() == {'nd': guyChallenge}
 
     #Create sealing interaction event for guy
+    data = [guyCns._asdict()]
+    guyIxnSerder = interact(guy, dig=guyISerder.said, data=data, version=Vrsn_2_0, kind=Kinds.json)
 
+    assert guyIxnSerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAADu.',
+        't': 'ixn',
+        'd': 'EEmZ6nuPKuq8d2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub',
+        'i': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+        's': '1',
+        'p': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+        'a': [{'nd': '0ABndXlzZWRpY2hhbGxlbmdl'}]
+    }
 
 
     # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
     # SAID and SN of event in Guy's KEL
-    guyCsr = SealEvent(i=guy, s='1', d='EBydfSx8ftk7IAwt2gUPLL-DKLFFdlFrUk39G7seAm4l')
+    guyCsr = SealEvent(i=guy, s=guyIxnSerder.snh, d=guyIxnSerder.said)
+    assert guyCsr == SealEvent(i='EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+                               s='1',
+                               d='EEmZ6nuPKuq8d2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
 
 
     iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
@@ -770,12 +785,26 @@ def test_core_identity():
     assert structor.crew._asdict() == {'nd': galChallenge}
 
     #Create sealing interaction event for gal
+    data = [galCns._asdict()]
+    galIxnSerder = interact(gal, dig=galISerder.said, data=data, version=Vrsn_2_0, kind=Kinds.json)
 
-
+    assert galIxnSerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAADu.',
+        't': 'ixn',
+        'd': 'EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr',
+        'i': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+        's': '1',
+        'p': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+        'a': [{'nd': '0ABnYWxzZWRpY2hhbGxlbmdl'}]
+    }
 
     # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
-    # SAID and SN of event in Guy's KEL
-    galCsr = SealEvent(i=guy, s='1', d='EBydfSx8ftk7IAwt2gUPLL-DKLFFdlFrUk39G7seAm4l')
+    # SAID and SN of event in Gals's KEL
+    galCsr = SealEvent(i=gal, s=galIxnSerder.snh, d=galIxnSerder.said)
+    assert galCsr == SealEvent(i='EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+                               s='1',
+                               d='EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
 
 
     # Gal's Identity Assurance Receipt (iar) ACDC
