@@ -17,7 +17,7 @@ from jsonschema.exceptions import ValidationError as SchemaValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Structor,
-                       SealEvent, SealDigest, incept)
+                       SealEvent, SealDigest, SealNonce, incept, interact)
 from keri.acdc import regcept, blindate, update, acdcmap
 
 
@@ -598,34 +598,26 @@ def test_core_identity():
     assert regserders[0].sner.num == 0
     assert regserders[0].stamp == stamp
 
-
-    # Challenge digest derived fromSalty Nonce 128 bit entropy
-    # currently SealDigest only accepts Digest CESR codes not Nonce CESR code so
-    # either need to extend SealDigest or create new Seal type that supports Nonces
-    # which include Digests such as SealNonce, need new group code so Structor renders
-    # to CESR correctly
-    raw = b'sediiarchallenge'  # raw challenge salt
+    # Guy's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
+    salt = b'guysedichallenge'  # raw challenge salt
     salter = Salter(raw=salt)
-    assert   salter.qb64 == '0ABzZWRpYWNkY3dvcmtzYWx0'  # CESR encoded 128 bit nonce
+    guyChallenge = salter.qb64
+    assert guyChallenge == '0ABndXlzZWRpY2hhbGxlbmdl'  # CESR encoded 128 bit nonce
 
-    # create guy's challenge as Digest qb64
-    # use guy's AID as path to stretch of salt and then take digest of seed from stretch
-    guyChallenge = Diger(ser=salter.stretch(path=guy)).qb64
-    assert guyChallenge =='EMQOicJKx8hRfZrpLvjHaYjaJdk5rqggyXCB32dcE28n'
-
-    # Challenge Nonce Seal anchored in KEL of SMAID
-    guyCns = SealDigest(d=guyChallenge)
-    structor = Structor(crew=guyCns, clan=SealDigest)
+    # Challenge Nonce Seal to be anchored in guy's SMAID KEL
+    guyCns = SealNonce(nd=guyChallenge)
+    structor = Structor(crew=guyCns, clan=SealNonce)
     assert structor.qb64 == guyChallenge
     assert structor.crew == guyCns
-    assert structor.crew._asdict() == {'d': guyChallenge}
+    assert structor.crew._asdict() == {'nd': guyChallenge}
+
+    #Create sealing interaction event for guy
 
 
-    # Challenge Seal Reference to event in KEL of SMAID
-    # need to anchor seal in interaction event in guy's KEL with anchor and then get its
+
+    # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
     # SAID and SN of event in Guy's KEL
     guyCsr = SealEvent(i=guy, s='1', d='EBydfSx8ftk7IAwt2gUPLL-DKLFFdlFrUk39G7seAm4l')
-
 
 
     iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
@@ -668,7 +660,7 @@ def test_core_identity():
 
     mapper = Mapper(mad=guyIarMad, makify=True, saidive=True, kind=kind)
     guyIarMadSaid = mapper.said
-    assert  guyIarMadSaid == 'ENBDA2Dxx9Lf2kKTcKiqEULab4sDB6hB3NWnhnvDu2EG'
+    assert  guyIarMadSaid == 'EPYDIt6majjjR7saXuiBpPL8kWAQbtXN7Vge2fZp9zIf'
     iarValidator.validate(mapper.mad)  # raises error if invalid
 
     guyIarAttBareMad = \
@@ -702,7 +694,7 @@ def test_core_identity():
 
     assert guyIarAttMad == \
     {
-        'd': 'EIAwt2gUPLL-BydfSx8ftkFrUk39G7seAm4l7DKLFFdl',
+        'd': guyIarAttMadSaid,
         'i': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
         'givenName': 'Guy',
         'middleName': 'Marty McFly',
@@ -731,16 +723,16 @@ def test_core_identity():
     assert guySerderIar.sad['a'] == guyIarAttMad
     assert guySerderIar.sad == \
     {
-        'v': 'ACDCCAACAAJSONAALn.',
+        'v': 'ACDCCAACAAJSONAALT.',
         't': 'acm',
-        'd': 'EJpYnJmj-e8Hr2W5awzMuwJGH8LFRjCd388qEEa3DVNw',
-        'u': 'EMQOicJKx8hRfZrpLvjHaYjaJdk5rqggyXCB32dcE28n',
-        'i': 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-',
-        's': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
+        'd': 'ECU_HW1X0I6-5sQSJU_3YfxmBIH3dfDhiw_3N35BxMg9',
+        'u': guyChallenge,
+        'i': sue,
+        's': IarSchemaSaid,
         'a':
         {
-            'd': 'EIAwt2gUPLL-BydfSx8ftkFrUk39G7seAm4l7DKLFFdl',
-            'i': 'EDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JR',
+            'd':  guyIarAttMadSaid,
+            'i': guy,
             'givenName': 'Guy',
             'middleName': 'Marty McFly',
             'familyName': 'Brown',
@@ -760,27 +752,30 @@ def test_core_identity():
             'sediURL': 'https://example.com/sedi/here'
         }
     }
-    assert guySerderIar.said == 'EJpYnJmj-e8Hr2W5awzMuwJGH8LFRjCd388qEEa3DVNw'
+    assert guySerderIar.said == 'ECU_HW1X0I6-5sQSJU_3YfxmBIH3dfDhiw_3N35BxMg9'
     assert guySerderIar.iseaid == guy
 
 
-    # create gal's challenge as Digest qb64
-    # use gal's AID as path to stretch of salt and then take digest of seed from stretch
-    galChallenge = Diger(ser=salter.stretch(path=gal)).qb64
-    assert galChallenge == 'ECPR1JsiZT9r7ADoBC0Kb9uuuoxnGI3tXaEcmvEAPhcw'
+    # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
+    salt = b'galsedichallenge'  # raw challenge salt
+    salter = Salter(raw=salt)
+    galChallenge = salter.qb64
+    assert galChallenge == '0ABnYWxzZWRpY2hhbGxlbmdl'  # CESR encoded 128 bit nonce
 
-
-     # Challenge Nonce Seal anchored in KEL of SMAID
-    galCns = SealDigest(d=galChallenge)
-    structor = Structor(crew=galCns, clan=SealDigest)
+    # Challenge Nonce Seal to be anchored in gal's SMAID KEL
+    galCns = SealNonce(nd=galChallenge)
+    structor = Structor(crew=galCns, clan=SealNonce)
     assert structor.qb64 == galChallenge
     assert structor.crew == galCns
-    assert structor.crew._asdict() == {'d': galChallenge}
+    assert structor.crew._asdict() == {'nd': galChallenge}
 
-    # Challenge Seal Reference to event in KEL of SMAID
-    # need to anchor seal in interaction event in gal's KEL with anchor and then get its
+    #Create sealing interaction event for gal
+
+
+
+    # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
     # SAID and SN of event in Guy's KEL
-    galCsr = SealEvent(i=gal, s='1', d='EBydfSx8ftk7IAwt2gUPLL-DKLFFdlFrUk39G7seAm4l')
+    galCsr = SealEvent(i=guy, s='1', d='EBydfSx8ftk7IAwt2gUPLL-DKLFFdlFrUk39G7seAm4l')
 
 
     # Gal's Identity Assurance Receipt (iar) ACDC
@@ -843,6 +838,10 @@ def test_core_identity():
     }
     mapper = Mapper(mad=galIarAttBareMad, makify=True, saidive=True, kind=kind)
     galIarAttMad = mapper.mad
+    galIarAttMadSaid = mapper.said
+    assert galIarAttMadSaid == 'EGrLfrJGwHHPVpHQMU2-bfzntCesFU_Q8rK7nbDBcTPz'
+    assert galIarAttMad['i'] == gal
+
     galSerderIar = acdcmap(sue, uuid=galChallenge, schema=IarSchemaSaid,
                            attribute=galIarAttMad, kind=kind)
     iarValidator.validate(galSerderIar.sad)  # raises error if invalid
@@ -850,16 +849,16 @@ def test_core_identity():
     assert galSerderIar.sad['a'] == galIarAttMad
     assert galSerderIar.sad == \
     {
-        'v': 'ACDCCAACAAJSONAALi.',
+        'v': 'ACDCCAACAAJSONAALO.',
         't': 'acm',
-        'd': 'EKI-UkGSgMdS8yI1Whq8ws5eUrlHUEQU6FriCoIBVPF7',
-        'u': 'ECPR1JsiZT9r7ADoBC0Kb9uuuoxnGI3tXaEcmvEAPhcw',
-        'i': 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-',
-        's': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
+        'd': 'EK1bd3kQ20jjeuWFsHfbKWwaMsDcqEmeAcKBJO995eUg',
+        'u': galChallenge,
+        'i': sue,
+        's': IarSchemaSaid,
         'a':
         {
-            'd': 'EGrLfrJGwHHPVpHQMU2-bfzntCesFU_Q8rK7nbDBcTPz',
-            'i': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+            'd': galIarAttMadSaid,
+            'i': gal,
             'givenName': 'Gal',
             'middleName': 'Parker',
             'familyName': 'Brown',
@@ -879,7 +878,7 @@ def test_core_identity():
             'sediURL': 'https://example.com/sedi/here'
         }
     }
-    assert galSerderIar.said == 'EKI-UkGSgMdS8yI1Whq8ws5eUrlHUEQU6FriCoIBVPF7'
+    assert galSerderIar.said == 'EK1bd3kQ20jjeuWFsHfbKWwaMsDcqEmeAcKBJO995eUg'
     assert galSerderIar.iseaid == gal
 
 
