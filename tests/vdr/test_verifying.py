@@ -1873,3 +1873,141 @@ def test_verifier_unknown_edge_operator_fails_closed():
         assert verfer.verifyChain(unsavedSaid, [], ian.pre) is None
 
     """End Test"""
+
+
+def test_verifier_edge_group_schema_pin(seeder):
+    """A schema pinned on an Edge-group constrains every edge below it, and composes.
+
+    keripy's v2 IPEX path lets an Edge-group carry `s`, inherited by every nested
+    block (``acdc/ipexing.py:875``), so one pin serves a whole group instead of being
+    repeated on each member. v1 read only a leaf's own `s`, so the same bytes had the
+    constraint enforced on one path and silently dropped on the other -- and dropping
+    it accepts far nodes the Issuer wrote the pin to exclude, which is the fail-open
+    direction.
+
+    `s` on an Edge-group is a keripy extension: ACDC reserves ``[d, u, o, w]`` there
+    (spec-body.md:1076-1083) and excludes `s` from the labels a nested block may use
+    (:1126), so it is a reserved label the group table does not define. It is
+    honoured rather than rejected because it is exactly a compaction of writing the
+    same `s` on every child, which is unambiguously legal per-edge, and because
+    rejecting it would revert behaviour merged upstream in #1643.
+
+    Composition is conjunction, not override. An inherited pin is a floor: a child
+    that carries its own `s` must satisfy both. This follows the settled reading of
+    edge `s` from issue #1534 -- S. Smith: when the edge schema differs from the far
+    node's own, "two schema validations must be performed and both must be valid" --
+    and the same logic applies to a pin a parent set. Letting a child's own `s`
+    replace an inherited one, as ipexing does today, lets a member escape a
+    constraint the Issuer placed on the group.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        seeder.seedSchema(db=hby.db)
+
+        regery = Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal], framed=True)
+        seqner = Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner,
+                         saider=Diger(qb64=hab.kever.serder.said))
+        regery.processEscrows()
+
+        verifier = Verifier(hby=hby, reger=regery.reger)
+        baseSchemer = hby.db.schema.get(optionalIssueeSchema)
+
+        def pinnedVariant(mutate):
+            """Build a schema variant and put it in the resolver cache."""
+            sed = copy.deepcopy(baseSchemer.sed)
+            sed['$id'] = ''
+            mutate(sed)
+            _, sed = Saider.saidify(sed, label=Saids.dollar)
+            schemer = Schemer(sed=sed)
+            hby.db.schema.pin(schemer.said, schemer)
+            return schemer.said
+
+        # Compatible: only the title differs, so the far node still validates.
+        compatSchema = pinnedVariant(
+            lambda sed: sed.__setitem__('title', 'Optional Issuee (group pin)'))
+        # Incompatible: requires an issuee the untargeted far node does not carry.
+        incompatSchema = pinnedVariant(
+            lambda sed: sed['properties']['a'].__setitem__('required',
+                                                           ['dt', 'claim', 'i']))
+        assert verifier.resolver.resolve(compatSchema)
+        assert verifier.resolver.resolve(incompatSchema)
+
+        anchor = dict(prefixer=hab.kever.prefixer, seqner=seqner,
+                      saider=Diger(qb64=hab.kever.serder.said))
+
+        def issueCred(creder):
+            iss = issuer.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            hab.interact(data=[rseal], framed=True)
+            issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=Seqner(sn=hab.kever.sn),
+                             saider=Diger(qb64=hab.kever.serder.said))
+            regery.processEscrows()
+
+        def buildCred(claim, source):
+            subject = dict(d="", dt=helping.nowIso8601(), claim=claim)
+            _, d = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            creder = credential(issuer=hab.pre, schema=optionalIssueeSchema, data=d,
+                                status=issuer.regk, source=source, rules={},
+                                version=Vrsn_1_0, kind=Kinds.json)
+            issueCred(creder)
+            return creder
+
+        # Untargeted far node whose own schema is optionalIssueeSchema: it satisfies
+        # compatSchema and fails incompatSchema.
+        far = buildCred("A far node claim.", {})
+        verifier.processCredential(far, **anchor)
+        assert regery.reger.saved.get(keys=far.said) is not None
+
+        def nearWithGroup(claim, groupPin, leafPin=None):
+            """Near credential whose single edge sits in a group carrying groupPin."""
+            leaf = dict(n=far.said)
+            if leafPin is not None:
+                leaf['s'] = leafPin
+            group = dict(d='', o="AND", **{'inner': leaf})
+            if groupPin is not None:
+                group['s'] = groupPin
+            _, group = Saider.saidify(sad=group, code=MtrDex.Blake3_256, label=Saids.d)
+            section = dict(d='', grouped=group)
+            _, section = Saider.saidify(sad=section, code=MtrDex.Blake3_256,
+                                        label=Saids.d)
+            return buildCred(claim, section)
+
+        # (1) The group's pin is enforced on a member that carries no `s` of its own.
+        # The far node fails it, so the near ACDC must be rejected.
+        bad = nearWithGroup("Group pins a schema the far node fails.", incompatSchema)
+        with pytest.raises(MissingChainError):
+            verifier.processCredential(bad, **anchor)
+        assert verifier.reger.saved.get(keys=bad.said) is None
+
+        # (2) Conjunction, not override: the member's own compatible pin does not
+        # release it from the group's incompatible one.
+        both = nearWithGroup("Leaf pin must not escape the group pin.",
+                             incompatSchema, leafPin=compatSchema)
+        with pytest.raises(MissingChainError):
+            verifier.processCredential(both, **anchor)
+        assert verifier.reger.saved.get(keys=both.said) is None
+
+        # (3) A group pin the far node satisfies verifies, so the rejections above
+        # are the pin being applied rather than grouped edges failing wholesale.
+        good = nearWithGroup("Group pins a schema the far node satisfies.",
+                             compatSchema)
+        verifier.processCredential(good, **anchor)
+        assert verifier.reger.saved.get(keys=good.said) is not None
+
+        # (4) A pin this verifier cannot resolve to a schema SAID is refused, never
+        # dropped: dropping it would accept far nodes the pin exists to exclude.
+        # v1 resolves pins by SAID, so the inline-document form v2 accepts
+        # (ipexing.py:806-820) is not resolvable here.
+        inline = nearWithGroup("Group pin is an inline schema document.",
+                               dict(baseSchemer.sed))
+        with pytest.raises(ValidationError):
+            verifier.processCredential(inline, **anchor)
+        assert verifier.reger.saved.get(keys=inline.said) is None
+
+    """End Test"""
