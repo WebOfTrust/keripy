@@ -789,9 +789,11 @@ def test_walk_edge_section():
     arbitrary depth. Edges and Edge-groups are told apart by one thing only: "An Edge
     block MUST have a node, `n`, field. This differentiates an Edge block from an
     Edge-group block," and "An Edge-group MUST NOT have a node, `n`, field"
-    (spec-body.md, "#### Block Types"). Reserved labels -- [d, u, o, w] in a group,
-    [d, u, n, s, o, w] in an edge -- carry properties of their own block; every other
-    label names a nested block.
+    (spec-body.md, "#### Block Types"). A label in the reserved union
+    [d, u, n, s, o, w] carries a property of its own block; every other label names a
+    nested block. The union, rather than each block type's own labels, is what bounds
+    nested-block labels (spec-body.md:1126) -- see
+    test_walk_edge_section_skips_the_reserved_label_union.
     """
     said = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
     other = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
