@@ -1041,7 +1041,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     sources = reger.sources(hby.db, creder)
     for source, atc in sources:
         sendArtifacts(hby, reger, postman, source, recp)
-        postman.send(serder=source, attachment=atc)
+        postman.send(serder=source, attachment=atc, gvrsn=source.pvrsn)
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
     msg = messagize(creder,

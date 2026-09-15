@@ -3,25 +3,27 @@
 tests.vdr.test_credentialing module
 
 """
-from keri.kering import Ilks, ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
+from keri.kering import Ilks, ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds, Roles
 
 from keri.core import (Number, Saider, Diger, SerderKERI, SealEvent, TraitDex,
-                       Seqner, Aggor, Noncer, MtrDex, Saids)
+                       Seqner, Aggor, Noncer, MtrDex, Saids, Prefixer, Parser)
 
 from keri.acdc import acdcagg
 from keri.acdc.messaging import acgSchemaDefault
-from keri.app import openKS, openHab
-from keri.db import openDB
+from keri.app import openKS, openHab, StreamPoster, ForwardHandler, Mailboxer
+from keri.db import openDB, openLMDB
 from keri.help import helping
+from keri.peer import Exchanger
 from keri.vc import credential
 from keri.vdr import Credentialer, Regery, Registrar, sendArtifacts
+from keri.vdr.credentialing import sendCredential
 from keri.vdr.eventing import incept
 
 from tests.vdr import buildHab
 
 
 
-def test_v1_registry_version_across_lifecycle_with_v2_identifier():
+def test_v1_registry_version_across_lifecycle_with_v2_identifier(monkeypatch):
     with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         for registry_type in ("standard", "signify"):
@@ -57,12 +59,12 @@ def test_v1_registry_version_across_lifecycle_with_v2_identifier():
                 )
                 credentialer.validate = lambda creder: True
 
-                def create_credential():
+                def create_credential(source=None):
                     return credentialer.create(
                         regname="legacy",
                         recp=None,
                         schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
-                        source=None,
+                        source=source,
                         rules=None,
                         data={"name": "Test"},
                     )
@@ -96,6 +98,46 @@ def test_v1_registry_version_across_lifecycle_with_v2_identifier():
                 iserder = registry.issue(said=creder.said)
                 assert iserder.pvrsn == Vrsn_1_0
                 assert iserder.ilk == Ilks.iss
+
+                seal = SealEvent(i=iserder.pre, s="0", d=iserder.said)
+                anchor = SerderKERI(raw=hab.interact(data=[seal._asdict()]))
+                rgy.tvy.processEvent(serder=iserder, seqner=Number(num=anchor.sn),
+                                     saider=Saider(qb64=anchor.said))
+                rgy.reger.logCred(creder, Prefixer(qb64=hab.pre),
+                                  Number(num=anchor.sn), Diger(qb64=anchor.said))
+                source = creder
+                source_iss = iserder
+                creder = create_credential(source=dict(d="", source=dict(
+                    n=source.said, s=source.schema)))
+                iserder = registry.issue(said=creder.said)
+                seal = SealEvent(i=iserder.pre, s="0", d=iserder.said)
+                anchor = SerderKERI(raw=hab.interact(data=[seal._asdict()]))
+                rgy.tvy.processEvent(serder=iserder, seqner=Number(num=anchor.sn),
+                                     saider=Saider(qb64=anchor.said))
+                rgy.reger.logCred(creder, Prefixer(qb64=hab.pre),
+                                  Number(num=anchor.sn), Diger(qb64=anchor.said))
+                monkeypatch.setattr(hab, "endsFor", lambda pre: {
+                    Roles.witness: {hab.pre: {}}
+                })
+                postman = StreamPoster(hby=hby, hab=hab, recp=hab.pre,
+                                       topic="credential", version=Vrsn_2_0)
+                sendCredential(hby, hab, rgy.reger, postman, creder, hab.pre)
+                with openLMDB(cls=Mailboxer, name="artifacts") as mbx:
+                    exc = Exchanger(hby=hby, handlers=[ForwardHandler(hby=hby, mbx=mbx)])
+                    parser = Parser(kvy=hby.kvy, exc=exc, version=Vrsn_2_0)
+                    for evt in postman.evts:
+                        parser.parse(ims=bytearray(evt["serder"].raw + evt["attachment"]))
+                        assert exc.complete(evt["serder"].said)
+                    carried = {}
+                    for _, _, msg in mbx.cloneTopicIter(topic=f"{hab.pre}/credential"):
+                        child = Parser().parse(ims=bytearray(msg), processive=False)[0]
+                        carried[child.serder.said] = child
+                    for tel in (vcp, source_iss, iserder):
+                        assert carried[tel.said].serder.raw == tel.raw
+                        assert len(carried[tel.said].sscs) == 1
+                    for credential in (source, creder):
+                        assert carried[credential.said].serder.raw == credential.raw
+                        assert len(carried[credential.said].ssts) == 1
             finally:
                 rgy.close()
 

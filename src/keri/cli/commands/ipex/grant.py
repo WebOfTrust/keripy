@@ -145,7 +145,7 @@ class GrantDoer(doing.DoDoer):
             for part in smids:  # this goes to other participants
                 postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
-                             attachment=watc)
+                             attachment=watc, gvrsn=Vrsn_1_0)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
@@ -160,12 +160,12 @@ class GrantDoer(doing.DoDoer):
             credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
             for source, atc in sources:
                 credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
-                postman.send(serder=source, attachment=atc)
+                postman.send(serder=source, attachment=atc, gvrsn=source.pvrsn)
 
             atc = exchanging.serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
             postman.send(serder=exn,
-                         attachment=atc)
+                         attachment=atc, gvrsn=Vrsn_1_0)
 
             doer = doing.DoDoer(doers=postman.deliver())
             self.extend([doer])
