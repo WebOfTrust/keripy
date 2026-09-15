@@ -42,6 +42,15 @@ EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
 DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
+
+# Unary operators whose presence suppresses the default rule. "When the Operator,
+# `o`, field is missing or empty or is present but does not include any of the
+# `I2I`, `NI2I`, `DI2I`, or `E1E` Operators" then the default is appended
+# (spec-body.md:1209 on the ACDC v1.1 line, which added E1E to the list; the 2.0
+# line still names only the delegative three because E1E has not been forward-ported
+# there). Keyed on this set rather than on the list being empty, so an `o` carrying
+# only a non-delegative operator still takes the default the spec appends.
+DefaultSuppressingEdgeOps = ("I2I", "NI2I", "DI2I", "E1E")
 EdgeGroupOps = ("AND", "OR")
 
 def _streamSerder(stream):
@@ -773,6 +782,15 @@ class IpexHandler:
         # permissive rule than the Issuer wrote.
         if any(cand not in UnaryEdgeOps for cand in ops):
             return None
+
+        # The default rule: a bare edge is not an unconstrained edge. `I2I` is appended
+        # for a targeted far node and `NI2I` for an untargeted one, which is what makes
+        # the Operator field optional in the common case (spec-body.md:1199-1201, and
+        # :1229 on the point of the defaults). Resolved through .iseaid so an aggregate
+        # ('acg') far node, whose issuee lives at .sad["A"][1]["i"], is read the same as
+        # an attributive one.
+        if not any(cand in DefaultSuppressingEdgeOps for cand in ops):
+            ops = ops + ["I2I" if fserder.iseaid is not None else "NI2I"]
 
         # Latest-wins applies only "among the conflicting Operators" (spec-body.md:1186).
         # The delegative operators constrain the same thing -- the near ACDC's issuer
