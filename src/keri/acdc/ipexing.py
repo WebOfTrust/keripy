@@ -42,6 +42,7 @@ EdgeSectionLabels = ("d", "u", "o", "w")
 EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
+DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
 EdgeGroupOps = ("AND", "OR")
 
 def _streamSerder(stream):
@@ -1073,31 +1074,45 @@ class IpexHandler:
         far = nodes[edgeSaid]
         fserder = far["serder"] if isinstance(far, dict) else far.serder
 
-        # Normalize one operator or a list of operators.
+        # A leaf edge operator is a single unary operator or a list of them: "When
+        # more than one unary Operator is applied to a given Edge, then the value of
+        # the Operator, `o`, field is a list of those unary Operators" (ACDC spec,
+        # Edge Section > Edge > Operator, `o` field). Anything that is neither is
+        # malformed.
         op = group.get("o")
         if op is None:
-            recognizedOps = ()
+            ops = []
         elif isinstance(op, str):
-            recognizedOps = (op,)
-        elif (isinstance(op, list) and op
-              and all(isinstance(operator, str) for operator in op)):
-            recognizedOps = tuple(op)
+            ops = [op]
+        elif isinstance(op, (list, tuple)):
+            ops = list(op)
         else:
             return None
 
-        # Every declared unary operator must be recognized.
-        if any(operator not in UnaryEdgeOps for operator in recognizedOps):
+        # Missing or empty `o` is valid and means there is no explicit unary operator
+        # constraint on this leaf. A provided but unrecognized operator fails closed
+        # instead of being treated like an omitted one -- every unary operator
+        # narrows what satisfies an edge, so reading past one applies a more
+        # permissive rule than the Issuer wrote.
+        if any(cand not in UnaryEdgeOps for cand in ops):
             return None
+
+        # Latest-wins applies only "among the conflicting Operators" (ACDC spec, Edge
+        # Section > Edge > Operator, `o` field). The delegative operators constrain the same thing -- the near ACDC's issuer
+        # relative to the far node's issuee -- so they conflict and the latest of them
+        # wins. E1E constrains the near issuee instead, so it composes with the winner
+        # rather than overriding it or being overridden.
+        dop = next((cand for cand in reversed(ops) if cand in DelegativeEdgeOps), None)
 
         # Recognized but unevaluated leaf operators fail as unsatisfied
         # relations instead of malformed input.
-        if "NOT" in recognizedOps or "DI2I" in recognizedOps:
+        if "NOT" in ops or dop == "DI2I":
             return False
 
         # Start from a passing state, then knock the edge down to False if
         # any required relation check fails.
         matched = True
-        if "E1E" in recognizedOps:
+        if "E1E" in ops:
             if (not nserder.iseaid
                     or not fserder.iseaid
                     or nserder.iseaid != fserder.iseaid):
@@ -1105,7 +1120,7 @@ class IpexHandler:
 
         # I2I compares the near issuer to the far Issuee. NI2I is explicitly
         # non-delegative and therefore adds no issuer-to-Issuee equality.
-        if matched and "I2I" in recognizedOps:
+        if matched and dop == "I2I":
             if not fserder.iseaid:
                 matched = False
             elif nserder.israid != fserder.iseaid:
