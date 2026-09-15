@@ -15,4 +15,5 @@ from .verifying import Verifier
 from .eventing import (incept, rotate, issue, revoke, backerIssue, backerRevoke,
                        Tever, Tevery, Reger, openReger, buildProof, messagize,
                        isEdgeGroup, walkEdgeSection, edgesOf,
-                       EdgeGroupLabels, MaxEdgeGroupDepth)
+                       EdgeGroupLabels, EdgeLabels, ReservedEdgeLabels,
+                       MaxEdgeGroupDepth)
