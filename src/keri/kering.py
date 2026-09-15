@@ -1119,6 +1119,41 @@ class RevokedChainError(KeriError):
     """
 
 
+class EdgeRefusalError(ValidationError):
+    """
+    Error an ACDC edge's operator constraint is not satisfied, decided against
+    evidence already in hand: the far node is untargeted where the operator
+    requires a target, or the AIDs the operator compares do not match. Both
+    sides of the comparison are fixed in SADs the Validator is holding, so no
+    later arrival changes the answer.
+
+    Distinct from MissingChainError, where the far node or its registry state is
+    merely absent and may still arrive, and which therefore escrows. A refusal
+    must not escrow: it would promise a retry that cannot succeed.
+
+    Usage:
+        raise EdgeRefusalError("error message")
+    """
+
+
+class UnsupportedOperatorError(ValidationError):
+    """
+    Error an ACDC edge or edge-group Operator is recognized but this
+    implementation cannot evaluate it, so the edge's validity is unknown rather
+    than false. Permanent for this Validator, since retrying the same evidence
+    against the same code cannot help.
+
+    Deliberately not a subclass of EdgeRefusalError. A reduction over member
+    verdicts may not treat "cannot evaluate" as "does not hold": under a
+    non-monotone Operator such as NAND or NOR, or under a unary NOT, that
+    collapse inverts into acceptance, and the enclosing ACDC would be accepted
+    precisely because one of its members could not be checked.
+
+    Usage:
+        raise UnsupportedOperatorError("error message")
+    """
+
+
 class MissingSchemaError(KeriError):
     """
     Error loading AC/DC credential schema from cache.
