@@ -14,7 +14,8 @@ from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
                        MtrDex, Saids, Aggor, Noncer, Schemer)
-from keri.kering import Ilks, Kinds, Vrsn_2_0, MissingSchemaError
+from keri.kering import (Ilks, Kinds, Vrsn_2_0, MissingSchemaError,
+                        EdgeRefusalError, UnsupportedOperatorError)
 from keri.help import helping
 from keri.vc import credential
 from keri.acdc import acdcagg
@@ -455,7 +456,11 @@ def test_verifier_chained_credential(seeder,
             missing = True
 
         assert missing is True
-        assert len(ianverfer.cues) == 4
+        # Three, not four. untargetedCreder's default-operator edge resolves to I2I
+        # against a targeted far node whose issuee is not its issuer, which is a
+        # decided refusal -- so the escrow pass above no longer parks it and no
+        # longer cues a proof query for a far node that is present and correct.
+        assert len(ianverfer.cues) == 3
         cue = ianverfer.cues.popleft()
         assert cue["kin"] == "saved"
         cue["creder"] = chainedCreder.raw
@@ -794,8 +799,10 @@ def test_verifier_aggregate_far_node_chain(seeder):
         assert state is not None
 
         # I2I mismatch: the near issuer (ian) does not equal the far issuee (han),
-        # so the binding is rejected (returns None, no TypeError).
-        assert verfer.verifyChain(agg.said, 'I2I', ian.pre) is None
+        # so the binding is refused. Both AIDs are fixed in SADs in hand, so this is
+        # decided rather than pending -- a named refusal, not the None that escrows.
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'I2I', ian.pre)
 
         # NI2I is untargeted: accepted regardless of issuer/issuee.
         state = verfer.verifyChain(agg.said, 'NI2I', ian.pre)
@@ -856,14 +863,18 @@ def test_verifier_e1e_aggregate_far_node(seeder):
 
         # E1E does work I2I cannot on this same aggregate far node: the identical
         # binding (near issuer=ian, far aggregate issuee=han, issuer != issuee) that
-        # E1E accepted above is rejected by I2I.
-        assert verfer.verifyChain(agg.said, 'I2I', ian.pre, issuee=han.pre) is None
+        # E1E accepted above is rejected by I2I. Refused, not escrowed: the two AIDs
+        # are fixed in SADs the verifier holds.
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'I2I', ian.pre, issuee=han.pre)
 
         # E1E rejects a near issuee that differs from the far (aggregate) issuee.
-        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=ian.pre) is None
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=ian.pre)
 
         # E1E rejects a missing near issuee (untargeted near ACDC carrying the edge).
-        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=None) is None
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=None)
 
     """End Test"""
 
@@ -1707,8 +1718,6 @@ def test_verifier_permanent_edge_refusal_does_not_escrow(seeder):
     "this edge does not hold" from "this verifier cannot say", which is not a
     distinction the reduction may collapse.
     """
-    from keri.kering import EdgeRefusalError, UnsupportedOperatorError
-
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
     unsavedSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 

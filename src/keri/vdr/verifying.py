@@ -14,7 +14,8 @@ from hio.help import decking, ogler
 from ..kering import (Ilks, MissingChainError,
                       MissingRegistryError, MissingSchemaError,
                       ValidationError, FailedSchemaValidationError,
-                      MissingChainError, RevokedChainError)
+                      MissingChainError, RevokedChainError,
+                      EdgeRefusalError, UnsupportedOperatorError)
 from ..core import Dater, Saider, Parser, CacheResolver, Schemer
 from ..help import helping
 
@@ -210,9 +211,13 @@ class Verifier:
                     # carried the edge, and the escrow handler logs only the exception.
                     # Re-raise with the near SAID and edge label so an operator triaging
                     # a stream can tell which credential to fix, matching the shape of
-                    # the MissingChainError messages below.
-                    raise ValidationError(f"Failure to verify credential {creder.said} "
-                                          f"chain {label}({nodeSaid}): {ex}") from ex
+                    # the MissingChainError messages below. Preserve the class: an edge
+                    # that does not hold (EdgeRefusalError) and one this validator
+                    # cannot evaluate (UnsupportedOperatorError) are different claims,
+                    # and flattening both to ValidationError here would discard the
+                    # distinction .verifyChain just made. Neither escrows.
+                    raise type(ex)(f"Failure to verify credential {creder.said} "
+                                   f"chain {label}({nodeSaid}): {ex}") from ex
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -483,7 +488,19 @@ class Verifier:
                 untargeted.
 
         Returns:
-            Serder: transaction event state notification message
+            Serder: transaction event state notification message, or None when the
+                edge cannot be decided yet because evidence is missing -- the far
+                node is not saved, its issuee indexes no saved credential, its
+                registry is not in .tevers, or its TEL carries no state for the far
+                SAID. None is the caller's signal to escrow and retry.
+
+        Raises:
+            EdgeRefusalError: the operator's constraint is decided against evidence
+                in hand and fails. Both sides of every comparison here are fixed in
+                SADs already held, so retrying cannot change the answer and the
+                caller must not escrow.
+            UnsupportedOperatorError: the operator is recognized but unimplemented,
+                so the edge's validity is unknown rather than false.
 
         """
         said = self.reger.saved.get(keys=nodeSaid)
@@ -515,11 +532,11 @@ class Verifier:
         # a MissingChainError: the chain is present and retrying cannot help, so
         # escrowing would promise a retry that can never succeed.
         if 'NOT' in ops:
-            raise ValidationError(f"Unsupported edge operator NOT on edge to node "
+            raise UnsupportedOperatorError(f"Unsupported edge operator NOT on edge to node "
                                   f"{nodeSaid}; NOT validation is not implemented")
 
         if op == 'DI2I':
-            raise ValidationError(f"Unsupported edge operator DI2I on edge to node "
+            raise UnsupportedOperatorError(f"Unsupported edge operator DI2I on edge to node "
                                   f"{nodeSaid}; DI2I validation is not implemented")
 
         if 'E1E' in ops:
@@ -529,25 +546,37 @@ class Verifier:
             # common SEDI case -- both credentials issued by a third party to the same
             # subject, issuer != issuee -- is valid (and is exactly what I2I rejects).
             # Resolve the far issuee via .iseaid so an aggregate node (A[1].i) works too.
+            # A mismatch is decided, not pending: both issuees are fixed in SADs already
+            # in hand, so no later arrival makes them equal. Refuse rather than return
+            # None, which the caller would escrow and retry forever.
             farIssuee = creder.iseaid
             if farIssuee is None or issuee is None or issuee != farIssuee:
-                return None
+                raise EdgeRefusalError(f"E1E edge to node {nodeSaid} requires equal "
+                                       f"issuees; near issuee {issuee} != far issuee "
+                                       f"{farIssuee}")
 
         if op is not None and op != 'NI2I':
             # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
             # node (issuee at .sad["A"][1]["i"]) resolves identically to an
             # attributive one (.attrib["i"]). None means an untargeted far node,
-            # which cannot satisfy a targeted (I2I/DI2I) edge.
+            # which cannot satisfy a targeted (I2I/DI2I) edge -- and cannot become
+            # targeted later, since the issuee is part of the SAD under its SAID.
             farIssuee = creder.iseaid
             if farIssuee is None:
-                return None
+                raise EdgeRefusalError(f"{op} edge to node {nodeSaid} requires a "
+                                       f"targeted far node, which has no issuee")
 
+            # Transient, unlike the two refusals around it: .subjs indexes the
+            # credentials this validator happens to have saved for that issuee, so a
+            # miss means the evidence has not arrived rather than that the edge fails.
             iss = self.reger.subjs.get(keys=farIssuee)
             if iss is None:
                 return None
 
             if op == 'I2I' and issuer != farIssuee:
-                return None
+                raise EdgeRefusalError(f"I2I edge to node {nodeSaid} requires the near "
+                                       f"issuer to be the far issuee; issuer {issuer} "
+                                       f"!= far issuee {farIssuee}")
 
         if creder.regid not in self.tevers:
             return None
