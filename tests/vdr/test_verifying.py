@@ -1817,3 +1817,51 @@ def test_verifier_permanent_edge_refusal_does_not_escrow(seeder):
         assert dict(kin="proof", said=unsavedSaid) in list(verfer.cues)
 
     """End Test"""
+
+
+def test_verifier_unknown_edge_operator_fails_closed():
+    """An operator token this validator does not recognize is refused, not dropped.
+
+    ``verifyChain`` filtered unrecognized tokens out of the operator list and then,
+    finding the list empty, applied the default rule. So an edge carrying a token
+    from a later ACDC version was validated under a *substituted* operator rather
+    than rejected: for a targeted far node the substitute is ``I2I``, and for an
+    untargeted one ``NI2I``, which constrains nothing at all.
+
+    Every reason to add a unary operator is to narrow what satisfies an edge --
+    ``DI2I`` widens the issuer class, ``E1E`` swaps the delegative constraint for an
+    identity one, and anything future (a time bound, an issuer-set restriction) is
+    the same shape. Silently dropping the token therefore relaxes the Issuer's
+    stated rule, in the direction of accepting more, with nothing on the wire or in
+    the log to say a divergence happened. The ACDC unary table
+    (spec-body.md:1190-1195) defines four operators and says nothing about a fifth,
+    so this is keripy choosing to fail closed where the spec is silent.
+
+    The check runs before the far-node lookup. An edge whose operator cannot be
+    evaluated cannot be evaluated no matter what arrives later, so escrowing it on
+    account of a missing far node would promise a retry that the operator forbids.
+    That ordering is what the two ``is None`` cases below pin: absent and empty
+    operators still reach the far-node lookup and report it transiently missing.
+    """
+    unsavedSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian):
+        verfer = Verifier(hby=ianHby)
+
+        # A token outside the recognized set, alone and alongside a recognized one.
+        # The list case matters most: dropping one member of ['NI2I', 'I1I'] leaves a
+        # list that looks fully understood.
+        with pytest.raises(UnsupportedOperatorError):
+            verfer.verifyChain(unsavedSaid, 'I1I', ian.pre)
+        with pytest.raises(UnsupportedOperatorError):
+            verfer.verifyChain(unsavedSaid, ['NI2I', 'I1I'], ian.pre)
+        with pytest.raises(UnsupportedOperatorError):
+            verfer.verifyChain(unsavedSaid, ['I1I'], ian.pre)
+
+        # Absent and empty are not unknown: the spec applies the default rule to
+        # both (spec-body.md:1197). Each therefore proceeds to the far-node lookup
+        # and reports it missing -- transiently, with None.
+        assert verfer.verifyChain(unsavedSaid, None, ian.pre) is None
+        assert verfer.verifyChain(unsavedSaid, [], ian.pre) is None
+
+    """End Test"""
