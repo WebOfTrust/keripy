@@ -1624,7 +1624,7 @@ class Tevery:
                 self.cues.push(dict(kin="reply", route="/tsn/registry", data=asdict(tsn), dest=source))
 
                 if vcpre := qry["i"]:
-                    tsn = tever.vcState(vcpre=vcpre)
+                    tsn = tever.vcState(vci=vcpre)
                     self.cues.push(dict(kin="reply", route="/tsn/credential", data=asdict(tsn), dest=source))
 
         else:
