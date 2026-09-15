@@ -911,6 +911,7 @@ def test_core_identity():
     assert galSerderIar.iseaid == gal
 
 
+
     # core sedi credential ACDC issued to SMAID
     coreMad = \
     {
@@ -990,6 +991,8 @@ def test_core_identity():
             "l": ""
         }
     }
+
+
 
     """Done Test"""
 
