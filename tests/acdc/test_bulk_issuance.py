@@ -2,9 +2,9 @@
 """
 tests.acdc.test_bulk_issuance module
 
-Worked, working example of *bulk-issued private ACDCs* (ACDC spec section 15.4,
-"Bulk-Issued Private ACDCs") used to defeat cross-verifier correlation for SEDI
-(Utah's State-Endorsed Digital Identity, Utah Code 63A-20). It is a sibling to
+Worked, working example of *bulk-issued private ACDCs* (ACDC, Bulk-issued Private
+ACDCs) used to defeat cross-verifier correlation for SEDI (Utah's State-Endorsed
+Digital Identity, Utah Code 63A-20). It is a sibling to
 tests/acdc/test_cp_disclosure.py (contractually-protected disclosure) and
 tests/acdc/test_guardianship_presentation.py (represented presentation), and it
 adds the one axis neither shows: IDENTIFIER-level cross-verifier unlinkability.
@@ -18,8 +18,8 @@ holds whether the edge is labeled E1E, I2I, or nothing at all. That join key
 undercuts SEDI's partition claim ("multiple breaches across multiple agencies would
 be required to leak everything"). Selective disclosure does not touch it.
 
-The answer, from the ACDC spec (section 15.4) and Sam Smith's reply in #1515:
-BULK ISSUANCE. The Issuer mints a SET of M semantically-identical copies of a
+The answer, from the ACDC spec (Bulk-issued Private ACDCs) and Sam Smith's reply in
+#1515: BULK ISSUANCE. The Issuer mints a SET of M semantically-identical copies of a
 credential, each with a unique SAID, generated on demand from one shared salt plus a
 template -- no per-copy storage. The public commitment is a BLINDED AGGREGATE 'B'
 (below), so the real SAIDs stay hidden. The holder spends a DIFFERENT copy per
@@ -240,12 +240,13 @@ def test_bulk_derivation_primitive_JSON():
 
     The whole set is generated on demand from ONE shared salt (no per-copy storage):
     for copy k, path "k" derives the top-level ACDC uuid u_k, path "k/j" derives nested
-    block j's uuid, and the DISTINCT path "k." derives the blinding factor v_k (spec
-    15.4: the blinding factor is deliberately NOT the ACDC's own 'u'). The public
-    commitment blinds each copy's SAID -- b_k = H(v_k + d_k) -- and aggregates the
-    blinded digests -- B = H(C(b_k for k)) -- so publishing the list [b_k] and B leaks
-    no SAID until a v_k is unblinded. A verifier proves copy k belongs to the committed
-    set from (d_k, v_k, [b_k], B) without learning any other member.
+    block j's uuid, and the DISTINCT path "k." derives the blinding factor v_k (ACDC,
+    Bulk-issued Private ACDCs > Basic Bulk Issuance Procedure: the blinding factor is
+    deliberately NOT the ACDC's own 'u'). The public commitment blinds each copy's SAID
+    -- b_k = H(v_k + d_k) -- and aggregates the blinded digests -- B = H(C(b_k for k))
+    -- so publishing the list [b_k] and B leaks no SAID until a v_k is unblinded. A
+    verifier proves copy k belongs to the committed set from (d_k, v_k, [b_k], B)
+    without learning any other member.
 
     Asserted here: the derivation is deterministic and its u/v spaces are disjoint; the
     aggregate is a stable, order-dependent commitment that leaks no SAID; each real copy
