@@ -34,10 +34,10 @@ class Verifier:
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
     TimeoutBCE = 3600  # seconds to timeout missing issuer escrows
 
-    # Unary edge operators this verifier recognizes. A token outside this set is not an
-    # operator to this verifier and is skipped when resolving a list-valued `o` (see
-    # .verifyChain). DI2I and NOT are recognized but unimplemented: they are listed so
-    # they fail closed diagnosably instead of being dropped and silently defaulting.
+    # Unary edge operators this verifier recognizes. A token outside this set cannot be
+    # evaluated, so an edge carrying one is refused rather than validated under a
+    # substituted operator -- see .verifyChain. DI2I and NOT are recognized but
+    # unimplemented, and refused for the same reason.
     # E1E is normative on the spec's v1.1 branch (kswg-acdc-specification#197). It is
     # absent from the 1.0 text currently under ToIP ratification, so a validator built
     # against 1.0 alone will not recognize it.
@@ -505,22 +505,38 @@ class Verifier:
                 so the edge's validity is unknown rather than false.
 
         """
+        # `o` is either a single unary operator or a list of them. An absent or empty
+        # operator takes the default rule below; a token outside .UnaryOps does not.
+        # Dropping an unrecognized token and defaulting would validate the edge under a
+        # substituted operator, and since every unary operator exists to narrow what
+        # satisfies an edge, the substitute is always the more permissive rule -- a
+        # silent relaxation of what the Issuer wrote. The ACDC unary table
+        # (spec-body.md:1190-1195) says nothing about a fifth token, so failing closed
+        # here is keripy's choice where the spec is silent.
+        #
+        # Checked before the far-node lookup on purpose: an operator this validator
+        # cannot evaluate stays that way however much evidence arrives, so reporting a
+        # missing far node first would promise a retry the operator forbids.
+        # ~3qah  reverses #1552's skip; needs S. Smith's buy-in via ACDC #201
+        ops = op if isinstance(op, (list, tuple)) else ([] if op is None else [op])
+        unknown = [cand for cand in ops if cand not in self.UnaryOps]
+        if unknown:
+            raise UnsupportedOperatorError(f"Unrecognized edge operator(s) {unknown} on "
+                                           f"edge to node {nodeSaid}; recognized are "
+                                           f"{list(self.UnaryOps)}")
+
         said = self.reger.saved.get(keys=nodeSaid)
         if said is None:
             return None
 
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        # `o` is either a single unary operator or a list of them. Latest-wins applies
-        # only "among the conflicting Operators" (ACDC spec, Edge Section > Edge >
-        # Operator, `o` field), so the list is resolved in two parts: the delegative
-        # operators constrain the same thing (the near issuer relative to the far
-        # issuee) and therefore conflict, so the latest of those wins; E1E constrains
-        # the near issuee instead, so it does not conflict with them and composes
-        # (AND) rather than overriding or being overridden. Tokens this verifier does
-        # not recognize are skipped.
-        ops = op if isinstance(op, (list, tuple)) else [op]
-        ops = [cand for cand in ops if cand in self.UnaryOps]
+        # Latest-wins applies only "among the conflicting Operators" (ACDC spec, Edge
+        # Section > Edge > Operator, `o` field), so the list is resolved in two parts:
+        # the delegative operators constrain the same thing (the near issuer relative
+        # to the far issuee) and therefore conflict, so the latest of those wins; E1E
+        # constrains the near issuee instead, so it does not conflict with them and
+        # composes (AND) rather than overriding or being overridden.
         op = next((cand for cand in reversed(ops) if cand in self.DelegativeOps), None)
 
         if not ops:  # absent, empty, or nothing recognized: apply the default rule
