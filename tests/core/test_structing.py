@@ -13,7 +13,7 @@ from keri.kering import (ValidationError, InvalidValueError, EmptyMaterialError,
 from keri.core import (Diger, DigDex, Prefixer, Number, Verser, Labeler,
                        Noncer, NonceDex, Salter, Texter, Dater, Structor, Sealer,
                        Blinder, Mediar, SealDigest, SealRoot, SealBack, SealEvent,
-                       SealLast, SealSource, SealKind, BlindState, BoundState,
+                       SealLast, SealSource, SealKind, SealNonce, BlindState, BoundState,
                        TypeMedia, FirstSeen, Castage, CodenToClans, ClanToCodens,
                        EmptyClanDom, EmptyCastDom, EClanDom, ECastDom,
                        SealClanDom, SealCastDom, SClanDom, SCastDom,
@@ -52,6 +52,7 @@ def test_structor_doms():
         'SealLast': SealLast,
         'SealBack': SealBack,
         'SealKind': SealKind,
+        'SealNonce': SealNonce,
     }
 
 
@@ -68,7 +69,8 @@ def test_structor_doms():
         'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
                                  d=Castage(kls=Diger, ipn=None)),
         'SealKind': SealKind(t=Castage(kls=Verser, ipn=None),
-                                 d=Castage(kls=Diger, ipn=None)),
+                                 d=Castage(kls=Noncer, ipn=None)),
+        'SealNonce': SealNonce(nd=Castage(kls=Noncer, ipn=None)),
     }
 
 
@@ -128,6 +130,7 @@ def test_structor_doms():
         'SealLast': SealLast,
         'SealBack': SealBack,
         'SealKind': SealKind,
+        'SealNonce': SealNonce,
         'BlindState': BlindState,
         'BoundState': BoundState,
         'TypeMedia': TypeMedia,
@@ -148,7 +151,8 @@ def test_structor_doms():
         'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
                                  d=Castage(kls=Diger, ipn=None)),
         'SealKind': SealKind(t=Castage(kls=Verser, ipn=None),
-                                 d=Castage(kls=Diger, ipn=None)),
+                                 d=Castage(kls=Noncer, ipn=None)),
+        'SealNonce': SealNonce(nd=Castage(kls=Noncer, ipn=None)),
         'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
                                  u=Castage(kls=Noncer, ipn='nonce'),
                                  td=Castage(kls=Noncer, ipn='nonce'),
@@ -177,6 +181,7 @@ def test_structor_doms():
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
+        'SealNonce': 'NonceSealSingles',
         'BlindState': 'BlindedStateQuadruples',
         'BoundState': 'BoundStateSextuples',
         'TypeMedia': 'TypedMediaQuadruples',
@@ -191,6 +196,7 @@ def test_structor_doms():
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
+        'NonceSealSingles': 'SealNonce',
         'BlindedStateQuadruples': 'BlindState',
         'BoundStateSextuples': 'BoundState',
         'TypedMediaQuadruples': 'TypeMedia',
@@ -215,6 +221,7 @@ def test_structor_class():
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
+        ('nd',): 'SealNonce',
         ('d', 'u', 'td', 'ts'): 'BlindState',
         ('d', 'u', 'td', 'ts', 'bn', 'bd'): 'BoundState',
         ('d', 'u', 'mt', 'mv'): 'TypeMedia',
@@ -230,6 +237,7 @@ def test_structor_class():
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
+        'SealNonce': 'NonceSealSingles',
         'BlindState': 'BlindedStateQuadruples',
         'BoundState': 'BoundStateSextuples',
         'TypeMedia': 'TypedMediaQuadruples',
@@ -245,6 +253,7 @@ def test_structor_class():
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
+        'NonceSealSingles': 'SealNonce',
         'BlindedStateQuadruples': 'BlindState',
         'BoundStateSextuples': 'BoundState',
         'TypedMediaQuadruples': 'TypeMedia',
@@ -1444,6 +1453,7 @@ def test_sealer_class():
         ('i',): 'SealLast',
         ('bi', 'd'): 'SealBack',
         ('t', 'd'): 'SealKind',
+        ('nd',): 'SealNonce',
     }
     assert Sealer.ClanCodens == \
     {
@@ -1453,7 +1463,8 @@ def test_sealer_class():
         'SealSource': 'SealSourceCouples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
-        'SealKind': 'TypedDigestSealCouples'
+        'SealKind': 'TypedDigestSealCouples',
+        'SealNonce': 'NonceSealSingles',
     }
 
     assert Sealer.CodenClans == \
@@ -1464,7 +1475,8 @@ def test_sealer_class():
         'SealSourceCouples': 'SealSource',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
-        'TypedDigestSealCouples': 'SealKind'
+        'TypedDigestSealCouples': 'SealKind',
+        'NonceSealSingles': 'SealNonce',
     }
 
     """End Test"""
@@ -1767,6 +1779,21 @@ def test_sealer():
     # enclose and extend with quadlet counter,
     ims = Sealer.enclose([sealer]) #enclose defaults to V2
     assert ims == bytearray(b'-WANYOCSRCAAEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE')
+    esealer = Sealer.extract(qb64=ims, strip=True)[0]
+    assert esealer.crew == crew
+
+    # Test SealNonce
+    salt = b'saltynoncerawval'
+    salter = Salter(raw=salt)
+    noncer = Noncer(raw=salter.stretch(path="test"), code=NonceDex.Salt_256)
+    assert noncer.qb64 == 'aJ7zsobF1x9SgXR3KWEEUZJ7yXAe_X9185GmohJE23PG'
+
+    crew = SealNonce(nd= 'aJ7zsobF1x9SgXR3KWEEUZJ7yXAe_X9185GmohJE23PG')
+    sealer = Sealer(crew=crew)
+    assert sealer.qb64 == 'aJ7zsobF1x9SgXR3KWEEUZJ7yXAe_X9185GmohJE23PG'
+    # enclose and extend with quadlet counter,
+    ims = Sealer.enclose([sealer]) #enclose defaults to V2
+    assert ims == (b'-NALaJ7zsobF1x9SgXR3KWEEUZJ7yXAe_X9185GmohJE23PG')
     esealer = Sealer.extract(qb64=ims, strip=True)[0]
     assert esealer.crew == crew
     """Done Test"""

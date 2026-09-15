@@ -420,9 +420,12 @@ class Salter(Matter):
         self.tier = tier if tier is not None else self.Tier
 
     def stretch(self, *, size=32, path="", tier=None, temp=False):
-        """
-        Returns (bytes): raw binary seed (secret) derived from path and .raw
-        and stretched to size given by code using argon2d stretching algorithm.
+        """Generates raw (bytes) seed
+
+        Returns:
+            seed (bytes): raw binary seed (secret) derived from path and .raw
+                          and stretched to size given by code using argon2d
+                          stretching algorithm.
 
         Parameters:
             size (int): number of bytes in stretched seed

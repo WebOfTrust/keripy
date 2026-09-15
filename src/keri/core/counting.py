@@ -56,7 +56,6 @@ class CounterCodex_1_0(IceMapDom):
     ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
     NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
-    TransReceiptIdxSigGroups: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+ControllerIdxSigs of qb64.
     FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
     TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
@@ -92,7 +91,6 @@ class QuadTripCodex_1_0(IceMapDom):
 
     As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]"""
-    TransReceiptIdxSigGroups: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+ControllerIdxSigs of qb64.
     PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
@@ -227,8 +225,8 @@ class CounterCodex_2_0(IceMapDom):
     BigWitnessIdxSigs: str = '--L'  # Big Witness Indexed Signature(s) of qb64.
     NonTransReceiptCouples: str = '-M'  # NonTrans Receipt Couple(s), pre+cig.
     BigNonTransReceiptCouples: str = '--M'  # Big NonTrans Receipt Couple(s), pre+cig.
-    TransReceiptIdxSigGroups: str = '-N'  # Trans Receipt Indexed Signature Groups(s), pre+snu+dig+ControllerIdxSigs of qb64.
-    BigTransReceiptIdxSigGroups: str = '--N'  # Big Trans Receipt Indexed Signature Groups(s)(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    NonceSealSingles: str = '-N'  # Nonce Seal Single(s), nonce as sealed data, nonce or dig.
+    BigNonceSealSingles: str = '--N'  # Big Nonce Seal Single(s), nonce as sealed data, nonce or dig.
     FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
     PathedMaterialCouples: str = '-P'  # Pathed Material couples. path+text
@@ -617,7 +615,7 @@ class Counter:
                 '-A': Cizage(hs=2, ss=2, fs=4),
                 '-B': Cizage(hs=2, ss=2, fs=4),
                 '-C': Cizage(hs=2, ss=2, fs=4),
-                '-D': Cizage(hs=2, ss=2, fs=4),
+                #'-D': Cizage(hs=2, ss=2, fs=4),
                 '-E': Cizage(hs=2, ss=2, fs=4),
                 '-F': Cizage(hs=2, ss=2, fs=4),
                 '-G': Cizage(hs=2, ss=2, fs=4),

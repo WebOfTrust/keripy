@@ -1132,7 +1132,7 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
     """Serialize a parsed message subtree as a nested CESR substream."""
     parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
 
-    if any(parsed.get(name) for name in ("rsgs", "ptds", "essrs")):
+    if any(parsed.get(name) for name in ("ptds", "essrs")):
         raise ValueError("Unsupported attachments for nested substream serialization")
 
     serder = parsed["serder"]
