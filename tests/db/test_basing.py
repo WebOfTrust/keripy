@@ -21,7 +21,8 @@ from keri.core import (Seqner, Diger, Number, Kever, Serder,
                        Verfer, Cigar, Saider, Noncer, Labeler,
                        Texter, SerderKERI, StateEstEvent,
                        IdrDex, MtrDex, NumDex,
-                       exchange, incept, rotate, interact)
+                       exchange, incept, rotate, interact,
+                       Kramer, query, exchept)
 
 from keri.core import state as eventState
 from keri.db import (Baser, BaserDoer, Baser, SerderSuber,
@@ -29,7 +30,7 @@ from keri.db import (Baser, BaserDoer, Baser, SerderSuber,
                      OnIoDupSuber, IoDupSuber, CatCesrSuber, statedict,
                      openDB, dgKey, snKey, openLMDB, openDB, reopenDB)
 
-from keri.help import datify, dictify
+from keri.help import datify, dictify, nowIso8601
 from keri.recording import (EventSourceRecord, KeyStateRecord,
                             OobiRecord, RawRecord, StateEERecord)
 # this breaks when running as __main__ better to do a custom import call to
@@ -1873,13 +1874,14 @@ def test_baser_clone_all_pre_iter():
         assert hab2.pre in pres
 
 
-def test_clean_baser():
+def test_clean_baser(tmp_path, fakeHelpingClock):
     """
     Test Baser db clean clone method
     """
     name = "nat"
     # with openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
-    with openHby(name=name, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
+    with openHby(name=name, headDirPath=str(tmp_path),
+                 salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
         natHab = hby.makeHab(name=name, isith='2', icount=3)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
@@ -1948,6 +1950,66 @@ def test_clean_baser():
             keys=(pending.said,), val=Texter(text="pending-essr"))
         assert natHab.db.ests.add(
             keys=(pending.said, endorser), val=sourceSeal)
+
+        hby.cf.put({"kram": {"enabled": True, "caches": {
+            "~": [1000, 60000, 120000, 300000, 60000, 120000, 300000]}}})
+        kramer = Kramer(db=natHab.db, cf=hby.cf)
+        stamp = nowIso8601()
+        prefixer = Prefixer(qb64=natHab.pre)
+        accepted = query(pre=natHab.pre, route="ksn", query={"case": "accepted"},
+                          stamp=stamp, pvrsn=Vrsn_2_0)
+        sigs = natHab.mgr.sign(ser=accepted.raw, verfers=natHab.kever.verfers,
+                                indexed=True)
+        assert kramer.intake(accepted, {"lsgs": [(prefixer, sigs)]}) is accepted
+        assert kramer.intake(accepted, {"lsgs": [(prefixer, sigs)]}) is None
+        partial = query(pre=natHab.pre, route="ksn", query={"case": "partial"},
+                         stamp=stamp, pvrsn=Vrsn_2_0)
+        partialSigs = natHab.mgr.sign(ser=partial.raw, verfers=natHab.kever.verfers,
+                                       indexed=True)
+        pkey = (natHab.pre, partial.said)
+        foreign = Prefixer(qb64=hby.signator.pre)
+        diger = Diger(qb64=natHab.kever.serder.said)
+        assert kramer.intake(partial, {
+            "lsgs": [(prefixer, partialSigs[:1])],
+            "tsgs": [(foreign, Number(num=0), diger, partialSigs[:2])],
+        }) is None
+
+        # The ordinary SAD signature shape shares tsgs. with KRAM tuples.
+        sadkey = (accepted.said, natHab.pre, "0" * 32, diger.qb64)
+        for sig in sigs[:2]:
+            assert natHab.db.tsgs.add(keys=sadkey, val=sig)
+        assert natHab.db.kramPTDS.add(keys=(foreign.qb64, partial.said), val=b"\xff\x00")
+
+        txn = exchept(sender=natHab.pre, receiver=natHab.pre, route="/test/clean",
+                      stamp=stamp, version=Vrsn_2_0, kind=Kinds.json)
+        txnSigs = natHab.mgr.sign(ser=txn.raw, verfers=natHab.kever.verfers,
+                                   indexed=True)
+        assert kramer.intake(txn, {"lsgs": [(prefixer, txnSigs)]}) is txn
+        assert kramer.intake(txn, {"lsgs": [(prefixer, txnSigs)]}) is None
+        partialTxn = exchept(sender=natHab.pre, receiver=natHab.pre,
+                             route="/test/partial", stamp=stamp,
+                             version=Vrsn_2_0, kind=Kinds.json)
+        partialTxnSigs = natHab.mgr.sign(ser=partialTxn.raw,
+                                        verfers=natHab.kever.verfers,
+                                        indexed=True)
+        assert kramer.intake(partialTxn, {
+            "lsgs": [(prefixer, partialTxnSigs[:1])],
+        }) is None
+
+        records = {}
+        for name in ("kramCTYP", "kramMSGC", "kramTMSC", "kramXDT"):
+            records[name] = [(bytes(key), bytes(val)) for key, val in
+                             natHab.db.getTopItemIter(db=getattr(natHab.db, name).sdb)]
+            assert records[name]
+
+        # Malformed orphan records must be discarded without decoding.
+        partials = ("kramPMKM", "kramPMKS", "kramPMSK", "kramTRQS",
+                    "kramTSGS", "kramULGS", "kramCIGS", "kramSSCS",
+                    "kramSSTS", "kramFRCS", "kramTDCS", "kramPTDS",
+                    "kramBSQS", "kramBSSS", "kramTMQS")
+        for name in partials:
+            assert natHab.db.putVal(db=getattr(natHab.db, name).sdb,
+                                   key=b"orphan", val=b"\xff\x00")
 
         # test reopenDB with reuse  (because temp)
         with reopenDB(db=natHab.db, reuse=True):
@@ -2023,6 +2085,51 @@ def test_clean_baser():
             state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.s == '6'
             assert state.f == '6'
+
+            for name, expected in records.items():
+                assert [(bytes(key), bytes(val)) for key, val in
+                        natHab.db.getTopItemIter(db=getattr(natHab.db, name).sdb)] == expected
+            kramer = Kramer(db=natHab.db, cf=hby.cf)
+            assert kramer.intake(accepted, {"lsgs": [(prefixer, sigs)]}) is None
+            assert kramer.intake(txn, {"lsgs": [(prefixer, txnSigs)]}) is None
+
+            for name in partials:
+                assert not list(natHab.db.getTopItemIter(
+                    db=getattr(natHab.db, name).sdb))
+            assert not natHab.db.tsgs.get(sadkey)
+
+            # Cancelled partials stay blocked even with all signatures.
+            assert kramer.intake(partial, {
+                "lsgs": [(prefixer, partialSigs[1:2])],
+            }) is None
+            assert kramer.intake(partial, {
+                "lsgs": [(prefixer, partialSigs)],
+            }) is None
+            assert kramer.intake(partialTxn, {
+                "lsgs": [(prefixer, partialTxnSigs)],
+            }) is None
+            assert natHab.db.kramPMKM.get(pkey) is None
+            assert not natHab.db.kramPMKS.get(pkey)
+
+            # A fresh request can accumulate new signatures after clean.
+            fakeHelpingClock.advance(milliseconds=1)
+            retry = query(pre=natHab.pre, route="ksn", query={"case": "partial"},
+                          stamp=nowIso8601(), pvrsn=Vrsn_2_0)
+            retryTxn = exchept(sender=natHab.pre, receiver=natHab.pre,
+                              route="/test/partial", stamp=nowIso8601(),
+                              version=Vrsn_2_0, kind=Kinds.json)
+            assert retry.said != partial.said
+            assert retryTxn.said != partialTxn.said
+            for msg in (retry, retryTxn):
+                retrySigs = natHab.mgr.sign(ser=msg.raw,
+                                           verfers=natHab.kever.verfers,
+                                           indexed=True)
+                assert kramer.intake(msg, {
+                    "lsgs": [(prefixer, retrySigs[:1])],
+                }) is None
+                assert kramer.intake(msg, {
+                    "lsgs": [(prefixer, retrySigs[1:2])],
+                }) is msg
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)

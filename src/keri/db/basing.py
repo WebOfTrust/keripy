@@ -1583,6 +1583,10 @@ class Baser(LMDBer):
         Database usage should be offline during cleaning as it will be cloned in
         readonly mode
 
+        Copy KRAM caches without reverification and discard partial state.
+        Retained replay markers require retries to use a new datetime and
+        new signatures.
+
         Parameters:
             gvrsn (Versionage): CESR genus version for clone attachments and parser
             version (Versionage): legacy alias for gvrsn
@@ -1622,7 +1626,8 @@ class Baser(LMDBer):
                 unsecured = ["hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns", "erpy",
                              "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi", "mfa", "rmfa",
                              "cfld", "cons", "ccigs", "cdel", "migs",
-                             "ifld", "sids", "icigs"]
+                             "ifld", "sids", "icigs",
+                             "kramCTYP", "kramMSGC", "kramTMSC", "kramXDT"]
 
                 for name in unsecured:
                     srcdb = getattr(self, name)
