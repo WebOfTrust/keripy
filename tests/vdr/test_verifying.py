@@ -1131,13 +1131,21 @@ def test_verifier_list_valued_operator(seeder):
         near = nearWithOp(["NI2I", "I2I"], "latest wins to I2I")
         assert verfer.reger.saved.get(keys=near.saidb) is None
 
-        # Unrecognized tokens are skipped, not treated as conflicting: the latest
-        # *recognized* operator wins.
-        near = nearWithOp(["NI2I", "BOGUS"], "unrecognized token skipped")
-        assert verfer.reger.saved.get(keys=near.saidb) is not None
+        # An unrecognized token is refused rather than skipped, which REVERSES what
+        # #1552 decided and this test previously pinned ("unrecognized tokens are
+        # skipped: the latest recognized operator wins"). The reversal is argued in
+        # test_verifier_unknown_edge_operator_fails_closed: every unary operator
+        # narrows what satisfies an edge, so skipping one applies a more permissive
+        # rule than the Issuer wrote. Note this is orthogonal to the default-append
+        # at spec-body.md:1197 -- that clause keys on the three delegative operators
+        # and still appends I2I here; the refusal is about the token that remains in
+        # the effective list and cannot be evaluated.
+        near = nearWithOp(["NI2I", "BOGUS"], "unrecognized token refused")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
 
-        # A list with no recognized operator falls to the default rule, which for a
-        # targeted far node is I2I -- and so rejects.
+        # Likewise a list whose only token is unrecognized. Rejected before and
+        # after, but for a different reason: it used to fall to the I2I default and
+        # fail that, so it escrowed; now the token itself is refused.
         near = nearWithOp(["BOGUS"], "no recognized operator")
         assert verfer.reger.saved.get(keys=near.saidb) is None
 
