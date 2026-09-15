@@ -1680,3 +1680,131 @@ def test_verifier_escrow_pass_survives_argless_exception(seeder):
             assert verfer.reger.mce.get(keys=said) is None
 
     """End Test"""
+
+
+def test_verifier_permanent_edge_refusal_does_not_escrow(seeder):
+    """An edge decided against evidence in hand is refused, not escrowed (tick 22pi).
+
+    ``verifyChain`` answers two different questions with the same ``None``. Some of
+    its refusals are transient -- the far node is not saved yet, its registry has not
+    replicated, its TEL carries no state for the SAID -- and retrying is exactly
+    right. Others are settled by evidence already in hand: an I2I edge whose far node
+    is untargeted, or whose issuee is not the near ACDC's issuer, or an E1E edge whose
+    issuees differ. Those cannot become true later, because both sides of the
+    comparison are fixed in SADs the verifier is holding.
+
+    ``processCredential`` treats every ``None`` as the transient kind, so it escrows
+    the near ACDC, cues a proof query, and re-runs the whole credential on every
+    escrow pass until the entry ages out. It promises a retry that cannot succeed,
+    and it does so on an operator mismatch that the Issuer's own bytes decided.
+
+    The two dispositions already exist and are already right for their own cases: a
+    permanent refusal raises out of ``verifyChain`` (which is what an unimplemented
+    operator does today, deliberately "not a MissingChainError"), and a transient one
+    escrows. What is missing is that the operator mismatches are on the wrong side of
+    that line. This pins both sides, and names the two permanent kinds distinctly --
+    refused versus unsupported -- so a later reduction over member verdicts can tell
+    "this edge does not hold" from "this verifier cannot say", which is not a
+    distinction the reduction may collapse.
+    """
+    from keri.kering import EdgeRefusalError, UnsupportedOperatorError
+
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    unsavedSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') \
+            as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian",
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+        def anchored(creder):
+            """Anchor the credential's TEL issuance so processCredential reaches edges."""
+            iss = ianiss.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            return creder
+
+        def process(creder):
+            verfer.processCredential(creder, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+
+        def issued(data, source, issuee=han.pre):
+            sad = dict(d="", dt=helping.nowIso8601(), **data)
+            if issuee is not None:
+                sad["i"] = issuee
+            _, saidified = Saider.saidify(sad=sad, code=MtrDex.Blake3_256, label=Saids.d)
+            return anchored(credential(issuer=ian.pre, schema=optionalIssueeSchema,
+                                       data=saidified, status=ianiss.regk, source=source,
+                                       rules={}, version=Vrsn_1_0, kind=Kinds.json))
+
+        # Far node: issued by ian to han, so its issuee is han, not ian.
+        core = issued(dict(claim="core identity"), source={})
+        process(core)
+        assert verfer.reger.saved.get(keys=core.saidb) is not None
+        assert core.iseaid == han.pre
+
+        def edge(node, op):
+            sad = dict(d='', evidence=dict(n=node, o=op))
+            _, chain = Saider.saidify(sad=sad, code=MtrDex.Blake3_256, label=Saids.d)
+            return chain
+
+        def refusalIsClean(creder, etype):
+            """The near ACDC is refused, left unsaved, and NOT parked in escrow."""
+            cues = len(verfer.cues)
+            with pytest.raises(etype):
+                process(creder)
+            assert verfer.reger.saved.get(keys=creder.saidb) is None
+            assert verfer.reger.mce.get(keys=creder.said) is None
+            assert list(verfer.cues)[cues:] == []
+
+        # I2I mismatch: the near ACDC's issuer is ian, the far node's issuee is han.
+        # Nothing that arrives later changes either, so this is decided, not pending.
+        mismatch = issued(dict(claim="over 21"), source=edge(core.said, "I2I"))
+        refusalIsClean(mismatch, EdgeRefusalError)
+
+        # I2I against an untargeted far node: no issuee exists to be the near issuer,
+        # and the far node's SAD cannot grow one.
+        orphan = issued(dict(claim="untargeted"), source={}, issuee=None)
+        process(orphan)
+        assert orphan.iseaid is None
+        toOrphan = issued(dict(claim="to orphan"), source=edge(orphan.said, "I2I"))
+        refusalIsClean(toOrphan, EdgeRefusalError)
+
+        # E1E mismatch: near issuee (ian) is not far issuee (han).
+        e1eBad = issued(dict(claim="wrong subject"), source=edge(core.said, "E1E"),
+                        issuee=ian.pre)
+        refusalIsClean(e1eBad, EdgeRefusalError)
+
+        # An operator this verifier cannot evaluate is refused too, but as its own
+        # kind: the edge may well hold, and only the verifier's reach is at fault.
+        unsupported = issued(dict(claim="delegated"), source=edge(core.said, "DI2I"))
+        refusalIsClean(unsupported, UnsupportedOperatorError)
+        assert issubclass(UnsupportedOperatorError, ValidationError)
+        assert not issubclass(UnsupportedOperatorError, EdgeRefusalError)
+
+        # The contrast, unchanged: a far node that is merely absent is transient. It
+        # escrows and cues, because the next stream may carry it.
+        pending = issued(dict(claim="pending"), source=edge(unsavedSaid, "NI2I"))
+        with pytest.raises(MissingChainError):
+            process(pending)
+        assert verfer.reger.mce.get(keys=pending.said) is not None
+        assert dict(kin="proof", said=unsavedSaid) in list(verfer.cues)
+
+    """End Test"""
