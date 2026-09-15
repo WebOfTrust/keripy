@@ -629,3 +629,24 @@ def test_credential_tsn_query(mockHelpingNowUTC, mockCoringRandomNonce, mockHelp
         assert ctsn["i"] == creder.said
         assert ctsn["ri"] == issuer.regk
         assert ctsn["et"] == "iss"
+
+def test_credential_tsn_query_unknown_credential(mockHelpingNowUTC, mockCoringRandomNonce,
+                                                 mockHelpingNowIso8601):
+    """A tsn query for a credential the registry never issued must not raise.
+
+    `vcState` returns None for an unissued credential, and `asdict(None)`
+    raises. This mirrors the branch just above, which emits nothing when the
+    REGISTRY is unknown: an unknown credential likewise produces no credential
+    reply, and the registry reply is unaffected.
+    """
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby:
+        bobHab, regery, issuer, _ = _issued_registry(bobHby)
+        tvy = _verifier_tevery(bobHby, regery, (issuer.regk,))
+
+        never_issued = "EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk"
+        qry = query(regk=issuer.regk, vcid=never_issued, route="tsn",
+                    pre=bobHab.pre, version=Vrsn_1_0, kind=Kinds.json)
+        tvy.processQuery(serder=qry, source=Prefixer(qb64=bobHab.pre), cigars=[])
+
+        assert [cue["route"] for cue in list(tvy.cues)] == ["/tsn/registry"]

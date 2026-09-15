@@ -1625,7 +1625,8 @@ class Tevery:
 
                 if vcpre := qry["i"]:
                     tsn = tever.vcState(vci=vcpre)
-                    self.cues.push(dict(kin="reply", route="/tsn/credential", data=asdict(tsn), dest=source))
+                    if tsn is not None:
+                        self.cues.push(dict(kin="reply", route="/tsn/credential", data=asdict(tsn), dest=source))
 
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
