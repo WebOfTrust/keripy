@@ -16,7 +16,8 @@ from jsonschema.exceptions import ValidationError as SchemaValidationError
 
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
-from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Structor,
+from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Compactor,
+                       Structor,
                        SealEvent, SealDigest, SealNonce, incept, interact)
 from keri.acdc import regcept, blindate, update, acdcmap
 
@@ -735,18 +736,20 @@ def test_core_identity():
     }
 
 
-    guySerderIar = acdcmap(sue, uuid=guyChallenge, schema=IarSchemaSaid,
+    guySerderIar = acdcmap(pat, uuid=guyChallenge, schema=IarSchemaSaid,
                          attribute=guyIarAttMad, kind=kind)
     iarValidator.validate(guySerderIar.sad)  # raises error if invalid
 
     assert guySerderIar.sad['a'] == guyIarAttMad
+    assert guySerderIar.said == 'EOmFbwu1YTdFJ4ltbA_Re3vahl0oaoKnHnQaTprGHJfX'
+    assert guySerderIar.iseaid == guy
     assert guySerderIar.sad == \
     {
         'v': 'ACDCCAACAAJSONAALT.',
         't': 'acm',
-        'd': 'ECU_HW1X0I6-5sQSJU_3YfxmBIH3dfDhiw_3N35BxMg9',
+        'd': guySerderIar.said,
         'u': guyChallenge,
-        'i': sue,
+        'i': pat,
         's': IarSchemaSaid,
         'a':
         {
@@ -771,8 +774,7 @@ def test_core_identity():
             'sediURL': 'https://example.com/sedi/here'
         }
     }
-    assert guySerderIar.said == 'ECU_HW1X0I6-5sQSJU_3YfxmBIH3dfDhiw_3N35BxMg9'
-    assert guySerderIar.iseaid == guy
+
 
 
     # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
@@ -880,18 +882,21 @@ def test_core_identity():
     assert galIarAttMadSaid == 'EGrLfrJGwHHPVpHQMU2-bfzntCesFU_Q8rK7nbDBcTPz'
     assert galIarAttMad['i'] == gal
 
-    galSerderIar = acdcmap(sue, uuid=galChallenge, schema=IarSchemaSaid,
+    galSerderIar = acdcmap(pat, uuid=galChallenge, schema=IarSchemaSaid,
                            attribute=galIarAttMad, kind=kind)
     iarValidator.validate(galSerderIar.sad)  # raises error if invalid
 
     assert galSerderIar.sad['a'] == galIarAttMad
+    assert galSerderIar.said == 'EItXy59_XvP0VKOPJy3rQLtwob3fa6smQz9J7MAVUSZ0'
+    assert galSerderIar.iseaid == gal
+
     assert galSerderIar.sad == \
     {
         'v': 'ACDCCAACAAJSONAALO.',
         't': 'acm',
-        'd': 'EK1bd3kQ20jjeuWFsHfbKWwaMsDcqEmeAcKBJO995eUg',
+        'd': galSerderIar.said,
         'u': galChallenge,
-        'i': sue,
+        'i': pat,
         's': IarSchemaSaid,
         'a':
         {
@@ -916,83 +921,177 @@ def test_core_identity():
             'sediURL': 'https://example.com/sedi/here'
         }
     }
-    assert galSerderIar.said == 'EK1bd3kQ20jjeuWFsHfbKWwaMsDcqEmeAcKBJO995eUg'
-    assert galSerderIar.iseaid == gal
 
+    salt = b'guyscoresedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
+    guyUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(16)]
+    assert guyUes == \
+    [
+        '0ABQNZNkD1y0W4mglDB4ei5Y',
+        '0ACd8yXBMGBLNDwr-MMgtris',
+        '0ADGYtYEzEdGpaq_sDXwamDm',
+        '0ACEZIR6pk97xr2cy-gBdod4',
+        '0ACUdqI4OVtXDL5BBO13QdrJ',
+        '0ACXabyEAzJ1U-4qOek3adv5',
+        '0ABR4UtpgSSmCSVF1eNJ6joz',
+        '0ABqxMB1vXX4RL4tFUOLzn8y',
+        '0AAvTJo84OMiipKf_90mn7bZ',
+        '0ACqPN2zhcII6TVGRKYC1ckJ',
+        '0AAfMYErqhjBCf4cgG5huzT2',
+        '0AADjz761fupJiCvj4GWFBfg',
+        '0AAsHaHfgfNEaRuRwI1Y77ry',
+        '0ABZHwn29_HgPlO7tRDEONUK',
+        '0AA2UPIBJ6WKRMVk_xgeHpSd',
+        '0AC2TvvDIyT60xBlRG9CjFI9'
+    ]
 
+    guyImageProof = Diger(ser=b"PretendImageOfGuy").qb64
+    assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
 
-    # core sedi credential ACDC issued to SMAID
-    coreMad = \
+    # Guy core SEDI attribution section
+
+    guyCoreAttBareMad = \
     {
-        "v": "",  #version string
-        "t": "acm",
-        "d": "",  # said
-        "u": "",  # unique entropy
-        "i": "StateIssuerAID",  # State Department Level Issuer AID
-        "rd": "",  # registy
-        "s": "",  # schema
-        "a":  # partially disclosable attributes
+        "d": "",
+        "u": guyUes[1],
+        "i": guy,  #guySMAID
+        "givenName": \
         {
             "d": "",
-            "u": "",
-            "i": "CitizenSEDI_AID",
-            "givenName": \
-            {
-                "d": "",
-                "u": "",
-                "value": "John",
-            },
-            "middleName": \
-            {
-                "d": "",
-                "u": "",
-                "value": "Henry Davis",
-            },
-            "familyName": \
-            {
-                "d": "",
-                "u": "",
-                "value": "Smith",
-            },
-            "dateOfBirth": \
-            {
-                "d": "",
-                "u": "",
-                "value": "2020-08-22T17:00:00.000000+00:00", # time MBZ
-            },
-            "placeOfBirth": \
-            {
-                "d": "",
-                "u": "",
-                "city": "Beaver",
-                "county": "Beaver",
-                "state": "Utah",
-                "country": "United States",
-            },
-            "facialImage": \
-            {
-                "d": "",
-                "u": "",
-                "value": "",  # Digest of image, actual image is attached as blindable typed media block
-            },
-            "legalPresence": \
-            {
-                "d": "",
-                "u": "",
-                "value": "TBD",
-            },
-            "dateOfIssuance": \
-            {
-                "d": "",
-                "u": "",
-                "value": "2020-08-22T17:00:00.000000+00:00",  # Time MBZ
-            },
-            "dateOfExpiration": \
-            {
-                "d": "",
-                "u": "",
-                "value": "2020-08-22T17:00:00.000000+00:00",  # Time MBZ
-            },
+            "u": guyUes[2],
+            "value": "John",
+        },
+        "middleName": \
+        {
+            "d": "",
+            "u": guyUes[3],
+            "value": "Henry Davis",
+        },
+        "familyName": \
+        {
+            "d": "",
+            "u":guyUes[4],
+            "value": "Smith",
+        },
+        "birthDate": \
+        {
+            "d": "",
+            "u": guyUes[5],
+            "value": "2020-08-22T17:00:00.000000+00:00", # time MBZ
+        },
+        "facialImageProof": \
+        {
+            "d": "",
+            "u": guyUes[6],
+            "value": guyImageProof,  # Digest of image, actual image is attached as blindable typed media block
+        },
+        "legalPresenceStatus": \
+        {
+            "d": "",
+            "u": guyUes[7],
+            "value": "citizen",
+        },
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  guyUes[8],
+            "value": "2020-08-22T17:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  guyUes[9],
+            "value": "2020-08-22T17:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=guyCoreAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyCoreAttMad = compactor.partials[('.givenName',
+                                        '.middleName',
+                                        '.familyName',
+                                        '.birthDate',
+                                        '.facialImageProof',
+                                        '.legalPresenceStatus',
+                                        '.issuedDate',
+                                        '.expirationDate')].mad
+    assert guyCoreAttMad['i'] == guy
+    guyCoreAttMadSaid = compactor.said
+    assert  guyCoreAttMadSaid == 'EFF_DQ1yoh_3gB_BwKwy6ZJXYVd-viCY-UIwvmAlLBee'
+
+    assert guyCoreAttMad == \
+    {
+        'd': guyCoreAttMadSaid,
+        'u': guyUes[1],
+        'i': guy,
+        'givenName':
+        {
+            'd': 'EDD2ilZtXTg9_CwP64AmN-K5nrhck5e1NY2QbrvQynSP',
+            'u': guyUes[2],
+            'value': 'John'
+        },
+        'middleName':
+        {
+            'd': 'EPeDlrbeUtBsvxiOSdTCMjARZ6MBQ9AynQU6jaLP1pgm',
+            'u': guyUes[3],
+            'value': 'Henry Davis'
+        },
+        'familyName':
+        {
+            'd': 'EGgdDUUjnDmXnUKOTuMm91xxfkL0f59LoMod9oYXdD8z',
+            'u': guyUes[4],
+            'value': 'Smith'
+        },
+        'birthDate':
+        {
+            'd': 'EPK5gGSEnc5E1UMVVNXtmS4EJSnmU8mXnb5LYhxJhZf7',
+            'u': guyUes[5],
+            'value': '2020-08-22T17:00:00.000000+00:00'
+        },
+        'facialImageProof':
+        {
+            'd': 'EOR1f3q1BbCvhUqrpQjzwY-3sFlklrYyqAZQ-E8L_Lze',
+            'u': guyUes[6],
+            'value': 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
+        },
+        'legalPresenceStatus':
+        {
+            'd': 'EIi_fYQJ6O__ncYIv3iiq-AHpkcJdxo6R6m142RNEJaq',
+            'u': guyUes[7],
+            'value': 'citizen'
+        },
+        'issuedDate':
+        {
+            'd': 'EAN7rgfuAWattk7C_5k5YrK6Gsn1OtjUyh3_9oQ4B7LV',
+            'u': guyUes[8],
+            'value': '2020-08-22T17:00:00.000000+00:00'
+        },
+        'expirationDate':
+        {
+            'd': 'ECOterVvkTSJ5Ig2YMgTE1_2qFq_pAg-sBd5JELDJUML',
+            'u': guyUes[9],
+            'value': '2020-08-22T17:00:00.000000+00:00'
+        }
+    }
+
+
+
+    # core sedi credential ACDC issuedby Sue AID to Guy SMAID
+    guyCoreMad = \
+    {
+        "v": "",  #version string computed
+        "t": "acm",
+        "d": "",  # SAID computed
+        "u": guyUes[0],  # unique entropy
+        "i": sue,  # State Department Level Issuer AID
+        "rd": rids[0],  # registy 0
+        "s": "",  # schema
+        "a": guyCoreAttMad,
+        "e":
+        {
+            "d": "",
         },
         "r":
         {
