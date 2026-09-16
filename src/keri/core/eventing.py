@@ -1688,22 +1688,6 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                 aims.extend(cigar.verfer.qb64b)
                 aims.extend(cigar.qb64b)
 
-        #if rsgs:
-            #rims = bytearray()
-            #for rsg in rsgs:
-                #prefixer, number, diger, sigers = rsg  # unpack
-                #rims.extend(prefixer.qb64b)
-                #rims.extend(_v1seqner(number))  # v1 Seqner not v2 Number
-                #rims.extend(diger.qb64b)
-
-                #rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                            #version=Vrsn_1_0).qb64b)
-                #for siger in sigers:
-                    #rims.extend(siger.qb64b)
-
-            #aims.extend(Counter.enclose(qb64=rims,
-                                        #code=Codens.TransIdxSigGroups,
-                                        #version=Vrsn_1_0))
 
         if bonds:
             if isinstance(bonds, tuple):
@@ -1852,24 +1836,6 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                                         code=Codens.NonTransReceiptCouples,
                                         version=gvrsn))
 
-        #if rsgs:
-            #rims = bytearray()
-            #for rsg in rsgs:
-                #prefixer, number, diger, sigers = rsg  # unpack
-                #rims.extend(prefixer.qb64b)
-                #rims.extend(number.qb64b)
-                #rims.extend(diger.qb64b)
-                #sims = bytearray()
-                #for siger in sigers:
-                    #sims.extend(siger.qb64b)
-
-                #rims.extend(Counter.enclose(qb64=sims,
-                                            #code=Codens.ControllerIdxSigs,
-                                            #version=gvrsn))
-
-            #aims.extend(Counter.enclose(qb64=rims,
-                                        #code=Codens.TransIdxSigGroups,
-                                        #version=gvrsn))
 
         if bonds:
             if isinstance(bonds, tuple):

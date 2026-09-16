@@ -634,6 +634,10 @@ def test_core_identity():
                                s='1',
                                d='EEmZ6nuPKuq8d2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
 
+    structor = Structor(crew=guyCsr)
+    guyAtc = Structor.enclose([Structor(crew=guyCsr)])  # CESR streamable attachment
+    assert guyAtc == bytearray(b'-TAXEDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JRMAABEEmZ6nuPKuq8'
+                               b'd2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
 
     iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
 
@@ -805,6 +809,11 @@ def test_core_identity():
     assert galCsr == SealEvent(i='EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
                                s='1',
                                d='EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
+
+    structor = Structor(crew=galCsr)
+    galAtc = Structor.enclose([Structor(crew=guyCsr)])  # CESR streamable attachment
+    assert galAtc == bytearray(b'-TAXEDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JRMAABEEmZ6nuPKuq8'
+                               b'd2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
 
 
     # Gal's Identity Assurance Receipt (iar) ACDC
