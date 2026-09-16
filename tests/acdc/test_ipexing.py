@@ -7883,6 +7883,66 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                     [goodNest],
                     "an unsatisfiable pin on the Edge Section itself")
 
+            # A registry's transaction state is "a string from a small finite set"
+            # defined *per registry*, with issued/revoked only the spec's example.
+            # So a denylist of the one word keripy happens to know falls open on
+            # every other: a far node a registry has `withdrawn` is not a far node
+            # in good standing. What this verifier does not recognize it cannot
+            # decide, and no arrival teaches it another registry's vocabulary.
+            epsilon, epsilonRip = makeRegistry("epsilon")
+            withdrawn, _, withdrawnIssued = issue(epsilon, "withdrawn later")
+            withdrawnBlinder, withdrawnUpdate = registrar.issue(
+                epsilon, acdc=withdrawn, state="withdrawn")
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(_anchor(issuerHab, epsilon, withdrawnUpdate,
+                                      framed=False)),
+                framed=False,
+                kvy=kvy)
+            recipientRgy.store.accept(epsilon.regk, 0, epsilonRip)
+            recipientRgy.store.accept(epsilon.regk, 1, withdrawnIssued)
+            recipientRgy.store.accept(epsilon.regk, 2, withdrawnUpdate)
+            withdrawnNest = _proofed(withdrawn, withdrawnBlinder)
+
+            refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(withdrawn))),
+                    [goodNest, withdrawnNest],
+                    "AND over a far node in a state this verifier cannot read")
+
+            # An edge's `s` pin must be enforced by validation, not by the far node
+            # asserting its own type. Nothing on this path ever validates a
+            # disclosed node against its schema -- v1's identical short-circuit is
+            # safe only because a far node had to be saved, and saving runs the
+            # schema check -- so a pin satisfied by declared-SAID equality is
+            # satisfied by saying so.
+            strict = deepcopy(good.sad["s"])
+            strict["$id"] = ""
+            strict["properties"]["a"]["oneOf"][1]["required"] = ["d", "i", "role"]
+            strictSchemer = Schemer(sed=strict)
+            recipientHby.db.schema.pin(strictSchemer.said, strictSchemer)
+
+            liar = acdcmap(israid=issuerHab.pre,
+                           schema=strictSchemer.sed,
+                           attribute=dict(d="", notRole="absent"),
+                           iseaid=issuerHab.pre)
+            assert liar.sad["s"]["$id"] == strictSchemer.said
+
+            refused(dict(d="", holder=dict(d="", n=liar.said, o="I2I",
+                                           s=strictSchemer.said)),
+                    [liar],
+                    "a pin the far node satisfies only by declaring it")
+
+            # The lesson from the leaf path applies to a group: an Operator this
+            # verifier does not reduce says nothing about whether the members below
+            # it are well-formed, and a malformed shape is not a truth value. The
+            # group returned its unknown before looking at a single child, so a
+            # list-valued `o` -- the exact shape asserted above to be refused even
+            # under OR -- rode in behind a NOR.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            nor=dict(d="", o="NOR",
+                                                     c=dict(d="", o=["AND"],
+                                                            b=leaf(good))))),
+                    [goodNest],
+                    "an unreduced group Operator must not hide a malformed child")
+
             # The origin's own issuer-auth is not a member of anything: no edge
             # points at it, so nothing can outvote it however satisfied its Edge
             # Section is.
