@@ -7624,6 +7624,23 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             recipientRgy.store.accept(gamma.regk, 0, gammaRip)
             recipientRgy.store.accept(gamma.regk, 1, spareIssued)
 
+            # A far node the issuer has revoked, in a registry the recipient has
+            # fully loaded. Its blinded head discloses "revoked" rather than
+            # "issued", and that state is the other half of what the ACDC
+            # specification decides an edge on -- so it must reach the reduction as
+            # a member verdict, not be computed and thrown away.
+            delta, deltaRip = makeRegistry("delta")
+            revoked, _, revokedIssued = issue(delta, "revoked later")
+            revokedBlinder, revokedUpdate = registrar.issue(delta, acdc=revoked,
+                                                            state="revoked")
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(_anchor(issuerHab, delta, revokedUpdate, framed=False)),
+                framed=False,
+                kvy=kvy)
+            recipientRgy.store.accept(delta.regk, 0, deltaRip)
+            recipientRgy.store.accept(delta.regk, 1, revokedIssued)
+            recipientRgy.store.accept(delta.regk, 2, revokedUpdate)
+
             # A node whose proof belongs to a different credential in a registry the
             # recipient *has* loaded: vet refuses it by name, permanently.
             forged = acdcmap(israid=issuerHab.pre,
@@ -7708,6 +7725,23 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(forged))),
                     [goodNest, forgedNest],
                     "AND over a far node whose proof is refused")
+
+            # The registry state is a member verdict. vet() recovers the disclosed
+            # transaction state from the blinded head and this handler read it and
+            # threw it away, so a revoked far node vetted as valid -- the axis the
+            # whole change is named after, unwired on this path while v1 raised
+            # RevokedChainError for the same edge.
+            revokedNest = _proofed(revoked, revokedBlinder)
+            refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(revoked))),
+                    [goodNest, revokedNest],
+                    "AND over a revoked far node")
+
+            # ...and under OR a valid sibling carries the group over it, which is the
+            # Issuer's stated intent and is only expressible once the state is a
+            # verdict rather than a raise.
+            accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(revoked))),
+                     [goodNest, revokedNest],
+                     "OR over a revoked far node")
 
             # An Operator this verifier cannot evaluate is an unknown in the lattice,
             # so a satisfied sibling decides the group without it. DI2I is recognized
