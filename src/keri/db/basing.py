@@ -23,7 +23,7 @@ from ..kering import (MissingEntryError, DatabaseError, SerializeError,
 from ..recording import (KeyStateRecord, EventSourceRecord,
                          HabitatRecord, TopicsRecord,
                          OobiRecord, EndpointRecord,
-                         LocationRecord, ObservedRecord,
+                         DeclRecord, LocationRecord, ObservedRecord,
                          CacheTypeRecord, TxnMsgCacheRecord,
                          MsgCacheRecord, WellKnownAuthN)
 
@@ -1080,6 +1080,16 @@ class Baser(LMDBer):
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  klas=LocationRecord, )
+
+        # auth AuthN by declarer at eid of its own declaration of a given kind
+        # maps key=eid.kind to val=diger of decl reply
+        self.dans = subing.CesrSuber(db=self, subkey='dans.', klas=coring.Diger)
+
+        # self-declarations keyed by eid.kind where kind is one of kering.Decls
+        # data extracted from reply /decl/tags or /decl/attribs
+        self.decls = koming.Komer(db=self,
+                                  subkey='decls.',
+                                  klas=DeclRecord, )
         # observed oids by watcher by cid.aid.oid  (endpoint identifier)
         # data extracted from reply loc
         self.obvs = koming.Komer(db=self,

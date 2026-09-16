@@ -2290,6 +2290,47 @@ class BaseHab:
         return self.reply(route="/loc/scheme", data=data, stamp=stamp, **kwa)
 
 
+    def makeDeclTags(self, tags, eid=None, stamp=None, **kwa):
+        """Return a reply message declaring own ``tags``.
+
+        A tag is a bare name a consumer may act on, so the set of names is what unions across a
+        witness set -- which is why tags and attribs are declared separately rather than in one
+        message. The other reason is BADA: each route is ordered on its own, so amending an
+        attribute never re-stamps a tag declaration.
+
+        Parameters:
+            tags (list): bare tag names being declared. Empty nullifies the declaration.
+            eid (str or None): qb64 of the declaring identifier.
+                None means use own ``.pre``.
+            stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
+                datetime. None means use now.
+            **kwa: keyword arguments forwarded to ``eventing.reply``.
+
+        Returns:
+            bytearray: reply message."""
+        eid = eid if eid is not None else self.pre
+        data = dict(eid=eid, tags=list(tags))
+        return self.reply(route="/decl/tags", data=data, stamp=stamp, **kwa)
+
+
+    def makeDeclAttribs(self, attribs, eid=None, stamp=None, **kwa):
+        """Return a reply message declaring own ``attribs``.
+
+        Parameters:
+            attribs (dict): key/value attributes being declared. Empty nullifies the declaration.
+            eid (str or None): qb64 of the declaring identifier.
+                None means use own ``.pre``.
+            stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
+                datetime. None means use now.
+            **kwa: keyword arguments forwarded to ``eventing.reply``.
+
+        Returns:
+            bytearray: reply message."""
+        eid = eid if eid is not None else self.pre
+        data = dict(eid=eid, attribs=dict(attribs))
+        return self.reply(route="/decl/attribs", data=data, stamp=stamp, **kwa)
+
+
     def replyLocScheme(self, eid, scheme="", **kwa):
         """Return a reply message stream of location scheme entries authed by
         the given ``eid`` from the reply database, including associated

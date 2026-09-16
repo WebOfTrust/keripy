@@ -380,6 +380,10 @@ Roles = Rolage(controller='controller', witness='witness', registrar='registrar'
                watcher='watcher', judge='judge', juror='juror', peer='peer', mailbox="mailbox", agent="agent", indexer="indexer")
 
 
+Declage = namedtuple("Declage", 'tags attribs')
+Decls = Declage(tags='tags', attribs='attribs')
+
+
 @dataclass(frozen=True)
 class TraitCodex:
     """
