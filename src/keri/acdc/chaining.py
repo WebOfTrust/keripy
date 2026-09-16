@@ -13,12 +13,19 @@ value or the Operator does not mean what the ACDC specification says it means. A
 group is already satisfied; that is only expressible if "absent" is a verdict rather
 than a control-flow jump out of the loop.
 
-So this module holds no storage and no policy. It defines the verdict a member
+So this module holds no storage and no evidence. It defines the verdict a member
 evaluates to, the reductions the Edge-group Operators perform over them, and nothing
 else. Each caller maps its own evidence into verdicts and disposes of the reduced one
 its own way -- v1 escrows and cues, the v2 IPEX path escrows through the Exchanger --
 which is why the mapping and the disposition stay with the callers while the algebra
 lives here.
+
+It does hold one policy, and says so rather than pretending otherwise: which
+Operators reduce, and how they read a member whose validity is not determined. ACDC
+assigns edge-validity logic to the Ecosystem Governance Framework, so the Kleene
+reading below is keripy's default rather than protocol. Both callers reach the table
+through a `MAryReducers` attribute they own, so a profile overrides it instead of
+forking the evaluator. See .MAryReducers.
 
 Three values, not four. An unknown verdict carries a retryability bit instead:
 "the evidence has not arrived" and "this implementation cannot evaluate the Operator"
@@ -180,15 +187,33 @@ def reduceOr(verdicts):
 
 
 MAryReducers = dict(AND=reduceAnd, OR=reduceOr)
-"""The m-ary Operators this module reduces, by token.
+"""keripy's default reduction for the ACDC Edge-group Operators, by token.
 
-`AND` and `OR` are the monotone rows of the ACDC Edge-group Operator table. `NAND`
-and `NOR` are expressible over this lattice but deliberately absent: the
-specification writes `NOT` two-valued ("If valid, then not valid. If invalid, then
-valid"), so its own prose invites reading an unevaluable member as false, and that
-reading inverts into acceptance. `AVG` and `WAVG` return a number over a
-schema-defined member property rather than a validity, so they do not reduce to a
-verdict at all. A caller meeting any of them must fail closed; .reduce raises.
+A default, not a protocol constant. ACDC assigns "the actual logic for interpreting
+the validity of a set of chained or treed ACDCs" to the Ecosystem Governance
+Framework (spec-body.md), and its m-ary Operator table is written over two values:
+it says an `AND` group is valid only if all members are valid and an `OR` group is
+valid if one member is, and says nothing about a member whose validity is not
+determined. Reading those rows as Kleene strong logic is this implementation's
+answer to that deferral. Both callers reach it through a `MAryReducers` attribute of
+their own, so a profile registers its Operators -- the dossier's weighted thresholds,
+for instance -- rather than growing a second evaluator.
+
+`NAND` and `NOR` are **unimplemented rather than unreducible**. Kleene negation is
+total (not-valid is invalid, not-invalid is valid, not-unknown is unknown), so both
+reduce over this lattice with no step that reads an undetermined member as false.
+What is unsettled is the specification, whose negation prose is two-valued -- the
+unary `NOT` row says "If valid, then not valid. If invalid, then valid" -- so a
+verifier following it literally satisfies a negative constraint on evidence the
+Discloser simply withheld, and reduces `NAND`/`NOR` to a different answer than this
+lattice would. Registering them here before that clause is amended would make keripy
+and a literal reader disagree on a security-relevant shape; failing closed until then
+is the conservative side of a disagreement this module cannot settle on its own.
+
+`AVG` and `WAVG` are a different case: they return a number over a schema-defined
+member property rather than a validity, so they do not reduce to a verdict at all.
+
+A caller meeting any unregistered token must fail closed; .reduce raises.
 """
 
 
@@ -201,18 +226,28 @@ def reduce(op, verdicts):
 
     Raises:
         ValidationError: if op is not reduced by this module, or if there are no
-            members. Neither is a truth value, so neither may enter the lattice: an
-            empty group read as valid would satisfy an enclosing AND, and read as
-            invalid would refuse a section its Issuer wrote deliberately, while a
-            verdict invented for an unrecognized Operator is the silent substitution
-            that makes an Issuer's rule mean less than it says. Both are malformed
-            input, and malformed input is the caller's to refuse before any reduction
-            runs -- if either reduced to a verdict, a satisfied sibling under OR
-            could outvote it.
+            members. Neither has an answer here, but they are different kinds of
+            thing and the callers treat them differently.
+
+            An Edge-group with no members is malformed: read as valid it would
+            satisfy an enclosing AND, and read as invalid it would refuse a section
+            its Issuer wrote deliberately. A malformed shape says the ACDC is not
+            well-formed rather than that some member's validity is unknown, so it
+            aborts the Edge Section before any reduction runs -- otherwise a
+            satisfied sibling under OR could outvote a well-formedness failure.
+
+            An Operator this table does not reduce is not malformed; the Issuer
+            named a rule and this implementation cannot apply it. Inventing a
+            verdict for it would be the silent substitution that makes the rule mean
+            less than it says, so the raise is how a caller learns to record the
+            group as an unknown no arrival can settle. Under Kleene reduction such
+            an unknown cannot change a verdict its siblings already decide, which is
+            what the specification's OR row asks for, and where it *is* outcome
+            relevant the section reduces to an unknown and is refused.
 
     """
     if op not in MAryReducers:
-        raise ValidationError(f"Edge-group Operator {op} is not reducible to a "
+        raise ValidationError(f"Edge-group Operator {op} is not reduced to a "
                               f"verdict; reducible are {sorted(MAryReducers)}")
 
     if not verdicts:

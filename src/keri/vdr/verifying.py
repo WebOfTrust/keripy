@@ -77,13 +77,25 @@ class Verifier:
     # this verifier and fails closed -- see .verifyGroup.
     MAryOps = ('AND', 'OR', 'NAND', 'NOR', 'AVG', 'WAVG')
 
-    # The subset of .MAryOps this verifier reduces lives in acdc.chaining, which both
-    # this stack and the v2 IPEX path share -- AND and NAND meaning different things
-    # on the two paths is the divergence that module exists to end. NAND, NOR, AVG
-    # and WAVG are recognized and not reduced: a group asking for one is unknown
-    # rather than silently treated as AND, which would apply a weaker rule than the
-    # Issuer specified.
-    MAryOpsImplemented = tuple(sorted(chaining.MAryReducers))
+    # The m-ary Operator reducers this verifier applies to an Edge-group. The default
+    # lives in acdc.chaining, which both this stack and the v2 IPEX path share -- AND
+    # meaning different things on the two paths is the divergence that module exists
+    # to end -- and the v2 IpexHandler carries the same attribute, so a deployment
+    # overrides the policy once rather than in two places.
+    #
+    # An attribute rather than a direct reach for chaining.MAryReducers because ACDC
+    # assigns "the actual logic for interpreting the validity of a set of chained or
+    # treed ACDCs" to the Ecosystem Governance Framework (spec-body.md:1112), and its
+    # m-ary table is written over two values: it says nothing about a member whose
+    # validity is not determined. The Kleene reading is keripy's answer to that
+    # deferral, not something the protocol imposes, and a profile with its own
+    # Operators -- the dossier's weighted thresholds, for instance -- registers them
+    # here instead of growing a second evaluator.
+    #
+    # NAND, NOR, AVG and WAVG are recognized by the spec and not reduced by default:
+    # a group asking for one is unknown rather than silently treated as AND, which
+    # would apply a weaker rule than the Issuer specified.
+    MAryReducers = chaining.MAryReducers
 
     # Operator applied to an Edge-group whose `o` field is absent: "When the
     # Operator, `o`, field is missing in an Edge-group block, the default value for
@@ -333,8 +345,8 @@ class Verifier:
                                       f"under {op}")
             return chaining.valid(f"credential {creder.said} carries no edges")
 
-        if op in chaining.MAryReducers:
-            return chaining.reduce(op, verdicts)
+        if op in self.MAryReducers:
+            return self.MAryReducers[op](verdicts)
 
         # Recognized but not reduced (NAND, NOR, AVG, WAVG), or not an Operator this
         # verifier knows at all. Either way the group's validity is unknown and no
@@ -345,7 +357,7 @@ class Verifier:
         # non-retryable unknown, and .disposeSection refuses without escrow.
         if op in self.MAryOps:
             reason = (f"Unsupported m-ary edge operator {op} on {where} of credential "
-                      f"{creder.said}; reducible are {sorted(chaining.MAryReducers)}")
+                      f"{creder.said}; reducible are {sorted(self.MAryReducers)}")
         else:
             reason = (f"Unrecognized m-ary edge operator {op!r} on {where} of "
                       f"credential {creder.said}; expected one of {self.MAryOps}")
