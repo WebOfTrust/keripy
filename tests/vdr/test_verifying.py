@@ -989,13 +989,21 @@ def test_verifier_edge_schema_constraint(seeder):
             issueCred(creder)
             return creder
 
-        # (1) Edge declares an INCOMPATIBLE schema the far node fails -> rejected.
-        # Assert the schema resolves, so the rejection is provably a validation
-        # failure (far node fails the edge schema) and not a missing-schema miss.
+        # (1) Edge declares an INCOMPATIBLE schema the far node fails -> rejected,
+        # permanently. Assert the schema resolves, so the rejection is provably a
+        # validation failure (far node fails the edge schema) and not a
+        # missing-schema miss. Both sides are fixed in SADs already in hand -- the
+        # far node's SAD under its SAID, and the pin under the near ACDC's -- so no
+        # arrival makes the far node satisfy the pin. It is therefore an edge
+        # refusal, and it must not escrow: parking it would promise a retry that
+        # cannot succeed, which is the same reasoning tick 22pi applied to the
+        # operator mismatches.
         assert verifier.resolver.resolve(incompatSchema)
         badCreder = nearCred("A near claim, incompatible edge schema.", incompatSchema)
-        with pytest.raises(MissingChainError):
+        with pytest.raises(EdgeRefusalError):
             verifier.processCredential(badCreder, **anchor)
+        assert verifier.reger.mce.get(keys=badCreder.said) is None
+        assert verifier.reger.saved.get(keys=badCreder.said) is None
 
         # (2) Edge declares the far node's OWN schema -> verifies.
         sameCreder = nearCred("A near claim, same edge schema.", optionalIssueeSchema)
@@ -1558,21 +1566,16 @@ def test_verifier_edge_group_traversal(seeder):
         # already follow in .verifyChain.
         assert not isinstance(ex, MissingChainError)
 
-        # `OR` is normative, and unimplemented here. It must fail closed too: under
-        # OR the group is valid if *one* member is valid, which is strictly weaker
-        # than the AND this verifier performs. Silently applying AND would reject
-        # ACDCs their issuer considers valid; silently applying OR would accept ones
-        # it cannot actually evaluate. Recognized-but-unimplemented is the honest
-        # answer, and it is distinguishable from the unrecognized case above.
+        # `OR` is normative and implemented, so a group asking for it is reduced
+        # under it rather than under the AND this loop used to perform on every
+        # group. Its semantics get their own test
+        # (test_verifier_reduces_the_edge_section_before_disposing); all this pins is
+        # that the traversal hands the group to the right reducer.
         endorsed = saidify(dict(d='', o="OR", work=dict(n=work.said, o="NI2I"),
-                                citizenship=dict(n=citizenship.said, o="NI2I")))
+                                citizenship=dict(n=citizenship.said, o="I2I")))
         section = saidify(dict(d='', endorsed=endorsed))
-        ex = expectRejected(section, "recognized but unimplemented operator OR")
-        assert "OR" in str(ex)
-        # Distinguishable from the unrecognized case: "Unsupported" says the token is
-        # in the spec's table but this verifier does not implement it, which is a
-        # different thing for an issuer to act on than "that is not an operator".
-        assert "Unsupported m-ary" in str(ex)
+        near = nearWithSection(section, "grouped OR, one member valid")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
 
         # An m-ary Operator on the top-level Edge Section fails closed just the same.
         section = saidify(dict(d='', o="NOR", work=dict(n=work.said, o="NI2I")))
@@ -1824,6 +1827,275 @@ def test_verifier_permanent_edge_refusal_does_not_escrow(seeder):
             process(pending)
         assert verfer.reger.mce.get(keys=pending.said) is not None
         assert dict(kin="proof", said=unsavedSaid) in list(verfer.cues)
+
+    """End Test"""
+
+
+def test_verifier_reduces_the_edge_section_before_disposing(seeder):
+    """The Edge Section reduces to one verdict, and the disposition happens once.
+
+    ``processCredential`` disposed of each edge where it evaluated it: a far node
+    not yet in hand escrowed the near ACDC and cued a proof query, a revoked one
+    raised, and the loop moved on. That is ``AND`` semantics written into the caller,
+    and it is invisible only while ``AND`` is the sole m-ary Operator the verifier
+    honours. The moment ``OR`` is real, disposing inside the loop is wrong twice
+    over: an ``OR`` already satisfied by evidence in hand still escrows and queries
+    on account of a member it does not need, and a member the Issuer wrote as
+    optional still refuses the whole ACDC.
+
+    So each member evaluates to a verdict -- valid, invalid, or unknown, with
+    unknown carrying whether waiting can help -- each Edge-group reduces its members
+    under its own Operator, and the Edge Section's reduced verdict is disposed of
+    once. What makes this more than a refactor is that the verdict spans both axes
+    the spec decides an edge on: the Operator's relation to the far node, and the far
+    node itself -- present or absent, satisfying the pinned schemas or not, issued or
+    revoked. Only the first of those was ever inside the thing being reduced.
+
+    Three member states stay outside the lattice, because they are not truth values.
+    A malformed group shape says the ACDC is not well-formed, not that a member's
+    validity is unknown, so it aborts the section before any reduction runs -- the
+    alternative is a well-formedness failure outvoted by a satisfied sibling. An
+    Operator this verifier cannot evaluate is different and does belong in the
+    lattice, as an unknown that no arrival can settle: under Kleene reduction an
+    absorbed unknown cannot change a verdict its siblings already decide, so
+    ``OR(valid, unevaluable)`` is valid, which is what the spec's ``OR`` row says.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    absentSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"  # never saved
+    otherAbsentSaid = "ECv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        def saidify(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256, label=Saids.d)
+            return block
+
+        def farNode(claim):
+            """Issue and save a targeted far node, ian -> han."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                             status=ianiss.regk, source={}, rules={},
+                             version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(far)
+            assert verfer.reger.saved.get(keys=far.saidb) is not None
+            return far
+
+        def nearWith(section, claim):
+            """Issue a near credential carrying `section`, anchored but unprocessed."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=section, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            iss = ianiss.issue(said=near.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                         gvrsn=Vrsn_1_0)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            return near
+
+        def run(section, claim):
+            """Returns (near, error or None, the cues this one credential emitted)."""
+            near = nearWith(saidify(section), claim)
+            before = len(verfer.cues)
+            error = None
+            try:
+                verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                         seqner=Seqner(sn=ian.kever.sn),
+                                         saider=Diger(qb64=ian.kever.serder.said))
+            except ValidationError as ex:
+                error = ex
+            return near, error, list(verfer.cues)[before:]
+
+        def saves(section, claim):
+            """The ACDC is accepted, saved, unescrowed, and cued exactly once."""
+            near, error, cues = run(section, claim)
+            assert error is None
+            assert verfer.reger.saved.get(keys=near.saidb) is not None
+            assert verfer.reger.mce.get(keys=near.said) is None
+            assert [cue["kin"] for cue in cues] == ["saved"]
+            return near
+
+        def refuses(section, claim, etype):
+            """The ACDC is refused permanently: not saved, not escrowed, not cued."""
+            near, error, cues = run(section, claim)
+            assert isinstance(error, etype), (claim, error)
+            assert verfer.reger.saved.get(keys=near.saidb) is None
+            assert verfer.reger.mce.get(keys=near.said) is None
+            assert verfer.reger.mse.get(keys=near.said) is None
+            assert cues == []
+            return error
+
+        def escrows(section, claim, queried):
+            """The ACDC waits: escrowed, and cued for every far node it waits on."""
+            near, error, cues = run(section, claim)
+            assert isinstance(error, MissingChainError), (claim, error)
+            assert verfer.reger.saved.get(keys=near.saidb) is None
+            assert verfer.reger.mce.get(keys=near.said) is not None
+            assert [cue for cue in cues if cue["kin"] == "proof"] == \
+                [dict(kin="proof", said=said) for said in queried]
+            return error
+
+        # Every near credential below is issued by ian, and every far node is issued
+        # by ian to han. So `near issuer (ian) != far issuee (han)`: an NI2I edge is
+        # satisfied and an I2I edge is refused on evidence already in hand.
+        work = farNode("work credential")
+        citizenship = farNode("citizenship credential")
+
+        def ok(said):
+            return dict(n=said, o="NI2I")
+
+        def bad(said):
+            return dict(n=said, o="I2I")
+
+        # OR is real. The spec's row -- "Edge-group is valid if one of the members is
+        # valid" -- is strictly weaker than the AND this verifier used to perform on
+        # every group, so a section the Issuer wrote as OR was refused despite being
+        # satisfied. One valid member now carries the group.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             citizenship=bad(citizenship.said)))),
+              "OR satisfied by one valid member")
+
+        # ...and an OR with no valid member is still refused, so OR is honoured
+        # rather than merely tolerated.
+        refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                               work=bad(work.said),
+                                               citizenship=bad(citizenship.said)))),
+                "OR with no valid member", EdgeRefusalError)
+
+        # The headline. A far node that has not arrived is an unknown member, not a
+        # jump out of the loop, so an OR already satisfied by evidence in hand does
+        # not escrow the near ACDC and does not query for a node it does not need.
+        # Before the reduction saw the far-node axis, this escrowed and cued on
+        # account of the absent member even though the group was decided without it.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             pending=ok(absentSaid)))),
+              "OR satisfied while a member is absent")
+
+        # The contrast, under AND: the absent member is exactly what the group is
+        # waiting on, so the ACDC escrows and cues a proof query for it.
+        escrows(dict(d='', both=saidify(dict(d='', o="AND",
+                                             work=ok(work.said),
+                                             pending=ok(absentSaid)))),
+                "AND waiting on an absent member", [absentSaid])
+
+        # Two absent members mean two queries. A disposition that named only the
+        # first would age the escrow out having asked for half of what it waits on,
+        # which is the reason a reduced unknown carries every contributing member
+        # rather than just the one that happened to be reached first.
+        escrows(dict(d='', both=saidify(dict(d='', o="AND",
+                                             here=ok(absentSaid),
+                                             there=ok(otherAbsentSaid)))),
+                "AND waiting on two absent members", [absentSaid, otherAbsentSaid])
+
+        # A revoked far node is a member verdict too, not an unconditional raise in
+        # the loop body. Under AND it still refuses the near ACDC, without escrow.
+        revoked = farNode("about to be revoked")
+        rev = ianiss.revoke(said=revoked.said)
+        rseal = SealEvent(rev.pre, Seqner(sn=rev.sn).snh, rev.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=rev.pre, regd=rev.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        refuses(dict(d='', both=saidify(dict(d='', o="AND",
+                                             work=ok(work.said),
+                                             stale=ok(revoked.said)))),
+                "AND with a revoked member", RevokedChainError)
+
+        # ...and under OR a valid sibling carries the group over it, which is the
+        # Issuer's stated intent and was not expressible before.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             stale=ok(revoked.said)))),
+              "OR over a revoked member")
+
+        # Retryability propagates with the verdict, so the disposition reads one bit
+        # instead of re-examining the members. DI2I is recognized and unimplemented:
+        # an unknown no arrival can settle. Under OR one retryable unknown can still
+        # carry the group on its own, so the ACDC escrows and queries for it.
+        escrows(dict(d='', either=saidify(dict(d='', o="OR",
+                                               pending=ok(absentSaid),
+                                               delegated=dict(n=work.said, o="DI2I")))),
+                "OR whose only hope is the retryable member", [absentSaid])
+
+        # Under AND one non-retryable unknown makes valid unreachable however much
+        # arrives, so escrowing would promise a retry that cannot succeed.
+        refuses(dict(d='', both=saidify(dict(d='', o="AND",
+                                             pending=ok(absentSaid),
+                                             delegated=dict(n=work.said, o="DI2I")))),
+                "AND held by a member no arrival can settle", UnsupportedOperatorError)
+
+        # An Operator this verifier cannot evaluate is an unknown in the lattice, so
+        # a satisfied sibling under OR decides the group without it. Under Kleene
+        # reduction that is not a relaxation: an absorbed unknown can never change a
+        # verdict relative to its true value, and every case where it is
+        # outcome-relevant reduces to unknown, which refuses.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             delegated=dict(n=citizenship.said,
+                                                            o="DI2I")))),
+              "OR over an unevaluable unary operator")
+
+        # The same for an m-ary Operator this verifier does not reduce. NOR is in the
+        # spec's normative table and unimplemented here; the group it governs is
+        # unknown, and the valid sibling decides the section.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             nor=saidify(dict(d='', o="NOR",
+                                                              a=ok(work.said)))))),
+              "OR over a group whose operator is not reduced")
+
+        # Malformed input is not a truth value, and this is where the lattice stops.
+        # An Edge-group's `o` is a single aggregating Operator; a list there is not a
+        # spec-legal spelling of anything, so the section is not well-formed. If that
+        # entered the lattice as an unknown, OR(valid, malformed) would accept -- a
+        # well-formedness failure outvoted by a sibling. It aborts instead, before
+        # any reduction runs.
+        error = refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                                       work=ok(work.said),
+                                                       broken=saidify(
+                                                           dict(d='', o=["AND"],
+                                                                a=ok(work.said)))))),
+                        "OR cannot outvote a malformed group shape", ValidationError)
+        assert "Unrecognized m-ary" in str(error)
+
+        # An Edge-group with no members is malformed for the same reason: read as
+        # valid it would satisfy an enclosing AND, and read as invalid it would
+        # refuse a section its Issuer wrote deliberately.
+        refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                               work=ok(work.said),
+                                               empty=saidify(dict(d=''))))),
+                "OR cannot outvote an empty group", ValidationError)
+
+        # An Edge Section carrying no edges at all is not malformed -- it is the
+        # ordinary shape of an unchained ACDC, and it is vacuously satisfied.
+        saves(dict(d=''), "no edges at all")
 
     """End Test"""
 
