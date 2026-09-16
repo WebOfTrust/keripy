@@ -2565,6 +2565,18 @@ class BaseHab:
         gvrsn = kwa.get("gvrsn") or Version
         msgs.extend(self.replay(cid, gvrsn=gvrsn))
 
+        # An OOBI on an identifier carries that identifier's own declarations. The witness-role
+        # branch below sends a witness's declarations to whoever resolves somebody it witnesses,
+        # which reaches third parties and misses the one party that most needs them: a controller
+        # deciding whether to designate the witness knows it only by its own OOBI, so without
+        # this the party choosing a laboratory witness is the only one who cannot see that it is
+        # one. Same declarer/relay split as loc scheme -- the declarer re-signs, anybody else
+        # replays what they were given, so a declaration keeps its original signature in transit.
+        if cid == self.pre:
+            msgs.extend(self.replyDecls(eid=cid, **kwa))
+        else:
+            msgs.extend(self.loadDecls(eid=cid, gvrsn=gvrsn))
+
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
 
