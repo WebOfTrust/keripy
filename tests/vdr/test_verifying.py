@@ -21,6 +21,8 @@ from keri.vc import credential
 from keri.acdc import acdcagg
 from keri.acdc.messaging import acgSchemaDefault
 from keri.vdr import Verifier, Regery, Tevery
+from keri.acdc import chaining
+from keri.acdc.ipexing import IpexHandler
 
 
 
@@ -2122,6 +2124,115 @@ def test_verifier_reduces_the_edge_section_before_disposing(seeder):
             verfer.processEscrows()
             assert list(verfer.cues)[before:] == [], "re-cued on an escrow pass"
         assert verfer.reger.saved.get(keys=near.saidb) is None
+
+    """End Test"""
+
+
+def test_verifier_mary_reducers_are_a_named_policy_hook(seeder):
+    """Which Operators reduce, and how, is a policy a deployment can change.
+
+    ACDC assigns "the actual logic for interpreting the validity of a set of chained
+    or treed ACDCs" to the Ecosystem Governance Framework (spec-body.md:1112), and
+    the normative m-ary table is written over two values: it says an ``AND`` group is
+    "valid only if all members are valid" and an ``OR`` group "is valid if one of the
+    members is valid", and says nothing about a member whose validity is not
+    determined. The Kleene lattice in ``acdc.chaining`` is keripy's answer to that
+    deferral, not something the protocol imposes -- so it has to be reachable as one
+    named thing rather than compiled into the verifier.
+
+    That matters concretely for the dossier profile, whose operators are weighted
+    sums against unity rather than ``AND`` or ``OR``. A profile that has to fork the
+    verifier to register one is a profile that will end up with its own evaluator,
+    which is the divergence the shared module exists to end.
+
+    The same attribute exists on the v2 IPEX handler, so a deployment changes the
+    policy once rather than in two places.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        def saidify(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256, label=Saids.d)
+            return block
+
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="far")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                         status=ianiss.regk, source={}, rules={},
+                         version=Vrsn_1_0, kind=Kinds.json)
+        issueAndSave(far)
+
+        def near(claim):
+            sub = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, d = Saider.saidify(sad=sub, code=MtrDex.Blake3_256, label=Saids.d)
+            section = saidify(dict(d='', nor=saidify(dict(
+                d='', o="NOR", a=dict(n=far.said, o="I2I")))))
+            creder = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=d,
+                                status=ianiss.regk, source=section, rules={},
+                                version=Vrsn_1_0, kind=Kinds.json)
+            iss = ianiss.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                         gvrsn=Vrsn_1_0)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            return creder
+
+        anchor = dict(prefixer=ian.kever.prefixer, seqner=Seqner(sn=ian.kever.sn),
+                      saider=Diger(qb64=ian.kever.serder.said))
+
+        # The default policy does not reduce NOR, so the group is an unknown no
+        # arrival settles and the section refuses without escrow. The single member
+        # is an I2I edge the near issuer does not satisfy, so NOR over it is true.
+        default = near("NOR under the default policy")
+        with pytest.raises(ValidationError):
+            verfer.processCredential(default, **anchor)
+        assert verfer.reger.saved.get(keys=default.saidb) is None
+
+        # A deployment that has settled how negation reads over an undetermined
+        # member registers its own reducer and the same bytes verify.
+        def reduceNor(verdicts):
+            """Kleene NOR: negate the disjunction, mapping unknown to itself."""
+            reduced = chaining.reduceOr(verdicts)
+            if reduced.verdict == chaining.Verdicts.valid:
+                return chaining.invalid(f"NOR: {reduced.reason}")
+            if reduced.verdict == chaining.Verdicts.invalid:
+                return chaining.valid(f"NOR: {reduced.reason}")
+            return reduced
+
+        class NorVerifier(Verifier):
+            MAryReducers = dict(chaining.MAryReducers, NOR=reduceNor)
+
+        policied = NorVerifier(hby=ianHby, reger=ianreg.reger)
+        assert 'NOR' in policied.MAryReducers
+        assert 'NOR' not in verfer.MAryReducers  # the default is not mutated
+
+        permissive = near("NOR under a policy that reduces it")
+        policied.processCredential(permissive, **anchor)
+        assert policied.reger.saved.get(keys=permissive.saidb) is not None
+
+        # The v2 IPEX handler exposes the same hook, so one override covers both.
+        assert IpexHandler.MAryReducers is chaining.MAryReducers
 
     """End Test"""
 
