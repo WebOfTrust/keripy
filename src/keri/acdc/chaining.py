@@ -42,7 +42,8 @@ Fields:
     unknown (str): the edge's validity is not determined -- see EdgeVerdict.retryable
 """
 
-EdgeVerdict = namedtuple("EdgeVerdict", "verdict retryable reason")
+EdgeVerdict = namedtuple("EdgeVerdict", "verdict retryable reason causes",
+                         defaults=((),))
 """One edge's or Edge-group's verdict, with why.
 
 Fields:
@@ -53,20 +54,26 @@ Fields:
     reason (str): diagnostic naming what decided this verdict, carried through the
         reductions so a refusal names the member that caused it rather than only the
         group that contained it
+    causes (tuple): whatever the caller attached to the members that decided this
+        verdict, in section order. Opaque here -- this module holds no policy -- and
+        a tuple rather than one value because a group's unknown genuinely has
+        several contributing members, and a caller that escrows must act on every
+        one of them or the ACDC waits forever on a query nobody sent.
 """
 
 
-def valid(reason):
+def valid(reason, cause=None):
     """Returns an EdgeVerdict for an edge that holds.
 
     Parameters:
         reason (str): what was checked
+        cause (object|None): caller payload for this member, see EdgeVerdict.causes
 
     """
-    return EdgeVerdict(Verdicts.valid, True, reason)
+    return EdgeVerdict(Verdicts.valid, True, reason, _causes(cause))
 
 
-def invalid(reason):
+def invalid(reason, cause=None):
     """Returns an EdgeVerdict for an edge decided not to hold.
 
     Nothing that arrives later changes an invalid verdict, so .retryable is False.
@@ -76,12 +83,13 @@ def invalid(reason):
 
     Parameters:
         reason (str): what failed
+        cause (object|None): caller payload for this member, see EdgeVerdict.causes
 
     """
-    return EdgeVerdict(Verdicts.invalid, False, reason)
+    return EdgeVerdict(Verdicts.invalid, False, reason, _causes(cause))
 
 
-def unknown(reason, *, retryable):
+def unknown(reason, *, retryable, cause=None):
     """Returns an EdgeVerdict for an edge whose validity is not determined.
 
     Parameters:
@@ -92,9 +100,23 @@ def unknown(reason, *, retryable):
             case escrowing would promise a retry that cannot succeed. Keyword-only
             and required, because defaulting it either way silently converts one of
             those cases into the other.
+        cause (object|None): caller payload for this member, see EdgeVerdict.causes
 
     """
-    return EdgeVerdict(Verdicts.unknown, retryable, reason)
+    return EdgeVerdict(Verdicts.unknown, retryable, reason, _causes(cause))
+
+
+def _causes(cause):
+    """Returns the one-or-none cause of a single member as a tuple."""
+    return () if cause is None else (cause,)
+
+
+def _join(verdicts):
+    """Returns the joined reasons and concatenated causes of several members."""
+    causes = ()
+    for verdict in verdicts:
+        causes = causes + tuple(verdict.causes)
+    return "; ".join(verdict.reason for verdict in verdicts), causes
 
 
 def reduceAnd(verdicts):
@@ -116,14 +138,15 @@ def reduceAnd(verdicts):
     """
     for verdict in verdicts:
         if verdict.verdict == Verdicts.invalid:
-            return invalid(verdict.reason)
+            return verdict  # the deciding member, with its own reason and causes
 
     unknowns = [v for v in verdicts if v.verdict == Verdicts.unknown]
     if unknowns:
-        return unknown("; ".join(v.reason for v in unknowns),
-                       retryable=all(v.retryable for v in unknowns))
+        reason, causes = _join(unknowns)
+        return EdgeVerdict(Verdicts.unknown,
+                           all(v.retryable for v in unknowns), reason, causes)
 
-    return valid("; ".join(v.reason for v in verdicts))
+    return valid(_join(verdicts)[0])
 
 
 def reduceOr(verdicts):
@@ -144,14 +167,16 @@ def reduceOr(verdicts):
     """
     for verdict in verdicts:
         if verdict.verdict == Verdicts.valid:
-            return valid(verdict.reason)
+            return verdict  # the deciding member, with its own reason and causes
 
     unknowns = [v for v in verdicts if v.verdict == Verdicts.unknown]
     if unknowns:
-        return unknown("; ".join(v.reason for v in unknowns),
-                       retryable=any(v.retryable for v in unknowns))
+        reason, causes = _join(unknowns)
+        return EdgeVerdict(Verdicts.unknown,
+                           any(v.retryable for v in unknowns), reason, causes)
 
-    return invalid("; ".join(v.reason for v in verdicts))
+    reason, causes = _join(verdicts)
+    return EdgeVerdict(Verdicts.invalid, False, reason, causes)
 
 
 MAryReducers = dict(AND=reduceAnd, OR=reduceOr)
