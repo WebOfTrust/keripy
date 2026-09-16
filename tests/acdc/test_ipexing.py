@@ -4,6 +4,7 @@ tests.acdc.test_ipexing module
 
 """
 from datetime import timedelta
+from collections import deque
 from types import SimpleNamespace
 
 import pytest
@@ -19,6 +20,7 @@ from keri.core import (Blinder, Codens, Compactor, Counter, Diger, GenDex, Kever
                        Kramer, Noncer, Number, Parser, Schemer, SealEvent, SealSource,
                        messagize, SerderKERI, Serdery, Texter, exchange)
 from keri.db import reopenDB
+from keri.acdc import chaining
 from keri.acdc.chaining import Verdicts
 from keri.kering import Colds, MissingSignatureError, sniff
 from keri.help import helping
@@ -2158,12 +2160,15 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         # with E1E, asserted directly on the evaluator rather than through six more
         # grants. The far node here is issued by issuer to issuer, and the near node
         # by issuer to subject, so I2I holds on the far pair and E1E does not.
+        # The far node's own verdict is seeded as valid: it carries no issuer-auth
+        # proof here, and what is under test is the Operator relation alone.
         nodes = {listOpChild.said: {"serder": listOpChild}}
 
         def evaluate(op):
             edge = dict(d="", n=listOpChild.said, o=op)
+            memo = {listOpChild.said: chaining.valid("far node vetted elsewhere")}
             return handler._evaluateLeafEdge(edge, nodes=nodes, nserder=listOpOrigin,
-                                             memo={}, inheritedPins=())
+                                             memo=memo, inheritedPins=())
 
         assert evaluate(["NI2I"]).verdict == Verdicts.valid
         # latest of the conflicting pair
@@ -3982,7 +3987,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=unsigned) is False
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=unsigned).verdict == Verdicts.invalid
 
         # A valid signature from an AID other than the issuer is insufficient.
         wrongSigner, = Parser(version=Vrsn_2_0).parse(
@@ -3990,7 +3995,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=wrongSigner) is False
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=wrongSigner).verdict == Verdicts.invalid
 
         # The issuer's current transferable signature authenticates the node.
         signed, = Parser(version=Vrsn_2_0).parse(
@@ -3998,7 +4003,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed).verdict == Verdicts.valid
 
         # An inner rd without top-level rd declares the unsupported hidden
         # issuer-registry form, so even a valid issuer signature cannot replace it.
@@ -4013,7 +4018,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             processive=False,
         )
         assert handler._verifyIssuerAuthNode(
-            serder=hidden, nest=hiddenSigned) is False
+            serder=hidden, nest=hiddenSigned).verdict == Verdicts.invalid
 
         # A source couple points to the issuer event that permanently seals it.
         anchor = issuer.interact(data=[dict(d=acdc.said)],
@@ -4030,15 +4035,15 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored).verdict == Verdicts.valid
 
         # Bare signatures expire when the issuer rotates, but the historical KEL
         # event continues to authenticate the ACDC it permanently anchored.
         issuer.rotate(version=Vrsn_2_0,
                       kind=issuer.kever.serder.kind,
                       gvrsn=Vrsn_2_0)
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed) is False
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed).verdict == Verdicts.invalid
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored).verdict == Verdicts.valid
 
 
 def test_ipex_v2_rejects_hidden_issuer_registry_signature_fallback():
@@ -6872,7 +6877,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             _anchor(childIssuee, childPresentationRegistry,
                     rgy.store.event(childPresentationRegistry.regk))
 
-            # Link the origin and child into one two-node disclosure DAG.
+            # Link the origin and child into one two-node disclosure DAG. The edge
+            # is explicitly NI2I: the child's issuee is not the origin's issuer, so
+            # the default I2I the spec appends to a bare edge would refuse it, and
+            # what is under test here is the presentation registries.
             child = acdcmap(
                 israid=issuer.pre,
                 regid=childIssuerRegistry.regk,
@@ -6887,7 +6895,7 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                 attribute=dict(d="",
                                rd=originPresentationRegistry.regk,
                                entitlement="origin"),
-                edge=_edge("child", child),
+                edge=_edge("child", child, op="NI2I"),
                 iseaid=originIssuee.pre,
             )
 
@@ -7654,17 +7662,43 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                                edge=edge,
                                iseaid=recipientHab.pre)
 
-            def run(originStream, artifacts, message):
-                """Parse one grant and return (exn, exchanger)."""
+            def planFor(originSerder):
+                """Disclosure plan selecting every node, in the walk's BFS order."""
+                known = {node.said: node
+                         for node in (good, spare, pending, forged, revoked)}
+                plan = [[originSerder.sad["s"]["$id"], "/", []]]
+                seen = {originSerder.said}
+                groups = deque([(originSerder.sad["e"], "/e/")])
+                while groups:
+                    grp, path = groups.popleft()
+                    if "n" in grp:
+                        if grp["n"] not in seen:
+                            seen.add(grp["n"])
+                            plan.append([known[grp["n"]].sad["s"]["$id"],
+                                         f"{path}_/", []])
+                        continue
+                    for label, node in grp.items():
+                        if label not in ("d", "u", "s", "o", "w"):
+                            groups.append((node, f"{path}{label}/"))
+                return plan
+
+            def run(originStream, artifacts, message, originSerder=None):
+                """Parse one grant and return its exn.
+
+                A multi-node grant carries an explicit disclosure plan, derived from
+                ``originSerder``; a one-node grant takes the derived root plan.
+                """
                 recorder = Recorder()
                 exc = Exchanger(hby=recipientHby, handlers=[])
                 loadHandlers(hby=recipientHby, exc=exc, notifier=recorder,
                              rgy=recipientRgy)
+                modifiers = (dict(dp=[planFor(originSerder)]) if artifacts else None)
                 exn, atc = ipexGrant(hab=issuerHab,
                                      recp=recipientHab.pre,
                                      message=message,
                                      origin=originStream,
-                                     artifacts=artifacts)
+                                     artifacts=artifacts,
+                                     modifiers=modifiers)
                 ims = bytearray(exn.raw)
                 ims.extend(atc)
                 Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
@@ -7672,17 +7706,23 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                 return exn
 
             def accepted(edge, artifacts, message):
-                exn = run(origin(edge), artifacts, message)
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
                 assert recipientHby.db.epse.get(keys=(exn.said,)) is None
 
             def escrowed(edge, artifacts, message):
-                exn = run(origin(edge), artifacts, message)
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is None
                 assert recipientHby.db.epse.get(keys=(exn.said,)) is not None
 
             def refused(edge, artifacts, message):
-                exn = run(origin(edge), artifacts, message)
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is None
                 assert recipientHby.db.epse.get(keys=(exn.said,)) is None
 
@@ -7743,6 +7783,17 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                      [goodNest, revokedNest],
                      "OR over a revoked far node")
 
+            # The boundary: the grant's *origin* is the ACDC being disclosed, and
+            # disclosing a revocation is a thing an Issuer does on purpose. Its
+            # registry state is recorded rather than enforced, which is what the v1
+            # Verifier does with a revoked presented credential too. Only a node
+            # reached through an edge -- where the near side is resting a claim on
+            # it -- is refused for being revoked.
+            exn = run(revokedNest, [],
+                      "the origin's own registry state is recorded, not enforced")
+            assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
+            assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+
             # An Operator this verifier cannot evaluate is an unknown in the lattice,
             # so a satisfied sibling decides the group without it. DI2I is recognized
             # and unimplemented; BOGUS is not recognized at all; neither can change a
@@ -7783,7 +7834,7 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                                    edge=dict(d="", holder=leaf(good)),
                                    iseaid=recipientHab.pre)
             exn = run(_proofed(forgedOrigin, goodBlinder), [goodNest],
-                      "the origin's own proof is refused")
+                      "the origin's own proof is refused", originSerder=forgedOrigin)
             assert recipientHby.db.exns.get(keys=(exn.said,)) is None
             assert recipientHby.db.epse.get(keys=(exn.said,)) is None
         finally:

@@ -442,6 +442,24 @@ class IpexHandler:
     # Receive route-filtered non-sender evidence from Exchanger.
     acceptsEvidence = True
 
+    # Registry state strings this handler treats as terminal, i.e. as refusing the
+    # ACDC bound to them. Deliberately a policy attribute rather than a constant:
+    # ACDC makes a registry's transaction state "a string from a small finite set"
+    # defined *per registry* (spec-body.md:2041, :2092), with issued/revoked only an
+    # example, and keripy already takes the vocabulary from the caller elsewhere
+    # (Blinder.unblind(states=[...])). So what counts as terminal belongs to the
+    # validator's policy, and a deployment overrides this rather than patching the
+    # handler. What this design fixes is only that the answer arrives as a verdict.
+    TerminalStates = ("revoked",)
+
+    # The m-ary Operator reducers this handler applies to an Edge-group. Named here
+    # rather than reached for inline because ACDC assigns "the actual logic for
+    # interpreting the validity of a set of chained or treed ACDCs" to the EGF
+    # (spec-body.md:1112); the Kleene lattice in acdc.chaining is keripy's default
+    # answer to that deferral, not something the protocol imposes, so a profile
+    # overrides this attribute rather than forking the handler.
+    MAryReducers = chaining.MAryReducers
+
     def __init__(self, resource, hby, notifier, rgy=None):
         """Create a handler for one IPEX route.
 
@@ -660,7 +678,8 @@ class IpexHandler:
                 # rather than as a separate operator-blind sweep beside it. The
                 # origin is where the answer is read, and its own issuer-auth sits
                 # outside every reduction because no edge points at it.
-                verdict = self._evaluateNode(origins[0], nodes=walked[0], memo={})
+                verdict = self._evaluateNode(origins[0], nodes=walked[0], memo={},
+                                             presented=True)
                 if verdict is None:  # malformed shape somewhere in the disclosed DAG
                     return False
 
@@ -1068,7 +1087,7 @@ class IpexHandler:
 
         return nodes, order
 
-    def _evaluateNode(self, said, *, nodes, memo):
+    def _evaluateNode(self, said, *, nodes, memo, presented=False):
         """Evaluate one disclosed node to a verdict, recursing through its edges.
 
         A node is valid when its own issuer-auth proof vets and its Edge Section
@@ -1086,6 +1105,9 @@ class IpexHandler:
             nodes (dict): Mapping of disclosed node SAIDs to parsed nests built
                 during the origin-graph walk.
             memo (dict): Node SAID to verdict, carried across the whole evaluation.
+            presented (bool): True for the grant's origin, the ACDC actually being
+                disclosed. Its registry state is recorded rather than enforced --
+                see ._verifyIssuerAuthNode.
 
         Returns:
             EdgeVerdict | None: the node's verdict, or ``None`` when some shape
@@ -1103,16 +1125,11 @@ class IpexHandler:
         nest = nodes[said]
         nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
 
-        try:
-            vetted = self._verifyIssuerAuthNode(serder=nserder, nest=nest)
-            auth = (chaining.valid(f"node {said} issuer-auth proof vets")
-                    if vetted
-                    else chaining.invalid(f"node {said} issuer-auth proof refused"))
-        except MissingChainError as ex:
-            # Retryable: the recipient has not learned enough of the issuer's TEL
-            # yet. A verdict rather than a raise, so an Operator that does not need
-            # this node is not made to wait on it.
-            auth = chaining.unknown(str(ex), retryable=True)
+        # Both what authenticates the node and what its registry says about it,
+        # as one verdict. A verdict rather than a raise, so an Operator that does
+        # not need this node is not made to wait on it.
+        auth = self._verifyIssuerAuthNode(serder=nserder, nest=nest,
+                                          presented=presented)
 
         edges = nserder.sad.get("e")
         if not edges:
@@ -1391,7 +1408,7 @@ class IpexHandler:
         if not isinstance(groupOp, str):
             return None
 
-        if groupOp not in chaining.MAryReducers:
+        if groupOp not in self.MAryReducers:
             # Recognized by the spec and not reduced here (NAND, NOR, AVG, WAVG), or
             # not an Operator this verifier knows at all. Either way the group's
             # validity is unknown and no arrival settles it. Reducing it as AND would
@@ -1399,7 +1416,7 @@ class IpexHandler:
             # would let it outvote siblings that decide the group without it.
             return chaining.unknown(
                 f"Edge-group Operator {groupOp!r} is not reduced by this verifier; "
-                f"reducible are {sorted(chaining.MAryReducers)}", retryable=False)
+                f"reducible are {sorted(self.MAryReducers)}", retryable=False)
 
         # Nested groups can pin one schema for every child below them. A group's own
         # pin is added to those already in force rather than replacing them, so a
@@ -1442,10 +1459,87 @@ class IpexHandler:
         # Reduce the child verdicts under the group's Operator, over three values
         # rather than two, so an unknown member cannot change a verdict its siblings
         # already decide.
-        return chaining.reduce(groupOp, results)
+        return self.MAryReducers[groupOp](results)
 
-    def _verifyIssuerAuthNode(self, serder, nest):
-        """Verify one ACDC using its declared issuer authentication factor."""
+    def _verifyIssuerAuthNode(self, serder, nest, *, presented=False):
+        """Verify one disclosed ACDC node's issuer authentication, as a verdict.
+
+        The node authenticates through its declared factor (see
+        ._authenticateIssuer). When that factor is a registry, the transaction
+        state the Issuer blinded into the registry's head is the other half of
+        what the ACDC specification decides an edge on, so it is read here rather
+        than discarded.
+
+        Parameters:
+            serder (Serder): The disclosed ACDC node being verified.
+            nest (dict | object): The parsed nested substream that carried the
+                node, with its issuer-auth attachments.
+            presented (bool): True for the ACDC the grant is disclosing, whose
+                registry state is recorded rather than enforced. Disclosing a
+                revocation is a thing an Issuer does on purpose, and the v1
+                Verifier saves a revoked presented credential for the same reason
+                (vdr/verifying.py, the near-node state branch). What neither path
+                accepts is a revoked ACDC reached through an *edge*, where the near
+                side is resting a claim on it.
+
+        Returns:
+            EdgeVerdict: valid when the node authenticates and, if registry-backed,
+            its registry's disclosed state is not one this handler treats as
+            terminal; invalid when its factor is permanently refused or the
+            registry says the ACDC is in a terminal state; unknown when the
+            verifier does not yet hold enough KEL or TEL evidence to conclude
+            (retryable) or the blinded head disclosed no state at all (not
+            retryable, since nothing that arrives supplies a state the Issuer did
+            not blind into the head).
+
+            A verdict rather than a bool because this is one of the two axes an
+            m-ary Operator aggregates. Returning True/False here would make the
+            registry's answer control flow again, which is the thing the Edge
+            Section reduction exists to stop.
+        """
+        try:
+            authenticated, record = self._authenticateIssuer(serder=serder, nest=nest)
+        except MissingChainError as ex:
+            return chaining.unknown(str(ex), retryable=True)
+
+        if not authenticated:
+            return chaining.invalid(f"node {serder.said} issuer-auth proof refused")
+
+        if record is None:  # authenticated by a factor that carries no state
+            return chaining.valid(f"node {serder.said} issuer-auth proof vets")
+
+        regk = record.regid
+        if presented:
+            return chaining.valid(f"node {serder.said} proof vets against registry "
+                                  f"{regk}, which says {record.state!r}")
+
+        if record.state is None:
+            # The head vetted and bound this ACDC but told no state. Nothing that
+            # arrives supplies a state the Issuer did not blind in, so this is
+            # undecided for good rather than pending.
+            return chaining.unknown(
+                f"registry {regk} head at n={record.sn} discloses no state for "
+                f"node {serder.said}", retryable=False)
+
+        if record.state in self.TerminalStates:
+            return chaining.invalid(
+                f"registry {regk} says node {serder.said} is {record.state!r}")
+
+        return chaining.valid(f"registry {regk} says node {serder.said} is "
+                              f"{record.state!r}")
+
+    def _authenticateIssuer(self, serder, nest):
+        """Verify one ACDC using its declared issuer authentication factor.
+
+        Returns:
+            tuple: ``(authenticated, record)``, where ``record`` is the vetted
+                ``RegStateRecord`` when the registry factor authenticated the node
+                and ``None`` for any other factor or a refusal.
+
+        Raises:
+            MissingChainError: When an issuer factor names KEL or TEL evidence
+                that the verifier has not loaded locally yet.
+        """
 
         # Authentication Factor 1: Registry
         # First check if a registry was declared, if so verify it
@@ -1455,14 +1549,12 @@ class IpexHandler:
                                        proofs=self._blindProofs(nest),
                                        target=serder.said,
                                        acdc=serder)
-            if record is None:
-                return False
-            return True
+            return record is not None, record
 
         # An inner rd without a top-level rd selects the unsupported hidden
         # issuer-registry form; it must not fall through to another factor.
         if self._presentationRegistries(serder) is None:
-            return False
+            return False, None
 
         # Authentication Factor 2: Seal Anchor
         # Registry-less ACDCs must identify a direct issuer AID.
@@ -1470,13 +1562,13 @@ class IpexHandler:
 
         # Reject a credential with no issuer authentication identity.
         if not issuer:
-            return False
+            return False, None
 
         # Parse the issuer identifier before processing attachments.
         try:
             prefixer = Prefixer(qb64=issuer)
         except Exception:
-            return False
+            return False, None
 
         # Normalize object and dictionary nest representations.
         parsed = nest if isinstance(nest, dict) else nest.__dict__
@@ -1506,7 +1598,7 @@ class IpexHandler:
 
             # A supplied issuer anchor is the selected factor. An invalid anchor
             # must not silently downgrade the ACDC to signature authentication.
-            return bool(validSeals)
+            return bool(validSeals), None
 
         # Authentication Factor 3: Signatures
         # Fall back to signature verification when no registry or anchor is supplied
@@ -1568,7 +1660,7 @@ class IpexHandler:
                 f"missing current issuer KEL evidence for ACDC {serder.said}")
 
         # Require at least one valid current issuer signature.
-        return bool(validTsgs or validCigars)
+        return bool(validTsgs or validCigars), None
 
     @staticmethod
     def _blindProofs(nest):
