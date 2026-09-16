@@ -5,11 +5,16 @@ tests.vdr.test_credentialing module
 """
 from keri.kering import Ilks, ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
 
-from keri.core import Number, Saider, Diger, SerderKERI, SealEvent, TraitDex
+from keri.core import (Number, Saider, Diger, SerderKERI, SealEvent, TraitDex,
+                       Seqner, Aggor, Noncer, MtrDex, Saids)
 
-from keri.app import openKS
+from keri.acdc import acdcagg
+from keri.acdc.messaging import acgSchemaDefault
+from keri.app import openKS, openHab
 from keri.db import openDB
-from keri.vdr import Credentialer, Regery, Registrar
+from keri.help import helping
+from keri.vc import credential
+from keri.vdr import Credentialer, Regery, Registrar, sendArtifacts
 from keri.vdr.eventing import incept
 
 from tests.vdr import buildHab
@@ -408,6 +413,163 @@ def test_escrow_suber_klas():
             if regk == reg_tede.regk:
                 found = True
         assert found, "tede getTopItemIter yielded nothing"
+
+
+class CapturingPoster:
+    """Minimal stand-in for forwarding.StreamPoster that records what was queued.
+
+    ``sendArtifacts`` only ever calls ``postman.send(serder=, attachment=)``, so
+    recording those calls is enough to assert which KELs and TELs were streamed,
+    without standing up witnesses or end role authorizations for a recipient.
+    """
+
+    def __init__(self):
+        self.msgs = []
+
+    def send(self, serder, attachment=None):
+        self.msgs.append((serder, attachment))
+
+    @property
+    def pres(self):
+        """list: qb64 prefix of every event serder queued."""
+        return [serder.pre for serder, _ in self.msgs]
+
+
+def _sendArtifactsSetup(hby, ian):
+    """Add an issuee and a recipient AID plus an anchored registry for ian.
+
+    ``sendArtifacts`` resolves both the issuer's and the issuee's KEL out of the
+    one ``hby.db``, so ian (issuer), han (issuee) and vic (recipient) all live in
+    the same Habery.
+
+    Returns:
+        tuple (Hab, Hab, Regery, Registry): (han, vic, rgy, registry)
+    """
+    han = hby.makeHab(name="han", transferable=True)
+    vic = hby.makeHab(name="vic", transferable=True)
+
+    rgy = Regery(hby=hby, name="ian", temp=True)
+    registry = rgy.makeRegistry(prefix=ian.pre, name="ian",
+                                version=Vrsn_1_0, kind=Kinds.json)
+    rseal = SealEvent(registry.regk, "0", registry.regd)._asdict()
+    ian.interact(data=[rseal], framed=True)
+    registry.anchorMsg(pre=registry.regk, regd=registry.regd,
+                       seqner=Seqner(sn=ian.kever.sn),
+                       saider=Diger(qb64=ian.kever.serder.said))
+    rgy.processEscrows()
+
+    return han, vic, rgy, registry
+
+
+def _aggregateCredential(ian, registry, rgy, issueeAid):
+    """Build an aggregative ('acg') credential and issue its SAID into ian's TEL.
+
+    For an aggregate ACDC the issuee lives at ``.sad["A"][1]["i"]`` rather than at
+    ``.sad["a"]["i"]``, so ``.attrib`` is None and ``.iseaid`` is the only way to
+    resolve the issuee -- exactly the case an attributive-only lookup mishandles.
+    """
+    raws = [b'aggsendartifact' + b'%0x' % (i) for i in range(3)]
+    nonces = [Noncer(raw=r).qb64 for r in raws]
+    # element 0 is the AGID placeholder; element 1 carries the issuee (i).
+    ael = ['', dict(d='', u=nonces[0], i=issueeAid),
+           dict(d='', u=nonces[1], over21=True)]
+    aggor = Aggor(ael=ael, makify=True, kind=Kinds.json)
+    sschema, _ = acgSchemaDefault(kind=Kinds.json)  # SAID string, not the block
+    agg = acdcagg(israid=ian.pre, uuid=nonces[2], regid=registry.regk,
+                  schema=sschema, aggregate=aggor.ael, kind=Kinds.json)
+
+    iss = registry.issue(said=agg.said)
+    rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+    ian.interact(data=[rseal], framed=True)
+    registry.anchorMsg(pre=iss.pre, regd=iss.said,
+                       seqner=Seqner(sn=ian.kever.sn),
+                       saider=Diger(qb64=ian.kever.serder.said))
+    rgy.processEscrows()
+    return agg
+
+
+def test_send_artifacts_aggregate_issuee():
+    """sendArtifacts resolves an aggregate ('acg') credential's issuee via .iseaid.
+
+    sendArtifacts reached the issuee through ``'i' in creder.attrib``, but
+    ``creder.attrib`` is None for an aggregate credential, so the membership test
+    raised ``TypeError`` and the issuee's KEL was never streamed -- an aggregate
+    credential could not be granted through this path at all. It must instead
+    resolve the issuee via ``.iseaid``, identically to an attributive credential.
+    """
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (hby, ian):
+        han, vic, rgy, registry = _sendArtifactsSetup(hby, ian)
+
+        agg = _aggregateCredential(ian, registry, rgy, han.pre)
+        assert agg.attrib is None            # aggregate: no 'a' section
+        assert agg.iseaid == han.pre         # issuee resolves from A[1].i
+        assert agg.israid == ian.pre
+
+        # Before the fix this raised TypeError on ``'i' in creder.attrib`` (None).
+        postman = CapturingPoster()
+        sendArtifacts(hby, rgy.reger, postman, agg, vic.pre)
+
+        pres = postman.pres
+        assert ian.pre in pres               # issuer KEL
+        assert han.pre in pres               # issuee KEL, resolved via .iseaid
+        assert registry.regk in pres         # management TEL
+        assert agg.said in pres              # credential TEL
+
+
+def test_send_artifacts_attributive_issuee():
+    """sendArtifacts streams an attributive credential's issuee KEL, unchanged.
+
+    The no-regression companion to test_send_artifacts_aggregate_issuee: for an
+    attributive credential ``.iseaid`` is ``.attrib['i']``, so routing through it
+    leaves this path's behavior identical.
+    """
+    schema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (hby, ian):
+        han, vic, rgy, registry = _sendArtifactsSetup(hby, ian)
+
+        data = dict(d="", i=han.pre, dt=helping.nowIso8601(), over21=True)
+        _, data = Saider.saidify(sad=data, code=MtrDex.Blake3_256, label=Saids.d)
+        creder = credential(issuer=ian.pre, schema=schema, data=data,
+                            status=registry.regk, rules={},
+                            version=Vrsn_1_0, kind=Kinds.json)
+
+        iss = registry.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True)
+        registry.anchorMsg(pre=iss.pre, regd=iss.said,
+                           seqner=Seqner(sn=ian.kever.sn),
+                           saider=Diger(qb64=ian.kever.serder.said))
+        rgy.processEscrows()
+
+        assert creder.attrib["i"] == han.pre
+        assert creder.iseaid == creder.attrib["i"]
+
+        postman = CapturingPoster()
+        sendArtifacts(hby, rgy.reger, postman, creder, vic.pre)
+
+        pres = postman.pres
+        assert ian.pre in pres
+        assert han.pre in pres
+        assert registry.regk in pres
+        assert creder.said in pres
+
+
+def test_send_artifacts_issuee_is_recipient():
+    """sendArtifacts skips the issuee KEL when the issuee is the recipient.
+
+    The ``isse != recp`` guard is unaffected by resolving the issuee via .iseaid.
+    """
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (hby, ian):
+        han, vic, rgy, registry = _sendArtifactsSetup(hby, ian)
+
+        agg = _aggregateCredential(ian, registry, rgy, han.pre)
+
+        postman = CapturingPoster()
+        sendArtifacts(hby, rgy.reger, postman, agg, han.pre)
+
+        pres = postman.pres
+        assert ian.pre in pres
+        assert han.pre not in pres           # recipient already holds its own KEL
 
 
 if __name__ == "__main__":

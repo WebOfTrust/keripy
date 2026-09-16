@@ -1062,7 +1062,10 @@ def sendArtifacts(hby, reger, postman, creder, recp):
         recp (str): qb64 prefix of the recipient to send the artifacts to
     """
     issr = creder.israid
-    isse = creder.attrib["i"] if "i" in creder.attrib else None
+    # Resolve the issuee via .iseaid so an aggregate ('acg') credential streams its
+    # issuee's KEL too: for them .attrib is None and the issuee lives at
+    # .sad["A"][1]["i"]. For attributive creds .iseaid == .attrib["i"]. (#1529)
+    isse = creder.iseaid
     regk = creder.regid
 
     ikever = hby.db.kevers[issr]
