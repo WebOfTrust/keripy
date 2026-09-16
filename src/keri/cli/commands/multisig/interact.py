@@ -10,27 +10,29 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import Parsery, config, setupHby, printIdentifier
+from ...common import Parsery, config, setupHby, printIdentifier, parseVersion
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Kinds, Vrsn_1_0
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
                      multisigInteractExn)
 from ....app.grouping import loadHandlers
 
-from ....core import Prefixer, Number, Diger, SerderKERI
+from ....core import Prefixer, Number, Diger, SerderKERI, Parser
 from ....peer import Exchanger
 
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
+parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: interactGroupIdentifier(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
 parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=True)
 parser.add_argument("--aids", "-g", help="List of other participant qb64 identifiers to include in interaction event",
                     action="append", required=False, default=None)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the group interaction event, such as 1.0 or 2.0')
 
 
 def interactGroupIdentifier(args):
@@ -49,7 +51,7 @@ def interactGroupIdentifier(args):
 
     data = config.parseData(args.data) if args.data is not None else None
     ixnDoer = GroupMultisigInteract(name=args.name, alias=args.alias, aids=args.aids, base=args.base, bran=args.bran,
-                                    data=data)
+                                    data=data, version=args.version)
 
     doers = [ixnDoer]
     return doers
@@ -66,24 +68,28 @@ class GroupMultisigInteract(doing.DoDoer):
 
     """
 
-    def __init__(self, name, alias, aids, base, bran, data):
+    def __init__(self, name, alias, aids, base, bran, data, version=None):
         self.base = base
         self.bran = bran
         self.alias = alias
         self.aids = aids
         self.data = data
+        self.version = version
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=self.version, kind=Kinds.json)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
+        self.mux = mux
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
-        self.counselor = Counselor(hby=self.hby)
+        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc,
+                              **kwa)
+        self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
 
         doers = [self.hbyDoer, self.postman, mbd, self.counselor]
         self.toRemove = list(doers)
@@ -112,10 +118,19 @@ class GroupMultisigInteract(doing.DoDoer):
 
         aids = self.aids if self.aids is not None else ghab.smids
 
-        ixn = ghab.interact(data=self.data)
+        kwa = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
+        ixn = ghab.interact(data=self.data, framed=True, **kwa)
         serder = SerderKERI(raw=ixn)
 
-        exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
+        exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn,
+                                       version=Vrsn_1_0, kind=Kinds.json)
+        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                framed=True,
+                                                processive=False)[0]
+        self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                              tsgs=local.tsgs, cigars=local.cigars,
+                              essrs=local.essrs)
+        self.mux.add(local.serder)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 

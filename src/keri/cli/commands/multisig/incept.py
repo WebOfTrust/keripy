@@ -14,18 +14,18 @@ import sys
 from hio.base import doing
 from hio.help import ogler
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Kinds, Version, Versionage, Vrsn_1_0
 from ....app import (Notifier, MailboxDirector, Multiplexor,
                      Counselor, HaberyDoer, Poster,
                      multisigInceptExn)
 from ....app.grouping import loadHandlers
-from ...common import Parsery, setupHby, printIdentifier
-from ....core import Prefixer, Number, Diger
+from ...common import Parsery, setupHby, printIdentifier, parseVersion
+from ....core import Prefixer, Number, Diger, Parser
 from ....peer import Exchanger
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a group identifier prefix', 
+parser = argparse.ArgumentParser(description='Initialize a group identifier prefix',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: inceptMultisig(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
@@ -34,6 +34,17 @@ parser.add_argument("--wait", "-w", help="number of seconds to wait for other mu
 
 parser.add_argument('--group', '-g', help="Human readable environment reference for group identifier", required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the group inception event, such as 1.0 or 2.0')
+
+
+def normalizeOptions(opts):
+    """
+    Normalize JSON-loaded multisig inception options.
+    """
+    if isinstance(opts.get("version"), (list, tuple)):
+        opts["version"] = Versionage(*opts["version"])
+    return opts
 
 
 def inceptMultisig(args):
@@ -51,14 +62,17 @@ def inceptMultisig(args):
     # help.ogler.reopen(name=args.name, temp=True, clear=True)
 
     try:
-        f = open(args.file)
-        opts = json.load(f)
+        with open(args.file) as f:
+            opts = normalizeOptions(json.load(f))
     except FileNotFoundError:
         print("config file", args.file, "not found")
         sys.exit(-1)
     except JSONDecodeError:
         print("config file", args.file, "not valid JSON")
         sys.exit(-1)
+
+    if args.version is not None:
+        opts["version"] = args.version
 
     name = args.name
     alias = args.alias
@@ -74,15 +88,19 @@ def inceptMultisig(args):
 
 class GroupMultisigIncept(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, group, wait, **kwa):
+    def __init__(self, name, base, alias, bran, group, wait, version=None, **kwa):
         self.name = name
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.alias = alias
-        self.inits = kwa
+        self.inits = dict(kwa)
+        if self.version is not None:
+            self.inits["version"] = self.version
         self.group = group
         self.wait = wait
+        init_kind = self.inits.get("kind", Kinds.json)
 
         topics = ['/receipt', '/multisig', '/replay']
         if "delpre" in self.inits:
@@ -92,10 +110,18 @@ class GroupMultisigIncept(doing.DoDoer):
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
-
-        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
-        self.counselor = Counselor(hby=self.hby)
-        self.postman = Poster(hby=self.hby)
+        self.mux = mux
+        if self.version is not None:
+            self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc,
+                                       version=self.version, gvrsn=self.version,
+                                       kind=init_kind)
+        else:
+            self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
+        self.counselor = Counselor(hby=self.hby,
+                                   version=self.version,
+                                   kind=init_kind)
+        self.postman = Poster(hby=self.hby, version=self.version,
+                              kind=init_kind)
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)
@@ -137,13 +163,23 @@ class GroupMultisigIncept(doing.DoDoer):
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
-            icp = ghab.makeOwnInception(allowPartiallySigned=True)
+            icp = ghab.msgOwnInception(allowPartiallySigned=True,
+                                       gvrsn=self.version if self.version is not None else Version)
 
             # Create a notification EXN message to send to the other agents
             exn, ims = multisigInceptExn(ghab.mhab,
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
-                                         icp=icp)
+                                         icp=icp,
+                                         version=Vrsn_1_0,
+                                         kind=self.inits.get("kind", Kinds.json))
+            local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                    framed=True,
+                                                    processive=False)[0]
+            self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                  tsgs=local.tsgs, cigars=local.cigars,
+                                  essrs=local.essrs)
+            self.mux.add(local.serder)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -163,7 +199,7 @@ class GroupMultisigIncept(doing.DoDoer):
                                  ghab=ghab)
 
         else:
-            prefixer = Prefixer(ghab.pre)
+            prefixer = Prefixer(qb64=ghab.pre)
             number = Number(sn=0)
 
         while True:
@@ -179,4 +215,3 @@ class GroupMultisigIncept(doing.DoDoer):
         print()
         printIdentifier(self.hby, ghab.pre)
         self.remove(self.toRemove)
-

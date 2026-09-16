@@ -21,10 +21,11 @@ Protocolage = namedtuple("Protocolage", "keri acdc")
 Protocols = Protocolage(keri="KERI", acdc="ACDC")
 
 Versionage = namedtuple("Versionage", "major minor")
-Version = Versionage(major=1, minor=0)  # KERI Protocol Version
-Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
-Vrsn_2_0 = Versionage(major=2, minor=0)  # KERI Protocol Version Specific
-
+Version = Versionage(major=2, minor=0)  # Default KERI Protocol, CESR Genus Version
+Vrsn_1_0 = Versionage(major=1, minor=0)  # Protocol/Genus Version 1 Specific
+Vrsn_2_0 = Versionage(major=2, minor=0)  # Protocol/Genus Version 2 Specific
+GVC_1_0 = '-_AAABAA'
+GVC_2_0 = '-_AAACAA'
 
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
@@ -50,7 +51,7 @@ VER2TERM = b'.'  # teminator character
 VEREX2 = ( b'(?P<proto2>[A-Z]{4})'
            b'(?P<pmajor2>[0-9A-Za-z_-])(?P<pminor2>[0-9A-Za-z_-]{2})'
            b'(?P<gmajor2>[0-9A-Za-z_-])(?P<gminor2>[0-9A-Za-z_-]{2})'
-           b'(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\.')
+           b'(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\\.')
 
 VEREX = VEREX2 + b'|' + VEREX1
 
@@ -140,7 +141,7 @@ def rematch(match):
 def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=None):
     """
     Returns:
-       vs (str): version string
+        vs (str): version string
 
     Parameters:
         proto (str): message protocol one of Protocols (KERI, ACDC etc)
@@ -157,9 +158,10 @@ def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=
 
     if pvrsn.major < 2:  # version1 version string
         if gvrsn is not None:
-            raise VersionError(f"Invalid (not None) CESR genus version="
-                               f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
-                               f"{pvrsn.major}.{pvrsn.minor} ")
+            if gvrsn.major != pvrsn.major or gvrsn.minor != pvrsn.minor:
+                raise VersionError(f"Invalid CESR genus version="
+                                   f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
+                                   f"{pvrsn.major}.{pvrsn.minor} ")
         if kind == Kinds.cesr:
             raise KindError(f"Invalid serialization {kind=} for message protocol"
                             f"  major version={pvrsn.major}")
@@ -190,7 +192,7 @@ def deversify(vs):
             gvrsn (Versionage): genus version (major, minor)
 
     Parameters:
-      vs (str | bytes): version string to extract from
+        vs (str | bytes): version string to extract from
 
     Uses regex match to extract:
         protocol type
@@ -481,6 +483,8 @@ class MissingEntryError(DatabaseError):
     Usage:
         raise MissingEntryError("error message")
     """
+
+
 
 
 # Errors when initing cryptographic material
@@ -804,6 +808,107 @@ class MissingDelegableApprovalError(ValidationError):
     Error referenced event missing from log so can't verify this txn state event
     Usage:
         raise MissingDelegableApprovalError("error message")
+    """
+
+
+class MisdigestError(ValidationError):
+    """
+    Error event's prior event digest does not match the digest of the event it
+    claims to follow, so the backward hash chain is broken at this event.
+
+    Distinct from OutOfOrderError, where the prior event is merely absent and
+    may still arrive: a mismatched prior digest is decided against events
+    already in hand, so no later arrival resolves it.
+
+    Usage:
+        raise MisdigestError("error message")
+    """
+
+
+class MissequenceError(ValidationError):
+    """
+    Error registry (TEL) event's sequence number breaks the strict chain rule:
+    a rip whose n is not 0, or an update whose n is not exactly prior + 1.
+    A gapped chain is decided malformed on the evidence in hand, so it is a
+    permanent refusal, never an escrow candidate.
+
+    Usage:
+        raise MissequenceError("error message")
+    """
+
+
+class MisregistryError(ValidationError):
+    """
+    Error registry (TEL) update event's registry SAID, rd field, does not
+    match the SAID of the registry inception (rip) event it is presented
+    with, so the update belongs to some other registry. Permanent refusal.
+
+    Usage:
+        raise MisregistryError("error message")
+    """
+
+
+class MisanchorError(ValidationError):
+    """
+    Error registry (TEL) event's anchoring seal was found, but in a KEL whose
+    controller AID is not the registry's issuer. A seal in a stranger's KEL
+    is merely a nonrepudiable endorsement, not a duplicity-evident commitment
+    by the issuer. Permanent refusal, distinct from MissingAnchorError where
+    no seal has been found anywhere and one may yet arrive.
+
+    Usage:
+        raise MisanchorError("error message")
+    """
+
+
+class RootSealError(ValidationError):
+    """
+    Error the KEL event claimed to anchor a registry (TEL) event carries seal
+    digest(s) that match no event in the presented TEL: an aggregate seal in
+    the style of a Merkle/SMT root over many transaction events. Verifying
+    such an anchor requires an inclusion proof, which is not supported, so
+    this is its own named refusal, distinct from an anchor that is merely
+    missing (MissingAnchorError).
+
+    Usage:
+        raise RootSealError("error message")
+    """
+
+
+class MisbindingError(ValidationError):
+    """
+    Error the binding equalities between a presented ACDC and its registry
+    (TEL) evidence fail: the registry state's transaction ACDC SAID (td) does
+    not equal the ACDC's SAID, or the ACDC's registry SAID (rd) does not
+    equal the registry inception (rip) event's SAID. Each artifact may verify
+    alone; the substitution lives in the binding between them. Permanent
+    refusal.
+
+    Usage:
+        raise MisbindingError("error message")
+    """
+
+
+class DuplicitousRegistryError(ValidationError):
+    """
+    Error registry (TEL) duplicity: two distinct registry events at the same
+    sequence number both chain-verify and are both anchored in the issuer's
+    KEL. No ordering of the evidence may hide this. Permanent refusal.
+
+    Usage:
+        raise DuplicitousRegistryError("error message")
+    """
+
+
+class UnverifiedBlindError(ValidationError):
+    """
+    Error a disclosed blinded state attribute block does not reproduce the
+    BLID (blinded state SAID) anchored by the blindable update (bup) event it
+    is disclosed against, so the disclosure proves nothing about the
+    registry's state.
+
+    Usage:
+        raise UnverifiedBlindError("error message")
     """
 
 

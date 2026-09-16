@@ -1,5 +1,7 @@
 {
   "transferable": false,
+  "version": [1, 0],
+  "kind": "JSON",
   "wits": [],
   "toad": 0,
   "icount": 1,
@@ -7,4 +9,3 @@
   "isith": "1",
   "nsith": "1"
 }
-

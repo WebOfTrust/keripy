@@ -6,13 +6,13 @@ tests.core.test_eventing module
 
 from hio.help import decking, ogler
 
-from keri.kering import Vrsn_1_0, Ilks
-from keri.core import Salter, Parser
-from keri.peer import Exchanger, exchange
+from keri.kering import Vrsn_1_0, Ilks, Kinds
+from keri.core import Salter, Parser, exchange
+from keri.peer import Exchanger, specialExchange
 from keri.app import openHby
 
-
 logger = ogler.getLogger()
+
 
 
 def test_pathed_material(mockHelpingNowUTC):
@@ -28,24 +28,32 @@ def test_pathed_material(mockHelpingNowUTC):
             self.msgs.append(serder)
             self.atcs.append(attachments)
 
-    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as hby,
-          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as debHby):
+    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as hby,
+          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as debHby):
+
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        palHab = hby.makeHab(name="pal")
-        debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
+        palHab = hby.makeHab(name="pal", version=Vrsn_1_0, kind=Kinds.json)
+        debHab = debHby.makeHab(name="deb", isith=sith, icount=3, version=Vrsn_1_0, kind=Kinds.json)
         # Create series of events
-        debMsgs = dict(icp=debHab.makeOwnInception(), ixn0=debHab.interact(), rot=debHab.rotate(),
-                       ixn1=debHab.interact())
-        fwd, end = exchange(route='/fwd',
-                            modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=debMsgs,
-                            sender=debHab.pre)
-        fwd = debHab.endorse(fwd, last=False, pipelined=False)
+        debMsgs = dict(icp=debHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0),
+                       ixn0=debHab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0),
+                       rot=debHab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0),
+                       ixn1=debHab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        fwd, end = specialExchange(sender=debHab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=palHab.pre,
+                                                  topic="replay"),
+                                   attributes={},
+                                   embeds=debMsgs,
+                                   version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        fwd = debHab.endorse(fwd, last=False, framed=True, gvrsn=Vrsn_1_0)
         fwd.extend(end)
         handler = MockHandler()
         exc = Exchanger(hby=debHby, handlers=[handler])
         parser = Parser(exc=exc, version=Vrsn_1_0)
 
-        parser.parseOne(ims=fwd)
+        result = parser.parseOne(ims=fwd)
+        assert result == True
         assert len(handler.msgs) == 1
         serder = handler.msgs.popleft()
 

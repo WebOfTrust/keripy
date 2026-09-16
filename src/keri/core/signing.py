@@ -29,14 +29,38 @@ Tierage = namedtuple("Tierage", 'low med high')
 
 Tiers = Tierage(low='low', med='med', high='high')
 
+# Inverse of the seed-code -> verfer-code derivation Signer.__init__ performs below.
+#
+# Rotation has to carry an identifier's signing algorithm forward, and on an identifier that
+# already exists the only record of that algorithm is the code of its current public key: the
+# key store keeps public keys and seeds, not the code they were made with. Mapping back is
+# therefore how a rotation stays on the curve the inception chose, rather than silently
+# reverting to the Ed25519 default.
+#
+# Both the transferable and non-transferable public codes map to the same seed code, because
+# transferability is a property of how the public key is encoded and not of the algorithm.
+SeedCodeByVerferCode = {
+    MtrDex.Ed25519: MtrDex.Ed25519_Seed,
+    MtrDex.Ed25519N: MtrDex.Ed25519_Seed,
+    MtrDex.ECDSA_256r1: MtrDex.ECDSA_256r1_Seed,
+    MtrDex.ECDSA_256r1N: MtrDex.ECDSA_256r1_Seed,
+    MtrDex.ECDSA_256k1: MtrDex.ECDSA_256k1_Seed,
+    MtrDex.ECDSA_256k1N: MtrDex.ECDSA_256k1_Seed,
+}
+
+# Every private key seed Signer can be built from. Derived from the mapping above rather than
+# written out again, so the two cannot disagree about which algorithms exist.
+SeedCodes = frozenset(SeedCodeByVerferCode.values())
+
 
 class Signer(Matter):
     """
     Signer is Matter subclass with method to create signature of serialization
     using:
-        .raw as signing (private) key seed,
-        .code as cipher suite for signing
-        .verfer whose property .raw is public key for signing.
+
+    - .raw as signing (private) key seed,
+    - .code as cipher suite for signing
+    - .verfer whose property .raw is public key for signing.
 
     If not provided .verfer is generated from private key seed using .code
     as cipher suite for creating key-pair.
@@ -44,48 +68,45 @@ class Signer(Matter):
 
     See Matter for inherited attributes and properties:
 
-    Attributes:
+        Inherited Properties:
 
-    Properties:  (inherited)
-        code (str): hard part of derivation code to indicate cypher suite
-        both (int): hard and soft parts of full text code
-        size (int): Number of triplets of bytes including lead bytes
+        - code (str): hard part of derivation code to indicate cypher suite
+        - both (int): hard and soft parts of full text code
+        - size (int): Number of triplets of bytes including lead bytes
             (quadlets of chars) of variable sized material. Value of soft size,
             ss, part of full text code.
             Otherwise None.
-        rize (int): number of bytes of raw material not including
-                    lead bytes
-        raw (bytes): private signing key crypto material only without code
-        qb64 (str): private signing key Base64 fully qualified with
-                    derivation code + crypto mat
-        qb64b (bytes): private signing keyBase64 fully qualified with
+        - rize (int): number of bytes of raw material not including lead bytes
+        - raw (bytes): private signing key crypto material only without code
+        - qb64 (str): private signing key Base64 fully qualified with
             derivation code + crypto mat
-        qb2  (bytes): private signing key binary with
-            derivation code + crypto material
-        transferable (bool): True means transferable derivation code False otherwise
-        digestive (bool): True means digest derivation code False otherwise
+        - qb64b (bytes): private signing keyBase64 fully qualified with
+            derivation code + crypto mat
+        - qb2  (bytes): private signing key binary with derivation code +
+            crypto material
+        - transferable (bool): True means transferable derivation code False otherwise
+        - digestive (bool): True means digest derivation code False otherwise
 
     Properties:
 
-        .verfer is Verfer object instance of public key derived from private key
-            seed which is .raw
+        - .verfer is Verfer object instance of public key derived from private key
+        seed which is .raw
 
     Methods:
-        sign: create signature
 
-    """
+        - sign: create signature"""
 
     def __init__(self, raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
         """Assign signing cipher suite function to ._sign
 
-        Parameters:  See Matter for inherted parameters
+        Parameters:
+            See Matter for inherted parameters.
+
             raw (bytes): crypto material for signing seed from which to generate
-                         private key
+                private key
             code (str): derivation code of signing seed
             transferable (bool):  True means make verifier code transferable
-                                  False make non-transferable
-
-        """
+                False make non-transferable"""
         try:
             super(Signer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
@@ -136,8 +157,7 @@ class Signer(Matter):
     def verfer(self):
         """Property verfer:
         Returns Verfer instance
-        Assumes ._verfer is correctly assigned
-        """
+        Assumes ._verfer is correctly assigned"""
         return self._verfer
 
 
@@ -154,10 +174,8 @@ class Signer(Matter):
             ser (bytes): serialization to be signed
             index (int):  main index of associated verifier key in event keys
             only (bool): True means main index only list, ondex ignored
-                          False means both index lists (default), ondex used
-            ondex (int | None): other index offset into list such as prior next
-
-        """
+                False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next"""
         return (self._sign(ser=ser,
                            seed=self.raw,
                            verfer=self.verfer,
@@ -190,9 +208,8 @@ class Signer(Matter):
                 Not None means return indexed Siger with Indexer code derived
                     from index, conly, and ondex values
             only (bool): True means main index only list, ondex ignored
-                          False means both index lists (default), ondex used
-            ondex (int | None): other index offset into list such as prior next
-        """
+                False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next"""
         # compute raw signature sig using seed on serialization ser
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
 
@@ -239,9 +256,8 @@ class Signer(Matter):
                 Not None means return indexed Siger with Indexer code derived
                     from index, conly, and ondex values
             only (bool): True means main index only list, ondex ignored
-                          False means both index lists (default), ondex used
-            ondex (int | None): other index offset into list such as prior next
-        """
+                False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next"""
         # compute raw signature sig using seed on serialization ser
         d = int.from_bytes(seed, byteorder="big")
         sigkey = ec.derive_private_key(d, ec.SECP256R1())
@@ -294,9 +310,8 @@ class Signer(Matter):
                 Not None means return indexed Siger with Indexer code derived
                     from index, conly, and ondex values
             only (bool): True means main index only list, ondex ignored
-                          False means both index lists (default), ondex used
-            ondex (int | None): other index offset into list such as prior next
-        """
+                False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next"""
         # compute raw signature sig using seed on serialization ser
         d = int.from_bytes(seed, byteorder="big")
         sigkey = ec.derive_private_key(d, ec.SECP256K1())
@@ -334,7 +349,8 @@ class Salter(Matter):
         salter = Salter(raw=b'0123456789abcdef')
 
     To create a deterministic secret, seed, or private key from salt
-    call .signer:
+    call .signer::
+
         signer = salter.signer(code=MtrDex.Ed25519_Seed,
                                transferable=True,
                                path="",
@@ -342,7 +358,8 @@ class Salter(Matter):
                                temp=False)
 
     To create a deterministic set of secrets or seeds or private keys from salt
-    call signers:
+    call signers::
+
         signers = salter.signers(count=1,
                                  start=0,
                                  path="",
@@ -374,9 +391,7 @@ class Salter(Matter):
         ._raw is bytes value for .raw property
         ._index is int value for .index property
         ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
-
-    """
+        ._exfil is method to extract .code and .raw from fully qualified Base64"""
     Tier = Tiers.low
 
     def __init__(self, raw=None, code=MtrDex.Salt_128, tier=None, **kwa):
@@ -384,16 +399,12 @@ class Salter(Matter):
         Initialize salter's raw and code
 
         Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-
-        """
+            raw: bytes of unqualified crypto material usable for crypto operations
+            qb64b: bytes of fully qualified crypto material
+            qb64: str or bytes  of fully qualified crypto material
+            qb2: bytes of fully qualified crypto material
+            code: str of derivation code
+            index: int of count of attached receipts for CryCntDex codes"""
         try:
             super(Salter, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
@@ -417,9 +428,8 @@ class Salter(Matter):
             size (int): number of bytes in stretched seed
             path (str): unique chars used in derivation of seed (secret)
             tier (str): value from Tierage for security level of stretch
-            temp is Boolean, True means use quick method to stretch salt
-                    for testing only, Otherwise use time set by tier to stretch
-        """
+            temp: Boolean, True means use quick method to stretch salt
+                for testing only, Otherwise use time set by tier to stretch"""
         tier = tier if tier is not None else self.tier
 
         if temp:
@@ -455,13 +465,12 @@ class Salter(Matter):
         for its .verfer is derived from code and transferable.
 
         Parameters:
-            code is str code of secret crypto suite
-            transferable is Boolean, True means use transferace code for public key
-            path is str of unique chars used in derivation of secret seed for signer
-            tier is str Tierage security level
-            temp is Boolean, True means use quick method to stretch salt
-                    for testing only, Otherwise use more time to stretch
-        """
+            code: str code of secret crypto suite
+            transferable: Boolean, True means use transferace code for public key
+            path: str of unique chars used in derivation of secret seed for signer
+            tier: str Tierage security level
+            temp: Boolean, True means use quick method to stretch salt
+                for testing only, Otherwise use more time to stretch"""
         seed = self.stretch(size=Matter._rawSize(code), path=path, tier=tier,
                             temp=temp)
 
@@ -474,9 +483,7 @@ class Salter(Matter):
         path made from path prefix and suffix of start plus offset for each count
         value from 0 to count - 1.
 
-        See .signer for parameters used to create each signer.
-
-        """
+        See .signer for parameters used to create each signer."""
         return [self.signer(path=f"{path}{i + start:x}", **kwa) for i in range(count)]
 
 
@@ -487,8 +494,7 @@ class CipherX25519VarStrmCodex:
     CipherX25519VarCodex is codex all variable sized cipher bytes derivation codes
     for sealed box encryped ciphertext. Plaintext is Sniffable CESR Stream.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
     X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
     X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
@@ -508,8 +514,7 @@ class CipherX25519VarQB64Codex:
     CipherX25519VarQB64Codex is codex all variable sized cipher bytes derivation codes
     for sealed box encryped ciphertext. Plaintext is QB64.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
     X25519_Cipher_QB64_L1:     str = '5D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 1
     X25519_Cipher_QB64_L2:     str = '6D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 2
@@ -529,8 +534,7 @@ class CipherX25519FixQB64Codex:
     CipherX25519FixQB64Codex is codex all fixed sized cipher bytes derivation codes
     for sealed box encryped ciphertext. Plaintext is B64.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
 
@@ -546,8 +550,7 @@ class CipherX25519AllQB64Codex:
     CipherX25519AllQB64Codex is codex all both fixed and variable sized cipher bytes
     derivation codes for sealed box encryped ciphertext. Plaintext is B64.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_Seed:   str = 'P'  # X25519 sealed box 124 char qb64 Cipher of 44 char qb64 Seed
     X25519_Cipher_Salt:   str = '1AAH'  # X25519 sealed box 100 char qb64 Cipher of 24 char qb64 Salt
     X25519_Cipher_QB64_L0:     str = '4D'  # X25519 sealed box cipher bytes of QB64 plaintext lead size 0
@@ -569,8 +572,7 @@ class CipherX25519QB2VarCodex:
     CipherX25519QB2VarCodex is codex all variable sized cipher bytes derivation codes
     for sealed box encryped ciphertext. Plaintext is B2.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_QB2_L0:     str = '4E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 0
     X25519_Cipher_QB2_L1:     str = '5E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 1
     X25519_Cipher_QB2_L2:     str = '6E'  # X25519 sealed box cipher bytes of QB2 plaintext lead size 2
@@ -590,8 +592,7 @@ class CipherX25519AllVarCodex:
     CipherX25519AllVarCodex is codex all variable size codes  of cipher bytes
     for sealed box encryped ciphertext. Plaintext maybe sniffable CESR stream or qb64 or qb2.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
     X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
     X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
@@ -623,8 +624,7 @@ class CipherX25519AllCodex:
     CipherX25519AllCodex is codex all codes and types of cipher bytes
     for sealed box encryped ciphertext. Plaintext maybe sniffable or qb64 or qb2.
     Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works."""
     X25519_Cipher_L0:     str = '4C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 0
     X25519_Cipher_L1:     str = '5C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 1
     X25519_Cipher_L2:     str = '6C'  # X25519 sealed box cipher bytes of sniffable stream plaintext lead size 2
@@ -666,9 +666,7 @@ class Cipher(Matter):
     for the encryption/decryption is implied by the context where the cipher is
     used.
 
-    See Matter for inherited attributes and properties
-
-    """
+    See Matter for inherited attributes and properties"""
     Codex = CiXDex
     Codes = asdict(CiXDex)  # map code name to code
 
@@ -677,11 +675,9 @@ class Cipher(Matter):
         Inherited Parameters:
             (see Matter)
 
-        Parmeters:
+            Parmeters:
             raw (bytes | str): cipher text (not plain text)
-            code (str): cipher suite
-
-        """
+            code (str): cipher suite"""
         # default when raw is not None and code is None  is to use fixed size
         # code given by raw size. Otherwise provided code fixed or variable size
         # is handled by Matter superclass.
@@ -718,12 +714,12 @@ class Cipher(Matter):
 
         Returns:
             decrypted (Matter | Indexer | Streamer): instance of decrypted
-               cipher text of .raw which is encrypted qb64, qb2, or sniffable
-               stream depending on .code when bare is False. Otherwise returns
-               plaintext itself.
+                cipher text of .raw which is encrypted qb64, qb2, or sniffable
+                stream depending on .code when bare is False. Otherwise returns
+                plaintext itself.
 
-        Keyword Parameters:
-            (see Matter because created Decrypter is Matter subclass)
+            Keyword Parameters:
+                See Matter because created Decrypter is Matter subclass.
 
         Parameters:
             prikey (str | bytes): qb64 or qb64b serialization of private
@@ -733,13 +729,12 @@ class Cipher(Matter):
                 fully qualified with code.
             klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
-            transferable (bool): Modifier of klas instance creation.
-                When klas init (such as Signer) supports transferabe parm;
-                   True means verfer of returned signer is transferable.
-                   False means non-transferable
-            bare (bool): False (default) means returns instance holding plaintext
-                         True means returns plaintext itself
-        """
+            transferable (bool): Modifier of klas instance creation. When klas
+                init (such as Signer) supports transferabe parm, True means
+                verfer of returned signer is transferable. False means
+                non-transferable.
+            bare (bool): False (default) means returns instance holding
+                plaintext. True means returns plaintext itself."""
         decrypter = Decrypter(qb64b=prikey, seed=seed, **kwa)
         return decrypter.decrypt(cipher=self,
                                  klas=klas,
@@ -768,21 +763,19 @@ class Encrypter(Matter):
     See Matter for inherited attributes and properties:
 
     Methods:
-        encrypt: returns cipher text
-
-    """
+        encrypt: returns cipher text"""
 
     def __init__(self, raw=None, code=MtrDex.X25519, verkey=None, **kwa):
         """
         Assign encrypting cipher suite function to ._encrypt
 
-        Parameters:  See Matter for inherted parameters such as qb64, qb64b
+        Parameters:
+            See Matter for inherted parameters such as qb64, qb64b
             raw (bytes): public encryption key
             qb64b (bytes): fully qualified public encryption key
             qb64 (str): fully qualified public encryption key
             code (str): derivation code for public encryption key
-            verkey (Union[bytes, str]): qb64b or qb64 of verkey used to derive raw
-        """
+            verkey (Union[bytes, str]): qb64b or qb64 of verkey used to derive raw"""
         if not raw and verkey:
             verfer = Verfer(qb64b=verkey)
             if verfer.code not in (MtrDex.Ed25519N, MtrDex.Ed25519):
@@ -807,8 +800,7 @@ class Encrypter(Matter):
 
         Parameters:
             seed (Union(bytes,str)): qb64b or qb64 serialization of private
-                signing key seed
-        """
+            signing key seed"""
         signer = Signer(qb64b=seed)
         verkey, sigkey = pysodium.crypto_sign_seed_keypair(signer.raw)
         pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
@@ -821,14 +813,12 @@ class Encrypter(Matter):
             provided by either ser or prim as CESR primitive instance.
 
         Parameters:
-
             ser (str | bytes | bytearray | memoryview): qb64b or qb64 or sniffable
                 stream serialization of plain text
             prim (Matter | Indexer | Streamer): CESR primitive instance whose
-                serialization is qb64 or qb2 or sniffable stream and is to be
+            serialization: qb64 or qb2 or sniffable stream and is to be
                 encrypted based on code
-            code (str): code of plain text type for resultant encrypted cipher
-        """
+            code (str): code of plain text type for resultant encrypted cipher"""
         if not ser:
 
             if not prim:
@@ -838,7 +828,12 @@ class Encrypter(Matter):
             if not code:
                 if prim.code == MtrDex.Salt_128:  # future other salt codes
                     code = MtrDex.X25519_Cipher_Salt
-                elif prim.code == MtrDex.Ed25519_Seed:  # future other seed codes
+                elif prim.code in SeedCodes:
+                    # Every seed code takes the same cipher code. The sealed box is over the
+                    # plain text's *fully qualified* qb64, so the seed's own derivation code
+                    # travels inside the cipher and decryption reconstructs the right kind of
+                    # Signer. The cipher code therefore says how the wrapping was done, not
+                    # which algorithm was wrapped, and one value covers all of them.
                     code = MtrDex.X25519_Cipher_Seed
                 else:
                     raise InvalidValueError(f"Unsupported primitive with code ="
@@ -872,12 +867,12 @@ class Encrypter(Matter):
     def _x25519(ser, pubkey, code):
         """
         Returns cipher text as Cipher instance
+
         Parameters:
             ser (Union[bytes, str]): qb64b or qb64 serialization of seed or salt
                 to be encrypted.
             pubkey (bytes): raw binary serialization of encryption public key
-            code (str): cipher derivation code
-        """
+            code (str): cipher derivation code"""
         raw = pysodium.crypto_box_seal(ser, pubkey)
         return Cipher(raw=raw, code=code)
 
@@ -906,11 +901,8 @@ class Decrypter(Matter):
 
     Properties:
 
-
     Methods:
-        decrypt: create cipher text
-
-    """
+        decrypt: create cipher text"""
 
     def __init__(self, code=MtrDex.X25519_Private, seed=None, **kwa):
         """
@@ -919,12 +911,13 @@ class Decrypter(Matter):
         Inherited Parameters:
             (see Matter)
 
-        Parameters:  See Matter for inherited parameters
+        Parameters:
+            See Matter for inherited parameters.
+
             code (str): derivation code for private decryption key
             seed (str | bytes | bytearray | memoryview | None): qb64b or qb64
                 of signing key seed used to derive raw which is private
-                decryption key
-        """
+                decryption key"""
         try:
             super(Decrypter, self).__init__(code=code, **kwa)
         except EmptyMaterialError as ex:
@@ -958,13 +951,13 @@ class Decrypter(Matter):
 
         Returns:
             decrypted (Matter | Indexer | Streamer | bytes): When bare is False
-               returns instance of decrypted cipher text of .raw which is
-               encrypted qb64, qb2, or sniffable stream depending on .code
-               hhen Bare is True. Otherwise returns decrypted serialization
-               plaintext whatever that may be.
+                returns instance of decrypted cipher text of .raw which is
+                encrypted qb64, qb2, or sniffable stream depending on .code
+                hhen Bare is True. Otherwise returns decrypted serialization
+                plaintext whatever that may be.
 
-        Keyword Parameters:
-            (see Matter because created Decrypter is Matter subclass)
+            Keyword Parameters:
+                See Matter because created Decrypter is Matter subclass.
 
         Parameters:
             cipher (Cipher): instance. One of cipher, qb64, or qb2 required.
@@ -976,13 +969,12 @@ class Decrypter(Matter):
                 and strip in kwa is True.
             klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
-            transferable (bool): Modifier of klas instance creation.
-                When klas init (such as Signer) supports transferabe parm;
-                   True means verfer of returned signer is transferable.
-                   False means non-transferable
-            bare (bool): False (default) means returns instance holding plaintext
-                         True means returns plaintext itself
-        """
+            transferable (bool): Modifier of klas instance creation. When klas
+                init (such as Signer) supports transferabe parm, True means
+                verfer of returned signer is transferable. False means
+                non-transferable.
+            bare (bool): False (default) means returns instance holding
+                plaintext. True means returns plaintext itself."""
         if not cipher:
             if qb64:  # create cipher from qb64
                 cipher = Cipher(qb64b=qb64, **kwa)
@@ -1012,11 +1004,10 @@ class Decrypter(Matter):
                 decrypted serialization. Default depends on cipher.code.
             transferable (bool): Modifier of Klas instance creation.
                 When klas init (such as Signer) supports transferabe parm;
-                   True means verfer of returned signer is transferable.
-                   False means non-transferable
+                    True means verfer of returned signer is transferable.
+                    False means non-transferable
             bare (bool): False (default) means CESR instance holding plaintext
-                         True means plaintext
-        """
+                True means plaintext"""
         # assumes raw plain text is qb64b or qb64 or sniffable stream
         # so it's round trippable
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
@@ -1057,16 +1048,10 @@ class Streamer:
     Properties:
         stream (bytearray): sniffable CESR stream
 
-
     Methods:
 
-
     Hidden:
-        _verify() -> bool
-
-
-
-    """
+        _verify() -> bool"""
 
     def __init__(self, stream, verify=False):
         """Initialize instance
@@ -1076,10 +1061,7 @@ class Streamer:
 
         Parameters:
             stream (str | bytes | bytearray | memoryview): sniffable CESR stream
-            verify (bool): When True raise error if .stream is not sniffable.
-
-
-        """
+            verify (bool): When True raise error if .stream is not sniffable."""
         if hasattr(stream, "encode"):
             stream = bytearray(stream.encode())  # convert str to bytearray
         if not isinstance(stream, (bytes, bytearray, memoryview)):
@@ -1093,18 +1075,16 @@ class Streamer:
 
         Returns:
             sniffable (bool): True when .stream is sniffable.
-                                  False otherwise.
-        Only works for ver 2 CESR because need for all count codes to be
-        pipelineable in order to simply parse stream
+                False otherwise.
 
-        """
+        Only works for ver 2 CESR because need for all count codes to be
+        pipelineable in order to simply parse stream"""
         return False
 
 
     @property
     def stream(self):
-        """stream property getter
-        """
+        """stream property getter"""
         return self._stream
 
 
@@ -1113,13 +1093,12 @@ class Streamer:
         """expanded stream where all primitives and groups in stream are
         individually expanded to qb64.
         Requires parsing full depth to ensure expanded consistently.
+
         Returns:
-           stream (bytes): expanded text qb64 version of stream
+            stream (bytes): expanded text qb64 version of stream
 
         Only works for ver 2 CESR because need for all count codes to be
-        pipelineable in order to simply parse and expand stream
-
-        """
+        pipelineable in order to simply parse and expand stream"""
         return self._stream
 
     @property
@@ -1127,31 +1106,32 @@ class Streamer:
         """compacted stream where all primitives and groups in stream are
         individually compacted to qb2.
         Requires parsing full depth to ensure compacted consistently
+
         Returns:
-           stream (bytes): compacted binary qb2 version of stream
+            stream (bytes): compacted binary qb2 version of stream
 
         Only works for ver 2 CESR because need for all count codes to be
-        pipelineable in order to simply parse and compact stream
-
-        """
+        pipelineable in order to simply parse and compact stream"""
         return self._stream
 
     @property
     def texter(self):
         """stream as Texter instance.
-            Texter(text=self.stream)
-        Returns:
-           texter (Texter): Texter primitive of stream suitable wrapping
 
-        """
+        Texter(text=self.stream)
+
+        Returns:
+            texter (Texter): Texter primitive of stream suitable wrapping"""
         return self._stream
 
     @property
     def bexter(self):
         """stream as Bexter instance.
         Bexter of expanded text version of stream.
-        First expand  to text which requires parsing then create bexter
+        First expand  to text which requires parsing then create bexter::
+
             Bexter(bext=self.text)
+
         Because sniffable stream MUST NOT start with 'A' then there is no
         length ambiguity. The only tritet collison of 'A' is with '-' but the
         remaining 5 bits are guaranteed to always be different. So bexter must
@@ -1159,8 +1139,7 @@ class Streamer:
         not 'A' as first byte.
 
         Requires parsing to ensure qb64
-        Returns:
-           bexter (Bexter): Bexter primitive of stream suitable wrapping
 
-        """
+        Returns:
+            bexter (Bexter): Bexter primitive of stream suitable wrapping"""
         return self._stream

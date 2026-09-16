@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 keri.core.eventing module
-
 """
 import datetime
 import logging
+import sys
 from collections import namedtuple
 from dataclasses import asdict
 from urllib.parse import urlsplit
@@ -21,24 +21,32 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks,
-                      versify, Kinds)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
+                      Roles, Schemes, Ilks, versify, Kinds,
+                      ConfigurationError)
 
-from ..help import helping
+from ..help import helping, Reb64
 
-from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
+from .coring import (PreDex, DigDex, NonTransDex, NumDex, Matter, Prefixer,
                      Diger, Number, Seqner, Cigar, Dater, Noncer,
-                     Verfer, Diger, Prefixer, Tholder)
+                     Verfer, Diger, Prefixer, Tholder, Texter)
 
 from .counting import Counter, Codens
-from .structing import SealEvent, SealLast, StateEstEvent
+from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
+                        BoundState, TypeMedia, FirstSeen, StateEstEvent,
+                        TransSigs, TransLastSigs, TransReceipts, AClanDom)
 from .indexing import Siger
 from .serdering import SerderKERI
 
-from ..db import Baser, dgKey, snKey
+from ..db import dgKey, snKey
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
                          LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)
+
+IS_PYODIDE = "emscripten" in sys.platform
+
+if not IS_PYODIDE:
+    from ..db import Baser  # noqa: E402
 
 
 logger = ogler.getLogger()
@@ -50,6 +58,8 @@ MaxIntThold = 2 ** 32 - 1
 # Location of last establishment key event: sn is int, dig is qb64 digest
 LastEstLoc = namedtuple("LastEstLoc", 's d')
 
+Kind = Kinds.cesr
+
 
 # Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted
 # to/from dicts easily  example: dict(kin="receipt", serder=serder)
@@ -59,9 +69,9 @@ def simple(n):
     """
     Returns int as simple majority of n when n >=1
         otherwise returns 0
+
     Parameters:
-        n is int total number of elements
-    """
+        n: int total number of elements"""
     return min(max(0, n), (max(0, n) // 2) + 1)
 
 
@@ -69,22 +79,22 @@ def ample(n, f=None, weak=True):
     """
     Returns int as sufficient immune (ample) majority of n when n >=1
         otherwise returns 0
-    Parameters:
-        n is int total number of elements
-        f is int optional fault number
-        weak is Boolean
-            If f is not None and
-                weak is True then minimize m for f
-                weak is False then maximize m for f that satisfies n >= 3*f+1
-            Else
-                weak is True then find maximum f and minimize m
-                weak is False then find maximum f and maximize m
 
-        n,m,f are subject to
-        f >= 1 if n > 0
-        n >= 3*f+1
-        (n+f+1)/2 <= m <= n-f
-    """
+    Parameters:
+        n: int total number of elements
+        f: int optional fault number
+        weak: Boolean
+                If f is not None and
+                    weak is True then minimize m for f
+                    weak is False then maximize m for f that satisfies n >= 3*f+1
+                Else
+                    weak is True then find maximum f and minimize m
+                    weak is False then find maximum f and maximize m
+
+            n,m,f are subject to
+            f >= 1 if n > 0
+            n >= 3*f+1
+            (n+f+1)/2 <= m <= n-f"""
     n = max(0, n)  # no negatives
     if f is None:
         f1 = max(1, max(0, n - 1) // 3)  # least floor f subject to n >= 3*f+1
@@ -113,27 +123,26 @@ def deWitnessCouple(data, strip=False):
     """
     Returns tuple of (diger, wiger) extracted from bytes or bytearray
     that hold concatenated data couple where:
-        diger is Diger instance
-        wiger is Siger instance
+    diger is Diger instance
+    wiger is Siger instance
+
     Couple is dig+wig  where:
-        dig is receipted event digest
-        wig is indexed signature made with key pair derived from witness nontrans
-            identifier prefix from witness list. Index is offset into witness
-            list of latest establishment event for receipted event.
+    dig is receipted event digest
+    wig is indexed signature made with key pair derived from witness nontrans
+    identifier prefix from witness list. Index is offset into witness
+    list of latest establishment event for receipted event.
 
     Parameters:
-        data is couple of bytes concatenation of dig+wig from receipt
+        data: couple of bytes concatenation of dig+wig from receipt
         deletive is Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
 
     Witness couple is used for escrows of unverified witness recipts signed by
     nontransferable witness prefix keys with indexed signatures where index
     is offset into associated witness list. At time of escrow receipted event
     may not be in KEL so need the dig to look up event and then look up witness
-    list from key state.
-
-
-    """
+    list from key state."""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -150,15 +159,19 @@ def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or bytearray
     of data couple made up of qb64 or qb64b versions of pre+cig where:
-       pre is nontransferable identifier prefix of receiptor
-       cig is nonindexed signature made with key pair derived from pre
+    pre is nontransferable identifier prefix of receiptor
+    cig is nonindexed signature made with key pair derived from pre
+
     Couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
-        strip is Boolean True means delete from data each part as parsed
+        data: couple of bytes concatenation of pre+sig from receipt
+        strip: Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
+
             Raises error if not bytearray
+
     """
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -176,15 +189,19 @@ def deSourceCouple(data, strip=False):
     """
     Returns tuple of (number, diger) from concatenated bytes or bytearray
     of data couple made up of qb64 or qb64b versions of snu+dig where:
-       snu is sn of delegator/issuer source event
-       dig is digest of delegator/issuer source event
+    snu is sn of delegator/issuer source event
+    dig is digest of delegator/issuer source event
+
     Couple is used for delegated/issued event attachment of delegator/issuer evt
 
     Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
-        strip is Boolean True means delete from data each part as parsed
+        data: couple of bytes concatenation of pre+sig from receipt
+        strip: Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
+
             Raises error if not bytearray
+
     """
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -202,17 +219,19 @@ def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes or bytearray
     of data triple made up of qb64 or qb64b versions of dig+pre+cig where:
-        dig is receipted event digest
-        pre is nontransferable identifier prefix of receiptor
-        cig is nonindexed signature made with key pair derived from pre
+    dig is receipted event digest
+    pre is nontransferable identifier prefix of receiptor
+    cig is nonindexed signature made with key pair derived from pre
 
     Triple is used for escrows of unverified receipts signed by nontransferable
     prefix keys
 
     Parameters:
-        data is triple of bytes concatenation of dig+pre+cig from receipt
+        data: triple of bytes concatenation of dig+pre+cig from receipt
         deletive is Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
+
     """
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -234,13 +253,16 @@ def deTransReceiptQuadruple(data, strip=False):
     Returns tuple (quadruple) of (prefixer, number, diger, siger) from
     concatenated bytes or bytearray of quadruple made up of qb64 or qb64b
     versions of spre+ssnu+sdig+sig.
+
     Quadruple is used for receipts signed by transferable prefix keys. Recept
     for event that is in kel where event is given by context or key
 
     Parameters:
         quadruple is bytes concatenation of pre+snu+dig+sig from receipt
         deletive is Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
+
     """
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -266,6 +288,7 @@ def deTransReceiptQuintuple(data, strip=False):
     Returns tuple of (ediger, seal prefixer, seal number, seal diger, siger)
     from concatenated bytes or bytearray of quintuple made up of qb64 or qb64b
     versions of quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig.
+
     Quintuple is used for unverified escrows of validator receipts signed
     by transferable prefix keys. Receipt for event that is not yet in KEL where
     event is given by event digest (ediger)
@@ -273,8 +296,7 @@ def deTransReceiptQuintuple(data, strip=False):
     Parameters:
         quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
         deletive is Boolean True means delete from data each part as parsed
-            Only useful if data is bytearray from front of stream
-    """
+            Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -311,10 +333,8 @@ def verifySigs(raw, sigers, verfers):
 
     Parameters:
         raw (bytes) signed data
-        sigers is list of indexed Siger instances (signatures)
-        verfers is list of Verfer instance (public keys)
-
-    """
+        sigers: list of indexed Siger instances (signatures)
+        verfers: list of Verfer instance (public keys)"""
     if sigers is None:
         sigers = []
     # Ensure no duplicate sigers by using set math on sigers' sigs otherwise
@@ -354,10 +374,10 @@ def validateSigs(serder, sigers, verfers, tholder):
 
     Returns:
         result (tuple): (sigers, valid) where:
-            sigers (list): subset of of provided sigers of verified signatures
-                on serder using verfers
-            valid (bool): True means threshold from tholder satisfied by sigers,
-                          False otherwise.
+        sigers (list): subset of of provided sigers of verified signatures
+            on serder using verfers
+        valid (bool): True means threshold from tholder satisfied by sigers,
+            False otherwise.
 
     Parameters:
         serder (SerderKERI): instance of message
@@ -369,9 +389,7 @@ def validateSigs(serder, sigers, verfers, tholder):
         seqner is Seqner instance of delegating event sequence number.
             If this event is not delegated then seqner is ignored
         diger is Diger instance of of delegating event digest.
-            If this event is not delegated then diger is ignored
-
-    """
+            If this event is not delegated then diger is ignored"""
     valid = False
     if len(verfers) < tholder.size:
         raise ValidationError("Invalid sith = {} for keys = {}."
@@ -409,7 +427,7 @@ def state(pre,
           cnfg=None,  # default to []
           dpre=None,
           version=Version,
-          kind=Kinds.json,
+          kind=Kind,
           intive = False,
           ):
     """
@@ -430,21 +448,19 @@ def state(pre,
             wr = witness remove list (cuts)
             wa = witness add list (adds)
         stamp (str | None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data
+            creation of message or data
         sith sith (int | str | list | None): current signing threshold input to Tholder
         ndigs (list | None): current signing key digests qb64
-        nsith int | str | list | None): next signing threshold input to Tholder
+            nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): prior witness identifier prefixes qb64
         cnfg (list | None):  strings from TraitDex configuration trait strings
         dpre (str | None): identifier prefix qb64 delegator if any
-                           If None then dpre in state is empty ""
+            If None then dpre in state is empty ""
         version (Version): KERI protocol version string
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-                       instead of hex str when numeric threshold
-
-    """
+            instead of hex str when numeric threshold"""
     sner = Number(num=sn)  # raises InvalidValueError if sn < 0
     fner = Number(num=fn)  # raises InvalidValueError if fn < 0
 
@@ -563,7 +579,7 @@ def incept(keys,
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.json,
+           kind=Kind,
            code=None,
            intive=False,
            delpre=None,
@@ -590,10 +606,9 @@ def incept(keys,
             not hex str when numeric threshold. Most compact JSON representation
             when Numbers are small because no quotes. Number accepts both.
         delpre (str | None): delegator identifier prefix qb64. When not None
-            makes this a msg type "dip", delegated inception event.
-    """
+            makes this a msg type "dip", delegated inception event."""
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
@@ -688,7 +703,7 @@ def delcept(keys, delpre, **kwa):
         keys  (list): current signing keys qb64
         isith (int | str | list | None): current signing threshold input to Tholder
         ndigs (list | None): current signing key digests qb64
-        nsith int | str | list | None): next signing threshold input to Tholder
+            nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): witness identifier prefixes qb64
         cnfg (list | None): configuration traits from TraitDex
@@ -701,8 +716,7 @@ def delcept(keys, delpre, **kwa):
         intive (bool): True means sith, nsith, and toad are serialized as ints
             not hex str when numeric threshold
         delpre (str | None): delegator identifier prefix qb64. When not None
-            makes this a msg type "dip", delegated inception event.
-    """
+            makes this a msg type "dip", delegated inception event."""
     return incept(keys=keys, delpre=delpre, **kwa)
 
 
@@ -724,7 +738,7 @@ def rotate(pre,
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.json,
+           kind=Kind,
            intive = False,
            ):
     """
@@ -751,10 +765,9 @@ def rotate(pre,
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-                       instead of hex str when numeric threshold
-    """
+            instead of hex str when numeric threshold"""
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = ilk
     if ilk not in (Ilks.rot, Ilks.drt):
@@ -883,7 +896,7 @@ def deltate(pre,
         sn (int | str): sequence number int or hex str
         isith (int | str | list): current signing threshold input to Tholder
         ndigs (list): current signing key digests qb64
-        nsith int | str | list): next signing threshold input to Tholder
+            nsith int | str | list): next signing threshold input to Tholder
         toad (int | str ): witness threshold number if str then hex str
         wits (list): prior witness identifier prefixes qb64
         cuts (list): witness prefixes to cut qb64
@@ -895,9 +908,7 @@ def deltate(pre,
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-            not hex str when numeric threshold
-
-    """
+            not hex str when numeric threshold"""
     return rotate(pre=pre, keys=keys, dig=dig, ilk=ilk, **kwa)
 
 
@@ -908,24 +919,23 @@ def interact(pre,
              version=Version,
              pvrsn=None,
              gvrsn=None,
-             kind=Kinds.json,
+             kind=Kind,
              ):
     """
     Returns serder of interaction event message.
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre is identifier prefix qb64
-        dig is said digest of previous event qb64
-        sn is int sequence number
-        data is list of dicts of comitted data such as seals
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
-        kind is serialization kind
-    """
+         pre: identifier prefix qb64
+         dig: said digest of previous event qb64
+         sn: int sequence number
+         data: list of dicts of comitted data such as seals
+         version (Versionage): KERI protocol default version if psvrsn is None
+         pvrsn (Versionage): KERI protocol version
+         gvrsn (Versionage): CESR genus vrsion
+         kind: serialization kind"""
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.ixn
     sner = Number(num=sn)
@@ -957,7 +967,7 @@ def receipt(pre,
             version=Version,
             pvrsn=None,
             gvrsn=None,
-            kind=Kinds.json
+            kind=Kind
             ):
     """
     Returns serder of event receipt message. Used for both non-trans and trans
@@ -966,16 +976,15 @@ def receipt(pre,
     Utility function to automate creation of receipts.
 
      Parameters:
-        pre is qb64 str of prefix of event being receipted
-        sn  is int sequence number of event being receipted
-        said is qb64 of said of event being receipted
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
-        kind  is serialization kind of receipt
-    """
+         pre: qb64 str of prefix of event being receipted
+         sn: int sequence number of event being receipted
+         said: qb64 of said of event being receipted
+         version (Versionage): KERI protocol default version if psvrsn is None
+         pvrsn (Versionage): KERI protocol version
+         gvrsn (Versionage): CESR genus vrsion
+         kind: serialization kind of receipt"""
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.rct
 
@@ -1002,7 +1011,7 @@ def query(pre="",
           version=Version,
           pvrsn=None,
           gvrsn=None,
-          kind=Kinds.json):
+          kind=Kind):
     """
     Returns serder of query 'qry' message.
     Utility function to automate creation of query messages.
@@ -1011,50 +1020,55 @@ def query(pre="",
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the query
+            handler (behavior) to processs the query
         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs reply message to query if any.
+            handler (behavior) to processs reply message to query if any.
         query (dict): query data paramaters modifiers
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message
+            creation of message
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+    Version 1.0:
 
-    Version 2.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+    .. code-block:: json
 
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "qry",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs",
+         "rr": "log/processor",
+         "q" :
+         {
+           "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+           "sn": "5",
+           "dt": "2020-08-01T12:20:05.123456+00:00",
+         }
+       }
+
+    Version 2.0:
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "qry",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs",
+         "rr": "log/processor",
+         "q" :
+         {
+           "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+           "sn": "5",
+           "dt": "2020-08-01T12:20:05.123456+00:00",
+         }
+       }
     """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
@@ -1094,7 +1108,7 @@ def reply(pre="",
           version=Version,
           pvrsn=None,
           gvrsn=None,
-          kind=Kinds.json):
+          kind=Kind):
     """Returns serder of reply 'rpy' message.
     Utility function to automate creation of reply messages.
     Reply 'rpy' message is a SAD item with an associated derived SAID in its
@@ -1106,49 +1120,53 @@ def reply(pre="",
             (behavior) to processs the reply if any
         data (dict): attribute section of reply
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data
+            creation of message or data
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
     Version 1:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "rpy",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs/processor",
+         "a" :
+         {
+            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+            "name": "John Jones",
+            "role": "Founder",
+         }
+       }
 
     Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "rpy",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
-
-
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs/processor",
+         "a" :
+         {
+            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+            "name": "John Jones",
+            "role": "Founder",
+         }
+       }
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     if data is None:
         data = {}
@@ -1184,61 +1202,66 @@ def prod(pre="",
           version=Version,
           pvrsn=None,
           gvrsn=None,
-          kind=Kinds.json):
+          kind=Kind):
     """Prod message
 
     Returns:
         prod (SerderKERI):  of prod, 'pro', msg to request disclosure via bare, 'bar' msg
+
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
     by all SAIDs given in digs list.
 
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the query
+            handler (behavior) to processs the query
         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs reply message to query if any.
+            handler (behavior) to processs reply message to query if any.
         query (dict): query data paramaters modifiers
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message
+            creation of message
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+    Version 1:
 
-    Version 2
+    .. code-block:: json
 
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "pro",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "data",
+         "rr": "data/processor",
+         "q":
+         {
+           "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         }
+       }
 
+    Version 2:
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "pro",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "data",
+         "rr": "data/processor",
+         "q":
+         {
+           "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         }
+       }
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.pro
 
@@ -1273,7 +1296,7 @@ def bare(pre="",
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.json):
+           kind=Kind):
     """Bare message
 
 
@@ -1289,67 +1312,64 @@ def bare(pre="",
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the exposure
+            handler (behavior) to processs the exposure
         data (dict): dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message
+            creation of message
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
+    Version 1:
 
-       route is route path string that indicates data flow handler (behavior)
-           to processs the exposure
-       data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
-       stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                     creation of message or data
-       version is Version instance
-       kind is serialization kind
+    .. code-block:: json
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "bar",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "sealed/processor",
+         "a" :
+           {
+             "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+               {
+                  "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                  "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                  "dt": "2020-08-22T17:50:12.988921+00:00",
+                  "name": "John Jones",
+                  "role": "Founder",
+               }
+           }
+       }
 
-    Version 2
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+    Version 2:
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "bar",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "sealed/processor",
+         "a" :
+           {
+             "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+               {
+                  "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                  "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                  "dt": "2020-08-22T17:50:12.988921+00:00",
+                  "name": "John Jones",
+                  "role": "Founder",
+               }
+           }
+       }
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
     ilk = Ilks.bar
 
     if pvrsn.major == Vrsn_1_0.major:
@@ -1381,9 +1401,10 @@ def exchept(sender="",
             attributes=None,
             nonce=None,
             stamp=None,
-            pvrsn=Vrsn_2_0,
+            version=Vrsn_2_0,
+            pvrsn=None,
             gvrsn=None,
-            kind=Kinds.json):
+            kind=Kind):
     """Utility function to automate creation of exchange incept, exchept, 'xip',
     message. The exchept 'xip' message is a SAD item with an associated derived
     SAID in its 'd' field.  Only defined for KERI v2.
@@ -1391,7 +1412,8 @@ def exchept(sender="",
     Returns:
         exchept (SerderKERI):  'xip' message.
 
-    Fields in order:
+        Fields in order:
+
     (v, t, d, u, ri, dt, r, q, a),
 
 
@@ -1399,39 +1421,43 @@ def exchept(sender="",
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         route (str):  '/' delimited path identifier of data flow handler
-               (behavior) to processs the reply if any
+            (behavior) to processs the reply if any
         modifiers (dict): modifiers
         attributes (dict): attributes
         nonce (str|None): qb64 of UUID salty nonce. When None generate nonce.
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data, default is now.
+            creation of message or data, default is now.
+        version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
     Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "/logs/processor",
-      "q":
-      {
-           "name": "Zoe",
-           "color": "Blue"
-      }
-      "a":
-      {
-          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "rpy",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
+         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+         "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "/logs/processor",
+         "q":
+         {
+              "name": "Zoe",
+              "color": "Blue"
+         }
+         "a":
+         {
+             "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         }
+       }
     """
-    pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.xip
 
@@ -1451,7 +1477,8 @@ def exchept(sender="",
     return serder
 
 
-def exchange(sender="",
+def exchange(*,
+             sender="",
              receiver="",
              xid="",
              prior="",
@@ -1459,126 +1486,462 @@ def exchange(sender="",
              modifiers=None,
              attributes=None,
              stamp=None,
-             pvrsn=Vrsn_2_0,
+             version=Version,
+             pvrsn=None,
              gvrsn=None,
-             kind=Kinds.json):
+             kind=Kind,):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
-        route (str):  '/' delimited path identifier of data flow handler
-               (behavior) to processs the reply if any
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-        prior (str): qb64 of prior exchange event including 'xip"
-        modifiers (dict): modifiers
-        attributes (dict): attributes
+            if any
+        prior (str): qb64 of prior exchange event including 'xip" if any
+        route (str):  '/' delimited path identifier of data flow handler
+            (behavior) to processs the reply if any (equivalent of
+            url path to resource)
+        modifiers (dict): modifiers field map (equvalent of http query string)
+        attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data, default is now.
+            creation of message or data, default is now.
+        version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
-        kind (str): serialization kind value of Serials
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                if serder.gvrsn else serder.pvrsn
+        kind (str): serialization for key event message
+            one of Kinds ("json","cbor","mgpk","cesr")"""
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
+    if pvrsn.major < 2:
+        sad = dict(v=vs,
+                  t=Ilks.exn,
+                  d="", # computed by SerderKERI init
+                  i=sender if sender is not None else "",
+                  rp=receiver if receiver is not None else "",
+                  p=prior if prior is not None else "",
+                  dt=stamp if stamp is not None else helping.nowIso8601(),
+                  r=route if route is not None else "",
+                  q=modifiers if modifiers is not None else {},
+                  a=attributes if attributes is not None else {})
 
-    """
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
-
-    ilk = Ilks.exn
-
-    sad = dict(v=vs,
-               t=ilk,
-               d="",
-               i=sender,
-               ri=receiver,
-               x=xid if xid is not None else "",
-               p=prior if prior is not None else "",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route if route is not None else "",
-               q=modifiers if modifiers is not None else {},  # q field required
-               a=attributes if attributes is not None else {}
-               )
+    else:  # v2
+        sad = dict(v=vs,
+                   t=Ilks.exn,
+                   d="",  # computed by SerderKERI init
+                   i=sender if sender is not None else "",
+                   ri=receiver if receiver is not None else "",
+                   x=xid if xid is not None else "",
+                   p=prior if prior is not None else "",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",
+                   q=modifiers if modifiers is not None else {},
+                   a=attributes if attributes is not None else {}
+                   )
 
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
-              pipelined=False):
+def _v1seqner(ordinal):
+    """Return the qb64b of a version-1 Seqner (fixed 24-char ``0A...`` form) for
+    the given ordinal, downgrading a v2 compact Number when necessary.
+
+    The ``gvrsn.major < 2`` legacy attachment path in messagize must emit
+    sequence and first-seen ordinals as v1 Seqner primitives (as genuine keri
+    1.x nodes expect), never as v2 Number primitives (``M...``). A v2 Number
+    wedged into an otherwise-v1 attachment stream is unparseable by a real v1
+    node, breaking v2->v1 interop for transferable seals (replies, transferable
+    receipts, first-seen replay).
+
+    Parameters:
+        ordinal (Number | Seqner | str): ordinal to serialize. A Number or
+            Seqner primitive, or a hex ordinal string (snh form).
     """
-    Attaches indexed signatures from sigers and/or cigars and/or wigers to
-    KERI message data from serder
+    if isinstance(ordinal, Seqner):
+        return ordinal.qb64b
+    if isinstance(ordinal, Number):
+        return Seqner(sn=ordinal.num).qb64b
+    return Seqner(snh=ordinal).qb64b
+
+
+def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
+                         cigars=None, rsgs=None, bonds=None, nests=None,
+                         framed=False, nested=False, gvrsn=Version, genusify=False):
+    """Attaches authenticator(s) from sigers (with or without source as seal) and/or
+    cigars and/or wigers and/or bonds. A bond is typically a seal reference to
+    an event with anchoring seal of message as authenticator. In v2 bonds may
+    also include any Structor subclass not simply seal references.
+
     Parameters:
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-        seal (Union[SealEvent, SealLast]): optional if sigers and
-            If SealEvent use attachment group code TransIdxSigGroups plus attach
-                triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else If SealLast use attachment group code TransLastIdxSigGroups plus
-                attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else use ControllerIdxSigs plus attached indexed sigs in sigers
+            based on seal type if any
+        tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+            controller idx sigs or endorsements from transferable aids with
+            reference to est evt providing key state and list of indexed sigs.
+        lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+            controller idx sigs or endorsements from transferable aids with
+            reference to est evt providing key state and list of indexed sigs.
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined (bool), True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
+        rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+            receiptor idx sigs or endorsements from transferable aids with
+            reference to est evt providing key state and list of indexed sigs.
+        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+            Non signature based authenticator typically an event reference or may
+            Only v2 supports BlindState|BoundState|TypeMedia
+            if bonds is not list convert to list.
+        nests (list[str|bytes|bytearray]|None): of nested msg substreams.
+            Each element stream with message + attachments. Attachements
+            must be enclosed in either AttachmentGroup or
+            BodyWithAttachmentGroup. When True forces gvrsn to V2 and
+            forces either nested to True or framed to false
+        framed (bool): True means each message plus attachments may be assumed to
+                be isolated as frame when parsing so do not need
+                attachment group
+            False means use attachment group since message plus
+                attachments may not be isolated as frame when parsing
+        nested (bool): True means messagize for non-top level
+                This forces non-native serializion to be embedded
+                in non-native group code. When True forces gvrsn to V2
+            False means messagize for top level of stream.
+                This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                if serder.gvrsn else serder.pvrsn
+        genusify (bool): True means prepend genus version code from gvrsn before
+                serder to override default stream genus version
+            False means do nothing
 
-    Returns: bytearray KERI event message
-    """
-    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    atc = bytearray()  # attachment
+    Returns:
+        msg (bytearray): KERI event with attachments if any"""
+    if not (sigers or tsgs or lsgs or cigars or wigers or rsgs or bonds):
+        raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
-    if not (sigers or cigars or wigers):
-        raise ValueError("Missing attached signatures on message = {}."
-                         "".format(serder.ked))
+    svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
 
-    if sigers:
-        if isinstance(seal, SealEvent):
-            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(seal.i.encode("utf-8"))
-            atc.extend(Seqner(snh=seal.s).qb64b)
-            atc.extend(seal.d.encode("utf-8"))
+    if (nested or nests) and gvrsn.major < 2:
+        gvrsn = Vrsn_2_0  # force gvrsn to v2 for nesting
 
-        elif isinstance(seal, SealLast):
-            atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+    if nests and not nested and framed:
+        nested = True
+
+    if (gvrsn.major < svrsn.major or
+            (gvrsn.major == svrsn.major and gvrsn.minor < svrsn.minor)):
+        gvrsn = svrsn  # serder vrsn greater than gvrsn so use it instead
+
+    gims = bytearray()  # for grouped message stream
+    if genusify:  # create and insert stream genus version code
+        gvc = Counter.makeGVC(version=gvrsn)
+        gims.extend(gvc)
+
+    aims = bytearray()  # attachment message stream
+
+    if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
+        if sigers:
+            aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
-            atc.extend(seal.i.encode("utf-8"))
+            for siger in sigers:
+                aims.extend(siger.qb64b)
 
-        atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                           version=Vrsn_1_0).qb64b)
-        for siger in sigers:
-            atc.extend(siger.qb64b)
+        if tsgs:
+            count = len(tsgs)
+            aims.extend(Counter(Codens.TransIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for tsg in tsgs:
+                prefixer, number, diger, sigers = tsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(_v1seqner(number))  # v1 Seqner not v2 Number
+                aims.extend(diger.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
 
-    if wigers:
-        atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                           version=Vrsn_1_0).qb64b)
-        for wiger in wigers:
-            if wiger.verfer and wiger.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(wiger.verfer.qb64))
-            atc.extend(wiger.qb64b)
 
-    if cigars:
-        atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
-                           version=Vrsn_1_0).qb64b)
-        for cigar in cigars:
-            if cigar.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(cigar.verfer.qb64))
-            atc.extend(cigar.verfer.qb64b)
-            atc.extend(cigar.qb64b)
+        if lsgs:
+            count = len(lsgs)
+            aims.extend(Counter(Codens.TransLastIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for lsg in lsgs:
+                prefixer, sigers = lsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
 
-    if pipelined:
-        if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
-        msg.extend(Counter(Codens.AttachmentGroup,
-                           count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
 
-    msg.extend(atc)
-    return msg
+        if wigers:
+            aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
+                               version=Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                aims.extend(wiger.qb64b)
+
+        if cigars:
+            aims.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
+                               version=Vrsn_1_0).qb64b)
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{cigar.verfer.qb64} for receipt.")
+                aims.extend(cigar.verfer.qb64b)
+                aims.extend(cigar.qb64b)
+
+        if rsgs:
+            rims = bytearray()
+            for rsg in rsgs:
+                prefixer, number, diger, sigers = rsg  # unpack
+                rims.extend(prefixer.qb64b)
+                rims.extend(_v1seqner(number))  # v1 Seqner not v2 Number
+                rims.extend(diger.qb64b)
+
+                rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    rims.extend(siger.qb64b)
+
+            aims.extend(Counter.enclose(qb64=rims,
+                                        code=Codens.TransReceiptIdxSigGroups,
+                                        version=Vrsn_1_0))
+
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
+
+            clans = {}
+            for bond in bonds: # collate seals from bonds into groups by clan
+                if (bond.__class__ not in (SealEvent, SealSource, SealLast, FirstSeen)):
+                    raise ValueError(f"Unsupported authenticator {bond} kind for "
+                                     f"version={gvrsn} msg={serder.pretty()}")
+
+                if bond.__class__ not in clans:  # zeroth one in group
+                    clans[bond.__class__] = [bond]  # make list
+                else:
+                    clans[bond.__class__].append(bond)
+
+            for clan, group in clans.items():
+                if issubclass(clan, SealEvent):  # authenticator is event seal
+                    aims.extend(Counter(Codens.SealSourceTriples, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.i.qb64b)
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
+                            aims.extend(bond.d.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(bond.i.encode())
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
+                            aims.extend(bond.d.encode())
+
+                elif issubclass(clan, SealSource):  # authenticator is last seal
+                    aims.extend(Counter(Codens.SealSourceCouples, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
+                            aims.extend(bond.d.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
+                            aims.extend(bond.d.encode())
+
+                elif issubclass(clan, SealLast):  # authenticator is last seal
+                    aims.extend(Counter(Codens.SealSourceLastSingles,
+                                        count=len(group),
+                                        version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.i.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(bond.i.encode())
+
+                elif issubclass(clan, FirstSeen):  # first seen bond
+                    aims.extend(Counter(Codens.FirstSeenReplayCouples,
+                                        count=len(group),
+                                        version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(_v1seqner(bond.f))  # v1 Seqner not v2 Number
+                            aims.extend(bond.dt.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(_v1seqner(bond.f))  # v1 Seqner not v2 Number
+                            aims.extend(Dater(dts=bond.dt).qb64b)
+
+                else:
+                    raise ValueError(f"Unsupported bond {clan} for"
+                                     f" version={gvrsn} msg={serder.pretty()}")
+
+        if len(aims) % 4:
+            raise ValueError(f"Invalid attachments size={len(aims)}, "
+                             f"nonintegral quadlets.")
+
+        msg = bytearray(serder.raw)
+        if not framed:
+            msg.extend(Counter(Codens.AttachmentGroup,
+                               count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
+        msg.extend(aims)
+
+    elif gvrsn.major == 2:  # version 2.x for attachments and/or nesting
+
+        if sigers:
+            sims = bytearray() # composes idxsig group inside group
+            for siger in sigers:
+                sims.extend(siger.qb64b)
+
+            aims.extend(Counter.enclose(qb64=sims,
+                                        code=Codens.ControllerIdxSigs,
+                                        version=gvrsn))
+
+        if tsgs:
+            cims = bytearray()
+            for tsg in tsgs:
+                prefixer, number, diger, sigers = tsg  # unpack
+                cims.extend(prefixer.qb64b)
+                cims.extend(number.qb64b)
+                cims.extend(diger.qb64b)
+
+                sims = bytearray()
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+                cims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=cims,
+                                        code=Codens.TransIdxSigGroups,
+                                        version=gvrsn))
+
+        if lsgs:
+            cims = bytearray()
+            for lsg in lsgs:
+                prefixer, sigers = lsg  # unpack
+                cims.extend(prefixer.qb64b)
+
+                sims = bytearray()
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+                cims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=cims,
+                                        code=Codens.TransLastIdxSigGroups,
+                                        version=gvrsn))
+
+
+        if wigers:
+            eims = bytearray()
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Mismatch: tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                eims.extend(wiger.qb64b)
+            aims.extend(Counter.enclose(qb64=eims,
+                                        code=Codens.WitnessIdxSigs,
+                                        version=gvrsn))
+
+        if cigars:
+            eims = bytearray()
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Mismatch: tranferable prefix="
+                                     f"{cigar.verfer.qb64} with nontrans cnt code.")
+                eims.extend(cigar.verfer.qb64b)
+                eims.extend(cigar.qb64b)
+            aims.extend(Counter.enclose(qb64=eims,
+                                        code=Codens.NonTransReceiptCouples,
+                                        version=gvrsn))
+
+        if rsgs:
+            rims = bytearray()
+            for rsg in rsgs:
+                prefixer, number, diger, sigers = rsg  # unpack
+                rims.extend(prefixer.qb64b)
+                rims.extend(number.qb64b)
+                rims.extend(diger.qb64b)
+                sims = bytearray()
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+
+                rims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=rims,
+                                        code=Codens.TransReceiptIdxSigGroups,
+                                        version=gvrsn))
+
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
+
+            clans = {}  # dict of structor lists keyed by clan
+            for bond in bonds:  # collate structors made from bonds by clan group
+                if isinstance(bond[0], Matter):  # bond is Structor data
+                    structor = Structor(data=bond)
+                else: # bond is structor crew (serialized)
+                    structor = Structor(crew=bond)
+
+                if (structor.clan not in AClanDom):
+                    raise ValueError(f"Unsupported bond {structor.clan}"
+                                     f" for version={gvrsn} msg={serder.pretty()}")
+                if structor.clan not in clans:
+                    clans[structor.clan] = [structor]
+                else:
+                    clans[structor.clan].append(structor)
+
+            for structors in clans.values():
+                aims.extend(Structor.enclose(structors))
+
+        if nests:
+            for nest in nests:  # list of msg substreams
+                if hasattr(nest, 'encode'):
+                    nest.encode()
+                if not Reb64.match(nest):  # idiot proof not at least Base64
+                    raise ValueError("Substream not Base64")
+
+                aims.extend(nest)
+
+        if len(aims) % 4:
+            raise ValueError(f"Invalid attachments size={len(aims)}, "
+                             f"nonintegral quadlets.")
+
+        if not nested and not framed:
+            aims = Counter.enclose(qb64=aims,
+                                       code=Codens.AttachmentGroup,
+                                       version=gvrsn)
+
+        if nested:  # enclose message+attachments in body+attach group
+            if serder.kind != Kinds.cesr:  # non-native  v1 always or v2
+                # enclose msg in non-native body group
+                texter = Texter(raw=serder.raw)
+                msg = Counter.enclose(qb64=texter.qb64b,
+                                      code=Codens.NonNativeBodyGroup,
+                                      version=gvrsn)
+            else:  # native cesr v2 only
+                msg = bytearray(serder.raw)
+
+            msg.extend(aims)  # attach attachments
+            msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup)
+
+        else:
+            msg = bytearray(serder.raw)
+            msg.extend(aims)  # attach attachments
+
+    else:  # not a supported gvrsn for attachments and nesting
+        raise ValueError(f"Unsupported configuration for protocol version={serder.pvrsn}")
+
+    gims.extend(msg)
+    return gims
 
 
 class Kever:
@@ -1620,7 +1983,7 @@ class Kever:
         toader (Number): instance of TOAD (threshold of accountable duplicity)
         wits (list): of qualified qb64 aids for witnesses
         cuts (list): of qualified qb64 aids for witnesses cut from prev wits list
-        adds (list) of qualified qb64 aids for witnesses added to prev wits list
+        adds (list): of qualified qb64 aids for witnesses added to prev wits list
 
         estOnly (bool): config trait True means only allow establishment events
             Default False. Corresponds to config trait string "EO"
@@ -1629,30 +1992,26 @@ class Kever:
 
         lastEst (LastEstLoc): namedtuple of int sn .s and qb64 digest .d of last est event
         delegated (bool): True means delegated identifier, False not delegated
-        delpre(str): qb64 of delegator's prefix
-
+        delpre (str): qb64 of delegator's prefix
 
     Properties:
         sn (int): sequence number property that returns .sner.num
         fn (int): first seen ordinal number property the returns .fner.num
         ndigs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
+
         transferable (bool): True if .digers is not empty and pre is transferable
 
+    To Do:
 
-
-    ToDo:
-       Add Registrar Backer support:
+        Add Registrar Backer support:
         Class variable, instance variable and parse support config trait.
-        raise error for now
-
-
-    """
+        raise error for now"""
     EstOnly = False
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 db=None, estOnly=None, delseqner=None, deldiger=None, firner=None,
+                 db=None, estOnly=None, delsner=None, delsger=None, firner=None,
                  dater=None, cues=None, eager=False, local=True, check=False):
         """
         Create incepting kever and state from inception serder
@@ -1667,12 +2026,12 @@ class Kever:
                 event. Index is offset into wits list from latest est event
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
-                            False all events allowed.
-            delseqner (Seqner | None): instance of delegating event sequence number.
+                False all events allowed.
+            delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            deldiger (Diger | None): instance of of delegating event SAID.
+            delsger (Diger | None): instance of of delegating event SAID diger.
                 If this event is not delegated then saider is ignored
-            firner (Seqner | None): instance optional of cloned first seen ordinal
+            firner (Number | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
@@ -1682,10 +2041,10 @@ class Kever:
             cues (Deck | None): reference to Kevery.cues Deck when provided
                 i.e. notices of events or requests to respond to
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -1693,8 +2052,7 @@ class Kever:
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-        """
+                and timestamps."""
         if not (state or (serder and sigers)):
             raise ValueError("Missing required arguments. Need state or serder"
                              " and sigers")
@@ -1725,8 +2083,7 @@ class Kever:
 
         # Validates signers, delegation if any, and witnessing when applicable
         # If does not validate then escrows as needed and raises ValidationError
-        delnum = Number(num=delseqner.sn) if delseqner is not None else None
-        sigers, wigers, delpre, delnum, deldiger = self.valSigsWigsDel(
+        sigers, wigers, delpre, delsner, delsger = self.valSigsWigsDel(
                                                         serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
@@ -1734,8 +2091,8 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=self.toader,
                                                         wits=self.wits,
-                                                        delnum=delnum,
-                                                        deldiger=deldiger,
+                                                        delsner=delsner,
+                                                        delsger=delsger,
                                                         eager=eager,
                                                         local=local)
 
@@ -1749,7 +2106,7 @@ class Kever:
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 wits=wits,
                                 first=True if not check else False,
-                                delnum=delnum, diger=deldiger,
+                                delnum=delsner, diger=delsger,
                                 firner=firner, dater=dater, local=local)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
@@ -1762,8 +2119,7 @@ class Kever:
     def sn(self):
         """
         Returns:
-            (int): .sner.num
-        """
+            (int): .sner.num"""
         return self.sner.num
 
 
@@ -1771,8 +2127,7 @@ class Kever:
     def fn(self):
         """
         Returns:
-            (int): .fner.num
-        """
+            (int): .fner.num"""
         return self.fner.num
 
 
@@ -1780,32 +2135,28 @@ class Kever:
     def ndigs(self):
         """
         Returns:
-            (list): digs of digers
-        """
+            (list): digs of digers"""
         return [diger.qb64 for diger in self.ndigers]
 
 
     @property
     def kevers(self):
         """
-        Returns .baser.kevers
-        """
+        Returns .baser.kevers"""
         return self.db.kevers
 
 
     @property
     def prefixes(self):
         """
-        Returns .db.prefixes
-        """
+        Returns .db.prefixes"""
         return self.db.prefixes
 
 
     @property
     def groups(self):
         """
-        Returns .db.gids oset of group hab ids (prefixes)
-        """
+        Returns .db.gids oset of group hab ids (prefixes)"""
         return self.db.groups
 
 
@@ -1813,9 +2164,12 @@ class Kever:
     def transferable(self):
         """
         Property transferable:
+
         Returns True if identifier does not have non-transferable derivation code
-                and .nextor is not None
-                False otherwise
+        and .nextor is not None
+
+        False otherwise
+
         """
         return True if self.ndigers and self.prefixer.transferable else False
 
@@ -1830,14 +2184,11 @@ class Kever:
 
         Returns:
             (bool): True if pre is local hab but not group hab
-                        When pre="" empty then returns False
+            When pre="" empty then returns False
 
         Parameters:
             pre (str|None): qb64 identifier prefix if any. Default None
-                    None means use self.prefixer.qb64
-
-
-        """
+                None means use self.prefixer.qb64"""
         pre = pre if pre is not None else self.prefixer.qb64
         return pre in self.prefixes and pre not in self.groups
 
@@ -1864,11 +2215,11 @@ class Kever:
 
         Returns:
             (bool): True if pre is local hab or group hab that has a local member
-                        When pre="" empty or None then returns False
+
+            When pre="" empty or None then returns False
 
         Parameters:
             pre (str): qb64 identifier prefix if any.
-
 
         ToDo: this code does not account for stale group members as delegators.
         i.e. a stale group membed is a member AID for a group AID in .groups
@@ -1882,17 +2233,19 @@ class Kever:
         That later approval must detect and properly handle the staleness.
 
         Alternatively the logic could be changed to short circut that later
-        work by checking here for staleness. For example:
+        work by checking here for staleness. For example::
+
             delpre.mhab.pre in delpre's hab.smids  (not stale )
 
+        ::
 
-        if pre in self.groups:  # local group delegator
-            habord = self.db.habs.get(keys=(pre,))
-            return habord.mid in habord.smids  # True not stale, False stale
+            if pre in self.groups:  # local group delegator
+                habord = self.db.habs.get(keys=(pre,))
+                return habord.mid in habord.smids  # True not stale, False stale
 
-        return pre in self.prefixes  # otherwise local non-group delegator
+            return pre in self.prefixes  # otherwise local non-group delegator
 
-        """
+        \"\"\""""
         pre = pre if pre is not None else ""
         return pre in self.prefixes
 
@@ -1904,10 +2257,8 @@ class Kever:
            i.e.  self is witnessd by locally owned (controlled) AID (identifier prefix)
 
         Parameters:
-           wits (list[str]): qb64 identifier prefixes of witnesses
-           serder ( SerderKERI | None): SerderKERI instace if any
-
-        """
+            wits (list[str]): qb64 identifier prefixes of witnesses
+            serder ( SerderKERI | None): SerderKERI instace if any"""
         if not wits:
             if not serder:
                 wits = self.wits
@@ -1925,13 +2276,11 @@ class Kever:
 
         Returns:
             (bool): True if pre is group hab identifier in .groups
-                    False otherwise
+            False otherwise
 
         Parameters:
             pre (str|None): qb64 identifier prefix if any or None
-                           When None default to use self.prefixer.qb64
-
-        """
+                When None default to use self.prefixer.qb64"""
         # assumes stale group membership is taken care of by presence of groups
         # i.e where once a local member but no more.
         pre = pre if pre is not None else self.prefixer.qb64
@@ -1948,9 +2297,7 @@ class Kever:
             verfers (list[Verfer]): instance for each current signing key
 
         Returns:
-            indices list[int]: list of indices of keys contributed by local members
-
-        """
+            indices list[int]: list of indices of keys contributed by local members"""
         habord = self.db.habs.get(keys=(self.prefixer.qb64,))
         kever = self.kevers[habord.mid]
 
@@ -1963,9 +2310,7 @@ class Kever:
         Reload Kever attributes (aka its state) from state (KeyStateRecord)
 
         Parameters:
-            state (KeyStateRecord | None): instance for key state notice
-
-        """
+            state (KeyStateRecord | None): instance for key state notice"""
         self.version = Versionage._make(state.vn)
         self.prefixer = Prefixer(qb64=state.i)
         self.sner = Number(numh=state.s)  # sequence number Number instance hex str
@@ -2002,9 +2347,8 @@ class Kever:
 
 
         Parameters:
-            serder is SerderKERI instance of inception event
-            estOnly is boolean  to indicate establish only events allowed
-        """
+            serder: SerderKERI instance of inception event
+            estOnly: boolean  to indicate establish only events allowed"""
         ked = serder.ked
 
         self.sner = serder.sner
@@ -2069,8 +2413,7 @@ class Kever:
 
     def config(self, serder, estOnly=None, doNotDelegate=None):
         """
-        Process cnfg field for configuration traits
-        """
+        Process cnfg field for configuration traits"""
         # assign traits
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                         else False)  # ensure default estOnly is boolean
@@ -2086,7 +2429,7 @@ class Kever:
             self.doNotDelegate = True
 
 
-    def update(self, serder, sigers, wigers=None, delseqner=None, deldiger=None,
+    def update(self, serder, sigers, wigers=None, delsner=None, delsger=None,
                firner=None, dater=None, eager=False, local=True, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
@@ -2100,9 +2443,9 @@ class Kever:
                 from prior next est event to latest est event.
             wigers (list | None): of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list from latest est event
-            delseqner (Seqner | None): instance of delegating event sequence number.
+            delsner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            deldiger (Diger | None): instance of of delegating event said.
+            delsger (Diger | None): instance of of delegating event said diger.
                 If this event is not delegated then diger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -2112,10 +2455,10 @@ class Kever:
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -2123,9 +2466,7 @@ class Kever:
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-
-        """
+                and timestamps."""
         ked = serder.ked
         if not self.transferable:  # not transferable so no further events allowed
             raise ValidationError("Unexpected event = {} is nontransferable "
@@ -2153,8 +2494,7 @@ class Kever:
             # Validates signers, delegation if any, and witnessing when applicable
             # returned sigers and wigers are verified signatures
             # If does not validate then escrows as needed and raises ValidationError
-            delnum = Number(num=delseqner.sn) if delseqner is not None else None
-            sigers, wigers, delpre, delnum, deldiger = self.valSigsWigsDel(
+            sigers, wigers, delpre, delsner, delsger = self.valSigsWigsDel(
                                                         serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
@@ -2162,8 +2502,8 @@ class Kever:
                                                         wigers=wigers,
                                                         toader=toader,
                                                         wits=wits,
-                                                        delnum=delnum,
-                                                        deldiger=deldiger,
+                                                        delsner=delsner,
+                                                        delsger=delsger,
                                                         eager=eager,
                                                         local=local)
 
@@ -2174,7 +2514,7 @@ class Kever:
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     wits=wits,
                                     first=True if not check else False,
-                                    delnum=delnum, diger=deldiger,
+                                    delnum=delsner, diger=delsger,
                                     firner=firner, dater=dater, local=local)
 
             # nxt and signatures verify so update state
@@ -2258,14 +2598,13 @@ class Kever:
         Validates provisional rotation
         Same logic for both 'rot' and 'drt' (plain and delegated rotation)
 
-        Returns: tuple (tholder, toader, wits, cuts, adds) of provisional  results
+        Returns:
+            tuple (tholder, toader, wits, cuts, adds) of provisional  results
+
         of rotation subject to additional validation
 
         Parameters:
-            serder (SerderKERI): instance of rotation ('rot' or 'drt') event.
-
-
-        """
+            serder (SerderKERI): instance of rotation ('rot' or 'drt') event."""
         ked = serder.ked
         sner = serder.sner
         pre = serder.pre  # ked["i"]  # controller AID prefix
@@ -2360,13 +2699,12 @@ class Kever:
 
         Returns:
             wca (tuple): of
-               wits (list[str]): prefixes of witnesses full list (backers)
-               cuts (list[str]): prefixes of witnesses removed in latest est evt
-               adds (list[str]): prefixes of witnesses added in latest est evt
+            wits (list[str]): prefixes of witnesses full list (backers)
+            cuts (list[str]): prefixes of witnesses removed in latest est evt
+            adds (list[str]): prefixes of witnesses added in latest est evt
 
         Parameters:
-            serder (SerderKeri): instance of current event
-        """
+            serder (SerderKeri): instance of current event"""
         if serder.ilk not in (Ilks.rot, Ilks.drt) or self.sn >= serder.sn:  # no changes
             return self.wits, self.cuts, self.adds
 
@@ -2407,18 +2745,21 @@ class Kever:
 
     def valSigsWigsDel(self, serder, sigers, verfers, tholder,
                                 wigers, toader, wits, *,
-                                delnum=None, deldiger=None, eager=False,
+                                delsner=None, delsger=None, eager=False,
                                 local=True):
         """
         Returns triple (sigers, wigers, delegator) where:
+
         sigers is unique validated signature verified members of inputed sigers
         wigers is unique validated signature verified members of inputed wigers
         delegator is qb64 delegator prefix if delegated else None
 
         Validates sigers signatures by validating indexes, verifying signatures, and
             validating threshold sith.
+
         Validate witness receipts by validating indexes, verifying
             witness signatures and validating toad.
+
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
@@ -2433,21 +2774,19 @@ class Kever:
             toader (Number): instance of backer witness threshold
             wits (list): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
-            delnum (Number | None): instance of delegating event sequence number.
+            delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            deldiger (Diger | None): instance of delegating event digest.
+            delsger (Diger | None): instance of delegating event said diger.
                 If this event is not delegated then diger is ignored
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-
-        """
+                Event validation logic is a function of local or remote"""
         if len(verfers) < tholder.size:
             raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                                   "".format(tholder.sith,
@@ -2499,7 +2838,7 @@ class Kever:
                             self.locallyWitnessed(wits=wits) or
                             self.locallyDelegated(pre=delpre))):
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               delnum=delnum, diger=deldiger, local=local)
+                               delsner=delsner, delsger=delsger, local=local)
             raise MisfitEventSourceError(f"Nonlocal source for locally owned or"
                                          f"locally witnessed or locally delegated"
                                          f"event={serder.ked}, local aids="
@@ -2515,7 +2854,7 @@ class Kever:
         pre = self.prefixer.qb64
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               delnum=delnum, diger=deldiger, local=local)
+                               delsner=delsner, delsger=delsger, local=local)
             msg = (f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying sith = {tholder.sith} "
                    f"on sigs {[siger.qb64 for siger in sigers]} "
                    f"for evt = {serder.said}")
@@ -2530,7 +2869,7 @@ class Kever:
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, diger=deldiger,local=local)
+                                   delsner=delsner, delsger=delsger,local=local)
                 msg = (
                     f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying prior nsith = {self.ntholder.sith} "
                     f"with exposed sigs {[siger.qb64 for siger in sigers]} "
@@ -2561,7 +2900,7 @@ class Kever:
 
                 if len(windices) < toader.num:  # not fully witnessed yet
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
-                                          delnum=delnum, diger=deldiger,
+                                          delsner=delsner, delsger=delsger,
                                           local=local):
                         # cue to query for witness receipts
                         self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.snh)))
@@ -2584,7 +2923,7 @@ class Kever:
 
         if (serder.ilk in (Ilks.dip, Ilks.drt) and self.locallyDelegated(delpre)
                 and not self.locallyOwned()):  # local delegator of delegated event
-            if delnum is None or deldiger is None: # missing delegation seal
+            if delsner is None or delsger is None: # missing delegation seal
                 # so escrow delegable. So local delegator can approve OOB.
                 # and create delegator event with valid event seal of this
                 # delegated event and then reprocess event with attached source
@@ -2599,17 +2938,17 @@ class Kever:
         # validateDelegation returns (None, None) when delegation validation
         # does not apply. Raises ValidationError if validation applies but
         # does not validate.
-        delnum, deldiger = self.validateDelegation(serder,
+        delsner, delsger = self.validateDelegation(serder,
                                                         sigers=sigers,
                                                         wigers=wigers,
                                                         wits=wits,
                                                         delpre=delpre,
-                                                        delnum=delnum,
-                                                        deldiger=deldiger,
+                                                        delsner=delsner,
+                                                        delsger=delsger,
                                                         eager=eager,
                                                         local=local)
 
-        return (sigers, wigers, delpre, delnum, deldiger)
+        return (sigers, wigers, delpre, delsner, delsger)
 
 
 
@@ -2641,8 +2980,7 @@ class Kever:
         digests defined by the rotation event.
 
         Parameters:
-            sigers (list): of Siger instances  of indexed signature with .verfer
-        """
+            sigers (list): of Siger instances  of indexed signature with .verfer"""
         odxs = []
         for siger in sigers:
             try:
@@ -2662,18 +3000,19 @@ class Kever:
 
 
     def validateDelegation(self, serder, sigers, wigers, wits, delpre, *,
-                    delnum=None, deldiger=None, eager=False, local=True):
+                    delsner=None, delsger=None, eager=False, local=True):
         """
         Returns delegator's qb64 identifier prefix if validation successful.
         Assumes that local vs remote source checks have been applied before
         this function is called.
 
         Rules:
-            If event is not a delegated event then not valid delegation
-            If delegatee's own event (.mine) then valid delegation
-            If delegation seal found in delgator's KEL then valid delegation given
-                valid superseding rules below
-            Otherwise escrow or reject if error condition
+
+        If event is not a delegated event then not valid delegation
+        If delegatee's own event (.mine) then valid delegation
+        If delegation seal found in delgator's KEL then valid delegation given
+        valid superseding rules below
+        Otherwise escrow or reject if error condition
 
         seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
@@ -2691,127 +3030,123 @@ class Kever:
             wits (list[str]): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
             delpre (str): qb64 prefix of delegator
-            delnum (Number | None): instance of delegating event sequence number.
+            delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            deldiger (Diger | None): instance of delegating event digest.
+            delsger (Diger | None): instance of delegating event said diger.
                 If this event is not delegated ignored
-                local (bool): event source for validation logic
-                True means event source is local (protected).
-                False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-            eager (bool): True means try harder to validate event by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
+            eager (bool): True means try harder to validate event by
+                walking KELs. Enables only being eager
+                in escrow processing not initial parsing.
+                False means only use pre-existing information
+                if any, either percolated attached or in database.
 
         Returns:
             None
 
-        Process Logic:
-            A delegative event is processed differently for each of four different
-            parties, namely, controller of event, witness to controller of event,
-            delegator of event , and validator of event that is not controller,
-            witness or delegator. Events are processed as either local (protected)
-            or remote. A local event may assume that the event only came via a
-            protected transmission path. This might be because the event is
-            functions locally on a device under the supervision of the controller
-            or was received via some protected channel using some form of MFA.
-            A remote event is received in an unprotected manner. The purpose of
-            local and remote is to allow increased security on local events where
-            a threshold structure is imposed.
+            Process Logic:
+                A delegative event is processed differently for each of four different
+                parties, namely, controller of event, witness to controller of event,
+                delegator of event , and validator of event that is not controller,
+                witness or delegator. Events are processed as either local (protected)
+                or remote. A local event may assume that the event only came via a
+                protected transmission path. This might be because the event is
+                functions locally on a device under the supervision of the controller
+                or was received via some protected channel using some form of MFA.
+                A remote event is received in an unprotected manner. The purpose of
+                local and remote is to allow increased security on local events where
+                a threshold structure is imposed.
 
-            A witness pool may act a threshold structure for enchanced security
-            when each witness only accepts local events that are protected
-            by a unique authentication factor thereby making the controller's
-            signature(s) the first factor and the set of unique witness factors
-            a secondary threshold factor. An attacker therefore has to compromise
-            not merely the controller's private key(s) but also the unique second factor
-            on each of a threshold satisfycing number of witnesses.
+                A witness pool may act a threshold structure for enchanced security
+                when each witness only accepts local events that are protected
+                by a unique authentication factor thereby making the controller's
+            signature (s): the first factor and the set of unique witness factors
+                a secondary threshold factor. An attacker therefore has to compromise
+                not merely the controller's private key(s) but also the unique second factor
+                on each of a threshold satisfycing number of witnesses.
 
-            Likewise a delegator may act as a threshold structure for enhanced security
-            when the delegator only accepts local events for delegation that are
-            protected by a unique authentication factor thereby making the
-            controller's signatures the first factor, a threshold satisfycing
-            number of unique witness factors the second layer of factors, and
-            the delegator's unique authentication factor as the third factor.
-            An attacker therefore has to compromise not merely the controller's
-            private key(s) but also the unique second factor
-            on each of a threshold satisfycing number of witnesses and the unique
-            third factor for the delegator.
+                Likewise a delegator may act as a threshold structure for enhanced security
+                when the delegator only accepts local events for delegation that are
+                protected by a unique authentication factor thereby making the
+                controller's signatures the first factor, a threshold satisfycing
+                number of unique witness factors the second layer of factors, and
+                the delegator's unique authentication factor as the third factor.
+                An attacker therefore has to compromise not merely the controller's
+                private key(s) but also the unique second factor
+                on each of a threshold satisfycing number of witnesses and the unique
+                third factor for the delegator.
 
-            Controller as delegatee must accept its own delegated event prior
-            to full witnessing or delegator approval (anchored seal) by signing the
-            event in order to trigger the logic to get witness receipts and
-            delegator approval. This means a local (protected) event may be
-            accepted into controller's KEL when fully signed by controller.
+                Controller as delegatee must accept its own delegated event prior
+                to full witnessing or delegator approval (anchored seal) by signing the
+                event in order to trigger the logic to get witness receipts and
+                delegator approval. This means a local (protected) event may be
+                accepted into controller's KEL when fully signed by controller.
 
-            Witness must accept a controller's delegated event it witnesses prior to
-            full witnessing or delegator approval in order to trigger its
-            witnessing logic. This means a local (protected) event may be
-            accepted into  a witness' KEL when fully signed by its controller.
+                Witness must accept a controller's delegated event it witnesses prior to
+                full witnessing or delegator approval in order to trigger its
+                witnessing logic. This means a local (protected) event may be
+                accepted into  a witness' KEL when fully signed by its controller.
 
-            Delegator may escrow or sandbox a delegated event prior to it anchoring
-            a seal of the event in its KEL in order to trigger its approval logic.
-            Alternatively the approval logic may be triggered immediately after
-            it is received and authenticated on it its local (protected) channel
-            but before it is submitted to its local Kevery for processing.
+                Delegator may escrow or sandbox a delegated event prior to it anchoring
+                a seal of the event in its KEL in order to trigger its approval logic.
+                Alternatively the approval logic may be triggered immediately after
+            it: received and authenticated on it its local (protected) channel
+                but before it is submitted to its local Kevery for processing.
 
-            The delegator MUST NOT accept a delegable event unless it is locally
-            sourced, fully signed by its controller, and fully witnessed by its
-            controller's designated witness pool.
-            A Delegator may impose additional validation logic prior to approval.
-            The approval logic may be handled by an escrow that only runs if
-            the delegable event is sourced as local. This may require a
-            sandboxed kel for the delegatee in order to not corrupt its pristine
-            copy of the delegatee's KEL with a valid delegable event from a
-            malicious source. The sandboxing logic may create a virtual
-            delegation event with seal for the purpose of checking the delegated
-            event superseding logic prior to acceptance.
+                The delegator MUST NOT accept a delegable event unless it is locally
+                sourced, fully signed by its controller, and fully witnessed by its
+                controller's designated witness pool.
+                A Delegator may impose additional validation logic prior to approval.
+                The approval logic may be handled by an escrow that only runs if
+                the delegable event is sourced as local. This may require a
+                sandboxed kel for the delegatee in order to not corrupt its pristine
+                copy of the delegatee's KEL with a valid delegable event from a
+                malicious source. The sandboxing logic may create a virtual
+                delegation event with seal for the purpose of checking the delegated
+                event superseding logic prior to acceptance.
 
-            A malicious attacker that compromises the pre-rotated keys of the
-            delegatee may issue a rotation that changes its witness pool in order
-            to bypass the local security logic of the witness pool. The approval
-            logic of the delegator may choose to not automatically approve a
-            delegable rotation event unliess the change to the witness pool is
-            below the threshold.
+                A malicious attacker that compromises the pre-rotated keys of the
+                delegatee may issue a rotation that changes its witness pool in order
+                to bypass the local security logic of the witness pool. The approval
+                logic of the delegator may choose to not automatically approve a
+                delegable rotation event unliess the change to the witness pool is
+                below the threshold.
 
-            The logic for superseded events is NOT a requirement for acceptance in
-            either a delegated event controller's KEL or its witness' KEL. The
-            delegator's kel creates a virtual (provisional) delegating interaction
-            event in order to evaluate correct superseding logic so as not to
-            accept an invalid supderseding delegated event into its local copy
-            of the delegated KEL. This virtual event is needed because superseding
-            logic requires an anchoring seal be present before the rules can
-            be fully evaluated.
+                The logic for superseded events is NOT a requirement for acceptance in
+                either a delegated event controller's KEL or its witness' KEL. The
+                delegator's kel creates a virtual (provisional) delegating interaction
+                event in order to evaluate correct superseding logic so as not to
+                accept an invalid supderseding delegated event into its local copy
+                of the delegated KEL. This virtual event is needed because superseding
+                logic requires an anchoring seal be present before the rules can
+                be fully evaluated.
 
-            Should the actual anchor be via a superseding rotation in the
-            delegator's KEL not via an interaction event then the delegator must
-            check the logic for a virtual delegating rotation instead.
-            In either case the delegated event does not change so the virtual
-            delegating checks are sufficient to accept the delegated event
-            into the delegator's local copy of the delegatee's KEL.
+                Should the actual anchor be via a superseding rotation in the
+                delegator's KEL not via an interaction event then the delegator must
+                check the logic for a virtual delegating rotation instead.
+                In either case the delegated event does not change so the virtual
+                delegating checks are sufficient to accept the delegated event
+                into the delegator's local copy of the delegatee's KEL.
 
 
-            Any of delegated controller, delegated witness, or delegator
-            of delegated event may after the fact fully validate event by
-            processing it as a remote event.
-            Then the logic applied is same as validator below.
+                Any of delegated controller, delegated witness, or delegator
+                of delegated event may after the fact fully validate event by
+                processing it as a remote event.
+                Then the logic applied is same as validator below.
 
-            A validator of a delegated event that is not the event's controller,
-            witness, or delegator must not accept the event until is is fully
-            signed by the controller (threshold), fully witnessed by the witness
-            pool (threshold) and its seal anchored in the delegator's KEL. The
-            rules for event superseding in the delegated controller's kel must
-            also be satisfied. The logic should be the same for both local and
-            remote event because the validator is not one of the protected parties
-            to the event.
+                A validator of a delegated event that is not the event's controller,
+                witness, or delegator must not accept the event until is is fully
+                signed by the controller (threshold), fully witnessed by the witness
+                pool (threshold) and its seal anchored in the delegator's KEL. The
+                rules for event superseding in the delegated controller's kel must
+                also be satisfied. The logic should be the same for both local and
+                remote event because the validator is not one of the protected parties
+                to the event.
 
-        Superseding Recovery:
+            Superseding Recovery:
 
         Supersede means that after an event has already been accepted as first seen
         into a KEL that a different event with the same sequence number is accepted
@@ -2840,6 +3175,7 @@ class Kever:
         A1. A non-delegated rotation may not supersede another rotation at the
             same sn.  (modified rule)
         A2. An interaction event may not supersede any event. ( existing rule).
+
 
         (B. and C. below provide the new rules)
 
@@ -2926,9 +3262,7 @@ class Kever:
         malicious source seal couple with repaired seal so repaired seal not
         malicous seal gets written to 'aes' db. When the event is valid but
         non-delegated then need to nullify malicous source seal couple so it
-        does not get written to 'aes' database.
-
-        """
+        does not get written to 'aes' database."""
         if not delpre: # not delegable delpre is None if ilk is not dip or drt
             return (None, None)  # non-delegated so delnum deldiger must be None
 
@@ -2949,7 +3283,7 @@ class Kever:
             # The processPDEvent should also cue a trigger to get KEL
             # of delegator if still missing when processing escrow later.
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               delnum=delnum, diger=deldiger, local=local)
+                               delsner=delsner, delsger=delsger, local=local)
             msg = f"Missing KEL of delegator {delpre} of evt {serder.sn} {serder.ilk} {serder.said}"
             logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -2965,27 +3299,27 @@ class Kever:
             raise ValidationError(msg)
 
         dserder = None  # no delegation event yet
-        if delnum is None or deldiger is None: # missing delegation seal ref
+        if delsner is None or delsger is None: # missing delegation seal ref
             if eager:  # walk kel here to find
                 seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
                 dserder = self.db.fetchLastSealingEventByEventSeal(pre=delpre,
                                                                      seal=seal)
                 if dserder is not None:  # found seal in dserder
-                    delnum = Number(num=dserder.sn)  # replace with found
-                    deldiger = Diger(qb64=dserder.said)  # replace with found
+                    delsner = Number(num=dserder.sn)  # replace with found
+                    delsger = Diger(qb64=dserder.said)  # replace with found
 
             if not dserder: # just escrow and try later
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, diger=deldiger, local=local)
+                                   delsner=delsner, delsger=delsger, local=local)
                 msg = (f"No delegation seal for delegator {delpre} on evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
                 raise MissingDelegationError(msg)
 
-        if delnum and deldiger and not dserder:  # given couple not found
+        if delsner and delsger and not dserder:  # given couple not found
             # Get delegating event from delnum and delpre
-            ssn = delnum.validate(inceptive=False).sn
+            ssn = delsner.validate(inceptive=False).sn
             # get the dig of the delegating event. Using getKeLast ensures delegating
             #  event has not already been superceded
             # get dig of last delegating event purported at sn
@@ -2995,8 +3329,8 @@ class Kever:
                 # ToDo XXXX process  this cue of query to fetch delegating event from
                 # delegator
                 self.cues.push(dict(kin="query", q=dict(pre=delpre,
-                                                                  sn=delnum.numh,
-                                                                  dig=deldiger.qb64)))
+                                                                  sn=delsner.numh,
+                                                                  dig=delsger.qb64)))
                 #  escrow event here
                 inceptive = True if serder.ilk in (Ilks.icp, Ilks.dip) else False
                 sn = Number(num=serder.sn).validate(inceptive=inceptive).sn
@@ -3004,8 +3338,8 @@ class Kever:
                 # must check for locallyOwned(delpre) first and escrowDelegable.
                 # otherwise escrowPDEvent
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, diger=deldiger, local=local)
-                msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
+                                   delsner=delsner, delsger=delsger, local=local)
+                msg = (f"No delegating event from {delpre} at {delsger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3036,9 +3370,9 @@ class Kever:
             if not found:  # nullify and escrow to try harder later
                 # worst case assume source seal was malicious so nullify it and
                 # attempt to repair by escrowing and eager search later
-                delnum = deldiger = None  # nullify
+                delsner = delsger = None  # nullify
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, diger=deldiger, local=local)
+                                   delsner=delsner, delsger=delsger, local=local)
                 msg = (f"No delegation seal for delegator {delpre} of evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3054,8 +3388,8 @@ class Kever:
                 #raise ValidationError(f"Invalid delegation from {delpre} at event"
                                       #f" dig={ddig} for evt={serder.ked}.")
 
-            delnum = Number(numh=dserder.snh)  # replace with found
-            deldiger = Diger(qb64=dserder.said)  # replace with found
+            delsner = Number(numh=dserder.snh)  # replace with found
+            delsger = Diger(qb64=dserder.said)  # replace with found
 
         # Since found valid anchoring seal so can confirm delegation successful
         # unless its one of the superseding conditions.
@@ -3071,7 +3405,7 @@ class Kever:
             (serder.sner.num == self.sner.num and  # superseding event at same sn and
                 self.ilk == Ilks.ixn and  # superseded is interaction and
                 serder.ilk == Ilks.drt)):  # superseding is rotation
-                    return (delnum, deldiger) # indicates delegation valid
+                    return (delsner, delsger) # indicates delegation valid
 
         # get to here means drt rotation superseding another drt rotation
         # Kever.logEvent saves authorizer (delegator) seal source couple in
@@ -3084,8 +3418,8 @@ class Kever:
         if not (bosso := self.fetchDelegatingEvent(delpre, serfo, original=True,
                                                    eager=eager)):
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                delnum=delnum, diger=deldiger, local=local)
-            msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
+                                delsner=delsner, delsger=delsger, local=local)
+            msg = (f"No delegating event from {delpre} at {delsger.qb64} for evt "
                    f"{serder.sn} {serder.ilk} {serder.said}")
             logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3101,7 +3435,7 @@ class Kever:
                 (bossn.Ilk == Ilks.drt and  # superseding  delegation is rotation and
                  bosso.Ilk == Ilks.ixn) ): # superseded delegation is interaction
                     # valid superseding delegation up chain so tail link valid
-                    return (delnum, deldiger)  # tail event's delegation source
+                    return (delsner, delsger)  # tail event's delegation source
 
             if bossn.said == bosso.said: # same delegating event
                 nseals = [SealEvent(**seal) for seal in bossn.seals
@@ -3118,7 +3452,7 @@ class Kever:
                 if nindex > oindex:  # superseding delegation seal is later
                     # assumes index can't be None
                     # valid superseding delegation up chain so tail link valid
-                    return (delnum, deldiger)  # tail event's delegation source
+                    return (delsner, delsger)  # tail event's delegation source
 
                 else:  # not superseded
                     # ToDo: XXXX may want to cue up business logic for delegator
@@ -3135,8 +3469,8 @@ class Kever:
                                                        original=False,
                                                        eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, diger=deldiger, local=local)
-                msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
+                                   delsner=delsner, delsger=delsger, local=local)
+                msg = (f"No delegating event from {delpre} at {delsger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3146,8 +3480,8 @@ class Kever:
                                                        original=True,
                                                        eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, diger=deldiger, local=local)
-                msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
+                                   delsner=delsner, delsger=delsger, local=local)
+                msg = (f"No delegating event from {delpre} at {delsger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
                 logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3172,21 +3506,21 @@ class Kever:
 
         Returns:
             dserder (SerderKERI): delegating key event with delegating seal of
-                                  delegated event serder. If can't fetch then
-                                  returns None when eager==False or raises
-                                  ValidationError if can't fetch but eager==True
+                delegated event serder. If can't fetch then
+                returns None when eager==False or raises
+                ValidationError if can't fetch but eager==True
 
         Parameters:
             delpre (str): qb64 of identifier prefix of delegator
             serder (SerderKERI): delegated serder
             original (bool): True means delegated event is the original candidate
-                             to be superseded. This means kel walk search should
-                             include superseded or disputed events.
-                             False means the delegated event is new candidate to
-                             supersede. This means kel walk search should not
-                             include superseded or disputed events.
+                to be superseded. This means kel walk search should
+                include superseded or disputed events.
+                False means the delegated event is new candidate to
+                supersede. This means kel walk search should not
+                include superseded or disputed events.
             eager (bool): True means do more expensive KEL walk instead of escrow
-                          False means do not do expensive KEL walk now.
+                False means do not do expensive KEL walk now.
 
         Assumes db.aes source seal couple of delegating event cannot be written
         unless that event has been accepted (first seen) into delegator's KEL
@@ -3218,8 +3552,7 @@ class Kever:
         entry. Otherwise does not repair but simply returns found delegation.
 
         Found delegation may not be superseding so do not repair .aess unless
-        delegate was already accepted.
-        """
+        delegate was already accepted."""
         if (duple := self.db.aess.get(keys=(serder.preb, serder.saidb))):  # delegation source couple at delegate
             delnum, diger = duple
             deldig = diger.qb64  # dig of delegating event
@@ -3285,29 +3618,28 @@ class Kever:
         Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
-            serder is SerderKERI instance of current event
-            sigers is optional list of Siger instance for current event
-            wigers is optional list of Siger instance of indexed witness sigs
-            wits is optional list of current witnesses provide during any establishment event
-            first is Boolean True means first seen accepted log of event.
-                    Otherwise means idempotent log of event to accept additional
-                    signatures beyond the threshold provided for first seen
-            delnum is Number instance of delegating event sequence number.
+            serder: SerderKERI instance of current event
+            sigers: optional list of Siger instance for current event
+            wigers: optional list of Siger instance of indexed witness sigs
+            wits: optional list of current witnesses provide during any establishment event
+            first: Boolean True means first seen accepted log of event.
+                Otherwise means idempotent log of event to accept additional
+                signatures beyond the threshold provided for first seen
+            delnum: Number instance of delegating event sequence number.
                 If this event is not delegated then delnum is ignored
-            diger is Diger instance of of delegating event said.
+            diger: Diger instance of of delegating event said.
                 If this event is not delegated then diger is ignored
-            firner is optional Seqner instance of cloned first seen ordinal
+            firner: optional Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater is optional Dater instance of cloned replay datetime
+            dater: optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         fn = None  # None means not a first seen log event so does not return an fn
         dgkeys = (serder.pre, serder.said)
@@ -3358,7 +3690,7 @@ class Kever:
             if dater:  # cloned replay use original's dts from dater
                 nowdater = dater
             self.db.dtss.pin(keys=dgkey, val=nowdater)  # first seen so set dts to now
-            self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
+            self.db.fons.pin(keys=dgkey, val=Number(sn=fn))
             logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
                          serder.pre, nowdater.dts)
@@ -3371,7 +3703,7 @@ class Kever:
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
-                      delnum=None, diger=None, local=True):
+                      delsner=None, delsger=None, local=True):
         """
         Update associated logs for escrow of MisFit event
 
@@ -3379,13 +3711,12 @@ class Kever:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             wigers (list): of witness signatures
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of digest of delegating/issuing event if any
+            delsner (Number): instance of sn of delegating event if any
+            delsger (Diger): instance of said digest of delegating event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -3402,8 +3733,8 @@ class Kever:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))
+        if delsner and delsger:
+            self.db.udes.put(keys=dgkey, val=(delsner, delsger))
 
         self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
@@ -3422,8 +3753,7 @@ class Kever:
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -3446,22 +3776,21 @@ class Kever:
 
 
     def escrowPSEvent(self, serder, *, sigers=None, wigers=None,
-                      delnum=None, diger=None, local=True):
+                      delsner=None, delsger=None, local=True):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but not yet verified delegation.
 
         Parameters:
-            serder is SerderKERI instance of event
-            sigers is list of Siger instances of indexed controller sigs
-            wigers is optional list of Siger instance of indexed witness sigs
-            delnum is Number instance of sn of seal source event of delegator/issuer
-            diger is Diger instance of digest of delegator/issuer
+            serder: SerderKERI instance of event
+            sigers: list of Siger instances of indexed controller sigs
+            wigers: optional list of Siger instance of indexed witness sigs
+            delsner (Number): instance of sn of delegating event if any
+            delsger (Diger): instance of said digest of delegating event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
@@ -3469,8 +3798,8 @@ class Kever:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
+        if delsner and delsger:
+            self.db.udes.put(keys=dgkey, val=(delsner, delsger))  # idempotent
 
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         # update event source
@@ -3489,22 +3818,20 @@ class Kever:
 
 
     def escrowPWEvent(self, serder, *, sigers=None, wigers=None,
-                      delnum=None, diger=None, local=True):
+                      delsner=None, delsger=None, local=True):
         """
         Update associated logs for escrow of partially witnessed event
 
         Parameters:
-            serder is SerderKERI instance of  event
-            sigers is optional list of Siger instances of indexed controller sigs
-            wigers is list of Siger instance of indexed witness sigs
-            delnum is Number instance of sn of seal source event of delegator/issuer
-            diger is Diger instance of digest of delegator/issuer
+            serder: SerderKERI instance of  event
+            sigers: optional list of Siger instances of indexed controller sigs
+            wigers: list of Siger instance of indexed witness sigs
+            delsner (Number): instance of sn of delegating event if any
+            delsger (Diger): instance of said digest of delegating event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
@@ -3513,8 +3840,8 @@ class Kever:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
+        if delsner and delsger:
+            self.db.udes.put(keys=dgkey, val=(delsner, delsger))  # idempotent
 
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         # update event source
@@ -3533,10 +3860,8 @@ class Kever:
 
 
     def escrowPDEvent(self, serder, *, sigers=None, wigers=None,
-                      delnum=None, diger=None, local=True):
-        """
-        Update associated logs for escrow of partially delegated or otherwise
-        authorized issued event.
+                      delsner=None, delsger=None, local=True):
+        """Update associated logs for escrow of partially delegated event.
         Assumes sigs (controller signatures) and wigs (witness signatures)  are
         provided elsewhere. Partial authentication occurs once an event is
         fully signed and witnessed but the authorizing (delegating) source
@@ -3550,17 +3875,15 @@ class Kever:
         couple from val in order to to re-verify authentication status.
 
         Parameters:
-            serder is SerderKERI instance of  event
-            sigers is optional list of Siger instances of indexed controller sigs
-            wigers is list of Siger instance of indexed witness sigs
-            delnum is Number instance of sn of seal source event of delegator/issuer
-            diger is Diger instance of digest of delegator/issuer
+            serder: SerderKERI instance of  event
+            sigers: optional list of Siger instances of indexed controller sigs
+            wigers: list of Siger instance of indexed witness sigs
+            delsner: Number instance of sn of seal source delegating event sn
+            delsger: Diger instance of digest of delegating event said
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
@@ -3569,10 +3892,10 @@ class Kever:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:  # idempotent
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:  # non-idempotent pin to repair replace
-            self.db.udes.pin(keys=dgkey, val=(delnum, diger))  # non-idempotent
+        if delsner and delsger:  # non-idempotent pin to repair replace
+            self.db.udes.pin(keys=dgkey, val=(delsner, delsger))  # non-idempotent
             logger.debug(f"Kever state: Replaced escrow source couple sn="
-                         f"{delnum.num}, said={diger.qb64} for partially "
+                         f"{delsner.num}, said={delsger.qb64} for partially "
                          f"delegated/authorized event said={serder.said}.")
         else:
             self.db.udes.rem(keys=dgkey)  # nullify non-idempotent
@@ -3598,9 +3921,7 @@ class Kever:
 
     def state(self):
         """
-        Returns KeyStateRecord instance of current key state
-
-        """
+        Returns KeyStateRecord instance of current key state"""
         eevt = StateEstEvent(s="{:x}".format(self.lastEst.s),
                              d=self.lastEst.d,
                              br=self.cuts,
@@ -3628,6 +3949,7 @@ class Kever:
                       wits=self.wits,
                       cnfg=cnfg,
                       dpre=self.delpre,
+                      version=self.serder.pvrsn,
                       )
                 )
 
@@ -3646,13 +3968,11 @@ class Kever:
         the result will be the list of digers immediately prior to the current list.
 
         Parameters:
-          sn (int | None): sn to start searching. If None then start at .lastEst.s - 1
+            sn (int | None): sn to start searching. If None then start at .lastEst.s - 1
 
         Returns:
             digers (list | None): of Diger instances or None if no prior est evt
-                to current .lastEst
-
-        """
+                to current .lastEst"""
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s - 1
@@ -3687,14 +4007,16 @@ class Kever:
         matching result may be from that event.
 
         Parameters:
-          verfers (list[Verfer]): of verfer instances
-          sn (int | None): sn to start searching. If None then start at .lastEst.s
+            verfers (list[Verfer]): of verfer instances
+            sn (int | None): sn to start searching. If None then start at .lastEst.s
 
         Returns:
-            tuple(int, int,Verfer) | None: where tuple is of form (sn, idx, verfer).
-                sn is sequence number.
-                idx is index of verfer in verfers
-                verfer is instance of Verfer
+            tuple (int, int,Verfer): | None: where tuple is of form (sn, idx, verfer).
+
+            sn: sequence number.
+            idx: index of verfer in verfers
+
+            verfer: instance of Verfer
 
         """
         pre = self.prefixer.qb64
@@ -3738,15 +4060,17 @@ class Kever:
         matching result may be from that event.
 
         Parameters:
-          verfer (Verfer): instance of verfer
-          sn (int | None): sn to start searching. If None then start at .lastEst.s
+            verfer (Verfer): instance of verfer
+            sn (int | None): sn to start searching. If None then start at .lastEst.s
 
         Returns:
-            tuple(int, int, list[Verfer]) | None: where tuple is of form
-            (sn, index, verfers)
-                sn is sequence number
-                index is index into verfers of verfers
-                verfers is list of Verfer instances.
+            tuple (int, int, list[Verfer]): | None: where tuple is of form
+                (sn, index, verfers)
+
+            sn: sequence number
+            index: index into verfers of verfers
+
+            verfers: list of Verfer instances.
 
         """
         pre = self.prefixer.qb64
@@ -3783,32 +4107,28 @@ class Kevery:
 
     Attributes:
         cues (Deck):  of Cues i.e. notices of events needing receipt or
-                      requests needing response
+            requests needing response
         db (Baser): instance of LMDB Baser object
         lax (bool): True means operate in promiscuous (unrestricted) mode,
-                           False means operate in nonpromiscuous (restricted) mode
-                              as determined by local and prefixes
+            False means operate in nonpromiscuous (restricted) mode
+                as determined by local and prefixes
 
         local (bool): True means only process msgs for own events if not lax
-                         False means only process msgs for not own events if not lax
+            False means only process msgs for not own events if not lax
         cloned (bool): True means cloned message stream so use attached
-                         datetimes from clone source not own.
-                         False means use current datetime
+            datetimes from clone source not own for first seen.
+            False means use current datetime for first seen
         direct (bool): True means direct mode so cue notices for receipts etc
-                          False means indirect mode so don't cue notices
+            False means indirect mode so don't cue notices
         check (bool): True means do not update the database in any
-                non-idempotent way. Useful for reinitializing the Kevers from
-                a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-
+            non-idempotent way. Useful for reinitializing the Kevers from
+            a persisted KEL without updating non-idempotent first seen .fels
+            and timestamps.
 
     Properties:
         .kevers is dict of db kevers indexed by pre (qb64) of each Kever
         .prefixes is OrderedSet of fully qualified base64 identifier prefixes of db
-            local habitats if any.
-
-
-    """
+        local habitats if any."""
     TimeoutOOE = 1200  # seconds to timeout out of order escrows
     TimeoutPSE = 3600  # seconds to timeout partially signed or delegated escrows
     TimeoutPWE = 3600  # seconds to timeout partially witnessed escrows
@@ -3820,7 +4140,8 @@ class Kevery:
     TimeoutQNF = 300   # seconds to timeout query not found escrows
 
     def __init__(self, *, cues=None, db=None, rvy=None, exc=None, tvy=None,
-                 kramer=None, lax=True, local=False, cloned=False, direct=True,
+                 cf=None, kramer=None, enableKram=False,
+                 lax=True, local=False, cloned=False, direct=True,
                  check=False):
         """
         Initialize instance:
@@ -3832,29 +4153,37 @@ class Kevery:
             rvy (Revery): instance for reply message processing
             exc (Exchanger): instance for exchange message processing
             tvy (Tevery): instance for TEL query route processing
+            cf (Configer): instance of configuration provider for KRAM settings
             kramer (Kramer): instance for KRAM processing
+            enableKram (bool): True means create a KRAM processor when kramer
+                is not provided. KRAM enforcement remains controlled by the
+                provided configuration, defaulting to disabled without one.
             lax (bool): True means operate in promiscuous (unrestricted) mode,
-                           False means operate in nonpromiscuous (restricted) mode
-                              as determined by local and prefixes
+                False means operate in nonpromiscuous (restricted) mode
+                    as determined by local and prefixes
             local (bool): True means event source is local (protected) for validation
-                         False means event source is remote (unprotected) for validation
+                False means event source is remote (unprotected) for validation
             cloned (bool): True means cloned message stream so use attached
-                         datetimes from clone source not own.
-                         False means use current datetime
+                datetimes from clone source not own.
+                False means use current datetime
             direct (bool): True means direct mode so cue notices for receipts etc
-                          False means indirect mode so don't cue notices
+                False means indirect mode so don't cue notices
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-        """
+                and timestamps."""
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
+            if IS_PYODIDE:
+                raise ConfigurationError("Kevery requires an injected db on Pyodide")
             db = Baser(reopen=True)  # default name = "main"
         self.db = db
         self.rvy = rvy
         self.exc = exc          # Exchanger instance for exn messages
         self.tvy = tvy          # Tevery instance for TEL query routes
+        if kramer is None and enableKram:
+            from .kraming import Kramer  # import here to avoid circular import
+            kramer = Kramer(db=self.db, cf=cf, cues=self.cues)
         self.kramer = kramer    # Kramer instance for KRAM processing
         if self.kramer is not None:
             self.kramer.cues = self.cues
@@ -3870,15 +4199,13 @@ class Kevery:
     @property
     def kevers(self):
         """
-        Returns .db.kevers
-        """
+        Returns .db.kevers"""
         return self.db.kevers
 
     @property
     def prefixes(self):
         """
-        Returns .db.prefixes
-        """
+        Returns .db.prefixes"""
         return self.db.prefixes
 
     def fetchWitnessState(self, pre, sn):
@@ -3889,15 +4216,13 @@ class Kevery:
         sequence number of each establishment event.  If sn represents an interaction event (ixn) it
         searches backwards for the last establishment event prior to sn and returns that witness state.
 
-        Args:
+        Parameters:
             pre (str): identifier prefix qb64
             sn (int): sequence number of the event for which witness state is desired
 
         Returns:
             list:  list of Prefixer objects representing the witness state for the identifier prefix at
-                 the sequence number
-
-        """
+                the sequence number"""
         preb = pre.encode("utf-8")
         for digb in self.db.kels.getBackIter(keys=preb, on=sn):
             serder = self.db.evts.get(keys=(preb, digb))
@@ -3908,21 +4233,21 @@ class Kevery:
         return []
 
 
-    def processEvent(self, serder, sigers, *, wigers=None, delnum=None, deldiger=None,
+    def processEvent(self, serder, sigers, *, wigers=None, delsner=None, delsger=None,
                      firner=None, dater=None, eager=False, local=None, **kwa):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
             serder (SerderKERI): instance of event to process
-            sigers (list[Siger]): instances of attached controller indexed sigs
+            sigers (list[Siger]|None): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
-            delnum (Number|None): instance of delegating event sequence number.
-                If this event is not delegated then ignored
-            deldiger (Diger|None): instance of of delegating event SAID.
-                If this event is not delegated then saider is ignored
-            firner (Seqner|None): instance of cloned first seen ordinal
+            delsner (Number|None): instance of delegating event sequence number.
+                If this event is not delegated then delnumber is ignored
+            delsger (Diger|None): instance of of delegating event SAID diger.
+                If this event is not delegated then deldiger is ignored
+            firner (Number|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
@@ -3930,14 +4255,13 @@ class Kevery:
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-        """
+                False means remote (unprotected).
+                None means use default .local ."""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -3956,6 +4280,7 @@ class Kevery:
         ilk = serder.ilk  # ked["t"]
         said = serder.said
 
+        sigers = sigers if sigers is not None else []
 
         if pre not in self.kevers:  # first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
@@ -3967,8 +4292,8 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              delseqner=delnum,
-                              deldiger=deldiger,
+                              delsner=delsner,
+                              delsger=delsger,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
@@ -4002,7 +4327,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   delnum=delnum, diger=deldiger, wigers=wigers, local=local)
+                                   delsner=delsner, delsger=delsger, wigers=wigers, local=local)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -4046,7 +4371,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       delnum=delnum, diger=deldiger, wigers=wigers, local=local)
+                                       delsner=delsner, delsger=delsger, wigers=wigers, local=local)
                     msg = f"Out-of-order event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
                     logger.debug(msg)
                     logger.debug("Out-of-order event body=\n%s\n", serder.pretty())
@@ -4062,7 +4387,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 delseqner=delnum, deldiger=deldiger,
+                                 delsner=delsner, delsger=delsger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  eager=eager, local=local, check=self.check)
@@ -4125,7 +4450,8 @@ class Kevery:
                         raise LikelyDuplicitousError(msg)
 
 
-    def processReceipt(self, serder, *, cigars=None, wigers=None, tsgs=None, local=None, **kwa):
+    def processReceipt(self, serder, *, cigars=None, wigers=None, tsgs=None,
+                       rsgs=None, local=None, **kwa):
         """
         Process one receipt serder with attached cigars
         may or may not be a witness receipt. If prefix matches witness then
@@ -4142,17 +4468,18 @@ class Kevery:
                 derived from nontrans witness prefix in associated witness list.
             tsgs (list[tuple]): from extracted transferable indexed sig groups
                 each converted group is tuple of (i,s,d) triple plus list of sigs
+            rsgs (list[tuple]): from extracted transferable receipt indexed sig groups
+                each converted group is tuple of (i,s,d) triple plus list of sigs
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
+                False means remote (unprotected).
+                None means use default .local .
 
         Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
             sn  # hex string sequence number
             ilk  # rct
-            dig  # qb64 digest of receipted event
-        """
+            dig  # qb64 digest of receipted event"""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -4230,7 +4557,7 @@ class Kevery:
                     # write receipt indexed sig to database
                     self.db.wigs.add(keys=dgkey, val=wiger)
 
-            for sprefixer, snumber, saider, sigers in tsgs:  # iterate over each tsg
+            for sprefixer, snumber, sdiger, sigers in tsgs:  # iterate over each tsg
                 if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
                     if pre in self.prefixes:  # skip own receipter of own event
                         # sign own events as controller not endorse them via receipt
@@ -4246,7 +4573,7 @@ class Kevery:
                 if sdig is None:
                     # receiptor's est event not yet in receiptors's KEL
                     # so need cue to discover est evt KEL for receipter from watcher etc
-                    self.escrowTReceipts(serder, sprefixer, snumber, saider, sigers)
+                    self.escrowTReceipts(serder, sprefixer, snumber, sdiger, sigers)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                                              "missing establishment event of transferable "
                                                              "receipter for event={}."
@@ -4255,7 +4582,7 @@ class Kevery:
                 # retrieve last event itself of receiptor est evt from sdig.
                 sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
                 # assumes db ensures that sserder must not be none because sdig was in KE
-                if not sserder.compare(said=saider.qb64):  # endorser's dig not match event
+                if not sserder.compare(said=sdiger.qb64):  # endorser's dig not match event
                     raise ValidationError("Bad trans indexed sig group at sn = {}"
                                           " for ksn = {}."
                                           "".format(snumber.sn, sserder.ked))
@@ -4263,20 +4590,88 @@ class Kevery:
                 # verify sigs and if so write receipt to database
                 sverfers = sserder.verfers
                 if not sverfers:
-                    raise ValidationError("Invalid receipter's est. event"
-                                          " dig = {}  from pre ={}, no keys."
-                                          "".format(saider.qb64, sprefixer.qb64))
+                    raise ValidationError(f"Invalid receipter's est. event"
+                                          f" dig={sdiger.qb64}  from pre="
+                                          f"{sprefixer.qb64}, no keys.")
 
+                #for siger in sigers:  # endorser (non-controller) signatures
+                    #if siger.index >= len(sverfers):
+                        #raise ValidationError(f"Index={siger.index} to large for keys.")
+
+                    #siger.verfer = sverfers[siger.index]  # assign verfer
+                    #if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        ## good sig so write receipt quadruple to database
+                        #quadruple = (sprefixer, snumber, sdiger, siger)
+                        #self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
+
+                # vrcsNew test to replace vrcs changed format of subdb
                 for siger in sigers:  # endorser (non-controller) signatures
                     if siger.index >= len(sverfers):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(siger.index))
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
+
                     siger.verfer = sverfers[siger.index]  # assign verfer
                     if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                        # good sig so write receipt quadruple to database
-                        quadruple = (sprefixer, snumber, saider, siger)
-                        self.db.vrcs.add(keys=dgKey(pre=pre, dig=ldig),
-                                       val=quadruple)  # dups kept
+                        # good sig so write receipt to database
+                        keys = (pre, ldig, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
+
+            for sprefixer, snumber, sdiger, sigers in rsgs:  # iterate over each tsg
+                if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
+                    if pre in self.prefixes:  # skip own receipter of own event
+                        # sign own events as controller not endorse them via receipt
+                        raise ValidationError("Own pre={} receipter of own event"
+                                              " {}.".format(self.prefixes, serder.pretty()))
+                    if not local:  # skip own receipts of nonlocal events
+                        raise ValidationError("Own pre={} receipter of nonlocal event "
+                                              "{}.".format(self.prefixes, serder.pretty()))
+
+                # receipted event in db so attempt to get receipter est evt
+                # retrieve dig of last event at sn of est evt of receiptor.
+                sdig = self.db.kels.getLast(keys=sprefixer.qb64b, on=snumber.sn)
+                if sdig is None:
+                    # receiptor's est event not yet in receiptors's KEL
+                    # so need cue to discover est evt KEL for receipter from watcher etc
+                    self.escrowTReceipts(serder, sprefixer, snumber, sdiger, sigers)
+                    raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                                             "missing establishment event of transferable "
+                                                             "receipter for event={}."
+                                                             "".format(ked))
+                sdig = sdig.encode("utf-8")
+                # retrieve last event itself of receiptor est evt from sdig.
+                sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
+                # assumes db ensures that sserder must not be none because sdig was in KE
+                if not sserder.compare(said=sdiger.qb64):  # endorser's dig not match event
+                    raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                          " for ksn = {}."
+                                          "".format(snumber.sn, sserder.ked))
+
+                # verify sigs and if so write receipt to database
+                sverfers = sserder.verfers
+                if not sverfers:
+                    raise ValidationError(f"Invalid receipter's est. event"
+                                          f" dig={sdiger.qb64}  from pre="
+                                          f"{sprefixer.qb64}, no keys.")
+
+                #for siger in sigers:  # endorser (non-controller) signatures
+                    #if siger.index >= len(sverfers):
+                        #raise ValidationError(f"Index={siger.index} to large for keys.")
+
+                    #siger.verfer = sverfers[siger.index]  # assign verfer
+                    #if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        ## good sig so write receipt quadruple to database
+                        #quadruple = (sprefixer, snumber, sdiger, siger)
+                        #self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
+
+                # vrcsNew test to replace vrcs changed format of subdb
+                for siger in sigers:  # endorser (non-controller) signatures
+                    if siger.index >= len(sverfers):
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
+
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        # good sig so write receipt to database
+                        keys = (pre, ldig, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
         else:  # no events to be receipted yet at that sn so escrow
             if cigars:
@@ -4294,25 +4689,29 @@ class Kevery:
             raise UnverifiedReceiptError(msg)
 
 
-    def processMsg(self, serder, **kwa):
+    def processMsg(self, kwa=None):
         """Process one non-key-event KERI message with attachments.
 
         Consolidated entry point for non-event message types:
         qry, rpy, pro, bar, xip, exn.
 
         Processing order:
-            1. AID-based allow/deny logic 
+            1. AID-based allow/deny logic
             2. KRAM processing via self.kramer.intake()
             3. Message-type-specific processing delegation
 
         Parameters:
-            serder (SerderKERI): message instance
-            **kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
-                   ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
-                   bsqs, bsss, tmqs, local, etc.)
-                   Also accepts processor overrides injected by parser:
-                   rvy (Revery), exc (Exchanger), tvy (Tevery)
-        """
+            kwa (dict | None): parser exts / attachment dict containing serder,
+                sigers, cigars, tsgs, lsgs, sscs, ssts, tdcs, wigers, trqs,
+                frcs, ptds, essrs, bsqs, bsss, tmqs, local, etc.; mutated in
+                place (KRAM normalization, rvy/exc/tvy pops, qry
+                source/sigers). Also accepts processor overrides injected by
+                parser: rvy (Revery), exc (Exchanger), tvy (Tevery)"""
+        if kwa is None:
+            kwa = {}
+        serder = kwa.pop('serder', None)
+        if serder is None:
+            raise ValidationError("Missing serder for message processing.")
         ilk = serder.ilk
 
         # Extract processor overrides injected by parser, fall back to self
@@ -4320,12 +4719,15 @@ class Kevery:
         exc = kwa.pop('exc', None) or self.exc
         tvy = kwa.pop('tvy', None) or self.tvy
 
+        # Normalize attachment shape: KRAM and qry dispatch always see a list.
+        kwa.setdefault('sigers', [])
+
         # Step 1: AID-based allow/deny Draft
-    
+
         # Determine sender AID using the serder
         sender = serder.pre
 
-        # Still needs fleshing out for delegate messages and multisig 
+        # Still needs fleshing out for delegate messages and multisig
 
         # Apply allow/deny rules
         if sender is not None:
@@ -4341,24 +4743,25 @@ class Kevery:
                 f"(not in allowlist; allowlist active)"
                 )
                 return  # drop silently
-                
+
         # Step 2: KRAM
         if self.kramer:
             self.kramer.reconcileConfig()
-            result = self.kramer.intake(serder, **kwa)
+            result = self.kramer.intake(serder, kwa)
             if result is None:
                 return  # message dropped or pending in KRAM
 
         # Step 3: Dispatch to message-specific processing
         match ilk:
             case Ilks.qry:
-                # Extract source and sigers from ssgs (like parser originally did)
-                if kwa.get('ssgs'):
-                    pre, sigers = kwa['ssgs'][-1]
+                # Extract source and sigers from lsgs (last sig groups)
+                # trans last indexed sig groups
+                if kwa.get('lsgs'):
+                    pre, sigers = kwa['lsgs'][-1]
                     kwa['source'] = pre
                     kwa['sigers'] = sigers
-                else:
-                    kwa['sigers'] = []  # just in case sigers provided not by ssgs
+                elif kwa['sigers'] and not kwa.get('source'):
+                    kwa['source'] = Prefixer(qb64=serder.pre)
 
                 if not (kwa.get('source') or kwa.get('cigars', [])):
                     raise ValidationError(
@@ -4405,13 +4808,31 @@ class Kevery:
                         f"dropped msg={serder.pretty()}.")
                 exc.processEvent(serder=serder, **kwa)
 
-            case Ilks.xip | Ilks.pro | Ilks.bar:
-                raise ValidationError(
-                    f"Message type {ilk} not yet supported in processMsg")
+            case Ilks.xip:
+                self.processXip(serder, kwa)
+
+            case Ilks.pro:
+                self.processPro(serder, kwa)
+
+            case Ilks.bar:
+                self.processBar(serder, kwa)
+
             case _:
                 raise ValidationError(
                     f"Unexpected non-event message type {ilk} "
                     f"for msg={serder.pretty()}")
+
+    def processXip(self, serder, kwa):
+        """Stub: KERI v2 exchange transaction; no processing yet."""
+        pass
+
+    def processPro(self, serder, kwa):
+        """Stub: exchange proposal message; no processing yet."""
+        pass
+
+    def processBar(self, serder, kwa):
+        """Stub: exchange barrier message; no processing yet."""
+        pass
 
     def processAttachedReceiptCouples(self, serder, cigars, *, firner=None,
                                       local=None, **kwa):
@@ -4432,10 +4853,8 @@ class Kevery:
                 if provided lookup event by fn = firner.sn
                 used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-
-        """
+                False means remote (unprotected).
+                None means use default .local ."""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -4495,10 +4914,9 @@ class Kevery:
                     self.db.rcts.add(keys=(pre, ldig), val=(cigar.verfer, cigar))
 
 
-    def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
+    def processAttachedReceiptSigGroups(self, serder, rsgs, *, firner=None,
                                          local=None, **kwa):
-        """
-        Process one attachment quadruple that represents an endorsement from
+        """Process one attachment quadruple that represents an endorsement from
         a transferable AID that is not the controller. Maybe a watcher.
         Originally may have been a transferable receipt or key event attachment
 
@@ -4507,24 +4925,17 @@ class Kevery:
         Parameters:
             serder (serderKERI):  instance serialized event message to which
                 attachments come from replay (clone)
-            trqs (list[tuple]): quadruples of (prefixer, seqner, diger, siger)
+            rsgs (list[tuple]):  (prefixer, number, diger, [sigers])
             firner (Seqner): instance of first seen ordinal,
-               if provided lookup event by fn = firner.sn
-               used when in cloned replay mode
+                if provided lookup event by fn = firner.sn
+                used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-
-        Seal labels
-            i pre  # qb64 prefix of receipter
-            s sn   # hex of sequence number of est event for receipter keys
-            d dig  # qb64 digest of est event for receipter keys
-
-        """
+                False means remote (unprotected).
+                None means use default .local ."""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
-        # fetch  pre, dig,seal to process
+        # fetch  ldig to process
         ked = serder.ked
         pre = serder.pre
         sn = serder.sn
@@ -4535,7 +4946,7 @@ class Kevery:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.kels.getLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
 
-        for sprefixer, snumber, saider, siger in trqs:  # iterate over each trq
+        for sprefixer, snumber, sdiger, sigers in rsgs:  # iterate over each trq
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
                 if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
@@ -4560,7 +4971,7 @@ class Kevery:
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
-                    self.escrowTRQuadruple(serder, sprefixer, snumber, saider, siger)
+                    self.escrowTransReceiptGroup(serder, sprefixer, snumber, sdiger, sigers)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                                              "missing establishment event of transferable "
                                                              "validator receipt quadruple for event={}."
@@ -4569,38 +4980,59 @@ class Kevery:
                 # retrieve last event itself of receipter
                 sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
                 # assumes db ensures that sserder must not be none because sdig was in KE
-                if not sserder.compare(said=saider.qb64):  # seal dig not match event
+                if not sserder.compare(said=sdiger.qb64):  # seal dig not match event
                     raise ValidationError("Bad trans receipt quadruple at sn = {}"
                                           " for rct = {}."
                                           "".format(snumber.sn, sserder.ked))
 
-                # verify sigs and if so write quadruple to database
+                # verify sigs and if so write sigs to database
                 sverfers = sserder.verfers
                 if not sverfers:
-                    raise ValidationError("Invalid trans receipt quad est. event"
+                    raise ValidationError("Invalid trans receipt est. event"
                                           " dig = {} for receipt from pre ={}, "
                                           "no keys."
-                                          "".format(saider.qb64, sprefixer.qb64))
+                                          "".format(sdiger.qb64, sprefixer.qb64))
 
-                if siger.index >= len(sverfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
+                # vrcsNew test to replace vrcs changed format of subdb
+                for siger in sigers:  # endorser (non-controller) signatures
+                    if siger.index >= len(sverfers):
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
 
-                siger.verfer = sverfers[siger.index]  # assign verfer
-                if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
-                    msg = f"Bad escrowed trans receipt sig pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
-                    logger.trace("Kevery unescrow error: %s", msg)
-                    raise ValidationError(msg)
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                        # good sig so write receipt to database
+                        keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
+                    else:
+                        msg = (f"Bad escrowed trans receipt sig pre={pre} sn={sn:x}"
+                              f" receipter={sprefixer.qb64}")
+                        logger.trace("Kevery unescrow error: %s", msg)
+                        raise ValidationError(msg)
 
-                # good sig so write receipt quadruple to database
+
+                #if siger.index >= len(sverfers):
+                    #raise ValidationError("Index = {} to large for keys."
+                                          #"".format(siger.index))
+
+                #siger.verfer = sverfers[siger.index]  # assign verfer
+                #if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                    #msg = f"Bad escrowed trans receipt sig pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
+                    #logger.trace("Kevery unescrow error: %s", msg)
+                    #raise ValidationError(msg)
+
+                # good sig so write receipt sig to database
 
                 # Set up quadruple
-                quadruple = (sprefixer, snumber, saider, siger)
-                self.db.vrcs.add(keys=dgKey(pre, serder.said), val=quadruple)
+                #quadruple = (sprefixer, snumber, diger, siger)
+                #self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+
+                # vrcsNew test to replace vrcs
+                #keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                #self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
 
             else:  # escrow  either receiptor or receipted event not yet in database
-                self.escrowTRQuadruple(serder, sprefixer, snumber, saider, siger)
+                self.escrowTransReceiptGroup(serder, sprefixer, snumber, sdiger, sigers)
                 msg = (f"Unverified receipt: missing associated event for transferable validator"
                        f"receipt quadruple for event {serder.said}")
                 logger.info(msg)
@@ -4610,14 +5042,22 @@ class Kevery:
 
     def removeStaleReplyEndRole(self, saider):
         """
-        Process reply escrow at saider for route "/end/role"
+        Process reply escrow at saider for route "/end/role".
+
+        Parameters:
+            saider (Saider): SAID of the reply SAD whose escrow entry should
+                be removed.
         """
         pass
 
 
     def removeStaleReplyLocScheme(self, saider):
         """
-        Process reply escrow at saider for route "/loc/scheme"
+        Process reply escrow at saider for route "/loc/scheme".
+
+        Parameters:
+            saider (Saider): SAID of the reply SAD whose escrow entry should
+                be removed.
         """
         pass
 
@@ -4626,9 +5066,7 @@ class Kevery:
         """ Register the routes for processing messages embedded in `rpy` event messages
 
         Parameters:
-            router(Router): reply message router
-
-        """
+            router (Router): reply message router"""
         router.addRoute("/end/role/{action}", self, suffix="EndRole")
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
@@ -4647,7 +5085,7 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -4659,7 +5097,8 @@ class Kevery:
             allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
             name: str = ""  # optional user friendly name of endpoint
 
-        Reply Message:
+            Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rpy",
@@ -4686,9 +5125,7 @@ class Kevery:
              "role": "watcher",  # one of Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
-        }
-
-        """
+        }"""
         # reply specific logic
         if route.startswith("/end/role/add"):
             allowed = True
@@ -4744,7 +5181,7 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -4788,10 +5225,7 @@ class Kevery:
              "scheme": "http",  # one of Schemes
              "url":  "",  # Nullifies
           }
-        }
-
-
-        """
+        }"""
         # reply specific logic
         if not route.startswith("/loc/scheme"):
             raise ValidationError("Usupported route={} in {} msg={}."
@@ -4846,7 +5280,7 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -4854,7 +5288,8 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
+            Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rpy",
@@ -4892,9 +5327,7 @@ class Kevery:
             },
             "di": ""
           }
-        }
-
-        """
+        }"""
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 
@@ -4968,8 +5401,7 @@ class Kevery:
             keys (tuple): of key strs for databases (cid, role, eid)
             saider (Diger): instance from said in reply serder (SAD)
             allowed (bool): True allow eid to be endpoint provided
-                          False otherwise
-        """
+                False otherwise"""
         # update .eans and .ends
         self.db.eans.pin(keys=keys, val=saider)  # overwrite
         if ender := self.db.ends.get(keys=keys):  # preexisting record
@@ -4986,8 +5418,7 @@ class Kevery:
         Parameters:
             keys (tuple): of key strs for databases (eid, scheme)
             saider (Diger): instance from said in reply serder (SAD)
-            url (str): endpoint url
-        """
+            url (str): endpoint url"""
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
         if locer := self.db.locs.get(keys=keys):  # preexisting record
             locer.url = url  # update preexisting record
@@ -5007,8 +5438,7 @@ class Kevery:
             aid (str): identifier of key state
             ksr (KeyStateRecord): converted from key state notice dict in reply msg
             saider (Diger): instance from said in serder (SAD)
-            dater (Dater): instance from date-time in serder (SAD)
-        """
+            dater (Dater): instance from date-time in serder (SAD)"""
         keys = (saider.qb64,)
 
         # Add source of ksn to the key for DATEs too...  (source AID, ksn AID)
@@ -5040,7 +5470,7 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -5048,7 +5478,8 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
+            Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rpy",
@@ -5061,9 +5492,7 @@ class Kevery:
             "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5"
             "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
           }
-        }
-
-        """
+        }"""
         aid = kwa["aid"]
         action = kwa["action"]
         # reply specific logic
@@ -5110,8 +5539,7 @@ class Kevery:
         Parameters:
             keys (tuple): of key strs for databases (eid, scheme)
             saider (Diger): instance from said in reply serder (SAD)
-            enabled (bool): True means add observed to watcher, False means remove (cut)
-        """
+            enabled (bool): True means add observed to watcher, False means remove (cut)"""
         self.db.wwas.pin(keys=keys, val=saider)  # overwrite
         if observed := self.db.obvs.get(keys=keys):  # preexisting record
             observed.enabled = enabled  # update preexisting record
@@ -5129,9 +5557,7 @@ class Kevery:
             serder (SerderKERI) is query message serder
             source (Prefixer) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
-            cigars (list) of Cigar instance of attached non-trans sigs
-
-        """
+            cigars (list) of Cigar instance of attached non-trans sigs"""
         ked = serder.ked
 
         ilk = ked["t"]
@@ -5178,11 +5604,12 @@ class Kevery:
                     raise QueryNotFoundError(msg)
 
             msgs = list()  # outgoing messages
-            for msg in self.db.clonePreIter(pre=pre, fn=fn):
+            for msg in self.db.clonePreIter(pre=pre, fn=fn, version=kever.serder.pvrsn):
                 msgs.append(msg)
 
             if kever.delpre:
-                cloner = self.db.clonePreIter(pre=kever.delpre, fn=0)  # create iterator at 0
+                dkever = self.kevers[kever.delpre]  # Get the delegator's kever so we can set the version for the iterator
+                cloner = self.db.clonePreIter(pre=kever.delpre, fn=0, version=dkever.serder.pvrsn)  # create iterator at 0
                 for msg in cloner:
                     msgs.append(msg)
 
@@ -5213,7 +5640,8 @@ class Kevery:
                 logger.debug("Query Body=\n%s\n", serder.pretty())
                 raise QueryNotFoundError(msg)
 
-            rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict())
+            rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict(),
+                            pre=pre, version=serder.pvrsn, kind=serder.kind)
             self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=rserder,
                                 dest=dest))
 
@@ -5249,9 +5677,8 @@ class Kevery:
         Returns None if no event at sn accepted in KEL for pre
 
         Parameters:
-            pre is qb64 of identifier prefix for KEL
-            sn is int sequence number of event in KEL of pre
-        """
+            pre: qb64 of identifier prefix for KEL
+            sn: int sequence number of event in KEL of pre"""
 
         found = False
         while not found:
@@ -5273,21 +5700,20 @@ class Kevery:
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
-                      delnum=None, diger=None, local=True):
+                      number=None, diger=None, local=True):
         """
         Update associated logs for escrow of MisFit event
 
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of dig of event delegatint/issuing event if any
+            number (Number): instance of sn of delegating/issuing event if any
+            diger (Diger): instance of dig of delegating/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -5304,28 +5730,26 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
+        if number and diger:
+            self.db.udes.put(keys=dgkey, val=(number, diger))  # idempotent
         self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed misfit event=\n%s", serder.pretty())
 
 
-    def escrowOOEvent(self, serder, sigers, delnum=None, diger=None, wigers=None, local=True):
-        """
-        Update associated logs for escrow of Out-of-Order event
+    def escrowOOEvent(self, serder, sigers, delsner=None, delsger=None, wigers=None, local=True):
+        """Update associated logs for escrow of Out-of-Order event
 
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of dig of event delegatint/issuing event if any
+            delnumber (Number): instance of sn of delegating/issuing event if any
+            diger (Diger): instance of said of delegating/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -5342,8 +5766,8 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
+        if delsner and delsger:
+            self.db.udes.put(keys=dgkey, val=(delsner, delsger))  # idempotent
         self.db.ooes.add(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed out of order event=\n%s", serder.pretty())
@@ -5356,8 +5780,7 @@ class Kevery:
             prefixer (Prefixer): source of query message
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            cigars (list): of non-transferable receipts
-        """
+            cigars (list): of non-transferable receipts"""
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())
@@ -5377,13 +5800,12 @@ class Kevery:
         Update associated logs for escrow of Likely Duplicitous event
 
         Parameters:
-            serder is SerderKERI instance of  event
-            sigers is list of Siger instance for  event
+            serder: SerderKERI instance of  event
+            sigers: list of Siger instance for  event
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -5416,10 +5838,9 @@ class Kevery:
         Parameters:
             serder (SerderKERI): instance of receipt msg not receipted event
             wigers (list): of Siger instances for witness indexed signature
-                of receipted event
-            said (str) qb64 said of receipted event not serder.dig because
-                serder is a receipt not the receipted event
-        """
+                    of receipted event
+            said (str): qb64 said of receipted event not serder.dig because
+                serder is a receipt not the receipted event"""
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5450,8 +5871,7 @@ class Kevery:
             serder (SerderKERI): instance of receipt msg not receipted event
             cigars (list): of Cigar instances for event receipt
             said (str): qb64 said in receipt of receipted event not serder.dig because
-                serder is of receipt not receipted event
-        """
+            serder: of receipt not receipted event"""
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5479,10 +5899,10 @@ class Kevery:
         event (transferable)
 
         Parameters:
-            serder instance of receipt message not receipted event
-            tsgs is list of tuples of form: (prefixer,seqner,diger, sigers)
+            serder: Serder instance of receipt message not receipted event
+            tsgs: list of tuples of form: (prefixer,seqner,diger, sigers)
                 prefixer is Prefixer instance of prefix of receipter
-                number is Number instance of  sn of est event of receiptor
+                number is Number instance of sn of est event of receiptor
                 diger is Diger instance of digest of est event of receiptor
                 sigers is list of Siger instances of multi-sig of receiptor
 
@@ -5493,8 +5913,7 @@ class Kevery:
                 pre is receipter prefix
                 snu is receipter est event sn
                 dig is receipt est evant dig
-                sig is indexed sig of receiptor of receipted event
-        """
+                sig is indexed sig of receiptor of receipted event"""
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5502,7 +5921,8 @@ class Kevery:
         # edig, validator prefix, validtor est event sn, validator est evvent dig
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
-        # lookup last event by sn not by dig.
+        # lookup last event by sn not by dig.#
+        # ToDo XXXX Is this approach still valid or do SAIDs now make it obsolete?
         for tsg in tsgs:
             prefixer, number, saider, sigers = tsg
             self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=Dater())
@@ -5522,17 +5942,18 @@ class Kevery:
                          "of pre=%s sn=%x dig=%s by pre=%s", serder.pre,
                          serder.sn, serder.ked["d"], prefixer.qb64)
 
+
     def escrowTReceipts(self, serder, prefixer, number, saider, sigers):
         """
         Update associated logs for escrow of Transferable Event Receipt Group
         (transferable)
 
         Parameters:
-            serder instance of receipt message not receipted event
-            prefixer is Prefixer instance of prefix of receipter
-            number is Number instance of  sn of est event of receiptor
-            saider is Saider instance of said of est event of receiptor
-            igers is list of Siger instances of multi-sig of receiptor
+            serder: Serder instance of receipt message not receipted event
+            prefixer: Prefixer instance of prefix of receipter
+            number: Number instance of  sn of est event of receiptor
+            saider: Saider instance of said of est event of receiptor
+            sigers: list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig
@@ -5541,8 +5962,7 @@ class Kevery:
                 pre is receipter prefix
                 snu is receipter est event sn
                 dig is receipt est evant dig
-                sig is indexed sig of receiptor of receipted event
-        """
+                sig is indexed sig of receiptor of receipted event"""
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5551,6 +5971,9 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
+        #ToDo XXXX Is this approach obsolete now that we have SAIDs? Do we have to compare
+        # digests for same algo, or do we always refer to the event SAID?
+
         self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=Dater())
         # since serder of of receipt not receipted event must use dig in
         # serder.ked["d"] not serder.dig
@@ -5569,9 +5992,9 @@ class Kevery:
                     "of pre=%s sn=%x dig=%s by pre=%s", serder.pre,
                     serder.sn, serder.ked["d"], prefixer.qb64)
 
-    def escrowTRQuadruple(self, serder, sprefixer, snumber, saider, siger):
-        """
-        Update associated logs for escrow of Unverified Transferable Receipt
+
+    def escrowTransReceiptGroup(self, serder, sprefixer, snumber, diger, sigers):
+        """Update associated logs for escrow of Unverified Transferable Receipt
         (transferable)
 
         escrow quintuple made from quadruple where:
@@ -5579,12 +6002,11 @@ class Kevery:
             quintuple = edig+spre+ssnu+sdig+sig  (edig is signed event digest)
 
         Parameters:
-            serder instance of receipt message not receipted event
-            sigers is list of Siger instances attached to receipt message
-            seal is SealEvent instance (namedTuple)
-            saider is digest of receipted event provided in receipt
-
-        """
+            serder (SerderKERI):  instance of receipt message not receipted event
+            sprefixer (Prefixer): instance receiptor AID
+            snumber (Number):  instance of sn of est event for receiptor key state
+            diger (Diger): instance said digest est event or receipt key state
+            sigers (list[Siger]): signatures of receiptor"""
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5593,26 +6015,27 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
+        # ToDo XXXX Is this approach obsolete now that we have SAIDs? Do we have to compare
+        # digests for same algo, or do we always refer to the event SAID?
+
         self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=Dater())
-        quintuple = (
-            Diger(qb64=serder.said),     # event digest
-            sprefixer,                          # Prefixer
-            Number(num=snumber.sn),        # Number
-            Diger(qb64=saider.qb64),     # est event digest
-            siger,                              # Siger
-        )
-        self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
-        # log escrowed
-        logger.debug("Kevery process: escrowed unverified transferabe validator "
-                     "receipt of pre= %s sn=%x dig=%s", serder.pre, serder.sn,
-                     serder.said)
+        for siger in sigers:
+            quintuple = (
+                Diger(qb64=serder.said),     # event digest
+                sprefixer,                  # Prefixer receiptor
+                Number(num=snumber.sn),     # SN of est event of receiptor key state
+                Diger(qb64=diger.qb64), # est event said of receiptro key state
+                siger,                  # signature of receiptor using est event key state
+            )
+            self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
+            # log escrowed
+            logger.debug("Kevery process: escrowed unverified transferabe validator "
+                         "receipt of pre= %s sn=%x dig=%s", serder.pre, serder.sn,
+                         serder.said)
 
     def processEscrows(self):
         """
-        Iterate throush escrows and process any that may now be finalized
-
-        Parameters:
-        """
+        Iterate throush escrows and process any that may now be finalized"""
         try:
             self.processEscrowOutOfOrders()
             self.processEscrowUnverWitness()
@@ -5666,8 +6089,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         for pre, sn, edig in self.db.ooes.getAllItemIter():
 
             if isinstance(pre, (tuple, list)):
@@ -5790,8 +6212,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
@@ -5848,16 +6269,16 @@ class Kevery:
                     logger.debug("Kevery unescrow wigs: No event wigs yet at."
                                  "dig = %s", edig.decode())
 
-                # seal source (delegator issuer if any)
-                delnum, deldiger = None, None
+                # seal source couple (sequence number, said diger) of delegator/issuer if any
+                sner, sger = None, None
                 if (couple := self.db.udes.get(keys=dgkey)):
-                    delnum, deldiger = couple
+                    sner, sger = couple
 
                 # process event
                 sigers = self.db.sigs.get(keys=(pre, edig))
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delnum=delnum,
-                                  deldiger=deldiger,
+                                  delsner=sner,
+                                  delsger=sger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate sigs or delegation seal (when delegated),
@@ -5947,8 +6368,7 @@ class Kevery:
                         Get and Attach Signatures
                         Get and Attach Witness Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         for pre, sn, edig in self.db.pwes.getAllItemIter(keys=b''):
             try:
                 if isinstance(pre, (tuple, list)):
@@ -6011,14 +6431,14 @@ class Kevery:
                 # process event
                 sigers = self.db.sigs.get(keys=(pre, edig))
 
-                # seal source (delegator issuer if any)
-                delnum = deldiger = None
+                # seal source couple (sequence number, said diger) of delegator/issuer if any
+                sner = sger = None
                 if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
-                    delnum, deldiger = couple
+                    sner, sger = couple
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delnum=delnum,
-                                  deldiger=deldiger,
+                                  delsner=sner,
+                                  delsger=sger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate wigs then process will attempt
@@ -6088,8 +6508,7 @@ class Kevery:
                         Get and Attach Signatures
                         Get and Attach Witness Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         for (epre,), esn, edig in self.db.pdes.getAllItemIter(keys=b''):
             try:
@@ -6152,12 +6571,12 @@ class Kevery:
                 # setup parameters to process event
                 sigers = self.db.sigs.get(keys=dgkey)
 
-                # seal source (delegator issuer if any)
+                # seal source couple (sequence number, said diger) of delegator/issuer if any
                 # If delegator KEL not available should also cue a trigger to
                 # get it if still missing when processing escrow.
-                delnum = deldiger = None
+                sner = sger = None
                 if (couple := self.db.udes.get(keys=(epre, edig))):
-                    delnum, deldiger = couple  # provided
+                    sner, sger = couple  # provided
 
                 #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
                     #if eserder.pre in self.kevers:
@@ -6167,13 +6586,13 @@ class Kevery:
                     #seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                     #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
                     #if srdr is not None:  # found seal in srdr
-                        #delseqner = Seqner(sn=srdr.sn)
-                        #delsaider = Saider(qb64=srdr.said)
-                        #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
+                        #number = Number(sn=srdr.sn)
+                        #diger = Diger(qb64=srdr.said)
+                        #self.db.udes.put(keys=dgkey, val=(number, diger))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delnum=delnum,
-                                  deldiger=deldiger,
+                                  delsner=sner,
+                                  delsger=sger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate delegation then process will attempt
@@ -6266,8 +6685,7 @@ class Kevery:
                         Get Event
                         compare dig so same event
                         verify wigs via wigers
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         #for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
         for (pre, ), sn, (rdig, wig) in self.db.uwes.getTopItemIter():
             try:
@@ -6371,8 +6789,7 @@ class Kevery:
                         Get Event
                         compare dig so same event
                         verify sigs via cigars
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getTopItemIter():
             sn = Seqner(qb64=sn).sn
@@ -6501,8 +6918,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         for (pre, sn), dig in self.db.delegables.getTopItemIter():
             try:
@@ -6553,12 +6969,11 @@ class Kevery:
 
                 # parse the event if we have a delegate seal
                 if (duple := self.db.aess.get(keys=(pre.encode("utf-8"), edig))) is not None:
-                    delnum, diger = duple  # delnum is Number from aess
+                    delsner, delsger = duple  #  Number from aess
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                      delnum=delnum,
-                                      deldiger=diger, local=esr.local)
+                                      delsner=delsner, delsger=delsger, local=esr.local)
                 else:
                     raise MissingDelegableApprovalError("No delegation seal found for event.")
 
@@ -6607,8 +7022,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         key = ekey = b''  # both start same. when not same means escrows found
         pre = b''
@@ -6698,21 +7112,18 @@ class Kevery:
         partially witnessed event
 
         Returns:
-           found (bool): True means found matching event in .Pwes and added wig
-                        to .Wigs. False means dig not find matching event in .Pwes
-
+            found (bool): True means found matching event in .Pwes and added wig
+                to .Wigs. False means dig not find matching event in .Pwes
 
         Raises:
             Validation error if found matching event but signature does not verify
 
         Parameters:
-           pre (Union[str,bytes]): pre of receipted event controller kel
-           sn (int): sequence number of receipted event
-           rsaider (Saider): derived from receipt's dig of receipted event to find
-           wiger (Siger): instance of witness indexed signature from receipt
-           cigar (Cigar): instance of witness nonindexed signature from receipt
-
-        """
+            pre (Union[str,bytes]): pre of receipted event controller kel
+            sn (int): sequence number of receipted event
+            rsaider (Saider): derived from receipt's dig of receipted event to find
+            wiger (Siger): instance of witness indexed signature from receipt
+            cigar (Cigar): instance of witness nonindexed signature from receipt"""
         # lookup the database dig of the receipted event in pwes escrow using
         # snKey(pre,sn) where pre is controller and sn is event sequence number
         # compare dig to rdiger derived from receipt's dig of receipted event
@@ -6838,8 +7249,7 @@ class Kevery:
                         Get Event
                         compare dig so same event
                         verify sigs via sigers
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
@@ -6926,8 +7336,12 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # good sig so write receipt quadruple to database
-                    quadruple = (sprefixer, snumber, ssaider, siger)
-                    self.db.vrcs.add(keys=dgKey(pre, serder.said), val=quadruple)
+                    #quadruple = (sprefixer, snumber, ssaider, siger)
+                    #self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+
+                    # vrcsNew test to replace vrcs
+                    keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, ssaider.qb64)
+                    self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
 
                 except UnverifiedTransferableReceiptError as ex:
@@ -6990,8 +7404,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for (pre,), sn, edig in self.db.ldes.getAllItemIter(keys=key):
@@ -7089,24 +7502,20 @@ class Kevery:
 
         Handles duplicity detection and logging if duplicitous
 
-        Placeholder here for logic need to move
-
-        """
+        Placeholder here for logic need to move"""
         pass
 
 
 def loadEvent(db, preb, dig):
     """ Load event details from database
 
-    Args:
+    Parameters:
         db (Baser): database to load event fro,
         preb (bytes): qb64b identifier prefix
         dig (bytes): digest of event to load
 
     Returns:
-        dict: data from event
-
-    """
+        dict: data from event"""
     event = dict()
     dgkey = dgKey(preb, dig)  # get message
     if not (serder := db.evts.get(keys=(preb, dig))):
@@ -7142,19 +7551,34 @@ def loadEvent(db, preb, dig):
         number, diger = duple
         event["source_seal"] = dict(sequence=number.sn, said=diger.qb64)
 
-    receipts = dict()
-    # add trans receipts quadruples
-    if quads := db.vrcs.get(keys=dgkey):
-        trans = []
-        for prefixer, number, diger, siger in quads:
-            trans.append(dict(
-                prefix=prefixer.qb64,
-                sequence=number.qb64,
-                said=diger.qb64,
-                signature=siger.qb64,
-            ))
+    receipts = dict()  # add receipts transferable and nontransferable if any
 
-        receipts["transferable"] = trans
+    ## add trans receipts quadruples
+    #if quads := db.vrcs.get(keys=dgkey):
+        #trans = []
+        #for prefixer, number, diger, siger in quads:
+            #trans.append(dict(
+                #prefix=prefixer.qb64,
+                #sequence=number.qb64,
+                #said=diger.qb64,
+                #signature=siger.qb64,
+            #))
+
+        #receipts["transferable"] = trans
+
+    # add trans receipts
+    # vcrsNew new style trans receipts
+    trans = []
+    topkeys = (preb, dig)
+    for keys, siger in db.vrcs.getTopItemIter(keys=topkeys):
+        epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+        trans.append(dict(prefix=rpre,
+                             sequence=Number(snh=rsnh).qb64,
+                             said=rdig,
+                             signature=siger.qb64))
+    if trans:
+        receipts['transferable'] = trans
+
 
     # add nontrans receipts couples
     if duple := db.rcts.get(keys=dgkey):

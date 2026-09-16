@@ -4,49 +4,163 @@ tests.app.grouping module
 
 """
 from contextlib import contextmanager
+from types import SimpleNamespace
 
-from keri.kering import Vrsn_1_0
+import pytest
+from hio.base import doing
+
+from keri.kering import ValidationError, Version, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.app import (Notifier, Counselor, Multiplexor,
-                      openHab, multisigInceptExn,
+                      openHab, openCF, multisigInceptExn,
                       multisigRotateExn, multisigInteractExn,
-                      multisigRegistryInceptExn)
+                      multisigRegistryInceptExn, multisigRpyExn)
+from keri.app import grouping
 
 from keri.app.grouping import loadHandlers
 
 from keri.core import (Prefixer, Number, Diger, Kevery,
                        Parser, SerderKERI, Counter,
-                       Codens, messagize)
+                       Codens, Kramer, exchange, messagize)
 
 from keri.vdr.eventing import incept
 from keri.peer import Exchanger
+from keri.peer.exchanging import serializeParsedSubstream
+
+TEST_VERSION = Vrsn_1_0
+
+
+def test_counselor_explicit_version_propagates_to_default_anchorer_and_delegator_queries(monkeypatch):
+    captures = {}
+
+    class FakeAnchorer(doing.Doer):
+        def __init__(self, hby, proxy=None, auths=None, version=None, kind=None, **kwa):
+            super().__init__(**kwa)
+            captures["anchorer_version"] = version
+            captures["anchorer_kind"] = kind
+
+        def delegation(self, pre, sn=None, proxy=None, auths=None):
+            captures["delegation"] = dict(pre=pre, sn=sn, proxy=proxy, auths=auths)
+
+        def complete(self, prefixer, number, diger=None):
+            return False
+
+    class FakeWitnessInquisitor(doing.Doer):
+        def __init__(self, hby, *args, **kwa):
+            super().__init__(**kwa)
+            self.hby = hby
+
+        def query(self, *args, **kwargs):
+            captures["query_args"] = args
+            captures["query_kwargs"] = kwargs
+
+    class FakeReceiptor(doing.Doer):
+        def __init__(self, hby, *args, **kwa):
+            super().__init__(**kwa)
+            self.hby = hby
+            self.msgs = []
+            self.gets = []
+            self.cues = []
+
+    class FakeTopItemStore:
+        def __init__(self, items=None):
+            self.items = list(items or [])
+            self.removed = []
+            self.added = []
+
+        def getTopItemIter(self):
+            return iter(self.items)
+
+        def rem(self, keys):
+            self.removed.append(keys)
+            self.items = []
+
+        def add(self, keys, val):
+            self.added.append((keys, val))
+
+    class FakeLastStore:
+        def __init__(self, value):
+            self.value = value
+
+        def getLast(self, keys, on=None):
+            return self.value
+
+    class FakeSigsStore:
+        def __init__(self, sigers):
+            self.sigers = sigers
+
+        def get(self, keys):
+            return self.sigers
+
+    monkeypatch.setattr(grouping, "Anchorer", FakeAnchorer)
+    monkeypatch.setattr(grouping, "WitnessInquisitor", FakeWitnessInquisitor)
+    monkeypatch.setattr(grouping, "Receiptor", FakeReceiptor)
+
+    pre = "EGroupPrefix"
+    delpre = "EDelegatorPrefix"
+    number = Number(num=1)
+    diger = SimpleNamespace(qb64="EGroupEventDigest")
+
+    gpse = FakeTopItemStore([((pre,), (number, diger))])
+    gdee = FakeTopItemStore()
+    fake_db = SimpleNamespace(gpse=gpse,
+                              gdee=gdee,
+                              kels=FakeLastStore("abc"),
+                              sigs=FakeSigsStore([SimpleNamespace(index=1)]))
+    fake_ghab = SimpleNamespace(
+        pre=pre,
+        kever=SimpleNamespace(
+            verfers=[SimpleNamespace(qb64="DFirst"), SimpleNamespace(qb64="DSecond")],
+            delegated=True,
+            ilk=grouping.Ilks.dip,
+            delpre=delpre,
+        ),
+        mhab=SimpleNamespace(pre="ELocalMember",
+                             kever=SimpleNamespace(verfers=[SimpleNamespace(qb64="DFirst")])),
+    )
+    fake_hby = SimpleNamespace(db=fake_db, habs={pre: fake_ghab})
+
+    counselor = Counselor(hby=fake_hby, version=Vrsn_1_0, kind=Kinds.json)
+    counselor.processPartialSignedEscrow()
+
+    assert captures["anchorer_version"] == Vrsn_1_0
+    assert captures["anchorer_kind"] == Kinds.json
+    assert captures["query_kwargs"] == dict(
+        src="ELocalMember",
+        pre=delpre,
+        anchor=dict(i=pre, s=number.snh, d=diger.qb64),
+        version=Vrsn_1_0,
+        gvrsn=Vrsn_1_0,
+        kind=Kinds.json,
+    )
 
 
 def test_counselor():
     salt = b'0123456789abcdef'
     prefix = "counselor"
-    with openHab(name=f"{prefix}_1", salt=salt, transferable=True) as (hby1, hab1), \
-            openHab(name=f"{prefix}_2", salt=salt, transferable=True) as (hby2, hab2), \
-            openHab(name=f"{prefix}_3", salt=salt, transferable=True) as (hby3, hab3):
-        counselor = Counselor(hby=hby1)
+    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name=f"{prefix}_2", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2), \
+            openHab(name=f"{prefix}_3", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby3, hab3):
+        counselor = Counselor(hby=hby1, version=TEST_VERSION, kind=Kinds.json)
 
         # Keverys so we can process each other's inception messages.
         kev1 = Kevery(db=hab1.db, lax=True, local=False)
         kev2 = Kevery(db=hab2.db, lax=True, local=False)
         kev3 = Kevery(db=hab3.db, lax=True, local=False)
 
-        icp1 = hab1.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev3, local=True)
-        icp2 = hab2.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev3, local=True)
-        icp3 = hab3.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev1, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev2, local=True)
+        icp1 = hab1.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp1), kvy=kev2, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp1), kvy=kev3, local=True)
+        icp2 = hab2.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp2), kvy=kev1, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp2), kvy=kev3, local=True)
+        icp3 = hab3.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp3), kvy=kev1, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp3), kvy=kev2, local=True)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
         rmids = None  # need to fixe this
-        inits = dict(isith='["1/2", "1/2", "1/2"]', nsith='["1/2", "1/2", "1/2"]', toad=0, wits=[])
+        inits = dict(isith='["1/2", "1/2", "1/2"]', nsith='["1/2", "1/2", "1/2"]',
+                     toad=0, wits=[], version=Vrsn_1_0, kind=Kinds.json)
 
         # Create group hab with init params
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
@@ -65,7 +179,7 @@ def test_counselor():
         # Sith 2 so create second signature to get past the first escrow
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab2.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         assert evt == (b'{"v":"KERI10JSON000207_","t":"icp","d":"ENuUR3YvSR2-dFoN1zBN2p8W'
                        b'9BvsySnrY6g2vDS1EVAS","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"0","kt":["1/2","1/2","1/2"],"k":["DEXdkHRR2Nspj5cz'
@@ -77,7 +191,7 @@ def test_counselor():
                        b'"a":[]}-AABBBBkMCMWP1Z2MMd6dBPlogRd1k6mv1joiHIyb8mXvp0H4kY0DHIPM'
                        b'9O6udZ1Bbyf3klr4uGnLs07qcCcnKGI6GsH')
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 to process all sigs together
 
         counselor.processEscrows()
@@ -86,13 +200,14 @@ def test_counselor():
         assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
-        hab1.rotate()
-        hab2.rotate()
+        hab1.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
+        hab2.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
+                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -111,7 +226,7 @@ def test_counselor():
                               b'CoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1], ondices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0t'
                        b'kJfD_rPULkQzphoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"1","p":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EV'
@@ -124,7 +239,7 @@ def test_counselor():
 
         # Create group rotation from second participant
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
@@ -139,13 +254,14 @@ def test_counselor():
 
         # Second Partial Rotation
 
-        hab1.rotate()
-        hab2.rotate()
+        hab1.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
+        hab2.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
+                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -165,7 +281,7 @@ def test_counselor():
                               b'Un"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L'
                        b'-aT9RESXYh8jylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"2","p":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_E'
@@ -179,7 +295,7 @@ def test_counselor():
 
         # Create group rotation from second participant
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
@@ -193,13 +309,14 @@ def test_counselor():
         assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Third Partial Rotation with Recovery
-        hab1.rotate()
-        hab3.rotate()
+        hab1.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
+        hab3.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         merfers = [hab1.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
+                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -219,7 +336,7 @@ def test_counselor():
 
         serder = evt
         sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[1], ondices=[2])
-        msg = messagize(serder=serder, sigers=sigers)
+        msg = messagize(serder=serder, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvI'
                        b'KkEbVRDDVf1oxGj_hnXw","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"3","p":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dE'
@@ -232,7 +349,7 @@ def test_counselor():
 
         # Create group rotation from second participant
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
@@ -242,13 +359,13 @@ def test_counselor():
 def test_the_seven():
     salt = b'0123456789abcdef'
     prefix = "counselor"
-    with openHab(name=f"{prefix}_1", salt=salt, transferable=True) as (hby1, hab1), \
-            openHab(name=f"{prefix}_2", salt=salt, transferable=True) as (hby2, hab2), \
-            openHab(name=f"{prefix}_3", salt=salt, transferable=True) as (hby3, hab3), \
-            openHab(name=f"{prefix}_4", salt=salt, transferable=True) as (hby4, hab4), \
-            openHab(name=f"{prefix}_5", salt=salt, transferable=True) as (hby5, hab5), \
-            openHab(name=f"{prefix}_6", salt=salt, transferable=True) as (hby6, hab6), \
-            openHab(name=f"{prefix}_7", salt=salt, transferable=True) as (hby7, hab7):
+    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name=f"{prefix}_2", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2), \
+            openHab(name=f"{prefix}_3", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby3, hab3), \
+            openHab(name=f"{prefix}_4", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby4, hab4), \
+            openHab(name=f"{prefix}_5", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby5, hab5), \
+            openHab(name=f"{prefix}_6", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby6, hab6), \
+            openHab(name=f"{prefix}_7", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby7, hab7):
         counselor = Counselor(hby=hby1)
 
         # All the Habs, this will come in handy later
@@ -262,25 +379,27 @@ def test_the_seven():
         kev7 = Kevery(db=hab7.db)
         kevs = [kev1, kev2, kev3, kev4, kev5, kev6, kev7]
 
-        icps = [hab1.makeOwnEvent(sn=0),
-                hab2.makeOwnEvent(sn=0),
-                hab3.makeOwnEvent(sn=0),
-                hab4.makeOwnEvent(sn=0),
-                hab5.makeOwnEvent(sn=0),
-                hab6.makeOwnEvent(sn=0),
-                hab7.makeOwnEvent(sn=0)
-                ]
+        icps = \
+        [
+            hab1.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION),
+            hab2.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION),
+            hab3.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION),
+            hab4.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION),
+            hab5.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION),
+            hab6.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION),
+            hab7.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        ]
 
         # Introduce everyone to each other by parsing each others ICP event into our keverys
         for (kev, icp) in [(kev, icp) for (kdx, kev) in enumerate(kevs) for (idx, icp) in enumerate(icps) if
                            kdx != idx]:
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(icp), kvy=kev, local=True)
+            Parser(version=TEST_VERSION).parse(ims=bytearray(icp), kvy=kev, local=True)
 
         smids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre, hab5.pre, hab6.pre, hab7.pre]
         rmids = None  # need to fixe this
         inits = dict(isith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                      nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
-                     toad=0, wits=[])
+                     toad=0, wits=[], version=Vrsn_1_0, kind=Kinds.json)
 
         # Create group hab with init params
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
@@ -311,57 +430,57 @@ def test_the_seven():
         # Get participation from everyone on inception
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab2.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBBAD108k4sWtYRv8jQaRbzX6kDebjdzFNVCh3N9cOAJqXV5IzmKdi60Cr0Eu'
                                    b'MaACskw0FCi73V2VX8BgFlxO8VIK')
         assert serd.raw == raw
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
 
         ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab3.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab3.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBCD6V2UkAovhY07MrJUNb-ICddDoyLde9i0FWclxfs7jes01YUEihfgbGERF'
                                    b'dKDR4kSr4WF3AskrZOPvMuXipAgP')
         assert serd.raw == raw
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
 
         ghab4 = hby4.makeGroupHab(group=f"{prefix}_group4", mhab=hab4,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab4.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab4.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBDBCZuZSFWy0tFshGny1pTR47GphDljd0SShmGRpUSpBX_BeHB1tdIObizaA'
                                    b'4GMoOcZ2sOWIe6muJPF_RaoKedYE')
         assert serd.raw == raw
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
 
         ghab5 = hby5.makeGroupHab(group=f"{prefix}_group5", mhab=hab5,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab5.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab5.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBEBsR6_hPId3H8fFG8EfevQVji8MsLAC72MjkkRxJp3h9v1vyFS1hAGGGxno'
                                    b'F5xSHOnpBpPwjMJwOCurAa3VrNAD')
         assert serd.raw == raw
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
 
         ghab6 = hby6.makeGroupHab(group=f"{prefix}_group6", mhab=hab6,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab6.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab6.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBFCi5hK6Ax4aBNsdoUkh7Q_CcSWJfpwkeF68aCO34J3BDN7k483lOxiyj6pl'
                                    b'8TQIQ7VJLBkoRscUMi_mls9jbpcD')
         assert serd.raw == raw
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
 
         ghab7 = hby7.makeGroupHab(group=f"{prefix}_group7", mhab=hab7,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab7.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab7.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=TEST_VERSION)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBGCtPvRj00vEfT5Po6eH50DWfBWwAcQgvBaJ7LlYT7kQswkl_r-K9Lsxi5tm'
                                    b'Pvsb2xFtcMJkFf-BxamGhFo9OOcD')
         assert serd.raw == raw
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)  # parse second signed group inception
 
         kev1.processEscrows()  # Run escrows for Kevery1 to process all sigs together
 
@@ -371,16 +490,17 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
-        hab1.rotate()
-        hab2.rotate()
-        hab3.rotate()
+        hab1.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab2.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab3.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
-                          toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+                          toad=0, cuts=list(), adds=list(), verfers=merfers,
+                          digers=migers, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -407,18 +527,18 @@ def test_the_seven():
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg[srdr.size:] == (b'-AABABAzvHN7yC3581dp9DxFXrKuXGP_62r_pzNMXL20T6RaPQASXvnBn6sKJ78z'
                                      b'KM9o499Zaz76j940nBoMT-yb9i8N')
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
         sigers = hab3.mgr.sign(srdr.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg[srdr.size:] == (b'-AABACB6z6LrzBAgpnrCopgiGxuki3sE-KAfY8t_rFq-2dIcQxRF4iCqCYNPKM9D'
                                      b'NbZbA1WDaQ72enSsR2UWMftX2kYD')
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()  # Get the rest of the way through counselor.
@@ -433,16 +553,17 @@ def test_the_seven():
         assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Second Partial Rotation
-        hab1.rotate()
-        hab2.rotate()
-        hab3.rotate()
+        hab1.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab2.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab3.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
-                          toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+                          toad=0, cuts=list(), adds=list(), verfers=merfers,
+                          digers=migers, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -470,18 +591,18 @@ def test_the_seven():
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg[srdr.size:] == (b'-AABABC4sYnDXCpO87BMXO21ofqHZKntPSdEXlBPlq1H8NOHD3KV-GHGWrXyrElK'
                                      b'BkQNBbNr9_yg-nSnBq7N9rAxEFcK')
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
         sigers = hab3.mgr.sign(srdr.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg[srdr.size:] == (b'-AABACAXyUueUfXC-ccUxBZTgnyHTXOy1wUYgQrhlk8FMJGQPiaOOdAzhaW71JeF'
                                      b'0By8Se-tKKuPP1xG41DblgXIwNkE')
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()  # Get the rest of the way through counselor.
@@ -498,10 +619,13 @@ def test_the_seven():
 
         # Third Partial Rotation with Recovery (using 4 members not involved in previous rotations)
         # First we have to do a replay of all multisig AID and member AID events and get members 4 - 7 up to date
-        msgs = [hab1.replay(), hab2.replay(), hab3.replay(), ghab.replay()]
+        msgs = [hab1.replay(version=TEST_VERSION),
+                hab2.replay(version=TEST_VERSION),
+                hab3.replay(version=TEST_VERSION),
+                ghab.replay(version=TEST_VERSION)]
         kevs = [kev4, kev5, kev6, kev7]
         for (kev, msg) in [(kev, msg) for kev in kevs for msg in msgs]:
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev, local=True)
+            Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev, local=True)
 
         assert kev4.kevers[ghab.pre] is not None
         assert kev5.kevers[ghab.pre] is not None
@@ -511,15 +635,16 @@ def test_the_seven():
         # Create a new counselor with #4
         counselor4 = Counselor(hby=hby4)
 
-        hab4.rotate()
-        hab5.rotate()
-        hab6.rotate()
+        hab4.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab5.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab6.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         merfers = [hab4.kever.verfers[0], hab5.kever.verfers[0], hab6.kever.verfers[0]]
         migers = [hab4.kever.ndigers[0], hab5.kever.ndigers[0], hab6.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab4.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
-                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+                           toad=0, cuts=list(), adds=list(), verfers=merfers,
+                           digers=migers, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         rserder = SerderKERI(raw=rot)
 
         counselor4.start(ghab=ghab4, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -543,18 +668,18 @@ def test_the_seven():
 
         # Grab the group ROT event, sign with Hab5 and parse into Kev4
         sigers = hab5.mgr.sign(srdr.raw, verfers=hab5.kever.verfers, indexed=True, indices=[1], ondices=[4])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg[srdr.size:] == (b'-AAB2AABAEDSs99oM-KOhJ8q3H8lqGqPE3EvZxCHvCjZFvWHLzhqm91YlcskGqvK'
                                      b'8DwCg9dj8wRZP54ienzD52EIKvJWWh4J')
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab6 and parse into Kev4.  This should commit the event
         sigers = hab6.mgr.sign(srdr.raw, verfers=hab6.kever.verfers, indexed=True, indices=[2], ondices=[5])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True, gvrsn=TEST_VERSION)
         assert msg[srdr.size:] == (b'-AAB2AACAFBNVTM0Gw4rSd-S5HQ_KpmBfDedi7XNvB24ijMjQaekIfKlcdguPS8p'
                                      b'ax9ht7EE3SiTj9fSO_3f4SVUfJMPmHIK')
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
+        Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
         kev4.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor4.processEscrows()  # Get the rest of the way through counselor.
@@ -570,23 +695,23 @@ def test_the_seven():
 
 @contextmanager
 def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
-    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp) as (hby1, hab1), \
-            openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp) as (hby2, hab2), \
-            openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp) as (hby3, hab3):
+    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2), \
+            openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp, version=Vrsn_1_0, kind=Kinds.json) as (hby3, hab3):
         # Keverys so we can process each other's inception messages.
         kev1 = Kevery(db=hab1.db, lax=True, local=False)
         kev2 = Kevery(db=hab2.db, lax=True, local=False)
         kev3 = Kevery(db=hab3.db, lax=True, local=False)
 
-        icp1 = hab1.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev3, local=True)
-        icp2 = hab2.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev3, local=True)
-        icp3 = hab3.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev1, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev2, local=True)
+        icp1 = hab1.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp1), kvy=kev2, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp1), kvy=kev3, local=True)
+        icp2 = hab2.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp2), kvy=kev1, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp2), kvy=kev3, local=True)
+        icp3 = hab3.msgOwnEvent(sn=0, framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp3), kvy=kev1, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(icp3), kvy=kev2, local=True)
 
         smids = [hab1.pre, hab2.pre, hab3.pre]
         rmids = None
@@ -595,7 +720,8 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             toad=0,
             wits=[],
             isith='3',
-            nsith='3'
+            nsith='3',
+            version=Vrsn_1_0, kind=Kinds.json
         )
 
         ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
@@ -613,12 +739,12 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
         evt = bytearray(eserder.raw)
         evt.extend(Counter(Codens.ControllerIdxSigs,
-                                count=3, version=Vrsn_1_0).qb64b)  # attach cnt
+                                count=3, version=TEST_VERSION).qb64b)  # attach cnt
         evt.extend(sigers)
 
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev3, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev2, local=True)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev1, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev3, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev2, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(evt), kvy=kev1, local=True)
 
         assert ghab1.pre in kev1.kevers
         assert ghab1.pre in kev2.kevers
@@ -628,21 +754,92 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
 
 def test_multisig_incept(mockHelpingNowUTC):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
-                                              icp=hab.makeOwnEvent(sn=hab.kever.sn))
+                                     icp=hab.msgOwnEvent(sn=hab.kever.sn,
+                                                         framed=True, gvrsn=TEST_VERSION),
+                                     version=TEST_VERSION,
+                                     kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/icp'
         assert exn.saidb == b'EJ6Kl50IBicAa8zND_3wMSQ5itw555V7NKid9y1SKobe'
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACL4cf7'
-                       b'LxzKJgaJbb7wWHLuTfj3wManDV0SW7euFNZDiEhD1kUiP3_wtOIfqB_ZsEceE4oI'
-                       b'gOOZwFROyrcf9ScB-LAa5AACAA-e-icp-AABAACihaKoLnoXxRoxGbFfOy67YSh6'
-                       b'UxtgjT2oxupnLDz2FlhevGJKTMObbdex9f0Hqob6uTavSJvsXf5RzitskkkC')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AAB'
+                       b'AACL4cf7LxzKJgaJbb7wWHLuTfj3wManDV0SW7euFNZDiEhD1kUiP3_wtOIf'
+                       b'qB_ZsEceE4oIgOOZwFROyrcf9ScB-LAa5AACAA-e-icp-AABAACihaKoLnoX'
+                       b'xRoxGbFfOy67YSh6UxtgjT2oxupnLDz2FlhevGJKTMObbdex9f0Hqob6uTav'
+                       b'SJvsXf5RzitskkkC')
         data = exn.ked["a"]
         assert data["smids"] == aids
         assert "icp" in exn.ked['e']
+
+
+def test_multisig_incept_legacy_special_exn_uses_explicit_v1_version(mockHelpingNowUTC, monkeypatch):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=TEST_VERSION)
+        special_calls = {}
+        endorse_calls = {}
+        original_special_exchange = grouping.specialExchange
+        original_endorse = hab.endorse
+
+        def capture_special_exchange(*, sender, route, modifiers, attributes, embeds,
+                                     version, pvrsn=None, gvrsn=None, kind=None):
+            # Capture the wrapper-construction inputs so this test can prove the
+            # helper stayed on the legacy specialExchange path.
+            special_calls["version"] = version
+            special_calls["pvrsn"] = pvrsn
+            special_calls["gvrsn"] = gvrsn
+            special_calls["kind"] = kind
+            return original_special_exchange(sender=sender,
+                                             route=route,
+                                             modifiers=modifiers,
+                                             attributes=attributes,
+                                             embeds=embeds,
+                                             version=version,
+                                             pvrsn=pvrsn,
+                                             gvrsn=gvrsn,
+                                             kind=kind)
+
+        def capture_endorse(*args, **kwargs):
+            endorse_calls["gvrsn"] = kwargs.get("gvrsn")
+            return original_endorse(*args, **kwargs)
+
+        monkeypatch.setattr(grouping, "specialExchange", capture_special_exchange)
+        monkeypatch.setattr(hab, "endorse", capture_endorse)
+
+        multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                          version=Vrsn_1_0, kind=Kinds.json)
+
+        assert special_calls["version"] == Vrsn_1_0
+        assert special_calls["pvrsn"] is None
+        assert special_calls["gvrsn"] is None
+        assert special_calls["kind"] == Kinds.json
+        assert endorse_calls["gvrsn"] == Vrsn_1_0
+
+
+def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (_, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True)
+        innerSerder = SerderKERI(raw=icp)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp)
+
+        assert exn.ked["r"] == '/multisig/icp'
+        data = exn.ked["a"]
+        assert data["gid"] == innerSerder.pre
+        assert data["smids"] == aids
+        assert data["rmids"] == aids
+        assert data["icp"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser().parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
 
 
 def test_multisig_rotate(mockHelpingNowUTC):
@@ -655,54 +852,132 @@ def test_multisig_rotate(mockHelpingNowUTC):
                b'"1/3","1/3"],"n":["EGX_K2uTEU6NOXfNo0VfhYLMrqADYHOoNk7WtT1SXOo2","EFl4us5uR0'
                b'hCiYcW7YyOaSAo-7zp8x1uBVU2E_tmhEwj","EMyxeTiM_cH5IHUI6nummgHMeW-_1oKw7rvqlDd'
                b'gha9v"],"bt":"0","br":[],"ba":[],"a":[]}')
-        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot)
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot,
+                                     version=TEST_VERSION, kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/rot'
         assert exn.saidb == b'EL4LeEHvTiOxs1UDNTv5qWxCYVYojdpEMfKI62O-UsPm'
-        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAACH_qI1'
-                       b'JebS_iehZT6XmvxylpOy2hS2BjO41e4mNmscSBdun2MyGk82SC-rHfQfvDJZlRRw'
-                       b'NhLw-pKKKxql8wUF')
-
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AAB'
+                       b'AACH_qI1JebS_iehZT6XmvxylpOy2hS2BjO41e4mNmscSBdun2MyGk82SC-r'
+                       b'HfQfvDJZlRRwNhLw-pKKKxql8wUF')
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
         assert "rot" in exn.ked["e"]
 
 
+def test_multisig_rotate_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        rot = ghab1.mhab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=rot)
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=rot, kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/rot'
+        data = exn.ked["a"]
+        assert data["smids"] == ghab1.smids
+        assert data["rmids"] == ghab1.rmids
+        assert data["gid"] == ghab1.pre
+        assert data["rot"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        ixn = ghab1.mhab.interact()
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
-                                                ixn=ixn)
+                                       ixn=ixn,
+                                       version=TEST_VERSION,
+                                       kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/ixn'
         assert exn.saidb == b'EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ26c0dUsS5p766q'
-        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AABAABFfU5s'
-                       b'o86inNogCPN7Ko8WXvkMKeiUKPScQ3FYrVmngNpVmW8xmhOTfixuWFlLcQPjEf3b'
-                       b'RQhvNvx7azcI_vwB-LAa5AACAA-e-ixn-AABAABG58m7gibjdrQ8YU-8WQ8A70nc'
-                       b'tYekYr3xdfZ5WgDQOD0bb9pI7SuuaJvzfAQisLAYQnztA82pAo1Skhf1vQwD')
+        assert atc == (b'-FABEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba0AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEH__mobl7NDyyQCB1DoLK-OPSueraPtZAlWEjfOYkaba-AAB'
+                       b'AABFfU5so86inNogCPN7Ko8WXvkMKeiUKPScQ3FYrVmngNpVmW8xmhOTfixu'
+                       b'WFlLcQPjEf3bRQhvNvx7azcI_vwB-LAa5AACAA-e-ixn-AABAABG58m7gibj'
+                       b'drQ8YU-8WQ8A70nctYekYr3xdfZ5WgDQOD0bb9pI7SuuaJvzfAQisLAYQnzt'
+                       b'A82pAo1Skhf1vQwD')
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
         assert "ixn" in exn.ked["e"]
 
 
+def test_multisig_interact_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=ixn)
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/ixn'
+        data = exn.ked["a"]
+        assert data["smids"] == ghab1.smids
+        assert data["gid"] == ghab1.pre
+        assert data["ixn"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
+def test_multisig_rpy_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_2_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=rpy)
+        exn, atc = multisigRpyExn(ghab=ghab1, rpy=rpy, kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/rpy'
+        data = exn.ked["a"]
+        assert data["gid"] == ghab1.pre
+        assert data["rpy"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        vcp = incept(ghab1.pre)
-        ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)])
+        vcp = incept(ghab1.pre, version=Vrsn_1_0, kind=Kinds.json)
+        ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)],
+                                  framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         exn, atc = multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, anc=ixn,
-                                                      usage="Issue vLEI Credentials")
+                                             usage="Issue vLEI Credentials",
+                                             version=TEST_VERSION,
+                                             kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/vcp'
         assert exn.saidb == b'EBum6f9SwkUUjQTl_vDplKs7L-shzQT6fS5jJlzdP9PP'
-        assert atc == (b'-FABEDEf72ZZ9mhpT1Xz-_YkXl7cg93sjZUFLIsxaFNTbXQO0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEDEf72ZZ9mhpT1Xz-_YkXl7cg93sjZUFLIsxaFNTbXQO-AABAAAS5k5D'
-                       b'9jH0rbS6jCtZIPyTJRS2l8TZBnChwG8try3kZUJuiAPoBLo7UuhFYmZlpTZ6MfSg'
-                       b'cDS7XNg0ETj6L3QF-LAa5AACAA-e-anc-AABAABXlwkzbp_tC4MEbx1Uyny1o7dB'
-                       b'GHrYjU3u90Mhv2GtrIGG-7va1jZnlXef2R_LM4TRN8_XjmpLv1skcJaM90UB')
+        assert atc == (b'-FABEDEf72ZZ9mhpT1Xz-_YkXl7cg93sjZUFLIsxaFNTbXQO0AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEDEf72ZZ9mhpT1Xz-_YkXl7cg93sjZUFLIsxaFNTbXQO-AAB'
+                       b'AAAS5k5D9jH0rbS6jCtZIPyTJRS2l8TZBnChwG8try3kZUJuiAPoBLo7UuhF'
+                       b'YmZlpTZ6MfSgcDS7XNg0ETj6L3QF-LAa5AACAA-e-anc-AABAABXlwkzbp_t'
+                       b'C4MEbx1Uyny1o7dBGHrYjU3u90Mhv2GtrIGG-7va1jZnlXef2R_LM4TRN8_X'
+                       b'jmpLv1skcJaM90UB')
         data = exn.ked["a"]
         assert data == {'gid': 'EEVG5a8c88Fg9vH-6zQP6gJdc4LxVbUTRydx-JhpDcob',
                         'usage': 'Issue vLEI Credentials'}
@@ -710,11 +985,41 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
         assert "anc" in exn.ked["e"]
 
 
+def test_multisig_registry_incept_handler_uses_embed_said(mockHelpingNowUTC, mockCoringRandomNonce):
+    with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
+        vcp = incept(ghab.pre, version=Vrsn_1_0, kind=Kinds.json)
+        anc = ghab.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)],
+                                 framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn, atc = multisigRegistryInceptExn(ghab=ghab, vcp=vcp.raw, anc=anc,
+                                             usage="Issue vLEI Credentials",
+                                             version=Vrsn_1_0,
+                                             kind=Kinds.json)
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn.raw + atc), exc=exc)
+        assert len(notifier.signaler.signals) == 0
+
+        esaid = exn.ked["e"]["d"]
+        digers = hby.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == exn.pre
+
+
 def test_multisig_incept_handler(mockHelpingNowUTC):
-    with openHab(name="test0", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test0", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
-                                              icp=hab.makeOwnEvent(sn=hab.kever.sn))
+                                     icp=hab.msgOwnEvent(sn=hab.kever.sn,
+                                                         framed=True, gvrsn=TEST_VERSION),
+                                     version=Vrsn_1_0,
+                                     kind=Kinds.json)
 
         notifier = Notifier(hby=hby)
         mux = Multiplexor(hby=hby, notifier=notifier)
@@ -723,7 +1028,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
-        Parser(version=Vrsn_1_0).parseOne(ims=ims, exc=exc)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
         assert len(notifier.signaler.signals) == 0
 
         esaid = exn.ked['e']['d']
@@ -735,9 +1040,877 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         assert prefixers[0].qb64 == exn.pre
 
 
+def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
+    with openHab(name="approved-embed1", salt=b'0123456789abcdef',
+                 transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="approved-embed2", salt=b'abcdef0123456789',
+                    transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2):
+        Parser(version=TEST_VERSION).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                          gvrsn=TEST_VERSION)),
+                                           kvy=hby1.kvy, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(hab1.msgOwnEvent(sn=0, framed=True,
+                                                                          gvrsn=TEST_VERSION)),
+                                           kvy=hby2.kvy, local=True)
+
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_1_0, kind=Kinds.json)
+        ghab1 = hby1.makeGroupHab(group="approved-embed", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="approved-embed", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, gvrsn=TEST_VERSION)
+        exn1, _ = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                    rmids=ghab1.rmids, icp=icp1,
+                                    version=Vrsn_1_0, kind=Kinds.json)
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, gvrsn=TEST_VERSION)
+        exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                       rmids=ghab2.rmids, icp=icp2,
+                                       version=Vrsn_1_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        mux.add(exn1)  # Record local approval before the matching peer proposal arrives.
+        ims = bytearray(exn2.raw)
+        ims.extend(atc2)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
+
+        serder = SerderKERI(raw=icp1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
+def test_multisig_incept_v1_body_supports_v2_attachments(mockHelpingNowUTC, monkeypatch):
+    with openHab(name="approved-embed-v2a-1", salt=b'0123456789abcdef',
+                 transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="approved-embed-v2a-2", salt=b'abcdef0123456789',
+                    transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2):
+        # Both members still use V1 outer message bodies, but their local AIDs
+        # already emit V2-framed key event attachments
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy, local=True)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab1.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby2.kvy, local=True)
+
+        # Build the same group on both sides using a V1 group habitat so the
+        # outer multisig exchange stays on the legacy embedded path
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_1_0, kind=Kinds.json)
+        ghab1 = hby1.makeGroupHab(group="approved-embed-v2a", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="approved-embed-v2a", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        # Each member creates a V1-wrapped proposal whose embedded child stream
+        # carries V2 attachment framing
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn1, _ = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                    rmids=ghab1.rmids, icp=icp1,
+                                    version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn2, _ = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                    rmids=ghab2.rmids, icp=icp2,
+                                    version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        child = SerderKERI(raw=icp2)
+        child_atc = bytearray(icp2[child.size:])
+
+        # The outer wrapper stays V1 and still stores the child body under e,
+        # even though the embedded child's attachment stream is V2-framed
+        assert exn1.pvrsn == Vrsn_1_0
+        assert "icp" in exn1.ked["e"]
+        assert exn1.ked["a"]["cgvrsn"] == [2, 0]
+
+        mux.add(exn1)  # Record local approval before the matching peer proposal arrives
+
+        # Initial ingestion should still key the proposal by the legacy V1
+        # embedded SAID before the approved replay branch runs
+        esaid = exn1.ked["e"]["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn1.said
+
+        # Bypass storage setup and hand the replay branch exactly what
+        # cloneMessage would have returned for the embedded child attachments
+        monkeypatch.setattr(grouping, "cloneMessage",
+                            lambda hby, said: (exn2, {"icp": child_atc}) if said == exn2.said else (None, None))
+        mux.add(exn2)
+
+        # The replay logic should detect the child's V2 attachment framing and
+        # still land the second signature on the shared group inception
+        serder = SerderKERI(raw=icp1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]  # Both signatures
+
+
+def test_multisig_interact_v1_body_supports_v2_attachments_through_approved_replay(mockHelpingNowUTC, monkeypatch):
+    with openMultiSig(prefix="approved-embed-ixn-v2a") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+        # Both members keep the legacy V1 outer wrapper, but the group interaction
+        # event they are coordinating already emits V2-framed attachments
+        ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                      ixn=ixn1,
+                                      version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+        ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn2, _ = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
+                                      ixn=ixn2,
+                                      version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        child = SerderKERI(raw=ixn2)
+        child_atc = bytearray(ixn2[child.size:])
+
+        # The outer wrapper stays on the embedded V1 path even though the child
+        # interaction stream carries V2-framed attachments
+        assert exn1.pvrsn == Vrsn_1_0
+        assert "ixn" in exn1.ked["e"]
+        assert exn1.ked["a"]["cgvrsn"] == [2, 0]
+
+        mux.add(exn1)  # Record local approval before the matching peer proposal arrives
+
+        esaid = exn1.ked["e"]["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn1.said
+
+        # Hand the approved replay branch the stored embedded child attachments
+        # so it has to detect the child's V2 framing when reparsing
+        monkeypatch.setattr(grouping, "cloneMessage",
+                            lambda hby, said: (exn2, {"ixn": child_atc}) if said == exn2.said else (None, None))
+        mux.add(exn2)
+
+        # The replay path should still land the second signature on the shared
+        # group interaction event
+        serder = SerderKERI(raw=ixn1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
+def test_multisig_interact_replays_stored_remote_after_late_local_approval(mockHelpingNowUTC):
+
+    # Create a normal three-party multisig fixture, but only use the first two participants here
+    with openMultiSig(prefix="late-local-approval-ixn") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+
+        # Build the local participant's partially signed child interaction event
+        ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+
+        # Wrap that local child in the legacy V1 /multisig/ixn exchange shape
+        exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                      ixn=ixn1,
+                                      version=Vrsn_1_0, kind=Kinds.json)
+
+        # Build the matching remote participant of the same child interaction
+        ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+
+        # Wrap the remote in its own /multisig/ixn exchange
+        exn2, atc2 = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
+                                         ixn=ixn2,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+
+        # Set up notifier, mux, exc and load IPEX Handlers
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Deliver the remote EXN first. This simulates the race where the remote's proposal
+        # arrives before the local side registers its own approval in the mux
+        ims = bytearray(exn2.raw)
+
+        # Append the remote EXN attachments so the parser receives the same bytes as the wire path
+        ims.extend(atc2)
+
+        # Process one complete V1-framed EXN through Exchanger -> Multisig handler -> mux.add
+        Parser(version=Vrsn_1_0).parseOne(ims=ims, exc=exc)
+
+        # At this point only the local participant's own signature should be on the child ixn,
+        # because the remote proposal has been stored/notified but not replayed yet
+        serder = SerderKERI(raw=ixn1)
+
+        # Look up signatures by the shared child event key, not by either wrapper EXN
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+
+        # Only signer index 0 is present before local approval closes the loop
+        assert [siger.index for siger in sigers] == [0]
+
+        # Register the local approval after the remote copy is already stored
+        # This is the regression case: the mux now needs to replay the stored remote copy
+        mux.add(exn1)
+
+        # The late local approval should trigger replay of the stored remote child stream,
+        # merging the second participant's signature onto the shared interaction event
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+
+        # Both signer indices prove the local event and stored remote event were merged
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
+def test_multisig_known_remote_submitter_does_not_count_as_local_approval(mockHelpingNowUTC):
+    with openMultiSig(prefix="remote-kever-not-approval") as ((hby1, ghab1), (_, ghab2), (_, ghab3)):
+        ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                      ixn=ixn1,
+                                      version=Vrsn_1_0, kind=Kinds.json)
+
+        ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn2, atc2 = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
+                                         ixn=ixn2,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+
+        ixn3 = ghab3.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn3, atc3 = multisigInteractExn(ghab=ghab3, aids=ghab3.smids,
+                                         ixn=ixn3,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Remote submitters are known in hby1.kevers, but they are not local habs
+        # and must not count as local approval.
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn2.raw + atc2), exc=exc)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn3.raw + atc3), exc=exc)
+
+        serder = SerderKERI(raw=ixn1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0]
+
+        # Once the local member approves, the stored remote proposals can replay
+        # and merge their signatures.
+        mux.add(exn1)
+
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1, 2]
+
+
+def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openHab(name="v2-wrap-v1-child", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
+        # Keep the child event body on V1 while emitting its attachments with V2 framing
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=icp)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["icp"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_multisig_rotate_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openMultiSig(prefix="rot-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
+        # Keep the rotation event body on V1 while emitting its attachments with V2 framing
+        rot = ghab1.mhab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=rot)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=rot, version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["rot"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_multisig_interact_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openMultiSig(prefix="ixn-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
+        # Keep the interaction event body on V1 while emitting its attachments with V2 framing
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=ixn)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                       ixn=ixn, version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["ixn"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+@pytest.mark.parametrize("version", (Vrsn_1_0, Vrsn_2_0))
+def test_multisig_local_approval_is_logged_before_mux_add(version, mockHelpingNowUTC):
+
+    with openMultiSig(prefix=f"local-approval-{version.major}",
+                      version=Vrsn_1_0, kind=Kinds.json) as ((hby1, ghab1), (_, _), (_, _)):
+
+        # Build the child group interaction
+        ixn = ghab1.interact(framed=True, version=version, kind=Kinds.json, gvrsn=version)
+
+        # Wrap the child interaction in the matching multisig EXN shape
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids, ixn=ixn,
+                                       version=version, kind=Kinds.json)
+
+        # Parse without processing so the test can manually seed exactly what the CLI seeds
+        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+
+        # Build a mux with its embedded exchanger, matching the local CLI approval path
+        mux = Multiplexor(hby=hby1, notifier=Notifier(hby=hby1))
+
+        # The CLI pre-seeds local approvals, so it must persist the EXN before mux.add indexes it
+        mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                         tsgs=local.tsgs, cigars=local.cigars,
+                         essrs=local.essrs, nests=local.nests)
+
+        # Now register the approval by the wrapped child SAID
+        mux.add(local.serder, nests=local.nests)
+
+        # V1 stores the child SAID in `e.d`; V2 stores it under the route-specific child field
+        esaid = exn.ked["e"]["d"] if version.major == Vrsn_1_0.major else exn.ked["a"]["ixn"]
+
+        # Read back the approvals indexed under the child event SAID
+        approvals = mux.get(esaid)
+
+        # The mux should report exactly the EXN that was locally approved
+        assert [approval["exn"]["d"] for approval in approvals] == [exn.said]
+
+        # The local approval must also be persisted so later replay can clone it from the DB
+        assert hby1.db.exns.get(keys=(exn.said,)) is not None
+
+        if version.major == Vrsn_1_0.major:
+            # Legacy V1 wrappers persist embedded child material as pathed attachments
+            assert len(hby1.db.epath.get(keys=(exn.said,))) == 1
+
+            # V1 local approvals should not create V2 nested-substream sidecars
+            assert not hby1.db.enst.get(keys=(exn.said,))
+        else:
+            # Native V2 wrappers should not use the legacy pathed attachment store
+            assert not hby1.db.epath.get(keys=(exn.said,))
+
+            # Native V2 wrappers must persist their one nested child substream
+            assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+
+def test_multisig_rpy_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openMultiSig(prefix="rpy-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
+        # Keep the reply event body on V1 while emitting its attachments with V2 framing
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_1_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=rpy)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigRpyExn(ghab=ghab1, rpy=rpy,
+                                  version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["rpy"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_multisig_incept_handler_v2_rejects_mismatched_nested_substream(mockHelpingNowUTC):
+    with openHab(name="bad-nested", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+        ixn = hab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(ixn),
+                                             framed=True,
+                                             processive=False)[0]
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        with pytest.raises(ValidationError):
+            mux.add(parsed.serder, nests=[bad])
+
+
+def test_multisig_incept_handler_v2_rejects_mismatched_nested_substream_before_save(mockHelpingNowUTC):
+    with openHab(name="bad-nested-route", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Replace the expected inception child with an interaction child while
+        # keeping the signed outer body unchanged.
+        ixn = hab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(ixn),
+                                             framed=True,
+                                             processive=False)[0]
+        badAtc = bytearray(hab.endorse(serder=exn,
+                                       framed=False,
+                                       gvrsn=Vrsn_2_0,
+                                       nests=[serializeParsedSubstream(bad)]))
+        del badAtc[:exn.size]
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        ims = bytearray(exn.raw + badAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert not hby.db.enst.get(keys=(exn.said,))
+        assert not hby.db.meids.get(keys=(SerderKERI(raw=icp).said,))
+        assert not hby.db.maids.get(keys=(SerderKERI(raw=icp).said,))
+        assert not notifier.signaler.signals
+        assert not any(cue.get("kin") == "saved" for cue in exc.cues)
+
+
+def test_multisig_incept_handler_v2_rejects_missing_signed_child_said(mockHelpingNowUTC):
+    with openHab(name="missing-signed-said", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+        sad = dict(parsed.serder.ked)
+        sad["a"] = dict(sad["a"])
+        del sad["a"]["icp"]
+        bad_exn = SerderKERI(sad=sad, makify=True)
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        with pytest.raises(ValidationError):
+            mux.add(bad_exn, nests=parsed.nests)
+
+
+def test_multisig_incept_handler_v2_rejects_non_saidive_nested_substream(mockHelpingNowUTC):
+    with openHab(name="bad-nonsaidive-nest", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+
+        # Set up mux and notifier
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        # The multisig inception proposal names a real local member and one placeholder peer
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+
+        # Build a valid inception child so the outer EXN has a valid signed child SAID
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+
+        # Keep the child serder so we can create a receipt against it
+        inner = SerderKERI(raw=icp)
+
+        # Build the valid V2 multisig inception wrapper first
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Parse without processing to recover the wrapper serder and original parsed nest
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+
+        # Create a receipt message; receipts are not SAIDive child events for multisig proposals
+        receipt = hab.receipt(inner, framed=True, gvrsn=Vrsn_2_0)
+
+        # Parse the receipt into the same nested-substream shape a handler would receive
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(receipt),
+                                             framed=True,
+                                             processive=False)[0]
+
+        # Replacing the nested event with a non-SAIDive receipt must be rejected
+        with pytest.raises(ValidationError):
+            mux.add(parsed.serder, nests=[bad])
+
+
+def test_multisig_handler_v2_rejects_unsupported_nested_route(mockHelpingNowUTC):
+    with openHab(name="unsupported-v2-route", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+
+        # Build a normal child KEL event that could be nested if the route supported it
+        child = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+
+        # Parse the child into the same nested form Parser would hand to the mux
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(child),
+                                                framed=True,
+                                                processive=False)[0]
+
+        # Build a synthetic V2 /multisig/vcp EXN; that route is not one of the supported
+        # native nested routes currently handled by the mux
+        exn = exchange(sender=hab.pre,
+                       route="/multisig/vcp",
+                       attributes={"gid": hab.pre},
+                       version=Vrsn_2_0,
+                       gvrsn=Vrsn_2_0,
+                       kind=Kinds.json)
+
+        # Use the mux directly so this test is about route validation, not signature handling
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        # The handler should fail closed instead of guessing how to replay an unsupported route
+        with pytest.raises(ValidationError):
+            mux.add(exn, nests=[parsed])
+
+
+def test_multisig_incept_handler_mixed_v1_v2_use_distinct_keys(mockHelpingNowUTC):
+    with openHab(name="mixed-v1-v2-1", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="mixed-v1-v2-2", temp=True, salt=b'abcdef0123456789',
+                    version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy, local=True)
+        aids = [hab1.pre, hab2.pre]
+        icp = hab1.msgOwnEvent(sn=hab1.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=icp)
+        exn1, atc1 = multisigInceptExn(hab=hab1, smids=aids, rmids=aids, icp=icp,
+                                       version=Vrsn_1_0, kind=Kinds.json)
+        exn2, atc2 = multisigInceptExn(hab=hab2, smids=aids, rmids=aids, icp=icp,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn1.raw + atc1), exc=exc)
+        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(exn2.raw + atc2), exc=exc)
+
+        v1_esaid = exn1.ked["e"]["d"]
+        v2_esaid = inner.said
+        assert v1_esaid != v2_esaid
+
+        digers = hby1.db.meids.get(keys=(v1_esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn1.said
+
+        prefixers = hby1.db.maids.get(keys=(v1_esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == hab1.pre
+
+        digers = hby1.db.meids.get(keys=(v2_esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn2.said
+
+        prefixers = hby1.db.maids.get(keys=(v2_esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == hab2.pre
+
+
+def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
+
+    # Create two member habitats that will each build the same 2-of-2 group
+    # inception proposal from their own local perspective
+    with openHab(name="approved-nested1", salt=b'0123456789abcdef',
+                 transferable=True, temp=True, version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="approved-nested2", salt=b'abcdef0123456789',
+                    transferable=True, temp=True, version=Vrsn_2_0, kind=Kinds.json) as (hby2, hab2):
+
+        # Exchange the member AID inception events first so each side knows the
+        # other participant before creating the shared group habitat
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy, local=True)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab1.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby2.kvy, local=True)
+
+        # Both members participate in signing this group inception
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_2_0, kind=Kinds.json)
+
+        # Build the same group habitat on both sides
+        ghab1 = hby1.makeGroupHab(group="approved-nested", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="approved-nested", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        # Member 1 creates a partially signed group inception and wraps it in a
+        # V2 /multisig/icp exchange
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn1, atc1 = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                       rmids=ghab1.rmids, icp=icp1,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        # Member 2 independently creates its matching partially signed copy and
+        # wraps it in the same V2 /multisig/icp exchange route
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                       rmids=ghab2.rmids, icp=icp2,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Seed "local approval already exists" directly in the mux. For V2 the
+        # wrapped group inception is carried in nested substreams, so we parse
+        # the local stream without processing it in order to recover `nests`
+        local = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn1.raw + atc1),
+                                               framed=True,
+                                               processive=False)[0]
+        mux.add(local.serder, nests=local.nests)
+
+        with openCF(name="grouping-kram", base="test") as cf:
+            # Send the Member 2's exchange through the real V2 path:
+            # Parser -> Kevery.processMsg -> Kramer -> Exchanger -> mux.add
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn2.raw + atc2),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        # Once Member 2's proposal is accepted, the inner
+        # group inception should have both members' signatures on it
+        serder = SerderKERI(raw=icp1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
+def test_multisig_incept_handler_v2_escrow_replay_restores_nested_substream(mockHelpingNowUTC):
+    with openHab(name="escrow-replay-local", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="escrow-replay-remote", temp=True, salt=b'abcdef0123456789',
+                    version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
+
+        # Set up
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # The group proposal will reference these two member AIDs
+        aids = [hab1.pre, hab2.pre]
+
+        # Build the remote member's child inception stream that will be nested in the EXN
+        icp = hab2.msgOwnEvent(sn=hab2.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        child = SerderKERI(raw=icp)
+
+        # Wrap that child in a V2 /multisig/icp exchange carrying one nested substream
+        exn, atc = multisigInceptExn(hab=hab2, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Deliver the EXN before the local side knows the remote member AID.
+        # That forces the exchange into partial-signature escrow.
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                       exc=exc,
+                                       local=False)
+
+        # While escrowed, the outer EXN should be stored in epse and its nested child
+        # should be preserved in enst instead of being lost
+        assert len(list(hby1.db.epse.getTopItemIter())) == 1
+        assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+        # The mux has not seen a successful replay yet, so no proposal key or notification exists
+        assert len(hby1.db.meids.get(keys=(child.said,))) == 0
+        assert len(notifier.signaler.signals) == 0
+
+        # Teach the local side the remote member's current key state so escrow replay can succeed
+        # This removes the reason the exchanger originally escrowed the remote EXN
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy,
+                                       local=True)
+
+        # Retry the exchanger escrow. This should reload the nested child from enst
+        # and feed it back through the normal multisig V2 handler path
+        exc.processEscrow()
+
+        # After replay, the proposal should now be indexed by the child SAID and attributed
+        # to the remote sender as if it had succeeded on the first pass
+        digers = hby1.db.meids.get(keys=(child.said,))
+
+        # The child SAID points back to the remote EXN SAID that carried it
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(child.said,))
+
+        # The mux also records which participant submitted that proposal
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == hab2.pre
+
+        # The replayed proposal should now notify once, and the nested child should remain durable
+        assert len(notifier.signaler.signals) == 1
+
+        # Successful replay should not delete the stored nested child; later clone/get paths still need it
+        assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+
+def test_multisig_incept_handler_v2_escrow_replay_rejection_cleans_nested_substream(mockHelpingNowUTC):
+    with openHab(name="escrow-reject-local", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="escrow-reject-remote", temp=True, salt=b'abcdef0123456789',
+                    version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
+
+        # Set up the local exchanger with the multisig handler registered
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Build a valid outer /multisig/icp body
+        aids = [hab1.pre, hab2.pre]
+        icp = hab2.msgOwnEvent(sn=hab2.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, _ = multisigInceptExn(hab=hab2, smids=aids, rmids=aids, icp=icp,
+                                   version=Vrsn_2_0, kind=Kinds.json)
+
+        # Replace the inception child with an interaction child in the
+        # attachment stream so mux validation will reject it once replayed
+        ixn = hab2.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json,
+                            gvrsn=Vrsn_2_0)
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(ixn),
+                                             framed=True,
+                                             processive=False)[0]
+        badAtc = bytearray(hab2.endorse(serder=exn,
+                                        framed=False,
+                                        gvrsn=Vrsn_2_0,
+                                        nests=[serializeParsedSubstream(bad)]))
+        del badAtc[:exn.size]
+
+        # Deliver before hby1 knows hab2's key state. This forces EXN escrow,
+        # and the nested child is parked in enst for a later retry
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + badAtc),
+                                       framed=False,
+                                       exc=exc,
+                                       local=False)
+        assert len(list(hby1.db.epse.getTopItemIter())) == 1
+        assert hby1.db.epsd.get(keys=(exn.said,)) is not None
+        assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+        # Teach hby1 the remote signer state so the next escrow pass reaches
+        # behavior verification instead of staying blocked on missing key state
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0,
+                                                                      framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy,
+                                       local=True)
+
+        # Replay should reject the mismatched nested child and clean all escrow
+        # sidecars instead of leaving orphan enst/epsd rows
+        exc.processEscrow()
+        assert len(list(hby1.db.epse.getTopItemIter())) == 0
+        assert hby1.db.epsd.get(keys=(exn.said,)) is None
+        assert not hby1.db.enst.get(keys=(exn.said,))
+        assert hby1.db.exns.get(keys=(exn.said,)) is None
+        assert not any(cue.get("kin") == "saved" for cue in exc.cues)
+        assert not notifier.signaler.signals
+
+
+def test_multiplexor_get_includes_stored_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="stored-v2-get") as ((hby1, ghab1), (_, ghab2), (_, _)):
+
+        # Build a V2 child interaction event
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+
+        # Keep the child serder so the final parse can verify identity by SAID
+        inner = SerderKERI(raw=ixn)
+
+        # Wrap the child in a V2 /multisig/ixn EXN from a peer participant
+        exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        # Process it through the exchanger so the persisted representation is populated
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                       exc=exc)
+
+        # Read the proposal back through the app-facing mux getter
+        proposals = mux.get(inner.said)
+
+        # Only the peer proposal should be returned for this child event
+        assert len(proposals) == 1
+
+        # V2 proposals no longer use legacy e/path embeds, so paths should be empty
+        assert proposals[0]["paths"] == {}
+
+        # The stored nested child should now be exposed directly to the app layer
+        assert proposals[0]["nests"] is not None
+
+        # This interaction wrapper carries exactly one child interaction stream
+        assert len(proposals[0]["nests"]) == 1
+
+        # Parse the returned stored nested bytes and verify they still resolve to the same child event
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(proposals[0]["nests"][0].encode("utf-8")),
+            framed=True,
+            processive=False,
+        )
+        # The stored sidecar should be one parseable nested message, not a bundle or an empty frame
+        assert len(parsed) == 1
+
+        # The recovered child SAID should match the original nested interaction
+        assert parsed[0].serder.said == inner.said
+
+
 def test_multisig_rotate_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
-        msg = ghab1.mhab.rotate()
+        msg = ghab1.mhab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
         exc = Exchanger(hby=hby1, handlers=[])
@@ -745,10 +1918,10 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
         # create and send message from ghab2
         exn, atc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
-                                              rot=msg)
+                                     rot=msg, version=Vrsn_1_0, kind=Kinds.json)
         ims = bytearray(exn.raw)
         ims.extend(atc)
-        Parser(version=Vrsn_1_0).parseOne(ims=ims, exc=exc)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
 
         # One notification
         assert len(notifier.signaler.signals) == 1
@@ -763,10 +1936,10 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
         # Send the same message from ghab1
         exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
-                                              rot=msg)
+                                     rot=msg, version=Vrsn_1_0, kind=Kinds.json)
         ims = bytearray(exn.raw)
         ims.extend(atc)
-        Parser(version=Vrsn_1_0).parseOne(ims=ims, exc=exc)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
 
         # There should still only be one notification because we don't notify for our own event
         assert len(notifier.signaler.signals) == 1
@@ -779,11 +1952,55 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         assert prefixers[1].qb64 == ghab1.mhab.pre
 
 
+def test_multisig_rotate_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+        msg = ghab1.mhab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        exn, atc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=msg, kind=Kinds.json)
+
+        with openCF(name="grouping-kram-rot", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        # Assert the notification
+        assert len(notifier.signaler.signals) == 1
+
+        esaid = SerderKERI(raw=msg).said
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
 def test_multisig_interact_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
-        ixn = ghab1.mhab.interact()
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
-                                                ixn=ixn)
+                                       ixn=ixn,
+                                       version=Vrsn_1_0,
+                                       kind=Kinds.json)
 
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
@@ -792,11 +2009,129 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
-        Parser(version=Vrsn_1_0).parseOne(ims=ims, exc=exc)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
 
         esaid = exn.ked['e']['d']
         assert len(notifier.signaler.signals) == 1
         digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_rpy_handler(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_1_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_1_0)
+        exn, atc = multisigRpyExn(ghab=ghab2, rpy=rpy,
+                                  version=Vrsn_1_0,
+                                  kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
+
+        esaid = exn.ked['e']['d']
+        assert len(notifier.signaler.signals) == 1
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_interact_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        with openCF(name="grouping-kram-ixn", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        assert len(notifier.signaler.signals) == 1
+
+        esaid = SerderKERI(raw=ixn).said
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_rpy_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_2_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        exn, atc = multisigRpyExn(ghab=ghab2, rpy=rpy, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        with openCF(name="grouping-kram-rpy", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        assert len(notifier.signaler.signals) == 1
+
+        esaid = SerderKERI(raw=rpy).said
+        digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))

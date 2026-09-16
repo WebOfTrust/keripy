@@ -17,7 +17,7 @@ from ....core import messagize
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Export end points', 
+parser = argparse.ArgumentParser(description='Export end points',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: export_ends(args))
 parser.add_argument("--aid", "-a", help="qualified base64 of AID to export rpy messages for all endpoints.",
@@ -54,7 +54,8 @@ class ExportDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context
@@ -68,7 +69,7 @@ class ExportDoer(doing.DoDoer):
             if said is not None:
                 serder = self.hby.db.rpys.get(keys=(said.qb64,))
                 cigars = self.hby.db.scgs.get(keys=(said.qb64,))
-                sigers = self.hby.db.ssgs.get(keys=(said.qb64,))
+                sigers = self.hby.db.tsgs.get(keys=(said.qb64,))
 
                 if len(cigars) == 1:
                     (verfer, cigar) = cigars[0]
@@ -78,6 +79,6 @@ class ExportDoer(doing.DoDoer):
                 print(messagize(serder=serder,
                                 cigars=[cigar],
                                 sigers=sigers,
-                                pipelined=True))
+                                framed=False))
 
         return True

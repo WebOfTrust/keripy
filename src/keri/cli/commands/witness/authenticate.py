@@ -82,7 +82,8 @@ class AuthDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
 
         """
         # enter context
@@ -91,14 +92,16 @@ class AuthDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         body = bytearray()
-        for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
+        for msg in self.hab.db.clonePreIter(pre=self.hab.pre, version=self.hab.kever.serder.pvrsn):
             body.extend(msg)
 
         fargs = dict([("kel", body.decode("utf-8"))])
 
         if self.hab.kever.delegated:
             delkel = bytearray()
-            for msg in self.hab.db.clonePreIter(self.hab.kever.delpre):
+            dkever = self.hab.kevers[self.hab.kever.delpre]
+            for msg in self.hab.db.clonePreIter(self.hab.kever.delpre,
+                                                version=dkever.serder.pvrsn):
                 delkel.extend(msg)
 
             fargs['delkel'] = delkel.decode("utf-8")

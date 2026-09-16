@@ -20,7 +20,7 @@ def handler(args):
     """
     Launch KERI database migrator
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
     migrator = MigrateDoer(args)

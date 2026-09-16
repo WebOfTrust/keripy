@@ -11,15 +11,15 @@ from hio.base import doing
 from hio.help import ogler
 
 
-from ...common import setupHby, Parsery
+from ...common import setupHby, Parsery, parseVersion
 
 from ....app import (GroupHab, HaberyDoer, MailboxDirector,
                      WitnessInquisitor, WitnessReceiptor,
                      Counselor, Multiplexor, Notifier,
                      Poster, grouping, delegating)
-from ....kering import Ilks
+from ....kering import Ilks, Kinds, Vrsn_1_0
 
-from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex
+from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex, Parser
 from ....help import helping
 from ....peer import Exchanger
 
@@ -39,6 +39,8 @@ parser.add_argument("--authenticate", '-z', help="Prompt the controller for auth
 parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
                     default=[], action="append", required=False)
 parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the delegation approval event, such as 1.0 or 2.0')
 
 
 def confirm(args):
@@ -57,9 +59,10 @@ def confirm(args):
     authenticate = args.authenticate
     codes = args.code
     codeTime = args.code_time
+    version = args.version
 
     confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto,
-                              authenticate=authenticate, codes=codes, codeTime=codeTime)
+                              authenticate=authenticate, codes=codes, codeTime=codeTime, version=version)
 
     doers = [confirmDoer]
     return doers
@@ -67,12 +70,13 @@ def confirm(args):
 
 class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
-                 codeTime=None):
-        hby = setupHby(name=name, base=base, bran=bran)
+                 codeTime=None, version=None):
+        self.version = version
+        hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
-        self.postman = Poster(hby=hby)
-        self.counselor = Counselor(hby=hby)
+        self.postman = Poster(hby=hby, version=self.version, kind=Kinds.json)
+        self.counselor = Counselor(hby=hby, version=self.version, kind=Kinds.json)
         self.notifier = Notifier(hby=hby)
         self.mux = Multiplexor(hby=hby, notifier=self.notifier)
         self.authenticate = authenticate
@@ -83,8 +87,10 @@ class ConfirmDoer(doing.DoDoer):
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
+        self.eventKwargs = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
-                                               exc=exc)
+                                               exc=exc, **kwa)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
@@ -97,18 +103,24 @@ class ConfirmDoer(doing.DoDoer):
 
     def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
         """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
+        edig = edig.encode("utf-8")
         sner = Number(num=anchorSn, code=NumDex.Huge)
         diger = Diger(qb64=anchorSaid)
         self.hby.db.aess.pin(keys=(pre, edig), val=(sner, diger))
 
     def _processEvent(self, pre, edig, eserder, anchorSn, anchorSaid):
         """Process the DIP or DRT event so it appears in the delegator's hby.kevers."""
+        committed = self.hby.db.kels.getLast(keys=pre, on=eserder.sn)
+        if committed == eserder.said:
+            return
+
+        edig = edig.encode("utf-8")
         sigers = self.hby.db.sigs.get(keys=(pre, edig))
-        wigers = self.hby.db.wigs.get(keys=(pre, bytes(edig)))
+        wigers = self.hby.db.wigs.get(keys=(pre, edig))
         sner = Number(num=anchorSn, code=NumDex.Huge)
         saider = Saider(qb64=anchorSaid)
-        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=sner,
-                                      delsaider=saider, local=True)
+        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delsner=sner,
+                                      delsger=saider, local=True)
 
     def confirmDo(self, tymth, tock=0.0, **kwa):
         """
@@ -117,12 +129,14 @@ class ConfirmDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
 
         while True:
             esc = self.escrowed()
@@ -160,13 +174,21 @@ class ConfirmDoer(doing.DoDoer):
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
-                            msg = hab.interact(data=[anchor])
+                            msg = hab.interact(data=[anchor], **self.eventKwargs)
                         else:
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
 
                         serder = SerderKERI(raw=msg)
-                        exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
+                        exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg),
+                                                                version=Vrsn_1_0, kind=Kinds.json)
+                        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + atc),
+                                                                framed=True,
+                                                                processive=False)[0]
+                        self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                              tsgs=local.tsgs, cigars=local.cigars,
+                                              essrs=local.essrs)
+                        self.mux.add(local.serder)
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 
@@ -201,9 +223,9 @@ class ConfirmDoer(doing.DoDoer):
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
-                            hab.interact(data=[anchor])
+                            hab.interact(data=[anchor], framed=True, **self.eventKwargs)
                         else:
-                            hab.rotate(data=[anchor])
+                            hab.rotate(data=[anchor], framed=True, **self.eventKwargs)
 
                         auths = {}
                         if self.authenticate:
@@ -232,17 +254,18 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'Delegator Prefix  {hab.pre}')
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
-                        # wait for confirmation of fully commited event
+                        # wait for confirmation of fully committed event
                         if eserder.pre in self.hby.kevers:
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **kwa)
 
-                            while eserder.sn < self.hby.kevers[eserder.pre].sn:
+                            while self.hby.kevers[eserder.pre].sn < eserder.sn:
                                 yield self.tock
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")
                         else:  # It should be an inception event then...
                             wits = [werfer.qb64 for werfer in eserder.berfers]
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits,
+                                            **kwa)
 
                             while eserder.pre not in self.hby.kevers:
                                 yield self.tock
@@ -253,7 +276,8 @@ class ConfirmDoer(doing.DoDoer):
                         #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self._addAuthorizerSeal(pre, edig, anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
-                        self._processEvent(pre=pre, edig=edig, eserder=eserder, anchorSn=eserder.sn, anchorSaid=eserder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder,
+                                           anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
                         self.remove(self.toRemove)
                         return True
 

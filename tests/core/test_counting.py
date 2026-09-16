@@ -9,21 +9,21 @@ from base64 import urlsafe_b64decode as decodeB64
 import pytest
 
 from keri.kering import (ShortageError, InvalidCodeError, EmptyMaterialError,
-                         Colds, Protocols, Versionage, Vrsn_1_0, Vrsn_2_0)
+                         InvalidVersionError, Colds, Protocols, Versionage,
+                         Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0)
 
 from keri.help import intToB64, b64ToInt, codeB64ToB2
 
 from keri.core import Texter
 from keri.core import (GenDex, Cizage, Counter, Codens, SUDex_1_0, CtrDex_1_0,
                        CtrDex_2_0, ProGen,GenDex, ProGen, CtrDex_1_0,
-                       CtrDex_2_0, QTDex_1_0, SUDex_1_0, MUDex_1_0, CtrDex_2_0,
-                       UniDex_2_0, SUDex_2_0, MUDex_2_0, CodeNames, Codens,
-                       SealDex_2_0, Codenage, Cizage, Counter)
+                       CtrDex_2_0, QTDex_1_0, SUDex_1_0, MUDex_1_0, BUDex_1_0,
+                       CtrDex_2_0, UniDex_2_0, SUDex_2_0, MUDex_2_0, BUDex_2_0,
+                       CodeNames, Codens, SealDex_2_0, Codenage, Cizage, Counter)
 
 
 def test_genus_codex_pro_gen():
-    """
-    Test protocol genera in GenDex as instance of GenusCodex and shared genus
+    """Test protocol genera in GenDex as instance of GenusCodex and shared genus
     code table mapping from Protocols via ProGen
 
     """
@@ -77,7 +77,7 @@ def test_codexes_tags():
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
         'NonTransReceiptCouples': '-C',
-        'TransReceiptQuadruples': '-D',
+        'TransReceiptIdxSigGroups': '-D',
         'FirstSeenReplayCouples': '-E',
         'TransIdxSigGroups': '-F',
         'SealSourceCouples': '-G',
@@ -100,6 +100,7 @@ def test_codexes_tags():
 
     assert  asdict(QTDex_1_0) == \
     {
+        'TransReceiptIdxSigGroups': '-D',
         'PathedMaterialCouples': '-L',
         'BigPathedMaterialCouples': '--L',
         'GenericGroup': '-T',
@@ -125,6 +126,12 @@ def test_codexes_tags():
     }
 
     assert  asdict(MUDex_1_0) == \
+    {
+        'NonNativeBodyGroup': '-W',
+        'BigNonNativeBodyGroup': '--W',
+    }
+
+    assert  asdict(BUDex_1_0) == \
     {
         'NonNativeBodyGroup': '-W',
         'BigNonNativeBodyGroup': '--W',
@@ -159,8 +166,8 @@ def test_codexes_tags():
         'BigWitnessIdxSigs': '--L',
         'NonTransReceiptCouples': '-M',
         'BigNonTransReceiptCouples': '--M',
-        'TransReceiptQuadruples': '-N',
-        'BigTransReceiptQuadruples': '--N',
+        'TransReceiptIdxSigGroups': '-N',
+        'BigTransReceiptIdxSigGroups': '--N',
         'FirstSeenReplayCouples': '-O',
         'BigFirstSeenReplayCouples': '--O',
         'PathedMaterialCouples': '-P',
@@ -244,6 +251,16 @@ def test_codexes_tags():
         'BigNonNativeBodyGroup': '--H',
     }
 
+    assert asdict(BUDex_2_0) == \
+    {
+        'FixBodyGroup': '-F',
+        'BigFixBodyGroup': '--F',
+        'MapBodyGroup': '-G',
+        'BigMapBodyGroup': '--G',
+        'NonNativeBodyGroup': '-H',
+        'BigNonNativeBodyGroup': '--H',
+    }
+
 
     assert CodeNames == \
     (
@@ -273,8 +290,8 @@ def test_codexes_tags():
         'BigWitnessIdxSigs',
         'NonTransReceiptCouples',
         'BigNonTransReceiptCouples',
-        'TransReceiptQuadruples',
-        'BigTransReceiptQuadruples',
+        'TransReceiptIdxSigGroups',
+        'BigTransReceiptIdxSigGroups',
         'FirstSeenReplayCouples',
         'BigFirstSeenReplayCouples',
         'PathedMaterialCouples',
@@ -337,8 +354,8 @@ def test_codexes_tags():
         BigWitnessIdxSigs='BigWitnessIdxSigs',
         NonTransReceiptCouples='NonTransReceiptCouples',
         BigNonTransReceiptCouples='BigNonTransReceiptCouples',
-        TransReceiptQuadruples='TransReceiptQuadruples',
-        BigTransReceiptQuadruples='BigTransReceiptQuadruples',
+        TransReceiptIdxSigGroups='TransReceiptIdxSigGroups',
+        BigTransReceiptIdxSigGroups='BigTransReceiptIdxSigGroups',
         FirstSeenReplayCouples='FirstSeenReplayCouples',
         BigFirstSeenReplayCouples='BigFirstSeenReplayCouples',
         DigestSealSingles='DigestSealSingles',
@@ -436,6 +453,18 @@ def test_counter_class():
         },
     }
 
+    assert Counter.BUCodes == \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: BUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: BUDex_2_0,
+        },
+    }
+
     assert Counter.Names == \
         {1:
             {0:
@@ -443,7 +472,7 @@ def test_counter_class():
                     '-A': 'ControllerIdxSigs',
                     '-B': 'WitnessIdxSigs',
                     '-C': 'NonTransReceiptCouples',
-                    '-D': 'TransReceiptQuadruples',
+                    '-D': 'TransReceiptIdxSigGroups',
                     '-E': 'FirstSeenReplayCouples',
                     '-F': 'TransIdxSigGroups',
                     '-G': 'SealSourceCouples',
@@ -493,8 +522,8 @@ def test_counter_class():
                     '--L': 'BigWitnessIdxSigs',
                     '-M': 'NonTransReceiptCouples',
                     '--M': 'BigNonTransReceiptCouples',
-                    '-N': 'TransReceiptQuadruples',
-                    '--N': 'BigTransReceiptQuadruples',
+                    '-N': 'TransReceiptIdxSigGroups',
+                    '--N': 'BigTransReceiptIdxSigGroups',
                     '-O': 'FirstSeenReplayCouples',
                     '--O': 'BigFirstSeenReplayCouples',
                     '-P': 'PathedMaterialCouples',
@@ -737,6 +766,14 @@ def test_counter_class():
         Counter.verToB64(minor=-1)
 
     # Test class methods
+
+    # Test makeGVC
+    assert Counter.makeGVC(version=Vrsn_1_0) ==  b'-_AAABAA' == GVC_1_0.encode()
+    assert Counter.makeGVC(version=Vrsn_2_0) ==  b'-_AAACAA' == GVC_2_0.encode()
+    with pytest.raises(InvalidVersionError):
+        assert Counter.makeGVC(version=Versionage(2, 1)) == b'-_AAACAB'
+
+
     # Test .enclose default V2
     enclosure = Counter.enclose()  # test defaults
     assert enclosure == bytearray(b'-CAA')

@@ -1,6 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-tests escrows in database primarily logic in Kevery and Kever from keri.core.eventing
+tests.core.test_escrow module
+
+V1-pinned escrow coverage (Vrsn_1_0 + JSON) for Kevery/Kever. V2 twins live in
+test_escrow_v2.py and use the default Version.
 
 """
 import os
@@ -11,9 +14,10 @@ import pytest
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0, MisfitEventSourceError
+from keri import Vrsn_1_0
+from keri.kering import MisfitEventSourceError, Kinds
 
-from keri.core import (Seqner, Counter, Salter, Saider,
+from keri.core import (Seqner, Counter, Salter, Saider, Prefixer,
                        Number, Diger, Kevery, eventing, parsing,
                        MtrDex, Codens, NumDex,
                        incept, interact, rotate, delcept)
@@ -21,8 +25,8 @@ from keri.core import (Seqner, Counter, Salter, Saider,
 from keri.db import dgKey, snKey, openDB
 from keri.app import keeping
 
-
 logger = ogler.getLogger()
+
 
 
 def test_partial_signed_escrow():
@@ -48,10 +52,11 @@ def test_partial_signed_escrow():
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256,
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
 
@@ -61,7 +66,7 @@ def test_partial_signed_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               version=Vrsn_1_0)
+                          version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
 
@@ -93,7 +98,7 @@ def test_partial_signed_escrow():
         # Send message again but with signature from other siger
         # send duplicate message with all three sigs
         counter = Counter(Codens.ControllerIdxSigs,
-                                 version=Vrsn_1_0)
+                          version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         msg.extend(sigers[2].qb64b)
         # apply msg to Kevery to process
@@ -131,7 +136,7 @@ def test_partial_signed_escrow():
         allsigers = mgr.sign(ser=srdr.raw, verfers=verfers)
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                            count=len(allsigers), version=Vrsn_1_0)
+                          count=len(allsigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in allsigers:
             msg.extend(siger.qb64b)
@@ -152,9 +157,10 @@ def test_partial_signed_escrow():
 
         # create interaction event for
         srdr = interact(pre=kvr.prefixer.qb64,
-                                 dig=kvr.serder.said,
-                                 sn=kvr.sn+1,
-                                 data=[])
+                        dig=kvr.serder.said,
+                        sn=kvr.sn+1,
+                        data=[],
+                        version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=kvr.verfers)
 
@@ -271,19 +277,20 @@ def test_partial_signed_escrow():
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = rotate(pre=kvr.prefixer.qb64,
-                               keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               dig=kvr.serder.said,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               sn=kvr.sn+1,
-                               data=[])
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=kvr.serder.said,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=kvr.sn+1,
+                      data=[],
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -301,19 +308,20 @@ def test_partial_signed_escrow():
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = rotate(pre=kvr.prefixer.qb64,
-                               keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               dig=kvr.serder.said,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               sn=kvr.sn+1,
-                               data=[])
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=kvr.serder.said,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=kvr.sn+1,
+                      data=[],
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=2,
-                               version=Vrsn_1_0)
+                          version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
         msg.extend(sigers[3].qb64b)
@@ -397,8 +405,8 @@ def test_missing_delegator_escrow():
         verfers, digers = watMgr.incept(stem='wat', temp=True)  # algo default salty and rooted
 
         watSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                                  ndigs=[diger.qb64 for diger in digers],
-                                  code=MtrDex.Blake3_256)
+                         ndigs=[diger.qb64 for diger in digers],
+                         code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         watPre = watSrdr.pre
         watMgr.move(old=verfers[0].qb64, new=watPre)  # move key pair label to prefix
@@ -409,7 +417,7 @@ def test_missing_delegator_escrow():
         sigers = watMgr.sign(ser=watSrdr.raw, verfers=verfers)
         msg = bytearray(watSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -424,8 +432,8 @@ def test_missing_delegator_escrow():
         # Setup Bob with own inception event
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                                  ndigs=[diger.qb64 for diger in digers],
-                                  code=MtrDex.Blake3_256)
+                         ndigs=[diger.qb64 for diger in digers],
+                         code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         bobPre = bobSrdr.pre
         bobMgr.move(old=verfers[0].qb64, new=bobPre)  # move key pair label to prefix
@@ -437,7 +445,7 @@ def test_missing_delegator_escrow():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -454,15 +462,15 @@ def test_missing_delegator_escrow():
         # apply msg to del's Kevery so he knows about the AID
         psr.parse(ims=bytearray(bobIcpMsg), kvy=delKvy, local=True)
         assert bobK.prefixer.qb64 in delKvy.kevers
-        delBobK = bobKvy.kevers[bobPre]  # bobs kever in dels kevery
+        delBobK = delKvy.kevers[bobPre]  # bobs kever in dels kevery
         assert delBobK.sn == 0
 
         # Setup Del's inception event assuming that Bob's next event will be
         # an ixn delegating event
         verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
         delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
-                                   delpre=bobPre,
-                                   ndigs=[diger.qb64 for diger in digers])
+                          delpre=bobPre,
+                          ndigs=[diger.qb64 for diger in digers], version=Vrsn_1_0, kind=Kinds.json)
 
         delPre = delSrdr.pre
         delMgr.move(old=verfers[0].qb64, new=delPre)  # move key pair label to prefix
@@ -475,15 +483,15 @@ def test_missing_delegator_escrow():
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
         bobSrdr = interact(pre=bobK.prefixer.qb64,
-                                    dig=bobK.serder.said,
-                                    sn=bobK.sn+1,
-                                    data=[seal._asdict()])
+                           dig=bobK.serder.said,
+                           sn=bobK.sn+1,
+                           data=[seal._asdict()], version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -494,17 +502,22 @@ def test_missing_delegator_escrow():
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
         assert bobK.sn == 1
 
+        # apply msg to del's Kevery so he knows about the delegating event
+        psr.parse(ims=bytearray(bobIxnMsg1), kvy=delKvy, local=True)
+        assert delBobK.serder.said == bobSrdr.said
+        assert delBobK.sn == 1
+
         # now create Del's delegated inception event msg
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = Counter(Codens.SealSourceCouples,
-                                     count=1, version=Vrsn_1_0)
+                          count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -584,22 +597,22 @@ def test_missing_delegator_escrow():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.said,
                                    sn=bobDelK.sn+1,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers], version=Vrsn_1_0, kind=Kinds.json)
 
         # Now create delegating interaction event
         seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
         bobSrdr = interact(pre=bobK.prefixer.qb64,
-                                    dig=bobK.serder.said,
-                                    sn=bobK.sn+1,
-                                    data=[seal._asdict()])
+                           dig=bobK.serder.said,
+                           sn=bobK.sn+1,
+                           data=[seal._asdict()], version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -625,12 +638,12 @@ def test_missing_delegator_escrow():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
         msg = bytearray(delSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = Counter(Codens.SealSourceCouples,
-                                     count=1, version=Vrsn_1_0)
+                          count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -693,8 +706,8 @@ def test_misfit_escrow():
         # Create inception event for a locally owned AID
         verfers, digers = mgr.incept(stem='mis', temp=True)
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.pre
         mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
@@ -706,7 +719,7 @@ def test_misfit_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -718,14 +731,15 @@ def test_misfit_escrow():
 
         # Build a valid interaction event for the same AID
         srdr2 = interact(pre=kever.prefixer.qb64,
-                                  dig=kever.serder.said,
-                                  sn=kever.sn + 1,
-                                  data=[])
+                         dig=kever.serder.said,
+                         sn=kever.sn + 1,
+                         data=[],
+                         version=Vrsn_1_0, kind=Kinds.json)
 
         sigers2 = mgr.sign(ser=srdr2.raw, verfers=kever.verfers)
         msg2 = bytearray(srdr2.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               count=len(sigers2), version=Vrsn_1_0)
+                          count=len(sigers2), version=Vrsn_1_0)
         msg2.extend(counter.qb64b)
         for siger in sigers2:
             msg2.extend(siger.qb64b)
@@ -777,8 +791,8 @@ def test_misfit_escrow_delegated():
         # Create a local delegator AID and mark it as local
         delg_verfers, delg_digers = mgr.incept(stem='delg', temp=True)
         delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
-                                    ndigs=[diger.qb64 for diger in delg_digers],
-                                    code=MtrDex.Blake3_256)
+                           ndigs=[diger.qb64 for diger in delg_digers],
+                           code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         delg_pre = delg_srdr.pre
         mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
         db.prefixes.add(delg_pre)
@@ -787,8 +801,9 @@ def test_misfit_escrow_delegated():
         # Create delegated inception event (dip) for a new delegatee AID
         del_verfers, del_digers = mgr.incept(stem='del', temp=True)
         dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
-                                    delpre=delg_pre,
-                                    ndigs=[diger.qb64 for diger in del_digers])
+                           delpre=delg_pre,
+                           ndigs=[diger.qb64 for diger in del_digers],
+                           version=Vrsn_1_0, kind=Kinds.json)
         del_pre = dip_srdr.pre
         mgr.move(old=del_verfers[0].qb64, new=del_pre)
 
@@ -796,7 +811,7 @@ def test_misfit_escrow_delegated():
         sigers = mgr.sign(ser=dip_srdr.raw, verfers=del_verfers)
         msg = bytearray(dip_srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -805,7 +820,7 @@ def test_misfit_escrow_delegated():
         seqner = Seqner(sn=0)
         saider = Saider(qb64=delg_srdr.said)
         counter = Counter(Codens.SealSourceCouples,
-                               count=1, version=Vrsn_1_0)
+                          count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         msg.extend(seqner.qb64b)
         msg.extend(saider.qb64b)
@@ -854,8 +869,8 @@ def test_misfit_escrow_valSigsWigsDel():
         # Create and accept a local inception event
         verfers, digers = mgr.incept(stem='unit', temp=True)
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         pre = srdr.pre
         mgr.move(old=verfers[0].qb64, new=pre)
         db.prefixes.add(pre)
@@ -864,7 +879,7 @@ def test_misfit_escrow_valSigsWigsDel():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -876,9 +891,10 @@ def test_misfit_escrow_valSigsWigsDel():
 
         # Build a valid interaction event and its signatures
         ixn = interact(pre=kever.prefixer.qb64,
-                                dig=kever.serder.said,
-                                sn=kever.sn + 1,
-                                data=[])
+                       dig=kever.serder.said,
+                       sn=kever.sn + 1,
+                       data=[],
+                       version=Vrsn_1_0, kind=Kinds.json)
         ixn_sigers = mgr.sign(ser=ixn.raw, verfers=kever.verfers)
 
         tholder = kever.tholder
@@ -895,8 +911,8 @@ def test_misfit_escrow_valSigsWigsDel():
                                  wigers=wigers,
                                  toader=toader,
                                  wits=wits,
-                                 delnum=None,
-                                 deldiger=None,
+                                 delsner=None,
+                                 delsger=None,
                                  eager=False,
                                  local=False)
 
@@ -927,8 +943,8 @@ def test_misfit_escrow_kevery():
         # Create a simple inception event and its signatures
         verfers, digers = mgr.incept(stem='kvy', temp=True)
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -940,7 +956,7 @@ def test_misfit_escrow_kevery():
         kvy.escrowMFEvent(serder=srdr,
                           sigers=sigers,
                           wigers=None,
-                          delnum=delnum,
+                          number=delnum,
                           diger=diger,
                           local=False)
 
@@ -994,8 +1010,8 @@ def test_delegated_partial_signed_escrow_udes():
         # Create a local delegator AID and mark it as local
         delg_verfers, delg_digers = mgr.incept(stem='pse-delg', temp=True)
         delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
-                                    ndigs=[diger.qb64 for diger in delg_digers],
-                                    code=MtrDex.Blake3_256)
+                           ndigs=[diger.qb64 for diger in delg_digers],
+                           code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         delg_pre = delg_srdr.pre
         mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
         db.prefixes.add(delg_pre)
@@ -1005,7 +1021,7 @@ def test_delegated_partial_signed_escrow_udes():
         sigers_delg = mgr.sign(ser=delg_srdr.raw, verfers=delg_verfers)
         msg = bytearray(delg_srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               count=len(sigers_delg), version=Vrsn_1_0)
+                          count=len(sigers_delg), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers_delg:
             msg.extend(siger.qb64b)
@@ -1016,10 +1032,11 @@ def test_delegated_partial_signed_escrow_udes():
         # Create delegated inception event (dip) for a new delegatee AID, with multi-sig threshold
         del_verfers, del_digers = mgr.incept(icount=2, ncount=2, stem='pse-del', temp=True)
         dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
-                                    delpre=delg_pre,
-                                    isith='2',
-                                    nsith='2',
-                                    ndigs=[diger.qb64 for diger in del_digers])
+                           delpre=delg_pre,
+                           isith='2',
+                           nsith='2',
+                           ndigs=[diger.qb64 for diger in del_digers],
+                           version=Vrsn_1_0, kind=Kinds.json)
         del_pre = dip_srdr.pre
         mgr.move(old=del_verfers[0].qb64, new=del_pre)
 
@@ -1028,7 +1045,7 @@ def test_delegated_partial_signed_escrow_udes():
         assert len(sigers) >= 2
         msg = bytearray(dip_srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                               count=1, version=Vrsn_1_0)
+                          count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
 
@@ -1036,7 +1053,7 @@ def test_delegated_partial_signed_escrow_udes():
         seqner = Seqner(sn=delg_kever.sn)
         saider = Saider(qb64=delg_srdr.said)
         counter = Counter(Codens.SealSourceCouples,
-                               count=1, version=Vrsn_1_0)
+                          count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         msg.extend(seqner.qb64b)
         msg.extend(saider.qb64b)
@@ -1084,10 +1101,10 @@ def test_out_of_order_escrow():
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
         icpdig = srdr.said
@@ -1098,7 +1115,7 @@ def test_out_of_order_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1106,13 +1123,13 @@ def test_out_of_order_escrow():
         icpmsg = bytearray(msg)  # save copy for later
 
         # create interaction event
-        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         ixnRawmsg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         ixnRawmsg.extend(counter.qb64b)
         for siger in sigers:
             ixnRawmsg.extend(siger.qb64b)
@@ -1127,13 +1144,14 @@ def test_out_of_order_escrow():
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = rotate(pre=pre,
-                               keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               dig=ixndig,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               sn=2,
-                               data=[])
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=ixndig,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=2,
+                      data=[],
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         rotdig = srdr.said
 
@@ -1141,7 +1159,7 @@ def test_out_of_order_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1278,6 +1296,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
             nsith="1",
             ndigs=[digers[0].qb64],
             code=MtrDex.Blake3_256,
+            version=Vrsn_1_0, kind=Kinds.json,
         )
         pre = icp.ked["i"]
         icpdig = icp.said
@@ -1286,20 +1305,20 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         sigers = mgr.sign(ser=icp.raw, verfers=verfers)
         msg = bytearray(icp.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         icpmsg = msg
 
         # valid interaction event
-        ixn = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixn = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = ixn.said
 
         sigers = mgr.sign(ser=ixn.raw, verfers=verfers)
         msg = bytearray(ixn.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1393,10 +1412,10 @@ def test_unverified_receipt_escrow():
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
 
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
         icpdig = srdr.said
@@ -1407,7 +1426,7 @@ def test_unverified_receipt_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1415,13 +1434,13 @@ def test_unverified_receipt_escrow():
         icpmsg = msg
 
         # create receipt(s) of inception message
-        reserder = eventing.receipt(pre=pre, sn=0, said=srdr.said)
+        reserder = eventing.receipt(pre=pre, sn=0, said=srdr.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt with wit0
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
         recnt = Counter(Codens.NonTransReceiptCouples, count=2,
-                             version=Vrsn_1_0)
+                        version=Vrsn_1_0)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -1449,13 +1468,13 @@ def test_unverified_receipt_escrow():
         assert cigar.qb64 == wit1Cigar.qb64
 
         # create interaction event
-        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1463,13 +1482,13 @@ def test_unverified_receipt_escrow():
         ixnmsg = msg
 
         # create receipt(s) of interaction message
-        reserder = eventing.receipt(pre=pre, sn=1, said=srdr.said)
+        reserder = eventing.receipt(pre=pre, sn=1, said=srdr.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt with wit0
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
         recnt = Counter(Codens.NonTransReceiptCouples, count=2,
-                             version=Vrsn_1_0)
+                        version=Vrsn_1_0)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -1504,13 +1523,14 @@ def test_unverified_receipt_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
 
         srdr = rotate(pre=pre,
-                               keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               dig=ixndig,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               sn=2,
-                               data=[])
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=ixndig,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=2,
+                      data=[],
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         rotdig = srdr.said
 
@@ -1518,7 +1538,7 @@ def test_unverified_receipt_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1526,13 +1546,13 @@ def test_unverified_receipt_escrow():
         rotmsg = msg
 
         # create receipt(s) of rotation message
-        reserder = eventing.receipt(pre=pre, sn=2, said=srdr.said)
+        reserder = eventing.receipt(pre=pre, sn=2, said=srdr.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt with wit0
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
         recnt = Counter(Codens.NonTransReceiptCouples, count=2,
-                             version=Vrsn_1_0)
+                        version=Vrsn_1_0)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -1564,9 +1584,9 @@ def test_unverified_receipt_escrow():
         kvy.processEscrowUnverNonTrans()
         assert pre not in kvy.kevers  # key state not updated
         # check escrows removed
-        kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 0
 
         # Now reset timeout so not zero and resend receipts to reload escrow
         kvy.TimeoutURE = 3600
@@ -1580,9 +1600,9 @@ def test_unverified_receipt_escrow():
         # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
         # assert Ure escrows are back
-        kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 2
 
         # apply inception msg to Kevery to process
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
@@ -1670,10 +1690,10 @@ def test_unverified_trans_receipt_escrow():
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
 
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               code=MtrDex.Blake3_256)
+                      isith=sith,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
         icpdig = srdr.said
@@ -1684,7 +1704,7 @@ def test_unverified_trans_receipt_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1697,10 +1717,10 @@ def test_unverified_trans_receipt_escrow():
 
         # create recepter's inception event
         rsrdr = incept(keys=[verfer.qb64 for verfer in rverfers],
-                                isith=rsith,
-                                nsith=rsith,
-                                ndigs=[diger.qb64 for diger in rdigers],
-                                code=MtrDex.Blake3_256)
+                       isith=rsith,
+                       nsith=rsith,
+                       ndigs=[diger.qb64 for diger in rdigers],
+                       code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         rpre = rsrdr.ked["i"]
         ricpdig = rsrdr.said
@@ -1711,7 +1731,7 @@ def test_unverified_trans_receipt_escrow():
 
         msg = bytearray(rsrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(rsigers), version=Vrsn_1_0)
+                          count=len(rsigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in rsigers:
             msg.extend(siger.qb64b)
@@ -1723,10 +1743,19 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.said)
-        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig)
+        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rcticpmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
@@ -1745,13 +1774,13 @@ def test_unverified_trans_receipt_escrow():
 
 
         # create interaction event
-        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1763,13 +1792,14 @@ def test_unverified_trans_receipt_escrow():
         rverfers, rdigers = mgr.rotate(pre=rpre, ncount=3, temp=True)
 
         rsrdr = rotate(pre=rpre,
-                                keys=[verfer.qb64 for verfer in rverfers],
-                                isith=rsith,
-                                dig=ricpdig,
-                                nsith=rsith,
-                                ndigs=[diger.qb64 for diger in rdigers],
-                                sn=1,
-                                data=[])
+                       keys=[verfer.qb64 for verfer in rverfers],
+                       isith=rsith,
+                       dig=ricpdig,
+                       nsith=rsith,
+                       ndigs=[diger.qb64 for diger in rdigers],
+                       sn=1,
+                       data=[],
+                       version=Vrsn_1_0, kind=Kinds.json)
 
         rrotdig = rsrdr.said
 
@@ -1777,7 +1807,7 @@ def test_unverified_trans_receipt_escrow():
 
         msg = bytearray(rsrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(rsigers), version=Vrsn_1_0)
+                          count=len(rsigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in rsigers:
             msg.extend(siger.qb64b)
@@ -1789,10 +1819,19 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.said)
-        reserder = eventing.receipt(pre=pre, sn=1, said=ixndig)
+        reserder = eventing.receipt(pre=pre, sn=1, said=ixndig, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rctixnmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
@@ -1817,13 +1856,14 @@ def test_unverified_trans_receipt_escrow():
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
         srdr = rotate(pre=pre,
-                               keys=[verfer.qb64 for verfer in verfers],
-                               isith=sith,
-                               dig=ixndig,
-                               nsith=nxtsith,
-                               ndigs=[diger.qb64 for diger in digers],
-                               sn=2,
-                               data=[])
+                      keys=[verfer.qb64 for verfer in verfers],
+                      isith=sith,
+                      dig=ixndig,
+                      nsith=nxtsith,
+                      ndigs=[diger.qb64 for diger in digers],
+                      sn=2,
+                      data=[],
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         rotdig = srdr.said
 
@@ -1831,7 +1871,7 @@ def test_unverified_trans_receipt_escrow():
 
         msg = bytearray(srdr.raw)
         counter = Counter(Codens.ControllerIdxSigs,
-                                 count=len(sigers), version=Vrsn_1_0)
+                          count=len(sigers), version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1843,10 +1883,19 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.said)
-        reserder = eventing.receipt(pre=pre, sn=2, said=rotdig)
+        reserder = eventing.receipt(pre=pre, sn=2, said=rotdig, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rctrotmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
@@ -1952,26 +2001,56 @@ def test_unverified_trans_receipt_escrow():
         assert len(kvy.db.vres.get(snKey(pre, 2))) == 0
 
         # verify receipts
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
-        assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 0
-        assert rctDiger.qb64 == ricpdig
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 0
+        #assert rctDiger.qb64 == ricpdig
 
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
-        assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 1
-        assert rctDiger.qb64 == rrotdig
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
 
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
+
+        # vrcsNew verify receipts
+        topkeys = (pre, icpdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
         assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 1
-        assert rctDiger.qb64 == rrotdig
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 0
+        assert rctdig == ricpdig
+
+        topkeys = (pre, ixndig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+        topkeys = (pre, rotdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+
 
     assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
@@ -1980,5 +2059,14 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    #test_unverified_receipt_escrow()
+    test_partial_signed_escrow()
     test_missing_delegator_escrow()
+    test_misfit_escrow()
+    test_misfit_escrow_delegated()
+    test_misfit_escrow_valSigsWigsDel()
+    test_misfit_escrow_kevery()
+    test_delegated_partial_signed_escrow_udes()
+    test_out_of_order_escrow()
+    test_ooes_missing_db_entries_escrow_cleanup()
+    test_unverified_receipt_escrow()
+    test_unverified_trans_receipt_escrow()

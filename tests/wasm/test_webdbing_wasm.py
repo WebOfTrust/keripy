@@ -2,10 +2,10 @@
 """
 tests.wasm.test_webdbing_wasm module
 
-WASM smoke tests for WebDBer — runs inside Pyodide via pytest-pyodide.
-The workflow copies webdbing.py into this directory before running.
+Browser storage tests run against the current Keripy wheel in Pyodide 314.
 """
 import os
+from pathlib import Path
 
 import pytest
 
@@ -18,21 +18,64 @@ if os.environ.get("RUN_WASM_TESTS") != "true":
 
 pytest_pyodide = pytest.importorskip("pytest_pyodide")
 run_in_pyodide = pytest_pyodide.run_in_pyodide
-copy_files_to_pyodide = pytest_pyodide.decorator.copy_files_to_pyodide
-
-WASM_PACKAGES = ["sortedcontainers", "micropip"]
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
-@run_in_pyodide(packages=WASM_PACKAGES)
-async def test_webdber_import_and_helpers(selenium):
+@run_in_pyodide(pytest_assert_rewrites=False)
+async def install_keri(selenium):
+    from pathlib import Path
+    from importlib import metadata
+
+    import micropip
+
+    # LMDB is native-only; check the remaining requirements after installation.
+    await micropip.install([f"emfs:{path}" for path in Path("/wheels").glob("*.whl")],
+                           deps=False)
+    from packaging.requirements import Requirement
+    from packaging.specifiers import SpecifierSet
+    from packaging.markers import default_environment
+
+    environment = default_environment()
+    environment["extra"] = ""
+    for distribution in metadata.distributions():
+        python = distribution.metadata.get("Requires-Python")
+        if python:
+            assert environment["python_full_version"] in SpecifierSet(python)
+        for value in distribution.requires or []:
+            requirement = Requirement(value)
+            if requirement.marker and not requirement.marker.evaluate(environment):
+                continue
+            if requirement.name == "lmdb" and distribution.metadata["Name"] in ("keri", "hio"):
+                continue
+            assert metadata.version(requirement.name) in requirement.specifier, value
+
+
+@pytest.fixture
+def selenium_keri(selenium):
+    from pytest_pyodide.copy_files_to_pyodide import copy_files_to_emscripten_fs
+
+    root = Path(__file__).resolve().parents[2]
+    current = list((root / "wheels/current").glob("keri-*.whl"))
+    assert len(current) == 1, "Build exactly one Keripy wheel from this checkout"
+    dependencies = sorted((root / "wheels/dependencies/wheelhouse").glob("*.whl"))
+    assert dependencies, "Prepare the pinned browser dependency wheels"
+    assert not any(path.name.startswith("keri-") for path in dependencies)
+    files = [(path, f"/wheels/{path.name}") for path in [*dependencies, *current]]
+    files.append((root / "tests/db/test_webbasing.py", "/home/pyodide/webbasing_fixtures.py"))
+    copy_files_to_emscripten_fs(files, selenium, install_wheels=False)
+    install_keri(selenium)
+    return selenium
+
+
+@run_in_pyodide
+async def test_webdber_import_and_helpers(selenium_keri):
     """Verify webdbing.py imports and key helpers work in WASM."""
     import sys
-    import micropip
-    await micropip.install("ordered_set")
-    sys.path.insert(0, "/home/pyodide")
-    from webdbing import WebDBer, onKey, splitOnKey, splitKey, MaxON
+    import pyodide
+    from keri.db.webdbing import onKey, splitOnKey, MaxON
 
+    assert sys.version_info[:3] == (3, 14, 2)
+    assert pyodide.__version__ == "314.0.5"
+    assert sys.platform == "emscripten"
     assert MaxON == int("f"*32, 16)
 
     key = onKey(b"pre", 42)
@@ -45,15 +88,10 @@ async def test_webdber_import_and_helpers(selenium):
     assert on2 == 0
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
-@run_in_pyodide(packages=WASM_PACKAGES)
-async def test_webdber_crud(selenium):
+@run_in_pyodide
+async def test_webdber_crud(selenium_keri):
     """Verify WebDBer create, read, update, delete in WASM."""
-    import sys
-    import micropip
-    await micropip.install("ordered_set")
-    sys.path.insert(0, "/home/pyodide")
-    from webdbing import WebDBer
+    from keri.db.webdbing import WebDBer
 
     class FakeHandle:
         def __init__(self): self._store = {}
@@ -86,15 +124,10 @@ async def test_webdber_crud(selenium):
     assert dber.getVal(sdb, b"hello") is None
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
-@run_in_pyodide(packages=WASM_PACKAGES)
-async def test_webdber_ordinals(selenium):
+@run_in_pyodide
+async def test_webdber_ordinals(selenium_keri):
     """Verify ordinal key operations in WASM."""
-    import sys
-    import micropip
-    await micropip.install("ordered_set")
-    sys.path.insert(0, "/home/pyodide")
-    from webdbing import WebDBer
+    from keri.db.webdbing import WebDBer
 
     class FakeHandle:
         def __init__(self): self._store = {}
@@ -127,15 +160,10 @@ async def test_webdber_ordinals(selenium):
     assert dber.cntOnAll(sdb, b"evt") == 3
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
-@run_in_pyodide(packages=WASM_PACKAGES)
-async def test_webdber_flush(selenium):
+@run_in_pyodide
+async def test_webdber_flush(selenium_keri):
     """Verify flush persistence cycle in WASM."""
-    import sys
-    import micropip
-    await micropip.install("ordered_set")
-    sys.path.insert(0, "/home/pyodide")
-    from webdbing import WebDBer
+    from keri.db.webdbing import WebDBer
 
     class FakeHandle:
         def __init__(self): self._store = {}
@@ -175,15 +203,10 @@ async def test_webdber_flush(selenium):
     assert dber2.getVal(sdb2, b"k2") == b"v2"
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
-@run_in_pyodide(packages=WASM_PACKAGES)
-async def test_webdber_prefix_iteration(selenium):
+@run_in_pyodide
+async def test_webdber_prefix_iteration(selenium_keri):
     """Verify prefix-scoped iteration in WASM."""
-    import sys
-    import micropip
-    await micropip.install("ordered_set")
-    sys.path.insert(0, "/home/pyodide")
-    from webdbing import WebDBer
+    from keri.db.webdbing import WebDBer
 
     class FakeHandle:
         def __init__(self): self._store = {}
@@ -219,3 +242,95 @@ async def test_webdber_prefix_iteration(selenium):
 
     assert dber.cntAll(sdb) == 3
     assert dber.cntTop(sdb, top=b"alpha.") == 2
+
+
+@run_in_pyodide
+async def test_habery_reopen_signing_and_auth_cleanup(selenium_keri):
+    """Persist key state and preserve AuthError for the async storage owner."""
+    import sys
+
+    import pytest
+    from keri import AuthError
+    from keri.app.habbing import Habery
+    from keri.app.webkeeping import WebKeeper
+    from keri.core import Salter
+    from keri.db.webbasing import WebBaser
+    from webbasing_fixtures import FakeStorageBackend, NullConfiger
+
+    assert "lmdb" not in sys.modules
+    assert "hio.core.tcp" not in sys.modules
+    backend = FakeStorageBackend()
+    correct = Salter(raw=b"0123456789abcdef").signer(transferable=False, temp=True)
+    wrong = Salter(raw=b"fedcba9876543210").signer(transferable=False, temp=True)
+    salt = Salter(raw=b"abcdefghijklmnop").qb64
+    message = b"browser storage signing"
+
+    keeper = WebKeeper(name="wasm-habery", storageOpener=backend.open)
+    baser = WebBaser(name="wasm-habery")
+    configer = NullConfiger()
+    try:
+        await keeper.reopen()
+        await baser.reopen(storageOpener=backend.open)
+        hby = Habery(name="wasm-habery", ks=keeper, db=baser, cf=configer,
+                     seed=correct.qb64, aeid=correct.verfer.qb64, salt=salt)
+        hab = hby.makeHab(name="alice")
+        hab.rotate()
+        pre = hab.pre
+        assert hab.kever.sn == 1
+        assert hab.kever.verfers[0].verify(hab.sign(ser=message)[0].raw, message)
+        with pytest.raises(RuntimeError, match="use await aclose"):
+            keeper.close()
+    finally:
+        try:
+            await keeper.aclose()
+        finally:
+            await baser.aclose()
+            configer.close()
+
+    # Fresh backend objects must recover persisted state, not live caches.
+    keeper = WebKeeper(name="wasm-habery", storageOpener=backend.open)
+    baser = WebBaser(name="wasm-habery")
+    configer = NullConfiger()
+    try:
+        await keeper.reopen()
+        await baser.reopen(storageOpener=backend.open)
+        with pytest.raises(AuthError):
+            Habery(name="wasm-habery", ks=keeper, db=baser, cf=configer,
+                   seed=wrong.qb64, salt=salt)
+        assert keeper.opened
+        assert baser.opened
+        assert configer.opened
+    finally:
+        try:
+            await keeper.aclose()
+        finally:
+            await baser.aclose()
+            configer.close()
+
+    await keeper.reopen()
+    await baser.reopen(storageOpener=backend.open)
+    configer = NullConfiger()
+    try:
+        hby = Habery(name="wasm-habery", ks=keeper, db=baser, cf=configer,
+                     seed=correct.qb64, salt=salt)
+        hab = hby.habByName("alice")
+        assert hab.pre == pre
+        assert hab.kever.sn == 1
+        assert hab.kever.verfers[0].verify(hab.sign(ser=message)[0].raw, message)
+    finally:
+        try:
+            await keeper.aclose(clear=True)
+        finally:
+            await baser.aclose(clear=True)
+            configer.close()
+
+    await keeper.reopen()
+    await baser.reopen(storageOpener=backend.open)
+    try:
+        assert keeper.gbls.get("aeid") is None
+        assert baser.habs.cnt() == 0
+    finally:
+        try:
+            await keeper.aclose(clear=True)
+        finally:
+            await baser.aclose(clear=True)

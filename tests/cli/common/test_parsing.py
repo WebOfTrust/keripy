@@ -1,8 +1,10 @@
 import json
+from argparse import ArgumentTypeError
 
 import pytest
 
-from keri.cli.common import Parsery, parseDataItems
+from keri.cli.common import Parsery, parseDataItems, parseVersion
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 
 
 class TestKeystoreParser:
@@ -85,3 +87,13 @@ class TestDataParser:
         result = parseDataItems(kv_pairs)
         print(result)
         assert result == {"key1": 123, "key2": -45.67}
+
+
+class TestVersionParser:
+    def test_parse_version(self):
+        assert parseVersion("1.0") == Vrsn_1_0
+        assert parseVersion("2.0") == Vrsn_2_0
+
+    def test_parse_invalid_version(self):
+        with pytest.raises(ArgumentTypeError):
+            parseVersion("1")

@@ -91,7 +91,7 @@ Setup
 
 Testing
 -------
-* Install pytest: :bash:`pip install pytest`
+* Install the test dependencies: :bash:`python -m pip install -e ".[test]"`
 
 * Run the test suites:
 

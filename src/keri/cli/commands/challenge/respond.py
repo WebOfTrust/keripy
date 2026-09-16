@@ -7,10 +7,11 @@ import argparse
 
 from hio.base import doing
 
-from ...common import Parsery, setupHby, aliasInput
+from ...common import Parsery, setupHby, aliasInput, parseVersion
 
 from ....app import Poster, Organizer, GroupHab, HaberyDoer
-from ....peer import exchange
+from ....core import exchange
+from ....kering import Version, Kinds
 
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '
@@ -22,6 +23,8 @@ parser.add_argument('--words', '-d', help='JSON formatted array of words to sign
                     action="store", required=True)
 parser.add_argument('--recipient', '-r', help='Contact alias of the AID to send the signed words to',
                     action="store", required=True)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the challenge response EXN, such as 1.0 or 2.0')
 
 
 def respond(args):
@@ -38,7 +41,7 @@ def respond(args):
     recp = args.recipient
 
     if args.words.startswith("@"):
-        f = open(args.data[1:], "r")
+        f = open(args.words[1:], "r")
         words = f.read()
     else:
         words = args.words
@@ -47,7 +50,8 @@ def respond(args):
     if not isinstance(words, list):
         raise ValueError("words must be an array of words")
 
-    ixnDoer = RespondDoer(name=name, base=base, alias=alias, bran=bran, words=words, recp=recp)
+    ixnDoer = RespondDoer(name=name, base=base, alias=alias, bran=bran, words=words, recp=recp,
+                          version=args.version)
 
     return [ixnDoer]
 
@@ -58,7 +62,7 @@ class RespondDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, words: list, recp: str):
+    def __init__(self, name, base, bran, alias, words: list, recp: str, version=None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
@@ -71,9 +75,10 @@ class RespondDoer(doing.DoDoer):
         self.alias = alias
         self.words = words
         self.recp = recp
+        self.version = version
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
-        self.postman = Poster(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
+        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.org = Organizer(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.respondDo)]
@@ -82,7 +87,8 @@ class RespondDoer(doing.DoDoer):
 
     def respondDo(self, tymth, tock=0.0, **opts):
         """
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """
@@ -105,9 +111,13 @@ class RespondDoer(doing.DoDoer):
 
         recp = recp[0]['id']
 
+        pvrsn = self.version if self.version is not None else Version
         payload = dict(i=hab.pre, words=self.words)
-        exn, _ = exchange(route="/challenge/response", payload=payload, sender=hab.pre)
-        ims = hab.endorse(serder=exn, last=False, pipelined=False)
+        exn = exchange(route="/challenge/response", attributes=payload,
+                       sender=hab.pre, pvrsn=pvrsn,
+                       gvrsn=pvrsn, kind=Kinds.json)
+        ims = hab.endorse(serder=exn, last=False, framed=True,
+                          gvrsn=pvrsn)
         del ims[:exn.size]
 
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab

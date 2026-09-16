@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.vc.proving module
-
 """
 
 from typing import Optional, Union
@@ -47,9 +46,7 @@ def credential(schema:str,
         kind (Kinds): serialization kind
 
     Returns:
-        SerderACDC: credential instance
-
-    """
+        SerderACDC: credential instance"""
     vs = versify(proto=Protocols.acdc, pvrsn=version, kind=kind, size=0)
 
     vc = dict(
