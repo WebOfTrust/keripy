@@ -202,13 +202,16 @@ for instance -- rather than growing a second evaluator.
 `NAND` and `NOR` are **unimplemented rather than unreducible**. Kleene negation is
 total (not-valid is invalid, not-invalid is valid, not-unknown is unknown), so both
 reduce over this lattice with no step that reads an undetermined member as false.
-What is unsettled is the specification, whose negation prose is two-valued -- the
-unary `NOT` row says "If valid, then not valid. If invalid, then valid" -- so a
-verifier following it literally satisfies a negative constraint on evidence the
-Discloser simply withheld, and reduces `NAND`/`NOR` to a different answer than this
-lattice would. Registering them here before that clause is amended would make keripy
-and a literal reader disagree on a security-relevant shape; failing closed until then
-is the conservative side of a disagreement this module cannot settle on its own.
+What is unsettled is the specification: its own m-ary rows are written over two
+values, and it is those rows rather than the unary `NOT` row that would need
+amending. `NOR` is "valid only if all members are invalid" and `NAND` "valid only if
+not all members are valid" (spec-body.md, m-ary Operator table), neither of which
+says what an undetermined member contributes. A verifier reading `NOR` literally
+counts a member it does not have as not-valid, which satisfies a negative constraint
+on evidence the Discloser simply withheld and reaches a different answer than this
+lattice. Registering them here before those rows are amended would make keripy and a
+literal reader disagree on a security-relevant shape; failing closed until then is
+the conservative side of a disagreement this module cannot settle on its own.
 
 `AVG` and `WAVG` are a different case: they return a number over a schema-defined
 member property rather than a validity, so they do not reduce to a verdict at all.
@@ -217,12 +220,18 @@ A caller meeting any unregistered token must fail closed; .reduce raises.
 """
 
 
-def reduce(op, verdicts):
+def reduce(op, verdicts, reducers=None):
     """Returns the reduction of member verdicts under the m-ary Operator op.
 
     Parameters:
-        op (str): m-ary Operator token, which MUST be a key of .MAryReducers
+        op (str): m-ary Operator token, which MUST be a key of reducers
         verdicts (list): EdgeVerdict of each member, in section order
+        reducers (dict|None): the Operator table to reduce under, defaulting to
+            .MAryReducers. Taken as an argument because the table is policy: both
+            evaluators carry an overridable attribute of their own, and a reduction
+            that closed over the module-level table would silently ignore every one
+            of those overrides -- giving a profile one answer from its callers and
+            another from here.
 
     Raises:
         ValidationError: if op is not reduced by this module, or if there are no
@@ -246,11 +255,13 @@ def reduce(op, verdicts):
             relevant the section reduces to an unknown and is refused.
 
     """
-    if op not in MAryReducers:
+    reducers = MAryReducers if reducers is None else reducers
+
+    if op not in reducers:
         raise ValidationError(f"Edge-group Operator {op} is not reduced to a "
-                              f"verdict; reducible are {sorted(MAryReducers)}")
+                              f"verdict; reducible are {sorted(reducers)}")
 
     if not verdicts:
         raise ValidationError(f"Edge-group with no members cannot reduce under {op}")
 
-    return MAryReducers[op](verdicts)
+    return reducers[op](verdicts)

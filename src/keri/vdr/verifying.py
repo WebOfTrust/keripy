@@ -71,6 +71,12 @@ class Verifier:
     # subset constrain something else and compose with the winner instead.
     DelegativeOps = ('I2I', 'NI2I', 'DI2I')
 
+    # Unary operators whose presence suppresses the default rule, per the spec's
+    # three-part condition -- see .verifyChain. E1E is in the set because it
+    # constrains the near issuee, which is a relation the default would otherwise
+    # add a second, conflicting one alongside.
+    DefaultSuppressingOps = ('I2I', 'NI2I', 'DI2I', 'E1E')
+
     # M-ary (aggregating) Operators from the ACDC spec's normative Edge-group table
     # (spec-body.md, "##### Operator, `o` field" under "#### Edge-group"). These
     # apply to an Edge-group's members, not to a single edge, and are therefore
@@ -266,11 +272,11 @@ class Verifier:
 
         """
         # Schema pins in force at each walked path. An Edge-group MAY carry `s`, a
-        # schema every edge below it must satisfy -- a keripy extension (ACDC
-        # reserves [d, u, o, w] on a group, spec-body.md:1076-1083) that the v2 IPEX
-        # path already honours and inherits (acdc/ipexing.py:875). Only nested groups
-        # carry one, matching that path, which reads no pin from the Edge Section
-        # itself.
+        # schema every edge below it must satisfy -- a keripy extension, since ACDC
+        # reserves [d, u, o, w] on a group and defines no `s` there, that the v2 IPEX
+        # path also honours and inherits (see acdc/ipexing.py, EdgeGroupLabels and
+        # ._evaluateGroupEdge). Read at every depth on both paths, the Edge Section
+        # included, because the Section is itself an Edge-group.
         pins = {}
         members = {}  # path of an Edge-group -> its members' verdicts, in order
         groups = []   # every Edge-group in pre-order, so reversed() is children-first
@@ -286,18 +292,7 @@ class Verifier:
                     # it only one level down dropped the pin an Issuer wrote across
                     # a whole section, and a dropped pin accepts the far nodes it
                     # exists to exclude.
-                    pin = node['s']
-                    if not isinstance(pin, str):
-                        # A pin this verifier cannot resolve to a schema SAID must
-                        # not be dropped: dropping it accepts the far nodes the pin
-                        # exists to exclude. v1 resolves by SAID, so the inline
-                        # schema-document form the v2 path accepts is not usable
-                        # here. Malformed, so not a verdict.
-                        raise ValidationError(f"Edge-group schema pin at "
-                                              f"{'.'.join(path)} in credential "
-                                              f"{creder.said} is not a schema SAID: "
-                                              f"{type(pin).__name__}")
-                    own = (pin,)
+                    own = (node['s'],)
                 pins[path] = inherited + own
                 members.setdefault(path, [])
                 groups.append((path, node))
@@ -392,7 +387,7 @@ class Verifier:
             return chaining.valid(f"credential {creder.said} carries no edges")
 
         if op in self.MAryReducers:
-            return self.MAryReducers[op](verdicts)
+            return chaining.reduce(op, verdicts, reducers=self.MAryReducers)
 
         # Recognized but not reduced (NAND, NOR, AVG, WAVG), or not an Operator this
         # verifier knows at all. Either way the group's validity is unknown and no
@@ -471,6 +466,21 @@ class Verifier:
         # its group placed. This is the #1534 rule ("two schema validations must be
         # performed and both must be valid") applied one level out.
         for nodeSchema in pins[path[:-1]] + ((node['s'],) if 's' in node else ()):
+            if not isinstance(nodeSchema, str):
+                # A pin this verifier cannot read is never dropped -- dropping it
+                # accepts the far nodes the pin exists to exclude -- but it is a
+                # limit of this verifier's reach, not a statement that the ACDC is
+                # malformed. v1 resolves pins by SAID, so the inline schema-document
+                # form the v2 path accepts is unreadable here, and unreadable is an
+                # unknown no arrival settles: the same place a compact Edge and an
+                # unevaluable Operator take. Refusing the section outright would let
+                # it outvote a sibling the Issuer wrote as an alternative.
+                reason = (f"schema pin on {where} is not a schema SAID, which this "
+                          f"verifier cannot resolve: {type(nodeSchema).__name__}")
+                return chaining.unknown(
+                    reason, retryable=False,
+                    cause=EdgeCause(ValidationError(reason), None, None))
+
             farCreder = self.reger.creds.get(keys=nodeSaid)
             if farCreder.schema != nodeSchema:
                 scraw = self.resolver.resolve(nodeSchema)
@@ -835,7 +845,15 @@ class Verifier:
         # composes (AND) rather than overriding or being overridden.
         op = next((cand for cand in reversed(ops) if cand in self.DelegativeOps), None)
 
-        if not ops:  # absent, empty, or nothing recognized: apply the default rule
+        # "When the Operator, `o`, field is missing or empty or is present but does
+        # not include any of the I2I, NI2I, DI2I or E1E Operators" the default is
+        # appended (spec-body.md). Keyed on that set rather than on the list being
+        # empty, matching acdc.ipexing.DefaultSuppressingEdgeOps, so an `o` carrying
+        # only a non-delegative Operator still takes the default the spec appends.
+        # No behaviour differs today -- the only recognized non-suppressing token is
+        # NOT, which is refused above -- but the two paths encoded the rule
+        # differently, and the divergence would surface the moment NOT is evaluable.
+        if not any(cand in self.DefaultSuppressingOps for cand in ops):
             # A far node is targeted (I2I) iff it has an issuee, else untargeted (NI2I).
             # Resolve via .iseaid so an aggregate ('acg') far node -- whose issuee is at
             # .sad["A"][1]["i"] and whose .attrib is None -- coerces the same as an
