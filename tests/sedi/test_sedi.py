@@ -1076,30 +1076,151 @@ def test_core_identity():
         }
     }
 
+    utahAgentAcdcSaid = Diger(ser=b"PretendUtahAgentAcdc").qb64
+    assert utahAgentAcdcSaid == 'EE-Lz-snXwc5VCKOZSQGVXeCO0HfrpXLabNqYP9QWgj_'
 
+    utahAgentSchemaSaid = Diger(ser=b"PretendUtahAgentSchema").qb64
+    assert utahAgentSchemaSaid == 'EPclO424AuAiGqlvfCfzrgsCirXA2Rj6fg5vo4Wv3I4m'
 
-    # core sedi credential ACDC issuedby Sue AID to Guy SMAID
-    guyCoreMad = \
+    guyEdgeBareMad = \
     {
-        "v": "",  #version string computed
-        "t": "acm",
-        "d": "",  # SAID computed
-        "u": guyUes[0],  # unique entropy
-        "i": sue,  # State Department Level Issuer AID
-        "rd": rids[0],  # registy 0
-        "s": "",  # schema
-        "a": guyCoreAttMad,
-        "e":
+        "d": "",
+        "UtahAgent":
         {
             "d": "",
+            "n": utahAgentAcdcSaid,
+            "s": utahAgentSchemaSaid,
         },
-        "r":
+    }
+    compactor = Compactor(mad=guyEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyEdgeMad = compactor.partials[('.UtahAgent',)].mad
+    assert guyEdgeMad == \
+    {
+        'd': 'EC0gfYR65XpLT6mDE36C2s4nAJ5eR4EtDVSVvoMJtiqM',
+        'UtahAgent':
         {
-            "d": "",
-            "l": ""
+            'd': 'EIGBd14taF1wtGkN42FlJsgxDxOO6IIFvqRk8QyinEzh',
+            'n': utahAgentAcdcSaid,
+            's': utahAgentSchemaSaid
         }
     }
 
+
+    guyRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=guyRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    guyRuleMad = compactor.partials[('',)].mad
+    assert guyRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+
+    coreSchemaSaid = Diger(ser=b"PretendUtahCoreSchema").qb64
+    assert coreSchemaSaid == 'EHyWqa53NlzFlUAB0Z4GIkb4kse7Kr-74WwBB44lmuG4'
+
+    guySerderCore = acdcmap(israid=sue,
+                            uuid=guyUes[0],
+                            regid=rids[0],
+                            schema=coreSchemaSaid,
+                           attribute=guyCoreAttMad,
+                           edge=guyEdgeMad,
+                           rule=guyRuleMad,
+                           kind=kind)
+    #iarValidator.validate(galSerderIar.sad)  # raises error if invalid
+
+    assert guySerderCore.said == 'EE261Aa4PtNCZtYIxKIeyn73Zvxs7NVRCIn8MS0bFwI0'
+    assert guySerderCore.israid == sue
+    assert guySerderCore.regid == rids[0]
+    assert guySerderCore.iseaid == guy
+    assert guySerderCore.sad['a'] == guyCoreAttMad
+
+    assert guySerderCore.sad == \
+    {
+        'v': 'ACDCCAACAAJSONAAbU.',
+        't': 'acm',
+        'd': guySerderCore.said,
+        'u': guyUes[0],
+        'i': sue,
+        'rd': rids[0],
+        's': coreSchemaSaid,
+        'a':
+        {
+            'd': guyCoreAttMadSaid,
+            'u': guyUes[1],
+            'i': guy,
+            'givenName':
+            {
+                'd': 'EDD2ilZtXTg9_CwP64AmN-K5nrhck5e1NY2QbrvQynSP',
+                'u': guyUes[2],
+                'value': 'John'
+            },
+            'middleName':
+            {
+                'd': 'EPeDlrbeUtBsvxiOSdTCMjARZ6MBQ9AynQU6jaLP1pgm',
+                'u': guyUes[3],
+                'value': 'Henry Davis'
+            },
+            'familyName':
+            {
+                'd': 'EGgdDUUjnDmXnUKOTuMm91xxfkL0f59LoMod9oYXdD8z',
+                'u': guyUes[4],
+                'value': 'Smith'
+            },
+            'birthDate':
+            {
+                'd': 'EPK5gGSEnc5E1UMVVNXtmS4EJSnmU8mXnb5LYhxJhZf7',
+                'u': guyUes[5],
+                'value': '2020-08-22T17:00:00.000000+00:00'
+            },
+            'facialImageProof':
+            {
+                'd': 'EOR1f3q1BbCvhUqrpQjzwY-3sFlklrYyqAZQ-E8L_Lze',
+                'u':  guyUes[6],
+                'value': 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
+            },
+            'legalPresenceStatus':
+            {
+                'd': 'EIi_fYQJ6O__ncYIv3iiq-AHpkcJdxo6R6m142RNEJaq',
+                'u': guyUes[7],
+                'value': 'citizen'
+            },
+            'issuedDate':
+            {
+                'd': 'EAN7rgfuAWattk7C_5k5YrK6Gsn1OtjUyh3_9oQ4B7LV',
+                'u': guyUes[8],
+                'value': '2020-08-22T17:00:00.000000+00:00'
+            },
+            'expirationDate':
+            {
+                'd': 'ECOterVvkTSJ5Ig2YMgTE1_2qFq_pAg-sBd5JELDJUML',
+                'u': guyUes[9],
+                'value': '2020-08-22T17:00:00.000000+00:00'
+            }
+        },
+        'e':
+        {
+            'd': 'EC0gfYR65XpLT6mDE36C2s4nAJ5eR4EtDVSVvoMJtiqM',
+            'UtahAgent':
+            {
+                'd': 'EIGBd14taF1wtGkN42FlJsgxDxOO6IIFvqRk8QyinEzh',
+                'n': utahAgentAcdcSaid,
+                's': utahAgentSchemaSaid,
+            }
+        },
+        'r':
+        {
+            'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+            'l': ''
+        }
+    }
 
 
     """Done Test"""
