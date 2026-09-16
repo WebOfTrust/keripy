@@ -3,6 +3,7 @@
 tests.acdc.test_ipexing module
 
 """
+from copy import deepcopy
 from datetime import timedelta
 from collections import deque
 from types import SimpleNamespace
@@ -7842,6 +7843,45 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                                             b=leaf(malformedFar, op="BOGUS"))),
                     [goodNest, malformedFar, malformedChild],
                     "an unevaluable Operator must not hide a malformed far subtree")
+
+            # A compact Edge -- the spec-legal form whose value is the Edge block's
+            # SAID rather than the block -- cannot be dereferenced by either path,
+            # since keripy does not store Edge blocks apart from the ACDC carrying
+            # them. That is an unknown no arrival settles, not a malformed shape, so
+            # a satisfied sibling under OR decides the group. The v1 path deleted
+            # such a member from the reduction entirely and saved the ACDC having
+            # checked nothing about it; both now give the same answer.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             compact=good.said)),
+                     [goodNest],
+                     "OR over a compact Edge")
+
+            # ...and a section that depends on one still refuses.
+            refused(dict(d="", both=group("AND", a=leaf(good), compact=good.said)),
+                    [goodNest],
+                    "AND over a compact Edge")
+
+            # A schema pinned on the Edge Section binds every edge below it, exactly
+            # as one pinned on a nested Edge-group does -- the Section is itself an
+            # Edge-group. This path read `s` only on a nested group and treated it
+            # as a child block at the top, so the same bytes were refused as
+            # malformed here and silently unenforced on v1.
+            goodSchema = dict(good.sad["s"])
+            goodSchema["title"] = "ACM Default Schema (compatible, section floor)"
+            sectionSchemer = Schemer(sed=goodSchema)
+            recipientHby.db.schema.pin(sectionSchemer.said, sectionSchemer)
+            accepted(dict(d="", s=sectionSchemer.said, holder=leaf(good)),
+                     [goodNest],
+                     "a satisfiable pin on the Edge Section itself")
+
+            unsatisfiable = deepcopy(good.sad["s"])
+            unsatisfiable["$id"] = ""
+            unsatisfiable["properties"]["a"]["oneOf"][1]["required"] = ["d", "i", "nope"]
+            unsatisfiableSchemer = Schemer(sed=unsatisfiable)
+            recipientHby.db.schema.pin(unsatisfiableSchemer.said, unsatisfiableSchemer)
+            refused(dict(d="", s=unsatisfiableSchemer.said, holder=leaf(good)),
+                    [goodNest],
+                    "an unsatisfiable pin on the Edge Section itself")
 
             # The origin's own issuer-auth is not a member of anything: no edge
             # points at it, so nothing can outvote it however satisfied its Edge

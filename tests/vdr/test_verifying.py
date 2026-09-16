@@ -2098,9 +2098,51 @@ def test_verifier_reduces_the_edge_section_before_disposing(seeder):
                                                empty=saidify(dict(d=''))))),
                 "OR cannot outvote an empty group", ValidationError)
 
-        # An Edge Section carrying no edges at all is not malformed -- it is the
-        # ordinary shape of an unchained ACDC, and it is vacuously satisfied.
-        saves(dict(d=''), "no edges at all")
+        # An ACDC with no Edge Section at all is vacuously satisfied -- that is the
+        # ordinary shape of an unchained credential, and `farNode` above relies on
+        # it. An Edge Section the Issuer wrote and left empty is a different thing:
+        # it reduces to nothing, and reading it as valid would let an empty group
+        # satisfy an enclosing AND. The v2 IPEX path already refuses it.
+        assert verfer.reger.saved.get(keys=work.saidb) is not None  # source={}
+        refuses(dict(d='', u=Noncer().qb64), "an authored but memberless section",
+                ValidationError)
+
+        # A compact Edge is a spec-legal form whose value is the Edge block's SAID
+        # rather than the block. keripy does not store Edge blocks apart from the
+        # ACDC that carries them, so it cannot be dereferenced -- and the walk
+        # skipped it, which deleted the member from the reduction and saved an ACDC
+        # having checked nothing about that edge: no Operator, no far node, no
+        # registry state. Deleting a member is the same fault as letting a sibling
+        # outvote it, reached a different way.
+        compactSaid = "EEv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+        refuses(dict(d='', work=ok(work.said), compact=compactSaid),
+                "AND over a compact Edge this verifier cannot dereference",
+                ValidationError)
+
+        # It is an unknown no arrival settles, not a malformed shape, so a satisfied
+        # sibling under OR still decides the group -- the same place an unevaluable
+        # Operator takes.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             compact=compactSaid))),
+              "OR over a compact Edge")
+
+        # A schema pinned on the Edge Section binds every edge below it, exactly as
+        # one pinned on a nested Edge-group does. The Section is itself an
+        # Edge-group, so reading the pin one level down and not at the top let an
+        # Issuer's constraint be silently dropped -- and dropping a pin accepts the
+        # far nodes it exists to exclude.
+        incompatible = copy.deepcopy(ianHby.db.schema.get(optionalIssueeSchema).sed)
+        incompatible['$id'] = ''
+        incompatible['properties']['a']['required'] = ['dt', 'claim', 'nope']
+        _, incompatible = Saider.saidify(incompatible, label=Saids.dollar)
+        incompatibleSchemer = Schemer(sed=incompatible)
+        ianHby.db.schema.pin(incompatibleSchemer.said, incompatibleSchemer)
+
+        refuses(dict(d='', s=incompatibleSchemer.said, work=ok(work.said)),
+                "a pin on the Edge Section itself", EdgeRefusalError)
+        saves(dict(d='', s=optionalIssueeSchema, work=ok(work.said)),
+              "a satisfiable pin on the Edge Section itself")
 
         # A section outstanding on two different kinds of evidence escrows in two
         # tables, and .processEscrows polls them in one pass: whichever table does
