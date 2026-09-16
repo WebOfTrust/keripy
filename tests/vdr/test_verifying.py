@@ -2464,14 +2464,40 @@ def test_verifier_edge_group_schema_pin(seeder):
         verifier.processCredential(good, **anchor)
         assert verifier.reger.saved.get(keys=good.said) is not None
 
-        # (4) A pin this verifier cannot resolve to a schema SAID is refused, never
-        # dropped: dropping it would accept far nodes the pin exists to exclude.
-        # v1 resolves pins by SAID, so the inline-document form v2 accepts
-        # (ipexing.py:806-820) is not resolvable here.
+        # (4) A pin this verifier cannot read is never dropped -- dropping it would
+        # accept the far nodes the pin exists to exclude -- but it is a limit of
+        # this verifier's reach rather than a statement that the ACDC is malformed.
+        # v1 resolves pins by SAID, so the inline-document form the v2 path accepts
+        # is unreadable here; that is an unknown no arrival settles, the same place
+        # a compact Edge and an unevaluable Operator take, and not the abort that
+        # well-formedness failures get. The distinction is visible under OR: an
+        # abort cannot be outvoted and an unknown can.
         inline = nearWithGroup("Group pin is an inline schema document.",
                                dict(baseSchemer.sed))
         with pytest.raises(ValidationError):
             verifier.processCredential(inline, **anchor)
         assert verifier.reger.saved.get(keys=inline.said) is None
+        assert verifier.reger.mce.get(keys=inline.said) is None  # no escrow
+
+        # The same unreadable pin under an OR whose other member is satisfied. The
+        # Issuer said either member suffices, and the satisfied one is decided on
+        # evidence in hand, so the group is carried -- where an abort would refuse
+        # an ACDC on account of a constraint this verifier merely cannot read.
+        def said(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256,
+                                      label=Saids.d)
+            return block
+
+        either = said(dict(
+            d='',
+            choose=said(dict(
+                d='', o="OR",
+                readable=said(dict(d='', s=compatSchema,
+                                   far=dict(n=far.said, o="NI2I"))),
+                unreadable=said(dict(d='', s=dict(baseSchemer.sed),
+                                     far=dict(n=far.said, o="NI2I")))))))
+        carried = buildCred("OR carries a member whose pin is unreadable", either)
+        verifier.processCredential(carried, **anchor)
+        assert verifier.reger.saved.get(keys=carried.said) is not None
 
     """End Test"""

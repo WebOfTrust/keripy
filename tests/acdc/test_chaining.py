@@ -14,7 +14,7 @@ import pytest
 
 from keri.kering import ValidationError
 from keri.acdc.chaining import (Verdicts, EdgeVerdict, valid, invalid, unknown,
-                                reduce, MAryReducers)
+                                reduce, reduceOr, MAryReducers)
 
 
 def test_verdict_values():
@@ -232,5 +232,40 @@ def test_reduce_rejects_what_is_not_a_reduction():
 
     with pytest.raises(ValidationError):
         reduce('WAVG', [valid("v")])
+
+
+def test_reduce_honours_a_callers_reducer_table():
+    """The table is policy, so the reduction entry point has to take it.
+
+    ACDC assigns edge-validity logic to the Ecosystem Governance Framework, so which
+    Operators reduce is keripy's default rather than protocol, and both evaluators
+    carry an overridable `MAryReducers` attribute. A reduction that closed over the
+    module-level table would quietly ignore every one of those overrides -- giving
+    three answers to one question, since the two callers would honour a profile's
+    table and the module's own entry point would not.
+    """
+    def reduceNor(verdicts):
+        reduced = reduceOr(verdicts)
+        if reduced.verdict == Verdicts.valid:
+            return invalid(f"NOR: {reduced.reason}")
+        if reduced.verdict == Verdicts.invalid:
+            return valid(f"NOR: {reduced.reason}")
+        return reduced
+
+    policy = dict(MAryReducers, NOR=reduceNor)
+
+    # Unreduced by default, reduced under a table that registers it.
+    with pytest.raises(ValidationError):
+        reduce('NOR', [invalid("i")])
+    assert reduce('NOR', [invalid("i")], reducers=policy).verdict == Verdicts.valid
+    assert reduce('NOR', [valid("v")], reducers=policy).verdict == Verdicts.invalid
+
+    # The default table is not mutated by a caller supplying its own.
+    assert 'NOR' not in MAryReducers
+
+    # An empty group is still malformed whatever the table says, since that is a
+    # statement about the Edge-group's shape rather than about its Operator.
+    with pytest.raises(ValidationError):
+        reduce('NOR', [], reducers=policy)
 
     """End Test"""
