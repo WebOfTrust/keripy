@@ -2100,6 +2100,29 @@ def test_verifier_reduces_the_edge_section_before_disposing(seeder):
         # ordinary shape of an unchained ACDC, and it is vacuously satisfied.
         saves(dict(d=''), "no edges at all")
 
+        # A section outstanding on two different kinds of evidence escrows in two
+        # tables, and .processEscrows polls them in one pass: whichever table does
+        # not match the raised class unescrows the entry, and the *other* table's
+        # write then looks new again, so every outstanding query is re-sent on
+        # every tick for the whole timeout. Emit the queries once, which means
+        # writing one escrow row -- the one whose table matches the class raised.
+        pinned = farNode("pinned by an uncached schema")
+        uncachedSchema = "EDv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"  # never cached
+        assert not verfer.resolver.resolve(uncachedSchema)
+
+        near, error, cues = run(dict(d='', both=saidify(dict(
+            d='', o="AND",
+            pinned=dict(n=pinned.said, o="NI2I", s=uncachedSchema),
+            absent=ok(absentSaid)))), "two kinds of outstanding evidence")
+        assert isinstance(error, (MissingChainError, MissingSchemaError)), error
+        assert [cue["kin"] for cue in cues] == ["query", "proof"]
+
+        for _ in range(3):
+            before = len(verfer.cues)
+            verfer.processEscrows()
+            assert list(verfer.cues)[before:] == [], "re-cued on an escrow pass"
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
     """End Test"""
 
 

@@ -7825,6 +7825,24 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                     [goodNest, _proofed(spare, spareBlinder)],
                     "OR cannot outvote a malformed group shape")
 
+            # ...and a leaf whose Operator this verifier cannot evaluate must still
+            # have its far node evaluated. The leaf's own verdict is already
+            # unknown and nothing below can change that, but the far node's
+            # *shape* is not a truth value, and returning before reaching it lets
+            # a malformed subtree ride in behind an unevaluable token.
+            malformedChild = acdcmap(israid=issuerHab.pre,
+                                     attribute=dict(d="", role="member"),
+                                     iseaid=issuerHab.pre)
+            malformedFar = acdcmap(israid=issuerHab.pre,
+                                   attribute=dict(d="", role="hides a bad shape"),
+                                   edge=dict(d="", broken=dict(d="", o=["AND"],
+                                                               b=leaf(malformedChild))),
+                                   iseaid=issuerHab.pre)
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            b=leaf(malformedFar, op="BOGUS"))),
+                    [goodNest, malformedFar, malformedChild],
+                    "an unevaluable Operator must not hide a malformed far subtree")
+
             # The origin's own issuer-auth is not a member of anything: no edge
             # points at it, so nothing can outvote it however satisfied its Edge
             # Section is.
