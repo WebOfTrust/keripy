@@ -1227,10 +1227,68 @@ class IpexHandler:
         # it, so a section that needs this leaf refuses without escrow while a
         # satisfied sibling under OR decides the group without it.
         unrecognized = [cand for cand in ops if cand not in UnaryEdgeOps]
+
+        # Every schema pin in force on this leaf: those inherited from enclosing
+        # groups first, then the leaf's own. Conjunction, not override -- an
+        # inherited pin is a floor, so a leaf carrying its own `s` must satisfy both
+        # and cannot release itself from a constraint its group placed. This is the
+        # rule settled for edge `s` on issue #1534: when the pinned schema differs
+        # from the far node's own, both validations must pass, and a pin one level
+        # out is no weaker a commitment than a pin on the edge.
+        #
+        # Resolved to (SAID, Schemer-or-None) pairs here, before any verdict is
+        # decided, because a pin whose *shape* this verifier cannot read is
+        # malformed input rather than a truth value -- and a malformed shape must
+        # be caught whatever the Operator on this edge turns out to be.
+        pins = tuple(inheritedPins)
+        if "s" in group:
+            pins = pins + (group["s"],)
+
+        farSchema = fserder.schema if pins else None
+        if isinstance(farSchema, Mapping):
+            farSchemaId = farSchema.get("$id")
+        elif isinstance(farSchema, str):
+            farSchemaId = farSchema
+        else:
+            farSchemaId = None
+        if pins and not isinstance(farSchemaId, str):
+            return None
+
+        resolved = []
+        for edgeSchema in pins:
+            if isinstance(edgeSchema, str):
+                resolved.append((edgeSchema, None))
+            elif isinstance(edgeSchema, Mapping):
+                declared = edgeSchema.get("$id")
+                if not isinstance(declared, str):
+                    return None
+                try:
+                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
+                except (ValidationError, ValueError):
+                    return None
+                if edgeSchemer.said != declared:
+                    return None
+                resolved.append((edgeSchemer.said, edgeSchemer))
+            else:
+                return None
+
+        def withFarNode(own):
+            """Conjoin this leaf's own verdict with the far node's.
+
+            The far node is evaluated whatever this leaf came to. Its verdict
+            cannot change an own-verdict that is already invalid, but its *shape*
+            is not a truth value, so a malformed subtree must be caught even
+            behind an Operator this verifier could not evaluate.
+            """
+            farVerdict = self._evaluateNode(edgeSaid, nodes=nodes, memo=memo)
+            if farVerdict is None:
+                return None
+            return chaining.reduceAnd([own, farVerdict])
+
         if unrecognized:
-            return chaining.unknown(
+            return withFarNode(chaining.unknown(
                 f"unrecognized unary Operator(s) {unrecognized} on edge to node "
-                f"{edgeSaid}; recognized are {list(UnaryEdgeOps)}", retryable=False)
+                f"{edgeSaid}; recognized are {list(UnaryEdgeOps)}", retryable=False))
 
         # The default rule: a bare edge is not an unconstrained edge. `I2I` is appended
         # for a targeted far node and `NI2I` for an untargeted one, which is what makes
@@ -1258,9 +1316,9 @@ class IpexHandler:
         if dop == "DI2I":
             unevaluable = unevaluable + [dop]
         if unevaluable:
-            return chaining.unknown(
+            return withFarNode(chaining.unknown(
                 f"unimplemented unary Operator(s) {unevaluable} on edge to node "
-                f"{edgeSaid}", retryable=False)
+                f"{edgeSaid}", retryable=False))
 
         # Start from a passing state, then knock the edge down to False if
         # any required relation check fails.
@@ -1287,48 +1345,10 @@ class IpexHandler:
                           f"be the far issuee; issuer {nserder.israid} != far issuee "
                           f"{fserder.iseaid}")
 
-        # Every schema pin in force on this leaf: those inherited from enclosing
-        # groups first, then the leaf's own. Conjunction, not override -- an
-        # inherited pin is a floor, so a leaf carrying its own `s` must satisfy both
-        # and cannot release itself from a constraint its group placed. This is the
-        # rule settled for edge `s` on issue #1534: when the pinned schema differs
-        # from the far node's own, both validations must pass, and a pin one level
-        # out is no weaker a commitment than a pin on the edge.
-        pins = tuple(inheritedPins)
-        if "s" in group:
-            pins = pins + (group["s"],)
-
-        farSchema = fserder.schema if pins else None
-        if isinstance(farSchema, Mapping):
-            farSchemaId = farSchema.get("$id")
-        elif isinstance(farSchema, str):
-            farSchemaId = farSchema
-        else:
-            farSchemaId = None
-        if pins and not isinstance(farSchemaId, str):
-            return None
-
         own = None  # set when a pin is neither satisfied nor refused, only unread
-        for edgeSchema in pins:
+        for edgeSchemaId, edgeSchemer in resolved:
             if not matched:
                 break
-
-            edgeSchemer = None
-            if isinstance(edgeSchema, str):
-                edgeSchemaId = edgeSchema
-            elif isinstance(edgeSchema, Mapping):
-                declared = edgeSchema.get("$id")
-                if not isinstance(declared, str):
-                    return None
-                try:
-                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
-                except (ValidationError, ValueError):
-                    return None
-                if edgeSchemer.said != declared:
-                    return None
-                edgeSchemaId = edgeSchemer.said
-            else:
-                return None
 
             # A direct schema SAID match is enough. Otherwise load or build
             # the schema and verify the far node against it.
@@ -1359,14 +1379,8 @@ class IpexHandler:
         # Operator relation that holds against a far node whose issuer-auth is
         # refused, or whose own Edge Section does not reduce, has not established
         # anything. Conjoining them here is what carries the far node's status into
-        # the enclosing m-ary reduction -- and it is evaluated whatever this leaf's
-        # relation came to, so a malformed shape below is still caught even on a
-        # branch the reduction is about to discard.
-        farVerdict = self._evaluateNode(edgeSaid, nodes=nodes, memo=memo)
-        if farVerdict is None:
-            return None
-
-        return chaining.reduceAnd([own, farVerdict])
+        # the enclosing m-ary reduction.
+        return withFarNode(own)
 
     def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, memo,
                            inheritedPins=()):

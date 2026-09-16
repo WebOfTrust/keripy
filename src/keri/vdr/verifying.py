@@ -490,15 +490,20 @@ class Verifier:
             pending = [cause for cause in causes if cause.escrow is not None]
 
             if verdict.retryable and pending:
-                # One escrow row per table, keyed on the near ACDC's SAID, however
-                # many members are outstanding -- but a cue for every one of them, or
-                # the entry ages out having asked for only the member that happened
-                # to be walked first. Cueing is gated on the escrow being new so an
-                # escrow pass that re-runs a credential does not re-send every query.
-                escrows = dict.fromkeys(cause.escrow for cause in pending)
-                fresh = [escrow(creder, prefixer, seqner, saider)
-                         for escrow in escrows]
-                if any(fresh):
+                # One escrow row, in the table whose class this disposition raises,
+                # and a cue for every outstanding member -- naming only the member
+                # that happened to be walked first would age the entry out having
+                # asked for half of what it waits on.
+                #
+                # Exactly one row, even when the members are outstanding on
+                # different kinds of evidence. .processEscrows polls every table in
+                # one pass and _processEscrow drops the entry from any table whose
+                # class does not match what the retry raised, so a second row is
+                # removed and then rewritten on every tick -- which makes the
+                # freshness gate below true every time and re-sends every query for
+                # the whole timeout. The surviving row is the one that matches, so
+                # that is the only one worth writing.
+                if pending[0].escrow(creder, prefixer, seqner, saider):
                     for cause in pending:
                         if cause.cue:
                             self.cues.append(cause.cue)
