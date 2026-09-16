@@ -39,7 +39,11 @@ PreviousRoutes = {
 }
 
 DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
-EdgeSectionLabels = ("d", "u", "o", "w")
+# An Edge Section is itself an Edge-group, so it carries the same reserved labels --
+# including keripy's `s` pin, which binds every edge below it exactly as one on a
+# nested group does. Reading the pin only one level down let an Issuer's constraint
+# be dropped on one path and made the same bytes malformed on the other.
+EdgeSectionLabels = ("d", "u", "s", "o", "w")
 EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
@@ -1076,6 +1080,13 @@ class IpexHandler:
                         for label, node in group.items():
                             if label in labels:
                                 continue
+                            if isinstance(node, str):
+                                # A compact Edge names an Edge block, not a
+                                # disclosed node, so there is nothing to enqueue
+                                # and nothing to require in the nests. Whether it
+                                # can be evaluated at all is the reduction's
+                                # question, not the walk's.
+                                continue
                             if not isinstance(node, Mapping):
                                 return None
                             groups.append((node, True))
@@ -1436,11 +1447,22 @@ class IpexHandler:
         # pin is added to those already in force rather than replacing them, so a
         # nested group cannot relax what its parent required.
         nextPins = tuple(inheritedPins)
-        if nested and "s" in group:
+        if "s" in group:
             nextPins = nextPins + (group["s"],)
         results = []
         for label, node in group.items():
             if label in labels:
+                continue
+            if isinstance(node, str):
+                # A compact Edge: the member's value is the Edge block's SAID rather
+                # than the block. Spec-legal, and not dereferenceable here -- keripy
+                # does not store Edge blocks apart from the ACDC that carries them --
+                # so it is an unknown no arrival settles rather than malformed input.
+                # A section that depends on one refuses; a satisfied sibling under OR
+                # decides the group without it, which is where the v1 path lands too.
+                results.append(chaining.unknown(
+                    f"compact edge {label} names Edge block {node}, which this "
+                    f"verifier cannot dereference", retryable=False))
                 continue
             if not isinstance(node, Mapping):
                 return None

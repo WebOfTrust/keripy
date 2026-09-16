@@ -21,7 +21,8 @@ from ..core import Dater, Saider, Parser, CacheResolver, Schemer
 from ..help import helping
 from ..acdc import chaining
 
-from .eventing import Tevery, Reger, query, walkEdgeSection
+from .eventing import (Tevery, Reger, query, walkEdgeSection,
+                       ReservedEdgeLabels)
 
 logger = ogler.getLogger()
 
@@ -279,7 +280,12 @@ class Verifier:
                 self.verifyGroup(node, path, creder)
                 inherited = pins[path[:-1]] if path else ()
                 own = ()
-                if path and 's' in node:
+                if 's' in node:
+                    # Read at every depth including the Edge Section itself, which
+                    # is an Edge-group and so pins its members the same way. Reading
+                    # it only one level down dropped the pin an Issuer wrote across
+                    # a whole section, and a dropped pin accepts the far nodes it
+                    # exists to exclude.
                     pin = node['s']
                     if not isinstance(pin, str):
                         # A pin this verifier cannot resolve to a schema SAID must
@@ -295,6 +301,27 @@ class Verifier:
                 pins[path] = inherited + own
                 members.setdefault(path, [])
                 groups.append((path, node))
+
+                # A compact Edge's value is the Edge block's SAID rather than the
+                # block, so .walkEdgeSection skips it -- keripy does not store Edge
+                # blocks apart from the ACDC that carries them, and there is nothing
+                # to descend into. Skipping it in the *walk* is right; leaving it out
+                # of the *reduction* is not, because a member that is silently
+                # deleted cannot refuse a section, and an ACDC whose only edge is
+                # compact would save having checked no Operator, no far node and no
+                # registry state. It enters as an unknown no arrival settles: this
+                # verifier cannot dereference it today and no evidence changes that.
+                for label, value in node.items():
+                    if label in ReservedEdgeLabels or isinstance(value, dict):
+                        continue
+                    where = '.'.join(path + (label,))
+                    members[path].append(chaining.unknown(
+                        f"compact edge {where} in credential {creder.said} names "
+                        f"Edge block {value}, which this verifier cannot "
+                        f"dereference", retryable=False,
+                        cause=EdgeCause(UnsupportedOperatorError(
+                            f"Compact edge {where} in credential {creder.said} "
+                            f"cannot be dereferenced"), None, None)))
                 continue
 
             members.setdefault(path[:-1], []).append(
@@ -302,7 +329,7 @@ class Verifier:
 
         verdict = None
         for path, node in reversed(groups):
-            verdict = self.reduceGroup(members[path], node, path, creder)
+            verdict = self.reduceGroup(members[path], node, path, creder, edge=edge)
             if path:
                 members[path[:-1]].append(verdict)
 
@@ -317,7 +344,7 @@ class Verifier:
 
         return verdict
 
-    def reduceGroup(self, verdicts, group, path, creder):
+    def reduceGroup(self, verdicts, group, path, creder, edge=None):
         """ Returns the EdgeVerdict of one Edge-group, reduced over its members
 
         Parameters:
@@ -326,21 +353,29 @@ class Verifier:
             path (tuple): non-reserved labels locating the group within the Edge
                 Section; empty for the Edge Section, which is the top-level group
             creder (Creder): the near (edge-bearing) credential, for diagnostics
+            edge (dict|None): the whole Edge Section block, so an empty one written
+                by the Issuer can be told from an ACDC that carries none at all
 
         Raises:
-            ValidationError: a nested Edge-group with no members. Read as valid it
-                would satisfy an enclosing AND, and read as invalid it would refuse a
-                section its Issuer wrote deliberately, so it is malformed rather than
-                either. An Edge *Section* with no edges is different and ordinary --
-                it is the shape of an unchained ACDC -- and is vacuously satisfied.
+            ValidationError: an Edge-group with no members. Read as valid it would
+                satisfy an enclosing AND, and read as invalid it would refuse a
+                section its Issuer wrote deliberately, so it is malformed rather
+                than either. An ACDC carrying no Edge Section is the exception and
+                is vacuously satisfied, which is what an unchained credential is.
 
         """
         op = group['o'] if 'o' in group else self.DefaultMAryOp
         where = f"edge group {'.'.join(path)}" if path else "the edge section"
 
         if not verdicts:
-            if path:
-                raise ValidationError(f"Edge-group {'.'.join(path)} of credential "
+            # Malformed at any depth, including the Edge Section itself: a group
+            # with no members reduces to nothing, and reading it as valid would let
+            # an empty group satisfy an enclosing AND. An ACDC with no Edge Section
+            # at all is a different shape -- .processCredential passes {} for it --
+            # and stays vacuously satisfied, which is where an unchained credential
+            # lands. The v2 IPEX path has always refused the authored-empty form.
+            if edge:
+                raise ValidationError(f"{where.capitalize()} of credential "
                                       f"{creder.said} has no members to reduce "
                                       f"under {op}")
             return chaining.valid(f"credential {creder.said} carries no edges")
