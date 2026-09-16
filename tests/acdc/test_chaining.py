@@ -155,6 +155,62 @@ def test_reduce_carries_a_reason_from_the_member_that_decided():
     assert "DI2I unimplemented" in both.reason
 
 
+def test_reduce_carries_the_deciding_members_causes():
+    """A reduced verdict carries the caller's payload for the members that decided it.
+
+    A reason is prose, and a disposition needs more than prose. When an Edge Section
+    reduces to something other than valid, v1 has to raise the exception class the
+    evidence produced -- ``EdgeRefusalError`` for a relation decided against,
+    ``MissingChainError`` for a far node not yet in hand, ``MissingSchemaError`` for a
+    pin not yet cached -- and, for the retryable ones, escrow the near ACDC and cue
+    the query that would resolve it. Those are values the caller built while mapping
+    its evidence, and the reduction is the only thing that knows which members
+    survived to decide the group. So it carries them through.
+
+    Opaque on purpose: this module holds no policy, and .causes is whatever the
+    caller put there. It is a tuple rather than one value because a group's unknown
+    genuinely has several contributing members, and a caller that escrows must cue
+    every one of them or the ACDC waits forever on a query nobody sent.
+    """
+    proof = object()      # stands in for a caller's (exception, cue, escrow) record
+    schema = object()
+    revoked = object()
+
+    assert valid("v").causes == ()
+    assert invalid("i", cause=revoked).causes == (revoked,)
+    assert unknown("u", retryable=True, cause=proof).causes == (proof,)
+
+    # A decided group carries the deciding member's causes and no others: under AND
+    # the first invalid member, under OR the first valid one. Anything else would
+    # have the caller raise on account of a member the reduction did not use.
+    V = valid("v")
+    first = invalid("first failure", cause=revoked)
+    second = invalid("second failure", cause=schema)
+    assert reduce('AND', [V, first, second]).causes == (revoked,)
+    assert reduce('OR', [first, V, second]).causes == ()
+
+    # An unknown group gathers every unknown member's causes, in section order.
+    # Cueing only the first would leave the other far node unqueried, so the escrow
+    # would age out having asked for half of what it was waiting on.
+    absent = unknown("far node absent", retryable=True, cause=proof)
+    uncached = unknown("pin not cached", retryable=True, cause=schema)
+    assert reduce('AND', [V, absent, uncached]).causes == (proof, schema)
+    assert reduce('OR', [first, absent, uncached]).causes == (proof, schema)
+
+    # An OR that is invalid was decided by all of its members together, so all of
+    # their causes come through; there is no single one to name.
+    assert reduce('OR', [first, second]).causes == (revoked, schema)
+
+    # A member that carried no cause contributes none, and does not displace the
+    # ones that did.
+    assert reduce('AND', [unknown("bare", retryable=True), absent]).causes == (proof,)
+
+    # Causes are additive to the existing shape, not a replacement for it: a verdict
+    # spelled without one is unchanged.
+    assert valid("far node issued") == EdgeVerdict(Verdicts.valid, True,
+                                                  "far node issued", ())
+
+
 def test_reduce_rejects_what_is_not_a_reduction():
     """An empty group and an unregistered operator are the caller's to refuse.
 
