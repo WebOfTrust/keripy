@@ -446,14 +446,23 @@ class IpexHandler:
     # Receive route-filtered non-sender evidence from Exchanger.
     acceptsEvidence = True
 
-    # Registry state strings this handler treats as terminal, i.e. as refusing the
-    # ACDC bound to them. Deliberately a policy attribute rather than a constant:
-    # ACDC makes a registry's transaction state "a string from a small finite set"
-    # defined *per registry* (spec-body.md:2041, :2092), with issued/revoked only an
-    # example, and keripy already takes the vocabulary from the caller elsewhere
-    # (Blinder.unblind(states=[...])). So what counts as terminal belongs to the
-    # validator's policy, and a deployment overrides this rather than patching the
-    # handler. What this design fixes is only that the answer arrives as a verdict.
+    # A registry's transaction state is "a string from a small finite set of
+    # strings" defined *per registry* (spec-body.md:2041, :2092), with `issued` and
+    # `revoked` only the specification's example -- keripy already takes the
+    # vocabulary from the caller elsewhere (Blinder.unblind(states=[...])). So both
+    # of these are policy attributes rather than constants, and a deployment whose
+    # registries speak a different vocabulary overrides them rather than patching
+    # the handler.
+    #
+    # Two lists rather than one, because a single denylist decides the wrong way for
+    # every word not on it. A state this handler does not recognize is not a state
+    # it can read as good standing: `withdrawn` and `suspended` are as terminal as
+    # `revoked` to the registry that wrote them, and nothing that arrives later
+    # teaches this verifier another registry's vocabulary. So an unrecognized state
+    # is an unknown no arrival settles -- refused where it is load-bearing, absorbed
+    # by a satisfied sibling under OR, which is where every other unreadable thing
+    # in this lattice lands.
+    AcceptedStates = ("issued",)
     TerminalStates = ("revoked",)
 
     # The m-ary Operator reducers this handler applies to an Edge-group. Named here
@@ -1361,27 +1370,45 @@ class IpexHandler:
             if not matched:
                 break
 
-            # A direct schema SAID match is enough. Otherwise load or build
-            # the schema and verify the far node against it.
-            if edgeSchemaId != farSchemaId:
-                if edgeSchemer is None:
+            # The far node is validated against every pin, including one whose SAID
+            # equals the schema the far node declares for itself. There is no
+            # short-circuit on that equality here, because nothing on this path ever
+            # validates a disclosed node against its own schema -- the v1 Verifier
+            # can skip the equal case only because its far node had to be saved, and
+            # saving runs the check. Skipping it here would let a pin be satisfied by
+            # the far node asserting its own type, which is the constraint's whole
+            # content.
+            if edgeSchemer is None:
+                if edgeSchemaId == farSchemaId and isinstance(farSchema, Mapping):
+                    # The far node carries its schema inline and the pin names it.
+                    # Building a Schemer over that document re-derives its SAID, so
+                    # a node whose `$id` does not match its own schema body is
+                    # refused here rather than believed.
+                    try:
+                        edgeSchemer = Schemer(sed=deepcopy(farSchema))
+                    except (ValidationError, ValueError):
+                        return None
+                    if edgeSchemer.said != farSchemaId:
+                        return None
+                else:
                     edgeSchemer = self.hby.db.schema.get(edgeSchemaId)
-                    if edgeSchemer is None:
-                        # Pinned by SAID and not cached yet. Undecided, and unlike a
-                        # pin whose shape this verifier cannot read at all, still
-                        # resolvable -- so it is a retryable unknown rather than
-                        # malformed input, and the recipient may fetch the schema and
-                        # try again.
-                        own = chaining.unknown(
-                            f"edge schema {edgeSchemaId} pinned on the edge to node "
-                            f"{edgeSaid} is not in cache", retryable=True)
-                        break
-                try:
-                    edgeSchemer.verify(fserder.raw)
-                except ValidationError as ex:
-                    matched = False
-                    reason = (f"far node {edgeSaid} does not satisfy edge schema "
-                              f"{edgeSchemaId}: {ex}")
+
+                if edgeSchemer is None:
+                    # Pinned by SAID and not cached yet. Undecided, and unlike a pin
+                    # whose shape this verifier cannot read at all, still resolvable
+                    # -- so it is a retryable unknown rather than malformed input,
+                    # and the recipient may fetch the schema and try again.
+                    own = chaining.unknown(
+                        f"edge schema {edgeSchemaId} pinned on the edge to node "
+                        f"{edgeSaid} is not in cache", retryable=True)
+                    break
+
+            try:
+                edgeSchemer.verify(fserder.raw)
+            except ValidationError as ex:
+                matched = False
+                reason = (f"far node {edgeSaid} does not satisfy edge schema "
+                          f"{edgeSchemaId}: {ex}")
 
         if own is None:
             own = chaining.valid(reason) if matched else chaining.invalid(reason)
@@ -1433,16 +1460,6 @@ class IpexHandler:
         if not isinstance(groupOp, str):
             return None
 
-        if groupOp not in self.MAryReducers:
-            # Recognized by the spec and not reduced here (NAND, NOR, AVG, WAVG), or
-            # not an Operator this verifier knows at all. Either way the group's
-            # validity is unknown and no arrival settles it. Reducing it as AND would
-            # apply a rule the Issuer did not write, and refusing the section outright
-            # would let it outvote siblings that decide the group without it.
-            return chaining.unknown(
-                f"Edge-group Operator {groupOp!r} is not reduced by this verifier; "
-                f"reducible are {sorted(self.MAryReducers)}", retryable=False)
-
         # Nested groups can pin one schema for every child below them. A group's own
         # pin is added to those already in force rather than replacing them, so a
         # nested group cannot relax what its parent required.
@@ -1491,6 +1508,22 @@ class IpexHandler:
             # section its Issuer wrote deliberately. Malformed, therefore, rather
             # than either.
             return None
+
+        if groupOp not in self.MAryReducers:
+            # Recognized by the spec and not reduced here (NAND, NOR, AVG, WAVG), or
+            # not an Operator this verifier knows at all. Either way the group's
+            # validity is unknown and no arrival settles it. Reducing it as AND would
+            # apply a rule the Issuer did not write, and refusing the section outright
+            # would let it outvote siblings that decide the group without it.
+            #
+            # Answered *after* the members are evaluated, not before. Whether this
+            # verifier can reduce the Operator says nothing about whether the blocks
+            # below it are well-formed, and a malformed shape is not a truth value --
+            # returning early let one ride in behind an Operator nobody reduces, the
+            # same fault the leaf path had for an unevaluable unary Operator.
+            return chaining.unknown(
+                f"Edge-group Operator {groupOp!r} is not reduced by this verifier; "
+                f"reducible are {sorted(self.MAryReducers)}", retryable=False)
 
         # Reduce the child verdicts under the group's Operator, over three values
         # rather than two, so an unknown member cannot change a verdict its siblings
@@ -1560,6 +1593,13 @@ class IpexHandler:
         if record.state in self.TerminalStates:
             return chaining.invalid(
                 f"registry {regk} says node {serder.said} is {record.state!r}")
+
+        if record.state not in self.AcceptedStates:
+            return chaining.unknown(
+                f"registry {regk} says node {serder.said} is {record.state!r}, "
+                f"which this verifier does not read as good standing; "
+                f"recognized are {list(self.AcceptedStates)} and "
+                f"{list(self.TerminalStates)}", retryable=False)
 
         return chaining.valid(f"registry {regk} says node {serder.said} is "
                               f"{record.state!r}")
