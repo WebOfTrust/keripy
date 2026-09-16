@@ -1090,6 +1090,7 @@ def test_core_identity():
             "d": "",
             "n": utahAgentAcdcSaid,
             "s": utahAgentSchemaSaid,
+            "o": "I2I",
         },
     }
     compactor = Compactor(mad=guyEdgeBareMad, makify=True, compactify=True,
@@ -1097,12 +1098,13 @@ def test_core_identity():
     guyEdgeMad = compactor.partials[('.UtahAgent',)].mad
     assert guyEdgeMad == \
     {
-        'd': 'EC0gfYR65XpLT6mDE36C2s4nAJ5eR4EtDVSVvoMJtiqM',
+        'd': 'EM9xsVGGYqRqAGtDwkZelZquVMGmQiWQ-jTXq4RbD4LB',
         'UtahAgent':
         {
-            'd': 'EIGBd14taF1wtGkN42FlJsgxDxOO6IIFvqRk8QyinEzh',
+            'd': 'EI5HOuLvPU7shbH7RU_ZW4gdP54vVlOCyLxDuOL1GGp-',
             'n': utahAgentAcdcSaid,
-            's': utahAgentSchemaSaid
+            's': utahAgentSchemaSaid,
+            'o': 'I2I',
         }
     }
 
@@ -1136,7 +1138,7 @@ def test_core_identity():
                            kind=kind)
     #iarValidator.validate(galSerderIar.sad)  # raises error if invalid
 
-    assert guySerderCore.said == 'EE261Aa4PtNCZtYIxKIeyn73Zvxs7NVRCIn8MS0bFwI0'
+    assert guySerderCore.said == 'EHSCo3Kajli7HzUamUa9cHsjyRbcifJNSXU-bvwcYgqW'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == rids[0]
     assert guySerderCore.iseaid == guy
@@ -1144,7 +1146,7 @@ def test_core_identity():
 
     assert guySerderCore.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAbU.',
+        'v': 'ACDCCAACAAJSONAAbe.',
         't': 'acm',
         'd': guySerderCore.said,
         'u': guyUes[0],
@@ -1207,12 +1209,13 @@ def test_core_identity():
         },
         'e':
         {
-            'd': 'EC0gfYR65XpLT6mDE36C2s4nAJ5eR4EtDVSVvoMJtiqM',
+            'd': 'EM9xsVGGYqRqAGtDwkZelZquVMGmQiWQ-jTXq4RbD4LB',
             'UtahAgent':
             {
-                'd': 'EIGBd14taF1wtGkN42FlJsgxDxOO6IIFvqRk8QyinEzh',
+                'd': 'EI5HOuLvPU7shbH7RU_ZW4gdP54vVlOCyLxDuOL1GGp-',
                 'n': utahAgentAcdcSaid,
                 's': utahAgentSchemaSaid,
+                'o': 'I2I',
             }
         },
         'r':
