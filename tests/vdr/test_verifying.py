@@ -14,7 +14,7 @@ from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
                        MtrDex, Saids, Aggor, Noncer, Schemer)
-from keri.kering import (Ilks, Kinds, Vrsn_2_0, MissingSchemaError,
+from keri.kering import (Ilks, Kinds, Vrsn_2_0, KeriError, MissingSchemaError,
                         EdgeRefusalError, UnsupportedOperatorError)
 from keri.help import helping
 from keri.vc import credential
@@ -1924,7 +1924,10 @@ def test_verifier_reduces_the_edge_section_before_disposing(seeder):
                 verfer.processCredential(near, prefixer=ian.kever.prefixer,
                                          seqner=Seqner(sn=ian.kever.sn),
                                          saider=Diger(qb64=ian.kever.serder.said))
-            except ValidationError as ex:
+            except KeriError as ex:
+                # Caught broadly on purpose: MissingChainError, RevokedChainError
+                # and MissingSchemaError are KeriError but not ValidationError, and
+                # which class comes out is exactly what these cases are pinning.
                 error = ex
             return near, error, list(verfer.cues)[before:]
 
@@ -2252,17 +2255,20 @@ def test_verifier_edge_group_schema_pin(seeder):
             return buildCred(claim, section)
 
         # (1) The group's pin is enforced on a member that carries no `s` of its own.
-        # The far node fails it, so the near ACDC must be rejected.
+        # The far node fails it, so the near ACDC must be rejected -- permanently,
+        # since the far node's SAD is fixed under its SAID and the pin under the near
+        # ACDC's, so no arrival makes one satisfy the other.
         bad = nearWithGroup("Group pins a schema the far node fails.", incompatSchema)
-        with pytest.raises(MissingChainError):
+        with pytest.raises(EdgeRefusalError):
             verifier.processCredential(bad, **anchor)
         assert verifier.reger.saved.get(keys=bad.said) is None
 
         # (2) Conjunction, not override: the member's own compatible pin does not
-        # release it from the group's incompatible one.
+        # release it from the group's incompatible one. Permanent for the same
+        # reason as (1).
         both = nearWithGroup("Leaf pin must not escape the group pin.",
                              incompatSchema, leafPin=compatSchema)
-        with pytest.raises(MissingChainError):
+        with pytest.raises(EdgeRefusalError):
             verifier.processCredential(both, **anchor)
         assert verifier.reger.saved.get(keys=both.said) is None
 
