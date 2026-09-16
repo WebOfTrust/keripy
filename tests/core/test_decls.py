@@ -141,3 +141,44 @@ def test_a_malformed_tag_declaration_is_refused(data):
         # And the refusal leaves nothing behind, so a retry is honest rather than hopeful.
         valhab.psr.parse(bytearray(msg))
         assert valhby.db.decls.get(keys=(withab.pre, "tags")) is None
+
+
+def test_a_declaration_travels_over_oobi_to_a_third_party():
+    """The step that makes this a broadcast rather than a private answer.
+
+    A consumer who never contacts the witness resolves an OOBI for a controller the witness
+    witnesses, and the witness's own declaration rides along with the loc scheme and key state it
+    was already sending. Without this the routes would exist and reach nobody.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="ctl", base="test", salt=salt, version=Vrsn_1_0) as ctlhby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab = withby.makeHab(
+            name="wit", isith="1", icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json
+        )
+        # The witness declares itself test infrastructure, into its own database.
+        withab.psr.parse(_decl(withab, tags=["testnet"]))
+        assert withby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+        # A controller this witness witnesses.
+        ctlhab = ctlhby.makeHab(
+            name="ctl", isith="1", icount=1, transferable=True, wits=[withab.pre], toad=1,
+            version=Vrsn_1_0, kind=Kinds.json
+        )
+        withab.psr.parse(bytearray(ctlhab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+
+        # What the witness would serve for an OOBI on that controller, in the witness role.
+        stream = withab.replyToOobi(aid=ctlhab.pre, role="witness", version=Vrsn_1_0,
+                                    kind=Kinds.json, gvrsn=Vrsn_1_0)
+        assert b"/decl/tags" in bytes(stream)
+
+        # A third party that has never spoken to the witness ingests the stream and ends up
+        # holding the declaration.
+        valhab = valhby.makeHab(
+            name="val", isith="1", icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json
+        )
+        valhab.psr.parse(bytearray(withab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+        valhab.psr.parse(bytearray(stream))
+
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
