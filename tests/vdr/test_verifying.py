@@ -2127,6 +2127,15 @@ def test_verifier_reduces_the_edge_section_before_disposing(seeder):
                                              compact=compactSaid))),
               "OR over a compact Edge")
 
+        # Only a string is a compact Edge. Any other non-block member is malformed
+        # and aborts the section, so an OR sibling cannot carry it -- the v2 path
+        # draws the line in the same place.
+        refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                               work=ok(work.said),
+                                               bogus=42))),
+                "OR cannot outvote a member that is neither block nor SAID",
+                ValidationError)
+
         # A schema pinned on the Edge Section binds every edge below it, exactly as
         # one pinned on a nested Edge-group does. The Section is itself an
         # Edge-group, so reading the pin one level down and not at the top let an

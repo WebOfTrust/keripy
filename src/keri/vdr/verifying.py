@@ -315,6 +315,17 @@ class Verifier:
                     if label in ReservedEdgeLabels or isinstance(value, dict):
                         continue
                     where = '.'.join(path + (label,))
+                    if not isinstance(value, str):
+                        # Only a SAID is a compact Edge. Anything else under a
+                        # non-reserved label is neither a block nor a reference to
+                        # one, which says the ACDC is not well-formed rather than
+                        # that some member's validity is unknown -- so it aborts
+                        # here rather than entering the lattice, where a satisfied
+                        # sibling under OR could outvote it.
+                        raise ValidationError(
+                            f"Edge {where} in credential {creder.said} is neither "
+                            f"an Edge block nor an Edge block SAID: "
+                            f"{type(value).__name__}")
                     members[path].append(chaining.unknown(
                         f"compact edge {where} in credential {creder.said} names "
                         f"Edge block {value}, which this verifier cannot "
