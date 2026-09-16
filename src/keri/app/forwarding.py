@@ -32,6 +32,9 @@ class Poster(doing.DoDoer):
     delivers them to one of the target receiver's witnesses for store and forward
     to the intended receiver
 
+    Forwarding bodies remain V1; attachment framing follows this poster's version.
+    Use StreamPoster for native V2 forwarding with nested payloads.
+
     """
 
     def __init__(self, hby, mbx=None, evts=None, cues=None, version=None, kind=None, **kwa):

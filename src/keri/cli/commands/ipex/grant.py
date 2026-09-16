@@ -164,6 +164,7 @@ class GrantDoer(doing.DoDoer):
 
             atc = exchanging.serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
+            # serializeMessage rebuilds this legacy pathed grant with V1 attachments.
             postman.send(serder=exn,
                          attachment=atc, gvrsn=Vrsn_1_0)
 

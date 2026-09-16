@@ -1194,6 +1194,7 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
                      nested=True,
                      gvrsn=gvrsn)
     if extra:
+        # messagize omits pathed/ESSR groups; include them in the outer group's size.
         Counter(qb64b=msg, strip=True, version=gvrsn)
         msg.extend(extra)
         msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup,
