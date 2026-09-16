@@ -102,7 +102,9 @@ class SpurnDoer(doing.DoDoer):
             raise ValueError(f"exn said={self.said} is not a spurnable message, route={route}")
 
         recp = ipex.ked['i']
-        exn, atc = ipexSpurnExn(hab=self.hab, message=self.message, spurned=ipex)
+        gvrsn = self.hab.kever.serder.pvrsn
+        exn, atc = ipexSpurnExn(hab=self.hab, message=self.message, spurned=ipex,
+                               gvrsn=gvrsn)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
@@ -121,7 +123,7 @@ class SpurnDoer(doing.DoDoer):
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
                 postman.send(serder=wexn,
-                             attachment=watc)
+                             attachment=watc, gvrsn=Vrsn_1_0)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
@@ -132,7 +134,7 @@ class SpurnDoer(doing.DoDoer):
             print("Sending spurn message...")
             postman = StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
             postman.send(serder=exn,
-                         attachment=atc)
+                         attachment=atc, gvrsn=gvrsn)
 
             doer = doing.DoDoer(doers=postman.deliver())
             self.extend([doer])

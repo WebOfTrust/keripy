@@ -4,15 +4,17 @@ tests.peer.test_exchanging module
 
 """
 import json
+from base64 import urlsafe_b64decode as decodeB64
 
 import pysodium
 import pytest
 
 from keri import Kinds, Vrsn_1_0, Vrsn_2_0
 from keri.kering import MissingSignatureError
-from keri.core import (Salter, Counter, Dater, Texter, Kevery, Kramer,
-                       Diger, Prefixer, Number,
-                       SealEvent, SealSource, SerderKERI, Parser, messagize,
+from keri.core import (Salter, Counter, Dater, Texter, Pather, Kevery, Kramer,
+                       Diger, Prefixer, Number, Verser, Noncer, Labeler,
+                       SealEvent, SealSource, SealKind, TypeMedia, Mediar,
+                       SerderKERI, Parser, messagize,
                        MtrDex, Codens, exchange)
 
 from keri.app import (Notifier, Counselor, Multiplexor,
@@ -22,6 +24,7 @@ from keri.app.grouping import loadHandlers
 
 from keri.peer import (Exchanger, nesting, serializeMessage, specialExchange,
                        verify)
+from keri.peer.exchanging import serializeParsedSubstream
 from keri.vdr import incept
 
 TEST_VERSION = Vrsn_1_0
@@ -290,7 +293,8 @@ def test_hab_exchange(mockHelpingNowUTC):
                     b'MP0D')
 
 
-def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUTC):
+@pytest.mark.parametrize("binary", [False, True])
+def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUTC, binary):
     with openHab(name="nested-save-src", base="test", salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (_, hab), \
             openHab(name="nested-save-rec", base="test", salt=b'abcdef0123456789', version=Vrsn_2_0, kind=Kinds.json) as (recHby, _):
 
@@ -305,6 +309,26 @@ def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUT
         # The child event carried by the exchange is a framed V2 inception stream
         icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
         inner = SerderKERI(raw=icp)
+        sigers = hab.sign(ser=inner.raw)
+        receipt = (Prefixer(qb64=hab.pre), Number(num=0), Diger(qb64=inner.said), sigers)
+        media = Mediar(data=TypeMedia(Noncer(nonce=""), Noncer(nonce=""),
+                                      Labeler(text="text/plain"), Texter(text="proof")),
+                        makify=True).data
+        bonds = [SealSource(receipt[1], receipt[2]),
+                 SealEvent(*receipt[:3]),
+                 SealKind(Verser(proto="KERI"), Noncer(qb64=inner.said)), media]
+        icp = messagize(inner, sigers=sigers, tsgs=[receipt], lsgs=[(receipt[0], sigers)],
+                       bonds=bonds, framed=True)
+        pathed = Pather(parts=("a", "proof")).qb64b + Texter(raw=b"pathed proof").qb64b
+        group = Counter.enclose(qb64=pathed, code=Codens.PathedMaterialCouples)
+        icp.extend(decodeB64(group) if binary else group)
+        payload = Texter(raw=b"encrypted payload")
+        icp.extend(Counter.enclose(qb64=payload.qb64b, code=Codens.ESSRPayloadGroup))
+
+        # A bare parent may carry an authenticated child without its own signature.
+        child = serializeParsedSubstream(Parser().parse(ims=icp, processive=False)[0])
+        icp = bytearray(inner.raw) + Counter.enclose(
+            qb64=child, code=Codens.AttachmentGroup)
 
         # Wrap that child in a V2 /multisig/icp EXN with one nested substream
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
@@ -337,6 +361,24 @@ def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUT
 
         # The child inside the rebuilt message should be the same child that was originally sent
         assert parsed[0].nests[0].serder.said == inner.said
+        parent = parsed[0].nests[0]
+        assert not parent.sigers
+        assert len(parent.nests) == 1
+        child = parent.nests[0]
+        assert child.serder.raw == inner.raw
+        assert [siger.qb64b for siger in child.sigers] == [siger.qb64b for siger in sigers]
+        assert len(child.tsgs) == 1
+        pre, sn, dig, signatures = child.tsgs[0]
+        assert (pre.qb64, sn.num, dig.qb64) == (hab.pre, 0, inner.said)
+        assert [siger.qb64b for siger in signatures] == [siger.qb64b for siger in sigers]
+        assert len(child.lsgs) == 1
+        assert child.lsgs[0][0].qb64 == hab.pre
+        assert [siger.qb64b for siger in child.lsgs[0][1]] == [siger.qb64b for siger in sigers]
+        for groups, bond in zip((child.sscs, child.ssts, child.tdcs, child.tmqs), bonds):
+            assert len(groups) == 1
+            assert [item.qb64b for item in groups[0]] == [item.qb64b for item in bond]
+        assert child.ptds == [pathed]
+        assert [texter.raw for texter in child.essrs] == [payload.raw]
 
 
 def test_source_seal_couple_round_trips_as_resolved_triple(mockHelpingNowUTC):
