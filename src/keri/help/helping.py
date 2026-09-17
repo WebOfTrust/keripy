@@ -302,13 +302,22 @@ def intToB64b(i, l=1):
 def b64ToInt(s):
     """
     Returns conversion of Base64 str s or bytes to int"""
+    # local import avoids a circular import: kering imports helping at load time
+    from .. import kering
     if not s:
         raise ValueError("Empty string, conversion undefined.")
     if hasattr(s, 'decode'):
-        s = s.decode("utf-8")
+        try:
+            s = s.decode("utf-8")
+        except UnicodeDecodeError as ex:
+            raise kering.ConversionError(f"Invalid non-UTF-8 Base64 = {s!r}.") from ex
     i = 0
-    for e, c in enumerate(reversed(s)):
-        i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
+    try:
+        for e, c in enumerate(reversed(s)):
+            i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
+    except KeyError as ex:
+        raise kering.ConversionError(f"Invalid non-Base64 character = {ex} "
+                                     f"in {s!r}.") from ex
     return i
 
 
