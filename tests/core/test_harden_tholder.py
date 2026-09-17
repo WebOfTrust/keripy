@@ -13,10 +13,8 @@ Two problems:
   2. Some pathological-but-not-crashing thresholds were accepted silently
      (thousands of clauses / weights). A sane clause/weight count is enforced.
 
-Because keripy callers (and the existing test_coring suite) catch ValueError
-around Tholder, the narrowed error kering.ThresholdError subclasses BOTH
-ValidationError (so `except KeriError` now catches it) and ValueError (so no
-existing catch/assertion breaks) -- a pure narrowing.
+Tholder raises kering.ValidationError (an existing KeriError subclass) for
+these failures, so hostile input no longer escapes `except KeriError`.
 
 Seeded from hardening/probes/probe_part_a.py and probe_numeric_size.py.
 """
@@ -51,13 +49,36 @@ def test_tholder_hostile_sith_raises_keri_error(sith, cid):
         Tholder(sith=sith)
 
 
-def test_tholder_hostile_sith_also_valueerror():
-    """The narrowed error stays a ValueError, so existing callers/tests are
-    unaffected (pure narrowing)."""
-    with pytest.raises(ValueError):
-        Tholder(sith=["1/0"])
+def test_tholder_hostile_sith_is_keri_error():
+    """The narrowed error is a ValidationError, hence a KeriError, so it is
+    caught by every `except KeriError` guard (P6: no longer a builtin
+    ValueError subclass)."""
     with pytest.raises(kering.KeriError):
         Tholder(sith=["1/0"])
+
+
+def test_tholder_deep_json_sith_rejected():
+    """P3: a deeply-nested sith string overflowed the C stack inside json.loads
+    (raw RecursionError); the length is bounded before json.loads runs."""
+    with pytest.raises(kering.ValidationError):
+        Tholder(sith="[" * 100000)
+
+
+def test_tholder_weight_product_blowup_rejected():
+    """P4: Limit bounds clause count and per-clause weight count independently
+    but not their product; [["1/1000"]*1000]*1000 (~10 MB, ~1e6 Fractions) was
+    accepted.  A cap on the total leaf/weight count across all clauses rejects
+    it before any Fraction is built."""
+    with pytest.raises(kering.ValidationError):
+        Tholder(sith=[["1/1000"] * 1000] * 1000)
+
+
+def test_tholder_large_but_reasonable_still_accepted():
+    """P4 narrowing proof: a legitimately large multisig threshold (well under
+    the total-leaf cap) is still accepted."""
+    tholder = Tholder(sith=["1/100"] * 100)  # 100 signers, sums to 1
+    assert tholder.weighted
+    assert tholder.size == 100
 
 
 # ---- silently-accepted pathological thresholds now bounded ------------------

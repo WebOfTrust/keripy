@@ -24,7 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
                       InvalidVarRawSizeError, ConversionError, InvalidValueError,
-                      ValidationError, ThresholdError, VersionError, ShortageError,
+                      ValidationError, VersionError, ShortageError,
                       UnexpectedCodeError, DeserializeError, Versionage,
                       UnexpectedCountCodeError, UnexpectedOpCodeError,
                       versify, deversify, smell, MAXVERFULLSPAN,
@@ -4316,11 +4316,20 @@ class Tholder:
         ._satisfy_numeric is numeric threshold verification method
         ._satisfy_weighted is fractional weighted threshold verification method"""
 
-    # Upper bound on the number of clauses in a weighted threshold and on the
-    # number of weights within any one clause. Real multisig thresholds have at
-    # most tens of participants; this generous cap bounds the work done parsing
-    # a hostile sith (thousands of clauses/weights were previously accepted).
+    # Upper bound on the number of clauses in a weighted threshold, on the
+    # number of weights within any one clause, and on the TOTAL weight/leaf
+    # count across all clauses. Real multisig thresholds have at most tens of
+    # participants; this generous cap bounds the work done parsing a hostile
+    # sith (thousands of clauses/weights, or their product, were previously
+    # accepted).
     Limit = 1000
+
+    # Upper bound on the length of a JSON-string sith before it is handed to
+    # json.loads. A deeply-nested string (e.g. "[" * 100000) overflows the C
+    # stack inside the decoder (raw RecursionError); this bound rejects it
+    # first. Far larger than any real threshold (hundreds of weights) yet far
+    # below the JSON nesting depth that overflows the stack.
+    MaxSith = 4096
 
     def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
@@ -4530,22 +4539,27 @@ class Tholder:
             try:
                 thold = int(sith, 16)
             except ValueError as ex:
-                raise ThresholdError(f"Invalid threshold = {sith}.") from ex
+                raise ValidationError(f"Invalid threshold = {sith}.") from ex
             self._processUnweighted(thold=thold)
 
         else:  # assumes sequence of weights or sequence of sequence of weights
             if isinstance(sith, str):  # json of weighted sith from cli
+                # bound length before json.loads: a deeply-nested string
+                # overflows the C stack inside the decoder (raw RecursionError)
+                if len(sith) > self.MaxSith:
+                    raise ValidationError(f"Threshold JSON length {len(sith)} "
+                                          f"exceeds limit {self.MaxSith}.")
                 try:
                     sith = json.loads(sith)  # deserialize
                 except json.JSONDecodeError as ex:
-                    raise ThresholdError(f"Invalid threshold JSON = {sith}.") from ex
+                    raise ValidationError(f"Invalid threshold JSON = {sith}.") from ex
 
             if not isNonStringSequence(sith):  # e.g. float, mapping, or other scalar
-                raise ThresholdError(f"Invalid sith = {sith}, expected a sequence "
+                raise ValidationError(f"Invalid sith = {sith}, expected a sequence "
                                      f"of weights.")
 
             if not sith:  # empty or None
-                raise ThresholdError(f"Empty weight list = {sith}.")
+                raise ValidationError(f"Empty weight list = {sith}.")
 
             # is it non str sequence of sequences? or non str sequnce of strs?
             # must test for emply mask because all([]) == True
@@ -4556,18 +4570,39 @@ class Tholder:
             # bound resource use: reject pathological clause / weight counts
             # before converting thousands of fractions (previously accepted).
             if len(sith) > self.Limit:
-                raise ThresholdError(f"Threshold clause count {len(sith)} "
+                raise ValidationError(f"Threshold clause count {len(sith)} "
                                      f"exceeds limit {self.Limit}.")
             for c in sith:
                 if isNonStringSequence(c) and len(c) > self.Limit:
-                    raise ThresholdError(f"Threshold weight count {len(c)} in "
+                    raise ValidationError(f"Threshold weight count {len(c)} in "
                                          f"clause exceeds limit {self.Limit}.")
+
+            # bound the TOTAL weight/leaf count across all clauses, not just each
+            # dimension independently: clauses x weights (e.g. [["1/1000"]*1000]
+            # *1000) otherwise builds ~1e6 Fractions before any per-dimension cap
+            # trips. Count leaves (nested map values included) and stop early.
+            leaves = 0
+            for c in sith:
+                if isNonStringSequence(c):
+                    for e in c:
+                        if isinstance(e, Mapping):
+                            for k in e:
+                                v = e[k]
+                                leaves += 1 + (len(v) if isNonStringSequence(v)
+                                               else 1)
+                        else:
+                            leaves += 1
+                else:
+                    leaves += 1
+                if leaves > self.Limit:
+                    raise ValidationError(f"Threshold total weight count exceeds "
+                                          f"limit {self.Limit}.")
 
             for c in sith:  # get each clause
                 # each element of a clause must be a str or dict
                 mask = [(isinstance(w, str) or isinstance(w, Mapping)) for w in c]
                 if mask and not all(mask):  # not empty and not sequence of str or dicts
-                    raise ThresholdError(f"Invalid sith = {sith} some weights in"
+                    raise ValidationError(f"Invalid sith = {sith} some weights in"
                                      f"clause {c} are non string.")
 
             # replace weight str expression, int str or fractional strings with
@@ -4581,7 +4616,7 @@ class Tholder:
                 for e in c:  # each element of clause c
                     if isinstance(e, Mapping):
                         if len(e) != 1:
-                            raise ThresholdError(f"Invalid sith = {sith} nested "
+                            raise ValidationError(f"Invalid sith = {sith} nested "
                                              f"weight map {e} in clause {c} "
                                              f" not single key value.")
                         k = list(e)[0]  # zeroth key is used
@@ -4602,7 +4637,7 @@ class Tholder:
         Parameters:
             thold (int): non-negative threshold number M-of-N threshold"""
         if thold < 0:
-            raise ThresholdError(f"Non-positive int threshold = {thold}.")
+            raise ValidationError(f"Non-positive int threshold = {thold}.")
         self._thold = thold
         self._weighted = False
         self._size = self._thold  # used to verify that keys list size is at least size
@@ -4625,13 +4660,13 @@ class Tholder:
                 if isinstance(e, tuple):
                     top.append(e[0])
                     if not (sum(e[1]) >= 1):
-                        raise ThresholdError(f"Invalid sith clause = {clause}, "
+                        raise ValidationError(f"Invalid sith clause = {clause}, "
                                          f"element = {e}. All nested clause "
                                          f"weight sums must be >= 1.")
                 else:
                     top.append(e)
             if not (sum(top) >= 1):
-                raise ThresholdError(f"Invalid sith clause = {clause}, all top level"
+                raise ValidationError(f"Invalid sith clause = {clause}, all top level"
                                  f"clause weight sums must be >= 1.")
 
         self._thold = thold
@@ -4686,16 +4721,16 @@ class Tholder:
                 raise TypeError(f"Invalid weight str got float w={w}.")
             w = int(w)  # expression is int str
         except TypeError as ex:
-            raise ThresholdError(str(ex)) from ex
+            raise ValidationError(str(ex)) from ex
 
         except (ValueError, OverflowError) as ex:  # not float/int str so try ratio str
             try:  # ratio str; narrows ZeroDivisionError/OverflowError/huge-int
                 w = Fraction(w)
             except (ValueError, ZeroDivisionError, OverflowError, TypeError) as ex2:
-                raise ThresholdError(f"Invalid weight = {w}.") from ex2
+                raise ValidationError(f"Invalid weight = {w}.") from ex2
 
         if not 0 <= w <= 1:
-            raise ThresholdError(f"Invalid weight not 0 <= {w} <= 1.")
+            raise ValidationError(f"Invalid weight not 0 <= {w} <= 1.")
         return w
 
 

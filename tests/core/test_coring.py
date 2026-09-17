@@ -6825,86 +6825,86 @@ def test_tholder():
     assert tholder.satisfy(indices=list(range(tholder.thold)))
 
 
-    with pytest.raises(ValueError):  # not 0 <= w <= 1
+    with pytest.raises(ValidationError):  # not 0 <= w <= 1
         tholder = Tholder(sith=-1)
 
     tholder = Tholder(sith=2)  # single weight not weighted
     assert not tholder.weighted
     assert  tholder.thold == 2
 
-    with pytest.raises(ValueError):  # json with int not str for given weight
+    with pytest.raises(ValidationError):  # json with int not str for given weight
         tholder = Tholder(sith='[1]')
 
-    with pytest.raises(ValueError):  # json with int not str for given weight
+    with pytest.raises(ValidationError):  # json with int not str for given weight
         tholder = Tholder(sith='[2]')
 
-    with pytest.raises(ValueError):  # json but not 0 <= w <= 1 for a given weight
+    with pytest.raises(ValidationError):  # json but not 0 <= w <= 1 for a given weight
         tholder = Tholder(sith='["2"]')
 
-    with pytest.raises(ValueError):  # json but given weight evals to float
+    with pytest.raises(ValidationError):  # json but given weight evals to float
         tholder = Tholder(sith='["0.5", "0.5"]')
 
-    with pytest.raises(ValueError):  # non int for unweighted
+    with pytest.raises(ValidationError):  # non int for unweighted
         tholder = Tholder(sith="1.0")
 
-    with pytest.raises(ValueError):  # non int for unweighted
+    with pytest.raises(ValidationError):  # non int for unweighted
         tholder = Tholder(sith="0.5")
 
-    with pytest.raises(ValueError):  # ratio of floats
+    with pytest.raises(ValidationError):  # ratio of floats
         tholder = Tholder(sith="1.0/2.0")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=["1/3", "1/2", []])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=["1/3", "1/2"])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[[], []])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[["1/3", "1/2"], ["1"]])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[["1/3", "1/2"], []])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2", "3/2"]])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=["1/2", "1/2", "3/2"])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2", "2/1"]])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=["1/2", "1/2", "2/1"])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=["1/2", "1/2", "2"])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2", "2"]])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], "1"])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], 1])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=[["1/2", "1/2"], "1.0"])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=["1/2", "1/2", []])
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(ValidationError) as ex:
         tholder = Tholder(sith=["1/2", 0.5])
 
     tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
@@ -7168,13 +7168,13 @@ def test_tholder():
     assert tholder.json == '[{"1/3": ["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["1", "1"]}]'
     assert tholder.num == None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[{"1/3":["1/3", "1/3", "1/4"]}, "1/3", "1/2", {"1/2": ["1", "1"]}])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[{"1/3":["1/2", "1/2", "1/2"]}, "1/3", "1/2", {"1/2": ["2/3", "1/4"]}])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[{"1/5":["1/2", "1/2", "1/2"]}, "1/4", "1/5", {"1/5": ["1", "1"]}])
 
     # test new nested weighted with Mapping dict with two clauses
@@ -7238,10 +7238,10 @@ def test_tholder():
                             '["1/2", ''{"1/2": ["1", "1"]}]]')
     assert tholder.num == None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[[{"1/3":["1/2", "1/2", "1/2"]}, "1/2", {"1/2": ["1", "1"]}], ["1/2", {"1/3": ["1", "1"]}]])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tholder = Tholder(sith=[[{"1/3":["1/3", "1/4", "1/3"]}, "1/2", {"1/2": ["1", "1"]}], ["1/2", {"1/2": ["1/2", "1/2"]}]])
 
 
