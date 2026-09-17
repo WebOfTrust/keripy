@@ -135,6 +135,229 @@ IarSchema = \
   'additionalProperties': False
 }
 
+CoreSchemaSaid = 'EOsOAvOK5Uicg5o8za3psR1zaq_BL5laSMx0Psdpf83d'
+CoreSchema = \
+{
+  '$id': 'EOsOAvOK5Uicg5o8za3psR1zaq_BL5laSMx0Psdpf83d',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Core Schema',
+  'description': 'SEDI Core Identity JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Core_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'givenName',
+            'middleName',
+            'familyName',
+            'birthDate',
+            'facialImageProof',
+            'legalPresenceStatus',
+            'issuedDate',
+            'expirationDate',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'givenName':
+            {
+              'description': 'Given Name Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Given Name Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'middleName':
+            {
+              'description': 'Middle Name(s) Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Middle Name(s) Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'familyName':
+            {
+              'description': 'Family Name Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Family Name Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'birthDate':
+            {
+              'description': 'Birth Date Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Birth Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'facialImageProof':
+            {
+              'description': 'Facial Image Proof Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Facial Image Proof Value as SAID of typed media block', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'legalPresenceStatus':
+            {
+              'description': 'Legal Presense Status Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Legal Presense Status Value i.e. citizen', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'issuedDate':
+            {
+              'description': 'Issued Date Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'expirationDate':
+            {
+              'description': 'Expiration Date Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'utahAgent'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'utahAgent':
+            {
+              'description': 'Utah Agent Edge Block',
+              'type': 'object',
+              'required': ['d', 'u', 'n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+
 
 def test_sedi_schema():
     """Test setup of schema for core SEDI acdcs"""
@@ -252,6 +475,10 @@ def test_sedi_schema():
     iarSchemaSAID = mapper.said
     assert  iarSchemaSAID == 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd'
 
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+
+    assert mapper.mad == IarSchema
+
     assert mapper.mad == \
     {
       '$id': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
@@ -365,9 +592,458 @@ def test_sedi_schema():
 
     #mapper.raw   # compact json of mapper
 
-    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
 
-    assert mapper.mad == IarSchema
+
+    # Core SEDI Schema
+
+    coreSchemaMad = \
+    {
+        "$id": "",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "SEDI Core Schema",
+        "description": "SEDI Core Identity JSON Schema for acm ACDC.",
+        "credentialType": "SEDI_Core_ACDC_acm_message",
+        "version": "0.1.0",
+        "type": "object",
+        "required": ["v", "d", "i", "rd", "s", "a", "e", "r"],
+        "properties":
+        {
+            "v": {"description": "ACDC version string", "type": "string"},
+            "t": {"description": "Message type", "type": "string"},
+            "d": {"description": "Message SAID", "type": "string"},
+            "u": {"description": "Message UE", "type": "string"},
+            "i": {"description": "Issuer AID", "type": "string"},
+            "rd": {"description": "Registry SAID", "type": "string"},
+            "s":
+            {
+                "description": "Schema Section",
+                "oneOf":
+                [
+                    {"description": "Schema Section SAID", "type": "string"},
+                    {"description": "Schema Section Detail", "type": "object"}
+                ]
+            },
+            "a":
+            {
+                "description": "Attribute Section",
+                "oneOf":
+                [
+                    {"description": "Attribute Section SAID", "type": "string"},
+                    {
+                        "description": "Attribute Section Detail",
+                        "type": "object",
+                        "required":
+                        [
+                            'd',
+                            'u',
+                            'i',
+                            'givenName',
+                            'middleName',
+                            'familyName',
+                            'birthDate',
+                            'facialImageProof',
+                            'legalPresenceStatus',
+                            'issuedDate',
+                            'expirationDate',
+                        ],
+                        "properties":
+                        {
+                            "d": {"description": "Attribute Section SAID", "type": "string"},
+                            "u": {"description": "Attribute Section UE", "type": "string"},
+                            "i": {"description": "Issuee SMAID SEDI Management AID", "type": "string"},
+                            "givenName":
+                            {
+                              'description': 'Given Name Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Given Name Value', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'middleName':
+                            {
+                              'description': 'Middle Name(s) Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Middle Name(s) Value', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'familyName':
+                            {
+                              'description': 'Family Name Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Family Name Value', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'birthDate':
+                            {
+                              'description': 'Birth Date Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Birth Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'facialImageProof':
+                            {
+                              'description': 'Facial Image Proof Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Facial Image Proof Value as SAID of typed media block', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'legalPresenceStatus':
+                            {
+                              'description': 'Legal Presense Status Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Legal Presense Status Value i.e. citizen', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'issuedDate':
+                            {
+                              'description': 'Issued Date Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            },
+                            'expirationDate':
+                            {
+                              'description': 'Expiration Date Block',
+                              'type': 'object',
+                              'required': ['d', 'u', 'value'],
+                              'properties':
+                              {
+                                'd': {'description': 'Block SAID', 'type': 'string'},
+                                'u': {'description': 'Bock UE', 'type': 'string'},
+                                'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                              },
+                              'additionalProperties': False
+                            }
+                        },
+                        "additionalProperties": False
+                    }
+                ]
+            },
+            "e":
+            {
+                "description": "Edge Section",
+                "oneOf":
+                [
+                    {"description": "Edge Section SAID", "type": "string"},
+                    {
+                        "description": "Edge Section Detail",
+                        "type": "object",
+                        "required": ["d", "u", "utahAgent"],
+                        "properties":
+                        {
+                            "d": {"description": "Edge Section SAID", "type": "string"},
+                            "u": {"description": "Edge Section UE", "type": "string"},
+                            "utahAgent":
+                            {
+                                "description": "Utah Agent Edge Block",
+                                "type": "object",
+                                "required": ["d", "u", "n", "s", "o"],
+                                "properties":
+                                {
+                                  "d": {"description": "Edge SAID", "type": "string"},
+                                  "u": {"description": "Edge UE", "type": "string"},
+                                  "n": {"description": "Far Node SAID", "type": "string"},
+                                  "s": {"description": "Far Node Schema SAID", "type": "string"},
+                                  "o": {"description": "Edge Unary Operator", "type": "string"},
+                                },
+                                "additionalProperties": False
+                            },
+                        },
+                        "additionalProperties": False
+                    }
+                ]
+            },
+            "r":
+            {
+                "description": "Rule Section",
+                "oneOf":
+                [
+                    {"description": "Rule Section SAID", "type": "string"},
+                    {
+                        "description": "Rule Section Detail",
+                        "type": "object",
+                        "required": ["d", "l"],
+                        "properties":
+                        {
+                            "d": {"description": "Rule Section SAID", "type": "string"},
+                            "l": {"description": "Legal Language", "type": "string"}
+                        },
+                        "additionalProperties": False
+                    }
+                ]
+            }
+        },
+        "additionalProperties": False
+    }
+    mapper = Mapper(mad=coreSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    coreSchemaSaid = mapper.said
+    assert  coreSchemaSaid == 'EOsOAvOK5Uicg5o8za3psR1zaq_BL5laSMx0Psdpf83d'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert coreSchemaSaid == CoreSchemaSaid
+    assert mapper.mad == CoreSchema
+
+    assert mapper.mad == \
+    {
+      '$id': 'EOsOAvOK5Uicg5o8za3psR1zaq_BL5laSMx0Psdpf83d',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Core Schema',
+      'description': 'SEDI Core Identity JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Core_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        "rd": {"description": "Registry SAID", "type": "string"},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'givenName',
+                'middleName',
+                'familyName',
+                'birthDate',
+                'facialImageProof',
+                'legalPresenceStatus',
+                'issuedDate',
+                'expirationDate',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                "givenName":
+                {
+                  'description': 'Given Name Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Given Name Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'middleName':
+                {
+                  'description': 'Middle Name(s) Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Middle Name(s) Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'familyName':
+                {
+                  'description': 'Family Name Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Family Name Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'birthDate':
+                {
+                  'description': 'Birth Date Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Birth Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'facialImageProof':
+                {
+                  'description': 'Facial Image Proof Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Facial Image Proof Value as SAID of typed media block', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'legalPresenceStatus':
+                {
+                  'description': 'Legal Presense Status Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Legal Presense Status Value i.e. citizen', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'issuedDate':
+                {
+                  'description': 'Issued Date Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'expirationDate':
+                {
+                  'description': 'Expiration Date Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                }
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'utahAgent'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'utahAgent':
+                {
+                  'description': 'Utah Agent Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                }
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
 
     """done test"""
 
@@ -922,6 +1598,9 @@ def test_core_identity():
         }
     }
 
+    # CoreSEDI ACDC setup
+    coreValidator = SchemaValidator(schema=CoreSchema)  # create validator for core SEDI ACDCs
+
     salt = b'guyscoresedisalt'  # base salt
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
@@ -1085,9 +1764,11 @@ def test_core_identity():
     guyEdgeBareMad = \
     {
         "d": "",
-        "UtahAgent":
+        "u": guyUes[10],
+        "utahAgent":
         {
             "d": "",
+            "u": guyUes[11],
             "n": utahAgentAcdcSaid,
             "s": utahAgentSchemaSaid,
             "o": "I2I",
@@ -1095,13 +1776,15 @@ def test_core_identity():
     }
     compactor = Compactor(mad=guyEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
-    guyEdgeMad = compactor.partials[('.UtahAgent',)].mad
+    guyEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyEdgeMad == \
     {
-        'd': 'EM9xsVGGYqRqAGtDwkZelZquVMGmQiWQ-jTXq4RbD4LB',
-        'UtahAgent':
+        'd': 'EDi37yTAxh7v3J6QlLG1ZQDnDASUgrIWo3kg5BOYzwA-',
+        'u': guyUes[10],
+        'utahAgent':
         {
-            'd': 'EI5HOuLvPU7shbH7RU_ZW4gdP54vVlOCyLxDuOL1GGp-',
+            'd': 'EB1aIgsOBz7V55G7gfoehU0G9SipPihYS_iSQ12pYZAM',
+            'u': guyUes[11],
             'n': utahAgentAcdcSaid,
             's': utahAgentSchemaSaid,
             'o': 'I2I',
@@ -1125,20 +1808,22 @@ def test_core_identity():
 
     # core sedi credential ACDC issued by Sue AID to Guy SMAID
 
-    coreSchemaSaid = Diger(ser=b"PretendUtahCoreSchema").qb64
-    assert coreSchemaSaid == 'EHyWqa53NlzFlUAB0Z4GIkb4kse7Kr-74WwBB44lmuG4'
+    #coreSchemaSaid = Diger(ser=b"PretendUtahCoreSchema").qb64
+    #assert coreSchemaSaid == 'EHyWqa53NlzFlUAB0Z4GIkb4kse7Kr-74WwBB44lmuG4'
 
     guySerderCore = acdcmap(israid=sue,
                             uuid=guyUes[0],
                             regid=rids[0],
-                            schema=coreSchemaSaid,
-                           attribute=guyCoreAttMad,
-                           edge=guyEdgeMad,
-                           rule=guyRuleMad,
-                           kind=kind)
-    #iarValidator.validate(galSerderIar.sad)  # raises error if invalid
+                            schema=CoreSchemaSaid,
+                            attribute=guyCoreAttMad,
+                            edge=guyEdgeMad,
+                            rule=guyRuleMad,
+                            kind=kind)
 
-    assert guySerderCore.said == 'EHSCo3Kajli7HzUamUa9cHsjyRbcifJNSXU-bvwcYgqW'
+    coreValidator.validate(guySerderCore.sad)  # raises error if invalid
+
+    assert guySerderCore.said == 'EMH-J3HiB3AaOJkKzBELhX_YWWd3cRpojW46UYMxh4eF'
+    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAcc.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == rids[0]
     assert guySerderCore.iseaid == guy
@@ -1146,13 +1831,13 @@ def test_core_identity():
 
     assert guySerderCore.sad == \
     {
-        'v': 'ACDCCAACAAJSONAAbe.',
+        'v': guySerderCore.verstr,
         't': 'acm',
         'd': guySerderCore.said,
         'u': guyUes[0],
         'i': sue,
         'rd': rids[0],
-        's': coreSchemaSaid,
+        's': CoreSchemaSaid,
         'a':
         {
             'd': guyCoreAttMadSaid,
@@ -1209,10 +1894,12 @@ def test_core_identity():
         },
         'e':
         {
-            'd': 'EM9xsVGGYqRqAGtDwkZelZquVMGmQiWQ-jTXq4RbD4LB',
-            'UtahAgent':
+            'd': 'EDi37yTAxh7v3J6QlLG1ZQDnDASUgrIWo3kg5BOYzwA-',
+            'u': guyUes[10],
+            'utahAgent':
             {
-                'd': 'EI5HOuLvPU7shbH7RU_ZW4gdP54vVlOCyLxDuOL1GGp-',
+                'd': 'EB1aIgsOBz7V55G7gfoehU0G9SipPihYS_iSQ12pYZAM',
+                'u': guyUes[11],
                 'n': utahAgentAcdcSaid,
                 's': utahAgentSchemaSaid,
                 'o': 'I2I',
