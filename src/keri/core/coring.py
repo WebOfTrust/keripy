@@ -1379,6 +1379,8 @@ class Matter:
         # these are well formed.
         # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
 
+        if len(qb64b) < cs:  # need more bytes to cover soft size field
+            raise ShortageError(f"Need {cs - len(qb64b)} more characters.")
 
         # extract soft chars including xtra, empty when ss==0 and xs == 0
         # assumes that when ss == 0 then xs must be 0

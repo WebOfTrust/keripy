@@ -305,7 +305,7 @@ def b64ToInt(s):
     # local import avoids a circular import: kering imports helping at load time
     from .. import kering
     if not s:
-        raise ValueError("Empty string, conversion undefined.")
+        raise kering.ConversionError("Empty string, conversion undefined.")
     if hasattr(s, 'decode'):
         try:
             s = s.decode("utf-8")

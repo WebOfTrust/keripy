@@ -48,6 +48,25 @@ def test_indexer_nonb64_index_raises_keri_error():
         indexing.Indexer(qb64b=b"A!!" + b"A" * 85)
 
 
+def test_matter_truncated_varsize_raises_shortage_error():
+    """P2: Matter._exfil sliced the soft size field without checking the buffer
+    covers cs = hs+ss, so a truncated variable-size primitive fed b64ToInt("")
+    and raised a raw ValueError.  A truncated tail must raise ShortageError so a
+    stream parser waits for more bytes (as Indexer._exfil already does)."""
+    for code in (b"4A", b"5A", b"6A", b"7AAA"):
+        with pytest.raises(kering.ShortageError):
+            coring.Matter(qb64b=code)
+
+
+def test_b64toint_empty_raises_conversion_error():
+    """P2 (defense in depth): b64ToInt("") raised a raw ValueError; narrow it to
+    ConversionError like its other two failure modes."""
+    with pytest.raises(kering.ConversionError):
+        helping.b64ToInt("")
+    with pytest.raises(kering.ConversionError):
+        helping.b64ToInt(b"")
+
+
 def test_b64toint_valid_input_unchanged():
     """Narrowing proof: every valid Base64 input converts to the same int."""
     # single and multi-char, str and bytes, must be identical to prior behavior
