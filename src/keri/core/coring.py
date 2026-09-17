@@ -3019,7 +3019,10 @@ class Pather(Matter):
             path = '/'.join(parts)
 
         else:
-            path = self.raw.decode()
+            try:
+                path = decodeUtf8(self.raw)  # narrows non-UTF-8 raw bytes
+            except ConversionError as ex:  # to Pather's InvalidValueError contract
+                raise InvalidValueError(f"Non-UTF-8 Pather raw={self.raw!r}.") from ex
 
         return path
 
@@ -3039,7 +3042,10 @@ class Pather(Matter):
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
         else:
-            path = self.raw.decode()
+            try:
+                path = decodeUtf8(self.raw)  # narrows non-UTF-8 raw bytes
+            except ConversionError as ex:  # to Pather's InvalidValueError contract
+                raise InvalidValueError(f"Non-UTF-8 Pather raw={self.raw!r}.") from ex
             parts = path.split("/")
 
         return parts
@@ -3060,7 +3066,10 @@ class Pather(Matter):
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
         else:
-            path = self.raw.decode()
+            try:
+                path = decodeUtf8(self.raw)  # narrows non-UTF-8 raw bytes
+            except ConversionError as ex:  # to Pather's InvalidValueError contract
+                raise InvalidValueError(f"Non-UTF-8 Pather raw={self.raw!r}.") from ex
             parts = path.split("/")
 
         while parts and parts[0] == "":

@@ -41,6 +41,24 @@ def test_pather_deep_path_raises_keri_error():
         Pather(path=["a"] * 5000).resolve({"a": 1})
 
 
+def test_pather_nonutf8_raw_accessors_raise_invalid_value_error():
+    """P1: a Pather whose code is not in BexDex (here Salt_128 '0A') carries
+    arbitrary raw bytes; .path/.parts/.rparts did a bare self.raw.decode() and
+    raised raw UnicodeDecodeError before _resolve ran.  Narrow to
+    InvalidValueError (Pather's own convention)."""
+    pather = Pather(qb64="0AD_____________________")  # 0xff... raw, non-UTF-8
+
+    with pytest.raises(kering.InvalidValueError):
+        pather.path
+    with pytest.raises(kering.InvalidValueError):
+        pather.parts
+    with pytest.raises(kering.InvalidValueError):
+        pather.rparts
+    # resolve() reaches the raw decode through .rparts, so it too is narrowed
+    with pytest.raises(kering.InvalidValueError):
+        pather.resolve({"a": 1})
+
+
 def test_pather_valid_resolution_unchanged():
     """Narrowing proof: valid path resolution is unchanged."""
     sad = {"a": {"b": {"c": "test"}}}
