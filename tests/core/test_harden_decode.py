@@ -47,6 +47,23 @@ def test_texter_text_nonutf8_raises_keri_error():
         coring.Texter(raw=b"\xff\xfe\xfd").text
 
 
+def test_labeler_label_nonutf8_raises_conversion_error():
+    """P5: Labeler.label else-branch (code not in TagDex/BexDex, e.g. Label1)
+    did a bare self.raw.decode() (coring:3333) and raised raw UnicodeDecodeError
+    on non-UTF-8 raw -- the same unfixed neighbour as Texter (A-15).  Narrow via
+    decodeUtf8 to ConversionError."""
+    lab = coring.Labeler(raw=b"\xff", code=coring.LabelDex.Label1)
+    with pytest.raises(kering.ConversionError):
+        lab.label
+
+
+def test_labeler_text_nonutf8_raises_conversion_error():
+    """P5: Labeler.text else-branch (coring:3354), same defect."""
+    lab = coring.Labeler(raw=b"\xff", code=coring.LabelDex.Label1)
+    with pytest.raises(kering.ConversionError):
+        lab.text
+
+
 # ---- family 1: error-handler double-decode ----------------------------------
 
 def test_coring_loads_nonutf8_json_raises_deserialize_error():
@@ -112,6 +129,11 @@ def test_valid_decode_paths_unchanged():
 
     t = coring.Texter(text="hello world")
     assert t.text == "hello world"
+
+    # Labeler with valid UTF-8 label/text still decodes identically
+    lab = coring.Labeler(label="field_1")
+    assert lab.label == "field_1"
+    assert coring.Labeler(text="hi").text == "hi"
 
     # valid JSON body round-trips through loads
     raw = coring.dumps(dict(a=1, b="x"), kind=kering.Kinds.json)

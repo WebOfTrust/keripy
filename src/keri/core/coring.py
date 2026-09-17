@@ -3341,7 +3341,7 @@ class Labeler(Matter):
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
 
         else:
-            label = self.raw.decode()  # everything else is just raw as str
+            label = decodeUtf8(self.raw)  # narrows non-UTF-8 raw as str
 
         if not Reatt.match(label.encode()):
             raise InvalidValueError(f"Invalid {label=}")
@@ -3362,7 +3362,7 @@ class Labeler(Matter):
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
             return label
 
-        return self.raw.decode()  # everything else is just raw as str
+        return decodeUtf8(self.raw)  # narrows non-UTF-8 raw as str
 
 
 class Verfer(Matter):
