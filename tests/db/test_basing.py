@@ -30,7 +30,7 @@ from keri.db import (Baser, BaserDoer, Baser, SerderSuber,
                      OnIoDupSuber, IoDupSuber, CatCesrSuber, statedict,
                      openDB, dgKey, snKey, openLMDB, openDB, reopenDB)
 
-from keri.help import datify, dictify, nowIso8601
+from keri.help import datify, dictify, helping
 from keri.recording import (EventSourceRecord, KeyStateRecord,
                             OobiRecord, RawRecord, StateEERecord)
 # this breaks when running as __main__ better to do a custom import call to
@@ -1951,10 +1951,13 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
         assert natHab.db.ests.add(
             keys=(pending.said, endorser), val=sourceSeal)
 
-        hby.cf.put({"kram": {"enabled": True, "caches": {
-            "~": [1000, 60000, 120000, 300000, 60000, 120000, 300000]}}})
+        caches = {
+            "~": [1000, 60000, 120000, 300000, 60000, 120000, 300000],
+            "qry.R.ksn": [1000, 300000, 600000, 900000, 300000, 600000, 900000],
+        }
+        hby.cf.put({"kram": {"enabled": True, "caches": caches}})
         kramer = Kramer(db=natHab.db, cf=hby.cf)
-        stamp = nowIso8601()
+        stamp = helping.nowIso8601()
         prefixer = Prefixer(qb64=natHab.pre)
         accepted = query(pre=natHab.pre, route="ksn", query={"case": "accepted"},
                           stamp=stamp, pvrsn=Vrsn_2_0)
@@ -1997,10 +2000,13 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
         }) is None
 
         records = {}
-        for name in ("kramCTYP", "kramMSGC", "kramTMSC", "kramXDT"):
+        for name in ("kramMSGC", "kramTMSC", "kramXDT"):
             records[name] = [(bytes(key), bytes(val)) for key, val in
                              natHab.db.getTopItemIter(db=getattr(natHab.db, name).sdb)]
             assert records[name]
+
+        del caches["qry.R.ksn"]
+        hby.cf.put({"kram": {"enabled": True, "caches": caches}})
 
         # Malformed orphan records must be discarded without decoding.
         partials = ("kramPMKM", "kramPMKS", "kramPMSK", "kramTRQS",
@@ -2089,6 +2095,7 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
             for name, expected in records.items():
                 assert [(bytes(key), bytes(val)) for key, val in
                         natHab.db.getTopItemIter(db=getattr(natHab.db, name).sdb)] == expected
+            assert not list(natHab.db.kramCTYP.getTopItemIter())
             kramer = Kramer(db=natHab.db, cf=hby.cf)
             assert kramer.intake(accepted, {"lsgs": [(prefixer, sigs)]}) is None
             assert kramer.intake(txn, {"lsgs": [(prefixer, txnSigs)]}) is None
@@ -2114,9 +2121,9 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
             # A fresh request can accumulate new signatures after clean.
             fakeHelpingClock.advance(milliseconds=1)
             retry = query(pre=natHab.pre, route="ksn", query={"case": "partial"},
-                          stamp=nowIso8601(), pvrsn=Vrsn_2_0)
+                          stamp=helping.nowIso8601(), pvrsn=Vrsn_2_0)
             retryTxn = exchept(sender=natHab.pre, receiver=natHab.pre,
-                              route="/test/partial", stamp=nowIso8601(),
+                              route="/test/partial", stamp=helping.nowIso8601(),
                               version=Vrsn_2_0, kind=Kinds.json)
             assert retry.said != partial.said
             assert retryTxn.said != partialTxn.said
@@ -2130,6 +2137,7 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
                 assert kramer.intake(msg, {
                     "lsgs": [(prefixer, retrySigs[1:2])],
                 }) is msg
+            assert natHab.db.kramMSGC.get((natHab.pre, retry.said)).ml == caches["~"][2]
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)
