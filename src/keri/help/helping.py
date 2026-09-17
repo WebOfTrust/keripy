@@ -321,6 +321,24 @@ def b64ToInt(s):
     return i
 
 
+def decodeUtf8(b):
+    """Returns str from UTF-8 decode of bytes/bytearray b, else b unchanged.
+
+    Narrows the UnicodeDecodeError raised on non-UTF-8 attacker bytes to
+    kering.ConversionError so hostile input reaching a CESR text decoder
+    raises a KeriError rather than a raw Python exception. Objects without a
+    .decode (e.g. already str) are returned unchanged, so this is a drop-in
+    for the `if hasattr(x, "decode"): x = x.decode("utf-8")` idiom."""
+    # local import avoids a circular import: kering imports helping at load time
+    from .. import kering
+    if hasattr(b, "decode"):
+        try:
+            return b.decode("utf-8")
+        except UnicodeDecodeError as ex:
+            raise kering.ConversionError(f"Invalid non-UTF-8 CESR text = {b!r}.") from ex
+    return b
+
+
 
 def codeB64ToB2(s):
     """Convert Base64 chars in s to B2 bytes

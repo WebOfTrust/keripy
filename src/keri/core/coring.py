@@ -6,6 +6,7 @@ import json
 from collections import namedtuple
 from collections.abc import Sequence, Mapping
 from dataclasses import dataclass, astuple, asdict
+import binascii
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from fractions import Fraction
@@ -31,7 +32,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       Kinds, Protocols, Ilks, TraitDex)
 
 from ..help import (sceil, isNonStringIterable, isNonStringSequence,
-                    intToB64, b64ToInt, codeB64ToB2, nabSextets,
+                    intToB64, b64ToInt, decodeUtf8, codeB64ToB2, nabSextets,
                     codeB2ToB64, Reb64, Reatt, Repath,
                     nowIso8601, fromIso8601)
 
@@ -142,7 +143,7 @@ def loads(raw, size=None, kind=Kinds.json):
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
             raise DeserializeError("Error deserializing JSON: {}"
-                                       "".format(raw[:size].decode("utf-8")))
+                                       "".format(raw[:size].decode("utf-8", "replace"))) from ex
 
     elif kind == Kinds.mgpk:
         try:
@@ -1350,8 +1351,7 @@ class Matter:
         first = qb64b[:1]  # extract first char code selector
         if isinstance(first, memoryview):
             first = bytes(first)
-        if hasattr(first, "decode"):
-            first = first.decode()  # converts bytes/bytearray to str
+        first = decodeUtf8(first)  # converts bytes/bytearray to str (narrows non-UTF-8)
         if first not in self.Hards:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
@@ -1369,8 +1369,7 @@ class Matter:
         hard = qb64b[:hs]  # extract hard code
         if isinstance(hard, memoryview):
             hard = bytes(hard)
-        if hasattr(hard, "decode"):
-            hard = hard.decode()  # converts bytes/bytearray to str
+        hard = decodeUtf8(hard)  # converts bytes/bytearray to str (narrows non-UTF-8)
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -1386,8 +1385,7 @@ class Matter:
         soft = qb64b[hs:hs+ss]
         if isinstance(soft, memoryview):
             soft = bytes(soft)
-        if hasattr(soft, "decode"):
-            soft = soft.decode()  # converts bytes/bytearray to str
+        soft = decodeUtf8(soft)  # converts bytes/bytearray to str (narrows non-UTF-8)
         xtra = soft[:xs]  # extract xtra if any from front of soft
         soft = soft[xs:]  # strip xtra from soft
         if xtra != f"{self.Pad * xs}":
@@ -1413,7 +1411,10 @@ class Matter:
 
         ps = cs % 4  # net prepad bytes to ensure 24 bit align when encodeB64
         base =  ps * b'A' + qb64b[cs:]  # prepad ps 'A's to  B64 of (lead + raw)
-        paw = decodeB64(base)  # now should have ps + ls leading sextexts of zeros
+        try:
+            paw = decodeB64(base)  # now should have ps + ls leading sextexts of zeros
+        except binascii.Error as ex:
+            raise ConversionError(f"Invalid Base64 material = {qb64b}.") from ex
         raw = paw[ps+ls:]  # remove prepad midpat bytes to invert back to raw
         # ensure midpad bytes are zero
         pi = int.from_bytes(paw[:ps+ls], "big")
@@ -2679,7 +2680,7 @@ class Texter(Matter):
     def text(self):
         """
         Property text: raw as str"""
-        return self.raw.decode()
+        return decodeUtf8(self.raw)
 
 
 class Bexter(Matter):
