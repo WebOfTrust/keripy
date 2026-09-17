@@ -2924,6 +2924,11 @@ class Pather(Matter):
         path = "AAA/BBB" with relative == True
         path = "/@AA/BBB" with pathive == False"""
 
+    # Upper bound on path depth traversed by ._resolve. SAD paths are shallow
+    # in practice; this generous cap keeps a hostile path from recursing to a
+    # RecursionError and bounds resolution work.
+    MaxDepth = 256
+
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.StrB64_L0, parts=None, path=None, relative=False,
                  pathive=True, **kwa):
@@ -3163,6 +3168,10 @@ class Pather(Matter):
         if len(parts) == 0:
             return val
 
+        if len(parts) > self.MaxDepth:  # bound recursion on a hostile path
+            raise InvalidValueError(f"Path depth {len(parts)} exceeds limit "
+                                    f"{self.MaxDepth}.")
+
         idx = parts.pop(0)
 
         if isinstance(val, dict):
@@ -3171,23 +3180,29 @@ class Pather(Matter):
 
                 keys = list(val)
                 if i >= len(keys):
-                    raise KeyError(f"invalid dict pointer index {i} for keys {keys}")
+                    raise InvalidValueError(f"invalid dict pointer index {i} for keys {keys}")
 
                 cur = val[list(val)[i]]
             elif idx == "":
                 return val
             else:
-                cur = val[idx]
+                try:
+                    cur = val[idx]
+                except KeyError as ex:
+                    raise InvalidValueError(f"invalid dict pointer key {idx}.") from ex
 
         elif isinstance(val, list):
-            i = int(idx)
+            try:
+                i = int(idx)
+            except (ValueError, TypeError) as ex:
+                raise InvalidValueError(f"invalid array pointer index {idx}.") from ex
             if i >= len(val):
-                raise KeyError(f"invalid array pointer index {i} for array {val}")
+                raise InvalidValueError(f"invalid array pointer index {i} for array {val}")
 
             cur = val[i]
 
         else:
-            raise KeyError("invalid traversal type")
+            raise InvalidValueError("invalid traversal type")
 
         return self._resolve(cur, parts)
 

@@ -5068,7 +5068,7 @@ def test_pather():
     assert pather.path == path
     assert pather.qb64 == "4AAB-0-a"
     assert pather.raw == b'\xfbO\x9a'
-    with pytest.raises(KeyError):
+    with pytest.raises(InvalidValueError):  # was raw KeyError (A-17), now narrowed
         pather.resolve(sad)
     assert pather.parts == ["","0", "a"]
     assert pather.rparts == ["0", "a"]
@@ -5078,7 +5078,7 @@ def test_pather():
     assert pather.path == path
     assert pather.qb64 == "4AADA-0-field1-0"
     assert pather.raw == b"\x03\xed>~'\xa5w_\xb4"
-    with pytest.raises(KeyError):
+    with pytest.raises(InvalidValueError):  # was raw KeyError (A-17), now narrowed
         pather.resolve(sad)
     assert pather.parts == ["","0", "field1", "0"]
     assert pather.rparts == ["0", "field1", "0"]
