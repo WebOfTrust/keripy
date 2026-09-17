@@ -1601,6 +1601,7 @@ def test_core_identity():
     # CoreSEDI ACDC setup
     coreValidator = SchemaValidator(schema=CoreSchema)  # create validator for core SEDI ACDCs
 
+    # Setup Guy's Core SEDI
     salt = b'guyscoresedisalt'  # base salt
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
@@ -1640,25 +1641,25 @@ def test_core_identity():
         {
             "d": "",
             "u": guyUes[2],
-            "value": "John",
+            "value": "Guy",
         },
         "middleName": \
         {
             "d": "",
             "u": guyUes[3],
-            "value": "Henry Davis",
+            "value": "Marty McFly",
         },
         "familyName": \
         {
             "d": "",
             "u":guyUes[4],
-            "value": "Smith",
+            "value": "Brown",
         },
         "birthDate": \
         {
             "d": "",
             "u": guyUes[5],
-            "value": "2020-08-22T17:00:00.000000+00:00", # time MBZ
+            "value": "2002-08-22T00:00:00.000000+00:00", # time MBZ
         },
         "facialImageProof": \
         {
@@ -1676,13 +1677,13 @@ def test_core_identity():
         {
             "d": "",
             "u":  guyUes[8],
-            "value": "2020-08-22T17:00:00.000000+00:00",  # Time MBZ
+            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
         },
         "expirationDate": \
         {
             "d": "",
             "u":  guyUes[9],
-            "value": "2020-08-22T17:00:00.000000+00:00",  # Time MBZ
+            "value": "2028-09-01T00:00:00.000000+00:00",  # Time MBZ
         },
     }
 
@@ -1698,7 +1699,7 @@ def test_core_identity():
                                         '.expirationDate')].mad
     assert guyCoreAttMad['i'] == guy
     guyCoreAttMadSaid = compactor.said
-    assert  guyCoreAttMadSaid == 'EFF_DQ1yoh_3gB_BwKwy6ZJXYVd-viCY-UIwvmAlLBee'
+    assert  guyCoreAttMadSaid == 'EKugXhv8kak37Ra2NH48ENl65TMPe-uhiSeBy8I7LKXC'
 
     assert guyCoreAttMad == \
     {
@@ -1707,33 +1708,33 @@ def test_core_identity():
         'i': guy,
         'givenName':
         {
-            'd': 'EDD2ilZtXTg9_CwP64AmN-K5nrhck5e1NY2QbrvQynSP',
+            'd': 'EBu_EdUcstZq6woZ7NMe2pyU7jjcQOdC9w1ryHa1P_Sq',
             'u': guyUes[2],
-            'value': 'John'
+            'value': 'Guy'
         },
         'middleName':
         {
-            'd': 'EPeDlrbeUtBsvxiOSdTCMjARZ6MBQ9AynQU6jaLP1pgm',
+            'd': 'EOhalIHhb5ZbrJZ5SMY_vWBj2ds_z9W8mJ3j-FTjgSUz',
             'u': guyUes[3],
-            'value': 'Henry Davis'
+            'value': 'Marty McFly'
         },
         'familyName':
         {
-            'd': 'EGgdDUUjnDmXnUKOTuMm91xxfkL0f59LoMod9oYXdD8z',
+            'd': 'EDBg78wYuNEQkcv-XciKFkxDQmRvIeTsXfjVMJLtUjYW',
             'u': guyUes[4],
-            'value': 'Smith'
+            'value': 'Brown'
         },
         'birthDate':
         {
-            'd': 'EPK5gGSEnc5E1UMVVNXtmS4EJSnmU8mXnb5LYhxJhZf7',
+            'd': 'EDUdjMw1pCajy659N-qjP_U1Gyop1O78XVUtb6l2ON6A',
             'u': guyUes[5],
-            'value': '2020-08-22T17:00:00.000000+00:00'
+            'value': '2002-08-22T00:00:00.000000+00:00'
         },
         'facialImageProof':
         {
             'd': 'EOR1f3q1BbCvhUqrpQjzwY-3sFlklrYyqAZQ-E8L_Lze',
             'u': guyUes[6],
-            'value': 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
+            'value': guyImageProof
         },
         'legalPresenceStatus':
         {
@@ -1743,15 +1744,15 @@ def test_core_identity():
         },
         'issuedDate':
         {
-            'd': 'EAN7rgfuAWattk7C_5k5YrK6Gsn1OtjUyh3_9oQ4B7LV',
+            'd': 'EHZyg34ZYUOj9GxL0kCJtjrKj7a7IT3LZYl1Oh8fhIVV',
             'u': guyUes[8],
-            'value': '2020-08-22T17:00:00.000000+00:00'
+            'value': '2020-08-22T00:00:00.000000+00:00'
         },
         'expirationDate':
         {
-            'd': 'ECOterVvkTSJ5Ig2YMgTE1_2qFq_pAg-sBd5JELDJUML',
+            'd': 'ELmeEY75YqosieinUUN0NesC_v_2Zt5eYGMvRgyuHWTw',
             'u': guyUes[9],
-            'value': '2020-08-22T17:00:00.000000+00:00'
+            'value': '2028-09-01T00:00:00.000000+00:00'
         }
     }
 
@@ -1822,8 +1823,8 @@ def test_core_identity():
 
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
-    assert guySerderCore.said == 'EMH-J3HiB3AaOJkKzBELhX_YWWd3cRpojW46UYMxh4eF'
-    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAcc.'
+    assert guySerderCore.said == 'EPev26DbMXDRD3HJGa0uTmCUy1ZRGLD6yM3xTYnaJsRw'
+    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAcb.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == rids[0]
     assert guySerderCore.iseaid == guy
@@ -1845,33 +1846,33 @@ def test_core_identity():
             'i': guy,
             'givenName':
             {
-                'd': 'EDD2ilZtXTg9_CwP64AmN-K5nrhck5e1NY2QbrvQynSP',
+                'd': 'EBu_EdUcstZq6woZ7NMe2pyU7jjcQOdC9w1ryHa1P_Sq',
                 'u': guyUes[2],
-                'value': 'John'
+                'value': 'Guy'
             },
             'middleName':
             {
-                'd': 'EPeDlrbeUtBsvxiOSdTCMjARZ6MBQ9AynQU6jaLP1pgm',
+                'd': 'EOhalIHhb5ZbrJZ5SMY_vWBj2ds_z9W8mJ3j-FTjgSUz',
                 'u': guyUes[3],
-                'value': 'Henry Davis'
+                'value': 'Marty McFly'
             },
             'familyName':
             {
-                'd': 'EGgdDUUjnDmXnUKOTuMm91xxfkL0f59LoMod9oYXdD8z',
+                'd': 'EDBg78wYuNEQkcv-XciKFkxDQmRvIeTsXfjVMJLtUjYW',
                 'u': guyUes[4],
-                'value': 'Smith'
+                'value': 'Brown'
             },
             'birthDate':
             {
-                'd': 'EPK5gGSEnc5E1UMVVNXtmS4EJSnmU8mXnb5LYhxJhZf7',
+                'd': 'EDUdjMw1pCajy659N-qjP_U1Gyop1O78XVUtb6l2ON6A',
                 'u': guyUes[5],
-                'value': '2020-08-22T17:00:00.000000+00:00'
+                'value': '2002-08-22T00:00:00.000000+00:00'
             },
             'facialImageProof':
             {
                 'd': 'EOR1f3q1BbCvhUqrpQjzwY-3sFlklrYyqAZQ-E8L_Lze',
                 'u':  guyUes[6],
-                'value': 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
+                'value': guyImageProof
             },
             'legalPresenceStatus':
             {
@@ -1881,15 +1882,15 @@ def test_core_identity():
             },
             'issuedDate':
             {
-                'd': 'EAN7rgfuAWattk7C_5k5YrK6Gsn1OtjUyh3_9oQ4B7LV',
+                'd': 'EHZyg34ZYUOj9GxL0kCJtjrKj7a7IT3LZYl1Oh8fhIVV',
                 'u': guyUes[8],
-                'value': '2020-08-22T17:00:00.000000+00:00'
+                'value': '2020-08-22T00:00:00.000000+00:00'
             },
             'expirationDate':
             {
-                'd': 'ECOterVvkTSJ5Ig2YMgTE1_2qFq_pAg-sBd5JELDJUML',
+                'd': 'ELmeEY75YqosieinUUN0NesC_v_2Zt5eYGMvRgyuHWTw',
                 'u': guyUes[9],
-                'value': '2020-08-22T17:00:00.000000+00:00'
+                'value': '2028-09-01T00:00:00.000000+00:00'
             }
         },
         'e':
@@ -1910,6 +1911,247 @@ def test_core_identity():
             'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
             'l': ''
         }
+    }
+
+    # Setup Gal's Core SEDI
+    salt = b'galscoresedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0ABnYWxzY29yZXNlZGlzYWx0'  # CESR encoded
+    galUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(16)]
+    assert galUes == \
+    [
+        '0AAgHaUeg5Pvr7KQMPBeYfIs',
+        '0ADkNrf84O_sw7WGXVMSkFWh',
+        '0AAe7cgRQjYZAcd0TVbjIxM-',
+        '0AAEbE87_XRwLHjbvj16wKqX',
+        '0AAa6B2FyXtFiWpXFbJrMg3n',
+        '0ABDbo5XZIfCSAsfTVl9jZfF',
+        '0ADXx6eI6thDHeHaKi9vWVaj',
+        '0AAUr_yhAHP31X1ZHOwUJE1z',
+        '0AAsG7_ogfBljU-7OuuYg8eG',
+        '0ADyZipGvcuOxw1ChYws3pig',
+        '0ACDMVtW0LTB2zvojqA3idZS',
+        '0ADPO0qUnzzehhLuLlOE104a',
+        '0AChBh2pZwiOkTy675JP3L-f',
+        '0AC9zE_ETWdeUUs3yP9kkJ0F',
+        '0AA5ZKSBfBOgjiWeqCoCu1V5',
+        '0ABbhr2o_M834GMWCYngZC3s'
+    ]
+
+    galImageProof = Diger(ser=b"PretendImageOfGal").qb64
+    assert galImageProof == 'EGh8sVJumVosTZVgT95YAb0Vor_7JRKGjgCX_2C7I9h4'
+
+    # Guy core SEDI attribution section
+
+    galCoreAttBareMad = \
+    {
+        "d": "",
+        "u": galUes[1],
+        "i": gal,  #galSMAID
+        "givenName": \
+        {
+            "d": "",
+            "u": galUes[2],
+            "value": "Gal",
+        },
+        "middleName": \
+        {
+            "d": "",
+            "u": galUes[3],
+            "value": "Parker",
+        },
+        "familyName": \
+        {
+            "d": "",
+            "u":galUes[4],
+            "value": "Brown",
+        },
+        "birthDate": \
+        {
+            "d": "",
+            "u": galUes[5],
+            "value": "2002-11-01T00:00:00.000000+00:00", # time MBZ
+        },
+        "facialImageProof": \
+        {
+            "d": "",
+            "u": galUes[6],
+            "value": galImageProof,  # Digest of image, actual image is attached as blindable typed media block
+        },
+        "legalPresenceStatus": \
+        {
+            "d": "",
+            "u": galUes[7],
+            "value": "citizen",
+        },
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  galUes[8],
+            "value": "2020-08-23T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  galUes[9],
+            "value": "2028-09-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=galCoreAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galCoreAttMad = compactor.partials[('.givenName',
+                                        '.middleName',
+                                        '.familyName',
+                                        '.birthDate',
+                                        '.facialImageProof',
+                                        '.legalPresenceStatus',
+                                        '.issuedDate',
+                                        '.expirationDate')].mad
+    assert galCoreAttMad['i'] == gal
+    galCoreAttMadSaid = compactor.said
+    assert  galCoreAttMadSaid == 'EC2-8Jiwr88OzPX6BeN-opVoaOMypUzAb2j8G96pWCGF'
+
+    assert galCoreAttMad == \
+    {
+        'd': galCoreAttMadSaid,
+        'u': galUes[1],
+        'i': gal,
+        'givenName':
+        {
+            'd': 'ECSb6A4qHXtoh1STpC-aBCvP4NTTh1UAudlbam0rBZ9i',
+            'u': galUes[2],
+            'value': 'Gal'
+        },
+        'middleName':
+        {
+            'd': 'EDK4tSBPZt0oDDZZy4SB8IfH-XELBuVGMickB9y4xlHP',
+            'u': galUes[3],
+            'value': 'Parker'
+        },
+        'familyName':
+        {
+            'd': 'EJoQ6tr804l4JYin_LC8l6qZy_bgQX1y3Re_nLIU6ltS',
+            'u': galUes[4],
+            'value': 'Brown'
+        },
+        'birthDate':
+        {
+            'd': 'ENQsc69ZFy98phXDEUf-1Yla6_A552IncAFq2PfBdfNl',
+            'u': galUes[5],
+            'value': '2002-11-01T00:00:00.000000+00:00'
+        },
+        'facialImageProof':
+        {
+            'd': 'EJ8CEbesqYDG-bOwRl5HAqG95j6iRfToyy4zN0eOu-bd',
+            'u': galUes[6],
+            'value': galImageProof
+        },
+        'legalPresenceStatus':
+        {
+            'd': 'EFEdNqUWOPWxEUs-69ivD5-a9UqiIB4EFwqilxySgdXI',
+            'u': galUes[7],
+            'value': 'citizen'
+        },
+        'issuedDate':
+        {
+            'd': 'ENq03um401R8-ibfRahqDK8RAgQ-nGsRNRx7junPdI3n',
+            'u':  galUes[8],
+            'value': '2020-08-23T00:00:00.000000+00:00'
+        },
+        'expirationDate':
+        {
+            'd': 'EHuL7LKe05akEiBiffEmnmGP-stq3m544EEzOTReczsU',
+            'u':  galUes[9],
+            'value': '2028-09-01T00:00:00.000000+00:00'
+        }
+    }
+
+    # same ones from guys core SEDI ACDC
+    #utahAgentAcdcSaid = Diger(ser=b"PretendUtahAgentAcdc").qb64
+    #assert utahAgentAcdcSaid == 'EE-Lz-snXwc5VCKOZSQGVXeCO0HfrpXLabNqYP9QWgj_'
+
+    #utahAgentSchemaSaid = Diger(ser=b"PretendUtahAgentSchema").qb64
+    #assert utahAgentSchemaSaid == 'EPclO424AuAiGqlvfCfzrgsCirXA2Rj6fg5vo4Wv3I4m'
+
+    galEdgeBareMad = \
+    {
+        "d": "",
+        "u": galUes[10],
+        "utahAgent":
+        {
+            "d": "",
+            "u": galUes[11],
+            "n": utahAgentAcdcSaid,
+            "s": utahAgentSchemaSaid,
+            "o": "I2I",
+        },
+    }
+    compactor = Compactor(mad=galEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galEdgeMad = compactor.partials[('.utahAgent',)].mad
+    assert galEdgeMad == \
+    {
+        'd': 'EFo3AP78OKOKlJW4HPEDRzhguEzHfENcc7x3e2j8THVw',
+        'u': galUes[10],
+        'utahAgent':
+        {
+            'd': 'ELP543GOl0bB3LLDJ0sOjySSWsFD2LBXhHfmugU4Juf_',
+            'u': galUes[11],
+            'n': utahAgentAcdcSaid,
+            's': utahAgentSchemaSaid,
+            'o': 'I2I',
+        }
+    }
+
+
+    galRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=galRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    galRuleMad = compactor.partials[('',)].mad
+    assert galRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+
+    galSerderCore = acdcmap(israid=sue,
+                            uuid=galUes[0],
+                            regid=rids[1],
+                            schema=CoreSchemaSaid,
+                            attribute=galCoreAttMad,
+                            edge=galEdgeMad,
+                            rule=galRuleMad,
+                            kind=kind)
+
+    coreValidator.validate(galSerderCore.sad)  # raises error if invalid
+
+    assert galSerderCore.said == 'EJynh_8Ah2tklz-fSfC_O6ZqDoGBQwSPpLnLXjqg8EOE'
+    assert galSerderCore.verstr == 'ACDCCAACAAJSONAAcW.'
+    assert galSerderCore.israid == sue
+    assert galSerderCore.regid == rids[1]
+    assert galSerderCore.iseaid == gal
+    assert galSerderCore.sad['a'] == galCoreAttMad
+
+    assert galSerderCore.sad == \
+    {
+        'v': galSerderCore.verstr,
+        't': 'acm',
+        'd': galSerderCore.said,
+        'u': galUes[0],
+        'i': sue,
+        'rd': rids[1],
+        's': CoreSchemaSaid,
+        'a': galCoreAttMad,
+        'e': galEdgeMad,
+        'r': galRuleMad
     }
 
 
