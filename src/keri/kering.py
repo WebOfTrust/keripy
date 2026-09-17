@@ -618,6 +618,21 @@ class ValidationError(KeriError):
     """
 
 
+class ThresholdError(ValidationError, ValueError):
+    """
+    Invalid signing/rotation threshold (sith/limen) expression.
+
+    Subclasses both ValidationError (so it is caught by the KeriError
+    hierarchy) and the builtin ValueError (so existing callers that catch
+    ValueError around Tholder construction remain unaffected). This makes
+    narrowing Tholder's raw ZeroDivisionError/OverflowError/TypeError/
+    ValueError into the keri hierarchy a pure narrowing.
+
+    Usage:
+        raise ThresholdError("error message")
+    """
+
+
 class MissingFieldError(ValidationError):
     """
     Missing a required element or field of message

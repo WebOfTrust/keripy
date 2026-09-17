@@ -24,7 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
                       InvalidVarRawSizeError, ConversionError, InvalidValueError,
-                      ValidationError, VersionError, ShortageError,
+                      ValidationError, ThresholdError, VersionError, ShortageError,
                       UnexpectedCodeError, DeserializeError, Versionage,
                       UnexpectedCountCodeError, UnexpectedOpCodeError,
                       versify, deversify, smell, MAXVERFULLSPAN,
@@ -4290,6 +4290,12 @@ class Tholder:
         ._satisfy_numeric is numeric threshold verification method
         ._satisfy_weighted is fractional weighted threshold verification method"""
 
+    # Upper bound on the number of clauses in a weighted threshold and on the
+    # number of weights within any one clause. Real multisig thresholds have at
+    # most tens of participants; this generous cap bounds the work done parsing
+    # a hostile sith (thousands of clauses/weights were previously accepted).
+    Limit = 1000
+
     def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
         Accepts signing threshold in various forms so that may output correct
@@ -4495,14 +4501,25 @@ class Tholder:
             self._processUnweighted(thold=sith)
 
         elif isinstance(sith, str) and '[' not in sith:
-            self._processUnweighted(thold=int(sith, 16))
+            try:
+                thold = int(sith, 16)
+            except ValueError as ex:
+                raise ThresholdError(f"Invalid threshold = {sith}.") from ex
+            self._processUnweighted(thold=thold)
 
         else:  # assumes sequence of weights or sequence of sequence of weights
             if isinstance(sith, str):  # json of weighted sith from cli
-                sith = json.loads(sith)  # deserialize
+                try:
+                    sith = json.loads(sith)  # deserialize
+                except json.JSONDecodeError as ex:
+                    raise ThresholdError(f"Invalid threshold JSON = {sith}.") from ex
+
+            if not isNonStringSequence(sith):  # e.g. float, mapping, or other scalar
+                raise ThresholdError(f"Invalid sith = {sith}, expected a sequence "
+                                     f"of weights.")
 
             if not sith:  # empty or None
-                raise ValueError(f"Empty weight list = {sith}.")
+                raise ThresholdError(f"Empty weight list = {sith}.")
 
             # is it non str sequence of sequences? or non str sequnce of strs?
             # must test for emply mask because all([]) == True
@@ -4510,11 +4527,21 @@ class Tholder:
             if mask and not all(mask):  # not empty and not sequence of sequenes
                 sith = [sith]  # attempt to make sequnce of sequqnces of strs
 
+            # bound resource use: reject pathological clause / weight counts
+            # before converting thousands of fractions (previously accepted).
+            if len(sith) > self.Limit:
+                raise ThresholdError(f"Threshold clause count {len(sith)} "
+                                     f"exceeds limit {self.Limit}.")
+            for c in sith:
+                if isNonStringSequence(c) and len(c) > self.Limit:
+                    raise ThresholdError(f"Threshold weight count {len(c)} in "
+                                         f"clause exceeds limit {self.Limit}.")
+
             for c in sith:  # get each clause
                 # each element of a clause must be a str or dict
                 mask = [(isinstance(w, str) or isinstance(w, Mapping)) for w in c]
                 if mask and not all(mask):  # not empty and not sequence of str or dicts
-                    raise ValueError(f"Invalid sith = {sith} some weights in"
+                    raise ThresholdError(f"Invalid sith = {sith} some weights in"
                                      f"clause {c} are non string.")
 
             # replace weight str expression, int str or fractional strings with
@@ -4528,7 +4555,7 @@ class Tholder:
                 for e in c:  # each element of clause c
                     if isinstance(e, Mapping):
                         if len(e) != 1:
-                            raise ValueError(f"Invalid sith = {sith} nested "
+                            raise ThresholdError(f"Invalid sith = {sith} nested "
                                              f"weight map {e} in clause {c} "
                                              f" not single key value.")
                         k = list(e)[0]  # zeroth key is used
@@ -4549,7 +4576,7 @@ class Tholder:
         Parameters:
             thold (int): non-negative threshold number M-of-N threshold"""
         if thold < 0:
-            raise ValueError(f"Non-positive int threshold = {thold}.")
+            raise ThresholdError(f"Non-positive int threshold = {thold}.")
         self._thold = thold
         self._weighted = False
         self._size = self._thold  # used to verify that keys list size is at least size
@@ -4572,13 +4599,13 @@ class Tholder:
                 if isinstance(e, tuple):
                     top.append(e[0])
                     if not (sum(e[1]) >= 1):
-                        raise ValueError(f"Invalid sith clause = {clause}, "
+                        raise ThresholdError(f"Invalid sith clause = {clause}, "
                                          f"element = {e}. All nested clause "
                                          f"weight sums must be >= 1.")
                 else:
                     top.append(e)
             if not (sum(top) >= 1):
-                raise ValueError(f"Invalid sith clause = {clause}, all top level"
+                raise ThresholdError(f"Invalid sith clause = {clause}, all top level"
                                  f"clause weight sums must be >= 1.")
 
         self._thold = thold
@@ -4630,16 +4657,19 @@ class Tholder:
             w (str): threshold weight expression"""
         try:  # float str or ratio str raises ValueError
             if int(float(w)) != float(w):  # float str
-                raise TypeError("Invalid weight str got float w={w}.")
+                raise TypeError(f"Invalid weight str got float w={w}.")
             w = int(w)  # expression is int str
         except TypeError as ex:
-            raise  ValueError(str(ex)) from  ex
+            raise ThresholdError(str(ex)) from ex
 
-        except ValueError as ex:  # not float str or int str so try ration str
-            w = Fraction(w)
+        except (ValueError, OverflowError) as ex:  # not float/int str so try ratio str
+            try:  # ratio str; narrows ZeroDivisionError/OverflowError/huge-int
+                w = Fraction(w)
+            except (ValueError, ZeroDivisionError, OverflowError, TypeError) as ex2:
+                raise ThresholdError(f"Invalid weight = {w}.") from ex2
 
         if not 0 <= w <= 1:
-            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+            raise ThresholdError(f"Invalid weight not 0 <= {w} <= 1.")
         return w
 
 
