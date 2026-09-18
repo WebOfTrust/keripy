@@ -514,10 +514,18 @@ class _RegistryPool:
         Used both for revocation (state='revoked') and for the state-PRESERVING updates
         that follow it, which are what keep the moment of revocation from being legible
         in the shape of the TEL.
+
+        Another Issuee's registry restates too, and has to: a later round that touches only
+        Alice's revoked registry among the ASSIGNED population separates assigned from
+        unassigned by traffic alone. Their blinding salt is theirs and not modeled here, so
+        those blinds come from the Issuer's side exactly as their assignment did.
         """
         acdcSaid, salt = self.assigned[i]
         sn = self.sn(i) + 1
-        blinder = Blinder.blind(acdc=acdcSaid, state=state, salt=salt, sn=sn)
+        if salt is None:
+            blinder = _blind_with(self.issuerBlind(i, sn), acdc=acdcSaid, state=state)
+        else:
+            blinder = Blinder.blind(acdc=acdcSaid, state=state, salt=salt, sn=sn)
         return self._append(i, blinder.said, stamp)
 
     def unassignedNear(self, count, exclude=(), *, label="pad"):
@@ -627,7 +635,15 @@ ROUND_STAMP = "2026-07-01T03:00:00.000000+00:00"
 ISSUE_ID_STAMP = "2026-07-01T03:00:00.000000+00:00"
 ISSUE_AGE_STAMP = "2026-07-01T03:00:00.000000+00:00"
 REVOKE_STAMP = "2026-08-01T09:00:00.000000+00:00"
-LATER_ROUND_STAMP = "2026-08-01T09:00:00.000000+00:00"
+# The batch that CARRIES the revocation spans a window rather than an instant. #204 asks an
+# Issuer to mix updates "across each registry and over time", and both halves matter: a
+# later round in which the revoked registry is the only participant, or in which every
+# event shares the revocation's datetime, dates the revocation precisely for an observer
+# who can read no state at all. So the later round has its own quota, drawn across the
+# pool and across the other residents, and its events fall at several datetimes.
+LATER_ROUND_STAMPS = ("2026-08-08T14:00:00.000000+00:00",
+                      "2026-08-19T21:00:00.000000+00:00",
+                      "2026-08-27T06:00:00.000000+00:00")
 
 
 # ===========================================================================
@@ -1837,13 +1853,43 @@ def test_precreg_disclosure_gating_and_revocation_JSON():
     # guardianship example says it does not do: without them, a registry that stops
     # emitting events at the moment of revocation dates the revocation for any observer,
     # even one who can read no state at all.
-    quiet = [pool.restate(i, 'revoked', LATER_ROUND_STAMP) for _ in range(2)]
+    quiet = [pool.restate(i, 'revoked', LATER_ROUND_STAMPS[n]) for n in range(2)]
     assert pool.sn(i) == revokeSn + 2
     assert len({e.sad['b'] for e in [revoked] + quiet}) == 3      # each re-blinded afresh
+
+    # ...and the rest of the round, which is the half that does the work. The revoked
+    # registry is one participant among a full quota: other residents' ASSIGNED registries
+    # restate (state-preserving, so nothing about them changed), and unassigned registries
+    # take fresh placeholders. Reusing the issuance round's padding here would anchor the
+    # same events twice and leave the revoked registry the only object in the pool with any
+    # traffic after the issuance -- the failure the quiet updates exist to prevent.
+    laterOthers = [pool.restate(x, 'issued', LATER_ROUND_STAMPS[n % 3])
+                   for n, x in enumerate(bulk.otherIdx)]
+    laterPad = [pool.placeholder(x, LATER_ROUND_STAMPS[n % 3])
+                for n, x in enumerate(pool.unassignedNear(
+                    WHITEN_QUOTA - 3 - len(laterOthers),
+                    exclude=bulk.idIdx + bulk.ageIdx, label="later"))]
     laterTree, laterSealer = _anchor([revoked.said], [e.said for e in quiet],
-                                     [e.said for e in bulk.padding])
+                                     [e.said for e in laterOthers],
+                                     [e.said for e in laterPad])
     for event in [revoked] + quiet:
         assert _verify_anchored(event.said, laterTree, laterSealer)
+
+    # The negative control for claim 6, stated over the pool rather than over this one
+    # registry. After the issuance round, traffic is not concentrated on the credential
+    # that died: a full quota of registries emits, the assigned population is represented
+    # among them, and the events do not share a datetime. Each of those three, violated
+    # alone, hands a third party the revocation date.
+    def _after(x):
+        return [e for e in pool.chain[x][1:] if e.sad['dt'] > ROUND_STAMP]
+
+    moved = [x for x in range(pool.size) if _after(x)]
+    stirred = [e for x in moved for e in _after(x)]
+    assert i in moved
+    assert len(stirred) == WHITEN_QUOTA                    # a full round, not a trickle
+    assert len(moved) > WHITEN_QUOTA / 2                   # spread across registries
+    assert set(bulk.otherIdx) <= set(moved)                # assigned registries move too
+    assert len({e.sad['dt'] for e in stirred}) > 1         # and spread over time
 
     # The verifier cannot follow the registry on its own: the blind it was given covers
     # the assignment event only, so reading any later event needs a FRESH disclosure. That
