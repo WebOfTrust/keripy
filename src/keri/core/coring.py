@@ -4325,11 +4325,17 @@ class Tholder:
     Limit = 1000
 
     # Upper bound on the length of a JSON-string sith before it is handed to
-    # json.loads. A deeply-nested string (e.g. "[" * 100000) overflows the C
-    # stack inside the decoder (raw RecursionError); this bound rejects it
-    # first. Far larger than any real threshold (hundreds of weights) yet far
-    # below the JSON nesting depth that overflows the stack.
-    MaxSith = 4096
+    # json.loads. This is a cheap coarse guard, reconciled with the Limit leaf
+    # cap (SEC-F3): any threshold within Limit leaves must FIT as a string, so
+    # the string API accepts exactly what the list/CESR-limen wire paths do.
+    # A flat 1000-leaf threshold of large fractions serializes to ~18000 chars;
+    # this bound (Limit x ~64 worst-case chars/leaf, incl. JSON quotes, commas
+    # and nested-map structure) is comfortably above that. The old 4096 value
+    # silently rejected ~450+ participant weighted thresholds the rest of the
+    # code accepted. The nesting RecursionError (P3) is handled separately, by
+    # catching RecursionError around json.loads below -- a deeply-nested string
+    # can overflow the decoder's C stack even while under this length bound.
+    MaxSith = 65536
 
     def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
@@ -4553,6 +4559,11 @@ class Tholder:
                     sith = json.loads(sith)  # deserialize
                 except json.JSONDecodeError as ex:
                     raise ValidationError(f"Invalid threshold JSON = {sith}.") from ex
+                except RecursionError as ex:
+                    # a deeply-nested string within the length bound overflows
+                    # the decoder's C stack (P3); narrow to ValidationError so
+                    # it cannot escape `except KeriError`.
+                    raise ValidationError(f"Threshold JSON nesting too deep.") from ex
 
             if not isNonStringSequence(sith):  # e.g. float, mapping, or other scalar
                 raise ValidationError(f"Invalid sith = {sith}, expected a sequence "

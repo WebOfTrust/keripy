@@ -64,6 +64,39 @@ def test_tholder_deep_json_sith_rejected():
         Tholder(sith="[" * 100000)
 
 
+def test_tholder_deep_json_within_length_bound_rejected():
+    """P3 (robustness): a deeply-nested sith string that fits WITHIN MaxSith
+    still overflows the C stack inside json.loads (raw RecursionError). After
+    raising MaxSith to admit legitimate thresholds, a within-length deep string
+    must still reject cleanly as ValidationError rather than escaping as a raw
+    RecursionError."""
+    deep = "[" * (Tholder.MaxSith - 1)  # within the length bound, but deep
+    with pytest.raises(kering.ValidationError):
+        Tholder(sith=deep)
+
+
+def test_tholder_weighted_string_matches_list_form():
+    """SEC-F3: a 500-of-800 weighted `sith` (800 weights of 1/500, any 500 sum
+    to 1) is accepted as a LIST but the equivalent JSON STRING was rejected
+    because it serializes to ~7200 chars > the old MaxSith=4096 -- an internal
+    inconsistency, since the list wire-path and the Limit=1000 leaf cap both
+    accept it. After reconciling MaxSith to the Limit leaf cap, the STRING form
+    is accepted and parses to the SAME threshold the LIST form produces."""
+    import json
+    weights = ["1/500"] * 800  # 800 leaves, within Limit=1000
+
+    fromList = Tholder(sith=weights)
+    assert fromList.weighted
+    assert fromList.size == 800
+
+    fromString = Tholder(sith=json.dumps(weights))
+    assert fromString.weighted
+    assert fromString.size == 800
+    # identical parsed threshold and CESR limen as the list form
+    assert fromString.thold == fromList.thold
+    assert fromString.limen == fromList.limen
+
+
 def test_tholder_weight_product_blowup_rejected():
     """P4: Limit bounds clause count and per-clause weight count independently
     but not their product; [["1/1000"]*1000]*1000 (~10 MB, ~1e6 Fractions) was
