@@ -1111,6 +1111,16 @@ def test_precreg_conveyance_JSON():
     assert max(bulk.idIdx) - min(bulk.idIdx) > BULK_SIZE
     assert not (set(bulk.idIdx) & set(bulk.ageIdx))       # 2*M distinct registries
 
+    # The path index rendering is LOWERCASE HEX, no leading zeros -- pinned by assertion
+    # rather than left to the coincidence that indices 0-9 render identically in both
+    # bases. The published spec still says "decimal or hexadecimal" (L2799), so this is
+    # the one place a conforming implementation can silently disagree with this module and
+    # still produce well-formed ACDCs. It bites here harder than in the co-created sibling:
+    # BULK_SIZE is small, but POOL_SIZE is not, so the pool's own "p{i}" paths cross 10 for
+    # the great majority of registries and the sweep below would be probing the wrong paths.
+    assert _hx(0) == "0" and _hx(15) == "f" and _hx(16) == "10"   # no padding, lowercase
+    assert _hx(10) != "10" and any(i > 9 for i in bulk.idIdx + bulk.ageIdx)
+
     # NOT DERIVABLE, asserted rather than argued. Sweep the paths bulk issuance uses --
     # including "k.r", the co-created sibling's registry-uuid path, and "k.", the
     # aggregate blinding factor's -- against both bulk salts. None of them produces the
