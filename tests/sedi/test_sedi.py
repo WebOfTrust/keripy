@@ -357,6 +357,233 @@ CoreSchema = \
   'additionalProperties': False
 }
 
+ResidenceSchemaSaid = 'EB9Pj129nGbfn6X-xg3cDIq8CoREy1OmBGrkK32JmqVp'
+ResidenceSchema = \
+{
+  '$id': 'EB9Pj129nGbfn6X-xg3cDIq8CoREy1OmBGrkK32JmqVp',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Residence Schema',
+  'description': 'SEDI Residence JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Residence_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'street',
+            'city',
+            'county',
+            'state',
+            'postcode',
+            'country',
+            'issuedDate',
+            'expirationDate',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'street':
+            {
+              'description': 'Street Address Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Street Address Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'city':
+            {
+              'description': 'City Name Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'City Name Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'county':
+            {
+              'description': 'County Name Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'County Name Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'state':
+            {
+              'description': 'State Name Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'State Name Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'postcode':
+            {
+              'description': 'Postcode Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Postcode Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'country':
+            {
+              'description': 'Country Name Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Country Name Value', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'issuedDate':
+            {
+              'description': 'Issued Date Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+              },
+              'additionalProperties': False
+            },
+            'expirationDate':
+            {
+              'description': 'Expiration Date Block',
+              'type': 'object',
+              'required': ['d', 'u', 'value'],
+              'properties':
+              {
+                'd': {'description': 'Block SAID', 'type': 'string'},
+                'u': {'description': 'Bock UE', 'type': 'string'},
+                'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'coreIdentity'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'coreIdentity':
+            {
+              'description': 'Core Identity Edge Block',
+              'type': 'object',
+              'required': ['d', 'u', 'n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o':
+                {
+                    'description': 'Edge Unary Operator',
+                    'type': 'array',
+                    'items': {'type': 'string'},
+                    'minItems': 1,
+                }
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
 
 
 def test_sedi_schema():
@@ -1045,6 +1272,244 @@ def test_sedi_schema():
       'additionalProperties': False
     }
 
+    # Setup Residence Schema
+    residenceSchemaMad = \
+    {
+      '$id': '',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Residence Schema',
+      'description': 'SEDI Residence JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Residence_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'street',
+                'city',
+                'county',
+                'state',
+                'postcode',
+                'country',
+                'issuedDate',
+                'expirationDate',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                'street':
+                {
+                  'description': 'Street Address Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Street Address Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'city':
+                {
+                  'description': 'City Name Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'City Name Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'county':
+                {
+                  'description': 'County Name Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'County Name Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'state':
+                {
+                  'description': 'State Name Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'State Name Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'postcode':
+                {
+                  'description': 'Postcode Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Postcode Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'country':
+                {
+                  'description': 'Country Name Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Country Name Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'issuedDate':
+                {
+                  'description': 'Issued Date Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+                'expirationDate':
+                {
+                  'description': 'Expiration Date Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                }
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'coreIdentity'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'coreIdentity':
+                {
+                  'description': 'Core Identity Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o':
+                    {
+                        'description': 'Edge Unary Operator',
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'minItems': 1,
+                    }
+                  },
+                  'additionalProperties': False
+                }
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=residenceSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    residenceSchemaSaid = mapper.said
+    assert  residenceSchemaSaid == 'EB9Pj129nGbfn6X-xg3cDIq8CoREy1OmBGrkK32JmqVp'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert residenceSchemaSaid == ResidenceSchemaSaid
+    assert mapper.mad == ResidenceSchema
+
+    #assert mapper.mad == {}
+
     """done test"""
 
 
@@ -1598,15 +2063,35 @@ def test_core_identity():
         }
     }
 
+    # Setup Utah State Sue issuer pretend delegation
+    utahAgentAcdcSaid = Diger(ser=b"PretendUtahAgentAcdc").qb64
+    assert utahAgentAcdcSaid == 'EE-Lz-snXwc5VCKOZSQGVXeCO0HfrpXLabNqYP9QWgj_'
+
+    utahAgentSchemaSaid = Diger(ser=b"PretendUtahAgentSchema").qb64
+    assert utahAgentSchemaSaid == 'EPclO424AuAiGqlvfCfzrgsCirXA2Rj6fg5vo4Wv3I4m'
+
+    # Setup SEDI ACDC JsonSchema Validators
     # CoreSEDI ACDC setup
     coreValidator = SchemaValidator(schema=CoreSchema)  # create validator for core SEDI ACDCs
 
-    # Setup Guy's Core SEDI
+    # CoreSEDI ACDC setup
+    residenceValidator = SchemaValidator(schema=ResidenceSchema)  # create validator for residence SEDI ACDCs
+
+    # Guy and Gal have same residence
+    street = "157 E 300 N"
+    city = "Beaver"
+    county = "Beaver"
+    state = "Utah"
+    postcode = "84713"
+    country = "United States"
+
+
+    # Setup Guy's SEDI ACDCs
     salt = b'guyscoresedisalt'  # base salt
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
     guyUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(16)]
+                                                             for i in range(32)]
     assert guyUes == \
     [
         '0ABQNZNkD1y0W4mglDB4ei5Y',
@@ -1624,8 +2109,26 @@ def test_core_identity():
         '0AAsHaHfgfNEaRuRwI1Y77ry',
         '0ABZHwn29_HgPlO7tRDEONUK',
         '0AA2UPIBJ6WKRMVk_xgeHpSd',
-        '0AC2TvvDIyT60xBlRG9CjFI9'
+        '0AC2TvvDIyT60xBlRG9CjFI9',
+        '0AARGwC82gXbtRbQXs4cGBpC',
+        '0ACkFgtF3ee459teQu6OJBRc',
+        '0AC9HltcQYMY0fjn-9zQftZW',
+        '0AAkcR_gzffjPL-mrjiJg9rv',
+        '0AAuZ1oTBZ6jqFp8Z7UrpKJs',
+        '0ABCJgPmvnyuDB_Bj34sb7ec',
+        '0ADYpt736nc2ZcVYFJDImwuy',
+        '0ACbDaiZmKZcyZLHmfVLpJYQ',
+        '0AA-hoK5ewZYxB5hXEMwxq5X',
+        '0ACyPy93wKHIWAvzu92ooj2c',
+        '0AAYbJl5lc9BwGOLiIaQVWQ8',
+        '0ACd7KIJHwn_s5kNHDqmQg8t',
+        '0ABQe9skiMkZBj86zvt6gtCY',
+        '0ACnZNwFbDOLXr65EDNIE--9',
+        '0ADwRPjDS8n94le48SRUTPZn',
+        '0ABnfpH75cVvRDh0giU6e1mn'
     ]
+
+    # Setup Guy's Core SEDI
 
     guyImageProof = Diger(ser=b"PretendImageOfGuy").qb64
     assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
@@ -1756,13 +2259,9 @@ def test_core_identity():
         }
     }
 
-    utahAgentAcdcSaid = Diger(ser=b"PretendUtahAgentAcdc").qb64
-    assert utahAgentAcdcSaid == 'EE-Lz-snXwc5VCKOZSQGVXeCO0HfrpXLabNqYP9QWgj_'
 
-    utahAgentSchemaSaid = Diger(ser=b"PretendUtahAgentSchema").qb64
-    assert utahAgentSchemaSaid == 'EPclO424AuAiGqlvfCfzrgsCirXA2Rj6fg5vo4Wv3I4m'
 
-    guyEdgeBareMad = \
+    guyCoreEdgeBareMad = \
     {
         "d": "",
         "u": guyUes[10],
@@ -1775,10 +2274,10 @@ def test_core_identity():
             "o": "I2I",
         },
     }
-    compactor = Compactor(mad=guyEdgeBareMad, makify=True, compactify=True,
+    compactor = Compactor(mad=guyCoreEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
-    guyEdgeMad = compactor.partials[('.utahAgent',)].mad
-    assert guyEdgeMad == \
+    guyCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
+    assert guyCoreEdgeMad == \
     {
         'd': 'EDi37yTAxh7v3J6QlLG1ZQDnDASUgrIWo3kg5BOYzwA-',
         'u': guyUes[10],
@@ -1793,37 +2292,34 @@ def test_core_identity():
     }
 
 
-    guyRuleBareMad = \
+    guyCoreRuleBareMad = \
     {
         "d": "",
         "l": "",
     }
-    compactor = Compactor(mad=guyRuleBareMad, makify=True, compactify=True,
+    compactor = Compactor(mad=guyCoreRuleBareMad, makify=True, compactify=True,
                           saidive=True, kind=kind)
-    guyRuleMad = compactor.partials[('',)].mad
-    assert guyRuleMad == \
+    guyCoreRuleMad = compactor.partials[('',)].mad
+    assert guyCoreRuleMad == \
     {
         'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
         'l': ''
     }
 
     # core sedi credential ACDC issued by Sue AID to Guy SMAID
-
-    #coreSchemaSaid = Diger(ser=b"PretendUtahCoreSchema").qb64
-    #assert coreSchemaSaid == 'EHyWqa53NlzFlUAB0Z4GIkb4kse7Kr-74WwBB44lmuG4'
-
     guySerderCore = acdcmap(israid=sue,
                             uuid=guyUes[0],
                             regid=rids[0],
                             schema=CoreSchemaSaid,
                             attribute=guyCoreAttMad,
-                            edge=guyEdgeMad,
-                            rule=guyRuleMad,
+                            edge=guyCoreEdgeMad,
+                            rule=guyCoreRuleMad,
                             kind=kind)
 
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
-    assert guySerderCore.said == 'EPev26DbMXDRD3HJGa0uTmCUy1ZRGLD6yM3xTYnaJsRw'
+    guyCoreSediSaid = guySerderCore.said
+    assert guyCoreSediSaid == 'EPev26DbMXDRD3HJGa0uTmCUy1ZRGLD6yM3xTYnaJsRw'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAcb.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == rids[0]
@@ -1834,7 +2330,7 @@ def test_core_identity():
     {
         'v': guySerderCore.verstr,
         't': 'acm',
-        'd': guySerderCore.said,
+        'd': guyCoreSediSaid,
         'u': guyUes[0],
         'i': sue,
         'rd': rids[0],
@@ -1913,12 +2409,218 @@ def test_core_identity():
         }
     }
 
-    # Setup Gal's Core SEDI
+    # Guy residence SEDI attribution section
+    guyResidenceAttBareMad = \
+    {
+        "d": "",
+        "u": guyUes[12],
+        "i": guy,  #guySMAID
+        "street": \
+        {
+            "d": "",
+            "u": guyUes[13],
+            "value": street,
+        },
+        "city": \
+        {
+            "d": "",
+            "u": guyUes[14],
+            "value": city,
+        },
+        "county": \
+        {
+            "d": "",
+            "u":guyUes[15],
+            "value": county,
+        },
+        "state": \
+        {
+            "d": "",
+            "u": guyUes[16],
+            "value": state,
+        },
+        "postcode": \
+        {
+            "d": "",
+            "u": guyUes[17],
+            "value": postcode,
+        },
+        "country": \
+        {
+            "d": "",
+            "u": guyUes[18],
+            "value": country,
+        },
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  guyUes[19],
+            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  guyUes[20],
+            "value": "2028-09-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=guyResidenceAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyResidenceAttMad = compactor.partials[('.street',
+                                             '.city',
+                                             '.county',
+                                             '.state',
+                                             '.postcode',
+                                             '.country',
+                                             '.issuedDate',
+                                             '.expirationDate')].mad
+    assert guyResidenceAttMad['i'] == guy
+    guyResidenceAttMadSaid = compactor.said
+    assert  guyResidenceAttMadSaid == 'EG7Z9L19BczHzJ0TQ2KG7BYvzpcWIyXnZFraDTAY1E_M'
+    assert guyResidenceAttMad == \
+    {
+        'd': guyResidenceAttMadSaid,
+        'u': guyUes[12],
+        'i': guy,
+        'street':
+        {
+            'd': 'EGsUp891O6-4MNUHidQcMd0rEwMvXPl9j8RXZm1fxV26',
+            'u': guyUes[13],
+            'value': street
+        },
+        'city':
+        {
+            'd': 'EPeSuhVXJm-pZzUaheFb91rE9Htr74o0SpL9jXfRsSa6',
+            'u': guyUes[14],
+            'value': city
+        },
+        'county':
+        {
+            'd': 'EIWG8UUJR7B59VrrUJiEJpz6cv2b4YEqqdqkHec-VK_d',
+            'u': guyUes[15],
+            'value': county
+        },
+        'state':
+        {
+            'd': 'EGJVpQ7UmB-LTuyWvov0VPZAbpPq1WQlRbNDqnKt2X64',
+            'u': guyUes[16],
+            'value': state
+        },
+        'postcode':
+        {
+            'd': 'ELaDD30J_a7pTBQtJCjypNQrwr6CYYfFCdpYMSEvGCOS',
+            'u': guyUes[17],
+            'value': postcode
+        },
+        'country':
+        {
+            'd': 'EBQsX5dyXYrHv9Q8bwYWv9fWnfV2nXOu0c_phP5TeKrf',
+            'u': guyUes[18],
+            'value': country
+        },
+        'issuedDate':
+        {
+            'd': 'EPI60lT-lOu-ZQDD8iP05WSjk6APGdwCUh-jR3o_af9r',
+            'u': guyUes[19],
+            'value': '2020-08-22T00:00:00.000000+00:00'
+        },
+        'expirationDate':
+        {
+            'd': 'ED9FMy1sPHpNdZ0-6jjFkzyrnjqTgEnTC5DjUo3heYOv',
+            'u': guyUes[20],
+            'value': '2028-09-01T00:00:00.000000+00:00'
+        }
+    }
+
+    guyResidenceEdgeBareMad = \
+    {
+        "d": "",
+        "u": guyUes[21],
+        "coreIdentity":
+        {
+            "d": "",
+            "u": guyUes[22],
+            "n": guyCoreSediSaid,
+            "s": CoreSchemaSaid,
+            "o": ["E1E", "NI2I"],
+        },
+    }
+    compactor = Compactor(mad=guyResidenceEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
+    assert guyResidenceEdgeMad == \
+    {
+        'd': 'EANw3ru7U4dC5nMdWiNitxEmDKl80srtu4_HSMlmJzSi',
+        'u': guyUes[21],
+        'coreIdentity':
+        {
+            'd': 'EGh3ORSV8SvSwMIfxI5A7CPAgeK3sCwlEt4lrA_ABrsc',
+            'u': guyUes[22],
+            'n': guyCoreSediSaid,
+            's': CoreSchemaSaid,
+            'o': ["E1E", "NI2I"],
+        }
+    }
+
+
+    guyResidenceRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=guyResidenceRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    guyResidenceRuleMad = compactor.partials[('',)].mad
+    assert guyResidenceRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    guySerderResidence = acdcmap(israid=sue,
+                            uuid=guyUes[23],
+                            regid=rids[2],
+                            schema=ResidenceSchemaSaid,
+                            attribute=guyResidenceAttMad,
+                            edge=guyResidenceEdgeMad,
+                            rule=guyResidenceRuleMad,
+                            kind=kind)
+
+    residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
+
+    guyResidenceSediSaid = guySerderResidence.said
+    assert guyResidenceSediSaid == 'EBNKdZRMfyreU6bBMkjbBI2GlcLBV2BGpLkIbE27FuQt'
+    assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAbJ.'
+    assert guySerderResidence.israid == sue
+    assert guySerderResidence.regid == rids[2]
+    assert guySerderResidence.iseaid == guy
+    assert guySerderResidence.sad['a'] == guyResidenceAttMad
+
+    assert guySerderResidence.sad == \
+    {
+        'v': guySerderResidence.verstr,
+        't': 'acm',
+        'd': guyResidenceSediSaid,
+        'u': guyUes[23],
+        'i': sue,
+        'rd': rids[2],
+        's': ResidenceSchemaSaid,
+        'a': guyResidenceAttMad,
+        'e': guyResidenceEdgeMad,
+        'r': guyResidenceRuleMad
+    }
+
+
+
+    # Setup Gal's SEDI ACDCs
+
     salt = b'galscoresedisalt'  # base salt
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABnYWxzY29yZXNlZGlzYWx0'  # CESR encoded
     galUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(16)]
+                                                             for i in range(32)]
     assert galUes == \
     [
         '0AAgHaUeg5Pvr7KQMPBeYfIs',
@@ -1936,8 +2638,26 @@ def test_core_identity():
         '0AChBh2pZwiOkTy675JP3L-f',
         '0AC9zE_ETWdeUUs3yP9kkJ0F',
         '0AA5ZKSBfBOgjiWeqCoCu1V5',
-        '0ABbhr2o_M834GMWCYngZC3s'
+        '0ABbhr2o_M834GMWCYngZC3s',
+        '0ABlOWnun7rNDUmzXlIk0OEe',
+        '0ADhxScWmTYdq8FrNGvcrYpZ',
+        '0AAnwG5mRUe5Et7RQ2TTUUEK',
+        '0ADQrYfARrpfPhWdHuz_gHPX',
+        '0ADGmcRPXhfi5kG6oQdU4fHW',
+        '0AADKjTvIy2bbrS-lXyI9VCS',
+        '0ACK5s1TfhDkVlr64Pg1gDl1',
+        '0AC2exiiWkYKfrZwUycP4SY9',
+        '0AAp2vdhFdWTt9O4E6Wi98VT',
+        '0ACjsqsuL-DOKmxTaJ7txUuZ',
+        '0ACJEGGAO0WbfqWL0QgHfjfS',
+        '0AABy0qynv8r9j8TVlm0E3Eb',
+        '0ADdsSxYps95HI5ZD9s6gQH0',
+        '0AA2XQraY1bu2gNAuP1TepSL',
+        '0AAe0fk7QDnX230fu_jsGYY4',
+        '0AArNPcT5h05Wxm0SUKpeL9O'
     ]
+
+    # Setup Gal's Core SEDI
 
     galImageProof = Diger(ser=b"PretendImageOfGal").qb64
     assert galImageProof == 'EGh8sVJumVosTZVgT95YAb0Vor_7JRKGjgCX_2C7I9h4'
@@ -2068,14 +2788,8 @@ def test_core_identity():
         }
     }
 
-    # same ones from guys core SEDI ACDC
-    #utahAgentAcdcSaid = Diger(ser=b"PretendUtahAgentAcdc").qb64
-    #assert utahAgentAcdcSaid == 'EE-Lz-snXwc5VCKOZSQGVXeCO0HfrpXLabNqYP9QWgj_'
 
-    #utahAgentSchemaSaid = Diger(ser=b"PretendUtahAgentSchema").qb64
-    #assert utahAgentSchemaSaid == 'EPclO424AuAiGqlvfCfzrgsCirXA2Rj6fg5vo4Wv3I4m'
-
-    galEdgeBareMad = \
+    galCoreEdgeBareMad = \
     {
         "d": "",
         "u": galUes[10],
@@ -2088,10 +2802,10 @@ def test_core_identity():
             "o": "I2I",
         },
     }
-    compactor = Compactor(mad=galEdgeBareMad, makify=True, compactify=True,
+    compactor = Compactor(mad=galCoreEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
-    galEdgeMad = compactor.partials[('.utahAgent',)].mad
-    assert galEdgeMad == \
+    galCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
+    assert galCoreEdgeMad == \
     {
         'd': 'EFo3AP78OKOKlJW4HPEDRzhguEzHfENcc7x3e2j8THVw',
         'u': galUes[10],
@@ -2106,34 +2820,34 @@ def test_core_identity():
     }
 
 
-    galRuleBareMad = \
+    galCoreRuleBareMad = \
     {
         "d": "",
         "l": "",
     }
-    compactor = Compactor(mad=galRuleBareMad, makify=True, compactify=True,
+    compactor = Compactor(mad=galCoreRuleBareMad, makify=True, compactify=True,
                           saidive=True, kind=kind)
-    galRuleMad = compactor.partials[('',)].mad
-    assert galRuleMad == \
+    galCoreRuleMad = compactor.partials[('',)].mad
+    assert galCoreRuleMad == \
     {
         'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
         'l': ''
     }
 
-    # core sedi credential ACDC issued by Sue AID to Guy SMAID
-
+    # core sedi credential ACDC issued by Sue AID to Gal SMAID
     galSerderCore = acdcmap(israid=sue,
                             uuid=galUes[0],
                             regid=rids[1],
                             schema=CoreSchemaSaid,
                             attribute=galCoreAttMad,
-                            edge=galEdgeMad,
-                            rule=galRuleMad,
+                            edge=galCoreEdgeMad,
+                            rule=galCoreRuleMad,
                             kind=kind)
 
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
-    assert galSerderCore.said == 'EJynh_8Ah2tklz-fSfC_O6ZqDoGBQwSPpLnLXjqg8EOE'
+    galCoreSediSaid = galSerderCore.said
+    assert galCoreSediSaid == 'EJynh_8Ah2tklz-fSfC_O6ZqDoGBQwSPpLnLXjqg8EOE'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAcW.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == rids[1]
@@ -2144,15 +2858,219 @@ def test_core_identity():
     {
         'v': galSerderCore.verstr,
         't': 'acm',
-        'd': galSerderCore.said,
+        'd': galCoreSediSaid,
         'u': galUes[0],
         'i': sue,
         'rd': rids[1],
         's': CoreSchemaSaid,
         'a': galCoreAttMad,
-        'e': galEdgeMad,
-        'r': galRuleMad
+        'e': galCoreEdgeMad,
+        'r': galCoreRuleMad
     }
+
+    # Gal residence SEDI attribution section
+    galResidenceAttBareMad = \
+    {
+        "d": "",
+        "u": galUes[12],
+        "i": gal,  #galSMAID
+        "street": \
+        {
+            "d": "",
+            "u": galUes[13],
+            "value": street,
+        },
+        "city": \
+        {
+            "d": "",
+            "u": galUes[14],
+            "value": city,
+        },
+        "county": \
+        {
+            "d": "",
+            "u":galUes[15],
+            "value": county,
+        },
+        "state": \
+        {
+            "d": "",
+            "u": galUes[16],
+            "value": state,
+        },
+        "postcode": \
+        {
+            "d": "",
+            "u": galUes[17],
+            "value": postcode,
+        },
+        "country": \
+        {
+            "d": "",
+            "u": galUes[18],
+            "value": country,
+        },
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  galUes[19],
+            "value": "2020-08-25T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  galUes[20],
+            "value": "2028-09-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=galResidenceAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galResidenceAttMad = compactor.partials[('.street',
+                                             '.city',
+                                             '.county',
+                                             '.state',
+                                             '.postcode',
+                                             '.country',
+                                             '.issuedDate',
+                                             '.expirationDate')].mad
+    assert galResidenceAttMad['i'] == gal
+    galResidenceAttMadSaid = compactor.said
+    assert  galResidenceAttMadSaid == 'EM_-usfReX6Pt_SrEaa_KKX53KDWtT9l6xdda0fqW8Td'
+    assert galResidenceAttMad == \
+    {
+        'd': galResidenceAttMadSaid,
+        'u': galUes[12],
+        'i': gal,
+        'street':
+        {
+            'd': 'EGafF9qZ2aSpOT5MFQM0pAXbWMWz9chkOiDd9h1K4BR5',
+            'u': galUes[13],
+            'value': street
+        },
+        'city':
+        {
+            'd': 'EPTnbnIR-JG5bv07K3AoQq76h6nArqgys9tDRH8G1lS7',
+            'u': galUes[14],
+            'value': city
+        },
+        'county':
+        {
+            'd': 'EEzJ051463te5YuuQts3VpT7Lds5iePs3B-JgBjsDV03',
+            'u': galUes[15],
+            'value': county
+        },
+        'state':
+        {
+            'd': 'EI96-7qnveO8SRXBg0WYq-TUfmDnnimuipT1pJvSYxA-',
+            'u': galUes[16],
+            'value': state
+        },
+        'postcode':
+        {
+            'd': 'EDPCBkSS9O9CW46JMpuw1ADzgRmCAvc_KoeaF45-OTCs',
+            'u': galUes[17],
+            'value': postcode
+        },
+        'country':
+        {
+            'd': 'ECJY95wUXqYVVnn_hLdmO6ld3oIRFozvBYXQG5o5jxTd',
+            'u': galUes[18],
+            'value': country
+        },
+        'issuedDate':
+        {
+            'd': 'EMbgVrmOzOpWwc_EuiRdFuHdph55UVlp4N44zz2NpGm3',
+            'u': galUes[19],
+            'value': '2020-08-25T00:00:00.000000+00:00'
+        },
+        'expirationDate':
+        {
+            'd': 'EJ7Eanv7E47CmQG8UoKlrjAw6GU7PHZD68OaSuQfsjDf',
+            'u': galUes[20],
+            'value': '2028-09-01T00:00:00.000000+00:00'
+        }
+    }
+
+    galResidenceEdgeBareMad = \
+    {
+        "d": "",
+        "u": galUes[21],
+        "coreIdentity":
+        {
+            "d": "",
+            "u": galUes[22],
+            "n": galCoreSediSaid,
+            "s": CoreSchemaSaid,
+            "o": ["E1E", "NI2I"],
+        },
+    }
+    compactor = Compactor(mad=galResidenceEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
+    assert galResidenceEdgeMad == \
+    {
+        'd': 'EO-m-2Q8OSrFAj3HeHrQr7AA5qULbMDWo-4upE4lMoyd',
+        'u': galUes[21],
+        'coreIdentity':
+        {
+            'd': 'ELXb0dwR6mKKKC_gEuh7ma96EqMDcGWjeA3ybjwZauWk',
+            'u': galUes[22],
+            'n': galCoreSediSaid,
+            's': CoreSchemaSaid,
+            'o': ["E1E", "NI2I"],
+        }
+    }
+
+
+    galResidenceRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=galResidenceRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    galResidenceRuleMad = compactor.partials[('',)].mad
+    assert galResidenceRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Gal SMAID
+    galSerderResidence = acdcmap(israid=sue,
+                            uuid=galUes[23],
+                            regid=rids[3],
+                            schema=ResidenceSchemaSaid,
+                            attribute=galResidenceAttMad,
+                            edge=galResidenceEdgeMad,
+                            rule=galResidenceRuleMad,
+                            kind=kind)
+
+    residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
+
+    galResidenceSediSaid = galSerderResidence.said
+    assert galResidenceSediSaid == 'EIoGPQIfkNI_SS6hH_RR0rC7yn7YHbcAu6bbOZFGdgML'
+    assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAbJ.'
+    assert galSerderResidence.israid == sue
+    assert galSerderResidence.regid == rids[3]
+    assert galSerderResidence.iseaid == gal
+    assert galSerderResidence.sad['a'] == galResidenceAttMad
+
+    assert galSerderResidence.sad == \
+    {
+        'v': galSerderResidence.verstr,
+        't': 'acm',
+        'd': galResidenceSediSaid,
+        'u': galUes[23],
+        'i': sue,
+        'rd': rids[3],
+        's': ResidenceSchemaSaid,
+        'a': galResidenceAttMad,
+        'e': galResidenceEdgeMad,
+        'r': galResidenceRuleMad
+    }
+
 
 
     """Done Test"""
