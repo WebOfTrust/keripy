@@ -9,7 +9,7 @@ import copy
 from dataclasses import dataclass, astuple, asdict
 from collections import namedtuple
 
-from ..help import (sceil, intToB64, b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
+from ..help import (sceil, intToB64, b64ToInt, decodeUtf8, codeB64ToB2, codeB2ToB64, Reb64,
                     nabSextets)
 
 from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0, InvalidVersionError,
@@ -1179,8 +1179,7 @@ class Counter:
 
 
         first = qb64b[:2]  # extract first two char code selector
-        if hasattr(first, "decode"):
-            first = first.decode("utf-8")
+        first = decodeUtf8(first)  # narrows non-UTF-8 to ConversionError
         if first not in self.Hards:
             if first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected op code start"
@@ -1193,8 +1192,7 @@ class Counter:
             raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
 
         hard = qb64b[:hs]  # get hard code
-        if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
+        hard = decodeUtf8(hard)  # decode converts bytearray/bytes to str (narrows non-UTF-8)
         if hard not in self._sizes:  # Sizes needs str not bytes
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
@@ -1208,8 +1206,7 @@ class Counter:
             raise ShortageError("Need {} more characters.".format(fs - len(qb64b)))
 
         count = qb64b[hs:fs]  # extract count chars
-        if hasattr(count, "decode"):
-            count = count.decode("utf-8")
+        count = decodeUtf8(count)  # narrows non-UTF-8 to ConversionError
         count = b64ToInt(count)  # compute int count
 
         self._code = hard

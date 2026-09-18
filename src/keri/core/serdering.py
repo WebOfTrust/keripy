@@ -1268,28 +1268,28 @@ class Serder:
                 sad = self._loads(raw=raw, size=size)
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CESR: "
-                                      f"{raw[:size].decode()}") from ex
+                                      f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         elif kind == Kinds.json:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing JSON: "
-                    f"{raw[:size].decode()}") from ex
+                    f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         elif kind == Kinds.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing MGPK: "
-                    f"{raw[:size].decode()}") from ex
+                    f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         elif kind == Kinds.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CBOR: "
-                    f"{raw[:size].decode()}") from ex
+                    f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         else:
             raise DeserializeError(f"Invalid deserialization kind: {kind}")
