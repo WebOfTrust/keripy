@@ -1833,10 +1833,15 @@ def test_precreg_disclosure_gating_and_revocation_JSON():
                             event=bulk.ageIssues[k], blind=bundle['blind'],
                             proof=strayTree.prove(bulk.padding[0].said),
                             sealer=bulk.sealer) is None
-    # ...and a BARE Merkle-root seal is refused rather than assumed, which is what makes
-    # the typed seal load-bearing instead of decorative: a Validator holding a root digest
-    # alone cannot tell a dense batch tree from the amalgamated sparse tree spec L2918
-    # describes, and #204 therefore has the Issuer commit the construction in band.
+    # ...and a BARE Merkle-root seal is refused rather than assumed. A Validator holding a
+    # root digest alone cannot tell a dense batch tree from the amalgamated sparse tree
+    # spec L2918 describes, so #204 has the Issuer type the anchor. Note the limit of what
+    # the type can say: SealKind's `t` is a Verser, which encodes (proto, pvrsn, gvrsn) and
+    # nothing else (src/keri/core/coring.py:2487), so a sparse-tree Issuer under ACDC v2.0
+    # emits this exact `t`. The construction is pinned only transitively, by being the one
+    # ACDC v2.0 defines. What this assertion proves is the narrower and still worthwhile
+    # thing: an untyped anchor is refused, so a Validator never silently supplies a
+    # construction the Issuer never named.
     bareSealer = Sealer(crew=SealRoot(rd=bulk.tree.root))
     assert _verify_issuance(bulk.ageCopies[k], reg=pool.regs[i],
                             event=bulk.ageIssues[k], blind=bundle['blind'],
