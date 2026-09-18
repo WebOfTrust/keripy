@@ -454,9 +454,9 @@ def test_cocreg_derivation_and_batch_JSON():
     blinders = [Blinder.blind(acdc=saids[k], state='issued', salt=bs[k], sn=1)
                 for k in range(M)]
     assert Blinder.unblind(said=blinders[0].said, acdc=saids[0],
-                           states=list(SET_STATES), salt=bs[0], sn=1).state == 'issued'
+                           states=SET_STATES, salt=bs[0], sn=1).state == 'issued'
     assert Blinder.unblind(said=blinders[0].said, acdc=saids[0],
-                           states=list(SET_STATES), salt=bs[1], sn=1) is None
+                           states=SET_STATES, salt=bs[1], sn=1) is None
 
     # The batch tree over those (stand-in) transaction-event SAIDs.
     events = [Diger(ser=f"bup{k}".encode()).qb64 for k in range(7)]   # odd count on purpose
@@ -715,16 +715,16 @@ def test_cocreg_sedi_id_set_JSON():
         assert b"issued" not in issued.raw            # state word stays blinded...
         assert copies[k].said.encode() not in issued.raw   # ...and so does the SAID
         unblinded = Blinder.unblind(said=issued.sad['b'], acdc=copies[k].said,
-                                    states=list(SET_STATES), salt=nonces.s(k), sn=1)
+                                    states=SET_STATES, salt=nonces.s(k), sn=1)
         assert unblinded.state == 'issued'
 
     # The binding is exact in both directions: another copy's SAID does not unblind this
     # registry's state, and another copy's salt does not either.
     other = (0 + 1) % BULK_SIZE
     assert Blinder.unblind(said=issues[0].sad['b'], acdc=copies[other].said,
-                           states=list(SET_STATES), salt=nonces.s(0), sn=1) is None
+                           states=SET_STATES, salt=nonces.s(0), sn=1) is None
     assert Blinder.unblind(said=issues[0].sad['b'], acdc=copies[0].said,
-                           states=list(SET_STATES), salt=nonces.s(other), sn=1) is None
+                           states=SET_STATES, salt=nonces.s(other), sn=1) is None
 
 
 # ===========================================================================
@@ -1080,7 +1080,7 @@ def test_cocreg_sedi_age_set_JSON():
     assert len({r.said for r in ageRegs}) == BULK_SIZE
     for k, issued in enumerate(ageIssues):
         assert Blinder.unblind(said=issued.sad['b'], acdc=ageCopies[k].said,
-                               states=list(SET_STATES), salt=ageNonces.s(k),
+                               states=SET_STATES, salt=ageNonces.s(k),
                                sn=1).state == 'issued'
 
     # Pinned reproducible values (derived, not pasted).
@@ -1397,7 +1397,7 @@ def _verify_issuance(copy, *, reg, event, blind, proof, sealer):
         return None
     if reg.sad['i'] != copy.sad['i']:      # the issuer controls the registry it names
         return None
-    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=list(SET_STATES),
+    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=SET_STATES,
                               uuid=blind)
     if blinder is None:
         return None

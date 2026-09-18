@@ -165,11 +165,12 @@ BULK_AGE_SALT = b'precregageexsalt'
 # set. Small for a readable example; a real deployment sizes M to the expected number of
 # distinct verifier contexts and pays for it in TELs (spec L2911).
 BULK_SIZE = 5
-# The states a registry's blindable update can carry, for both bulk sets. Every call site
-# below passes list(SET_STATES) rather than SET_STATES: Blinder.unblind APPENDS the empty
-# placeholder state to the list it is handed (src/keri/core/structing.py), so passing this
-# constant directly would leave '' permanently in it and quietly weaken every later
-# assertion that iterates over the states an Issuer actually uses.
+# The states a registry's blindable update can carry, for both bulk sets. Blinder.unblind
+# adds the empty placeholder state to its OWN copy of this list, and the empty SAID to its
+# own copy of the acdc list (src/keri/core/structing.py:1527-1533), so the search space a
+# Disclosee brute-forces is (len(acdcs) + 1) * (len(states) + 1): the placeholder events
+# are candidates too, which is what keeps a vacuous update indistinguishable from a real
+# one even against someone who knows every state word the Issuer uses.
 SET_STATES = ['issued', 'revoked']
 
 
@@ -1041,11 +1042,11 @@ def test_precreg_pool_JSON():
     # Only the Issuer can even confirm it is a placeholder: the combination trial needs
     # the blinding factor, which for a pre-assignment event never leaves the Issuer.
     blind = pool.issuerBlind(0, pool.sn(0))
-    unblinded = Blinder.unblind(said=head.sad['b'], acdc='', states=list(SET_STATES),
+    unblinded = Blinder.unblind(said=head.sad['b'], acdc='', states=SET_STATES,
                                 uuid=blind)
     assert unblinded is not None
     assert unblinded.crew.td == '' and unblinded.crew.ts == ''
-    assert Blinder.unblind(said=head.sad['b'], acdc='', states=list(SET_STATES),
+    assert Blinder.unblind(said=head.sad['b'], acdc='', states=SET_STATES,
                            uuid=pool.issuerBlind(1, pool.sn(1))) is None
 
     # The creation batch: one typed seal over many registries' inception events. Anchoring
@@ -1166,11 +1167,11 @@ def test_precreg_conveyance_JSON():
         i = bulk.idIdx[k]
         sn = pool.sn(i)
         assert Blinder.unblind(said=pool.head(i).sad['b'], acdc=bulk.idCopies[k].said,
-                               states=list(SET_STATES),
+                               states=SET_STATES,
                                uuid=wallet.blind(k, sn)).state == 'issued'
         other = (k + 1) % BULK_SIZE
         assert Blinder.unblind(said=pool.head(i).sad['b'], acdc=bulk.idCopies[k].said,
-                               states=list(SET_STATES),
+                               states=SET_STATES,
                                uuid=wallet.blind(other, sn)) is None
 
     # The wallet cannot read its own registry's PRE-assignment history, and does not need
@@ -1178,7 +1179,7 @@ def test_precreg_conveyance_JSON():
     # This is what lets the salt arrive later than the registry does.
     firstPlaceholder = pool.chain[bulk.idIdx[0]][1]
     assert all(Blinder.unblind(said=firstPlaceholder.sad['b'],
-                               acdc=bulk.idCopies[0].said, states=list(SET_STATES),
+                               acdc=bulk.idCopies[0].said, states=SET_STATES,
                                uuid=wallet.blind(0, sn)) is None
                for sn in range(1, pool.sn(bulk.idIdx[0]) + 1))
 
@@ -1252,14 +1253,14 @@ def test_precreg_whitening_round_JSON():
     for event in (assignment, noop):
         for copy in bulk.idCopies + bulk.ageCopies:
             assert Blinder.unblind(said=event.sad['b'], acdc=copy.said,
-                                   states=list(SET_STATES), uuid=guess) is None
+                                   states=SET_STATES, uuid=guess) is None
     i0 = bulk.idIdx[0]
     assert Blinder.unblind(said=assignment.sad['b'], acdc=bulk.idCopies[0].said,
-                           states=list(SET_STATES),
+                           states=SET_STATES,
                            uuid=bulk.idWallet.blind(0, bulk.pool.sn(i0))).state == 'issued'
     padIdx = bulk.pool.byRd[noop.sad['rd']]
     padBlind = bulk.pool.issuerBlind(padIdx, bulk.pool.sn(padIdx))
-    padded = Blinder.unblind(said=noop.sad['b'], acdc='', states=list(SET_STATES),
+    padded = Blinder.unblind(said=noop.sad['b'], acdc='', states=SET_STATES,
                              uuid=padBlind)
     assert padded is not None and padded.crew.ts == ''
 
@@ -1636,7 +1637,7 @@ def _verify_issuance(copy, *, reg, event, blind, proof, sealer):
         return None
     if reg.sad['i'] != copy.sad['i']:      # the issuer controls the registry it names
         return None
-    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=list(SET_STATES),
+    blinder = Blinder.unblind(said=event.sad['b'], acdc=copy.said, states=SET_STATES,
                               uuid=blind)
     if blinder is None:
         return None
