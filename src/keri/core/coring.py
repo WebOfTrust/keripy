@@ -2926,9 +2926,14 @@ class Pather(Matter):
         path = "AAA/BBB" with relative == True
         path = "/@AA/BBB" with pathive == False"""
 
-    # Upper bound on path depth traversed by ._resolve. SAD paths are shallow
-    # in practice; this generous cap keeps a hostile path from recursing to a
-    # RecursionError and bounds resolution work.
+    # DoS-narrowing cap (deployment-tunable). Upper bound on path depth
+    # traversed by ._resolve. SAD paths are shallow in practice; this generous
+    # cap keeps a hostile path from recursing to a RecursionError and bounds
+    # resolution work. It is a local defensive limit, NOT a protocol maximum:
+    # a peer MAY send a wire-legal path deeper than this, and an operator whose
+    # data legitimately exceeds it may raise the value. One of a family of such
+    # caps (see Tholder.Limit/MaxSith below and the message/connection caps in
+    # the wider hardening set); tune them together for a given deployment.
     MaxDepth = 256
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
@@ -4316,16 +4321,21 @@ class Tholder:
         ._satisfy_numeric is numeric threshold verification method
         ._satisfy_weighted is fractional weighted threshold verification method"""
 
-    # Upper bound on the number of clauses in a weighted threshold, on the
-    # number of weights within any one clause, and on the TOTAL weight/leaf
-    # count across all clauses. Real multisig thresholds have at most tens of
-    # participants; this generous cap bounds the work done parsing a hostile
-    # sith (thousands of clauses/weights, or their product, were previously
-    # accepted).
+    # DoS-narrowing cap (deployment-tunable). Upper bound on the number of
+    # clauses in a weighted threshold, on the number of weights within any one
+    # clause, and on the TOTAL weight/leaf count across all clauses. Real
+    # multisig thresholds have at most tens of participants; this generous cap
+    # bounds the work done parsing a hostile sith (thousands of clauses/weights,
+    # or their product, were previously accepted). It is a local defensive
+    # limit, NOT a protocol maximum -- the KERI spec places no bound on multisig
+    # size, so a peer MAY send a wire-legal threshold with more leaves than this;
+    # an operator running a larger multisig may raise the value. MaxSith below is
+    # kept reconciled to this leaf cap so the string and list/limen paths agree.
     Limit = 1000
 
-    # Upper bound on the length of a JSON-string sith before it is handed to
-    # json.loads. This is a cheap coarse guard, reconciled with the Limit leaf
+    # DoS-narrowing cap (deployment-tunable). Upper bound on the length of a
+    # JSON-string sith before it is handed to json.loads. This is a cheap coarse
+    # guard, reconciled with the Limit leaf
     # cap (SEC-F3): any threshold within Limit leaves must FIT as a string, so
     # the string API accepts exactly what the list/CESR-limen wire paths do.
     # A flat 1000-leaf threshold of large fractions serializes to ~18000 chars;
@@ -4335,6 +4345,8 @@ class Tholder:
     # code accepted. The nesting RecursionError (P3) is handled separately, by
     # catching RecursionError around json.loads below -- a deeply-nested string
     # can overflow the decoder's C stack even while under this length bound.
+    # Like Limit this is a local defensive limit, not a protocol maximum; raise
+    # it together with Limit if a deployment's legitimate thresholds are larger.
     MaxSith = 65536
 
     def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
