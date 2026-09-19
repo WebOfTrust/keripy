@@ -161,7 +161,10 @@ def test_annot():
     assert 105 - 36 == 69
 
 
-    # From keri spec examples
+    # Originally from the KERI spec examples. Kept verbatim rather than regenerated when the
+    # DID config trait was dropped from Ean's inception: this is the only case in the suite
+    # that annotates a non-empty config trait list (XDID), and regenerating it would leave
+    # an empty one. A standalone fixture now, not tracking the spec.
     ims = (b'-FCS0OKERICAACAAXicpEDZOA3y_b_0LG4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsEDZOA3y_b_0L'
                     b'G4_cfpKTbWU-_3eeYNM0w9iTkT7frTYsMAAAMAAC-JAhDBFiIgoCOpJ_zW_OO0GdffhHfEvJWb1H'
                     b'xpDx95bFvufuDG-YwInLUxzVDD5z8SqZmS2FppXSB-ZX_f2bJC_ZnsM5DGIAk2jkC3xuLIe-DI9r'
