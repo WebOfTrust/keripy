@@ -377,6 +377,69 @@ class LocationRecord:  # baser.locs
 
 
 @dataclass
+class DeclRecord:  # baser.decls
+    """
+    Self-declaration Record holding what an identifier says about itself. The eid is usually a
+    nontransferable identifier, because the motivating case is a witness: a witness AID cannot be
+    transferable (it would need witnesses of its own and the definition would not terminate), so
+    its prefix is its public key and commits to nothing in its inception event, and nothing in the
+    ecosystem fetches its KEL because verifying its receipts needs the prefix alone. A declaration
+    reply is therefore the only way a witness can say anything about itself that travels.
+
+    Database Keys are (eid, kind) where eid is the declaring identifier (qb64 prefix) and kind is
+    one of Decls. Kinds are keyed separately, and that is the point: BADA orders each route on its
+    own, so replacing a contact address does not re-stamp an unrelated declaration.
+
+    Two kinds, divided by whether a consumer DECIDES on the value or merely DISPLAYS it.
+
+    ``tags`` are bare names a consumer acts on, which is why they are names rather than key/value
+    pairs: a set of names unions across a witness set, and key/value pairs do not — three witnesses
+    declaring three different regions have no natural merge.
+
+    ``attribs`` are key/value facts a consumer shows a person and should not act on. A declaration
+    is only as good as the declarer's interest in making it, so a self-reported location or
+    operator name carries no weight, whereas a declaration AGAINST interest -- that this witness is
+    test infrastructure -- is worth reading precisely because nobody gains by making it falsely.
+
+    A decl reply message is required from which the values of this record are extracted. Routes are
+    /decl/tags and /decl/attribs. Uses enact-anul model: an empty tags list or attribs map
+    nullifies the declaration.
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/decl/tags",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "tags": ["testnet"],
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/decl/attribs",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "attribs": {"operator": "Example Org", "contact": "mailto:ops@example.com"},
+      }
+    }
+
+    """
+    tags: list[str] = field(default_factory=list)  # bare names a consumer decides on
+    attribs: dict[str, str] = field(default_factory=dict)  # key/value a consumer displays
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
 class ObservedRecord:  # baser.obvs
     """
     Watched Record with fields and keys to manage OIDs (Observed IDs) being watched by a watcher, keyed by
