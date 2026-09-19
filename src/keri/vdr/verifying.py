@@ -14,11 +14,12 @@ from hio.help import decking, ogler
 from ..kering import (Ilks, MissingChainError,
                       MissingRegistryError, MissingSchemaError,
                       ValidationError, FailedSchemaValidationError,
-                      MissingChainError, RevokedChainError)
+                      MissingChainError, RevokedChainError,
+                      EdgeRefusalError, UnsupportedOperatorError)
 from ..core import Dater, Saider, Parser, CacheResolver, Schemer
 from ..help import helping
 
-from .eventing import Tevery, Reger, query
+from .eventing import Tevery, Reger, query, walkEdgeSection
 
 logger = ogler.getLogger()
 
@@ -33,11 +34,12 @@ class Verifier:
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
     TimeoutBCE = 3600  # seconds to timeout missing issuer escrows
 
-    # Unary edge operators this verifier recognizes. A token outside this set is not an
-    # operator to this verifier and is skipped when resolving a list-valued `o` (see
-    # .verifyChain). DI2I and NOT are recognized but unimplemented: they are listed so
-    # they fail closed diagnosably instead of being dropped and silently defaulting.
-    # E1E is a keripy extension not yet in the spec's normative operator table.
+    # Unary edge operators this verifier recognizes. A token outside this set cannot be
+    # evaluated, so an edge carrying one is refused rather than validated under a
+    # substituted operator -- see .verifyChain. DI2I and NOT are recognized but
+    # unimplemented, and refused for the same reason. E1E is normative in ACDC v1.1
+    # (spec-body.md:1206 on the v1.1 line, added by trustoverip/
+    # kswg-acdc-specification#197) and has not been forward-ported to the 2.0 line.
     UnaryOps = ('I2I', 'NI2I', 'DI2I', 'E1E', 'NOT')
 
     # The delegative subset of .UnaryOps: each constrains the near ACDC's issuer
@@ -45,6 +47,26 @@ class Verifier:
     # containing several is a conflict resolved latest-wins. Operators outside this
     # subset constrain something else and compose with the winner instead.
     DelegativeOps = ('I2I', 'NI2I', 'DI2I')
+
+    # M-ary (aggregating) Operators from the ACDC spec's normative Edge-group table
+    # (spec-body.md, "##### Operator, `o` field" under "#### Edge-group"). These
+    # apply to an Edge-group's members, not to a single edge, and are therefore
+    # disjoint from .UnaryOps. A token outside this set is not an m-ary Operator to
+    # this verifier and fails closed -- see .verifyGroup.
+    MAryOps = ('AND', 'OR', 'NAND', 'NOR', 'AVG', 'WAVG')
+
+    # The subset of .MAryOps whose semantics this verifier implements. AND is the
+    # spec's default when an Edge-group's `o` field is absent, and its meaning --
+    # the group is valid only if every member is valid -- is exactly the aggregation
+    # .processCredential already performs over a flat edge section. The rest are
+    # recognized but unimplemented, so they fail closed rather than being silently
+    # treated as AND, which would apply a weaker rule than the Issuer specified.
+    MAryOpsImplemented = ('AND',)
+
+    # Operator applied to an Edge-group whose `o` field is absent: "When the
+    # Operator, `o`, field is missing in an Edge-group block, the default value for
+    # the Operator, `o`, field MUST be the `AND` Operator."
+    DefaultMAryOp = 'AND'
 
     def __init__(self, hby, reger=None, creds=None, cues=None, expiry=36000000000):
         """
@@ -169,9 +191,43 @@ class Verifier:
             raise ValidationError(f"invalid type for edges: {prov}")
 
         for edge in edges:
-            for label, node in edge.items():
-                if label in ('d', 'o'):  # SAID or Operator of this edge block
+            # An Edge Section is itself an Edge-group and MAY nest further
+            # Edge-groups, so walk it rather than assuming every non-reserved label
+            # at the top level is a flat edge. Every Edge-group encountered has its
+            # m-ary Operator checked; every Edge found, at any depth, is validated.
+            # This is the AND aggregation -- the spec default -- and .verifyGroup
+            # rejects any group asking for something else.
+            # Schema pins in force at each walked path. An Edge-group MAY carry `s`,
+            # a schema every edge below it must satisfy -- a keripy extension (ACDC
+            # reserves [d, u, o, w] on a group, spec-body.md:1076-1083) that the v2
+            # IPEX path already honours and inherits (acdc/ipexing.py:875). Only
+            # nested groups carry one, matching that path, which reads no pin from the
+            # Edge Section itself. The walk is pre-order, so a parent's entry is
+            # always present before its children are reached.
+            pins = {}
+
+            for path, node, group in walkEdgeSection(edge):
+                if group:
+                    self.verifyGroup(node, path, creder)
+                    inherited = pins[path[:-1]] if path else ()
+                    own = ()
+                    if path and 's' in node:
+                        pin = node['s']
+                        if not isinstance(pin, str):
+                            # A pin this verifier cannot resolve to a schema SAID must
+                            # not be dropped: dropping it accepts the far nodes the pin
+                            # exists to exclude. v1 resolves by SAID, so the inline
+                            # schema-document form the v2 path accepts is not usable
+                            # here. Permanent, so not an escrow.
+                            raise ValidationError(f"Edge-group schema pin at "
+                                                  f"{'.'.join(path)} in credential "
+                                                  f"{creder.said} is not a schema SAID: "
+                                                  f"{type(pin).__name__}")
+                        own = (pin,)
+                    pins[path] = inherited + own
                     continue
+
+                label = '.'.join(path)  # dotted path so nested edges are locatable
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
                 try:
@@ -181,9 +237,13 @@ class Verifier:
                     # carried the edge, and the escrow handler logs only the exception.
                     # Re-raise with the near SAID and edge label so an operator triaging
                     # a stream can tell which credential to fix, matching the shape of
-                    # the MissingChainError messages below.
-                    raise ValidationError(f"Failure to verify credential {creder.said} "
-                                          f"chain {label}({nodeSaid}): {ex}") from ex
+                    # the MissingChainError messages below. Preserve the class: an edge
+                    # that does not hold (EdgeRefusalError) and one this validator
+                    # cannot evaluate (UnsupportedOperatorError) are different claims,
+                    # and flattening both to ValidationError here would discard the
+                    # distinction .verifyChain just made. Neither escrows.
+                    raise type(ex)(f"Failure to verify credential {creder.said} "
+                                   f"chain {label}({nodeSaid}): {ex}") from ex
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -203,8 +263,13 @@ class Verifier:
                 # must be reissued. Handled here rather than in verifyChain so the
                 # missing-schema case can escrow and cue a schema query, exactly as
                 # the near ACDC's own schema does above.
-                nodeSchema = node['s'] if 's' in node else None
-                if nodeSchema is not None:
+                # Every pin in force here, enclosing groups first, then the edge's
+                # own. Conjunction, not override: an inherited pin is a floor, so an
+                # edge carrying its own `s` must satisfy both and cannot release
+                # itself from a constraint its group placed. This is the #1534 rule
+                # ("two schema validations must be performed and both must be valid")
+                # applied one level out.
+                for nodeSchema in pins[path[:-1]] + ((node['s'],) if 's' in node else ()):
                     farCreder = self.reger.creds.get(keys=nodeSaid)
                     if farCreder.schema != nodeSchema:
                         scraw = self.resolver.resolve(nodeSchema)
@@ -242,6 +307,48 @@ class Verifier:
 
         self.saveCredential(creder, prefixer, seqner, saider)
         self.cues.append(dict(kin="saved", creder=creder))
+
+    def verifyGroup(self, group, path, creder):
+        """ Verifies the m-ary Operator of an Edge-group is one this verifier honors
+
+        Carries none of the aggregation semantics of the operators themselves beyond
+        AND: the caller validates every Edge in the section and fails on the first
+        bad one, which is AND. This method's job is to confirm the Issuer actually
+        asked for AND, so a group asking for something else cannot be quietly
+        validated under the wrong rule.
+
+        Parameters:
+            group (dict): the Edge-group block, possibly the Edge Section itself
+            path (tuple): non-reserved labels locating the group within the Edge
+                Section; empty for the Edge Section, which is the top-level group
+            creder (Creder): the near (edge-bearing) credential, for diagnostics
+
+        Raises:
+            ValidationError: the group's `o` is not a recognized m-ary Operator, or
+                is recognized but unimplemented. Deliberately not a MissingChainError
+                in either case: the section is fully in hand and no amount of
+                retrying will make an unsupported operator supported, so escrowing
+                would promise a retry that can never succeed. This matches the
+                treatment .verifyChain gives NOT and DI2I.
+
+        """
+        # An absent `o` is not "no operator": the spec assigns it a value, and that
+        # value goes through the same checks as an explicit one so the default can
+        # never drift out of .MAryOpsImplemented unnoticed.
+        op = group['o'] if 'o' in group else self.DefaultMAryOp
+        where = f"edge group {'.'.join(path)}" if path else "the edge section"
+
+        # Unlike an Edge's unary `o`, an Edge-group's `o` is a single aggregating
+        # Operator over the group's members -- the spec defines no list form for it.
+        if not isinstance(op, str) or op not in self.MAryOps:
+            raise ValidationError(f"Unrecognized m-ary edge operator {op!r} on "
+                                  f"{where} of credential {creder.said}; expected "
+                                  f"one of {self.MAryOps}")
+
+        if op not in self.MAryOpsImplemented:
+            raise ValidationError(f"Unsupported m-ary edge operator {op} on {where} "
+                                  f"of credential {creder.said}; only "
+                                  f"{self.MAryOpsImplemented} is implemented")
 
     def processACDC(self, **kwa):
         """Alias of .processCredential with Parser compatible call signature
@@ -412,24 +519,53 @@ class Verifier:
                 untargeted.
 
         Returns:
-            Serder: transaction event state notification message
+            Serder: transaction event state notification message, or None when the
+                edge cannot be decided yet because evidence is missing -- the far
+                node is not saved, its issuee indexes no saved credential, its
+                registry is not in .tevers, or its TEL carries no state for the far
+                SAID. None is the caller's signal to escrow and retry.
+
+        Raises:
+            EdgeRefusalError: the operator's constraint is decided against evidence
+                in hand and fails. Both sides of every comparison here are fixed in
+                SADs already held, so retrying cannot change the answer and the
+                caller must not escrow.
+            UnsupportedOperatorError: the operator is recognized but unimplemented,
+                so the edge's validity is unknown rather than false.
 
         """
+        # `o` is either a single unary operator or a list of them. An absent or empty
+        # operator takes the default rule below; a token outside .UnaryOps does not.
+        # Dropping an unrecognized token and defaulting would validate the edge under a
+        # substituted operator, and since every unary operator exists to narrow what
+        # satisfies an edge, the substitute is always the more permissive rule -- a
+        # silent relaxation of what the Issuer wrote. The ACDC unary table
+        # (spec-body.md:1190-1195) says nothing about a fifth token, so failing closed
+        # here is keripy's choice where the spec is silent.
+        #
+        # Checked before the far-node lookup on purpose: an operator this validator
+        # cannot evaluate stays that way however much evidence arrives, so reporting a
+        # missing far node first would promise a retry the operator forbids.
+        # ~3qah  reverses #1552's skip; needs S. Smith's buy-in via ACDC #201
+        ops = op if isinstance(op, (list, tuple)) else ([] if op is None else [op])
+        unknown = [cand for cand in ops if cand not in self.UnaryOps]
+        if unknown:
+            raise UnsupportedOperatorError(f"Unrecognized edge operator(s) {unknown} on "
+                                           f"edge to node {nodeSaid}; recognized are "
+                                           f"{list(self.UnaryOps)}")
+
         said = self.reger.saved.get(keys=nodeSaid)
         if said is None:
             return None
 
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        # `o` is either a single unary operator or a list of them. Latest-wins applies
-        # only "among the conflicting Operators" (ACDC spec-body.md L1186), so the list
-        # is resolved in two parts: the delegative operators constrain the same thing
-        # (the near issuer relative to the far issuee) and therefore conflict, so the
-        # latest of those wins; E1E constrains the near issuee instead, so it does not
-        # conflict with them and composes (AND) rather than overriding or being
-        # overridden. Tokens this verifier does not recognize are skipped.
-        ops = op if isinstance(op, (list, tuple)) else [op]
-        ops = [cand for cand in ops if cand in self.UnaryOps]
+        # Latest-wins applies only "among the conflicting Operators" (ACDC
+        # spec-body.md L1186), so the list is resolved in two parts: the delegative
+        # operators constrain the same thing (the near issuer relative to the far
+        # issuee) and therefore conflict, so the latest of those wins; E1E constrains
+        # the near issuee instead, so it does not conflict with them and composes (AND)
+        # rather than overriding or being overridden.
         op = next((cand for cand in reversed(ops) if cand in self.DelegativeOps), None)
 
         if not ops:  # absent, empty, or nothing recognized: apply the default rule
@@ -444,11 +580,11 @@ class Verifier:
         # a MissingChainError: the chain is present and retrying cannot help, so
         # escrowing would promise a retry that can never succeed.
         if 'NOT' in ops:
-            raise ValidationError(f"Unsupported edge operator NOT on edge to node "
+            raise UnsupportedOperatorError(f"Unsupported edge operator NOT on edge to node "
                                   f"{nodeSaid}; NOT validation is not implemented")
 
         if op == 'DI2I':
-            raise ValidationError(f"Unsupported edge operator DI2I on edge to node "
+            raise UnsupportedOperatorError(f"Unsupported edge operator DI2I on edge to node "
                                   f"{nodeSaid}; DI2I validation is not implemented")
 
         if 'E1E' in ops:
@@ -458,25 +594,37 @@ class Verifier:
             # common SEDI case -- both credentials issued by a third party to the same
             # subject, issuer != issuee -- is valid (and is exactly what I2I rejects).
             # Resolve the far issuee via .iseaid so an aggregate node (A[1].i) works too.
+            # A mismatch is decided, not pending: both issuees are fixed in SADs already
+            # in hand, so no later arrival makes them equal. Refuse rather than return
+            # None, which the caller would escrow and retry forever.
             farIssuee = creder.iseaid
             if farIssuee is None or issuee is None or issuee != farIssuee:
-                return None
+                raise EdgeRefusalError(f"E1E edge to node {nodeSaid} requires equal "
+                                       f"issuees; near issuee {issuee} != far issuee "
+                                       f"{farIssuee}")
 
         if op is not None and op != 'NI2I':
             # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
             # node (issuee at .sad["A"][1]["i"]) resolves identically to an
             # attributive one (.attrib["i"]). None means an untargeted far node,
-            # which cannot satisfy a targeted (I2I/DI2I) edge.
+            # which cannot satisfy a targeted (I2I/DI2I) edge -- and cannot become
+            # targeted later, since the issuee is part of the SAD under its SAID.
             farIssuee = creder.iseaid
             if farIssuee is None:
-                return None
+                raise EdgeRefusalError(f"{op} edge to node {nodeSaid} requires a "
+                                       f"targeted far node, which has no issuee")
 
+            # Transient, unlike the two refusals around it: .subjs indexes the
+            # credentials this validator happens to have saved for that issuee, so a
+            # miss means the evidence has not arrived rather than that the edge fails.
             iss = self.reger.subjs.get(keys=farIssuee)
             if iss is None:
                 return None
 
             if op == 'I2I' and issuer != farIssuee:
-                return None
+                raise EdgeRefusalError(f"I2I edge to node {nodeSaid} requires the near "
+                                       f"issuer to be the far issuee; issuer {issuer} "
+                                       f"!= far issuee {farIssuee}")
 
         if creder.regid not in self.tevers:
             return None

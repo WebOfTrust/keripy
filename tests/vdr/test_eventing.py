@@ -14,7 +14,8 @@ from keri import (Ilks, TraitDex, MissingAnchorError, ValidationError,
                   Vrsn_1_0, Kinds)
 from keri.vdr import (openReger, incept, rotate,
                       issue, revoke, backerIssue,
-                      backerRevoke, Tever, Tevery)
+                      backerRevoke, Tever, Tevery,
+                      isEdgeGroup, walkEdgeSection, edgesOf, MaxEdgeGroupDepth)
 
 from tests.vdr import buildHab
 
@@ -779,6 +780,150 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         # If unescrow succeeded, bis is in TEL and reprocessing raises duplicitous
         with pytest.raises(LikelyDuplicitousError):
             tvy.processEvent(serder=bis, seqner=Seqner(sn=2), saider=Diger(qb64b=rotsaid2), wigers=[biger])
+
+
+def test_walk_edge_section():
+    """Structural traversal of an ACDC Edge Section, independent of any validator.
+
+    The Edge Section of an ACDC is an Edge-group and MAY nest further Edge-groups to
+    arbitrary depth. Edges and Edge-groups are told apart by one thing only: "An Edge
+    block MUST have a node, `n`, field. This differentiates an Edge block from an
+    Edge-group block," and "An Edge-group MUST NOT have a node, `n`, field"
+    (spec-body.md, "#### Block Types"). A label in the reserved union
+    [d, u, n, s, o, w] carries a property of its own block; every other label names a
+    nested block. The union, rather than each block type's own labels, is what bounds
+    nested-block labels (spec-body.md:1126) -- see
+    test_walk_edge_section_skips_the_reserved_label_union.
+    """
+    said = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    other = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    # `n` is the discriminator, not the presence of nested blocks. A group holding a
+    # single edge is still a group; an edge with no properties beyond `n` is still an
+    # edge.
+    assert isEdgeGroup(dict(d='', o="AND", one=dict(n=said)))
+    assert isEdgeGroup(dict(d=''))
+    assert not isEdgeGroup(dict(n=said))
+    assert not isEdgeGroup(dict(d='', u='0AB', n=said, s='', o="I2I", w='1'))
+
+    # Flat section: the section itself is yielded as a group, its edge as an edge.
+    flat = dict(d=said, one=dict(n=other, o="NI2I"))
+    assert list(walkEdgeSection(flat)) == [
+        ((), flat, True),
+        (('one',), dict(n=other, o="NI2I"), False),
+    ]
+
+    # Nested group. Paths locate each block from the section down; the section's own
+    # path is empty. Labels are only locally unique, so the path -- not the label --
+    # is what identifies an edge within a section.
+    inner = dict(d='', o="AND", work=dict(n=said), citizenship=dict(n=other))
+    section = dict(d='', endorsed=inner, direct=dict(n=said))
+    assert [(p, g) for p, _, g in walkEdgeSection(section)] == [
+        ((), True),
+        (('endorsed',), True),
+        (('endorsed', 'work'), False),
+        (('endorsed', 'citizenship'), False),
+        (('direct',), False),
+    ]
+    assert [p for p, _ in edgesOf(section)] == [
+        ('endorsed', 'work'), ('endorsed', 'citizenship'), ('direct',)]
+
+    # Reserved Edge-group labels are properties of the group, never nested blocks.
+    # `u` and `w` matter here: both are scalars today, but a walker that skipped only
+    # `d` and `o` and leaned on "not a dict" to drop the rest would misclassify any
+    # future block-valued reserved field instead of ignoring it.
+    reserved = dict(d='', u='0ABhY2Rjc3BlY3dvcmtyYXcw', o="AND", w='2',
+                    one=dict(n=said))
+    assert [p for p, _ in edgesOf(reserved)] == [('one',)]
+
+    # Compact and simple-compact Edge forms put the Edge block's SAID in place of the
+    # block. Resolving one needs the Edge block, which keripy does not store apart
+    # from its ACDC, so these are skipped -- deliberately, and documented as deferred
+    # rather than silently dropped.
+    assert [p for p, _ in edgesOf(dict(d='', compact=said, one=dict(n=other)))] == \
+           [('one',)]
+
+    # A compact Edge Section is just its SAID, with no blocks to walk at all, and an
+    # empty section has no edges. Neither is an error.
+    assert list(edgesOf(said)) == []
+    assert list(walkEdgeSection(said)) == []
+    assert list(edgesOf({})) == []
+
+    # The Edge Section is an Edge-group, so it MUST NOT carry a node, `n`, field --
+    # a section written as if it were a single bare Edge is malformed. It fails
+    # closed rather than being read as either one edge or no edges: before this
+    # change the same input crashed the verifier with a TypeError (indexing a str)
+    # while Reger.sources quietly returned no artifacts at all.
+    with pytest.raises(ValidationError):
+        list(edgesOf(dict(d='', n=said, o="I2I")))
+
+    # Nesting is bounded. SAID references make a cycle infeasible to build, so this
+    # is a stack guard, not a cycle guard: a hand-crafted section cannot recurse the
+    # verifier to death. It fails with a ValidationError naming where it gave up --
+    # not a MissingChainError, since retrying cannot make the section shallower.
+    deep = cur = dict(d='')
+    for i in range(MaxEdgeGroupDepth + 2):
+        nxt = dict(d='')
+        cur[f'g{i}'] = nxt
+        cur = nxt
+    cur['leaf'] = dict(n=said)
+    with pytest.raises(ValidationError) as excinfo:
+        list(edgesOf(deep))
+    assert str(MaxEdgeGroupDepth) in str(excinfo.value)
+
+    # A section exactly at the bound still traverses.
+    ok = cur = dict(d='')
+    for i in range(MaxEdgeGroupDepth - 1):
+        nxt = dict(d='')
+        cur[f'g{i}'] = nxt
+        cur = nxt
+    cur['leaf'] = dict(n=said)
+    assert len(list(edgesOf(ok))) == 1
+
+    """End Test"""
+
+
+def test_walk_edge_section_skips_the_reserved_label_union():
+    """A reserved label is a property of its block, even one the block does not define.
+
+    The walker skipped only the Edge-group's own reserved labels, [d, u, o, w], and
+    treated everything else as a nested block. But the spec bounds nested blocks by
+    the *union* of both label sets: Edge-groups and Edges nested in an Edge-group
+    "MAY appear as labeled fields whose labels are not any of the reserved field
+    labels for either Edge-groups or Edges, namely, [d, u, n, s, o, w]"
+    (spec-body.md:1126). So `s` on an Edge-group can never name a nested block, and a
+    walker that treats it as one is reading a property as structure.
+
+    The consequence is not a dropped constraint, it is a fabricated edge. keripy's v2
+    IPEX path accepts an inline schema *document* as a group's `s` (ipexing.py:806-820,
+    the group-level pin at :875). Walked under the old skip set, that document is
+    classified as an Edge-group -- it has no `n` -- and recursed into, so a `properties`
+    subschema whose own label happens to carry an `n` is yielded as an Edge. The
+    verifier then resolves and validates a far node that the Issuer never linked, at a
+    SAID taken from a schema.
+
+    `n` needs no test of its own: a block carrying it is an Edge, so it never reaches
+    the group's label loop.
+    """
+    said = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    other = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    # A string-valued `s` -- the ordinary group-level schema pin.
+    pinned = dict(d='', o="AND", s=said, one=dict(n=other))
+    assert [p for p, _ in edgesOf(pinned)] == [('one',)]
+
+    # A Mapping-valued `s` -- the inline schema form. Only `one` is an edge; nothing
+    # inside the schema document is structure.
+    inline = dict(d='', o="AND",
+                  s={'$id': said, 'properties': {'bogus': {'n': said}}},
+                  one=dict(n=other))
+    assert [p for p, _ in edgesOf(inline)] == [('one',)]
+    assert [(p, g) for p, _, g in walkEdgeSection(inline)] == [
+        ((), True),
+        (('one',), False),
+    ]
+
+    """End Test"""
 
 
 if __name__ == "__main__":

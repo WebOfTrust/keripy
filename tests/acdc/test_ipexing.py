@@ -1907,6 +1907,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        handler = exc.routes["/ipex/grant"]
 
         def assert_accepted(message, origin, artifacts):
             exn, atc = ipexGrant(hab=issuer,
@@ -1993,18 +1994,88 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         groupedOrigin,
                         [orMember, orStaff])
 
-        # Case 4: a leaf edge may omit `o`. The V2 edge shape allows that, and
-        # IPEX does not infer an I2I/NI2I default when the operator is absent.
+        # Case 4: a leaf edge may omit `o`, and the spec's default rule then applies.
+        # "If the node pointed to by the Edge is a targeted ACDC, i.e., has an
+        # Issuee, then the `I2I` Operator MUST be appended to the Operator, `o`,
+        # field's effective list value" (spec-body.md:1199, and :1209 on the v1.1
+        # line, which suppresses the default when the list already includes I2I,
+        # NI2I, DI2I or E1E). So a bare edge is not an unconstrained edge.
+        # ~7kev  which default is right is still open on keripy #1556; this is the
+        # one that is normative today
+        #
+        # Here the far node is targeted at issuer, and the near node's issuer is
+        # issuer, so the appended I2I holds and the bare edge verifies.
         noOpChild = acdcmap(israid=issuer.pre,
                             attribute=dict(d="", role="member"),
-                            iseaid=subject.pre)
+                            iseaid=issuer.pre)
         noOpOrigin = acdcmap(israid=issuer.pre,
                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                              edge=_edge("holder", noOpChild),
                              iseaid=subject.pre)
-        assert_accepted("Here is the no-operator DAG",
+        assert_accepted("Here is the no-operator DAG satisfying the default I2I",
                         noOpOrigin,
                         [noOpChild])
+
+        # An untargeted far node takes NI2I as its default, which constrains
+        # nothing, so a bare edge to one verifies regardless of the issuer pair.
+        untargetedChild = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", role="member"))
+        untargetedOrigin = acdcmap(israid=issuer.pre,
+                                   attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                   edge=_edge("holder", untargetedChild),
+                                   iseaid=subject.pre)
+        assert untargetedChild.iseaid is None
+        assert_accepted("Here is the no-operator DAG to an untargeted far node",
+                        untargetedOrigin,
+                        [untargetedChild])
+
+        # Explicit NI2I still suppresses the default, which is how an Issuer says
+        # the relation does not apply -- the same pair the rejection sweep proves
+        # is refused when the operator is omitted.
+        relaxedChild = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", role="member"),
+                               iseaid=subject.pre)
+        relaxedOrigin = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                edge=_edge("holder", relaxedChild, op="NI2I"),
+                                iseaid=subject.pre)
+        assert_accepted("Here is the explicitly relaxed no-relation DAG",
+                        relaxedOrigin,
+                        [relaxedChild])
+
+        # Case 5: `o` may be a list. "When more than one unary Operator is applied
+        # to a given Edge, then the value of the Operator, `o`, field is a list of
+        # those unary Operators" (spec-body.md:1186), so the list is the spec's own
+        # spelling and not an error. This one resolves to NI2I, which the near
+        # issuer/far issuee pair below does not satisfy under I2I.
+        listOpChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        listOpOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=_edge("holder", listOpChild, op=["NI2I"]),
+                               iseaid=subject.pre)
+        assert_accepted("Here is the list-valued leaf-operator DAG",
+                        listOpOrigin,
+                        [listOpChild])
+
+        # Latest-wins among the conflicting (delegative) operators, and composition
+        # with E1E, asserted directly on the evaluator rather than through six more
+        # grants. The far node here is issued by issuer to issuer, and the near node
+        # by issuer to subject, so I2I holds on the far pair and E1E does not.
+        nodes = {listOpChild.said: {"serder": listOpChild}}
+
+        def evaluate(op):
+            edge = dict(d="", n=listOpChild.said, o=op)
+            return handler._evaluateLeafEdge(edge, nodes=nodes, nserder=listOpOrigin,
+                                             inheritedPins=())
+
+        assert evaluate(["NI2I"]) is True
+        assert evaluate(["I2I", "NI2I"]) is True       # latest of the conflicting pair
+        assert evaluate(["NI2I", "I2I"]) is True       # I2I wins, and holds here
+        assert evaluate(["I2I", "E1E"]) is False       # E1E composes and fails
+        assert evaluate([]) is True                    # empty: no constraint, as absent
+        assert evaluate(["NI2I", "BOGUS"]) is None     # unevaluable, fails closed
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
@@ -2128,7 +2199,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert handler._evaluateLeafEdge(notOrigin.sad["e"]["holder"],
                                          nodes={notChild.said: {"serder": notChild}},
                                          nserder=notOrigin,
-                                         inheritedSchema=None) is False
+                                         inheritedPins=()) is False
 
         diChild = acdcmap(israid=issuer.pre,
                           attribute=dict(d="", role="member"),
@@ -2143,19 +2214,13 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert handler._evaluateLeafEdge(diOrigin.sad["e"]["holder"],
                                          nodes={diChild.said: {"serder": diChild}},
                                          nserder=diOrigin,
-                                         inheritedSchema=None) is False
+                                         inheritedPins=()) is False
 
-        # List-valued leaf operators are not supported
-        listOpChild = acdcmap(israid=issuer.pre,
-                              attribute=dict(d="", role="member"),
-                              iseaid=issuer.pre)
-        listOpOrigin = acdcmap(israid=issuer.pre,
-                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                               edge=_edge("holder", listOpChild, op=["I2I"]),
-                               iseaid=subject.pre)
-        assert_rejected("Here is the list-valued leaf-operator DAG",
-                        listOpOrigin,
-                        [listOpChild])
+        # A list-valued leaf operator is spec-legal (spec-body.md:1186) and is
+        # covered as an acceptance case in
+        # test_ipex_v2_accepts_grant_graph_shape_and_semantics. What is
+        # rejected is a list carrying a token this verifier cannot evaluate, which
+        # the unknown-operator case below covers in its scalar form.
 
         # Unknown edge operators are not supported
         bogusChild = acdcmap(israid=issuer.pre,
@@ -2168,6 +2233,23 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the unknown-operator DAG",
                         bogusOrigin,
                         [bogusChild])
+
+        # A bare edge is not an unconstrained edge: the spec appends I2I when the far
+        # node is targeted (spec-body.md:1199), and here the far node's issuee is
+        # subject while the near node's issuer is issuer, so the appended operator is
+        # violated. Before the default was applied on this path, this was the
+        # cheapest edge to satisfy -- one pointed at any targeted ACDC the Discloser
+        # could obtain, with no relation checked at all.
+        defaultedChild = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", role="member"),
+                                 iseaid=subject.pre)
+        defaultedOrigin = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                  edge=_edge("holder", defaultedChild),
+                                  iseaid=subject.pre)
+        assert_rejected("Here is the default-I2I-violating DAG",
+                        defaultedOrigin,
+                        [defaultedChild])
 
         # An OR group fails when none of its children satisfy the
         # disclosed relation constraints.
@@ -2206,6 +2288,34 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the incompatible-schema DAG",
                         badSchemaOrigin,
                         [badSchemaChild])
+
+        # An inherited group pin is a floor, not a default: a member carrying its own
+        # compatible `s` must still satisfy the pin its group placed. Composing by
+        # override would let any member release itself from a constraint the Issuer
+        # put on the whole group. This is the #1534 rule ("two schema validations
+        # must be performed and both must be valid") applied one level out.
+        floorCompatSchema = dict(baseChild.sad["s"])
+        floorCompatSchema["title"] = "ACM Default Schema (compatible, group floor)"
+        floorCompatSchemer = Schemer(sed=floorCompatSchema)
+        hby.db.schema.pin(floorCompatSchemer.said, floorCompatSchemer)
+
+        floorChild = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="member"),
+                             iseaid=issuer.pre)
+        floorOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=dict(d="",
+                                        u=Noncer().qb64,
+                                        reports=dict(d="",
+                                                     s=incompatSchemer.said,
+                                                     member=dict(d="",
+                                                                 n=floorChild.said,
+                                                                 o="I2I",
+                                                                 s=floorCompatSchemer.said))),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the group-floor-escaping DAG",
+                        floorOrigin,
+                        [floorChild])
 
 
 def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():

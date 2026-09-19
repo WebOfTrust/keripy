@@ -42,6 +42,15 @@ EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
 DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
+
+# Unary operators whose presence suppresses the default rule. "When the Operator,
+# `o`, field is missing or empty or is present but does not include any of the
+# `I2I`, `NI2I`, `DI2I`, or `E1E` Operators" then the default is appended
+# (spec-body.md:1209 on the ACDC v1.1 line, which added E1E to the list; the 2.0
+# line still names only the delegative three because E1E has not been forward-ported
+# there). Keyed on this set rather than on the list being empty, so an `o` carrying
+# only a non-delegative operator still takes the default the spec appends.
+DefaultSuppressingEdgeOps = ("I2I", "NI2I", "DI2I", "E1E")
 EdgeGroupOps = ("AND", "OR")
 
 def _streamSerder(stream):
@@ -718,7 +727,7 @@ class IpexHandler:
 
         return nodes, order
 
-    def _evaluateLeafEdge(self, group, *, nodes, nserder, inheritedSchema):
+    def _evaluateLeafEdge(self, group, *, nodes, nserder, inheritedPins=()):
         """Evaluate one disclosed leaf edge against its referenced far node.
 
         Parameters:
@@ -729,8 +738,8 @@ class IpexHandler:
                 during the origin-graph walk.
             nserder (Serder): Serder for the current near node whose edge block
                 is being evaluated.
-            inheritedSchema (str | Mapping | None): Optional schema pin passed
-                down from a parent edge group.
+            inheritedPins (tuple): Schema pins in force from enclosing edge
+                groups, every one of which the far node must satisfy.
 
         Returns:
             bool | None: ``True`` when the leaf edge semantics are satisfied,
@@ -752,34 +761,53 @@ class IpexHandler:
         far = nodes[edgeSaid]
         fserder = far["serder"] if isinstance(far, dict) else far.serder
 
-        # Leaf edge operators are optional scalar strings in the V2 shape.
+        # A leaf edge operator is a single unary operator or a list of them: "When
+        # more than one unary Operator is applied to a given Edge, then the value of
+        # the Operator, `o`, field is a list of those unary Operators"
+        # (spec-body.md:1186). Anything that is neither is malformed.
         op = group.get("o")
-        if op is not None and not isinstance(op, str):
-            return None
-
-        # Missing `o` is valid and means there is no explicit unary operator
-        # constraint on this leaf. A provided but unrecognized operator fails
-        # closed instead of being treated like an omitted one.
         if op is None:
-            recognizedOp = None
-        elif op not in UnaryEdgeOps:
-            return None
+            ops = []
+        elif isinstance(op, str):
+            ops = [op]
+        elif isinstance(op, (list, tuple)):
+            ops = list(op)
         else:
-            recognizedOp = op
+            return None
 
-        # Edge operators either drive the issuer/issuee relation
-        # check directly or, for E1E, add an issuee-to-issuee constraint.
-        dop = recognizedOp if recognizedOp in DelegativeEdgeOps else None
+        # Missing or empty `o` is valid and means there is no explicit unary operator
+        # constraint on this leaf. A provided but unrecognized operator fails closed
+        # instead of being treated like an omitted one -- every unary operator
+        # narrows what satisfies an edge, so reading past one applies a more
+        # permissive rule than the Issuer wrote.
+        if any(cand not in UnaryEdgeOps for cand in ops):
+            return None
+
+        # The default rule: a bare edge is not an unconstrained edge. `I2I` is appended
+        # for a targeted far node and `NI2I` for an untargeted one, which is what makes
+        # the Operator field optional in the common case (spec-body.md:1199-1201, and
+        # :1229 on the point of the defaults). Resolved through .iseaid so an aggregate
+        # ('acg') far node, whose issuee lives at .sad["A"][1]["i"], is read the same as
+        # an attributive one.
+        if not any(cand in DefaultSuppressingEdgeOps for cand in ops):
+            ops = ops + ["I2I" if fserder.iseaid is not None else "NI2I"]
+
+        # Latest-wins applies only "among the conflicting Operators" (spec-body.md:1186).
+        # The delegative operators constrain the same thing -- the near ACDC's issuer
+        # relative to the far node's issuee -- so they conflict and the latest of them
+        # wins. E1E constrains the near issuee instead, so it composes with the winner
+        # rather than overriding it or being overridden.
+        dop = next((cand for cand in reversed(ops) if cand in DelegativeEdgeOps), None)
 
         # Recognized but unevaluated leaf operators fail as unsatisfied
         # relations instead of malformed input.
-        if recognizedOp == "NOT" or dop == "DI2I":
+        if "NOT" in ops or dop == "DI2I":
             return False
 
         # Start from a passing state, then knock the edge down to False if
         # any required relation check fails.
         matched = True
-        if recognizedOp == "E1E":
+        if "E1E" in ops:
             if (not nserder.iseaid
                     or not fserder.iseaid
                     or nserder.iseaid != fserder.iseaid):
@@ -793,10 +821,31 @@ class IpexHandler:
             elif dop == "I2I" and nserder.israid != fserder.iseaid:
                 matched = False
 
-        # A leaf may pin the far node's schema directly, otherwise it
-        # inherits the schema pin from its parent group.
-        edgeSchema = group["s"] if "s" in group else inheritedSchema
-        if matched and edgeSchema is not None:
+        # Every schema pin in force on this leaf: those inherited from enclosing
+        # groups first, then the leaf's own. Conjunction, not override -- an
+        # inherited pin is a floor, so a leaf carrying its own `s` must satisfy both
+        # and cannot release itself from a constraint its group placed. This is the
+        # rule settled for edge `s` on issue #1534: when the pinned schema differs
+        # from the far node's own, both validations must pass, and a pin one level
+        # out is no weaker a commitment than a pin on the edge.
+        pins = tuple(inheritedPins)
+        if "s" in group:
+            pins = pins + (group["s"],)
+
+        farSchema = fserder.schema if pins else None
+        if isinstance(farSchema, Mapping):
+            farSchemaId = farSchema.get("$id")
+        elif isinstance(farSchema, str):
+            farSchemaId = farSchema
+        else:
+            farSchemaId = None
+        if pins and not isinstance(farSchemaId, str):
+            return None
+
+        for edgeSchema in pins:
+            if not matched:
+                break
+
             edgeSchemer = None
             if isinstance(edgeSchema, str):
                 edgeSchemaId = edgeSchema
@@ -814,16 +863,6 @@ class IpexHandler:
             else:
                 return None
 
-            farSchema = fserder.schema
-            if isinstance(farSchema, Mapping):
-                farSchemaId = farSchema.get("$id")
-            elif isinstance(farSchema, str):
-                farSchemaId = farSchema
-            else:
-                return None
-            if not isinstance(farSchemaId, str):
-                return None
-
             # A direct schema SAID match is enough. Otherwise load or build
             # the schema and verify the far node against it.
             if edgeSchemaId != farSchemaId:
@@ -838,7 +877,7 @@ class IpexHandler:
 
         return matched
 
-    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, inheritedSchema):
+    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, inheritedPins=()):
         """Evaluate one disclosed edge group and reduce its child results.
 
         Parameters:
@@ -851,8 +890,8 @@ class IpexHandler:
             nested (bool): ``True`` when ``group`` is a nested edge group and
                 therefore allows group-only labels like ``s``; ``False`` for a
                 top-level edge section.
-            inheritedSchema (str | Mapping | None): Optional schema pin passed
-                down from the parent edge group.
+            inheritedPins (tuple): Schema pins in force from enclosing edge
+                groups, every one of which the far node must satisfy.
 
         Returns:
             bool | None: ``True`` when the group is well-formed and its child
@@ -871,8 +910,12 @@ class IpexHandler:
         if not isinstance(groupOp, str) or groupOp not in EdgeGroupOps:
             return None
 
-        # Nested groups can pin one schema for every child below them.
-        nextSchema = group.get("s", inheritedSchema) if nested else inheritedSchema
+        # Nested groups can pin one schema for every child below them. A group's own
+        # pin is added to those already in force rather than replacing them, so a
+        # nested group cannot relax what its parent required.
+        nextPins = tuple(inheritedPins)
+        if nested and "s" in group:
+            nextPins = nextPins + (group["s"],)
         results = []
         for label, node in group.items():
             if label in labels:
@@ -885,13 +928,13 @@ class IpexHandler:
                 matched = self._evaluateLeafEdge(node,
                                                  nodes=nodes,
                                                  nserder=nserder,
-                                                 inheritedSchema=nextSchema)
+                                                 inheritedPins=nextPins)
             else:
                 matched = self._evaluateGroupEdge(node,
                                                   nodes=nodes,
                                                   nserder=nserder,
                                                   nested=True,
-                                                  inheritedSchema=nextSchema)
+                                                  inheritedPins=nextPins)
             if matched is None:
                 return None
             results.append(matched)
@@ -942,13 +985,13 @@ class IpexHandler:
                     matched = self._evaluateLeafEdge(edge,
                                                      nodes=nodes,
                                                      nserder=nserder,
-                                                     inheritedSchema=None)
+                                                     inheritedPins=())
                 else:
                     matched = self._evaluateGroupEdge(edge,
                                                       nodes=nodes,
                                                       nserder=nserder,
                                                       nested=False,
-                                                      inheritedSchema=None)
+                                                      inheritedPins=())
                 if matched is not True:
                     return False
 
