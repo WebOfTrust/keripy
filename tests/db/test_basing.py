@@ -1914,7 +1914,7 @@ def test_clean_baser():
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
         assert state.f == '6'
-        assert natHab.db.env.stat()['entries'] <= 105 #68
+        assert natHab.db.env.stat()['entries'] <= 106 #68
 
         grant = exchange(sender=natHab.pre,
                          route="/test/grant",
@@ -1926,6 +1926,7 @@ def test_clean_baser():
         sourceSeal = (Number(sn=natHab.kever.sn),
                       Diger(qb64=natHab.kever.serder.said))
         assert natHab.db.ests.add(keys=(grant.said, endorser), val=sourceSeal)
+        assert natHab.db.eidx.add(keys=(endorser,), val=Diger(qb64=grant.said))
 
         pending = exchange(sender=natHab.pre,
                            route="/test/pending",
@@ -1948,6 +1949,9 @@ def test_clean_baser():
             keys=(pending.said,), val=Texter(text="pending-essr"))
         assert natHab.db.ests.add(
             keys=(pending.said, endorser), val=sourceSeal)
+        # Add a dangling endorser index for an exchange that was never accepted.
+        assert natHab.db.eidx.add(
+            keys=(endorser,), val=Diger(qb64=pending.said))
 
         # test reopenDB with reuse  (because temp)
         with reopenDB(db=natHab.db, reuse=True):
@@ -1957,7 +1961,7 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
-            assert natHab.db.env.stat()['entries'] <= 105 #68
+            assert natHab.db.env.stat()['entries'] <= 106 #68
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)
@@ -1967,6 +1971,8 @@ def test_clean_baser():
             assert [(number.sn, diger.qb64) for number, diger in seals] == [
                 (sourceSeal[0].sn, sourceSeal[1].qb64)
             ]
+            assert [diger.qb64 for diger in natHab.db.eidx.get(
+                keys=(endorser,))] == [grant.said, pending.said]
 
             # add garbage event to corrupt database
             badsrdr = rotate(pre=natHab.pre,
@@ -2032,6 +2038,8 @@ def test_clean_baser():
             assert [(number.sn, diger.qb64) for number, diger in seals] == [
                 (sourceSeal[0].sn, sourceSeal[1].qb64)
             ]
+            assert [diger.qb64 for diger in natHab.db.eidx.get(
+                keys=(endorser,))] == [grant.said]
             assert list(natHab.db.esigs.getTopItemIter(
                 keys=(pending.said, ""))) == []
             assert natHab.db.ecigs.get(keys=(pending.said,)) == []

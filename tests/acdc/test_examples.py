@@ -576,7 +576,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
         # The holder (Bob) presents Amy's credential to the verifier (Vic). The
-        # outer IPEX sender is Bob, while the nested ACDC issuer remains Amy.
+        # outer IPEX sender is Bob, while Amy signs the registry-less ACDC.
         grantResult, grantWire = ipexExn(
             hby=hby,
             exc=exc,
@@ -584,7 +584,9 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
             receiver=vic,
             message="Selective aggregate disclosure",
             admitMessage="Received selective aggregate disclosure",
-            origin=selective,
+            origin=amy.endorse(serder=selective,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
         )
 
         carried = grantResult.nests[0].serder
@@ -820,7 +822,9 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=ruleOnly,
+            origin=amy.endorse(serder=ruleOnly,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Rule section disclosure",
             admitMessage="Received rule section disclosure",
         )
@@ -871,7 +875,9 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=gradesWithheld,
+            origin=amy.endorse(serder=gradesWithheld,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Grades withheld partial disclosure",
             admitMessage="Received grades-withheld partial disclosure",
         )
@@ -894,7 +900,9 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=gradesRevealed,
+            origin=amy.endorse(serder=gradesRevealed,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Grades revealed partial disclosure",
             admitMessage="Received grades-revealed partial disclosure",
         )
@@ -938,7 +946,9 @@ def test_partial_disclosure_compaction_IPEX_JSON():
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=mixedAcdc,
+            origin=amy.endorse(serder=mixedAcdc,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Mixed nested partial disclosure",
             admitMessage="Received mixed nested partial disclosure",
         )
