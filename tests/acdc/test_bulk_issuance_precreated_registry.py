@@ -248,13 +248,18 @@ class _BulkNonces:
 # Phase 1b: the batch anchoring primitive, now under a TYPED seal.
 # ===========================================================================
 # #204: an Issuer anchoring a batch of independent-registry transaction events SHOULD use
-# a TYPED seal rather than a bare Merkle-root-digest seal, so that the tree type and
-# version a Validator must assume are committed in band. KERI's typed seal carries a
-# Verser -- a protocol-and-version tag -- alongside the digest, so what a Validator reads
-# off the seal is "the tree construction defined by ACDC protocol v2.0", which is the
-# construction pinned in #204 and implemented by _BatchTree. That is a coarser type than
-# "dense versus sparse" would be, and it is what KERI offers today; the co-created
-# sibling still uses the bare SealRoot, so the two spellings sit side by side.
+# a TYPED seal rather than a bare Merkle-root-digest seal, so that a Validator reads a
+# declared type off the anchor instead of supplying an assumption. Be exact about how far
+# that reaches, because it is easy to overstate. KERI's typed seal carries a Verser, whose
+# entire value space is (proto, pvrsn, gvrsn) -- src/keri/core/coring.py:2487 -- so the
+# type it declares is "ACDC protocol v2.0" and NOT "dense rather than sparse". An Issuer
+# building the amalgamated sparse tree of spec L2918 under the same protocol version emits
+# a byte-identical `t`. The construction is pinned only transitively, by being the one
+# ACDC v2.0 defines, which #204 specifies and _BatchTree implements; committing it
+# directly would need a value space Verser does not have. What the typed seal buys over
+# the bare one is that an untyped anchor can be REFUSED rather than read as a dense-tree
+# root. The co-created sibling still uses the bare SealRoot, so the two spellings sit side
+# by side.
 BATCH_TREE_TYPE = Verser(proto=Protocols.acdc, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0).qb64
 
 
@@ -1782,7 +1787,7 @@ def test_precreg_disclosure_gating_and_revocation_JSON():
     assert granted['e']['age']['n'] == bulk.ageCopies[k].said
     bundle = grant.sad['a']['issuance']
     assert bundle['rip']['d'] == pool.rd(i) and bundle['rip']['i'] == STATE
-    assert bundle['seal']['t'] == BATCH_TREE_TYPE               # typed seal, in band
+    assert bundle['seal']['t'] == BATCH_TREE_TYPE               # typed anchor, not bare
     assert _verify_issuance(bulk.ageCopies[k], reg=pool.regs[i],
                             event=bulk.ageIssues[k], blind=bundle['blind'],
                             proof=bulk.tree.prove(bulk.ageIssues[k].said),
