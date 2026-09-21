@@ -88,7 +88,8 @@ spec/spec-body.md of trustoverip/kswg-acdc-specification at commit f96ef54 (2026
 co-created sibling explains the drift hazard at length. Everything this module does that
 the published text does not pin -- the "k.s" blinding-salt path, the conveyed registry
 list, the dense batch tree's leaf and interior digests, the typed batch seal, the
-mixing and lock-step obligations -- is specified in
+disclosure of one event's blind rather than the blinding salt, the mixing and lock-step
+obligations -- is specified in
 trustoverip/kswg-acdc-specification#204, which should land at the same time as this
 example.
 
@@ -1654,13 +1655,14 @@ def _verify_issuance(copy, *, reg, event, blind, proof, sealer):
       4. the Issuer's anchoring seal commits to the event, which here means a typed seal
          of the expected tree type whose digest the inclusion proof reconstructs.
 
-    TAKES THE BLIND, NOT THE SALT. Blinder.makeUUID derives the blind from the salt with
-    the sequence number as the ENTIRE path (src/keri/core/structing.py), so a Disclosee
-    handed the salt could unblind every event in the registry, past and future, without
-    ever interacting again. That would defeat the re-blinding remedy at spec L2131 and
-    contradict spec L2133, which reserves the salt to Issuer and Discloser. So the
-    Discloser sends one event's blind, and each later state change requires a fresh
-    disclosure -- which is what Phase 6's revocation exercises.
+    The blind, not the salt, and #204 states the prohibition directly. Blinder.makeUUID
+    derives the blind from the salt with the sequence number as the ENTIRE path
+    (src/keri/core/structing.py), and that sequence number rides in the clear in every
+    `bup`, so a Disclosee handed the salt could unblind every event in the registry, past
+    and future, without ever interacting again. That would defeat the re-blinding remedy
+    at spec L2131 and contradict spec L2133, which reserves the salt to Issuer and
+    Discloser. So the Discloser sends one event's blind, and each later state change
+    requires a fresh disclosure -- which is what Phase 6's revocation exercises.
 
     Returns the state string ('issued' / 'revoked') or None if any step fails.
     """
