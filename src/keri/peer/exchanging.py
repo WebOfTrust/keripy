@@ -4,18 +4,20 @@ keri.peer.exchanging module
 """
 import datetime
 import logging
+from base64 import urlsafe_b64encode as encodeB64
 from datetime import timedelta
 
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
+from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks, Colds, sniff,
                       Kinds, Version, versify,
                       ValidationError, MissingChainError, MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger, Number,
                     Prefixer, Seqner, Saider,
                     Serder, SerderKERI, Texter,
-                    Saids, Codens, BlindState, BoundState, FirstSeen, SealEvent,
-                    SealKind, SealSource, TypeMedia, Parser, messagize,
+                    Saids, Codens, BlindState, BoundState, FirstSeen,
+                    SealSource, SealEvent, SealKind, TypeMedia, Parser,
+                    messagize,
                     verifySigs)
 from ..db import fetchTsgs
 from ..help import helping
@@ -318,7 +320,8 @@ class Exchanger:
                 attachments.append((np, pattach))
 
         kwa["attachments"] = attachments
-        if nests and (route.startswith("/multisig") or route.startswith("/ipex")):
+        if nests and (route.startswith("/multisig") or route.startswith("/ipex")
+                      or route == "/fwd"):
             kwa["nests"] = nests
         if essrs:
             kwa["essr"] = b''.join([texter.raw for texter in essrs])
@@ -1202,66 +1205,55 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
     """Serialize a parsed message subtree as a nested CESR substream."""
     parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
 
-    if any(parsed.get(name) for name in ("rsgs", "ptds", "essrs")):
-        raise ValueError("Unsupported attachments for nested substream serialization")
-
     serder = parsed["serder"]
     sigers = parsed.get("sigers") or None
     tsgs = parsed.get("tsgs") or None
     lsgs = parsed.get("lsgs") or None
-    if sigers and (tsgs or lsgs):
-        raise ValueError("Unsupported mixed signature groups for nested substream serialization")
-
-    # Parsed bond groups come back as plain tuples of primitive instances, but
-    # messagize() needs their namedtuple clans to select the correct counters.
-    # Rebuild sender-implied source couples.
-    bonds = [item if isinstance(item, SealSource) else SealSource(*item)
-             for item in (parsed.get("sscs") or [])]
-    # Rebuild explicit source triples.
-    bonds.extend(item if isinstance(item, SealEvent) else SealEvent(*item)
-                 for item in (parsed.get("ssts") or []))
-    # Rebuild typed digest couples.
-    bonds.extend(item if isinstance(item, SealKind) else SealKind(*item)
-                 for item in (parsed.get("tdcs") or []))
-    # Rebuild sequenced blind-state proofs.
-    bonds.extend(item if isinstance(item, BlindState) else BlindState(*item)
-                 for item in (parsed.get("bsqs") or []))
-    # Rebuild bound blind-state proofs.
-    bonds.extend(item if isinstance(item, BoundState) else BoundState(*item)
-                 for item in (parsed.get("bsss") or []))
-    # Rebuild type-and-media couples.
-    bonds.extend(item if isinstance(item, TypeMedia) else TypeMedia(*item)
-                 for item in (parsed.get("tmqs") or []))
-    for item in parsed.get("frcs") or []:
-        bonds.append(item if isinstance(item, FirstSeen) else FirstSeen(*item))
+    bonds = []
+    # The parser returns tuples; messagize requires the corresponding bond clan.
+    for name, clan in (("sscs", SealSource), ("ssts", SealEvent),
+                       ("tdcs", SealKind), ("bsqs", BlindState),
+                       ("bsss", BoundState), ("tmqs", TypeMedia),
+                       ("frcs", FirstSeen)):
+        bonds.extend(item if isinstance(item, clan) else clan(*item)
+                     for item in (parsed.get(name) or []))
 
     wigers = parsed.get("wigers") or None
     cigars = parsed.get("cigars") or None
     nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
              for nest in (parsed.get("nests") or [])]
 
-    # Support bare nested artifacts, such as ACDCs carried inside IPEX messages.
-    # These have no signatures or attachment groups of their own, so rebuild the
-    # nested body-with-attachments wrapper directly from the parsed serder body.
-    if not (sigers or tsgs or lsgs or bonds or wigers or cigars or nests):
+    extra = bytearray()
+    for pathed in parsed.get("ptds") or []:
+        if sniff(pathed) == Colds.bny:
+            pathed = encodeB64(pathed)
+        extra.extend(Counter.enclose(qb64=pathed, code=Codens.PathedMaterialCouples,
+                                     version=gvrsn))
+    if parsed.get("essrs"):
+        extra.extend(Counter.enclose(qb64=b"".join(texter.qb64b for texter in parsed["essrs"]),
+                                     code=Codens.ESSRPayloadGroup, version=gvrsn))
+
+    # Build the wrapper directly when there is no authenticator for messagize.
+    if not (sigers or tsgs or lsgs or bonds or wigers or cigars):
         body = bytearray(serder.raw)
         if serder.kind != Kinds.cesr:
             body = Counter.enclose(qb64=Texter(raw=body).qb64b,
                                    code=Codens.NonNativeBodyGroup,
                                    version=gvrsn)
 
-        empty = Counter.enclose(qb64=b'',
-                                code=Codens.ControllerIdxSigs,
-                                version=gvrsn)
+        attachments = b"".join(nests) + extra
+        if not attachments:
+            attachments = Counter.enclose(qb64=b'', code=Codens.ControllerIdxSigs,
+                                          version=gvrsn)
         nested = bytearray(body)
-        nested.extend(Counter.enclose(qb64=empty,
+        nested.extend(Counter.enclose(qb64=attachments,
                                       code=Codens.AttachmentGroup,
                                       version=gvrsn))
         return Counter.enclose(qb64=nested,
                                code=Codens.BodyWithAttachmentGroup,
                                version=gvrsn)
 
-    return messagize(serder=serder,
+    msg = messagize(serder=serder,
                      sigers=sigers,
                      tsgs=tsgs,
                      lsgs=lsgs,
@@ -1271,6 +1263,13 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
                      nests=nests or None,
                      nested=True,
                      gvrsn=gvrsn)
+    if extra:
+        # messagize omits pathed/ESSR groups; include them in the outer group's size.
+        Counter(qb64b=msg, strip=True, version=gvrsn)
+        msg.extend(extra)
+        msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup,
+                              version=gvrsn)
+    return msg
 
 
 def loadParsedNestedSubstreams(hby, said):

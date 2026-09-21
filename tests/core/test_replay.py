@@ -376,34 +376,34 @@ def test_replay_v1():
             del msg[:len(siger.qb64b)]
         assert len(msg) == 584 # 828 - 3 * len(siger.qb64b) == 564 # 744
 
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
-        assert counter.code == CtrDex_1_0.NonTransReceiptCouples
-        assert counter.count == 1  # single sig bev
+        # extract trans idx sig counters triple plus sig group
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans idx sig (vrc) counter
+        assert counter.code == CtrDex_1_0.TransIdxSigGroups  # was TransReceiptIdxSigGroups
+        assert counter.count == 1 # number of groups v1
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 580
+        assert len(msg) == 580 # 560
 
-        for i in range(counter.count):  # parse receipt couples
-            prefixer, cigar = deReceiptCouple(msg, strip=True)
-        assert len(msg) == 448 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
-
-        # extract trans receipt counters (quadlet)
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans receipt (vrc) counter
-        assert counter.code == CtrDex_1_0.TransReceiptIdxSigGroups
-        assert counter.count == 95 # now quadlet counter not 3  multisig cam
-        del msg[:len(counter.qb64b)]
-        assert len(msg) == 444 # 560
-
-        # extract receipt triple
+        # extract triple
         prefixer = Prefixer(qb64b=msg, strip=True)
         number = Number(qb64b=msg, strip=True)
         diger = Diger(qb64b=msg, strip=True)
-        assert len(msg) == 332 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
+        assert len(msg) == 468 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
         #extract sigs
         counter = Counter(qb64b=msg, strip=True, version=Vrsn_1_0)
         sigers = []
         for i in range(counter.count):  # extract idx sig group ctr non-quadlet
             sigers.append(Siger(qb64b=msg, strip=True))
-        assert len(msg) == 64 # 200 == 468 - 4 - 3 * len(sigers[0].qb64b)
+        assert len(msg) == 200 # 200 == 468 - 4 - 3 * len(sigers[0].qb64b)
+
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
+        assert counter.code == CtrDex_1_0.NonTransReceiptCouples
+        assert counter.count == 1  # single sig bev
+        del msg[:len(counter.qb64b)]
+        assert len(msg) == 196
+
+        for i in range(counter.count):  # parse receipt couples
+            prefixer, cigar = deReceiptCouple(msg, strip=True)
+        assert len(msg) == 64 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # first seen replay couple counter
         assert counter.code == CtrDex_1_0.FirstSeenReplayCouples
@@ -423,6 +423,7 @@ def test_replay_v1():
         assert len(msg) == 0  # 36 less
 
         cloner.close()  # must close or get lmdb error upon with exit
+
         """Exception ignored in: <generator object LMDBer.getAllOrdItemPreIter at 0x106fe1c10>
         Traceback (most recent call last):
         File "/Users/Load/Data/Code/public/keripy/src/keri/db/dbing.py", line 512, in getAllOrdItemPreIter
@@ -862,33 +863,35 @@ def test_replay_v2():
             del msg[:len(siger.qb64b)]
         assert len(msg) == 544
 
-        counter = Counter(qb64b=msg, version=Vrsn_2_0)  # nontrans receipt (rct) counter
-        assert counter.code == CtrDex_2_0.NonTransReceiptCouples
-        del msg[:len(counter.qb64b)]
-        assert len(msg) == 540
-
-        for i in range(1):  # parse receipt couples single sig
-            prefixer, cigar = deReceiptCouple(msg, strip=True)
-        assert len(msg) == 408 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
-
-        # extract trans receipt counters (quadlet)
-        counter = Counter(qb64b=msg, version=Vrsn_2_0)  # trans receipt (vrc) counter
-        assert counter.code == CtrDex_2_0.TransReceiptIdxSigGroups
+        # extract trans idx sig endorsers counters (triplet + group)  was TransReceiptIdxSigGroups
+        counter = Counter(qb64b=msg, version=Vrsn_2_0)  # trans idx sig group (vrc) counter
+        assert counter.code == CtrDex_2_0.TransIdxSigGroups
         assert counter.count == 90 # now quadlet counter not 3  multisig cam
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 404 # 560
+        assert len(msg) == 540 # 560
 
-        # extract receipt triple
+        # extract endorsement triple
         prefixer = Prefixer(qb64b=msg, strip=True)
         number = Number(qb64b=msg, strip=True)
         diger = Diger(qb64b=msg, strip=True)
-        assert len(msg) == 312 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
+        assert len(msg) == 448 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
         #extract sigs
         counter = Counter(qb64b=msg, strip=True, version=Vrsn_2_0)
         sigers = []
         for i in range(3):  # extract idx sig group ctr quadlet
             sigers.append(Siger(qb64b=msg, strip=True))
-        assert len(msg) == 44
+        assert len(msg) == 180
+
+
+        counter = Counter(qb64b=msg, version=Vrsn_2_0)  # nontrans receipt (rct) counter
+        assert counter.code == CtrDex_2_0.NonTransReceiptCouples
+        del msg[:len(counter.qb64b)]
+        assert len(msg) == 176
+
+        for i in range(1):  # parse receipt couples single sig
+            prefixer, cigar = deReceiptCouple(msg, strip=True)
+        assert len(msg) == 44 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
+
 
         counter = Counter(qb64b=msg, version=Vrsn_2_0)  # first seen replay couple counter
         assert counter.code == CtrDex_2_0.FirstSeenReplayCouples

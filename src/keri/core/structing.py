@@ -65,10 +65,16 @@ SealLast = namedtuple("SealLast", 'i')
 SealBack = namedtuple("SealBack", 'bi d')
 
 # Kind Digest Seal for typed versioned digests : duple (t, d)
-# t = type of digest as (Verser)
-# d = SAID digest qb64 of transaction event (Diger)
+# t = type of digest as (Verser)moo
+# d = digest or nonce using custom derivation given by type field (Noncer)
 # use TypedDigestSealCouples count code for CESR Native
 SealKind = namedtuple("SealKind", 't d')
+
+# Nonce Seal: uniple (d,)
+# nd = nonce or digest qb64 as data
+# use NonceSealSingles as count code for CESR native
+SealNonce = namedtuple("SealNonce", 'nd')
+
 
 # following are attachments
 
@@ -108,14 +114,6 @@ TypeMedia = namedtuple("TypeMedia", 'd u mt mv')
 # dt = date time stamp str of RFC-3339 profile of ISO-8601 (Dater)
 # use FirstSeenReplayCouples count code for CESR native
 FirstSeen = namedtuple("FirstSeen", 'f, dt')
-
-# Transferable Receipts
-# ri = AID pre qb64 of receiptor (Prefixer)
-# n = sn of receipted event as lowercase hex string snh no leading zeros, (Number)
-# d = SAID digest qb64 of receipted event (Diger)
-# rss = receiptor indexed signatures qb64 list[Siger]
-# use TransReceiptIdxSigGroups count code for CESR native
-TransReceipts = namedtuple("TransReceipts", 'i, n, d, rss')
 
 # Transferable Signatures
 # i = AID pre qb64 of signer (Prefixer)
@@ -207,6 +205,7 @@ class SealClanDom(IceMapDom):
     SealLast: type[NamedTuple] = SealLast  # SealLast class reference single (i,)
     SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
+    SealNonce: type[NamedTuple] = SealNonce  # SealNonce class reference (nd,)
 
 
     def __iter__(self):
@@ -235,9 +234,10 @@ class SealCastDom(IceMapDom):
                                       d=Castage(Diger))  # SealEvent class reference triple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBack class reference
+                                    d=Castage(Diger))  # SealBack class reference
     SealKind: NamedTuple = SealKind(t=Castage(Verser),
-                                        d=Castage(Diger))  # SealKind class reference
+                                    d=Castage(Noncer))  # SealKind class reference
+    SealNonce: NamedTuple = SealNonce(nd=Castage(Noncer))  # SealNonce class reference
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -393,6 +393,7 @@ class AllClanDom(IceMapDom):
     SealLast: type[NamedTuple] = SealLast  # SealLast class reference single (i,)
     SealBack: type[NamedTuple] = SealBack  # SealBack class reference (bi, d)
     SealKind: type[NamedTuple] = SealKind  # SealKind class reference (t, d)
+    SealNonce: type[NamedTuple] = SealNonce  # SealNonce class reference (nd,)
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
     BoundState: type[NamedTuple] = BoundState  # BoundState class reference (d,u,td,ts,bn,bd)
     TypeMedia: type[NamedTuple] = TypeMedia  # TypeMedia class reference (d,u,mt,mv)
@@ -428,9 +429,10 @@ class AllCastDom(IceMapDom):
                                       d=Castage(Diger))  # SealEvent class reference triple
     SealLast: NamedTuple = SealLast(i=Castage(Prefixer))  # SealLast class reference single
     SealBack: NamedTuple = SealBack(bi=Castage(Prefixer),
-                                        d=Castage(Diger))  # SealBack class reference
+                                    d=Castage(Diger))  # SealBack class reference
     SealKind: NamedTuple = SealKind(t=Castage(Verser),
-                                        d=Castage(Diger))  # SealKind class reference
+                                    d=Castage(Noncer))  # SealKind class reference
+    SealNonce: NamedTuple = SealNonce(nd=Castage(Noncer))  # SealNonce class reference
     BlindState: NamedTuple = BlindState(d=Castage(Noncer, 'nonce'),
                                         u=Castage(Noncer, 'nonce'),
                                         td=Castage(Noncer, 'nonce'),
@@ -463,6 +465,7 @@ ClanToCodens[AClanDom.SealEvent.__name__] = Codens.SealSourceTriples
 ClanToCodens[AClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
 ClanToCodens[AClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
 ClanToCodens[AClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
+ClanToCodens[AClanDom.SealNonce.__name__] = Codens.NonceSealSingles
 ClanToCodens[AClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
 ClanToCodens[AClanDom.BoundState.__name__] = Codens.BoundStateSextuples
 ClanToCodens[AClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
@@ -1243,6 +1246,7 @@ class Sealer(Structor):
     ClanCodens[SClanDom.SealLast.__name__] = Codens.SealSourceLastSingles
     ClanCodens[SClanDom.SealBack.__name__] = Codens.BackerRegistrarSealCouples
     ClanCodens[SClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
+    ClanCodens[SClanDom.SealNonce.__name__] = Codens.NonceSealSingles
 
     # map counter code to clan name for ser/des as counted group
     CodenClans = { val: key for key, val in ClanCodens.items()}  # invert dict

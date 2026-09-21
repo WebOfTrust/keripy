@@ -3571,7 +3571,7 @@ class Diger(Matter):
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
 
         if strict and self.code not in DigDex:
-            raise InvalidCodeError(f"Unsupported Digest {code=}.")
+            raise InvalidCodeError(f"Unsupported Digest code={self.code}.")
 
 
     def verify(self, ser):
