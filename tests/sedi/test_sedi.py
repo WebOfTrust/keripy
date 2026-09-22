@@ -2341,6 +2341,8 @@ def test_core_identity():
     assert guySerderCore.iseaid == guy
     assert guySerderCore.sad['a'] == guyCoreAttMad
 
+    # add nameSuffix field
+
     assert guySerderCore.sad == \
     {
         'v': guySerderCore.verstr,
@@ -2596,6 +2598,8 @@ def test_core_identity():
         'l': ''
     }
 
+   # delete expiration date on residence credential
+   # tBD on street or street1 street2
     # core sedi credential ACDC issued by Sue AID to Guy SMAID
     guySerderResidence = acdcmap(israid=sue,
                             uuid=guyUes[23],
