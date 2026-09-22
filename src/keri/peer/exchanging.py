@@ -380,12 +380,6 @@ class Exchanger:
         verifier = getattr(behavior, "verify", None)
         # Isolate verification-only arguments from handler arguments.
         verifyKwa = dict(kwa)
-        # Share derived verification results only with handlers that opt in.
-        verification = {}
-        acceptsVerificationContext = getattr(
-            behavior, "acceptsVerificationContext", False)
-        if acceptsVerificationContext:
-            verifyKwa["verification"] = verification
         # Pass selected evidence only to handlers that advertise support.
         if getattr(behavior, "acceptsEvidence", False):
             # Only an opted-in V2 behavior sees the post-KRAM evidence selected
@@ -418,10 +412,7 @@ class Exchanger:
 
         # Execute any behavior specific handling, not sure if this should be different than verify
         try:
-            handleKwa = dict(kwa)
-            if acceptsVerificationContext:
-                handleKwa["verification"] = verification
-            behavior.handle(serder=serder, **handleKwa)
+            behavior.handle(serder=serder, **kwa)
         except AttributeError:
             logger.debug("Behavior for %s missing or does not have handle for SAID=%s", route, serder.said)
             logger.debug("Event=\n%s\n", serder.pretty())

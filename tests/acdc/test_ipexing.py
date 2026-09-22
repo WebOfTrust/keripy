@@ -2066,6 +2066,20 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         noOpOrigin,
                         [noOpChild])
 
+        # Case 5: SEDI edges may combine non-delegative and same-Issuee
+        # constraints in one conjunctive unary-operator list.
+        listOpChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=subject.pre)
+        listOpOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=_edge("holder", listOpChild,
+                                          op=["E1E", "NI2I"]),
+                               iseaid=subject.pre)
+        assert_accepted("Here is the conjunctive-operator DAG",
+                        listOpOrigin,
+                        [listOpChild])
+
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
     """Grant rejects malformed graph closure and false leaf edge semantics."""
@@ -2205,15 +2219,16 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                                          nserder=diOrigin,
                                          inheritedSchema=None) is False
 
-        # List-valued leaf operators are not supported
+        # A list containing any unknown operator is malformed.
         listOpChild = acdcmap(israid=issuer.pre,
                               attribute=dict(d="", role="member"),
                               iseaid=issuer.pre)
         listOpOrigin = acdcmap(israid=issuer.pre,
                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                               edge=_edge("holder", listOpChild, op=["I2I"]),
+                               edge=_edge("holder", listOpChild,
+                                          op=["E1E", "BOGUS"]),
                                iseaid=subject.pre)
-        assert_rejected("Here is the list-valued leaf-operator DAG",
+        assert_rejected("Here is the invalid list-valued leaf-operator DAG",
                         listOpOrigin,
                         [listOpChild])
 
@@ -3933,7 +3948,6 @@ def test_ipex_v2_escrows_registry_backed_grant_until_tel_evidence_arrives(sender
             assert recorder.items[0]["r"] == "/exn/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Waiting on observer TEL"
-            assert recorder.items[0]["issuerStates"][0]["state"] == "issued"
             assert list(exc.cues) == [
                 dict(kin="proof", said=grantExn.said),
                 dict(kin="saved", said=grantExn.said),
@@ -5997,18 +6011,6 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
             assert unblinder is not None
             assert unblinder.state == "revoked"
 
-            # IPEX accepts both authentic lifecycle states and surfaces each
-            # verified snapshot for the later authorization layer.
-            issuedNotice = next(item for item in recorder.items
-                                if item["d"] == issuedGrantExn.said)
-            revokedNotice = next(item for item in recorder.items
-                                 if item["d"] == revokedGrantExn.said)
-            assert issuedNotice["issuerStates"][0]["state"] == "issued"
-            assert issuedNotice["issuerStates"][0]["acdc"] == acdc.said
-            assert revokedNotice["issuerStates"][0]["state"] == "revoked"
-            assert revokedNotice["issuerStates"][0]["acdc"] == acdc.said
-            assert "presentationStates" not in revokedNotice
-
             # The notifier should reflect both full disclosures in the order they were sent
             assert [(item["r"], item["m"]) for item in recorder.items] == [
                 ("/exn/ipex/apply", "Please issue the issued blind credential"),
@@ -6229,14 +6231,6 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert sourcePrefix.qb64 == issuee.pre
             assert sourceNumber.sn == presentedAnchorSerder.sn
             assert sourceDiger.qb64 == presentedAnchorSerder.said
-
-            # Keep issuer lifecycle state separate from Grant presentation state.
-            notice = recorder.items[-1]
-            assert notice["issuerStates"][0]["state"] == "issued"
-            assert notice["issuerStates"][0]["acdc"] == acdc.said
-            assert notice["presentationStates"][0]["state"] == "presented"
-            assert notice["presentationStates"][0]["node"] == acdc.said
-            assert notice["presentationStates"][0]["acdc"] == grantExn.said
 
             # Presentation anchoring is mandatory from issuance metadata even
             # when a later grant omits ax.
@@ -6525,8 +6519,6 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert recorder.items[0]["r"] == "/exn/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Present both credentials"
-            assert len(recorder.items[0]["issuerStates"]) == 2
-            assert len(recorder.items[0]["presentationStates"]) == 2
         finally:
             rgy.close()
 

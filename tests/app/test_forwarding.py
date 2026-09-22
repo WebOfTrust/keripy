@@ -158,7 +158,8 @@ def test_stream_poster_forwards_native_grant_with_registry_proof(monkeypatch, ki
         receiver.parse(ims=bytearray(message), local=False)
         assert exc.complete(grant.said)
         assert verify(rhby, grant)
-        assert notices == [dict(r="/exn/ipex/grant", d=grant.said,
+        assert notices == [dict(r="/exn/ipex/grant",
+                                d=grant.said,
                                 m="Here is the credential")]
         nested = loadParsedNestedSubstreams(rhby, grant.said)
         assert len(nested) == 1

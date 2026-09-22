@@ -42,7 +42,6 @@ EdgeSectionLabels = ("d", "u", "o", "w")
 EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
-DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
 EdgeGroupOps = ("AND", "OR")
 
 def _streamSerder(stream):
@@ -415,8 +414,6 @@ class IpexHandler:
     acceptsSscs = True
     # Receive route-filtered non-sender evidence from Exchanger.
     acceptsEvidence = True
-    # Share verified registry snapshots with the accepted-message handler.
-    acceptsVerificationContext = True
 
     def __init__(self, resource, hby, notifier, rgy=None):
         """Create a handler for one IPEX route.
@@ -441,7 +438,7 @@ class IpexHandler:
         self.acceptsMissingEvidence = resource == "/ipex/grant"
 
     def verify(self, serder, attachments=None, nests=None, sscs=None,
-               evidence=None, verification=None):
+               evidence=None):
         """Validate the verb, prior link, and single-response rule.
 
         Parameters:
@@ -454,8 +451,6 @@ class IpexHandler:
             sscs (list | None): Sender source-seal couples retained after KRAM.
             evidence (tuple | None): Post-KRAM non-sender signature groups,
                 cigars, and source-seal triples accepted by ``verifyEvidence``.
-            verification (dict | None): Mutable per-message context used to
-                surface verified registry-state snapshots after acceptance.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -602,9 +597,7 @@ class IpexHandler:
 
             # Stage 6: after the disclosed graph shape is accepted, each walked
             # registry-backed node must vet its own node-local proof group.
-            issuerStates = {}
-            if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1],
-                                               states=issuerStates):
+            if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
                 return False
 
             # Require Exchanger's fixed three-part evidence result.
@@ -623,13 +616,11 @@ class IpexHandler:
             grantors.update(prefixer.qb64 for prefixer, _, _ in extraSeals)
 
             # Verify every presentation registry declared across the DAG.
-            presentationStates = {}
             tethered = self._verifyPresentationAuthGraph(
                 serder=serder,
                 nodes=walked[0],
                 order=walked[1],
                 grantors=grantors,
-                states=presentationStates,
             )
 
             # Reject any malformed, missing, or invalid presentation factor.
@@ -669,11 +660,6 @@ class IpexHandler:
                 # Require at least one qualifying authenticated anchorer.
                 if not any(aid and aid in anchorers for aid in candidates):
                     return False
-
-            # Surface verified snapshots only after all Grant checks pass.
-            if verification is not None:
-                verification["issuerStates"] = issuerStates
-                verification["presentationStates"] = presentationStates
 
         return True
 
@@ -900,8 +886,8 @@ class IpexHandler:
 
         Parameters:
             group (Mapping): Leaf edge mapping that must carry an ``n`` field
-                naming the far-node SAID, and may carry scalar-string ``o``
-                and ``s`` fields for operator and schema-pin semantics.
+                naming the far-node SAID, and may carry a string or non-empty
+                list of strings in ``o`` plus a schema pin in ``s``.
             nodes (dict): Mapping of disclosed node SAIDs to parsed nests built
                 during the origin-graph walk.
             nserder (Serder): Serder for the current near node whose edge block
@@ -929,45 +915,42 @@ class IpexHandler:
         far = nodes[edgeSaid]
         fserder = far["serder"] if isinstance(far, dict) else far.serder
 
-        # Leaf edge operators are optional scalar strings in the V2 shape.
+        # Normalize one operator or a list of operators.
         op = group.get("o")
-        if op is not None and not isinstance(op, str):
-            return None
-
-        # Missing `o` is valid and means there is no explicit unary operator
-        # constraint on this leaf. A provided but unrecognized operator fails
-        # closed instead of being treated like an omitted one.
         if op is None:
-            recognizedOp = None
-        elif op not in UnaryEdgeOps:
-            return None
+            recognizedOps = ()
+        elif isinstance(op, str):
+            recognizedOps = (op,)
+        elif (isinstance(op, list) and op
+              and all(isinstance(operator, str) for operator in op)):
+            recognizedOps = tuple(op)
         else:
-            recognizedOp = op
+            return None
 
-        # Edge operators either drive the issuer/issuee relation
-        # check directly or, for E1E, add an issuee-to-issuee constraint.
-        dop = recognizedOp if recognizedOp in DelegativeEdgeOps else None
+        # Every declared unary operator must be recognized.
+        if any(operator not in UnaryEdgeOps for operator in recognizedOps):
+            return None
 
         # Recognized but unevaluated leaf operators fail as unsatisfied
         # relations instead of malformed input.
-        if recognizedOp == "NOT" or dop == "DI2I":
+        if "NOT" in recognizedOps or "DI2I" in recognizedOps:
             return False
 
         # Start from a passing state, then knock the edge down to False if
         # any required relation check fails.
         matched = True
-        if recognizedOp == "E1E":
+        if "E1E" in recognizedOps:
             if (not nserder.iseaid
                     or not fserder.iseaid
                     or nserder.iseaid != fserder.iseaid):
                 matched = False
 
-        # Delegative operators compare the near node's issuer relation to the
-        # far node's issuer AID.
-        if matched and dop is not None and dop != "NI2I":
+        # I2I compares the near issuer to the far Issuee. NI2I is explicitly
+        # non-delegative and therefore adds no issuer-to-Issuee equality.
+        if matched and "I2I" in recognizedOps:
             if not fserder.iseaid:
                 matched = False
-            elif dop == "I2I" and nserder.israid != fserder.iseaid:
+            elif nserder.israid != fserder.iseaid:
                 matched = False
 
         # A leaf may pin the far node's schema directly, otherwise it
@@ -1131,7 +1114,7 @@ class IpexHandler:
 
         return True
 
-    def _verifyIssuerAuthGraph(self, nodes, order, states=None):
+    def _verifyIssuerAuthGraph(self, nodes, order):
         """Verify issuer-auth proof groups for each walked disclosed DAG node.
 
         Parameters:
@@ -1157,14 +1140,13 @@ class IpexHandler:
             nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
 
             # Require one valid issuer authentication factor per node.
-            if not self._verifyIssuerAuthNode(serder=nserder, nest=nest,
-                                              states=states):
+            if not self._verifyIssuerAuthNode(serder=nserder, nest=nest):
                 return False
 
         # Every disclosed node passed issuer authentication.
         return True
 
-    def _verifyIssuerAuthNode(self, serder, nest, states=None):
+    def _verifyIssuerAuthNode(self, serder, nest):
         """Verify one ACDC using its declared issuer authentication factor."""
 
         # Authentication Factor 1: Registry
@@ -1177,8 +1159,6 @@ class IpexHandler:
                                        acdc=serder)
             if record is None:
                 return False
-            if states is not None:
-                states[serder.said] = record
             return True
 
         # An inner rd without a top-level rd selects the unsupported hidden
@@ -1520,8 +1500,7 @@ class IpexHandler:
         # Return every explicit presentation requirement.
         return declarations
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors,
-                                     states=None):
+    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
         """Verify every presentation registry in the DAG."""
 
         required = []
@@ -1578,10 +1557,6 @@ class IpexHandler:
             # Require a valid binding anchored before the KRAM-accepted send.
             if record is None:
                 return None
-
-            # Preserve this registry snapshot for downstream policy.
-            if states is not None:
-                states[(said, issuee, regk)] = record
 
             # Record the Issuee authenticated by this registry.
             tethered.add(issuee)
@@ -1678,8 +1653,7 @@ class IpexHandler:
 
         return None
 
-    def handle(self, serder, attachments=None, nests=None, sscs=None,
-               verification=None):
+    def handle(self, serder, attachments=None, nests=None, sscs=None):
         """Emit a notifier record for an accepted IPEX message.
 
         Parameters:
@@ -1689,34 +1663,16 @@ class IpexHandler:
             nests (list | None): Parsed V2 nested artifacts, unused by the
                 notifier path.
             sscs (list | None): Sender source-seal couples, unused after verify.
-            verification (dict | None): Verified registry snapshots produced
-                while authenticating this accepted Grant.
 
         Returns:
             None
         """
         attrs = serder.ked["a"]
-        notice = dict(
+        self.notifier.add(attrs=dict(
             r=f"/exn{serder.ked['r']}",
             d=serder.said,
             m=attrs["m"],
-        )
-
-        # Surface issuer lifecycle snapshots without applying authorization.
-        issuerStates = (verification or {}).get("issuerStates", {})
-        if issuerStates:
-            notice["issuerStates"] = [dict(node=said, **record._asdict())
-                                      for said, record in issuerStates.items()]
-
-        # Keep Grant-presentation snapshots separate from ACDC lifecycle state.
-        presentationStates = (verification or {}).get("presentationStates", {})
-        if presentationStates:
-            notice["presentationStates"] = [
-                dict(node=said, issuee=issuee, **record._asdict())
-                for (said, issuee, _), record in presentationStates.items()
-            ]
-
-        self.notifier.add(attrs=notice)
+        ))
 
 def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gvrsn=None, *, ax=None):
     """Create a signed V2 IPEX ``apply`` exchange.
