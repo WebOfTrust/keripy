@@ -1718,8 +1718,10 @@ def test_core_identity():
     ueraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(8)]
     uens = [Noncer(raw=raw).qb64 for raw in ueraws]  # unique entropy nonce qb64
     # create shared secret salts for bup events
-    ssraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(8)]
+    ssraws = [b'sediacdcworkbup' + b'%0x'%(i, ) for i in range(8)]
     ssss = [Noncer(raw=raw).qb64 for raw in ssraws]  # shared secret salt qb64
+
+    # create datetimek stamp
     stamp = '2026-09-01T08:30:00.000000+00:00'
 
     # create registry serders for sue as Issuer
