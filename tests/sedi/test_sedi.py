@@ -1723,10 +1723,10 @@ def test_core_identity():
     stamp = '2026-09-00T08:30:00.000000+00:00'
 
     # create registry serders for sue as Issuer
-    regserders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in uens]
-    sueRids = [rss.said for rss in regserders]
+    sueRegSerders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in uens]
+    sueRids = [rss.said for rss in sueRegSerders]
 
-    assert regserders[0].sad == \
+    assert sueRegSerders[0].sad == \
     {
         'v': 'ACDCCAACAAJSONAADa.',
         't': 'rip',
@@ -1736,21 +1736,21 @@ def test_core_identity():
         'n': '0',
         'dt': '2026-09-00T08:30:00.000000+00:00'
     }
-    assert sueRids[0] == regserders[0].said == 'ECvi_BgZw_Jp3qaVoNC-kOjW7X33i7fVQ0vIITy8Nfr5'
-    assert regserders[0].israid == sue
-    assert regserders[0].nonce == uens[0]
-    assert regserders[0].sner.num == 0
-    assert regserders[0].stamp == stamp
+    assert sueRids[0] == sueRegSerders[0].said == 'ECvi_BgZw_Jp3qaVoNC-kOjW7X33i7fVQ0vIITy8Nfr5'
+    assert sueRegSerders[0].israid == sue
+    assert sueRegSerders[0].nonce == uens[0]
+    assert sueRegSerders[0].sner.num == 0
+    assert sueRegSerders[0].stamp == stamp
 
-    #create presentation registries for Guy and Gal
-    salt = b'sedipresregisalt'  # base salt
+    #create presentation registries for Guy
+    salt = b'guypresntregsalt'  # base salt for presentation registries
     salter = Salter(raw=salt)
-    preregUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+    guyPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
                                                              for i in range(2)]
-    regserders= [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in preregUes]
-    preRids = [rss.said for rss in regserders]
-    assert preRids == ['ELVWDaNYJW8uOv-_D92PvlTO7Syyy2MH04q2wi7cd-zK',
-                       'ELb9THYBfn68rUybNhAc-7ZHhJHSlfJ7WxNEN2zLAgtF']
+    guyRegSerders= [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in guyPreRegUes]
+    guyPreRids = [rss.said for rss in guyRegSerders]
+    assert guyPreRids == ['EFS9Tda-58FG2VDM7EI2Qk3zd-aX18X3mxyArDQY9SGr',
+                          'EKGHbC8RGftd0P0QAtDQucSy_M4qA5iiLDU6TQtr0QFy']
 
 
     # Guy's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
@@ -1929,7 +1929,15 @@ def test_core_identity():
         }
     }
 
-
+    #create presentation registries for Gal
+    salt = b'galpresntregsalt'  # base salt for presentation registries
+    salter = Salter(raw=salt)
+    galPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(2)]
+    galRegSerders= [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in galPreRegUes]
+    galPreRids = [rss.said for rss in galRegSerders]
+    assert galPreRids == ['ELnOLu7MwvfpEuwTXDDiKS1Y8IVz6QstAGLmT-tlcv3S',
+                          'EFLtJJGon6v04pc5z04x9VqklN08EjV173-KB_Ql35mR']
 
     # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
     salt = b'galsedichallenge'  # raw challenge salt
@@ -1967,9 +1975,10 @@ def test_core_identity():
                                d='EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
 
     structor = Structor(crew=galCsr)
-    galAtc = Structor.enclose([Structor(crew=guyCsr)])  # CESR streamable attachment
-    assert galAtc == bytearray(b'-TAXEDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JRMAABEEmZ6nuPKuq8'
-                               b'd2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
+    galAtc = Structor.enclose([Structor(crew=galCsr)])  # CESR streamable attachment
+    assert galAtc == bytearray(b'-TAXEIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegYMAABEGpG0MnNDI37'
+                               b'DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
+
 
 
     # Gal's Identity Assurance Receipt (iar) ACDC
@@ -2153,7 +2162,7 @@ def test_core_identity():
         "d": "",
         "u": guyUes[1],
         "i": guy,  #guySMAID
-        "rd": preRids[0],
+        "rd": guyPreRids[0],
         "givenName": \
         {
             "d": "",
@@ -2216,14 +2225,14 @@ def test_core_identity():
                                         '.expirationDate')].mad
     assert guyCoreAttMad['i'] == guy
     guyCoreAttMadSaid = compactor.said
-    assert  guyCoreAttMadSaid == 'EDuCEY2WL4SG9D3VHvXjR75Rm0P4Gt-glmnWEMaKWUBn'
+    assert  guyCoreAttMadSaid == 'EAfMDGSdXdW_YYLBf7fYPt3fseA1-IW3jjoiMaowGEhi'
 
     assert guyCoreAttMad == \
     {
         'd': guyCoreAttMadSaid,
         'u': guyUes[1],
         'i': guy,
-        "rd": preRids[0],
+        "rd": guyPreRids[0],
         'givenName':
         {
             'd': 'EBu_EdUcstZq6woZ7NMe2pyU7jjcQOdC9w1ryHa1P_Sq',
@@ -2334,7 +2343,7 @@ def test_core_identity():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EOU6bsr-dpy37kzCj7OsNu28pxbqXnnriH_UyXKiFVfw'
+    assert guyCoreSediSaid == 'EC6Xp2NcVkuHQ3yt_1v_nWOWOBqvq8P5TkfA3XgoQ0VO'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAdP.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
@@ -2357,7 +2366,7 @@ def test_core_identity():
             'd': guyCoreAttMadSaid,
             'u': guyUes[1],
             'i': guy,
-            "rd": preRids[0],
+            "rd": guyPreRids[0],
             'givenName':
             {
                 'd': 'EBu_EdUcstZq6woZ7NMe2pyU7jjcQOdC9w1ryHa1P_Sq',
@@ -2433,7 +2442,7 @@ def test_core_identity():
         "d": "",
         "u": guyUes[12],
         "i": guy,  #guySMAID
-        "rd": preRids[0],
+        "rd": guyPreRids[0],
         "street": \
         {
             "d": "",
@@ -2496,13 +2505,13 @@ def test_core_identity():
                                              '.expirationDate')].mad
     assert guyResidenceAttMad['i'] == guy
     guyResidenceAttMadSaid = compactor.said
-    assert  guyResidenceAttMadSaid == 'EB26AGZ37bqlhrITXZOdOv1uRXy1ObL0yH7qcTTZTdfH'
+    assert  guyResidenceAttMadSaid == 'ELm6UGUTfqM0b2VYoMsqglAdE4cfUAYHtoPgZe6DaIBh'
     assert guyResidenceAttMad == \
     {
         'd': guyResidenceAttMadSaid,
         'u': guyUes[12],
         'i': guy,
-        "rd": preRids[0],
+        "rd": guyPreRids[0],
         'street':
         {
             'd': 'EGsUp891O6-4MNUHidQcMd0rEwMvXPl9j8RXZm1fxV26',
@@ -2571,11 +2580,11 @@ def test_core_identity():
     guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyResidenceEdgeMad == \
     {
-        'd': 'EBasMP58YRfoZ_RE6nzX7iM43hqDO-4ewDOptoUBClXj',
+        'd': 'EKNLV92lGBKk0IxwbixbmKEaB_Uhb5KyOmD7ACyTOvQ4',
         'u': guyUes[21],
         'coreIdentity':
         {
-            'd': 'EO7sXLuQLUDr6eVIyjAj4Psk_JocU0Iuf_ONzeDIKm1D',
+            'd': 'EE38n0uK9QQk2ULkTzUiZDG1GkwT0ZA6cStfAyYKcTpe',
             'u': guyUes[22],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -2613,7 +2622,7 @@ def test_core_identity():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'EEWFX2LFhixIf6Jyxypr1xIv7G3Xni27Wa_z6jl1dakf'
+    assert guyResidenceSediSaid == 'EFmXCe4eyTFarqWzQUoDqt0UsvMte77El0TZIlr2JqeW'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAb9.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -2691,7 +2700,7 @@ def test_core_identity():
         "d": "",
         "u": galUes[1],
         "i": gal,  #galSMAID
-        "rd": preRids[1],
+        "rd": galPreRids[1],
         "givenName": \
         {
             "d": "",
@@ -2754,14 +2763,14 @@ def test_core_identity():
                                         '.expirationDate')].mad
     assert galCoreAttMad['i'] == gal
     galCoreAttMadSaid = compactor.said
-    assert  galCoreAttMadSaid == 'EMGjZ6llanUn4qvbPsKb8uuAnFKRbST6HLJvyJU8lGyL'
+    assert  galCoreAttMadSaid == 'EDnFdGxJP07lmb2l0iS3C1iYD0-vWVvhIRpnEjeZA04l'
 
     assert galCoreAttMad == \
     {
         'd': galCoreAttMadSaid,
         'u': galUes[1],
         'i': gal,
-        "rd": preRids[1],
+        "rd": galPreRids[1],
         'givenName':
         {
             'd': 'ECSb6A4qHXtoh1STpC-aBCvP4NTTh1UAudlbam0rBZ9i',
@@ -2871,7 +2880,7 @@ def test_core_identity():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EOEsu3Gr3PLe6Zy71DK7I3NSWrS1TM21-Odsny0u8fG8'
+    assert galCoreSediSaid == 'ENK8mCQMzGgFWuRXeVPhSuoEnNnymfe2hUP96QxMZx0B'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAdK.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -2898,7 +2907,7 @@ def test_core_identity():
         "d": "",
         "u": galUes[12],
         "i": gal,  #galSMAID
-        "rd": preRids[1],
+        "rd": galPreRids[1],
         "street": \
         {
             "d": "",
@@ -2961,13 +2970,13 @@ def test_core_identity():
                                              '.expirationDate')].mad
     assert galResidenceAttMad['i'] == gal
     galResidenceAttMadSaid = compactor.said
-    assert  galResidenceAttMadSaid == 'EAt6GhtQyN2IeK1z7yKUtFQKIwkkDzxlyMTMs9qcRUQK'
+    assert  galResidenceAttMadSaid == 'EMr2ASucEU8tP8N0QPhEhJ4S3LVjXtsvtnZcgAKy9ojt'
     assert galResidenceAttMad == \
     {
         'd': galResidenceAttMadSaid,
         'u': galUes[12],
         'i': gal,
-        "rd": preRids[1],
+        "rd": galPreRids[1],
         'street':
         {
             'd': 'EGafF9qZ2aSpOT5MFQM0pAXbWMWz9chkOiDd9h1K4BR5',
@@ -3036,11 +3045,11 @@ def test_core_identity():
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad == \
     {
-        'd': 'EJeVXBnxv29ORQUqOMUMhrWy6WoFfqCmUv4W-_RB2aBi',
+        'd': 'EDeq51OrGnpBTMWEL_82PvAN1mxKnW4glaV9aYQ_WIkB',
         'u': galUes[21],
         'coreIdentity':
         {
-            'd': 'EF8aMQP59vykeJkgq8Y4-l5HDVkY9DXkyOxkI3YVRy0T',
+            'd': 'EGIzXNfumR4jwnMxeVoGVJPJczFunp-znoeUW96SXBdz',
             'u': galUes[22],
             'n': galCoreSediSaid,
             's': CoreSchemaSaid,
@@ -3076,7 +3085,7 @@ def test_core_identity():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'ECxSLBUg2vKUGOuMrMqHXpDdyLzvTkZbHP8b5xF8MXYc'
+    assert galResidenceSediSaid == 'EOYjL1wD0i5Dm7PUYvtrOPMLk2XuViLE-72Szq89z_o-'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAb9.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
