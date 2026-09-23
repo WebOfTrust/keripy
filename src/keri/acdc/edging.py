@@ -33,11 +33,12 @@ Malformed shapes raise EdgeShapeError rather than entering the lattice, because 
 shape is not a truth value and a satisfied sibling under OR must not outvote it.
 """
 
+import json
 from collections import namedtuple
 from collections.abc import Mapping
 from copy import deepcopy
 
-from ..kering import KeriError, ValidationError, MissingAnchorError
+from ..kering import Kinds, KeriError, ValidationError, MissingAnchorError
 from . import chaining
 
 
@@ -441,8 +442,11 @@ class _Walker:
                 return chaining.unknown(f"edge schema {said} pinned on the edge to "
                                         f"node {far.said} is not in cache",
                                         retryable=True)
+            # Schemer.verify reads JSON only, so a far node in another kind is judged on
+            # its re-serialized field map: the fields its SAID committed to.
+            raw = far.raw if far.kind == Kinds.json else json.dumps(far.sad).encode()
             try:
-                schemer.verify(far.raw)
+                schemer.verify(raw)
             except ValidationError as ex:
                 return chaining.invalid(f"far node {far.said} does not satisfy edge "
                                         f"schema {said}: {ex}")
