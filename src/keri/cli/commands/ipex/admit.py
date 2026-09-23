@@ -141,7 +141,7 @@ class AdmitDoer(doing.DoDoer):
             for part in smids:  # this goes to other participants only as a signaling mechanism
                 postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
-                             attachment=watc)
+                             attachment=watc, gvrsn=Vrsn_1_0)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
@@ -155,7 +155,7 @@ class AdmitDoer(doing.DoDoer):
             atc = serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
             postman.send(serder=exn,
-                         attachment=atc)
+                         attachment=atc, gvrsn=exn.gvrsn or exn.pvrsn)
 
             doer = doing.DoDoer(doers=postman.deliver())
             self.extend([doer])
