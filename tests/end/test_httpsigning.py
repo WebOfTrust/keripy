@@ -1012,6 +1012,16 @@ def test_sign_verify_response():
         verifyResp(rep, kept, now=NOW + 1000)
 
 
+def test_verify_response_keyid_order():
+    """A malformed keyid is malformed-key even on a response, whose expected
+    keyid check comes after resolution (profile section 9)."""
+    msg, kept = served()
+    with pytest.raises(hs.MalformedKey):
+        verifyResp(response(kept, sign=dict(keyid="garbage")), kept)
+    with pytest.raises(hs.UnknownKey):
+        verifyResp(response(kept, signer=ntSigner()), kept)
+
+
 def test_response_status_forms():
     """A framework status line such as falcon's '200 OK' is accepted; anything
     without a three digit code is refused with a code, never a bare

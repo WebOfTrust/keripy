@@ -997,9 +997,10 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
     _checkCoverage(items, required)
 
     keyid = params["keyid"]
+    verfer = _resolve(resolver, keyid, params.get("alg"))
+    # after resolution, so a malformed keyid is malformed-key (section 9)
     if expectKeyid is not None and keyid != expectKeyid:
         raise UnknownKey(f"Signed by {keyid}, not by {expectKeyid}.")
-    verfer = _resolve(resolver, keyid, params.get("alg"))
 
     base = signatureBase(items, params, **baseKwa)
     if authority is not None and authority not in policy.authorities:
