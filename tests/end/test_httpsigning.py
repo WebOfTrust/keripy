@@ -653,6 +653,32 @@ def test_policy_authorities_normalized():
             requireAuthority=True, authorities=frozenset(["keria.example"])))
 
 
+def test_authority_default_port():
+    """Port 80 and 443 are removed from @authority whether it comes from the
+    caller or from Host; the verifier cannot know the scheme (profile
+    section 2)."""
+    def line(**kwa):
+        return hs.signatureBase(["@authority"], {}, **kwa).split("\n")[0]
+
+    for host in ("Keria.Example:443", "keria.example:80", "keria.example"):
+        assert line(headers={"Host": host}) == '"@authority": keria.example'
+        assert line(authority=host) == '"@authority": keria.example'
+    assert line(authority="keria.example:8443") == \
+        '"@authority": keria.example:8443'
+    assert line(authority="[::1]:443") == '"@authority": [::1]'
+    assert line(authority="[::1]:8080") == '"@authority": [::1]:8080'
+
+    # signed for keria.example, received with Host: keria.example:443
+    msg = signed(authority=None,
+                 headers={"Host": "keria.example", "Content-Length": "7"})
+    msg["headers"]["Host"] = "KERIA.example:443"
+    policy = hs.Policy(requireAuthority=True,
+                       authorities=["keria.example:443"])
+    assert policy.authorities == frozenset(["keria.example"])
+    verify(msg)
+    verify(msg, policy=policy)
+
+
 def test_policy_floor():
     """A policy cannot be configured below the profile's minimum set, and
     its clock window must be positive (profile section 3)."""

@@ -398,13 +398,34 @@ def _components(covered, *, response):
     return items
 
 
+_DefaultPorts = (":80", ":443")
+
+
+def normalizeAuthority(authority):
+    """
+    Returns authority normalized for @authority (RFC 9421 section 2.2.3):
+    lowercased, with port 80 or 443 removed.
+
+    Both ports are removed whatever the scheme, because a verifier that has
+    only the Host header behind a TLS-terminating proxy cannot know the scheme,
+    which is the input the default-port rule needs. The only request this gets
+    wrong is http on 443 or https on 80, and that fails closed as
+    signature-mismatch.
+    """
+    authority = authority.lower()
+    for port in _DefaultPorts:
+        if authority.endswith(port):
+            return authority[:-len(port)]
+    return authority
+
+
 def _componentValue(item, *, method, authority, path, query, fields, status):
     name = item.value
     if name == "@method":
         value = method
     elif name == "@authority":
         value = authority if authority is not None else _fieldValue(fields, "host")
-        value = value.lower() if value is not None else None
+        value = normalizeAuthority(value) if value is not None else None
     elif name == "@path":
         value = (path or "/") if path is not None else None
     elif name == "@query":
@@ -725,7 +746,8 @@ class Policy:
             raise ValueError("authorities must be a collection of authorities, "
                              "not a single str.")
         object.__setattr__(self, "authorities",
-                           frozenset(a.lower() for a in self.authorities))
+                           frozenset(normalizeAuthority(a)
+                                     for a in self.authorities))
         given = {_componentKey(_component(c)) for c in self.request}
         for component in RequestMinimum:
             if _componentKey(_component(component)) not in given:
@@ -997,7 +1019,7 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     verified = _verifyCanonical(
         fields=fields, required=required, resolver=resolver, policy=policy,
         now=now, response=False,
-        authority=(authority or "").lower() if policy.requireAuthority else None,
+        authority=normalizeAuthority(authority or "") if policy.requireAuthority else None,
         baseKwa=dict(method=method, authority=authority, path=path,
                      query=query, headers=fields))
     if body is not None:
