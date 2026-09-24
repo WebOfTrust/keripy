@@ -493,14 +493,20 @@ def signatureParams(*, created, keyid, expires=None, nonce=None, alg=None,
     return {name: values[name] for name in ParamOrder if values[name] is not None}
 
 
-def _signatureParamsValue(items, params):
+def _innerList(items, params):
+    """The @signature-params Inner List, which is also the Signature-Input
+    member, so the two are serialized by one function."""
     inner = http_sfv.InnerList()
     for item in items:
         copy = http_sfv.Item(item.value)
         copy.params.update(item.params)
         inner.append(copy)
     inner.params.update(params)
-    return str(inner)
+    return inner
+
+
+def _signatureParamsValue(items, params):
+    return str(_innerList(items, params))
 
 
 def signatureBase(covered, params, *, method=None, authority=None, path=None,
@@ -626,11 +632,7 @@ def _sign(items, *, signer, hab, keyid, label, created, expires, nonce, tag,
         raw = signer.sign(base).raw
 
     inputs = http_sfv.Dictionary()
-    inner = http_sfv.InnerList()
-    for item in items:
-        inner.append(item)
-    inner.params.update(params)
-    inputs[label] = inner
+    inputs[label] = _innerList(items, params)
     signatures = http_sfv.Dictionary()
     signatures[label] = raw
     return {"Signature-Input": str(inputs), "Signature": str(signatures)}
