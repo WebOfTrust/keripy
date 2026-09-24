@@ -779,6 +779,34 @@ def test_effective_signer():
         assert verified.verfer.qb64 == rotated.kever.verfers[0].qb64
 
 
+def padded(keyid):
+    """keyid with a non-zero pad bit: same length and code, but re-encoding
+    the decoded value does not give it back."""
+    raw = bytearray(base64.urlsafe_b64decode("A" + keyid[1:]))
+    raw[0] |= 0x01  # the two bits after the code character are pad
+    bad = keyid[0] + base64.urlsafe_b64encode(bytes(raw)).decode()[1:]
+    assert len(bad) == len(keyid) and bad != keyid
+    return bad
+
+
+def test_keyid_nonzero_pad_bits():
+    """A keyid whose pad bits are not zero is malformed-key, before any key
+    state is consulted (fiki#4 codex round)."""
+    nt = ntSigner().verfer.qb64
+    with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
+                         temp=True) as (hby, hab):
+        for keyid in (nt, hab.pre):
+            bad = padded(keyid)
+            # even a key state filed under the bad string is never reached
+            kevers = {bad: hab.kever, keyid: hab.kever}
+            with pytest.raises(hs.MalformedKey):
+                hs.keverResolver(kevers)(bad)
+            refused(craft(COVERED, params(keyid=f'"{bad}"')), "malformed-key",
+                    resolver=None)
+            refused(craft(COVERED, params(keyid=f'"{bad}"')), "malformed-key",
+                    resolver=hs.keverResolver(kevers))
+
+
 def test_verify_request_policy():
     with pytest.raises(ValueError):
         hs.Policy(requireAuthority=True)
