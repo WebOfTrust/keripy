@@ -313,7 +313,9 @@ def _fieldValue(fields, name):
     lines = fields.get(name)
     if lines is None:
         return None
-    return ", ".join(_OBSFOLD.sub(" ", str(line)).strip() for line in lines)
+    # RFC 9421 section 2.1 strips SP and HTAB only; str.strip() would also
+    # remove characters such as \x85 and \xa0 that an intermediary can add.
+    return ", ".join(_OBSFOLD.sub(" ", str(line)).strip(" \t") for line in lines)
 
 
 def _component(component):
@@ -484,7 +486,8 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
 
     Raises:
         MalformedSignatureInput, DuplicateComponent, UnsupportedComponent,
-        MissingComponent
+        MissingComponent, and SignatureMismatch when a component value has a
+        newline or a non-ASCII character, so the base cannot be built
     """
     response = status is not None
     items = _components(covered, response=response)
@@ -505,6 +508,10 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
             value = _componentValue(item, method=method, authority=authority,
                                     path=path, query=query, fields=fields,
                                     status=status)
+        if "\n" in value or "\r" in value or not value.isascii():
+            raise SignatureMismatch(f"Signature base cannot be built: the "
+                                    f"value of {_serialize(item)} has a "
+                                    f"newline or a non-ASCII character.")
         lines.append(f"{_serialize(item)}: {value}")
 
     lines.append(f'"@signature-params": {_signatureParamsValue(items, params)}')

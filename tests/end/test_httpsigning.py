@@ -271,6 +271,34 @@ def test_signature_base_rfc_2_1_fields():
     ).split("\n")[0] == '"cache-control": max-age=60, must-revalidate'
 
 
+def test_signature_base_whitespace_and_unbuildable():
+    """Only SP and HTAB are stripped (RFC 9421 section 2.1), and a base with a
+    newline or a non-ASCII character cannot be built, which is
+    signature-mismatch (profile section 9)."""
+    def line(value):
+        return hs.signatureBase(["x"], {}, headers={"x": value}).split("\n")[0]
+
+    assert line(" \tabc\t ") == '"x": abc'
+    assert line("abc\x0b") == '"x": abc\x0b'
+    for value in ("abc\x85", "\xa0abc", "a\nb", "a\rb", "caf\xe9"):
+        with pytest.raises(hs.SignatureMismatch):
+            line(value)
+    for kwa in (dict(method="G\nET"), dict(method="G\xc9T"),
+                dict(path="/a\nb")):
+        with pytest.raises(hs.SignatureMismatch):
+            hs.signatureBase(["@method", "@path"], {}, **{
+                **dict(method="GET", path="/"), **kwa})
+
+    # an intermediary appends a byte Python's strip() would have removed
+    msg = signed(headers={"Content-Length": "7", "X-Foo": "abc"},
+                 sign=dict(covered=["@method", "@path", "@query", "x-foo",
+                                    "content-digest"]))
+    verify(msg)
+    msg["headers"]["X-Foo"] = "abc\x85"
+    with pytest.raises(hs.SignatureMismatch):
+        verify(msg)
+
+
 def test_signature_base_derived():
     """@method case, @path, @query, @authority, @status."""
     def line(component, **kwa):
