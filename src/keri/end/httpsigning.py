@@ -8,8 +8,10 @@ of keri.end.ending so a server can accept both while clients upgrade.
 
 The profile itself (covered components, parameters, keyid resolution, mode
 selection and the refusal codes) is specified in the "KERI profile of RFC 9421
-HTTP Message Signatures". Section numbers in comments below refer to it where
-they say "profile", and to RFC 9421 otherwise.
+HTTP Message Signatures", draft 6. It has no public URL yet.
+TODO PROFILE-URL: link the published profile here once it has one.
+Section numbers in comments below refer to it where they say "profile", and to
+RFC 9421 otherwise.
 
 This module takes plain values (method, authority, path, query, headers, body)
 rather than a framework request object, so any server or client can adapt to
@@ -165,9 +167,10 @@ class UncoveredBody(HttpSigError):
 
 class Unauthenticated(HttpSigError):
     """
-    An unsigned 401 answering a canonical request (profile section 8). Not a
-    verification refusal: the server refused the request's authentication, and
-    the body of its response is not to be trusted.
+    An unsigned 401 answering a canonical request (profile sections 8 and 9).
+    Response only, and checked before any other response check: the server
+    refused the request's authentication, and the body of its response is not
+    to be trusted.
     """
     code = "unauthenticated"
 
