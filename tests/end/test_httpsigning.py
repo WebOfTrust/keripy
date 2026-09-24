@@ -1234,10 +1234,11 @@ def test_response_status_forms():
         verifyResp(dict(status="garbage", headers={}, body=b""), kept)
 
 
-def underSigned(kept, covered, body=b'{"ok":true}', status=200):
+def underSigned(kept, covered, body=b'{"ok":true}', status=200, digest=None):
     """A response signed over covered by hand, since signResponse refuses to
-    sign below the minimum set."""
-    headers = {"Content-Digest": hs.contentDigest(body)}
+    sign below the minimum set, or to bind a bad request digest. digest
+    overrides the response's own Content-Digest value."""
+    headers = {"Content-Digest": digest or hs.contentDigest(body)}
     params = hs.signatureParams(created=NOW, alg="ed25519",
                                 keyid=ntSigner(b"\x02" * 32).verfer.qb64)
     base = hs.signatureBase(covered, params, status=status, headers=headers,
@@ -1247,6 +1248,59 @@ def underSigned(kept, covered, body=b'{"ok":true}', status=200):
         '"@signature-params": ', 1)[1]
     headers["Signature"] = f"signify=:{base64.b64encode(raw).decode()}:"
     return dict(status=status, headers=headers, body=body)
+
+
+def test_response_rechecks_request_digest():
+    """A response covering "content-digest";req has the request's
+    Content-Digest recomputed over the request body the client kept (fiki#4
+    round 2). Every covered digest is parsed before any is compared."""
+    msg, kept = served()
+    rep = response(kept)
+    assert '"content-digest";req' in verifyResp(rep, kept).covered
+
+    # the request body was swapped after the digest was computed
+    swapped = kept._replace(body=b'{"a":2}')
+    with pytest.raises(hs.DigestMismatch):
+        verifyResp(underSigned(swapped, hs.responseCovered(kept, b"{}"),
+                               body=b"{}"), swapped)
+    # the client kept no body: a caller error, not a refusal
+    with pytest.raises(ValueError):
+        verifyResp(rep, kept._replace(body=None))
+    # an empty body is checked like any other
+    empty = kept._replace(body=b"")
+    with pytest.raises(hs.DigestMismatch):
+        verifyResp(underSigned(empty, hs.responseCovered(kept, b"{}"),
+                               body=b"{}"), empty)
+    ok = kept._replace(body=b"", headers={**kept.headers,
+                                          "Content-Digest": hs.contentDigest(b"")})
+    verifyResp(underSigned(ok, hs.responseCovered(kept, b"{}"), body=b"{}"), ok)
+
+    # defects in both digests: malformed-digest wins, whichever side has it
+    badReq = kept._replace(headers={**kept.headers, "Content-Digest": "garbage"})
+    rep = underSigned(badReq, hs.responseCovered(kept, b"{}"), body=b"{}",
+                      digest=hs.contentDigest(b"other"))
+    with pytest.raises(hs.MalformedDigest):
+        verifyResp(rep, badReq)
+    rep = underSigned(swapped, hs.responseCovered(kept, b"{}"), body=b"{}",
+                      digest="garbage")
+    with pytest.raises(hs.MalformedDigest):
+        verifyResp(rep, swapped)
+    # the same with the response body deferred: the header-time stage parses
+    # both and compares the request's
+    with pytest.raises(hs.MalformedDigest):
+        verifyResp({**rep, "body": hs.Deferred}, swapped)
+    rep = underSigned(swapped, hs.responseCovered(kept, b"{}"), body=b"{}")
+    with pytest.raises(hs.DigestMismatch):
+        verifyResp({**rep, "body": hs.Deferred}, swapped)
+
+    # the signer will not bind a request digest its request body contradicts
+    with pytest.raises(hs.DigestMismatch):
+        response(swapped)
+    with pytest.raises(hs.MalformedDigest):
+        response(badReq)
+    with pytest.raises(ValueError):
+        response(kept._replace(body=None), sign=dict(
+            covered=hs.responseCovered(kept, b'{"ok":true}')))
 
 
 def test_sign_below_minimum_refused():

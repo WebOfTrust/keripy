@@ -242,6 +242,17 @@ def verifyContentDigest(value, body):
             Byte Sequence, or no member is recognized
         DigestMismatch: a recognized member does not match body
     """
+    _compareDigest(_parseDigest(value), body)
+
+
+def _parseDigest(value):
+    """
+    Returns list of (alg, digest bytes) for the recognized members of a
+    Content-Digest value, so that every covered digest can be parsed before
+    any is compared (malformed-digest precedes digest-mismatch).
+
+    Raises MalformedDigest.
+    """
     if isinstance(value, str):
         value = value.encode("utf-8")
     members = http_sfv.Dictionary()
@@ -261,7 +272,11 @@ def verifyContentDigest(value, body):
 
     if not recognized:
         raise MalformedDigest("Content-Digest has no sha-256 or sha-512 member.")
+    return recognized
 
+
+def _compareDigest(recognized, body):
+    """Raises DigestMismatch unless every recognized digest matches body."""
     raw = _bytify(body)
     for alg, digest in recognized:
         if not hmac.compare_digest(DigestAlgs[alg](raw).digest(), digest):
@@ -709,6 +724,9 @@ def _digestFields(items, headers, raw, kind):
     return added, fields
 
 
+_RequestDigest = '"content-digest";req'
+
+
 def responseMinimum(requestHadBody):
     """
     Returns the minimum covered components of a response (profile section 3),
@@ -752,7 +770,9 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
             responseMinimum(request had a body)
 
     Raises:
-        as signRequest, with the response minimum set
+        as signRequest, with the response minimum set; MalformedDigest or
+        DigestMismatch when "content-digest";req is covered and the request's
+        Content-Digest does not match request.body (None is a ValueError)
     """
     _statusCode(status)  # a caller's bad status is a ValueError, up front
     raw = _bytify(body)
@@ -760,6 +780,16 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
         covered = responseCovered(request, raw)
     items = _components(covered, response=True)
     _checkCoverage(items, responseMinimum(bool(_bytify(request.body))))
+    if _RequestDigest in {_serialize(item) for item in items}:
+        # never bind a request digest that the request body contradicts
+        if request.body is None:
+            raise ValueError("Covering the request's content-digest needs "
+                             "request.body, the content received (b'' for "
+                             "none), not None.")
+        value = _fieldValue(_fieldLines(request.headers), "content-digest")
+        if value is None:
+            raise MissingComponent("The request has no Content-Digest.")
+        verifyContentDigest(value, request.body)
     added, fields = _digestFields(items, headers, raw, "response")
 
     added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
@@ -1259,6 +1289,10 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         policy (Policy): freshness settings; default Policy()
         now (int): seconds since the epoch; None is now
 
+    When the response covers "content-digest";req, the request's
+    Content-Digest is recomputed over request.body, which must then be the
+    content sent (b'' for none); None is a ValueError.
+
     Raises:
         Unauthenticated: unsigned 401 to a canonical request
         HttpSigError subclass for the first check that fails (section 9)
@@ -1304,6 +1338,21 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         fields=fields, required=required, resolver=resolver, policy=policy,
         now=now, response=True, expectKeyid=keyid,
         baseKwa=dict(status=status, headers=fields, request=request))
+
+    # Body: parse every covered digest before comparing any, then recompute
+    # the request's over the body the client kept; the response's own is
+    # compared now, or by checkBody when the body is Deferred.
+    reqDigest = _RequestDigest in verified.covered
+    if reqDigest and request.body is None:
+        raise ValueError("The response covers the request's content-digest, "
+                         "so request.body must be the content sent (b'' for "
+                         "none), not None.")
+    if '"content-digest"' in verified.covered:
+        _parseDigest(_fieldValue(fields, "content-digest"))
+    if reqDigest:
+        reqFields = _fieldLines(request.headers)
+        _compareDigest(_parseDigest(_fieldValue(reqFields, "content-digest")),
+                       request.body)
     return _bodyStage(verified, fields, body)
 
 
