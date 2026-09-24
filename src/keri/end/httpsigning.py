@@ -1230,9 +1230,12 @@ def keverResolver(kevers):
                 raise UnsupportedAlgorithm(f"Key {keyid} has an unsupported "
                                            f"algorithm.") from ex
 
-        kever = kevers.get(keyid)
-        if kever is None:
+        # in and [], never get: Baser.kevers reads through to the database on
+        # in and [] only, so get would miss key state not yet cached, as
+        # after a restart.
+        if keyid not in kevers:
             raise UnknownKey(f"No key state for {keyid}.")
+        kever = kevers[keyid]
         if len(kever.verfers) != 1 or not _simpleThreshold(kever.tholder):
             raise UnsupportedSigner(f"{keyid} is not a single key signer.")
         return kever.verfers[0]

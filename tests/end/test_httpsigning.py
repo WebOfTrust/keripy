@@ -587,6 +587,33 @@ def test_kever_resolver():
             assert ex.value.code == "unsupported-signer"
 
 
+def test_kever_resolver_after_reopen(tmp_path):
+    """Key state in the database but not yet cached in memory, as after a
+    restart, still resolves (Baser.kevers reads through on in and [] but not
+    on get)."""
+    from keri.core import eventing, parsing
+    with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
+                         temp=True) as (chby, ctrl):
+        icp = ctrl.msgOwnInception()
+        hby = habbing.Habery(name="verifier", temp=False,
+                             headDirPath=str(tmp_path))
+        try:
+            hby.makeHab(name="agent")
+            kvy = eventing.Kevery(db=hby.db, lax=True, local=False)
+            parsing.Parser().parse(ims=bytearray(icp), kvy=kvy)
+        finally:
+            hby.close()
+
+        hby = habbing.Habery(name="verifier", temp=False,
+                             headDirPath=str(tmp_path))
+        try:
+            assert not dict.__contains__(hby.kevers, ctrl.pre)  # not cached
+            verfer = hs.keverResolver(hby.kevers)(ctrl.pre)
+            assert verfer.qb64 == ctrl.kever.verfers[0].qb64
+        finally:
+            hby.close(clear=True)
+
+
 def test_verify_request_policy():
     with pytest.raises(ValueError):
         hs.Policy(requireAuthority=True)
