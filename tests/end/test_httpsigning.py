@@ -1111,6 +1111,17 @@ def test_verify_response_keyid_order():
         verifyResp(response(kept, signer=ntSigner()), kept)
 
 
+def test_verify_response_mode_mismatch_either_way():
+    """Profile section 8 (draft 6): a response in the other mode than the
+    request is mode-mismatch in either direction."""
+    msg, kept = served()
+    rep = response(kept)
+    with pytest.raises(hs.ModeMismatch):
+        verifyResp(rep, kept, requestMode="legacy")
+    with pytest.raises(ValueError):
+        verifyResp(rep, kept, requestMode="Canonical")
+
+
 def test_response_status_forms():
     """A framework status line such as falcon's '200 OK' is accepted; anything
     without a three digit code is refused with a code, never a bare

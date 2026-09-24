@@ -1191,8 +1191,9 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         resolver (callable): keyid -> Verfer for canonical mode, with a
             .legacy(aid) lookup for legacy mode; see KeverResolver
         keyid (str): AID the client expects to be talking to
-        requestMode (str): mode the request was signed in. After a canonical
-            request only a canonical response is accepted (section 8).
+        requestMode (str): mode the request was signed in, 'canonical' or
+            'legacy'. A response in the other mode is mode-mismatch
+            (section 8).
         policy (Policy): freshness settings; default Policy()
         now (int): seconds since the epoch; None is now
 
@@ -1201,6 +1202,8 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         HttpSigError subclass for the first check that fails (section 9)
     """
     _checkBodyArg(body)
+    if requestMode not in (Canonical, Legacy):
+        raise ValueError(f"Unknown requestMode {requestMode!r}.")
     policy = policy if policy is not None else DefaultPolicy
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
@@ -1217,8 +1220,9 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         raise MissingSignatureInput("Response has no Signature-Input.")
 
     mode = detectMode(signature)
-    if requestMode == Canonical and mode == Legacy:
-        raise ModeMismatch("Legacy response to a canonical request.")
+    if mode != requestMode:
+        raise ModeMismatch(f"{mode.capitalize()} response to a {requestMode} "
+                           f"request.")
     if mode == Legacy:
         resource = _fieldValue(fields, "signify-resource")
         if resource != keyid:
