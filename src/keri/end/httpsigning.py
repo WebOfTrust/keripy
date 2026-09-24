@@ -757,7 +757,10 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
                  hab=None, keyid=None, label="signify", covered=None,
                  created=None, expires=None, nonce=None, tag=None, alg=Alg):
     """
-    Sign a response to a canonical request.
+    Sign a response to a canonical request. Never use it to answer a legacy
+    request: that is answered in legacy mode with ending.siginput and
+    ending.signature (profile section 8), and a canonical response to it is
+    refused by the client as mode-mismatch.
 
     Returns dict of header fields to add to the response, as signRequest.
 
@@ -810,8 +813,13 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
 #   verfer (Verfer): key that verified the signature
 #   bodyOwed (bool): True when the body was Deferred and checkBody has not yet
 #       run. A Verified with bodyOwed True is NOT a completed verification.
-#   request (Requestage): the verified request, from verifyRequest, ready to
-#       pass to signResponse; None from verifyResponse and verifyLegacy
+#   request (Requestage): the verified request, from verifyRequest; None from
+#       verifyResponse and verifyLegacy. Only when mode is 'canonical' is it
+#       ready to pass to signResponse. A legacy request is answered in legacy
+#       mode (profile section 8): sign the response with ending.siginput and
+#       ending.signature over the request's method and path, as KERIA's
+#       SignedHeaderAuthenticator.outbound does. signResponse would produce a
+#       canonical response, which the client refuses as mode-mismatch.
 Verified = namedtuple("Verified",
                       "mode keyid label params covered verfer bodyOwed request")
 
