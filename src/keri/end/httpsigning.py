@@ -1003,18 +1003,20 @@ def _parseSignature(value, label):
     return raw
 
 
+_DECIMAL = re.compile(r"\A[0-9]+\Z")
+
+
 def _hasBody(fields):
-    """Header-time body test (profile section 3): Content-Length greater than
-    zero or any Transfer-Encoding."""
+    """Header-time body test of a request (profile section 3): Content-Length
+    greater than zero or not a plain decimal, or any Transfer-Encoding."""
     if fields.get("transfer-encoding"):
         return True
     length = _fieldValue(fields, "content-length")
     if length is None:
         return False
-    try:
-        return int(length) > 0
-    except ValueError:
-        return True  # unparsable: assume a body rather than skip coverage
+    if not _DECIMAL.match(length):
+        return True  # not a plain decimal: fail closed, assume a body
+    return int(length) > 0
 
 
 def _checkCoverage(items, required):
@@ -1289,9 +1291,11 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         return verifyLegacy(method=request.method, path=request.path,
                             headers=fields, verfer=verfer)
 
+    # A response's body is its content; its Content-Length is not evidence,
+    # since a HEAD or 304 response announces a length it does not send. A
+    # deferred body is checked by checkBody.
     required = responseMinimum(bool(_bytify(request.body)))
-    if (body is Deferred and _hasBody(fields)) or (
-            body is not Deferred and _bytify(body)):
+    if body is not Deferred and _bytify(body):
         required.append("content-digest")
 
     verified = _verifyCanonical(

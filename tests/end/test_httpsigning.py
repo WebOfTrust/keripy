@@ -625,6 +625,32 @@ def test_deferred_body():
         assert checked._replace(request=legacy.request) == legacy
 
 
+def test_content_length_plain_decimal():
+    """Only a plain decimal Content-Length of 0 is evidence of no body; any
+    other value fails closed (profile section 3)."""
+    for length in ("-1", "+5", " 5", "5_0", "0x5", "1e3", "", "5, 5"):
+        msg = signed(method="GET", body=None,
+                     headers={"Content-Length": length})
+        with pytest.raises(hs.InsufficientCoverage):
+            verify({**msg, "body": hs.Deferred})
+    for length in ("0", "00"):
+        verify(signed(method="GET", body=None,
+                      headers={"Content-Length": length}))
+
+
+def test_response_body_is_its_content():
+    """A response's Content-Length is not evidence of a body: a HEAD response
+    announces a length it does not send."""
+    msg, kept = served()
+    rep = response(kept, body=b"", headers={"Content-Length": "898"})
+    assert '"content-digest"' not in verifyResp(rep, kept).covered
+    owed = verifyResp({**rep, "body": hs.Deferred}, kept)
+    assert owed.bodyOwed
+    hs.checkBody(owed, rep["headers"], b"")
+    with pytest.raises(hs.InsufficientCoverage):
+        hs.checkBody(owed, rep["headers"], b"surprise")
+
+
 def test_verify_request_transferable():
     with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
                          temp=True) as (hby, hab):
