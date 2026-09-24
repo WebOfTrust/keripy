@@ -1128,10 +1128,14 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
     _checkCoverage(items, required)
 
     keyid = params["keyid"]
+    if expectKeyid is not None:
+        # signify-ts's order: well-formedness first (malformed-key), then a
+        # keyid other than the expected AID is unknown-key, before any
+        # resolver or alg check runs
+        _checkAid(keyid)
+        if keyid != expectKeyid:
+            raise UnknownKey(f"Signed by {keyid}, not by {expectKeyid}.")
     verfer = _resolve(resolver, keyid, params.get("alg"))
-    # after resolution, so a malformed keyid is malformed-key (section 9)
-    if expectKeyid is not None and keyid != expectKeyid:
-        raise UnknownKey(f"Signed by {keyid}, not by {expectKeyid}.")
 
     base = signatureBase(items, params, **baseKwa)
     if authority is not None and authority not in policy.authorities:
@@ -1289,7 +1293,9 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
             calls the resolver itself); see KeverResolver. None
             means no key is known: malformed-key for a keyid that is not an
             AID, otherwise unknown-key.
-        keyid (str): AID the client expects to be talking to
+        keyid (str): AID the client expects to be talking to. A response
+            keyid that is well formed but different is unknown-key, checked
+            after malformed-key and before any resolver or alg check.
         requestMode (str): mode the request was signed in, 'canonical' or
             'legacy'. A response in the other mode is mode-mismatch
             (section 8).

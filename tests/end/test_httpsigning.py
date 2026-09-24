@@ -1299,6 +1299,24 @@ def test_response_request_body_required():
             response(kept._replace(body=missing))
 
 
+def test_response_unexpected_aid_before_resolution():
+    """A well-formed keyid that is not the expected AID is unknown-key before
+    any resolver or alg check runs; a malformed one is still malformed-key
+    (panel r2 SPC-F2, signify-ts's order)."""
+    msg, kept = served()
+    rep = response(kept)
+    agent = ntSigner(b"\x02" * 32).verfer.qb64
+    k1 = Signer(code=MtrDex.ECDSA_256k1_Seed, transferable=False).verfer.qb64
+    for keyid, klas in ((k1, hs.UnknownKey), ("garbage", hs.MalformedKey)):
+        headers = dict(rep["headers"])
+        headers["Signature-Input"] = headers["Signature-Input"].replace(
+            agent, keyid)
+        with pytest.raises(klas):
+            verifyResp({**rep, "headers": headers}, kept)
+    # the expected AID itself still resolves and verifies
+    verifyResp(rep, kept)
+
+
 def test_response_rechecks_request_digest():
     """A response covering "content-digest";req has the request's
     Content-Digest recomputed over the request body the client kept (fiki#4
