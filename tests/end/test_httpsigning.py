@@ -1612,7 +1612,7 @@ def loadVectors():
     cases = []
     for filename in VECTOR_FILES:
         data = json.loads((VECTORS / filename).read_text(encoding="utf-8"))
-        assert data["keri_vectors_format"] == 1
+        assert data["keri_vectors_format"] == 2
         for case in data["cases"]:
             cases.append(pytest.param(filename, data, case,
                                       id=f"{filename[:-5]}:{case['id']}"))
@@ -1620,7 +1620,8 @@ def loadVectors():
 
 
 def vectorTarget(url):
-    """Returns (authority, path, query) of a vector's url, as sent."""
+    """Returns (authority, path, query) of a vector's url, as sent. A relative
+    url leaves the authority to Host."""
     parts = urlsplit(url)
     authority = parts.netloc.lower() or None
     if authority and parts.port == DEFAULT_PORTS.get(parts.scheme.lower()):
@@ -1628,40 +1629,64 @@ def vectorTarget(url):
     return authority, parts.path, parts.query
 
 
-def vectorBody(body):
-    """null means no body is handed to the verifier: empty content."""
-    return b"" if body is None else body.encode("utf-8")
-
-
 def vectorResolver(data):
-    """keverResolver over the vector's keys table: each transferable keyid
-    stands for a KEL whose current key is public_key."""
+    """KeverResolver over key state built from the vector's keys table: each
+    transferable keyid's current keys and signing threshold, reduced by
+    keripy's own Tholder (profile R4)."""
     kevers = {}
     for key in data.get("keys", []):
-        if key["kind"] == "transferable":
-            verfer = Verfer(raw=b64url(key["public_key"]), code=MtrDex.Ed25519)
-            kevers[key["keyid"]] = SimpleNamespace(verfers=[verfer],
-                                                   tholder=Tholder(sith="1"))
+        if key["kind"] != "transferable":
+            continue
+        state = key["key_state"]
+        kevers[key["keyid"]] = SimpleNamespace(
+            verfers=[Verfer(qb64=k) for k in state["keys"]],
+            tholder=Tholder(sith=state["threshold"]))
     return hs.keverResolver(kevers)
 
 
-def vectorPolicy(data):
+def test_vector_key_states():
+    """keripy reduces every key state in the table to the effective key the
+    vectors name, or refuses it when they name none."""
+    for filename in ("requests.json", "responses.json", "refusals.json"):
+        data = json.loads((VECTORS / filename).read_text(encoding="utf-8"))
+        resolve = vectorResolver(data)
+        for key in data["keys"]:
+            if key["effective_key"] is None:
+                with pytest.raises(hs.UnsupportedSigner):
+                    resolve(key["keyid"])
+            else:
+                assert resolve(key["keyid"]).raw == b64url(key["effective_key"])
+
+
+def vectorPolicy(data, case):
     policy = data["policy"]
+    authorities = case.get("policy", {}).get("authorities")
     return hs.Policy(request=tuple(policy["request_minimum"]),
-                     maxAge=policy["max_age"], skew=policy["skew"])
+                     maxAge=policy["max_age"], skew=policy["skew"],
+                     requireAuthority=bool(authorities),
+                     authorities=frozenset(authorities or ()))
 
 
 def vectorRequest(msg):
+    """A request as its verifier sees it. body null means none is handed
+    over, so the verifier checks the headers and the body check is owed."""
     authority, path, query = vectorTarget(msg["url"])
+    body = hs.Deferred if msg["body"] is None else msg["body"].encode("utf-8")
     return dict(method=msg["method"], authority=authority, path=path,
-                query=query, headers=msg["headers"],
-                body=vectorBody(msg["body"]))
+                query=query, headers=msg["headers"], body=body)
 
 
-def vectorAgent(data):
-    """keyid a client expects its responses to be signed by."""
-    return next(key["keyid"] for key in data["keys"]
-                if key["note"].startswith("An agent's"))
+def keptRequest(msg):
+    """The request as its client kept it, to verify the response."""
+    kept = vectorRequest(msg)
+    if kept["body"] is hs.Deferred:
+        kept["body"] = b""
+    return hs.Requestage(**kept)
+
+
+def responseBody(body):
+    """A response's body is its content: null is none."""
+    return b"" if body is None else body.encode("utf-8")
 
 
 def signatureMember(headers):
@@ -1684,6 +1709,7 @@ def runRfc9421(data, case):
 
 def checkAccepted(verified, expected, msg=None, response=None, request=None):
     assert verified.mode == "canonical"
+    assert verified.bodyOwed is False
     assert verified.keyid == expected["keyid"]
     assert list(verified.covered) == expected["covered"]
     if response is None:
@@ -1696,31 +1722,39 @@ def checkAccepted(verified, expected, msg=None, response=None, request=None):
     assert base == expected["base"]
 
 
-def runRequests(data, case):
+def verifyVectorRequest(data, case):
     msg = vectorRequest(case["request"])
     verified = hs.verifyRequest(**msg, resolver=vectorResolver(data),
-                                policy=vectorPolicy(data), now=case["now"])
+                                policy=vectorPolicy(data, case),
+                                now=case["now"])
+    if msg["body"] is hs.Deferred:
+        assert verified.bodyOwed is True
+        verified = hs.checkBody(verified, msg["headers"], b"")
+    return verified, msg
+
+
+def runRequests(data, case):
+    verified, msg = verifyVectorRequest(data, case)
     checkAccepted(verified, case["expected"], msg=msg)
     assert signatureMember(msg["headers"]) == case["expected"]["signature"]
 
 
 def verifyVectorResponse(data, case):
-    msg = vectorRequest(case["request"])
-    request = hs.Requestage(**msg)
+    request = keptRequest(case["request"])
     rep = case["response"]
-    verified = hs.verifyResponse(status=rep["status"], headers=rep["headers"],
-                                 body=vectorBody(rep["body"]), request=request,
-                                 resolver=vectorResolver(data),
-                                 keyid=vectorAgent(data),
-                                 policy=vectorPolicy(data), now=case["now"])
+    verified = hs.verifyResponse(
+        status=rep["status"], headers=rep["headers"],
+        body=responseBody(rep["body"]), request=request,
+        resolver=vectorResolver(data),
+        keyid=case["policy"]["expected_keyid"],
+        requestMode=hs.peekMode(case["request"]["headers"]),
+        policy=vectorPolicy(data, case), now=case["now"])
     return verified, request
 
 
 def runResponses(data, case):
     # the request it answers verifies too
-    msg = vectorRequest(case["request"])
-    hs.verifyRequest(**msg, resolver=vectorResolver(data),
-                     policy=vectorPolicy(data), now=case["now"])
+    verifyVectorRequest(data, case)
     verified, request = verifyVectorResponse(data, case)
     checkAccepted(verified, case["expected"], response=case["response"],
                   request=request)
@@ -1733,13 +1767,12 @@ def runRefusals(data, case):
     assert klas is not None, case["error"]
     with pytest.raises(hs.HttpSigError) as ex:
         if case["kind"] == "request":
-            hs.verifyRequest(**vectorRequest(case["request"]),
-                             resolver=vectorResolver(data),
-                             policy=vectorPolicy(data), now=case["now"])
+            verifyVectorRequest(data, case)
         elif case["kind"] == "response":
             verifyVectorResponse(data, case)
         elif case["kind"] == "sign-request":
             msg = vectorRequest(case["request"])
+            msg["body"] = None if msg["body"] is hs.Deferred else msg["body"]
             signer = Signer(raw=bytes.fromhex(case["seed_hex"]),
                             code=MtrDex.Ed25519_Seed, transferable=False)
             hs.signRequest(**msg, signer=signer, keyid=case["keyid"],
@@ -1763,6 +1796,7 @@ def runLegacy(data, case):
                           fields=fields).decode() == case["base"]
     # and a canonical verifier routes it to legacy mode
     assert hs.detectMode(case["headers"]["Signature"]) == "legacy"
+    assert hs.peekMode(case["headers"]) == "legacy"
 
 
 VECTOR_RUNNERS = {"rfc9421.json": runRfc9421, "requests.json": runRequests,
@@ -1776,12 +1810,9 @@ def test_shared_vectors(filename, data, case):
 
 
 def test_shared_vectors_cover_every_code():
-    """Every section 9 code the vectors list is exercised by a case, except
-    mode-mismatch and unsupported-signer, which format 1 has no case for and
-    which the tests above cover."""
+    """Every section 9 code the vectors list is exercised by a case."""
     data = json.loads((VECTORS / "refusals.json").read_text(encoding="utf-8"))
     used = {case["error"] for case in data["cases"]}
-    listed = set(data["codes"])
-    assert listed - used == {"mode-mismatch", "unsupported-signer"}
-    for code in listed:
+    assert set(data["codes"]) == used
+    for code in used:
         assert hs.errorForCode(code) is not None

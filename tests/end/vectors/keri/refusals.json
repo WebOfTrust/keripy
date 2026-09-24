@@ -1,19 +1,19 @@
 {
   "about": "Messages a canonical verifier must REFUSE, and the section 9 code.",
-  "keri_vectors_format": 1,
+  "keri_vectors_format": 2,
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "draft": 4,
+    "draft": 6,
     "date": "2026-09-24",
     "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
-    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails; every refusal case has exactly one defect, so it has exactly one correct code."
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
   },
   "encoding": {
-    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier.",
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier, which is how a case tests what the headers alone announce.",
     "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
     "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
-    "public_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "effective_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
     "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
     "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
   },
@@ -31,39 +31,105 @@
       "\"@path\";req",
       "\"@query\";req"
     ],
-    "body_rule": "Profile section 3. A message has a body when it carries Content-Length above zero or any Transfer-Encoding, or when a non-empty body arrives whatever the headers said; a body obliges a covered content-digest. A response to a request that had a body must also cover \"content-digest\";req.",
-    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch."
+    "body_rule": "Profile section 3. A REQUEST has a body when it carries Content-Length above zero, any Transfer-Encoding, or a Content-Length that is not a plain decimal, or when a non-empty body arrives whatever the headers said. A RESPONSE has a body when it has content; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A body obliges a covered content-digest, and a response to a request that had a body must also cover \"content-digest\";req.",
+    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch.",
+    "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3)."
   },
+  "keys_rule": "A keyid is a well-formed AID when it is 44 characters, its first character is B, D or E, and the other 43 are base64url that decode, behind one leading pad character, to 32 bytes. A keyid that is not is malformed-key. A well-formed B keyid yields its key from the prefix. Every other well-formed keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, and an entry whose effective_key is null is unsupported-signer. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
   "keys": [
     {
       "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
       "kind": "non-transferable",
-      "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+      "effective_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
       "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
       "note": "Ed25519N. The verifier derives the key from the prefix itself and holds no KEL."
     },
     {
       "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
       "kind": "transferable",
-      "public_key": "Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM",
+      "effective_key": "Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM",
       "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
-      "note": "A controller's current signing key, as the KEL the verifier holds says. The AID is synthetic: a well-formed E code, not the digest of a real inception event."
+      "key_state": {
+        "keys": [
+          "DEPNwCPSLV-eEH0aBpNFfTXR0Q630hxyEZL1b13kBmXT"
+        ],
+        "threshold": "1"
+      },
+      "note": "A controller with one current signing key. The AID is synthetic: a well-formed E code, not the digest of a real inception event."
     },
     {
       "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
       "kind": "transferable",
-      "public_key": "SB7edy2hV4XJ5ZoIYgG4w_nDBxKeP8bX80qk3-1YFOU",
+      "effective_key": "SB7edy2hV4XJ5ZoIYgG4w_nDBxKeP8bX80qk3-1YFOU",
       "seed_hex": "030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122",
-      "note": "An agent's current signing key; it signs the responses. Synthetic like the controller's."
+      "key_state": {
+        "keys": [
+          "DEge3nctoVeFyeWaCGIBuMP5wwcSnj_G1_NKpN_tWBTl"
+        ],
+        "threshold": "1"
+      },
+      "note": "An agent with one current signing key; it signs the responses. Synthetic like the controller's."
     },
     {
       "keyid": "DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI",
       "kind": "transferable",
-      "public_key": "yZ4rN96TAC32gyanhUk81KpIfRpF-iEXqhBQSJI794E",
+      "effective_key": "yZ4rN96TAC32gyanhUk81KpIfRpF-iEXqhBQSJI794E",
       "seed_hex": "05060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324",
+      "key_state": {
+        "keys": [
+          "DMmeKzfekwAt9oMmp4VJPNSqSH0aRfohF6oQUEiSO_eB"
+        ],
+        "threshold": "1"
+      },
       "embedded_key": "UZmMz9__2D2XJEkIGMoiqXoDDRi7Kp10Zo9yuBw_pYg",
       "embedded_seed_hex": "0405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223",
-      "note": "A basic transferable prefix after one rotation. Decoding the prefix yields embedded_key, the INCEPTION key; the current key is public_key and comes only from the KEL (profile R1). A verifier that decodes a D keyid as a key accepts a rotated-away key."
+      "note": "A basic transferable prefix after one rotation. Decoding the prefix yields embedded_key, the INCEPTION key; the current key comes only from the KEL (profile R1). A verifier that decodes a D keyid as a key accepts a rotated-away key."
+    },
+    {
+      "keyid": "EPt12fG7BNmu9VhOAXyl82r59wQ3troXZzH4zsRGyLCh",
+      "kind": "transferable",
+      "effective_key": "qqP-1LDxS6J0-qWDfHiuwO6fmrXKZrl7QgG4dfaolso",
+      "seed_hex": "060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425",
+      "key_state": {
+        "keys": [
+          "DKqj_tSw8UuidPqlg3x4rsDun5q1yma5e0IBuHX2qJbK",
+          "DADQWh0eolE5bVV6-9RYizxtmdvrly_tEKMlYuom3Nz6"
+        ],
+        "threshold": [
+          "1",
+          "0"
+        ]
+      },
+      "note": "A Signify controller after its passcode is rotated: keys [new, prior-next] and threshold ['1','0'], so only the first key satisfies it alone, and that key signs (profile R4)."
+    },
+    {
+      "keyid": "EId9a0qAumQjSrz4ozs6UjAj_MnDTNh7IUBqD1wQRRyg",
+      "kind": "transferable",
+      "effective_key": null,
+      "seed_hex": "08090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324252627",
+      "key_state": {
+        "keys": [
+          "DEvd7lUO9zTK4E7uQq5jo3nTEStrpzr1NWiNcsmagoRg",
+          "DGd-3Zx6b7ql1gnccAXOgBHVTgMUrPicoXIFe8FA7eYq"
+        ],
+        "threshold": "1"
+      },
+      "note": "Threshold 1 over two keys: either alone suffices, so there is no single effective signer and the signature names no key index (profile R4). The vectors' messages for this keyid are signed by the first key."
+    },
+    {
+      "keyid": "EPOiz_RjA1se4yfJptWCAwxqLhuQ33UfDSdJGiC2B8ZU",
+      "kind": "transferable",
+      "effective_key": null,
+      "seed_hex": "08090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324252627",
+      "key_state": {
+        "keys": [
+          "DEvd7lUO9zTK4E7uQq5jo3nTEStrpzr1NWiNcsmagoRg",
+          "DGd-3Zx6b7ql1gnccAXOgBHVTgMUrPicoXIFe8FA7eYq",
+          "DFCynp-mOIj4ErG7yajGhMV4ANhfPlBLLhNGhSWlDZUe"
+        ],
+        "threshold": "2"
+      },
+      "note": "A 2-of-3 group: no one key suffices (profile R4). The vectors' messages for this keyid are signed by the first key."
     }
   ],
   "codes": [
@@ -86,6 +152,7 @@
     "signature-mismatch",
     "signature-stale",
     "signature-expired",
+    "unauthenticated",
     "malformed-digest",
     "digest-mismatch",
     "uncovered-body"
@@ -211,13 +278,13 @@
     {
       "id": "two-labels",
       "kind": "request",
-      "note": "Canonical mode carries exactly one signature.",
+      "note": "Canonical mode carries exactly one signature; both headers carry two, under the same two labels.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers",
         "headers": {
           "Signature-Input": "other=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\", signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
-          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Signature": "other=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:, signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
           "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
         },
         "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
@@ -347,7 +414,7 @@
     {
       "id": "content-length-body-without-digest",
       "kind": "request",
-      "note": "Content-Length above zero means a body, and the body's digest is not covered.",
+      "note": "Content-Length above zero announces a body whose digest is not covered. No body is handed over: this is the header-time test of section 3.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers",
@@ -356,7 +423,7 @@
           "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"SpbgA-nAa-ESFogAh0MyTA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
           "Signature": "signify=:F0rV/j79nLRtHWg0+mcAX5aZIJ15qH8ej4BleYAw7Y6mglXHsI64RiUftNbKSLNoFubTnY6qcP2z9lrpNx10Cw==:"
         },
-        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+        "body": null
       },
       "now": 1700000030,
       "error": "insufficient-coverage"
@@ -364,7 +431,7 @@
     {
       "id": "chunked-body-without-digest",
       "kind": "request",
-      "note": "Any Transfer-Encoding means a body.",
+      "note": "Any Transfer-Encoding announces a body. No body is handed over.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers",
@@ -373,7 +440,24 @@
           "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"GWV25ahd1irMrYcWhI2EfQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
           "Signature": "signify=:hXT5CAFak9SiagRz7oLqjd98PuCVK06UyMZwuDs6p/JCikWGQPiTjyPF1OavVjUs1FFjOVrNIqipfJzgdtzZAw==:"
         },
-        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+        "body": null
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "negative-content-length",
+      "kind": "request",
+      "note": "A Content-Length that is not a plain decimal is not evidence of no body; fail closed.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Length": "-1",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"lRJ4Iyr4DxvzeD1criQk7Q\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:xxiZnTzn5Sa+hEFxoGWOwYUjoyKAObR2Gr2R8mCimUAe/qJXwc6rHBuBZFXnOdt0vi0Nvl1DlQ9GKg60x4bxCw==:"
+        },
+        "body": null
       },
       "now": 1700000030,
       "error": "insufficient-coverage"
@@ -427,6 +511,40 @@
       },
       "now": 1700000030,
       "error": "unknown-key"
+    },
+    {
+      "id": "either-of-two-keys",
+      "kind": "request",
+      "note": "Profile R4: threshold 1 over two keys has no single effective signer.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"ZweIsTz-Zj_SbKqgW4xHtA\";alg=\"ed25519\";keyid=\"EId9a0qAumQjSrz4ozs6UjAj_MnDTNh7IUBqD1wQRRyg\"",
+          "Signature": "signify=:aaeYnMtuod7zgSSOUdv3wzBYrEsvmFRwAa4ZX6q/0mHoebE9c9nvXzqoHJDTGc4rJy3RaCXewFzUPP/CrHRqCQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-signer"
+    },
+    {
+      "id": "two-of-three-keys",
+      "kind": "request",
+      "note": "Profile R4: a 2-of-3 group has no single effective signer.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"Of3xsLdOKAroCyqqKmIGlg\";alg=\"ed25519\";keyid=\"EPOiz_RjA1se4yfJptWCAwxqLhuQ33UfDSdJGiC2B8ZU\"",
+          "Signature": "signify=:aCOqOmvNSWnxnSft2ity7FtoLJDs8Jp/jDMPZVOULZdpCa1QSiwwwWtEKPz1b9lcFr2NN6tIbLoAt1xQha7sBw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-signer"
     },
     {
       "id": "unsupported-algorithm",
@@ -507,6 +625,47 @@
           "Signature": "signify=:37B//8PKxRZ8Ov5xEWLwbP5ZHMJ4qtsbGz3uot3Tqpf3pKDCccMM20JX9WCvhAbI+eyU/940Pn5/7bYsEJQ6Cw==:"
         },
         "body": null
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "authority-outside-the-served-set",
+      "kind": "request",
+      "note": "Signed for other.example.com and delivered here with its Host intact, so the rebuilt base verifies; the covered @authority is not one this verifier serves (profile section 3).",
+      "request": {
+        "method": "POST",
+        "url": "/identifiers",
+        "headers": {
+          "Host": "other.example.com",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"c2empsF6j_roMxBE_y7xNA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:bZ8EthTmRG11t3c3jgpeydCsII3eMpN3bKfalS4CtNzVB1ITAN5BLgLk/ascZJSuJsyQ0uimPT4M/kEwnmpWDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "policy": {
+        "authorities": [
+          "keria.example.com"
+        ]
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "base-that-cannot-be-built",
+      "kind": "request",
+      "note": "A covered field value with a non-ASCII character has no one serialization both sides agree on, so the base cannot be built (profile section 9).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "X-Note": "café",
+          "Signature-Input": "signify=(\"@method\" \"@path\" \"@query\" \"x-note\" \"content-digest\");created=1700000000;nonce=\"OPGnmy1Qwa_kLyENQ5c7CA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:82Fagqg/FF65JZqX/WHKY2oFS3FVJJ2RsoGd9omQA42q1nLKUi/nRNVSBfuabWcA/IrweyXfNrUWLKj1NSJcDw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
       },
       "now": 1700000030,
       "error": "signature-mismatch"
@@ -653,6 +812,9 @@
         },
         "body": "{\"done\": true}"
       },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
       "now": 1700000030,
       "error": "signature-mismatch"
     },
@@ -678,6 +840,9 @@
           "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
         },
         "body": "{\"done\": false}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
       },
       "now": 1700000030,
       "error": "digest-mismatch"
@@ -705,6 +870,9 @@
         },
         "body": "{\"done\": true}"
       },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
       "now": 1700000030,
       "error": "signature-mismatch"
     },
@@ -730,6 +898,9 @@
           "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
         },
         "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
       },
       "now": 1700000030,
       "error": "insufficient-coverage"
@@ -757,13 +928,16 @@
         },
         "body": "{\"done\": true}"
       },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
       "now": 1700000030,
       "error": "insufficient-coverage"
     },
     {
       "id": "response-body-without-digest",
       "kind": "response",
-      "note": "A response body whose digest is not covered.",
+      "note": "A response body, arriving as content, whose digest is not covered.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers/alice/events",
@@ -777,19 +951,21 @@
       "response": {
         "status": 200,
         "headers": {
-          "Content-Length": "14",
           "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\";req);created=1700000000;nonce=\"fn0lEhIeeO6A7bvMM7P6Jg\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
           "Signature": "signify=:D6yYs+zrpVFngcQ+R0uHMXZHY+G8gJOPOETiOncr7s2px/XG+DmH9V/bCv/eYQ7z1P527NJveUIfQ+BnEh+FBQ==:"
         },
         "body": "{\"done\": true}"
       },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
       "now": 1700000030,
       "error": "insufficient-coverage"
     },
     {
-      "id": "response-duplicate-ignoring-parameter-order",
+      "id": "response-duplicate-req-component",
       "kind": "response",
-      "note": "Duplicate detection ignores parameter order, and it precedes unsupported-component (sf) in section 9.",
+      "note": "The same req component twice.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers/alice/events",
@@ -803,19 +979,22 @@
       "response": {
         "status": 200,
         "headers": {
-          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req;sf \"content-digest\";sf;req);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
           "Signature": "signify=:JK+oXQL2TehrZzGEQCEj4+B+UHoG0fMCTZdZ+Qxh/hq2Jf3Q1AK6i3fie+pTN2X6yv2JC0IrUuLNA66UhuSvBA==:",
           "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
         },
         "body": "{\"done\": true}"
       },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
       "now": 1700000030,
       "error": "duplicate-component"
     },
     {
-      "id": "unsigned-response",
+      "id": "response-unsupported-parameter",
       "kind": "response",
-      "note": "Section 8: a client that sent a canonical request refuses an unsigned response (an unsigned 401 is the one exception, and is not a verification).",
+      "note": "req is the only supported component parameter; sf beside it is refused.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers/alice/events",
@@ -829,12 +1008,169 @@
       "response": {
         "status": 200,
         "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req;sf);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:JK+oXQL2TehrZzGEQCEj4+B+UHoG0fMCTZdZ+Qxh/hq2Jf3Q1AK6i3fie+pTN2X6yv2JC0IrUuLNA66UhuSvBA==:",
           "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
         },
         "body": "{\"done\": true}"
       },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "error": "unsupported-component"
+    },
+    {
+      "id": "response-from-an-unexpected-aid",
+      "kind": "response",
+      "note": "Validly signed by a key the client knows, but not by the AID it is talking to (profile R1, section 9).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"7hQeql4CE3VQh5uFzymCIQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:G45WQ6r9JNLIi7Zys6W40ZN9qZWV3u3ny/kMhTaboB85h3brCBr6jQE57teEjBGd+ifsk1OogdW3detOsDFoDQ==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "error": "unknown-key"
+    },
+    {
+      "id": "unsigned-401",
+      "kind": "response",
+      "note": "Section 8: KERIA cannot sign a refusal issued before it resolves the agent. Reported as an authentication failure whose body is not trusted; checked before anything else.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\"title\": \"401 Unauthorized\"}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "error": "unauthenticated"
+    },
+    {
+      "id": "unsigned-200",
+      "kind": "response",
+      "note": "Every unsigned response other than a 401 is missing-signature.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
       "now": 1700000030,
       "error": "missing-signature"
+    },
+    {
+      "id": "legacy-response-to-a-canonical-request",
+      "kind": "response",
+      "note": "A canonical request to /boot answered in legacy mode: legacy.json's keria-response-from-agent. The legacy response covers neither status nor body, so a client that sent a canonical request refuses it before any canonical check.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/boot",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"nrZOYRbuKDnFEMsQydUhcg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:ygrEKyYe0BKkhANCM5CLLU8JNDSMNpUmH1U0ZYLR6Fdr6xYSsoNKaQdRA869/4M8VM7f2Ri5+I/S4Hf4A6J9CA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "connection": "close",
+          "content-length": "256",
+          "content-type": "application/json",
+          "signify-resource": "EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt",
+          "signify-timestamp": "2021-01-01T00:00:00.000000+00:00",
+          "Signature-Input": "signify=(\"signify-resource\" \"@method\" \"@path\" \"signify-timestamp\");created=1609459200;keyid=\"EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt\";alg=\"ed25519\"",
+          "Signature": "indexed=\"?0\";signify=\"0BBWiqPdnUjfwkDcFQQyUUjjATXp0mRgG7S9ikr_XZkp0Nbv77dY8syrdpJTLuU4gTfmMYJb4OIR5oN7K02CV_0I\""
+        },
+        "body": null
+      },
+      "policy": {
+        "expected_keyid": "EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt"
+      },
+      "now": 1700000030,
+      "error": "mode-mismatch",
+      "verified_by_fiki": false,
+      "why": "fiki does not implement legacy mode (this.i @07wstqk7), so it cannot detect a legacy header or know that a request was legacy. The legacy half is legacy.json's material verbatim, apart from what the note says."
+    },
+    {
+      "id": "canonical-response-to-a-legacy-request",
+      "kind": "response",
+      "note": "legacy.json's keria-request-to-boot, without its Content-Length (which the legacy signature does not cover, so the request still verifies in legacy mode), answered by a canonical response. A client answers in the mode it asked in, and refuses the other (section 8).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/boot",
+        "headers": {
+          "Content-Type": "application/json",
+          "Connection": "close",
+          "Signify-Resource": "EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq",
+          "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00",
+          "Signature-Input": "signify=(\"signify-resource\" \"@method\" \"@path\" \"signify-timestamp\");created=1609459200;keyid=\"EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq\";alg=\"ed25519\"",
+          "Signature": "indexed=\"?0\";signify=\"0BDBVr5ape8f9nV60ThhWOKvu5HKXQc5798Sz95FIoqXQ9vvL8HoYsLRp5aN86MIXr0GqH37SowsmTP-k9UhYSkN\""
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\");created=1700000000;nonce=\"SQptEzbo1uYk1HiDxO2paw\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:9Wdh2Kkphxloi4UtKF/Te8quo/BvMptmK6Ohco1yvMzstCFUzaEfOCsa7/BfSKNgFzdsxeuIVRDkKC7NFp7vCA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "error": "mode-mismatch",
+      "verified_by_fiki": false,
+      "why": "fiki does not implement legacy mode (this.i @07wstqk7), so it cannot detect a legacy header or know that a request was legacy. The legacy half is legacy.json's material verbatim, apart from what the note says."
     },
     {
       "id": "sign-body-without-digest",
@@ -854,6 +1190,24 @@
       "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
       "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
       "error": "uncovered-body"
+    },
+    {
+      "id": "sign-below-the-minimum",
+      "kind": "sign-request",
+      "note": "A signer asked to cover less than the request minimum set refuses (profile section 3, draft 6).",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot",
+        "headers": {},
+        "body": null
+      },
+      "covered": [
+        "\"@method\"",
+        "\"@path\""
+      ],
+      "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "error": "insufficient-coverage"
     }
   ]
 }

@@ -1,19 +1,19 @@
 {
   "about": "RFC 9421's own Ed25519 example, reproduced.",
-  "keri_vectors_format": 1,
+  "keri_vectors_format": 2,
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "draft": 4,
+    "draft": 6,
     "date": "2026-09-24",
     "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
-    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails; every refusal case has exactly one defect, so it has exactly one correct code."
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
   },
   "encoding": {
-    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier.",
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier, which is how a case tests what the headers alone announce.",
     "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
     "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
-    "public_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "effective_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
     "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
     "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
   },

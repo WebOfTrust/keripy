@@ -1,6 +1,6 @@
 # KERI profile RFC 9421 vectors
 
-These five files are copied verbatim from bakobo/fiki, `vectors/keri/`, at commit `530cd8c269675bb8fc311d8896034cfd2a46fafc`, `keri_vectors_format` 1. fiki generates them independently of keripy (`vectors/keri/generate.py` there), and signify-ts carries identical copies.
+These five files are copied verbatim from bakobo/fiki, `vectors/keri/`, at commit `34f37a0dd953976a64f914bb22f6d68fd4d1f393`, `keri_vectors_format` 2. fiki generates them independently of keripy (`vectors/keri/generate.py` there), and signify-ts carries identical copies.
 
 Do not edit them here. A case that disagrees with keripy is resolved against the profile and, if the vector is wrong, fixed in fiki and copied again. `tests/end/test_httpsigning.py` runs every case (`test_shared_vectors`).
 
