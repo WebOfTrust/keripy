@@ -1012,6 +1012,29 @@ def test_sign_verify_response():
         verifyResp(rep, kept, now=NOW + 1000)
 
 
+def test_response_status_forms():
+    """A framework status line such as falcon's '200 OK' is accepted; anything
+    without a three digit code is refused with a code, never a bare
+    ValueError."""
+    msg, kept = served()
+    rep = response(kept, status="200 OK")
+    assert "200" in hs.signatureBase(["@status"], {}, status="200 OK")
+    verifyResp(rep, kept)
+    verifyResp({**rep, "status": 200}, kept)
+    verifyResp({**rep, "status": "200"}, kept)
+    for status in ("OK", "20", "2000", "", None, True, 99, 1000, 200.0):
+        if status is None:
+            continue
+        with pytest.raises(hs.SignatureMismatch):
+            verifyResp({**rep, "status": status}, kept)
+        with pytest.raises(ValueError):
+            response(kept, status=status)
+    with pytest.raises(hs.Unauthenticated):
+        verifyResp(dict(status="401 Unauthorized", headers={}, body=b""), kept)
+    with pytest.raises(hs.MissingSignature):
+        verifyResp(dict(status="garbage", headers={}, body=b""), kept)
+
+
 def test_verify_response_refusals():
     msg, kept = served()
     # response coverage minimum

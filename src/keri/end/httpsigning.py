@@ -430,6 +430,26 @@ def normalizeAuthority(authority):
     return authority
 
 
+_STATUS = re.compile(r"\A([1-9][0-9]{2})(?: .*)?\Z", re.DOTALL)
+
+
+def _statusCode(status):
+    """
+    Returns int status code from an int, or from a str whose first token is
+    the three digit code, such as falcon's '200 OK'.
+
+    Raises ValueError for anything else.
+    """
+    if type(status) is int:
+        if 100 <= status <= 999:
+            return status
+    elif isinstance(status, str):
+        match = _STATUS.match(status)
+        if match:
+            return int(match.group(1))
+    raise ValueError(f"Invalid response status {status!r}.")
+
+
 def _componentValue(item, *, method, authority, path, query, fields, status):
     name = item.value
     if name == "@method":
@@ -442,7 +462,14 @@ def _componentValue(item, *, method, authority, path, query, fields, status):
     elif name == "@query":
         value = f"?{query or ''}"
     elif name == "@status":
-        value = f"{int(status):03d}" if status is not None else None
+        if status is None:
+            value = None
+        else:
+            try:
+                value = f"{_statusCode(status):03d}"
+            except ValueError as ex:
+                raise SignatureMismatch(f"Signature base cannot be built: "
+                                        f"{ex}") from ex
     else:
         value = _fieldValue(fields, name)
 
@@ -490,7 +517,8 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
         path (str): @path as sent, percent-encoding included
         query (str): query as sent without the leading '?'; None or '' is none
         headers: target message fields, mapping or iterable of pairs
-        status (int): response status. Set means the target is a response.
+        status (int | str): response status, an int or a status line such
+            as '200 OK'. Set means the target is a response.
         request (Requestage): request answered, for components marked req
 
     Raises:
@@ -691,7 +719,7 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
     Returns dict of header fields to add to the response, as signRequest.
 
     Parameters:
-        status (int): response status code
+        status (int | str): response status code, or a line such as '200 OK'
         request (Requestage): the request being answered, as received
         headers, body, signer, hab, keyid, label, created, expires, nonce, tag,
         alg: as for signRequest
@@ -700,6 +728,7 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
     Raises:
         as signRequest
     """
+    _statusCode(status)  # a caller's bad status is a ValueError, up front
     raw = _bytify(body)
     if covered is None:
         covered = responseCovered(request, raw)
@@ -1075,7 +1104,8 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
     Returns Verified.
 
     Parameters:
-        status (int): response status code
+        status (int | str): response status code, or a line such as '200 OK'.
+            A status without a three digit code is signature-mismatch.
         headers: response header fields
         body (bytes): response content as received
         request (Requestage): the request as sent
@@ -1094,7 +1124,11 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
     if signature is None:
-        if requestMode == Canonical and int(status) == 401:
+        try:
+            unauthorized = _statusCode(status) == 401
+        except ValueError:
+            unauthorized = False
+        if requestMode == Canonical and unauthorized:
             raise Unauthenticated("Server refused the request's "
                                   "authentication (unsigned 401).")
         raise MissingSignature("Response has no Signature.")
