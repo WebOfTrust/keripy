@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 import pytest
 
 from keri.core import MtrDex
-from keri.core.coring import Tholder, Verfer
+from keri.core.coring import Diger, Tholder, Verfer
 from keri.app import habbing
 from keri.kering import Vrsn_1_0, Kinds
 from keri.core.signing import Signer
@@ -659,6 +659,50 @@ def test_kever_resolver_after_reopen(tmp_path):
             assert verfer.qb64 == ctrl.kever.verfers[0].qb64
         finally:
             hby.close(clear=True)
+
+
+def test_effective_signer():
+    """Profile R4 (draft 6): the key state qualifies when exactly one current
+    key satisfies the signing threshold alone, and that key is used."""
+    a, b, c = (ntSigner(bytes([i]) * 32).verfer for i in (7, 8, 9))
+
+    def aid(name):
+        return Diger(ser=name.encode()).qb64
+
+    def kever(verfers, sith):
+        return SimpleNamespace(verfers=verfers, tholder=Tholder(sith=sith))
+
+    kevers = {
+        # Signify after a passcode rotation: keys [new, prior-next]
+        aid("PasscodeRotated"): kever([a, b], ["1", "0"]),
+        aid("SecondKeyOnly"): kever([a, b], ["0", "1"]),
+        aid("Plain"): kever([a], "1"),
+        aid("EitherKey"): kever([a, b], "1"),
+        aid("TwoOfThree"): kever([a, b, c], "2"),
+        aid("Halves"): kever([a, b], ["1/2", "1/2"]),
+        aid("BothWhole"): kever([a, b], ["1", "1"]),
+    }
+    resolve = hs.keverResolver(kevers)
+    assert resolve(aid("PasscodeRotated")).qb64 == a.qb64
+    assert resolve(aid("SecondKeyOnly")).qb64 == b.qb64
+    assert resolve(aid("Plain")).qb64 == a.qb64
+    for pre in (aid("EitherKey"),
+                aid("TwoOfThree"),
+                aid("Halves"),
+                aid("BothWhole")):
+        with pytest.raises(hs.UnsupportedSigner):
+            resolve(pre)
+
+    # a real habitat in the passcode-rotated shape signs and verifies
+    with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
+                         temp=True) as (hby, hab):
+        rotated = hby.makeHab(name="rotated", icount=2, isith=["1", "0"],
+                              ncount=2, nsith=["1", "0"])
+        msg = request()
+        added = hs.signRequest(hab=rotated, created=NOW, nonce="n1", **msg)
+        msg["headers"] = {**msg["headers"], **added}
+        verified = verify(msg, resolver=hs.keverResolver(hby.kevers))
+        assert verified.verfer.qb64 == rotated.kever.verfers[0].qb64
 
 
 def test_verify_request_policy():

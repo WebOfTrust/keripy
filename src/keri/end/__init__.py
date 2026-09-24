@@ -28,6 +28,7 @@ from .httpsigning import (HttpSigError, MissingSignature,
                           signatureBase, normalizeAuthority, signRequest,
                           signResponse,
                           responseCovered, Verified, Policy, detectMode,
+                          effectiveVerfer,
                           signatureKeyid, verifyRequest, checkBody,
                           verifyResponse, verifyLegacy,
                           keverResolver)

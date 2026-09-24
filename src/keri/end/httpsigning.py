@@ -119,7 +119,7 @@ class UnknownKey(HttpSigError):
 
 
 class UnsupportedSigner(HttpSigError):
-    """Key state with other than one signing key and a threshold of one."""
+    """Key state without a single effective signer (profile R4)."""
     code = "unsupported-signer"
 
 
@@ -596,10 +596,7 @@ def _sign(items, *, signer, hab, keyid, label, created, expires, nonce, tag,
     if (signer is None) == (hab is None):
         raise ValueError("Exactly one of signer or hab is required.")
     if hab is not None:
-        verfers = hab.kever.verfers
-        if len(verfers) != 1 or not _simpleThreshold(hab.kever.tholder):
-            raise UnsupportedSigner(f"{hab.pre} is not a single key signer.")
-        verfer = verfers[0]
+        verfer = effectiveVerfer(hab.kever.verfers, hab.kever.tholder)
         keyid = keyid if keyid is not None else hab.pre
     else:
         verfer = signer.verfer
@@ -668,7 +665,7 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
 
     Raises:
         UncoveredBody: non-empty body without covered content-digest
-        UnsupportedSigner: hab with other than one key and threshold one
+        UnsupportedSigner: hab without a single effective signer (R4)
         UnsupportedAlgorithm: key is not Ed25519
         ValueError: bad arguments
     """
@@ -958,8 +955,29 @@ def _checkCoverage(items, required):
                                        f"{_serialize(item)}.")
 
 
-def _simpleThreshold(tholder):
-    return not tholder.weighted and tholder.thold == 1
+def effectiveVerfer(verfers, tholder):
+    """
+    Returns the single effective signing key of a key state (profile section
+    7, R4): the one current key that satisfies the signing threshold on its
+    own. A canonical signature carries no key index, so exactly one key may
+    qualify. A plain single key state qualifies, and so does a Signify
+    controller after a passcode rotation (keys [new, prior-next], threshold
+    ['1', '0']).
+
+    Parameters:
+        verfers (list): current signing keys, Verfer instances
+        tholder (Tholder): current signing threshold
+
+    Raises:
+        UnsupportedSigner: no key, or more than one key, satisfies the
+            threshold alone, e.g. a 2-of-3 group or '1' over two keys
+    """
+    alone = [verfer for index, verfer in enumerate(verfers)
+             if tholder.satisfy(indices=[index])]
+    if len(alone) != 1:
+        raise UnsupportedSigner("Key state has no single key that satisfies "
+                                "its signing threshold alone.")
+    return alone[0]
 
 
 def _resolve(resolver, keyid, alg):
@@ -1302,8 +1320,8 @@ def keverResolver(kevers):
     The keyid is an AID in qb64 and is resolved by its derivation code, never
     by its first character alone: a non-transferable code yields the key
     directly; every transferable code, including the basic transferable
-    Ed25519 prefix, must have key state in kevers. That key state must have
-    exactly one signing key and a threshold of one.
+    Ed25519 prefix, must have key state in kevers. The key returned is that
+    state's single effective signer (effectiveVerfer, R4).
 
     Parameters:
         kevers (Mapping): prefix qb64 -> Kever, e.g. hab.kevers
@@ -1329,8 +1347,6 @@ def keverResolver(kevers):
         if keyid not in kevers:
             raise UnknownKey(f"No key state for {keyid}.")
         kever = kevers[keyid]
-        if len(kever.verfers) != 1 or not _simpleThreshold(kever.tholder):
-            raise UnsupportedSigner(f"{keyid} is not a single key signer.")
-        return kever.verfers[0]
+        return effectiveVerfer(kever.verfers, kever.tholder)
 
     return resolve
