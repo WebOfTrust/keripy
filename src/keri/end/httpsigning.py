@@ -8,8 +8,8 @@ of keri.end.ending so a server can accept both while clients upgrade.
 
 The profile itself (covered components, parameters, keyid resolution, mode
 selection and the refusal codes) is specified in the "KERI profile of RFC 9421
-HTTP Message Signatures", draft 6. It has no public URL yet.
-TODO PROFILE-URL: link the published profile here once it has one.
+HTTP Message Signatures", version 1, published at
+https://github.com/bakobo/fiki/blob/main/docs/keri-profile.md
 Section numbers in comments below refer to it where they say "profile", and to
 RFC 9421 otherwise.
 
