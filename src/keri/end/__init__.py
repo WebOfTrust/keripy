@@ -25,5 +25,8 @@ from .httpsigning import (HttpSigError, MissingSignature,
                           MalformedDigest, DigestMismatch, UncoveredBody,
                           Unauthenticated, errorForCode, Requestage,
                           contentDigest, verifyContentDigest, signatureParams,
-                          signatureBase)
+                          signatureBase, signRequest, signResponse,
+                          responseCovered, Verified, Policy, detectMode,
+                          signatureKeyid, verifyRequest, checkBody,
+                          verifyResponse, keverResolver)
 from .priming import parseArgs

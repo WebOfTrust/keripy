@@ -21,12 +21,16 @@ import base64
 import hashlib
 import hmac
 import re
+import secrets
 from collections import namedtuple
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 import http_sfv
 
 from .. import kering
+from ..core.coring import MtrDex, PreDex, NonTransDex, Prefixer, Verfer
+from ..help import helping
 
 
 # Errors. Each refusal carries the profile section 9 code as .code so that a
@@ -336,7 +340,7 @@ def _component(component):
         raise MalformedSignatureInput(f"Invalid component identifier "
                                       f"{component!r}.")
 
-    if not isinstance(item.value, str) or not item.value:
+    if type(item.value) is not str or not item.value:  # String, not Token
         raise MalformedSignatureInput(f"Component identifier {item} is not a "
                                       f"String.")
     if item.value != item.value.lower():
@@ -484,3 +488,624 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
 
     lines.append(f'"@signature-params": {_signatureParamsValue(items, params)}')
     return "\n".join(lines)
+
+
+# Sign
+
+# Default covered components of a signed request (profile section 3), plus
+# content-digest when there is a body.
+RequestCovered = ("@method", "@authority", "@path", "@query")
+
+# Signature algorithm of this profile version, and the key codes it covers.
+Alg = "ed25519"
+_Ed25519Codes = (MtrDex.Ed25519N, MtrDex.Ed25519)
+
+Canonical = "canonical"
+Legacy = "legacy"
+
+
+def _now():
+    return int(helping.nowUTC().timestamp())
+
+
+def _nonce():
+    """128 random bits, unpadded base64url (profile section 4)."""
+    return base64.urlsafe_b64encode(secrets.token_bytes(16)).rstrip(b"=").decode()
+
+
+def _plainNames(items):
+    """Names of covered components that carry no parameters."""
+    return {item.value for item in items if not item.params}
+
+
+def _sign(items, *, signer, hab, keyid, label, created, expires, nonce, tag,
+          alg, baseKwa):
+    """
+    Returns dict with Signature-Input and Signature for covered items over the
+    message described by baseKwa (keyword arguments of signatureBase).
+    """
+    if (signer is None) == (hab is None):
+        raise ValueError("Exactly one of signer or hab is required.")
+    if hab is not None:
+        verfers = hab.kever.verfers
+        if len(verfers) != 1 or not _simpleThreshold(hab.kever.tholder):
+            raise UnsupportedSigner(f"{hab.pre} is not a single key signer.")
+        verfer = verfers[0]
+        keyid = keyid if keyid is not None else hab.pre
+    else:
+        verfer = signer.verfer
+        if keyid is None:
+            if verfer.transferable:
+                raise ValueError("A transferable key is not its own keyid; "
+                                 "supply keyid, the signer's AID.")
+            keyid = verfer.qb64
+    if alg is not None and alg != Alg:
+        raise ValueError(f"Unsupported signature algorithm {alg!r}.")
+    if verfer.code not in _Ed25519Codes:
+        raise UnsupportedAlgorithm(f"Key code {verfer.code} is not Ed25519.")
+
+    params = signatureParams(
+        created=created if created is not None else _now(),
+        expires=expires,
+        nonce=_nonce() if nonce is None else (nonce or None),
+        alg=alg, keyid=keyid, tag=tag)
+    base = signatureBase(items, params, **baseKwa).encode("utf-8")
+
+    if hab is not None:
+        raw = hab.sign(ser=base, verfers=[verfer], indexed=False)[0].raw
+    else:
+        raw = signer.sign(base).raw
+
+    inputs = http_sfv.Dictionary()
+    inner = http_sfv.InnerList()
+    for item in items:
+        inner.append(item)
+    inner.params.update(params)
+    inputs[label] = inner
+    signatures = http_sfv.Dictionary()
+    signatures[label] = raw
+    return {"Signature-Input": str(inputs), "Signature": str(signatures)}
+
+
+def signRequest(*, method, path, query=None, authority=None, headers=None,
+                body=None, signer=None, hab=None, keyid=None, label="signify",
+                covered=None, created=None, expires=None, nonce=None, tag=None,
+                alg=Alg):
+    """
+    Sign a request in canonical mode.
+
+    Returns dict of header fields to add to the request: Content-Digest when
+    content-digest is covered, then Signature-Input and Signature.
+
+    Parameters:
+        method (str): method exactly as it will be sent
+        path (str): path as sent, percent-encoding included
+        query (str): query as sent without the leading '?'; None if none
+        authority (str): target authority without default port; None uses Host
+        headers: request header fields, mapping or iterable of pairs
+        body (bytes | str | None): content as sent
+        signer (Signer): signing key. Exactly one of signer or hab.
+        hab (Hab): single key habitat to sign with
+        keyid (str): signer's AID. Defaults to hab.pre, or to the verfer of a
+            non-transferable signer.
+        label (str): signature label
+        covered (list): components to cover. Default @method @authority @path
+            @query, plus content-digest when body is non-empty.
+        created (int): seconds since the epoch; None is now
+        expires (int): optional expiry, seconds since the epoch
+        nonce (str): None generates 128 random bits; False omits it
+        tag (str): optional application tag
+        alg (str): 'ed25519', or None to omit the parameter
+
+    Raises:
+        UncoveredBody: non-empty body without covered content-digest
+        UnsupportedSigner: hab with other than one key and threshold one
+        UnsupportedAlgorithm: key is not Ed25519
+        ValueError: bad arguments
+    """
+    raw = _bytify(body)
+    if covered is None:
+        covered = RequestCovered + (("content-digest",) if raw else ())
+    items = _components(covered, response=False)
+
+    added = {}
+    fields = [(n, v) for n, v in _fieldLines(headers).items()]
+    if "content-digest" in _plainNames(items):
+        added["Content-Digest"] = contentDigest(raw)
+        fields = [(n, v) for n, v in fields if n != "content-digest"]
+        fields.append(("content-digest", added["Content-Digest"]))
+    elif raw:
+        raise UncoveredBody("A request with a body must cover content-digest.")
+
+    added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
+                       created=created, expires=expires, nonce=nonce, tag=tag,
+                       alg=alg,
+                       baseKwa=dict(method=method, authority=authority,
+                                    path=path, query=query, headers=fields)))
+    return added
+
+
+def responseCovered(request, body):
+    """
+    Returns default covered components of a response to request (profile
+    section 3): @status, content-digest when body is non-empty, and the
+    request's @method, @path, @query and, when it had a body, content-digest,
+    each marked req.
+    """
+    covered = ["@status"]
+    if _bytify(body):
+        covered.append("content-digest")
+    covered.extend(['"@method";req', '"@path";req', '"@query";req'])
+    if _bytify(request.body):
+        covered.append('"content-digest";req')
+    return covered
+
+
+def signResponse(*, status, request, headers=None, body=None, signer=None,
+                 hab=None, keyid=None, label="signify", covered=None,
+                 created=None, expires=None, nonce=None, tag=None, alg=Alg):
+    """
+    Sign a response to a canonical request.
+
+    Returns dict of header fields to add to the response, as signRequest.
+
+    Parameters:
+        status (int): response status code
+        request (Requestage): the request being answered, as received
+        headers, body, signer, hab, keyid, label, created, expires, nonce, tag,
+        alg: as for signRequest
+        covered (list): default responseCovered(request, body)
+
+    Raises:
+        as signRequest
+    """
+    raw = _bytify(body)
+    if covered is None:
+        covered = responseCovered(request, raw)
+    items = _components(covered, response=True)
+
+    added = {}
+    fields = [(n, v) for n, v in _fieldLines(headers).items()]
+    if "content-digest" in _plainNames(items):
+        added["Content-Digest"] = contentDigest(raw)
+        fields = [(n, v) for n, v in fields if n != "content-digest"]
+        fields.append(("content-digest", added["Content-Digest"]))
+    elif raw:
+        raise UncoveredBody("A response with a body must cover content-digest.")
+
+    added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
+                       created=created, expires=expires, nonce=nonce, tag=tag,
+                       alg=alg,
+                       baseKwa=dict(status=status, headers=fields,
+                                    request=request)))
+    return added
+
+
+# Verify
+
+# Result of a successful verification.
+#   mode (str): 'canonical' or 'legacy'
+#   keyid (str): the signer's AID; in legacy mode the Signify-Resource value
+#   label (str): signature label
+#   params (dict): signature parameters in wire order
+#   covered (tuple): serialized covered component identifiers
+#   verfer (Verfer): key that verified the signature
+Verified = namedtuple("Verified", "mode keyid label params covered verfer")
+
+
+@dataclass(frozen=True)
+class Policy:
+    """
+    Verifier policy (profile sections 3 and 6).
+
+    Attributes:
+        request (tuple): minimum covered components of a request, besides
+            content-digest when there is a body
+        requireAuthority (bool): also require @authority, compared with
+            authorities
+        authorities (frozenset): authorities this verifier serves, lowercase
+            and without default port; required when requireAuthority
+        maxAge (int): seconds a signature stays fresh after created
+        skew (int): tolerated clock skew in seconds
+    """
+    request: tuple = ("@method", "@path", "@query")
+    requireAuthority: bool = False
+    authorities: frozenset = frozenset()
+    maxAge: int = 300
+    skew: int = 60
+
+    def __post_init__(self):
+        if self.requireAuthority and not self.authorities:
+            raise ValueError("requireAuthority needs the configured authorities "
+                             "this verifier serves.")
+
+
+DefaultPolicy = Policy()
+
+# Signature parameters of the profile, and their types (section 4)
+_ParamTypes = dict(created=int, expires=int, nonce=str, alg=str, keyid=str,
+                   tag=str)
+
+
+def _parseDict(value):
+    if isinstance(value, str):
+        value = value.encode("utf-8")
+    members = http_sfv.Dictionary()
+    members.parse(value)
+    return members
+
+
+def detectMode(value):
+    """
+    Returns 'canonical' or 'legacy' for a Signature field value (profile
+    section 8): canonical when it parses as an RFC 8941 Dictionary whose every
+    member is a Byte Sequence, legacy when keri.end.ending.designature accepts
+    it.
+
+    Raises:
+        MalformedSignature: neither
+    """
+    try:
+        members = _parseDict(value)
+    except ValueError:
+        members = None
+    if members and all(isinstance(m, http_sfv.Item) and isinstance(m.value, bytes)
+                       for m in members.values()):
+        return Canonical
+
+    from .ending import designature
+    try:
+        if designature(value):
+            return Legacy
+    except Exception:
+        pass
+    raise MalformedSignature("Signature is neither an RFC 9421 Byte Sequence "
+                             "nor the legacy KERI form.")
+
+
+def signatureKeyid(headers):
+    """
+    Returns the keyid a request claims, without verifying anything: the keyid
+    parameter in canonical mode, the Signify-Resource field in legacy mode, or
+    None. The value is untrusted until verifyRequest returns; it exists so that
+    a server can find the agent that holds the key state before verifying.
+    """
+    fields = _fieldLines(headers)
+    signature = _fieldValue(fields, "signature")
+    if signature is None:
+        return None
+    try:
+        mode = detectMode(signature)
+    except MalformedSignature:
+        return None
+    if mode == Legacy:
+        return _fieldValue(fields, "signify-resource")
+    try:
+        members = _parseDict(_fieldValue(fields, "signature-input") or "")
+    except ValueError:
+        return None
+    if len(members) != 1:
+        return None
+    member = next(iter(members.values()))
+    keyid = getattr(member, "params", {}).get("keyid")
+    return keyid if type(keyid) is str else None
+
+
+def _parseInput(value):
+    """
+    Returns (label, items, params) from Signature-Input field value.
+
+    Raises MalformedSignatureInput, then MalformedSignatureLabel.
+    """
+    try:
+        members = _parseDict(value)
+    except ValueError as ex:
+        raise MalformedSignatureInput(f"Signature-Input does not parse: "
+                                      f"{ex}.") from ex
+    if not members:
+        raise MalformedSignatureInput("Signature-Input is empty.")
+    parsed = []
+    for label, member in members.items():
+        if not isinstance(member, http_sfv.InnerList):
+            raise MalformedSignatureInput(f"Signature-Input member {label} is "
+                                          f"not an Inner List.")
+        items = [_component(item) for item in member]
+        for name, val in member.params.items():
+            kind = _ParamTypes.get(name)
+            if kind is None:
+                raise MalformedSignatureInput(f"Unknown signature parameter "
+                                              f"{name}.")
+            if type(val) is not kind:  # excludes bool, Token, Decimal
+                raise MalformedSignatureInput(f"Signature parameter {name} has "
+                                              f"the wrong type.")
+        for name in ("created", "keyid"):
+            if name not in member.params:
+                raise MalformedSignatureInput(f"Signature parameter {name} is "
+                                              f"required.")
+        parsed.append((label, items, dict(member.params)))
+    if len(parsed) != 1:
+        raise MalformedSignatureLabel("Signature-Input must carry exactly one "
+                                      "label.")
+    return parsed[0]
+
+
+def _parseSignature(value, label):
+    """
+    Returns raw signature bytes for label from canonical Signature value.
+
+    Raises MalformedSignatureLabel, MissingSignatureLabel,
+    MalformedSignatureValue.
+    """
+    members = _parseDict(value)  # detectMode has already parsed it
+    if len(members) != 1:
+        raise MalformedSignatureLabel("Signature must carry exactly one label.")
+    if label not in members:
+        raise MissingSignatureLabel(f"Signature has no member for label "
+                                    f"{label}.")
+    raw = members[label].value
+    if len(raw) != 64:
+        raise MalformedSignatureValue(f"Signature is {len(raw)} bytes, not 64.")
+    return raw
+
+
+def _hasBody(fields):
+    """Header-time body test (profile section 3): Content-Length greater than
+    zero or any Transfer-Encoding."""
+    if fields.get("transfer-encoding"):
+        return True
+    length = _fieldValue(fields, "content-length")
+    if length is None:
+        return False
+    try:
+        return int(length) > 0
+    except ValueError:
+        return True  # unparsable: assume a body rather than skip coverage
+
+
+def _checkCoverage(items, required):
+    covered = {_componentKey(item) for item in items}
+    for component in required:
+        item = _component(component)
+        if _componentKey(item) not in covered:
+            raise InsufficientCoverage(f"Policy requires covering "
+                                       f"{_serialize(item)}.")
+
+
+def _simpleThreshold(tholder):
+    return not tholder.weighted and tholder.thold == 1
+
+
+def _resolve(resolver, keyid, alg):
+    """Returns verfer for keyid, checking alg against the key (section 4)."""
+    verfer = resolver(keyid)
+    if verfer is None:
+        raise UnknownKey(f"No key state for {keyid}.")
+    if verfer.code not in _Ed25519Codes:
+        raise UnsupportedAlgorithm(f"Key {keyid} is not an Ed25519 key.")
+    if alg is not None and alg != Alg:
+        raise UnsupportedAlgorithm(f"Signature algorithm {alg} is not "
+                                   f"supported.")
+    return verfer
+
+
+def _checkFreshness(params, policy, now):
+    now = _now() if now is None else int(now)
+    created = params["created"]
+    if created < now - policy.maxAge - policy.skew or created > now + policy.skew:
+        raise SignatureStale(f"Signature created at {created} is outside the "
+                             f"freshness window.")
+    expires = params.get("expires")
+    if expires is not None and expires < now - policy.skew:
+        raise SignatureExpired(f"Signature expired at {expires}.")
+
+
+def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
+                     response, expectKeyid=None, authority=None):
+    """Header, covered list, key, base, signature and freshness checks, in the
+    order of profile section 9."""
+    label, items, params = _parseInput(_fieldValue(fields, "signature-input"))
+    raw = _parseSignature(_fieldValue(fields, "signature"), label)
+
+    items = _components(items, response=response)
+    _checkCoverage(items, required)
+
+    keyid = params["keyid"]
+    if expectKeyid is not None and keyid != expectKeyid:
+        raise UnknownKey(f"Signed by {keyid}, not by {expectKeyid}.")
+    verfer = _resolve(resolver, keyid, params.get("alg"))
+
+    base = signatureBase(items, params, **baseKwa)
+    if authority is not None and authority not in policy.authorities:
+        raise SignatureMismatch(f"Signature is for authority {authority}, "
+                                f"which this verifier does not serve.")
+    if not verfer.verify(sig=raw, ser=base.encode("utf-8")):
+        raise SignatureMismatch("Signature does not verify.")
+
+    _checkFreshness(params, policy, now)
+    return Verified(mode=Canonical, keyid=keyid, label=label, params=params,
+                    covered=tuple(_serialize(item) for item in items),
+                    verfer=verfer)
+
+
+def verifyRequest(*, method, path, query=None, authority=None, headers,
+                  body=None, resolver, policy=None, now=None,
+                  acceptLegacy=True):
+    """
+    Verify a signed request in either mode (profile section 8).
+
+    Returns Verified.
+
+    Parameters:
+        method (str): method as received
+        path (str): path as received, percent-encoding included
+        query (str): raw query without the leading '?'; None if none
+        authority (str): authority the request was sent to; None uses Host
+        headers: request header fields, mapping or iterable of pairs
+        body (bytes | None): content, or None when not yet read. With None
+            only the header-time body test runs and the caller must call
+            checkBody once the body is read.
+        resolver (callable): keyid -> Verfer, see keverResolver
+        policy (Policy): default Policy()
+        now (int): seconds since the epoch; None is now
+        acceptLegacy (bool): False refuses legacy mode as malformed-signature
+
+    Raises:
+        HttpSigError subclass for the first check that fails (section 9)
+    """
+    policy = policy if policy is not None else DefaultPolicy
+    fields = _fieldLines(headers)
+    signature = _fieldValue(fields, "signature")
+    if signature is None:
+        raise MissingSignature("Request has no Signature.")
+    if _fieldValue(fields, "signature-input") is None:
+        raise MissingSignatureInput("Request has no Signature-Input.")
+
+    if detectMode(signature) == Legacy:
+        if not acceptLegacy:
+            raise MalformedSignature("Legacy signatures are not accepted.")
+        return _verifyLegacyRequest(method=method, path=path, fields=fields,
+                                    resolver=resolver)
+
+    required = list(policy.request)
+    if policy.requireAuthority:
+        required.append("@authority")
+    if _hasBody(fields):
+        required.append("content-digest")
+
+    if authority is None:
+        authority = _fieldValue(fields, "host")
+    verified = _verifyCanonical(
+        fields=fields, required=required, resolver=resolver, policy=policy,
+        now=now, response=False,
+        authority=(authority or "").lower() if policy.requireAuthority else None,
+        baseKwa=dict(method=method, authority=authority, path=path,
+                     query=query, headers=fields))
+    if body is not None:
+        checkBody(verified, fields, body)
+    return verified
+
+
+def checkBody(verified, headers, body):
+    """
+    Post-read body check of a verified message (profile sections 3 and 5): a
+    non-empty body without covered content-digest is refused, and a covered
+    Content-Digest is recomputed over the content received. Both must pass
+    before the message reaches application code. A no-op in legacy mode,
+    which covers no body.
+
+    Raises:
+        InsufficientCoverage, MalformedDigest, DigestMismatch
+    """
+    if verified.mode != Canonical:
+        return
+    raw = _bytify(body)
+    if '"content-digest"' not in verified.covered:
+        if raw:
+            raise InsufficientCoverage("Body is not covered by content-digest.")
+        return
+    value = _fieldValue(_fieldLines(headers), "content-digest")
+    if value is None:
+        raise MissingComponent("Covered content-digest is absent.")
+    verifyContentDigest(value, raw)
+
+
+def verifyResponse(*, status, headers, body, request, resolver, keyid,
+                   requestMode=Canonical, policy=None, now=None):
+    """
+    Verify the response to a request this client signed.
+
+    Returns Verified.
+
+    Parameters:
+        status (int): response status code
+        headers: response header fields
+        body (bytes): response content as received
+        request (Requestage): the request as sent
+        resolver (callable): keyid -> Verfer
+        keyid (str): AID the client expects to be talking to
+        requestMode (str): mode the request was signed in. After a canonical
+            request only a canonical response is accepted (section 8).
+        policy (Policy): freshness settings; default Policy()
+        now (int): seconds since the epoch; None is now
+
+    Raises:
+        Unauthenticated: unsigned 401 to a canonical request
+        HttpSigError subclass for the first check that fails (section 9)
+    """
+    policy = policy if policy is not None else DefaultPolicy
+    fields = _fieldLines(headers)
+    signature = _fieldValue(fields, "signature")
+    if signature is None:
+        if requestMode == Canonical and int(status) == 401:
+            raise Unauthenticated("Server refused the request's "
+                                  "authentication (unsigned 401).")
+        raise MissingSignature("Response has no Signature.")
+    if _fieldValue(fields, "signature-input") is None:
+        raise MissingSignatureInput("Response has no Signature-Input.")
+
+    mode = detectMode(signature)
+    if requestMode == Canonical and mode == Legacy:
+        raise ModeMismatch("Legacy response to a canonical request.")
+    if mode == Legacy:
+        verfer = resolver(keyid)
+        if verfer is None:
+            raise UnknownKey(f"No key state for {keyid}.")
+        return verifyLegacy(method=request.method, path=request.path,
+                            headers=fields, verfer=verfer)
+
+    raw = _bytify(body)
+    required = ["@status"]
+    if raw or (body is None and _hasBody(fields)):
+        required.append("content-digest")
+    required.extend(['"@method";req', '"@path";req', '"@query";req'])
+    if _bytify(request.body):
+        required.append('"content-digest";req')
+
+    verified = _verifyCanonical(
+        fields=fields, required=required, resolver=resolver, policy=policy,
+        now=now, response=True, expectKeyid=keyid,
+        baseKwa=dict(status=status, headers=fields, request=request))
+    if body is not None:
+        checkBody(verified, fields, body)
+    return verified
+
+
+# Resolvers
+
+def keverResolver(kevers):
+    """
+    Returns resolver callable(keyid) -> Verfer over key state kevers (profile
+    section 7, R1 and R4).
+
+    The keyid is an AID in qb64 and is resolved by its derivation code, never
+    by its first character alone: a non-transferable code yields the key
+    directly; every transferable code, including the basic transferable
+    Ed25519 prefix, must have key state in kevers. That key state must have
+    exactly one signing key and a threshold of one.
+
+    Parameters:
+        kevers (Mapping): prefix qb64 -> Kever, e.g. hab.kevers
+    """
+    def resolve(keyid):
+        try:
+            prefixer = Prefixer(qb64=keyid)
+        except Exception as ex:
+            raise MalformedKey(f"keyid {keyid!r} is not an AID.") from ex
+        if prefixer.qb64 != keyid or prefixer.code not in PreDex:
+            raise MalformedKey(f"keyid {keyid!r} is not an AID.")
+
+        if prefixer.code in NonTransDex:
+            try:
+                return Verfer(qb64=keyid)
+            except Exception as ex:
+                raise UnsupportedAlgorithm(f"Key {keyid} has an unsupported "
+                                           f"algorithm.") from ex
+
+        kever = kevers.get(keyid)
+        if kever is None:
+            raise UnknownKey(f"No key state for {keyid}.")
+        if len(kever.verfers) != 1 or not _simpleThreshold(kever.tholder):
+            raise UnsupportedSigner(f"{keyid} is not a single key signer.")
+        return kever.verfers[0]
+
+    return resolve

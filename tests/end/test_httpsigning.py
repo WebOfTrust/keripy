@@ -18,6 +18,7 @@ import pathlib
 import pytest
 
 from keri.core import MtrDex
+from keri.app import habbing
 from keri.core.signing import Signer
 from keri.end import httpsigning as hs
 
@@ -343,3 +344,573 @@ def test_signature_base_duplicates_ignore_param_order():
     base = hs.signatureBase(["@status", "x", '"x";req'], {}, status=200,
                             headers={"x": "2"}, request=request)
     assert base.split("\n")[1:3] == ['"x": 2', '"x";req: 1']
+
+
+# Sign and verify. A fixed clock keeps signatures reproducible.
+
+NOW = 1618884473
+SEED = b"\x01" * 32
+
+
+def ntSigner(seed=SEED):
+    """Non-transferable Ed25519 signer; its verfer qb64 is its own AID."""
+    return Signer(raw=seed, code=MtrDex.Ed25519_Seed, transferable=False)
+
+
+def request(**kwa):
+    """Keyword arguments of a canonical test request."""
+    msg = dict(method="POST", authority="keria.example",
+               path="/identifiers/aid1/events", query="type=rot",
+               headers={"Content-Type": "application/json",
+                        "Content-Length": "7"},
+               body=b'{"a":1}')
+    msg.update(kwa)
+    return msg
+
+
+def signed(signer=None, *, sign=None, **kwa):
+    """Returns request kwargs with the signature headers added."""
+    msg = request(**kwa)
+    signer = signer if signer is not None else ntSigner()
+    sign = {**dict(created=NOW, nonce="n1"), **(sign or {})}
+    added = hs.signRequest(signer=signer, **msg, **sign)
+    msg["headers"] = {**msg["headers"], **added}
+    return msg
+
+
+def verify(msg, **kwa):
+    kwa.setdefault("resolver", hs.keverResolver({}))
+    kwa.setdefault("now", NOW)
+    return hs.verifyRequest(**msg, **kwa)
+
+
+def test_sign_request_headers():
+    signer = ntSigner()
+    msg = request()
+    added = hs.signRequest(signer=signer, created=NOW, nonce="n1", **msg)
+    assert list(added) == ["Content-Digest", "Signature-Input", "Signature"]
+    assert added["Content-Digest"] == hs.contentDigest(b'{"a":1}')
+    assert added["Signature-Input"] == (
+        'signify=("@method" "@authority" "@path" "@query" "content-digest")'
+        f';created={NOW};nonce="n1";alg="ed25519";keyid="{signer.verfer.qb64}"')
+    base = hs.signatureBase(
+        ["@method", "@authority", "@path", "@query", "content-digest"],
+        hs.signatureParams(created=NOW, nonce="n1", alg="ed25519",
+                           keyid=signer.verfer.qb64),
+        method="POST", authority="keria.example",
+        path="/identifiers/aid1/events", query="type=rot",
+        headers={**msg["headers"], **added})
+    sig = signer.sign(base.encode()).raw
+    assert added["Signature"] == \
+        f"signify=:{base64.b64encode(sig).decode()}:"
+
+    # no body: no content-digest, not covered
+    added = hs.signRequest(signer=signer, created=NOW, nonce=False, alg=None,
+                           tag="t", label="sig1", expires=NOW + 10,
+                           **request(method="GET", body=None, headers={}))
+    assert list(added) == ["Signature-Input", "Signature"]
+    assert added["Signature-Input"] == (
+        'sig1=("@method" "@authority" "@path" "@query")'
+        f';created={NOW};expires={NOW + 10};keyid="{signer.verfer.qb64}"'
+        ';tag="t"')
+
+
+def test_sign_request_defaults(mockHelpingNowUTC):
+    signer = ntSigner()
+    one = hs.signRequest(signer=signer, **request())
+    two = hs.signRequest(signer=signer, **request())
+    params = []
+    for added in (one, two):
+        inner = http_sfvDict(added["Signature-Input"])["signify"]
+        assert inner.params["created"] == 1609459200  # mocked clock
+        nonce = inner.params["nonce"]
+        assert len(b64url(nonce)) == 16  # 128 bits
+        params.append(nonce)
+    assert params[0] != params[1]
+
+
+def http_sfvDict(value):
+    import http_sfv
+    d = http_sfv.Dictionary()
+    d.parse(value.encode())
+    return d
+
+
+def test_sign_request_refusals():
+    signer = ntSigner()
+    with pytest.raises(hs.UncoveredBody) as ex:
+        hs.signRequest(signer=signer, covered=["@method", "@path", "@query"],
+                       **request())
+    assert ex.value.code == "uncovered-body"
+    # a transferable key is never its own keyid (profile R1)
+    with pytest.raises(ValueError):
+        hs.signRequest(signer=Signer(raw=SEED, transferable=True), **request())
+    with pytest.raises(ValueError):
+        hs.signRequest(**request())  # neither signer nor hab
+    with pytest.raises(ValueError):
+        hs.signRequest(signer=signer, alg="rsa-pss-sha512", **request())
+    with pytest.raises(hs.UnsupportedComponent):
+        hs.signRequest(signer=signer, covered=["@method", "@target-uri"],
+                       **request(body=None))
+    with pytest.raises(hs.MissingComponent):
+        hs.signRequest(signer=signer, **request(authority=None))
+    with pytest.raises(hs.UnsupportedAlgorithm):
+        hs.signRequest(signer=Signer(code=MtrDex.ECDSA_256k1_Seed,
+                                     transferable=False), **request())
+
+
+def test_verify_request_roundtrip():
+    signer = ntSigner()
+    msg = signed(signer)
+    verified = verify(msg)
+    assert verified == hs.Verified(
+        mode="canonical", keyid=signer.verfer.qb64, label="signify",
+        params={"created": NOW, "nonce": "n1", "alg": "ed25519",
+                "keyid": signer.verfer.qb64},
+        covered=('"@method"', '"@authority"', '"@path"', '"@query"',
+                 '"content-digest"'),
+        verfer=verified.verfer)
+    assert verified.verfer.qb64 == signer.verfer.qb64
+
+    # headers may arrive in any case and as pairs
+    pairs = [(k.upper(), v) for k, v in msg["headers"].items()]
+    assert verify({**msg, "headers": pairs}).keyid == signer.verfer.qb64
+
+    # absent alg is fine: the key's code implies ed25519 (profile section 4)
+    assert "alg" not in verify(signed(sign=dict(alg=None))).params
+
+    # the minimum set without @authority passes default policy
+    verify(signed(sign=dict(covered=["@method", "@path", "@query",
+                                     "content-digest"])))
+
+
+@pytest.mark.parametrize("change", [
+    dict(method="PUT"), dict(method="post"), dict(path="/identifiers/aid2/events"),
+    dict(query="type=ixn"), dict(query=None), dict(authority="evil.example"),
+])
+def test_verify_request_tampered(change):
+    msg = signed()
+    with pytest.raises(hs.SignatureMismatch) as ex:
+        verify({**msg, **change})
+    assert ex.value.code == "signature-mismatch"
+
+
+def test_verify_request_body():
+    msg = signed()
+    with pytest.raises(hs.DigestMismatch):
+        verify({**msg, "body": b'{"a":2}'})
+
+    # body not read yet: header-time checks only, then checkBody
+    verified = verify({**msg, "body": None})
+    hs.checkBody(verified, msg["headers"], msg["body"])
+    with pytest.raises(hs.DigestMismatch):
+        hs.checkBody(verified, msg["headers"], b'{"a":2}')
+
+    # headers claimed no body, but one arrived: refused after the read
+    msg = signed(method="GET", body=None, headers={})
+    verified = verify(msg)
+    hs.checkBody(verified, msg["headers"], b"")
+    with pytest.raises(hs.InsufficientCoverage):
+        hs.checkBody(verified, msg["headers"], b"sneaky")
+    with pytest.raises(hs.InsufficientCoverage):
+        verify({**msg, "body": b"sneaky"})
+
+    # a covered content-digest on empty content is checked against the
+    # digest of the empty string (profile section 5)
+    msg = signed(method="GET", body=None, headers={},
+                 sign=dict(covered=["@method", "@path", "@query",
+                                    "content-digest"]))
+    assert msg["headers"]["Content-Digest"] == hs.contentDigest(b"")
+    verify({**msg, "body": b""})
+    with pytest.raises(hs.DigestMismatch):
+        verify({**msg, "body": b"x"})
+
+
+def test_verify_request_transferable():
+    with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
+                         temp=True) as (hby, hab):
+        resolver = hs.keverResolver(hab.kevers)
+        msg = request()
+        added = hs.signRequest(hab=hab, created=NOW, nonce="n1", **msg)
+        msg["headers"] = {**msg["headers"], **added}
+        verified = verify(msg, resolver=resolver)
+        assert verified.keyid == hab.pre
+        assert verified.verfer.qb64 == hab.kever.verfers[0].qb64
+
+        # key state is the one current at verification time (profile R3)
+        hab.rotate()
+        with pytest.raises(hs.SignatureMismatch):
+            verify(msg, resolver=resolver)
+
+        multi = hby.makeHab(name="multi", icount=2, isith="1", ncount=2,
+                            nsith="1")
+        with pytest.raises(hs.UnsupportedSigner):
+            hs.signRequest(hab=multi, **request())
+
+
+def test_kever_resolver():
+    with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
+                         temp=True) as (hby, hab):
+        multi = hby.makeHab(name="multi", icount=2, isith="2", ncount=2,
+                            nsith="2")
+        one = hby.makeHab(name="one", icount=2, isith="1", ncount=2,
+                          nsith="1")
+        resolve = hs.keverResolver(hby.kevers)
+
+        assert resolve(hab.pre).qb64 == hab.kever.verfers[0].qb64
+        nt = ntSigner()
+        assert resolve(nt.verfer.qb64).qb64 == nt.verfer.qb64
+
+        for keyid in ("", "notanaid", hab.pre + "A", hab.pre[:-1],
+                      nt.sign(b"x").qb64):
+            with pytest.raises(hs.MalformedKey) as ex:
+                resolve(keyid)
+            assert ex.value.code == "malformed-key"
+
+        # a transferable prefix the verifier holds no KEL for
+        with pytest.raises(hs.UnknownKey):
+            resolve("E" + hab.pre[1:-1] + ("A" if hab.pre[-1] != "A" else "B"))
+        # basic transferable D prefix is never treated as a raw key (R1)
+        dkey = Signer(raw=SEED, transferable=True).verfer.qb64
+        assert dkey.startswith("D")
+        with pytest.raises(hs.UnknownKey) as ex:
+            resolve(dkey)
+        assert ex.value.code == "unknown-key"
+
+        for other in (multi, one):
+            with pytest.raises(hs.UnsupportedSigner) as ex:
+                resolve(other.pre)
+            assert ex.value.code == "unsupported-signer"
+
+
+def test_verify_request_policy():
+    with pytest.raises(ValueError):
+        hs.Policy(requireAuthority=True)
+    policy = hs.Policy(requireAuthority=True,
+                       authorities=frozenset(["keria.example"]))
+    verify(signed(), policy=policy)
+    # signed and sent to another service: valid signature, wrong service
+    msg = signed(authority="other.example")
+    verify(msg)
+    with pytest.raises(hs.SignatureMismatch):
+        verify(msg, policy=policy)
+    # @authority not covered
+    msg = signed(sign=dict(covered=["@method", "@path", "@query",
+                                    "content-digest"]))
+    with pytest.raises(hs.InsufficientCoverage):
+        verify(msg, policy=policy)
+
+    policy = hs.Policy(request=("@method", "@path", "@query", "content-type"))
+    with pytest.raises(hs.InsufficientCoverage):
+        verify(signed(), policy=policy)
+    verify(signed(sign=dict(covered=["@method", "@path", "@query",
+                                     "content-type", "content-digest"])),
+           policy=policy)
+
+
+@pytest.mark.parametrize("created,expires,code", [
+    (NOW - 360, None, None),
+    (NOW - 361, None, "signature-stale"),
+    (NOW + 60, None, None),
+    (NOW + 61, None, "signature-stale"),
+    (NOW, NOW - 60, None),
+    (NOW, NOW - 61, "signature-expired"),
+])
+def test_verify_request_freshness(created, expires, code):
+    msg = signed(sign=dict(created=created, expires=expires))
+    if code is None:
+        verify(msg)
+    else:
+        with pytest.raises(hs.HttpSigError) as ex:
+            verify(msg)
+        assert ex.value.code == code
+    # a bespoke window
+    verify(msg, policy=hs.Policy(maxAge=1000, skew=1000))
+
+
+def craft(covered, params, *, label="signify", signer=None, sigLabel=None,
+          sig=None, msg=None):
+    """Hand-built canonical request, for refusals signRequest will not
+    produce. params values are serialized verbatim."""
+    msg = msg or request(headers={"Content-Type": "application/json",
+                                  "Content-Length": "7",
+                                  "Content-Digest": hs.contentDigest(b'{"a":1}')})
+    signer = signer or ntSigner()
+    inner = "(" + " ".join(covered) + ")" + "".join(f";{k}={v}"
+                                                   for k, v in params.items())
+    headers = dict(msg["headers"])
+    headers["Signature-Input"] = f"{label}={inner}"
+    if sig is None:
+        try:
+            lines = hs.signatureBase(covered, {}, method=msg["method"],
+                                     authority=msg["authority"],
+                                     path=msg["path"], query=msg["query"],
+                                     headers=headers).split("\n")[:-1]
+        except hs.HttpSigError:  # refused before the base is built
+            raw = b"x" * 64
+        else:
+            base = "\n".join(lines + [f'"@signature-params": {inner}'])
+            raw = signer.sign(base.encode()).raw
+        sig = f"{sigLabel or label}=:{base64.b64encode(raw).decode()}:"
+    headers["Signature"] = sig
+    return {**msg, "headers": headers}
+
+
+COVERED = ['"@method"', '"@path"', '"@query"', '"content-digest"']
+
+
+def params(**kwa):
+    out = dict(created=NOW, keyid=f'"{ntSigner().verfer.qb64}"')
+    out.update(kwa)
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def refused(msg, code, **kwa):
+    with pytest.raises(hs.HttpSigError) as ex:
+        verify(msg, **kwa)
+    assert ex.value.code == code, str(ex.value)
+    assert isinstance(ex.value, hs.errorForCode(code))
+
+
+def without(msg, *names):
+    headers = {k: v for k, v in msg["headers"].items() if k not in names}
+    return {**msg, "headers": headers}
+
+
+def test_craft_accepts():
+    verify(craft(COVERED, params()))
+    verify(craft(COVERED, params(alg='"ed25519"')))
+
+
+def test_refusals_headers():
+    good = craft(COVERED, params())
+    refused(without(good, "Signature"), "missing-signature")
+    refused(without(good, "Signature", "Signature-Input"), "missing-signature")
+    refused(without(good, "Signature-Input"), "missing-signature-input")
+    for sig in ("!!", "signify=", "signify=:AAAA:, x=1", "indexed"):
+        refused(craft(COVERED, params(), sig=sig), "malformed-signature")
+
+    # Signature-Input that does not parse, or parses to the wrong shape
+    for value in ("signify=(", 'signify="x"', "signify", "(\"@method\")",
+                  'signify=("@method" x)'):
+        msg = {**good, "headers": {**good["headers"],
+                                   "Signature-Input": value}}
+        refused(msg, "malformed-signature-input")
+    # uppercase field name, unknown or ill-typed parameters
+    for covered, prms in (
+            (COVERED + ['"Content-Type"'], params()),
+            (COVERED, params(context='"x"')),
+            (COVERED, params(created=None)),
+            (COVERED, params(created='"1618884473"')),
+            (COVERED, params(created="?1")),
+            (COVERED, params(created="1618884473.5")),
+            (COVERED, params(keyid=None)),
+            (COVERED, params(keyid="abc")),  # token, not String
+            (COVERED, params(expires='"x"')),
+            (COVERED, params(nonce="1")),
+            (COVERED, params(alg="ed25519")),
+            (COVERED, params(tag="?0"))):
+        refused(craft(covered, prms), "malformed-signature-input")
+
+    # labels
+    two = craft(COVERED, params())
+    two["headers"]["Signature-Input"] += ", other=" + \
+        two["headers"]["Signature-Input"].split("=", 1)[1]
+    refused(two, "malformed-signature-label")
+    two = craft(COVERED, params())
+    two["headers"]["Signature"] += ", other=:" + "A" * 86 + "==:"
+    refused(two, "malformed-signature-label")
+    refused(craft(COVERED, params(), sigLabel="other"),
+            "missing-signature-label")
+    short = f"signify=:{base64.b64encode(b'x' * 32).decode()}:"
+    refused(craft(COVERED, params(), sig=short), "malformed-signature-value")
+
+
+def test_refusals_precedence():
+    """Each message has exactly one correct code: the first group that
+    fails (profile section 9)."""
+    nt = ntSigner()
+    bad = f"signify=:{base64.b64encode(b'x' * 64).decode()}:"
+
+    # header group before everything else
+    refused(craft(['"@method"', '"@method"'], params(created=None)),
+            "malformed-signature-input")
+    refused(craft(['"@method"', '"@method"'], params(), sig="signify=:AA==:"),
+            "malformed-signature-value")
+    # covered list: duplicate, then unsupported, then insufficient
+    refused(craft(['"@target-uri"', '"@method"', '"@method"'], params()),
+            "duplicate-component")
+    refused(craft(['"@target-uri"', '"@method"'], params()),
+            "unsupported-component")
+    refused(craft(['"@method";req'] + COVERED, params()),
+            "unsupported-component")
+    refused(craft(['"@method"', '"@path"', '"content-digest"'],
+                  params(keyid='"bad"')), "insufficient-coverage")
+    refused(craft(['"@method"', '"@path"', '"@query"'], params()),
+            "insufficient-coverage")  # body without content-digest
+    chunked = request(headers={"Transfer-Encoding": "chunked"})
+    refused(craft(['"@method"', '"@path"', '"@query"'], params(), msg=chunked),
+            "insufficient-coverage")
+    # key group
+    refused(craft(COVERED + ['"x-missing"'], params(keyid='"bad"')),
+            "malformed-key")
+    refused(craft(COVERED, params(keyid='"EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"')),
+            "unknown-key")
+    refused(craft(COVERED + ['"x-missing"'], params(alg='"rsa-pss-sha512"')),
+            "unsupported-algorithm")
+    k1 = Signer(code=MtrDex.ECDSA_256k1_Seed, transferable=False)
+    refused(craft(COVERED, params(keyid=f'"{k1.verfer.qb64}"'), signer=k1),
+            "unsupported-algorithm")
+    # base and signature: missing component before mismatch
+    refused(craft(COVERED + ['"x-missing"'], params(), sig=bad),
+            "missing-component")
+    refused(craft(COVERED, params(), sig=bad), "signature-mismatch")
+    # policy after signature, so an unauthenticated message never learns
+    # the clock policy
+    refused(craft(COVERED, params(created=NOW - 10000), sig=bad),
+            "signature-mismatch")
+    refused(craft(COVERED, params(created=NOW - 10000)), "signature-stale")
+    refused(craft(COVERED, params(created=NOW - 10000, expires=NOW - 10000)),
+            "signature-stale")
+    refused(craft(COVERED, params(expires=NOW - 10000)), "signature-expired")
+    # body last
+    msg = craft(COVERED, params())
+    refused({**msg, "body": b"other"}, "digest-mismatch")
+    msg = craft(COVERED, params(),
+                msg=request(headers={"Content-Length": "7",
+                                     "Content-Digest": "garbage"}))
+    refused(msg, "malformed-digest")
+    msg = craft(COVERED, params(created=NOW - 10000),
+                msg=request(headers={"Content-Length": "7",
+                                     "Content-Digest": "garbage"}))
+    refused(msg, "signature-stale")
+    assert nt
+
+
+def test_detect_mode():
+    assert hs.detectMode("sig=:AAAA:") == "canonical"
+    assert hs.detectMode(f"signify=:{'A' * 86}==:") == "canonical"
+    # KERIA's pinned legacy request signature
+    assert hs.detectMode(
+        'indexed="?0";signify="0BDBVr5ape8f9nV60ThhWOKvu5HKXQc5798Sz95FIoqXQ9v'
+        'vL8HoYsLRp5aN86MIXr0GqH37SowsmTP-k9UhYSkN"') == "legacy"
+    for value in ("", "garbage", "sig=:AAAA:, x=1", "indexed=\"?0\";x=\"1\""):
+        with pytest.raises(hs.MalformedSignature):
+            hs.detectMode(value)
+
+
+def test_signature_keyid():
+    msg = signed()
+    assert hs.signatureKeyid(msg["headers"]) == ntSigner().verfer.qb64
+    assert hs.signatureKeyid({}) is None
+    assert hs.signatureKeyid({"Signature-Input": "(("}) is None
+    assert hs.signatureKeyid({"Signature-Input": 'a=();keyid="x"',
+                              "Signature": "!!"}) is None
+    legacy = {"Signify-Resource": "EAID",
+              "Signature": 'indexed="?0";signify="0BDBVr5ape8f9nV60ThhWOKvu5H'
+                           'KXQc5798Sz95FIoqXQ9vvL8HoYsLRp5aN86MIXr0GqH37Sow'
+                           'smTP-k9UhYSkN"',
+              "Signature-Input": 'signify=("@method");created=1;keyid="x"'}
+    assert hs.signatureKeyid(legacy) == "EAID"
+
+
+# Responses
+
+def served():
+    """A verified canonical request as the server holds it, and the
+    Requestage the client kept."""
+    msg = signed()
+    kept = hs.Requestage(method=msg["method"], authority=msg["authority"],
+                         path=msg["path"], query=msg["query"],
+                         headers=msg["headers"], body=msg["body"])
+    return msg, kept
+
+
+def response(kept, *, signer=None, sign=None, status=200,
+             headers=None, body=b'{"ok":true}'):
+    headers = dict(headers if headers is not None
+                   else {"Content-Type": "application/json"})
+    signer = signer or ntSigner(b"\x02" * 32)
+    added = hs.signResponse(status=status, request=kept, headers=headers,
+                            body=body, signer=signer,
+                            **dict(dict(created=NOW, nonce="r1"), **(sign or {})))
+    headers.update(added)
+    return dict(status=status, headers=headers, body=body)
+
+
+def verifyResp(rep, kept, **kwa):
+    kwa.setdefault("resolver", hs.keverResolver({}))
+    kwa.setdefault("keyid", ntSigner(b"\x02" * 32).verfer.qb64)
+    kwa.setdefault("now", NOW)
+    return hs.verifyResponse(**rep, request=kept, **kwa)
+
+
+def test_sign_verify_response():
+    msg, kept = served()
+    rep = response(kept)
+    agent = ntSigner(b"\x02" * 32).verfer.qb64
+    assert rep["headers"]["Signature-Input"] == (
+        'signify=("@status" "content-digest" "@method";req "@path";req '
+        '"@query";req "content-digest";req)'
+        f';created={NOW};nonce="r1";alg="ed25519";keyid="{agent}"')
+    verified = verifyResp(rep, kept)
+    assert verified.mode == "canonical"
+    assert verified.keyid == agent
+
+    # response without body; request without body
+    msg, kept = served()
+    kept = kept._replace(body=b"", headers={}, method="GET")
+    rep = response(kept, body=b"", status=204, headers={})
+    assert rep["headers"]["Signature-Input"].startswith(
+        'signify=("@status" "@method";req "@path";req "@query";req);')
+    verifyResp(rep, kept)
+
+    msg, kept = served()
+    rep = response(kept)
+    with pytest.raises(hs.SignatureMismatch):
+        verifyResp({**rep, "status": 500}, kept)
+    with pytest.raises(hs.DigestMismatch):
+        verifyResp({**rep, "body": b'{"ok":false}'}, kept)
+    # answered a different request than the one this client sent
+    with pytest.raises(hs.SignatureMismatch):
+        verifyResp(rep, kept._replace(query="type=ixn"))
+    # signed by someone other than the agent this client talks to
+    with pytest.raises(hs.UnknownKey):
+        verifyResp(rep, kept, keyid=ntSigner().verfer.qb64)
+    # freshness applies to responses too
+    with pytest.raises(hs.SignatureStale):
+        verifyResp(rep, kept, now=NOW + 1000)
+
+
+def test_verify_response_refusals():
+    msg, kept = served()
+    # response coverage minimum
+    rep = response(kept, sign=dict(covered=[
+        "@status", "content-digest", '"@method";req', '"@path";req',
+        '"content-digest";req']))
+    with pytest.raises(hs.InsufficientCoverage):
+        verifyResp(rep, kept)
+    rep = response(kept, sign=dict(covered=[
+        "@status", "content-digest", '"@method";req', '"@path";req',
+        '"@query";req']))
+    with pytest.raises(hs.InsufficientCoverage):
+        verifyResp(rep, kept)
+
+    # unsigned: 401 is an authentication failure, anything else refused
+    with pytest.raises(hs.Unauthenticated) as ex:
+        verifyResp(dict(status=401, headers={}, body=b"{}"), kept)
+    assert ex.value.code == "unauthenticated"
+    with pytest.raises(hs.MissingSignature):
+        verifyResp(dict(status=200, headers={}, body=b"{}"), kept)
+    with pytest.raises(hs.MissingSignature):
+        verifyResp(dict(status=500, headers={"Signature-Input": "x"},
+                        body=b"{}"), kept)
+
+    # a legacy response to a canonical request
+    legacy = {"Signature-Input": 'signify=("@method");created=1;keyid="x"',
+              "Signature": 'indexed="?0";signify="0BDBVr5ape8f9nV60ThhWOKvu5H'
+                           'KXQc5798Sz95FIoqXQ9vvL8HoYsLRp5aN86MIXr0GqH37Sow'
+                           'smTP-k9UhYSkN"'}
+    with pytest.raises(hs.ModeMismatch) as ex:
+        verifyResp(dict(status=200, headers=legacy, body=b"{}"), kept)
+    assert ex.value.code == "mode-mismatch"
