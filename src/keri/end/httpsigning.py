@@ -492,6 +492,10 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
 
 # Sign
 
+# Minimum covered components of a request (profile section 3), besides
+# content-digest when there is a body. No policy may go below it.
+RequestMinimum = ("@method", "@path", "@query")
+
 # Default covered components of a signed request (profile section 3), plus
 # content-digest when there is a body.
 RequestCovered = ("@method", "@authority", "@path", "@query")
@@ -700,15 +704,17 @@ class Policy:
 
     Attributes:
         request (tuple): minimum covered components of a request, besides
-            content-digest when there is a body
+            content-digest when there is a body. Must include RequestMinimum.
         requireAuthority (bool): also require @authority, compared with
             authorities
         authorities (frozenset): authorities this verifier serves, lowercase
             and without default port; required when requireAuthority
-        maxAge (int): seconds a signature stays fresh after created
-        skew (int): tolerated clock skew in seconds
+        maxAge (int): seconds a signature stays fresh after created; positive
+        skew (int): tolerated clock skew in seconds; positive
+
+    Raises ValueError for a policy below the profile's floor.
     """
-    request: tuple = ("@method", "@path", "@query")
+    request: tuple = RequestMinimum
     requireAuthority: bool = False
     authorities: frozenset = frozenset()
     maxAge: int = 300
@@ -720,6 +726,15 @@ class Policy:
                              "not a single str.")
         object.__setattr__(self, "authorities",
                            frozenset(a.lower() for a in self.authorities))
+        given = {_componentKey(_component(c)) for c in self.request}
+        for component in RequestMinimum:
+            if _componentKey(_component(component)) not in given:
+                raise ValueError(f"Policy request set must include "
+                                 f"{component} (profile section 3).")
+        for name in ("maxAge", "skew"):
+            value = getattr(self, name)
+            if type(value) is not int or value <= 0:
+                raise ValueError(f"Policy {name} must be a positive int.")
         if self.requireAuthority and not self.authorities:
             raise ValueError("requireAuthority needs the configured authorities "
                              "this verifier serves.")

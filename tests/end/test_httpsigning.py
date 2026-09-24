@@ -653,6 +653,18 @@ def test_policy_authorities_normalized():
             requireAuthority=True, authorities=frozenset(["keria.example"])))
 
 
+def test_policy_floor():
+    """A policy cannot be configured below the profile's minimum set, and
+    its clock window must be positive (profile section 3)."""
+    for kwa in (dict(request=()), dict(request=("@method", "@path")),
+                dict(request=("@method", "@query", "content-type")),
+                dict(maxAge=0), dict(maxAge=-1), dict(skew=0), dict(skew=-5)):
+        with pytest.raises(ValueError):
+            hs.Policy(**kwa)
+    # more than the minimum, in any order and case, is fine
+    hs.Policy(request=("@query", "Content-Type", "@path", "@method"))
+
+
 @pytest.mark.parametrize("created,expires,code", [
     (NOW - 360, None, None),
     (NOW - 361, None, "signature-stale"),
@@ -1134,9 +1146,11 @@ def test_verify_request_legacy_mode():
         canon = dict(legacy)
         canon["Signature"] = f"signify=:{base64.b64encode(raw).decode()}:"
         del canon["Content-Length"]
+        canon["Signature-Input"] = canon["Signature-Input"].replace(
+            '"signify-timestamp")', '"signify-timestamp" "@query")')
         with pytest.raises(hs.SignatureMismatch):
             hs.verifyRequest(**{**msg, "headers": canon}, resolver=resolver,
-                             now=1609459200, policy=hs.Policy(request=()))
+                             now=1609459200)
 
 
 def test_verify_response_legacy():
