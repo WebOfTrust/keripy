@@ -639,6 +639,20 @@ def test_verify_request_policy():
            policy=policy)
 
 
+def test_policy_authorities_normalized():
+    # a str would make membership a substring test
+    for bad in ("keria.example", b"keria.example"):
+        with pytest.raises(ValueError):
+            hs.Policy(requireAuthority=True, authorities=bad)
+    policy = hs.Policy(requireAuthority=True,
+                       authorities=["Keria.Example", "other.example"])
+    assert policy.authorities == frozenset(["keria.example", "other.example"])
+    verify(signed(), policy=policy)
+    with pytest.raises(hs.SignatureMismatch):
+        verify(signed(authority="example"), policy=hs.Policy(
+            requireAuthority=True, authorities=frozenset(["keria.example"])))
+
+
 @pytest.mark.parametrize("created,expires,code", [
     (NOW - 360, None, None),
     (NOW - 361, None, "signature-stale"),

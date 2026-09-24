@@ -715,6 +715,11 @@ class Policy:
     skew: int = 60
 
     def __post_init__(self):
+        if isinstance(self.authorities, (str, bytes)):
+            raise ValueError("authorities must be a collection of authorities, "
+                             "not a single str.")
+        object.__setattr__(self, "authorities",
+                           frozenset(a.lower() for a in self.authorities))
         if self.requireAuthority and not self.authorities:
             raise ValueError("requireAuthority needs the configured authorities "
                              "this verifier serves.")
