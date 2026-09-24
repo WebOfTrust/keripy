@@ -1145,19 +1145,69 @@ def test_response_status_forms():
         verifyResp(dict(status="garbage", headers={}, body=b""), kept)
 
 
+def underSigned(kept, covered, body=b'{"ok":true}', status=200):
+    """A response signed over covered by hand, since signResponse refuses to
+    sign below the minimum set."""
+    headers = {"Content-Digest": hs.contentDigest(body)}
+    params = hs.signatureParams(created=NOW, alg="ed25519",
+                                keyid=ntSigner(b"\x02" * 32).verfer.qb64)
+    base = hs.signatureBase(covered, params, status=status, headers=headers,
+                            request=kept)
+    raw = ntSigner(b"\x02" * 32).sign(base.encode()).raw
+    headers["Signature-Input"] = "signify=" + base.rsplit(
+        '"@signature-params": ', 1)[1]
+    headers["Signature"] = f"signify=:{base64.b64encode(raw).decode()}:"
+    return dict(status=status, headers=headers, body=body)
+
+
+def test_sign_below_minimum_refused():
+    """Signers refuse a covered list below the minimum set and unsupported
+    component parameters (profile sections 2 and 3, draft 6)."""
+    signer = ntSigner()
+    get = request(method="GET", body=None, headers={})
+    for covered in (["@method", "@path"], ["@path", "@query"],
+                    ["@method", "@authority", "@query"]):
+        with pytest.raises(hs.InsufficientCoverage):
+            hs.signRequest(signer=signer, covered=covered, **get)
+    for covered in (['"@method"', '"@path";key="x"', '"@query"'],
+                    ["@method", "@path", "@query", '"x-foo";sf'],
+                    ["@method", "@path", "@query", '"x-foo";bs']):
+        with pytest.raises(hs.UnsupportedComponent):
+            hs.signRequest(signer=signer, covered=covered,
+                           **{**get, "headers": {"X-Foo": "1"}})
+
+    msg, kept = served()
+    for covered in (
+            ["@status", "content-digest", '"@method";req', '"@path";req',
+             '"content-digest";req'],  # no "@query";req
+            ["@status", "content-digest", '"@method";req', '"@path";req',
+             '"@query";req'],  # the request had a body
+            ["content-digest", '"@method";req', '"@path";req', '"@query";req',
+             '"content-digest";req']):  # no @status
+        with pytest.raises(hs.InsufficientCoverage):
+            response(kept, sign=dict(covered=covered))
+    with pytest.raises(hs.UncoveredBody):
+        response(kept, sign=dict(covered=[
+            "@status", '"@method";req', '"@path";req', '"@query";req',
+            '"content-digest";req']))
+
+
 def test_verify_response_refusals():
     msg, kept = served()
     # response coverage minimum
-    rep = response(kept, sign=dict(covered=[
+    rep = underSigned(kept, [
         "@status", "content-digest", '"@method";req', '"@path";req',
-        '"content-digest";req']))
+        '"content-digest";req'])
     with pytest.raises(hs.InsufficientCoverage):
         verifyResp(rep, kept)
-    rep = response(kept, sign=dict(covered=[
+    rep = underSigned(kept, [
         "@status", "content-digest", '"@method";req', '"@path";req',
-        '"@query";req']))
+        '"@query";req'])
     with pytest.raises(hs.InsufficientCoverage):
         verifyResp(rep, kept)
+    # the hand-signed full set verifies, so the refusals above are coverage
+    verifyResp(underSigned(kept, hs.responseCovered(kept, b'{"ok":true}')),
+               kept)
 
     # unsigned: 401 is an authentication failure, anything else refused
     with pytest.raises(hs.Unauthenticated) as ex:

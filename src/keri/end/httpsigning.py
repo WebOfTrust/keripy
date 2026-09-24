@@ -664,6 +664,8 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
         alg (str): 'ed25519', or None to omit the parameter
 
     Raises:
+        InsufficientCoverage: covered falls short of RequestMinimum
+        UnsupportedComponent: a component or parameter the profile lacks
         UncoveredBody: non-empty body without covered content-digest
         UnsupportedSigner: hab without a single effective signer (R4)
         UnsupportedAlgorithm: key is not Ed25519
@@ -673,15 +675,8 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
     if covered is None:
         covered = RequestCovered + (("content-digest",) if raw else ())
     items = _components(covered, response=False)
-
-    added = {}
-    fields = [(n, v) for n, v in _fieldLines(headers).items()]
-    if "content-digest" in _plainNames(items):
-        added["Content-Digest"] = contentDigest(raw)
-        fields = [(n, v) for n, v in fields if n != "content-digest"]
-        fields.append(("content-digest", added["Content-Digest"]))
-    elif raw:
-        raise UncoveredBody("A request with a body must cover content-digest.")
+    _checkCoverage(items, RequestMinimum)
+    added, fields = _digestFields(items, headers, raw, "request")
 
     added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
                        created=created, expires=expires, nonce=nonce, tag=tag,
@@ -691,6 +686,37 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
     return added
 
 
+def _digestFields(items, headers, raw, kind):
+    """
+    Returns (added, fields): the Content-Digest header to add when items cover
+    content-digest, and the header fields to build the base from, carrying
+    that value. A non-empty body without covered content-digest is
+    UncoveredBody.
+    """
+    added = {}
+    fields = list(_fieldLines(headers).items())
+    if "content-digest" in _plainNames(items):
+        added["Content-Digest"] = contentDigest(raw)
+        fields = [(n, v) for n, v in fields if n != "content-digest"]
+        fields.append(("content-digest", added["Content-Digest"]))
+    elif raw:
+        raise UncoveredBody(f"A {kind} with a body must cover content-digest.")
+    return added, fields
+
+
+def responseMinimum(requestHadBody):
+    """
+    Returns the minimum covered components of a response (profile section 3),
+    besides its own content-digest when it has a body: @status and the
+    request's @method, @path, @query and, when it had a body,
+    content-digest, each marked req.
+    """
+    minimum = ["@status", '"@method";req', '"@path";req', '"@query";req']
+    if requestHadBody:
+        minimum.append('"content-digest";req')
+    return minimum
+
+
 def responseCovered(request, body):
     """
     Returns default covered components of a response to request (profile
@@ -698,13 +724,10 @@ def responseCovered(request, body):
     request's @method, @path, @query and, when it had a body, content-digest,
     each marked req.
     """
-    covered = ["@status"]
+    minimum = responseMinimum(bool(_bytify(request.body)))
     if _bytify(body):
-        covered.append("content-digest")
-    covered.extend(['"@method";req', '"@path";req', '"@query";req'])
-    if _bytify(request.body):
-        covered.append('"content-digest";req')
-    return covered
+        minimum.insert(1, "content-digest")
+    return minimum
 
 
 def signResponse(*, status, request, headers=None, body=None, signer=None,
@@ -720,25 +743,19 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
         request (Requestage): the request being answered, as received
         headers, body, signer, hab, keyid, label, created, expires, nonce, tag,
         alg: as for signRequest
-        covered (list): default responseCovered(request, body)
+        covered (list): default responseCovered(request, body); must include
+            responseMinimum(request had a body)
 
     Raises:
-        as signRequest
+        as signRequest, with the response minimum set
     """
     _statusCode(status)  # a caller's bad status is a ValueError, up front
     raw = _bytify(body)
     if covered is None:
         covered = responseCovered(request, raw)
     items = _components(covered, response=True)
-
-    added = {}
-    fields = [(n, v) for n, v in _fieldLines(headers).items()]
-    if "content-digest" in _plainNames(items):
-        added["Content-Digest"] = contentDigest(raw)
-        fields = [(n, v) for n, v in fields if n != "content-digest"]
-        fields.append(("content-digest", added["Content-Digest"]))
-    elif raw:
-        raise UncoveredBody("A response with a body must cover content-digest.")
+    _checkCoverage(items, responseMinimum(bool(_bytify(request.body))))
+    added, fields = _digestFields(items, headers, raw, "response")
 
     added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
                        created=created, expires=expires, nonce=nonce, tag=tag,
@@ -1231,13 +1248,10 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         return verifyLegacy(method=request.method, path=request.path,
                             headers=fields, verfer=verfer)
 
-    required = ["@status"]
+    required = responseMinimum(bool(_bytify(request.body)))
     if (body is Deferred and _hasBody(fields)) or (
             body is not Deferred and _bytify(body)):
         required.append("content-digest")
-    required.extend(['"@method";req', '"@path";req', '"@query";req'])
-    if _bytify(request.body):
-        required.append('"content-digest";req')
 
     verified = _verifyCanonical(
         fields=fields, required=required, resolver=resolver, policy=policy,
