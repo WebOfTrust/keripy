@@ -289,19 +289,28 @@ def _fieldLines(headers):
 
     headers may be a mapping (including multidicts whose .items() yields
     repeated names) or an iterable of (name, value) pairs. A list or tuple
-    value is several field lines.
+    value is several field lines. bytes names and values are decoded as
+    latin-1.
     """
     fields = {}
     if headers is None:
         return fields
     items = headers.items() if isinstance(headers, Mapping) else headers
     for name, value in items:
-        lines = fields.setdefault(name.lower(), [])
+        lines = fields.setdefault(_latin1(name).lower(), [])
         if isinstance(value, (list, tuple)):
-            lines.extend(value)
+            lines.extend(_latin1(v) for v in value)
         else:
-            lines.append(value)
+            lines.append(_latin1(value))
     return fields
+
+
+def _latin1(value):
+    """Header names and values given as bytes are decoded as latin-1, as WSGI
+    does, so every byte survives and a non-ASCII one refuses the base."""
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("latin-1")
+    return str(value)
 
 
 def _fieldValue(fields, name):
@@ -315,7 +324,7 @@ def _fieldValue(fields, name):
         return None
     # RFC 9421 section 2.1 strips SP and HTAB only; str.strip() would also
     # remove characters such as \x85 and \xa0 that an intermediary can add.
-    return ", ".join(_OBSFOLD.sub(" ", str(line)).strip(" \t") for line in lines)
+    return ", ".join(_OBSFOLD.sub(" ", line).strip(" \t") for line in lines)
 
 
 def _component(component):

@@ -299,6 +299,25 @@ def test_signature_base_whitespace_and_unbuildable():
         verify(msg)
 
 
+def test_bytes_headers():
+    """Header names and values may be bytes, decoded as latin-1."""
+    assert hs.signatureBase(["x-foo"], {}, headers={b"X-Foo": b"v"}) \
+        .split("\n")[0] == '"x-foo": v'
+    assert hs.signatureBase(["x-foo"], {}, headers=[(b"X-Foo", [b"a", "b"])]) \
+        .split("\n")[0] == '"x-foo": a, b'
+
+    msg = signed()
+    raw = {k.encode(): v.encode() for k, v in msg["headers"].items()}
+    assert verify({**msg, "headers": raw}).mode == "canonical"
+    assert hs.signatureKeyid(raw) == ntSigner().verfer.qb64
+
+    with keriaController() as (hby, controller):
+        raw = {k.encode(): v.encode() for k, v in keriaHeaders().items()}
+        verified = hs.verifyLegacy(method="POST", path="/boot", headers=raw,
+                                   verfer=controller.kever.verfers[0])
+        assert verified.keyid == KERIA_CONTROLLER
+
+
 def test_signature_base_derived():
     """@method case, @path, @query, @authority, @status."""
     def line(component, **kwa):
