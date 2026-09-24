@@ -1278,6 +1278,27 @@ def underSigned(kept, covered, body=b'{"ok":true}', status=200, digest=None):
     return dict(status=status, headers=headers, body=body)
 
 
+def test_response_request_body_required():
+    """verifyResponse and signResponse need the request as sent: a
+    request.body of None or Deferred is a ValueError up front, whatever the
+    response covers (panel r2 SEC-F2)."""
+    msg, kept = served()
+    rep = response(kept)
+    bare = kept._replace(body=b"", headers={}, method="GET")
+    bareRep = response(bare, body=b"", status=204, headers={})
+    verifyResp(bareRep, bare)
+    for missing in (None, hs.Deferred):
+        with pytest.raises(ValueError):
+            verifyResp(bareRep, bare._replace(body=missing))
+        with pytest.raises(ValueError):
+            verifyResp(rep, kept._replace(body=missing))
+        with pytest.raises(ValueError):
+            response(bare._replace(body=missing), body=b"", status=204,
+                     headers={})
+        with pytest.raises(ValueError):
+            response(kept._replace(body=missing))
+
+
 def test_response_rechecks_request_digest():
     """A response covering "content-digest";req has the request's
     Content-Digest recomputed over the request body the client kept (fiki#4

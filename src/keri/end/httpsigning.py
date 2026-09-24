@@ -763,7 +763,9 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
 
     Parameters:
         status (int | str): response status code, or a line such as '200 OK'
-        request (Requestage): the request being answered, as received
+        request (Requestage): the request being answered, as received, with
+            body the bytes received (b'' for none); None or Deferred is a
+            ValueError
         headers, body, signer, hab, keyid, label, created, expires, nonce, tag,
         alg: as for signRequest
         covered (list): default responseCovered(request, body); must include
@@ -772,9 +774,10 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
     Raises:
         as signRequest, with the response minimum set; MalformedDigest or
         DigestMismatch when "content-digest";req is covered and the request's
-        Content-Digest does not match request.body (None is a ValueError)
+        Content-Digest does not match request.body
     """
     _statusCode(status)  # a caller's bad status is a ValueError, up front
+    _checkRequestBody(request)
     raw = _bytify(body)
     if covered is None:
         covered = responseCovered(request, raw)
@@ -782,10 +785,6 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
     _checkCoverage(items, responseMinimum(bool(_bytify(request.body))))
     if _RequestDigest in {_serialize(item) for item in items}:
         # never bind a request digest that the request body contradicts
-        if request.body is None:
-            raise ValueError("Covering the request's content-digest needs "
-                             "request.body, the content received (b'' for "
-                             "none), not None.")
         value = _fieldValue(_fieldLines(request.headers), "content-digest")
         if value is None:
             raise MissingComponent("The request has no Content-Digest.")
@@ -837,6 +836,13 @@ class _DeferredType:
 # the body is read. The result then has bodyOwed True, and the caller MUST
 # call checkBody with the body before the message reaches application code.
 Deferred = _DeferredType()
+
+
+def _checkRequestBody(request):
+    """The Requestage a response answers must carry the request as sent."""
+    if request.body is None or request.body is Deferred:
+        raise ValueError("request.body must be the request content as sent, "
+                         "bytes (b'' for none), not None or Deferred.")
 
 
 def _checkBodyArg(body):
@@ -1276,7 +1282,8 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         body (bytes | Deferred): response content as received, b'' for none,
             or Deferred to check the headers first; then the result has
             bodyOwed True and checkBody must follow, as for verifyRequest.
-        request (Requestage): the request as sent
+        request (Requestage): the request as sent, with body the bytes sent
+            (b'' for none); None or Deferred is a ValueError
         resolver (callable | None): keyid -> Verfer for canonical mode, with
             a .legacy(aid) lookup for legacy mode (without one, legacy mode
             calls the resolver itself); see KeverResolver. None
@@ -1290,14 +1297,14 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         now (int): seconds since the epoch; None is now
 
     When the response covers "content-digest";req, the request's
-    Content-Digest is recomputed over request.body, which must then be the
-    content sent (b'' for none); None is a ValueError.
+    Content-Digest is recomputed over request.body.
 
     Raises:
         Unauthenticated: unsigned 401 to a canonical request
         HttpSigError subclass for the first check that fails (section 9)
     """
     _checkBodyArg(body)
+    _checkRequestBody(request)
     if requestMode not in (Canonical, Legacy):
         raise ValueError(f"Unknown requestMode {requestMode!r}.")
     policy = policy if policy is not None else DefaultPolicy
@@ -1343,10 +1350,6 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
     # the request's over the body the client kept; the response's own is
     # compared now, or by checkBody when the body is Deferred.
     reqDigest = _RequestDigest in verified.covered
-    if reqDigest and request.body is None:
-        raise ValueError("The response covers the request's content-digest, "
-                         "so request.body must be the content sent (b'' for "
-                         "none), not None.")
     if '"content-digest"' in verified.covered:
         _parseDigest(_fieldValue(fields, "content-digest"))
     if reqDigest:
