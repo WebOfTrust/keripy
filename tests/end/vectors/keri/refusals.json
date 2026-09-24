@@ -1,0 +1,859 @@
+{
+  "about": "Messages a canonical verifier must REFUSE, and the section 9 code.",
+  "keri_vectors_format": 1,
+  "generated_by": "vectors/keri/generate.py",
+  "profile": {
+    "title": "KERI profile of RFC 9421 HTTP Message Signatures",
+    "draft": 4,
+    "date": "2026-09-24",
+    "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails; every refusal case has exactly one defect, so it has exactly one correct code."
+  },
+  "encoding": {
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier.",
+    "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
+    "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
+    "public_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
+    "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
+  },
+  "policy": {
+    "max_age": 300,
+    "skew": 60,
+    "request_minimum": [
+      "\"@method\"",
+      "\"@path\"",
+      "\"@query\""
+    ],
+    "response_minimum": [
+      "\"@status\"",
+      "\"@method\";req",
+      "\"@path\";req",
+      "\"@query\";req"
+    ],
+    "body_rule": "Profile section 3. A message has a body when it carries Content-Length above zero or any Transfer-Encoding, or when a non-empty body arrives whatever the headers said; a body obliges a covered content-digest. A response to a request that had a body must also cover \"content-digest\";req.",
+    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch."
+  },
+  "keys": [
+    {
+      "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
+      "kind": "non-transferable",
+      "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+      "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "note": "Ed25519N. The verifier derives the key from the prefix itself and holds no KEL."
+    },
+    {
+      "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+      "kind": "transferable",
+      "public_key": "Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "note": "A controller's current signing key, as the KEL the verifier holds says. The AID is synthetic: a well-formed E code, not the digest of a real inception event."
+    },
+    {
+      "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+      "kind": "transferable",
+      "public_key": "SB7edy2hV4XJ5ZoIYgG4w_nDBxKeP8bX80qk3-1YFOU",
+      "seed_hex": "030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122",
+      "note": "An agent's current signing key; it signs the responses. Synthetic like the controller's."
+    },
+    {
+      "keyid": "DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI",
+      "kind": "transferable",
+      "public_key": "yZ4rN96TAC32gyanhUk81KpIfRpF-iEXqhBQSJI794E",
+      "seed_hex": "05060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324",
+      "embedded_key": "UZmMz9__2D2XJEkIGMoiqXoDDRi7Kp10Zo9yuBw_pYg",
+      "embedded_seed_hex": "0405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223",
+      "note": "A basic transferable prefix after one rotation. Decoding the prefix yields embedded_key, the INCEPTION key; the current key is public_key and comes only from the KEL (profile R1). A verifier that decodes a D keyid as a key accepts a rotated-away key."
+    }
+  ],
+  "codes": [
+    "missing-signature",
+    "missing-signature-input",
+    "malformed-signature",
+    "malformed-signature-input",
+    "malformed-signature-label",
+    "missing-signature-label",
+    "malformed-signature-value",
+    "mode-mismatch",
+    "duplicate-component",
+    "unsupported-component",
+    "insufficient-coverage",
+    "malformed-key",
+    "unknown-key",
+    "unsupported-signer",
+    "unsupported-algorithm",
+    "missing-component",
+    "signature-mismatch",
+    "signature-stale",
+    "signature-expired",
+    "malformed-digest",
+    "digest-mismatch",
+    "uncovered-body"
+  ],
+  "cases": [
+    {
+      "id": "no-signature",
+      "kind": "request",
+      "note": "The Signature header is absent.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "missing-signature"
+    },
+    {
+      "id": "no-signature-input",
+      "kind": "request",
+      "note": "The Signature-Input header is absent.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "missing-signature-input"
+    },
+    {
+      "id": "unparsable-signature",
+      "kind": "request",
+      "note": "Neither an RFC 8941 dictionary nor the legacy form.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "((((",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature"
+    },
+    {
+      "id": "unparsable-signature-input",
+      "kind": "request",
+      "note": "Signature-Input does not parse.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "((((",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "uppercase-field-name",
+      "kind": "request",
+      "note": "A field name parsed from the wire must already be lowercase.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"Content-Digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "unknown-signature-parameter",
+      "kind": "request",
+      "note": "Only created, expires, nonce, alg, keyid and tag are canonical; context, which the legacy code parses, is not.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\";context=\"x\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "absent-keyid",
+      "kind": "request",
+      "note": "keyid is REQUIRED in the profile.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "two-labels",
+      "kind": "request",
+      "note": "Canonical mode carries exactly one signature.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "other=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\", signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-label"
+    },
+    {
+      "id": "labels-differ",
+      "kind": "request",
+      "note": "Signature and Signature-Input name different labels.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "other=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "missing-signature-label"
+    },
+    {
+      "id": "signature-not-64-bytes",
+      "kind": "request",
+      "note": "A 32-byte byte sequence where the 64-byte Ed25519 signature belongs.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-value"
+    },
+    {
+      "id": "duplicate-component",
+      "kind": "request",
+      "note": "The same component twice.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "duplicate-component"
+    },
+    {
+      "id": "unsupported-component-parameter",
+      "kind": "request",
+      "note": "sf is not supported; refused, not ignored.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\";sf);created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-component"
+    },
+    {
+      "id": "unsupported-derived-component",
+      "kind": "request",
+      "note": "@target-uri is not in the profile's list.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@target-uri\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-component"
+    },
+    {
+      "id": "req-in-a-request",
+      "kind": "request",
+      "note": "req is valid only in a response.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\";req \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-component"
+    },
+    {
+      "id": "query-not-covered",
+      "kind": "request",
+      "note": "Validly signed over too little: @query is in the minimum set.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@path\" \"content-digest\");created=1700000000;nonce=\"gKNc5qAgvJWAy0vHxVGh7w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:wyQPk+tFphIxaYXbyPJnYT4TxezVECRn8wMFW+EDIdJqowcp8utpG/NwxalnynVnJlSXQDcaf8TRYBVs42MeCQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "content-length-body-without-digest",
+      "kind": "request",
+      "note": "Content-Length above zero means a body, and the body's digest is not covered.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Length": "53",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"SpbgA-nAa-ESFogAh0MyTA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:F0rV/j79nLRtHWg0+mcAX5aZIJ15qH8ej4BleYAw7Y6mglXHsI64RiUftNbKSLNoFubTnY6qcP2z9lrpNx10Cw==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "chunked-body-without-digest",
+      "kind": "request",
+      "note": "Any Transfer-Encoding means a body.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Transfer-Encoding": "chunked",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"GWV25ahd1irMrYcWhI2EfQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:hXT5CAFak9SiagRz7oLqjd98PuCVK06UyMZwuDs6p/JCikWGQPiTjyPF1OavVjUs1FFjOVrNIqipfJzgdtzZAw==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "body-arrived-without-digest",
+      "kind": "request",
+      "note": "No header announced a body, and one arrived: the read-time rule of section 3.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"uaeorpMBgGJV4HHaV2IkBQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:qDGfNayStMYjaFnuaZTCVesfYonqpZCU6DYax4YgWmqbKVMNsECrGEru4fPgrh4u0tuH4VTHWhXYHniLfceXBg==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "keyid-not-an-aid",
+      "kind": "request",
+      "note": "The keyid is not a well-formed AID.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"DSTwjma20Y-1MqYdydGhdQ\";alg=\"ed25519\";keyid=\"not-an-aid\"",
+          "Signature": "signify=:VriFBwfCheoFM9UJ9+CKFpFipLfLfV0pFpoZCdGOolZZvHfuWj+EDElXXE6XzGQOXP1HiH3JgKD3w0ehB6DPAw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-key"
+    },
+    {
+      "id": "unknown-transferable-keyid",
+      "kind": "request",
+      "note": "A well-formed E keyid the verifier holds no KEL for; never a raw key.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"NNTeHPbcmshg8TczbOffDw\";alg=\"ed25519\";keyid=\"EJHyEvZ7buuL2CGeiNDxYW32V872H0vwwhTeqaZWeVpi\"",
+          "Signature": "signify=:SHCqrgHea+Kub/ktxpZcTSHPTIAsnDlBd8aaPoyhKyDWxuPElhQKpiK1SrbbkPAwiBzQaAG6Bx36XDHCtmA0Dg==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unknown-key"
+    },
+    {
+      "id": "unsupported-algorithm",
+      "kind": "request",
+      "note": "alg present and not ed25519.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"rsa-pss-sha512\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-algorithm"
+    },
+    {
+      "id": "covered-field-absent",
+      "kind": "request",
+      "note": "A covered field is absent from the message; never skipped.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@path\" \"@query\" \"x-request-id\" \"content-digest\");created=1700000000;nonce=\"nC1o_L_G1kg-iSMLy_0bCg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:4lUT7Ion1D7+Elf060oFDX3BZ3BXBwipK3TV3nYkguSZHld1jai7MQplB2b/cTSZi+guwJu1usICyig5uYIjAw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "missing-component"
+    },
+    {
+      "id": "rewritten-query",
+      "kind": "request",
+      "note": "The query KERIA routes on, rewritten.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=ixn",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"Xwv-ZL1_vwEdFxq9I7jQJg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:2Mps0HQM5yzaEADXIrIn3QNlOIZ2NKlS/dJBnGOmAr1GjwK8t2h9jtFn0FJB+sY2LkpmChaxtWNEvrx47DUwBw==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "method-case-changed",
+      "kind": "request",
+      "note": "Signed as post, received as POST: no case transformation on either side.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"eJMC3mbdGUN3rBBSro4e8A\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:dfvFjYet4udsFn+sTAia+0bf1uYfMufcq00EspoSCUxHfKAZgm6w0xmX0vasm+7GqVV2MPtxKEncKAwDBt6dBw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "path-reencoded-as-hio-does",
+      "kind": "request",
+      "note": "Profile O1 as a refusal: a verifier that substitutes a re-encoded path fails.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers/a%3Ab",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"6UQ4o_2gK364nedIZzO4EQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:37B//8PKxRZ8Ov5xEWLwbP5ZHMJ4qtsbGz3uot3Tqpf3pKDCccMM20JX9WCvhAbI+eyU/940Pn5/7bYsEJQ6Cw==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "d-keyid-signed-by-its-inception-key",
+      "kind": "request",
+      "note": "Signed by the key the D prefix embeds, which has been rotated away. A verifier that decodes the prefix as a key accepts this; the KEL says otherwise.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"FVNZEkuBxoInuGGjyjkZDA\";alg=\"ed25519\";keyid=\"DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI\"",
+          "Signature": "signify=:o0YK31gWsIkdE0sbdQjDsqFA6vUF+bY+jXdK+xO5aQbVdhoUrx/4WseQem3JysushQaZfIjbvzp2AvuV4Y9OBQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "stale-boundary-outside",
+      "kind": "request",
+      "note": "created one second before now - max_age - skew.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"lG-i9If5toXtKNduEVtVHA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:SHrN/KuzCNFPdkDsl9IRwqe6aD5aGt9Gnp0cmST/4MTB5V6umgtC7V9VebkdjT2vM8t/NQknt8tCav0cDD//Bw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000361,
+      "error": "signature-stale"
+    },
+    {
+      "id": "future-boundary-outside",
+      "kind": "request",
+      "note": "created one second after now + skew.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"l74_0YJrwhNYWu8HDesZbg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:1jBkqrlHEhik49zrw5aYfjT6S+C/17OxwjQAbCBVZK5XUdgd6Gfk4+3wxxJ1LRzkS8Zmyk3j2fy5Rw9Fnn+hAA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1699999939,
+      "error": "signature-stale"
+    },
+    {
+      "id": "expires-boundary-outside",
+      "kind": "request",
+      "note": "expires one second before now - skew.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;expires=1700000100;nonce=\"QNan2v_d4RlRm48bbCF7Kw\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:7dY74nZBqybZbLwIcrYzKF/hHD6oJVrC0UnXgyUAx03Kzt6sU3e4pch6peNfW2AK0J+B0xbgXRKugKzbiz9CCw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000161,
+      "error": "signature-expired"
+    },
+    {
+      "id": "digest-with-no-recognized-algorithm",
+      "kind": "request",
+      "note": "No sha-256 or sha-512 member: an error, not a pass.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Digest": "x-unknown=:AAAA:",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4HF0OiJp_Ry6QJ3xzhF4cA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:BSRmf4NMYPa/t2WRoEvQ/I0IsuUPEXqoWrbA0N9jWd4m0gARPSScHb6U4HkpdYoU8cjQiFle6QcP443U5CXZAw==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-digest"
+    },
+    {
+      "id": "swapped-body",
+      "kind": "request",
+      "note": "The body does not match its covered digest.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"mallory\"}"
+      },
+      "now": 1700000030,
+      "error": "digest-mismatch"
+    },
+    {
+      "id": "two-recognized-digests-one-mismatching",
+      "kind": "request",
+      "note": "sha-256 matches and sha-512 does not; every recognized member must match.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:, sha-512=:4lrDhF+MvhKAGi36WonUxV3EeQDztu3Jqe5ZDzwrkxL2ZdADnJOCi3tY8zlQvIF6CVWpxQAKjT4oBWnwh0XKaA==:",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"5EmwvPoLpliVaj_0ZfgW3g\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:okxlYwQ7YDQV5b63B1sES/x1IWvOIQYTvGQZ4zjNagdynQNdM3Da9U8altR2CeIwAWIdCzlfNVAAEAI8vZO6BQ==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "digest-mismatch"
+    },
+    {
+      "id": "response-status-altered",
+      "kind": "response",
+      "note": "The status was changed in transit.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:JK+oXQL2TehrZzGEQCEj4+B+UHoG0fMCTZdZ+Qxh/hq2Jf3Q1AK6i3fie+pTN2X6yv2JC0IrUuLNA66UhuSvBA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "response-body-swapped",
+      "kind": "response",
+      "note": "The response body was replaced.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:JK+oXQL2TehrZzGEQCEj4+B+UHoG0fMCTZdZ+Qxh/hq2Jf3Q1AK6i3fie+pTN2X6yv2JC0IrUuLNA66UhuSvBA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": false}"
+      },
+      "now": 1700000030,
+      "error": "digest-mismatch"
+    },
+    {
+      "id": "response-to-a-different-path",
+      "kind": "response",
+      "note": "A response recorded for one request, replayed against another path.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/bob/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:JK+oXQL2TehrZzGEQCEj4+B+UHoG0fMCTZdZ+Qxh/hq2Jf3Q1AK6i3fie+pTN2X6yv2JC0IrUuLNA66UhuSvBA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "response-missing-a-req-component",
+      "kind": "response",
+      "note": "\"@path\";req is in the response minimum set.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"sCu_1F-xLyoRBybLXC1lRw\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:4W8OCehcGNv62G55L9OrECqf0sq1ugyfbgkI081M+SN/4/Kc7pOmR73o9npsHwvvHvTkaXU8rLOcRqoWvvACCw==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "response-missing-the-requests-digest",
+      "kind": "response",
+      "note": "The request had a body, so the response must cover \"content-digest\";req.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\");created=1700000000;nonce=\"ceZvF5-r0Vajq5Cn7-PwQQ\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:yIhWfQ5zBgHbk5QqIHkUdZ1VLvYcKyFC6Zg7zFZsRym0GBhks2KYB+zp32yQj3goatMoZfCNObbeTgr971I5Cw==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "response-body-without-digest",
+      "kind": "response",
+      "note": "A response body whose digest is not covered.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Length": "14",
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\";req);created=1700000000;nonce=\"fn0lEhIeeO6A7bvMM7P6Jg\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:D6yYs+zrpVFngcQ+R0uHMXZHY+G8gJOPOETiOncr7s2px/XG+DmH9V/bCv/eYQ7z1P527NJveUIfQ+BnEh+FBQ==:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
+      "id": "response-duplicate-ignoring-parameter-order",
+      "kind": "response",
+      "note": "Duplicate detection ignores parameter order, and it precedes unsupported-component (sf) in section 9.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req;sf \"content-digest\";sf;req);created=1700000000;nonce=\"vqNhH6JLb2M05NCqsbEG-Q\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:JK+oXQL2TehrZzGEQCEj4+B+UHoG0fMCTZdZ+Qxh/hq2Jf3Q1AK6i3fie+pTN2X6yv2JC0IrUuLNA66UhuSvBA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "duplicate-component"
+    },
+    {
+      "id": "unsigned-response",
+      "kind": "response",
+      "note": "Section 8: a client that sent a canonical request refuses an unsigned response (an unsigned 401 is the one exception, and is not a verification).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "now": 1700000030,
+      "error": "missing-signature"
+    },
+    {
+      "id": "sign-body-without-digest",
+      "kind": "sign-request",
+      "note": "A signer asked to sign a non-empty body without covering content-digest refuses. The only signer-side code.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {},
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "covered": [
+        "\"@method\"",
+        "\"@path\"",
+        "\"@query\""
+      ],
+      "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "error": "uncovered-body"
+    }
+  ]
+}

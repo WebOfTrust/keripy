@@ -1,0 +1,55 @@
+{
+  "about": "RFC 9421's own Ed25519 example, reproduced.",
+  "keri_vectors_format": 1,
+  "generated_by": "vectors/keri/generate.py",
+  "profile": {
+    "title": "KERI profile of RFC 9421 HTTP Message Signatures",
+    "draft": 4,
+    "date": "2026-09-24",
+    "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails; every refusal case has exactly one defect, so it has exactly one correct code."
+  },
+  "encoding": {
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier.",
+    "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
+    "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
+    "public_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
+    "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
+  },
+  "cases": [
+    {
+      "id": "rfc-9421-b-2-6",
+      "note": "RFC 9421 Appendix B.2.6: the B.2 test request signed with the B.1.4 Ed25519 key. Reproduce the base and the signature byte for byte. Neither the minimum covered set nor the AID keyid applies; this pins the signature base builder against something no party to the profile wrote.",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/foo?param=Value&Pet=dog",
+        "headers": {
+          "Host": "example.com",
+          "Date": "Tue, 20 Apr 2021 02:07:55 GMT",
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-512=:WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrIiYllu7BNNyealdVLvRwEmTHWXvJwew==:",
+          "Content-Length": "18"
+        },
+        "body": "{\"hello\": \"world\"}"
+      },
+      "seed_hex": "9f8362f87a484a954e6e740c5b4c0e84229139a20aa8ab56ff66586f6a7d29c5",
+      "public_key": "JrQLj5P_89iXES9-vFgrIy29clF9CC_oPPsw3c5D0bs",
+      "label": "sig-b26",
+      "covered": [
+        "date",
+        "@method",
+        "@path",
+        "@authority",
+        "content-type",
+        "content-length"
+      ],
+      "created": 1618884473,
+      "keyid": "test-key-ed25519",
+      "expected": {
+        "base": "\"date\": Tue, 20 Apr 2021 02:07:55 GMT\n\"@method\": POST\n\"@path\": /foo\n\"@authority\": example.com\n\"content-type\": application/json\n\"content-length\": 18\n\"@signature-params\": (\"date\" \"@method\" \"@path\" \"@authority\" \"content-type\" \"content-length\");created=1618884473;keyid=\"test-key-ed25519\"",
+        "signature": "wqcAqbmYJ2ji2glfAMaRy4gruYYnx2nEFN2HN6jrnDnQCK1u02Gb04v9EDgwUPiu4A0w6vuQv5lIp5WPpBKRCw=="
+      }
+    }
+  ]
+}

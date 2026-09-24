@@ -1,0 +1,137 @@
+{
+  "about": "Legacy-mode messages pinned in KERIA's and signify-ts's current tests, so each implementation proves it still accepts today's traffic (profile section 10). fiki does not verify legacy mode; these are static data.",
+  "keri_vectors_format": 1,
+  "generated_by": "vectors/keri/generate.py",
+  "profile": {
+    "title": "KERI profile of RFC 9421 HTTP Message Signatures",
+    "draft": 4,
+    "date": "2026-09-24",
+    "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails; every refusal case has exactly one defect, so it has exactly one correct code."
+  },
+  "encoding": {
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier.",
+    "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
+    "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
+    "public_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
+    "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
+  },
+  "rules": "key is the signer's current Ed25519 verification key in CESR qb64 (a one-character D code over 32 bytes). base is the legacy signature base keripy's ending.siginput builds: field lines, then a final line with the quote placed before @signature-params and unquoted identifiers and parameters. The signature is the Signature header's signify member, CESR 0B (Ed25519) over that base. A legacy verifier checks no freshness.",
+  "cases": [
+    {
+      "id": "keria-request-to-boot",
+      "kind": "request",
+      "source": {
+        "repo": "WebOfTrust/keria",
+        "commit": "7e685edaaeca408919f9adf6789a6626d9c5cf79",
+        "file": "tests/core/test_authing.py",
+        "lines": "36-164",
+        "test": "test_signed_header_authenticator, the 'Good signature' request"
+      },
+      "method": "POST",
+      "path": "/boot",
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "256",
+        "Connection": "close",
+        "Signify-Resource": "EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq",
+        "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00",
+        "Signature-Input": "signify=(\"signify-resource\" \"@method\" \"@path\" \"signify-timestamp\");created=1609459200;keyid=\"EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq\";alg=\"ed25519\"",
+        "Signature": "indexed=\"?0\";signify=\"0BDBVr5ape8f9nV60ThhWOKvu5HKXQc5798Sz95FIoqXQ9vvL8HoYsLRp5aN86MIXr0GqH37SowsmTP-k9UhYSkN\""
+      },
+      "keyid": "EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq",
+      "key": "DAFFYufJkgED00EwDPDUfQ2jYT_kOkGKYRGYxySX_VjW",
+      "created": 1609459200,
+      "mocked_now": "2021-01-01T00:00:00+00:00 (keria tests/conftest.py mockHelpingNowUTC)",
+      "note": "The controller of salt b'1111456789abcdef'. key is its current signing key (the Verfer), which the test does not print: it was derived by running keripy 2.0.0-dev6 from the same salt and confirmed by the signature verifying below.",
+      "base": "\"signify-resource\": EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq\n\"@method\": POST\n\"@path\": /boot\n\"signify-timestamp\": 2022-09-24T00:05:48.196795+00:00\n\"@signature-params: (signify-resource @method @path signify-timestamp);created=1609459200;keyid=EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq;alg=ed25519\""
+    },
+    {
+      "id": "keria-response-from-agent",
+      "kind": "response",
+      "source": {
+        "repo": "WebOfTrust/keria",
+        "commit": "7e685edaaeca408919f9adf6789a6626d9c5cf79",
+        "file": "tests/core/test_authing.py",
+        "lines": "166-185",
+        "test": "test_signed_header_authenticator, authn.outbound"
+      },
+      "method": "POST",
+      "path": "/boot",
+      "status": 200,
+      "headers": {
+        "connection": "close",
+        "content-length": "256",
+        "content-type": "application/json",
+        "signify-resource": "EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt",
+        "signify-timestamp": "2021-01-01T00:00:00.000000+00:00",
+        "Signature-Input": "signify=(\"signify-resource\" \"@method\" \"@path\" \"signify-timestamp\");created=1609459200;keyid=\"EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt\";alg=\"ed25519\"",
+        "Signature": "indexed=\"?0\";signify=\"0BBWiqPdnUjfwkDcFQQyUUjjATXp0mRgG7S9ikr_XZkp0Nbv77dY8syrdpJTLuU4gTfmMYJb4OIR5oN7K02CV_0I\""
+      },
+      "keyid": "EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt",
+      "key": "DKDhlTWVfELdh0IbjoZ-ox0PI3xxGyrKUvg31KPTedcG",
+      "created": 1609459200,
+      "mocked_now": "2021-01-01T00:00:00+00:00 (keria tests/conftest.py mockHelpingNowUTC)",
+      "note": "KERIA's agent signing its response to the request above: the legacy response base is the REQUEST's method and path plus the response's own headers, and covers neither status nor body. key is the agent's current key, derived by running keripy 2.0.0-dev6 with the test's salt and caid and confirmed by the signature verifying below.",
+      "base": "\"signify-resource\": EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt\n\"@method\": POST\n\"@path\": /boot\n\"signify-timestamp\": 2021-01-01T00:00:00.000000+00:00\n\"@signature-params: (signify-resource @method @path signify-timestamp);created=1609459200;keyid=EEAJjjsbswsipSk6qypNw9bKszVfkAWvAYonKTKWHnDt;alg=ed25519\""
+    },
+    {
+      "id": "signify-ts-response-verified",
+      "kind": "response",
+      "source": {
+        "repo": "WebOfTrust/signify-ts",
+        "commit": "ffba8406ef5d0c148decefd6ecfb2f31c480a0ef",
+        "file": "test/core/authing.test.ts",
+        "lines": "30-170",
+        "test": "SignedHeaderAuthenticator.verify, 'verify signature on Response', the 'Good' case"
+      },
+      "method": "GET",
+      "path": "/identifiers/aid1",
+      "status": 200,
+      "headers": {
+        "Content-Length": "898",
+        "Content-Type": "application/json",
+        "Signify-Timestamp": "2023-05-22T00:37:00.248708+00:00",
+        "Signify-Resource": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei",
+        "Signature-Input": "signify=(\"signify-resource\" \"@method\" \"@path\" \"signify-timestamp\");created=1684715820;keyid=\"EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei\";alg=\"ed25519\"",
+        "Signature": "indexed=\"?0\";signify=\"0BDLh8QCytVBx1YMam4Vt8s4b9HAW1dwfE4yU5H_w1V6gUvPBoVGWQlIMdC16T3WFWHDHCbMcuceQzrr6n9OULsK\""
+      },
+      "keyid": "EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei",
+      "key": "DMZh_y-H5C3cSbZZST-fqnsmdNTReZxIh0t2xSTOJQ8a",
+      "created": 1684715820,
+      "mocked_now": "none: legacy verification checks no freshness",
+      "note": "The request was GET http://127.0.0.1:3901/identifiers/aid1. key is the agent Verfer the test constructs (aaid).",
+      "base": "\"signify-resource\": EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei\n\"@method\": GET\n\"@path\": /identifiers/aid1\n\"signify-timestamp\": 2023-05-22T00:37:00.248708+00:00\n\"@signature-params: (signify-resource @method @path signify-timestamp);created=1684715820;keyid=EEXekkGu9IAzav6pZVJhkLnjtjM5v3AcyA-pdKUcaGei;alg=ed25519\""
+    },
+    {
+      "id": "signify-ts-request-prepared",
+      "kind": "request",
+      "source": {
+        "repo": "WebOfTrust/signify-ts",
+        "commit": "ffba8406ef5d0c148decefd6ecfb2f31c480a0ef",
+        "file": "test/core/authing.test.ts",
+        "lines": "172-222",
+        "test": "SignedHeaderAuthenticator.prepare, 'Create signed headers for a request'"
+      },
+      "method": "POST",
+      "path": "/boot",
+      "url": "http://127.0.0.1:3903/boot",
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "256",
+        "Connection": "close",
+        "Signify-Resource": "EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs",
+        "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00",
+        "Signature-Input": "signify=(\"@method\" \"@path\" \"signify-resource\" \"signify-timestamp\");created=1609459200;keyid=\"DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt\";alg=\"ed25519\"",
+        "Signature": "indexed=\"?0\";signify=\"0BChvN_BWAf-mgEuTnWfNnktgHdWOuOh9cWc4o0GFWuZOwra3DyJT5dJ_6BX7AANDOTnIlAKh5Sg_9qGQXHjj5oJ\""
+      },
+      "keyid": "DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt",
+      "key": "DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt",
+      "created": 1609459200,
+      "mocked_now": "2021-01-01T00:00:00.000000+00:00 (utilApi.nowUTC spied)",
+      "note": "Signed by salter.signer() of salt '0123456789abcdef'. Here keyid is the signer's own Verfer (a D code), not an AID, because the test signs with a bare signer; the legacy verifier resolves Signify-Resource instead.",
+      "base": "\"@method\": POST\n\"@path\": /boot\n\"signify-resource\": EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs\n\"signify-timestamp\": 2022-09-24T00:05:48.196795+00:00\n\"@signature-params: (@method @path signify-resource signify-timestamp);created=1609459200;keyid=DN54yRad_BTqgZYUSi_NthRBQrxSnqQdJXWI5UHcGOQt;alg=ed25519\""
+    }
+  ]
+}

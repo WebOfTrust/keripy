@@ -1,0 +1,549 @@
+{
+  "about": "Signed requests a canonical verifier must ACCEPT, with the base.",
+  "keri_vectors_format": 1,
+  "generated_by": "vectors/keri/generate.py",
+  "profile": {
+    "title": "KERI profile of RFC 9421 HTTP Message Signatures",
+    "draft": 4,
+    "date": "2026-09-24",
+    "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails; every refusal case has exactly one defect, so it has exactly one correct code."
+  },
+  "encoding": {
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier.",
+    "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
+    "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
+    "public_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
+    "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
+  },
+  "policy": {
+    "max_age": 300,
+    "skew": 60,
+    "request_minimum": [
+      "\"@method\"",
+      "\"@path\"",
+      "\"@query\""
+    ],
+    "response_minimum": [
+      "\"@status\"",
+      "\"@method\";req",
+      "\"@path\";req",
+      "\"@query\";req"
+    ],
+    "body_rule": "Profile section 3. A message has a body when it carries Content-Length above zero or any Transfer-Encoding, or when a non-empty body arrives whatever the headers said; a body obliges a covered content-digest. A response to a request that had a body must also cover \"content-digest\";req.",
+    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch."
+  },
+  "keys": [
+    {
+      "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
+      "kind": "non-transferable",
+      "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+      "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "note": "Ed25519N. The verifier derives the key from the prefix itself and holds no KEL."
+    },
+    {
+      "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+      "kind": "transferable",
+      "public_key": "Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "note": "A controller's current signing key, as the KEL the verifier holds says. The AID is synthetic: a well-formed E code, not the digest of a real inception event."
+    },
+    {
+      "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+      "kind": "transferable",
+      "public_key": "SB7edy2hV4XJ5ZoIYgG4w_nDBxKeP8bX80qk3-1YFOU",
+      "seed_hex": "030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122",
+      "note": "An agent's current signing key; it signs the responses. Synthetic like the controller's."
+    },
+    {
+      "keyid": "DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI",
+      "kind": "transferable",
+      "public_key": "yZ4rN96TAC32gyanhUk81KpIfRpF-iEXqhBQSJI794E",
+      "seed_hex": "05060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324",
+      "embedded_key": "UZmMz9__2D2XJEkIGMoiqXoDDRi7Kp10Zo9yuBw_pYg",
+      "embedded_seed_hex": "0405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223",
+      "note": "A basic transferable prefix after one rotation. Decoding the prefix yields embedded_key, the INCEPTION key; the current key is public_key and comes only from the KEL (profile R1). A verifier that decodes a D keyid as a key accepts a rotated-away key."
+    }
+  ],
+  "cases": [
+    {
+      "id": "get-with-query",
+      "note": "The default signer set: @method, @authority, @path, @query.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot&last=5",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"X3vGfjNoYdyGc6nQiCS_lQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:KxtZ1ii+lqjNG/Ar3GkBVAhg7R70WcFwSFbSToBa5PtVi2iYXHf4RgEtzl/NrkDi96Bwnoj8lYm1n9MNlkJNBQ==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?type=rot&last=5\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"X3vGfjNoYdyGc6nQiCS_lQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "KxtZ1ii+lqjNG/Ar3GkBVAhg7R70WcFwSFbSToBa5PtVi2iYXHf4RgEtzl/NrkDi96Bwnoj8lYm1n9MNlkJNBQ=="
+      }
+    },
+    {
+      "id": "get-without-query",
+      "note": "@query is a bare question mark when the target has no query.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"RERW_i1ZFObv1Yy3tWqh-Q\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:bspzN/bLerNBeiRSapp1JbvmaYhBXGTPl3gWTjNXcdqBIZMeyHAmDrq9Q43oq03/cdnysuvXcpMW+rbuAfglDA==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"RERW_i1ZFObv1Yy3tWqh-Q\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "bspzN/bLerNBeiRSapp1JbvmaYhBXGTPl3gWTjNXcdqBIZMeyHAmDrq9Q43oq03/cdnysuvXcpMW+rbuAfglDA=="
+      }
+    },
+    {
+      "id": "post-with-content-digest",
+      "note": "A body is covered by a sha-256 Content-Digest.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"CCiKtCAqNTyBZIWV5UBktg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:tvKiyrzutWs7t3pfbWRJj+VlZDsaFyYuOAE7PGQeOwHQTmjaPAz6TY8SJm0ex/GIS2Rzs4Mjpix7zqwn4z8gDA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"CCiKtCAqNTyBZIWV5UBktg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "tvKiyrzutWs7t3pfbWRJj+VlZDsaFyYuOAE7PGQeOwHQTmjaPAz6TY8SJm0ex/GIS2Rzs4Mjpix7zqwn4z8gDA=="
+      }
+    },
+    {
+      "id": "post-with-empty-body",
+      "note": "A covered content-digest on an empty body is the digest of the empty string.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Length": "0",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"cgsTlJdvi8CgK2FiXdXBSg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:bXfnm6xViRTOEvK5rZjUZ9OdiOHjdWPPJOPbRrGurUE2SRw0sBAEJOcR1kQ++QbkK8zxkZ7sh59OPnvRKNw8DQ==:",
+          "Content-Digest": "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:"
+        },
+        "body": ""
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"cgsTlJdvi8CgK2FiXdXBSg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "bXfnm6xViRTOEvK5rZjUZ9OdiOHjdWPPJOPbRrGurUE2SRw0sBAEJOcR1kQ++QbkK8zxkZ7sh59OPnvRKNw8DQ=="
+      }
+    },
+    {
+      "id": "digest-with-an-unknown-algorithm-member",
+      "note": "RFC 9530: an algorithm the verifier does not recognize is ignored, and it comes first so a verifier that checks only the first member fails.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Digest": "x-unknown=:AAAA:, sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"knDfQUss52N0jDUilqgZIQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:kCC5+HSwINKhCOVA7SSHRaNrkJZqylXC2deuYL+rQbi/l990IX6aRDtO1CTOkP+VwEKqKUSaeY6wiSqrFuj/Aw==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": x-unknown=:AAAA:, sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"knDfQUss52N0jDUilqgZIQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "kCC5+HSwINKhCOVA7SSHRaNrkJZqylXC2deuYL+rQbi/l990IX6aRDtO1CTOkP+VwEKqKUSaeY6wiSqrFuj/Aw=="
+      }
+    },
+    {
+      "id": "digest-with-two-recognized-members",
+      "note": "Every recognized member must match, and both do.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:, sha-512=:AcNVW7TLPhGCJvi8PNRiIYbjdNtIGRbcSSJNEwVzuMj2WNU/QfzF+9gKftwUUzFqsNyCbVuVpjIOFPNKuQZlYw==:",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"lR2YbTj6Nn49_8CPC3vhCQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:giA+nzyjDvnZhl8iuosEt3OxDHDf31ck7ELIkB3oZfOAlRQeei3ileWB+01KZQXu/NRfpoi58kInO/u6nJS+AQ==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:, sha-512=:AcNVW7TLPhGCJvi8PNRiIYbjdNtIGRbcSSJNEwVzuMj2WNU/QfzF+9gKftwUUzFqsNyCbVuVpjIOFPNKuQZlYw==:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"lR2YbTj6Nn49_8CPC3vhCQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "giA+nzyjDvnZhl8iuosEt3OxDHDf31ck7ELIkB3oZfOAlRQeei3ileWB+01KZQXu/NRfpoi58kInO/u6nJS+AQ=="
+      }
+    },
+    {
+      "id": "chunked-body-with-content-digest",
+      "note": "A chunked body is covered like any other; body is the de-chunked content.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Transfer-Encoding": "chunked",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"-EfnATh5vWFAi1XEzgyRnQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:RdbOkt/ACvCikCByzt1qlzJxm5AWVwKyyP62waksHhYiRfmxrp7UMLZUyl4GP5l+bgD6Fm+pPTHu8Shm24dGBA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"-EfnATh5vWFAi1XEzgyRnQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "RdbOkt/ACvCikCByzt1qlzJxm5AWVwKyyP62waksHhYiRfmxrp7UMLZUyl4GP5l+bgD6Fm+pPTHu8Shm24dGBA=="
+      }
+    },
+    {
+      "id": "lowercase-method",
+      "note": "RFC 9421 section 2.2.1: @method is the method as sent, with no case transformation. Browsers' fetch() uppercases standard methods on the wire.",
+      "request": {
+        "method": "post",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"z7fq4tzKPXK2CY5PfVagtQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:P9JWY5SI5AROn6uFOQ+bzkjjSDLUET0kYj6cfq4d2wUiaFMxxn96wswU0xoZZcygBqbg5YT9EcsMxAb7BAFBBA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": post\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"z7fq4tzKPXK2CY5PfVagtQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "P9JWY5SI5AROn6uFOQ+bzkjjSDLUET0kYj6cfq4d2wUiaFMxxn96wswU0xoZZcygBqbg5YT9EcsMxAb7BAFBBA=="
+      }
+    },
+    {
+      "id": "path-with-a-colon",
+      "note": "Profile O1: hio re-encodes ':' as %3A, so a KERIA that rebuilds @path from hio's path fails this. @path is the path as sent.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers/a:b",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"rTWXSZS-gz_cuS-dh39qIg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:3hUmwzzwh6Fx1P7RhB+23lCkQVrMgA1oblV8DnrYscNnMVXvZhVyB25nZZPtz3kIALLbBILI3rJ7UQZrSmy4CQ==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers/a:b\n\"@query\": ?\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"rTWXSZS-gz_cuS-dh39qIg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "3hUmwzzwh6Fx1P7RhB+23lCkQVrMgA1oblV8DnrYscNnMVXvZhVyB25nZZPtz3kIALLbBILI3rJ7UQZrSmy4CQ=="
+      }
+    },
+    {
+      "id": "path-with-an-encoded-tilde",
+      "note": "Profile O1: hio decodes %7E to '~' and does not re-encode it. @path keeps the percent-encoding as sent.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers/%7Ebob",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"AxpRS3jriJ5YzQsyAtGflw\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:/r/MJ/jxZefWr757cGA2jGraEhy9LAL7f+08ysIHDS62ZVUGToMZwZKroZJeR9ms6UJnVkf3HiAl3cBvsn4YAg==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers/%7Ebob\n\"@query\": ?\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"AxpRS3jriJ5YzQsyAtGflw\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "/r/MJ/jxZefWr757cGA2jGraEhy9LAL7f+08ysIHDS62ZVUGToMZwZKroZJeR9ms6UJnVkf3HiAl3cBvsn4YAg=="
+      }
+    },
+    {
+      "id": "non-transferable-keyid",
+      "note": "A B keyid yields its key directly from the prefix; no KEL.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"RVe5Wqy523d4d15fYGRSqw\";alg=\"ed25519\";keyid=\"BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4\"",
+          "Signature": "signify=:pkILH45dXzLLHnoo+bj8xmFSNWhfe8obXPNTiIEKcsXQctE/JbNJzIFRy8z+PBn/tc8YgIERuhzqxV3YrFjDBg==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?type=rot\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"RVe5Wqy523d4d15fYGRSqw\";alg=\"ed25519\";keyid=\"BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4\"",
+        "signature": "pkILH45dXzLLHnoo+bj8xmFSNWhfe8obXPNTiIEKcsXQctE/JbNJzIFRy8z+PBn/tc8YgIERuhzqxV3YrFjDBg=="
+      }
+    },
+    {
+      "id": "transferable-aid-keyid",
+      "note": "An E keyid: the key comes from the KEL the verifier holds, which the keys table stands in for.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"6OE9DzV52cSuDmxHvNYh4Q\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:I8ro/m1QUlgnnRbESwB3gHNUvDUBeUsWxPTfJsxSZrtCaRWabCyJhHKAs7voztm2I7NKOM6MowtBnzf2wNoACw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"6OE9DzV52cSuDmxHvNYh4Q\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "I8ro/m1QUlgnnRbESwB3gHNUvDUBeUsWxPTfJsxSZrtCaRWabCyJhHKAs7voztm2I7NKOM6MowtBnzf2wNoACw=="
+      }
+    },
+    {
+      "id": "basic-transferable-keyid-after-rotation",
+      "note": "A D keyid signed by its CURRENT key after rotation, resolved through the KEL. Decoding the prefix would give the inception key and refuse this.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"qZpB_POW49dxp0Mykx4rAw\";alg=\"ed25519\";keyid=\"DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI\"",
+          "Signature": "signify=:RDYcKq9Zq13phLrBppStmcNxa/xn9b8pwsMrw/+FuydEzFyulmi0ZtqQm6TgljBkB3U1Kc2CYr2OCjqr+JHdCw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"qZpB_POW49dxp0Mykx4rAw\";alg=\"ed25519\";keyid=\"DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI\"",
+        "signature": "RDYcKq9Zq13phLrBppStmcNxa/xn9b8pwsMrw/+FuydEzFyulmi0ZtqQm6TgljBkB3U1Kc2CYr2OCjqr+JHdCw=="
+      }
+    },
+    {
+      "id": "absent-alg",
+      "note": "alg is optional on the wire; when absent the algorithm is the one the resolved key implies.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4_gOr9gcHEt8d-KPRiC0TA\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:wfgt3zdwmt0azVbnbasZSDHa/8yX6bxQPBDt/YCpyUKNzifxYNKwFIioJXq73xySI4x3RGPYxAZhAGNeStV+AQ==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"4_gOr9gcHEt8d-KPRiC0TA\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "wfgt3zdwmt0azVbnbasZSDHa/8yX6bxQPBDt/YCpyUKNzifxYNKwFIioJXq73xySI4x3RGPYxAZhAGNeStV+AQ=="
+      }
+    },
+    {
+      "id": "without-nonce",
+      "note": "nonce is optional on the wire and never checked.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:P3jyVv7yMyuvLHmwmr/MmplvAjLXfZxYuGPM+qQ0U+jSrQHY6/BmayM/a+OAYVAqfFAaPz2mtDWqVD/nlDb+AA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "P3jyVv7yMyuvLHmwmr/MmplvAjLXfZxYuGPM+qQ0U+jSrQHY6/BmayM/a+OAYVAqfFAaPz2mtDWqVD/nlDb+AA=="
+      }
+    },
+    {
+      "id": "stale-boundary-inside",
+      "note": "created = now - max_age - skew exactly, which is not earlier than it.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"NUQ42fweAJPYUt71H5cqGQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:POOx+XLPy7V77JBpuPr3eOAYroJ/J2YDEB9JL7BbbCCnUCw98YwdzbhaKYt/Ny2rrJWW75ydqn/HvBLueZKuBg==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000360,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"NUQ42fweAJPYUt71H5cqGQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "POOx+XLPy7V77JBpuPr3eOAYroJ/J2YDEB9JL7BbbCCnUCw98YwdzbhaKYt/Ny2rrJWW75ydqn/HvBLueZKuBg=="
+      }
+    },
+    {
+      "id": "future-boundary-inside",
+      "note": "created = now + skew exactly.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"BCCxhxEvIY_N_x7VBdrqhA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:jAb5BBVBNlyIuGdvMTRcjbx+psAQa/sa/lr3ABG+iutMGLegnjUhgYVKQPOcMLcFkhplZ7n9nLFhWyu7wGxjCw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1699999940,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"BCCxhxEvIY_N_x7VBdrqhA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "jAb5BBVBNlyIuGdvMTRcjbx+psAQa/sa/lr3ABG+iutMGLegnjUhgYVKQPOcMLcFkhplZ7n9nLFhWyu7wGxjCw=="
+      }
+    },
+    {
+      "id": "expires-boundary-inside",
+      "note": "expires = now - skew exactly.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;expires=1700000100;nonce=\"mw4RpTXNJaQFB5fLHj2Lew\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:vdwWyo1yNrX0/cJwFd7Ud/P6DTonqW9xagTD73rkdWB9XXVudlo/tQi++SKj9h0SyvUFMc4LatbFLVmaY98/AQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000160,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;expires=1700000100;nonce=\"mw4RpTXNJaQFB5fLHj2Lew\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "vdwWyo1yNrX0/cJwFd7Ud/P6DTonqW9xagTD73rkdWB9XXVudlo/tQi++SKj9h0SyvUFMc4LatbFLVmaY98/AQ=="
+      }
+    }
+  ]
+}
