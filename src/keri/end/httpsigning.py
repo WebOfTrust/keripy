@@ -757,7 +757,38 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
 #   params (dict): signature parameters in wire order
 #   covered (tuple): serialized covered component identifiers
 #   verfer (Verfer): key that verified the signature
-Verified = namedtuple("Verified", "mode keyid label params covered verfer")
+#   bodyOwed (bool): True when the body was Deferred and checkBody has not yet
+#       run. A Verified with bodyOwed True is NOT a completed verification.
+Verified = namedtuple("Verified",
+                      "mode keyid label params covered verfer bodyOwed")
+
+
+class _DeferredType:
+    """Type of Deferred, the body argument meaning "not read yet"."""
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __repr__(self):
+        return "Deferred"
+
+    def __reduce__(self):
+        return (_DeferredType, ())
+
+
+# Pass as body to verifyRequest or verifyResponse to verify the headers before
+# the body is read. The result then has bodyOwed True, and the caller MUST
+# call checkBody with the body before the message reaches application code.
+Deferred = _DeferredType()
+
+
+def _checkBodyArg(body):
+    if body is None:
+        raise ValueError("body is required: the content as bytes (b'' for "
+                         "none), or Deferred when it has not been read yet.")
 
 
 @dataclass(frozen=True)
@@ -1029,17 +1060,26 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
 
     _checkFreshness(params, policy, now)
     return Verified(mode=Canonical, keyid=keyid, label=label, params=params,
+                    bodyOwed=False,
                     covered=tuple(_serialize(item) for item in items),
                     verfer=verfer)
 
 
 def verifyRequest(*, method, path, query=None, authority=None, headers,
-                  body=None, resolver, policy=None, now=None,
-                  acceptLegacy=True):
+                  body, resolver, policy=None, now=None, acceptLegacy=True):
     """
     Verify a signed request in either mode (profile section 8).
 
     Returns Verified.
+
+    The body check may be deferred, but never forgotten. Pass the body as
+    bytes and the returned Verified is complete (bodyOwed False). Pass
+    body=Deferred to verify on headers alone, before reading the body, which
+    rejects forgeries cheaply; the returned Verified then has bodyOwed True
+    and is NOT a completed verification: read the body, call
+    checkBody(verified, headers, body), and use the Verified it returns. A
+    request must not reach application code while bodyOwed is True
+    (profile section 5).
 
     Parameters:
         method (str): method as received
@@ -1047,9 +1087,8 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
         query (str): raw query without the leading '?'; None if none
         authority (str): authority the request was sent to; None uses Host
         headers: request header fields, mapping or iterable of pairs
-        body (bytes | None): content, or None when not yet read. With None
-            only the header-time body test runs and the caller must call
-            checkBody once the body is read.
+        body (bytes | Deferred): content as received, b'' for none, or
+            Deferred when not yet read. Required; None is a ValueError.
         resolver (callable): keyid -> Verfer for canonical mode, with a
             .legacy(aid) lookup for legacy mode; see KeverResolver
         policy (Policy): default Policy()
@@ -1059,6 +1098,7 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     Raises:
         HttpSigError subclass for the first check that fails (section 9)
     """
+    _checkBodyArg(body)
     policy = policy if policy is not None else DefaultPolicy
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
@@ -1087,9 +1127,13 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
         authority=normalizeAuthority(authority or "") if policy.requireAuthority else None,
         baseKwa=dict(method=method, authority=authority, path=path,
                      query=query, headers=fields))
-    if body is not None:
-        checkBody(verified, fields, body)
-    return verified
+    return _bodyStage(verified, fields, body)
+
+
+def _bodyStage(verified, fields, body):
+    if body is Deferred:
+        return verified._replace(bodyOwed=verified.mode == Canonical)
+    return checkBody(verified, fields, body)
 
 
 def checkBody(verified, headers, body):
@@ -1097,23 +1141,36 @@ def checkBody(verified, headers, body):
     Post-read body check of a verified message (profile sections 3 and 5): a
     non-empty body without covered content-digest is refused, and a covered
     Content-Digest is recomputed over the content received. Both must pass
-    before the message reaches application code. A no-op in legacy mode,
-    which covers no body.
+    before the message reaches application code. Legacy mode covers no body,
+    so there it checks nothing.
+
+    Returns the Verified with bodyOwed False. Use the returned value; the
+    one passed in still says the body check is owed.
+
+    Parameters:
+        verified (Verified): result of verifyRequest or verifyResponse
+        headers: the message's header fields
+        body (bytes): content as received, b'' for none
 
     Raises:
-        InsufficientCoverage, MalformedDigest, DigestMismatch
+        InsufficientCoverage, MalformedDigest, DigestMismatch, and ValueError
+        for a body that is None or Deferred
     """
+    _checkBodyArg(body)
+    if body is Deferred:
+        raise ValueError("checkBody needs the body that was read.")
     if verified.mode != Canonical:
-        return
+        return verified._replace(bodyOwed=False)
     raw = _bytify(body)
     if '"content-digest"' not in verified.covered:
         if raw:
             raise InsufficientCoverage("Body is not covered by content-digest.")
-        return
+        return verified._replace(bodyOwed=False)
     value = _fieldValue(_fieldLines(headers), "content-digest")
     if value is None:
         raise MissingComponent("Covered content-digest is absent.")
     verifyContentDigest(value, raw)
+    return verified._replace(bodyOwed=False)
 
 
 def verifyResponse(*, status, headers, body, request, resolver, keyid,
@@ -1127,7 +1184,9 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         status (int | str): response status code, or a line such as '200 OK'.
             A status without a three digit code is signature-mismatch.
         headers: response header fields
-        body (bytes): response content as received
+        body (bytes | Deferred): response content as received, b'' for none,
+            or Deferred to check the headers first; then the result has
+            bodyOwed True and checkBody must follow, as for verifyRequest.
         request (Requestage): the request as sent
         resolver (callable): keyid -> Verfer for canonical mode, with a
             .legacy(aid) lookup for legacy mode; see KeverResolver
@@ -1141,6 +1200,7 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         Unauthenticated: unsigned 401 to a canonical request
         HttpSigError subclass for the first check that fails (section 9)
     """
+    _checkBodyArg(body)
     policy = policy if policy is not None else DefaultPolicy
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
@@ -1167,9 +1227,9 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         return verifyLegacy(method=request.method, path=request.path,
                             headers=fields, verfer=verfer)
 
-    raw = _bytify(body)
     required = ["@status"]
-    if raw or (body is None and _hasBody(fields)):
+    if (body is Deferred and _hasBody(fields)) or (
+            body is not Deferred and _bytify(body)):
         required.append("content-digest")
     required.extend(['"@method";req', '"@path";req', '"@query";req'])
     if _bytify(request.body):
@@ -1179,9 +1239,7 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         fields=fields, required=required, resolver=resolver, policy=policy,
         now=now, response=True, expectKeyid=keyid,
         baseKwa=dict(status=status, headers=fields, request=request))
-    if body is not None:
-        checkBody(verified, fields, body)
-    return verified
+    return _bodyStage(verified, fields, body)
 
 
 # Legacy mode
@@ -1292,7 +1350,7 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
                            "alg")
               if getattr(inputage, name) is not None}
     resource = _fieldValue(fields, "signify-resource")
-    return Verified(mode=Legacy,
+    return Verified(mode=Legacy, bodyOwed=False,
                     keyid=resource if resource is not None else inputage.keyid,
                     label=inputage.name, params=params,
                     covered=tuple(inputage.fields), verfer=verfer)

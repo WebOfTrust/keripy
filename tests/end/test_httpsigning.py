@@ -426,6 +426,8 @@ def signed(signer=None, *, sign=None, **kwa):
     sign = {**dict(created=NOW, nonce="n1"), **(sign or {})}
     added = hs.signRequest(signer=signer, **msg, **sign)
     msg["headers"] = {**msg["headers"], **added}
+    if msg["body"] is None:
+        msg["body"] = b""  # a verifier is handed the empty content
     return msg
 
 
@@ -520,7 +522,7 @@ def test_verify_request_roundtrip():
                 "keyid": signer.verfer.qb64},
         covered=('"@method"', '"@authority"', '"@path"', '"@query"',
                  '"content-digest"'),
-        verfer=verified.verfer)
+        verfer=verified.verfer, bodyOwed=False)
     assert verified.verfer.qb64 == signer.verfer.qb64
 
     # headers may arrive in any case and as pairs
@@ -552,7 +554,7 @@ def test_verify_request_body():
         verify({**msg, "body": b'{"a":2}'})
 
     # body not read yet: header-time checks only, then checkBody
-    verified = verify({**msg, "body": None})
+    verified = verify({**msg, "body": hs.Deferred})
     hs.checkBody(verified, msg["headers"], msg["body"])
     with pytest.raises(hs.DigestMismatch):
         hs.checkBody(verified, msg["headers"], b'{"a":2}')
@@ -575,6 +577,49 @@ def test_verify_request_body():
     verify({**msg, "body": b""})
     with pytest.raises(hs.DigestMismatch):
         verify({**msg, "body": b"x"})
+
+
+def test_deferred_body():
+    """A header-time verification whose body check is still owed says so
+    (profile section 5, panel SEC-F2): body is required, Deferred is the
+    explicit "not read yet", and checkBody clears bodyOwed."""
+    msg = signed()
+    args = {k: v for k, v in msg.items() if k != "body"}
+    with pytest.raises(TypeError):
+        hs.verifyRequest(**args, resolver=hs.keverResolver({}), now=NOW)
+    with pytest.raises(ValueError):
+        verify({**msg, "body": None})
+    assert repr(hs.Deferred) == "Deferred"
+
+    owed = verify({**msg, "body": hs.Deferred})
+    assert owed.bodyOwed is True
+    done = hs.checkBody(owed, msg["headers"], msg["body"])
+    assert done.bodyOwed is False
+    assert done._replace(bodyOwed=True) == owed
+    with pytest.raises(hs.DigestMismatch):
+        hs.checkBody(owed, msg["headers"], b"other")
+    with pytest.raises(ValueError):
+        hs.checkBody(owed, msg["headers"], hs.Deferred)
+
+    assert verify(msg).bodyOwed is False
+
+    # responses too
+    msg, kept = served()
+    rep = response(kept)
+    owed = verifyResp({**rep, "body": hs.Deferred}, kept)
+    assert owed.bodyOwed is True
+    assert hs.checkBody(owed, rep["headers"], rep["body"]).bodyOwed is False
+    assert verifyResp(rep, kept).bodyOwed is False
+    with pytest.raises(ValueError):
+        verifyResp({**rep, "body": None}, kept)
+
+    # legacy mode covers no body, so none is owed
+    with keriaController() as (hby, controller):
+        legacy = hs.verifyRequest(method="POST", path="/boot", query=None,
+                                  headers=keriaHeaders(), body=hs.Deferred,
+                                  resolver=hs.keverResolver(controller.kevers))
+        assert legacy.bodyOwed is False
+        assert hs.checkBody(legacy, keriaHeaders(), b"x") == legacy
 
 
 def test_verify_request_transferable():
@@ -1168,7 +1213,7 @@ def test_verify_legacy_keria_vectors():
                     "alg": "ed25519"},
             covered=("signify-resource", "@method", "@path",
                      "signify-timestamp"),
-            verfer=verfer)
+            verfer=verfer, bodyOwed=False)
 
         # falcon hands KERIA uppercase header names
         upper = {k.upper(): v for k, v in keriaHeaders().items()}
@@ -1260,15 +1305,15 @@ def test_verify_request_legacy_mode():
     with keriaController() as (hby, controller):
         resolver = hs.keverResolver(controller.kevers)
         msg = dict(method="POST", path="/boot", query=None,
-                   headers=keriaHeaders())
+                   headers=keriaHeaders(), body=b"")
         verified = hs.verifyRequest(**msg, resolver=resolver)
         assert verified.mode == "legacy"
         assert verified.keyid == KERIA_CONTROLLER
         # legacy mode performs no freshness check (profile section 6)
         hs.verifyRequest(**msg, resolver=resolver, now=NOW + 10 ** 9)
         # nor covers a body or query
-        verified = hs.verifyRequest(**{**msg, "query": "type=rot"},
-                                    body=b"anything", resolver=resolver)
+        verified = hs.verifyRequest(**{**msg, "query": "type=rot",
+                                       "body": b"anything"}, resolver=resolver)
         hs.checkBody(verified, msg["headers"], b"anything")
         assert hs.signatureKeyid(msg["headers"]) == KERIA_CONTROLLER
 
@@ -1434,7 +1479,8 @@ def vectorTarget(url):
 
 
 def vectorBody(body):
-    return None if body is None else body.encode("utf-8")
+    """null means no body is handed to the verifier: empty content."""
+    return b"" if body is None else body.encode("utf-8")
 
 
 def vectorResolver(data):
