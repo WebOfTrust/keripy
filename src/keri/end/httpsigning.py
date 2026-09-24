@@ -1047,6 +1047,9 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
     if requestMode == Canonical and mode == Legacy:
         raise ModeMismatch("Legacy response to a canonical request.")
     if mode == Legacy:
+        resource = _fieldValue(fields, "signify-resource")
+        if resource != keyid:
+            raise UnknownKey(f"Response names {resource}, not {keyid}.")
         verfer = resolver(keyid)
         if verfer is None:
             raise UnknownKey(f"No key state for {keyid}.")
@@ -1068,6 +1071,132 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
     if body is not None:
         checkBody(verified, fields, body)
     return verified
+
+
+# Legacy mode
+
+def _legacyBase(inputage, *, method, path, fields):
+    """
+    Returns the legacy KERI signature base for inputage, bytes, exactly as
+    KERIA's SignedHeaderAuthenticator.inbound builds it: derived components
+    other than @method and @path are dropped, covered fields that are absent
+    are skipped, and the final line keeps the legacy quote placement and
+    unquoted parameter values.
+    """
+    from .ending import normalize
+
+    items = []
+    for field in inputage.fields:
+        if field.startswith("@"):
+            if field == "@method":
+                items.append(f'"{field}": {method}')
+            elif field == "@path":
+                items.append(f'"{field}": {path}')
+        else:
+            field = field.lower()
+            if field not in fields:
+                continue
+            value = normalize(",".join(fields[field]))
+            items.append(f'"{field}": {value}')
+
+    values = [f"({' '.join(inputage.fields)})", f"created={inputage.created}"]
+    if inputage.expires is not None:
+        values.append(f"expires={inputage.expires}")
+    if inputage.nonce is not None:
+        values.append(f"nonce={inputage.nonce}")
+    if inputage.keyid is not None:
+        values.append(f"keyid={inputage.keyid}")
+    if inputage.context is not None:
+        values.append(f"context={inputage.context}")
+    if inputage.alg is not None:
+        values.append(f"alg={inputage.alg}")
+
+    params = ";".join(values)
+    items.append(f'"@signature-params: {params}"')
+    return "\n".join(items).encode("utf-8")
+
+
+def verifyLegacy(*, method, path, headers, verfer, label="signify"):
+    """
+    Verify a message signed in legacy mode (keri.end.ending.siginput and
+    signature), exactly as KERIA's SignedHeaderAuthenticator.inbound does, so
+    that today's traffic keeps verifying byte for byte. No freshness check, and
+    neither query nor body is covered (profile sections 6 and 8).
+
+    Resolving the signer is the caller's business; KERIA looks the controller
+    up by Signify-Resource. A response is verified with the method and path of
+    the request it answers.
+
+    Returns Verified with mode 'legacy'; keyid is the Signify-Resource value
+    (the AID the message claims), or the keyid parameter when that field is
+    absent.
+
+    Parameters:
+        method (str): request method
+        path (str): request path, as KERIA passes it
+        headers: message header fields, mapping or iterable of pairs
+        verfer (Verfer): key to verify with
+        label (str): signature label; legacy Signify uses 'signify'
+
+    Raises:
+        MissingSignature, MissingSignatureInput, MalformedSignatureInput,
+        MalformedSignature, MissingSignatureLabel, SignatureMismatch
+    """
+    from .ending import desiginput, designature
+
+    fields = _fieldLines(headers)
+    signature = _fieldValue(fields, "signature")
+    siginput = _fieldValue(fields, "signature-input")
+    if siginput is None:
+        raise MissingSignatureInput("Missing SIGNATURE-INPUT header")
+    if signature is None:
+        raise MissingSignature("Missing SIGNATURE header")
+
+    try:
+        inputs = desiginput(siginput.encode("utf-8"))
+    except Exception as ex:
+        raise MalformedSignatureInput(f"Legacy Signature-Input does not parse: "
+                                      f"{ex}.") from ex
+    inputs = [i for i in inputs if i.name == label]
+    if not inputs:
+        raise MissingSignatureLabel(f"Missing {label} inputs in signature")
+
+    try:
+        signages = designature(signature)
+    except Exception as ex:
+        raise MalformedSignature(f"Legacy Signature does not parse: {ex}.") from ex
+
+    for inputage in inputs:
+        ser = _legacyBase(inputage, method=method, path=path, fields=fields)
+        marker = signages[0].markers.get(inputage.name)
+        if marker is None:
+            raise MissingSignatureLabel(f"Signature has no member for label "
+                                        f"{inputage.name}.")
+        if not verfer.verify(sig=marker.raw, ser=ser):
+            raise SignatureMismatch(f"Signature for {inputage} invalid")
+
+    inputage = inputs[0]
+    params = {name: getattr(inputage, name)
+              for name in ("created", "expires", "nonce", "keyid", "context",
+                           "alg")
+              if getattr(inputage, name) is not None}
+    resource = _fieldValue(fields, "signify-resource")
+    return Verified(mode=Legacy,
+                    keyid=resource if resource is not None else inputage.keyid,
+                    label=inputage.name, params=params,
+                    covered=tuple(inputage.fields), verfer=verfer)
+
+
+def _verifyLegacyRequest(*, method, path, fields, resolver):
+    """Legacy request: the signer is the AID named by Signify-Resource."""
+    resource = _fieldValue(fields, "signify-resource")
+    if resource is None:
+        raise MissingComponent("Missing SIGNIFY-RESOURCE header")
+    verfer = resolver(resource)
+    if verfer is None:
+        raise UnknownKey(f"No key state for {resource}.")
+    return verifyLegacy(method=method, path=path, headers=fields,
+                        verfer=verfer)
 
 
 # Resolvers

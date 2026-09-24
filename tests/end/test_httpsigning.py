@@ -19,6 +19,7 @@ import pytest
 
 from keri.core import MtrDex
 from keri.app import habbing
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core.signing import Signer
 from keri.end import httpsigning as hs
 
@@ -914,3 +915,220 @@ def test_verify_response_refusals():
     with pytest.raises(hs.ModeMismatch) as ex:
         verifyResp(dict(status=200, headers=legacy, body=b"{}"), kept)
     assert ex.value.code == "mode-mismatch"
+
+
+# Legacy mode. Signatures pinned by KERIA's and keripy's own tests: the
+# verifier must accept today's traffic byte for byte.
+
+KERIA_SIG_GOOD = ("0BDBVr5ape8f9nV60ThhWOKvu5HKXQc5798Sz95FIoqXQ9vvL8HoYsLRp5"
+                  "aN86MIXr0GqH37SowsmTP-k9UhYSkN")
+KERIA_SIG_BAD = KERIA_SIG_GOOD[:-1] + "M"
+KERIA_CONTROLLER = "EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq"
+V1 = dict(version=Vrsn_1_0, kind=Kinds.json)
+
+
+def keriaHeaders(sig=KERIA_SIG_GOOD, label="signify"):
+    """Request headers of keria tests/core/test_authing.py
+    test_signed_header_authenticator."""
+    return {
+        "Content-Type": "application/json",
+        "Content-Length": "256",
+        "Connection": "close",
+        "Signify-Resource": KERIA_CONTROLLER,
+        "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00",
+        "Signature-Input": f'{label}=("signify-resource" "@method" "@path" '
+                           '"signify-timestamp");created=1609459200;keyid'
+                           f'="{KERIA_CONTROLLER}";alg="ed25519"',
+        "Signature": f'indexed="?0";signify="{sig}"',
+    }
+
+
+def keriaController():
+    # KERIA pins keri 1.2.x, whose KELs are KERI v1 JSON
+    return habbing.openHab(name="caid", salt=b"1111456789abcdef", temp=True,
+                           **V1)
+
+
+def test_verify_legacy_keria_vectors():
+    with keriaController() as (hby, controller):
+        assert controller.pre == KERIA_CONTROLLER
+        verfer = controller.kever.verfers[0]
+
+        verified = hs.verifyLegacy(method="POST", path="/boot",
+                                   headers=keriaHeaders(), verfer=verfer)
+        assert verified == hs.Verified(
+            mode="legacy", keyid=KERIA_CONTROLLER, label="signify",
+            params={"created": 1609459200, "keyid": KERIA_CONTROLLER,
+                    "alg": "ed25519"},
+            covered=("signify-resource", "@method", "@path",
+                     "signify-timestamp"),
+            verfer=verfer)
+
+        # falcon hands KERIA uppercase header names
+        upper = {k.upper(): v for k, v in keriaHeaders().items()}
+        hs.verifyLegacy(method="POST", path="/boot", headers=upper,
+                        verfer=verfer)
+
+        with pytest.raises(hs.SignatureMismatch) as ex:
+            hs.verifyLegacy(method="POST", path="/boot",
+                            headers=keriaHeaders(KERIA_SIG_BAD), verfer=verfer)
+        # KERIA's message, unchanged
+        assert str(ex.value) == (
+            "Signature for Inputage(name='signify', fields=['signify-resource', "
+            "'@method', '@path', 'signify-timestamp'], created=1609459200, "
+            "keyid='EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq', alg='ed25519',"
+            " expires=None, nonce=None, context=None) invalid")
+
+        with pytest.raises(hs.MissingSignatureLabel) as ex:
+            hs.verifyLegacy(method="POST", path="/boot",
+                            headers=keriaHeaders(label="notsignify"),
+                            verfer=verfer)
+        assert str(ex.value) == "Missing signify inputs in signature"
+
+        for change in (dict(method="GET"), dict(path="/boot2")):
+            with pytest.raises(hs.SignatureMismatch):
+                hs.verifyLegacy(**{**dict(method="POST", path="/boot"),
+                                   **change},
+                                headers=keriaHeaders(), verfer=verfer)
+
+        # legacy behaviour kept: a covered field that is absent is skipped
+        # from the base rather than refused, so the signature no longer
+        # verifies, and an unknown derived component is dropped
+        headers = keriaHeaders()
+        del headers["Signify-Timestamp"]
+        with pytest.raises(hs.SignatureMismatch):
+            hs.verifyLegacy(method="POST", path="/boot", headers=headers,
+                            verfer=verfer)
+
+        for name in ("Signature", "Signature-Input"):
+            headers = keriaHeaders()
+            del headers[name]
+            with pytest.raises(hs.HttpSigError) as ex:
+                hs.verifyLegacy(method="POST", path="/boot", headers=headers,
+                                verfer=verfer)
+            assert ex.value.code == ("missing-signature" if name == "Signature"
+                                     else "missing-signature-input")
+        headers = keriaHeaders()
+        headers["Signature-Input"] = 'signify=("@method");keyid="x"'
+        with pytest.raises(hs.MalformedSignatureInput):
+            hs.verifyLegacy(method="POST", path="/boot", headers=headers,
+                            verfer=verfer)
+        headers = keriaHeaders()
+        headers["Signature"] = f'indexed="?0";other="{KERIA_SIG_GOOD}"'
+        with pytest.raises(hs.MissingSignatureLabel):
+            hs.verifyLegacy(method="POST", path="/boot", headers=headers,
+                            verfer=verfer)
+
+
+def test_verify_legacy_keripy_vector():
+    """tests/end/test_ending.py test_siginput: label sig0, and a
+    Signify-Resource that is not the signer."""
+    with habbing.openHab(name="test", base="test", temp=True,
+                         salt=b"0123456789abcdef", **V1) as (hby, hab):
+        headers = {
+            "Content-Type": "application/json",
+            "Content-Length": "256",
+            "Connection": "close",
+            "Signify-Resource": "EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs",
+            "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00",
+            "Signature": 'indexed="?0";sig0="0BCF-Qc9q1YrNOP5Np4fy9mz0o8HQALA'
+                         'NKP8ZjvItfjjmpYKYL_FSj4bcLZKFSd81bo9SeQn36bLt3dpbEz'
+                         't2GgN"',
+            "Signature-Input": 'sig0=("signify-resource" "@method" "@path" '
+                               '"signify-timestamp");created=1609459200;keyid'
+                               '="EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"'
+                               ';alg="ed25519"',
+        }
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+        verified = hs.verifyLegacy(method="POST", path="/signify",
+                                   headers=headers, label="sig0",
+                                   verfer=hab.kever.verfers[0])
+        assert verified.keyid == "EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs"
+        assert verified.label == "sig0"
+        with pytest.raises(hs.MissingSignatureLabel):
+            hs.verifyLegacy(method="POST", path="/signify", headers=headers,
+                            verfer=hab.kever.verfers[0])
+
+
+def test_verify_request_legacy_mode():
+    with keriaController() as (hby, controller):
+        resolver = hs.keverResolver(controller.kevers)
+        msg = dict(method="POST", path="/boot", query=None,
+                   headers=keriaHeaders())
+        verified = hs.verifyRequest(**msg, resolver=resolver)
+        assert verified.mode == "legacy"
+        assert verified.keyid == KERIA_CONTROLLER
+        # legacy mode performs no freshness check (profile section 6)
+        hs.verifyRequest(**msg, resolver=resolver, now=NOW + 10 ** 9)
+        # nor covers a body or query
+        verified = hs.verifyRequest(**{**msg, "query": "type=rot"},
+                                    body=b"anything", resolver=resolver)
+        hs.checkBody(verified, msg["headers"], b"anything")
+        assert hs.signatureKeyid(msg["headers"]) == KERIA_CONTROLLER
+
+        with pytest.raises(hs.SignatureMismatch):
+            hs.verifyRequest(**{**msg, "headers": keriaHeaders(KERIA_SIG_BAD)},
+                             resolver=resolver)
+        # decision D9: a deployment can turn legacy off
+        with pytest.raises(hs.MalformedSignature) as ex:
+            hs.verifyRequest(**msg, resolver=resolver, acceptLegacy=False)
+        assert ex.value.code == "malformed-signature"
+
+        headers = keriaHeaders()
+        del headers["Signify-Resource"]
+        with pytest.raises(hs.MissingComponent):
+            hs.verifyRequest(**{**msg, "headers": headers}, resolver=resolver)
+        # the resource must resolve
+        with pytest.raises(hs.UnknownKey):
+            hs.verifyRequest(**msg, resolver=hs.keverResolver({}))
+
+        # canonical and legacy never cross-verify: same key, legacy base
+        # signature presented in canonical form
+        legacy = keriaHeaders()
+        from keri.end import ending
+        raw = ending.designature(legacy["Signature"])[0].markers["signify"].raw
+        canon = dict(legacy)
+        canon["Signature"] = f"signify=:{base64.b64encode(raw).decode()}:"
+        del canon["Content-Length"]
+        with pytest.raises(hs.SignatureMismatch):
+            hs.verifyRequest(**{**msg, "headers": canon}, resolver=resolver,
+                             now=1609459200, policy=hs.Policy(request=()))
+
+
+def test_verify_response_legacy():
+    """A legacy request gets a legacy response, verified with the request's
+    method and path, as signify-ts does today."""
+    with keriaController() as (hby, controller):
+        with habbing.openHab(name="agent", salt=b"abcdef0123456789",
+                             temp=True) as (ahby, agent):
+            from keri.end import ending
+            headers = {"Content-Type": "application/json",
+                       "Signify-Resource": agent.pre,
+                       "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00"}
+            header, qsig = ending.siginput(
+                "signify", "POST", "/boot", headers,
+                fields=["Signify-Resource", "@method", "@path",
+                        "Signify-Timestamp"],
+                hab=agent, alg="ed25519", keyid=agent.pre)
+            headers.update(header)
+            headers.update(ending.signature([ending.Signage(
+                markers=dict(signify=qsig), indexed=False, signer=None,
+                ordinal=None, digest=None, kind=None)]))
+
+            kept = hs.Requestage(method="POST", authority=None, path="/boot",
+                                 query=None, headers=keriaHeaders(), body=b"")
+            resolver = hs.keverResolver(agent.kevers)
+            rep = dict(status=200, headers=headers, body=b"{}")
+            verified = hs.verifyResponse(**rep, request=kept, resolver=resolver,
+                                         keyid=agent.pre, requestMode="legacy")
+            assert verified.mode == "legacy"
+            with pytest.raises(hs.SignatureMismatch):
+                hs.verifyResponse(**rep, request=kept._replace(path="/x"),
+                                  resolver=resolver, keyid=agent.pre,
+                                  requestMode="legacy")
+            with pytest.raises(hs.UnknownKey):
+                hs.verifyResponse(**rep, request=kept, resolver=resolver,
+                                  keyid=controller.pre, requestMode="legacy")
+            with pytest.raises(hs.ModeMismatch):
+                hs.verifyResponse(**rep, request=kept, resolver=resolver,
+                                  keyid=agent.pre)

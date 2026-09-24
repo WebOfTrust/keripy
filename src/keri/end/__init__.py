@@ -28,5 +28,6 @@ from .httpsigning import (HttpSigError, MissingSignature,
                           signatureBase, signRequest, signResponse,
                           responseCovered, Verified, Policy, detectMode,
                           signatureKeyid, verifyRequest, checkBody,
-                          verifyResponse, keverResolver)
+                          verifyResponse, verifyLegacy,
+                          keverResolver)
 from .priming import parseArgs
