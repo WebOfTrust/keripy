@@ -522,7 +522,7 @@ def test_verify_request_roundtrip():
                 "keyid": signer.verfer.qb64},
         covered=('"@method"', '"@authority"', '"@path"', '"@query"',
                  '"content-digest"'),
-        verfer=verified.verfer, bodyOwed=False)
+        verfer=verified.verfer, bodyOwed=False, request=verified.request)
     assert verified.verfer.qb64 == signer.verfer.qb64
 
     # headers may arrive in any case and as pairs
@@ -595,7 +595,9 @@ def test_deferred_body():
     assert owed.bodyOwed is True
     done = hs.checkBody(owed, msg["headers"], msg["body"])
     assert done.bodyOwed is False
-    assert done._replace(bodyOwed=True) == owed
+    assert done._replace(bodyOwed=True,
+                         request=owed.request) == owed
+    assert done.request.body == msg["body"]
     with pytest.raises(hs.DigestMismatch):
         hs.checkBody(owed, msg["headers"], b"other")
     with pytest.raises(ValueError):
@@ -619,7 +621,8 @@ def test_deferred_body():
                                   headers=keriaHeaders(), body=hs.Deferred,
                                   resolver=hs.keverResolver(controller.kevers))
         assert legacy.bodyOwed is False
-        assert hs.checkBody(legacy, keriaHeaders(), b"x") == legacy
+        checked = hs.checkBody(legacy, keriaHeaders(), b"x")
+        assert checked._replace(request=legacy.request) == legacy
 
 
 def test_verify_request_transferable():
@@ -1033,6 +1036,66 @@ def test_signature_keyid():
     assert hs.signatureKeyid(legacy) == "EAID"
 
 
+def test_peek_mode():
+    assert hs.peekMode(signed()["headers"]) == "canonical"
+    assert hs.peekMode(keriaHeaders()) == "legacy"
+    assert hs.peekMode({}) is None
+    assert hs.peekMode({"Signature": "!!"}) is None
+    assert hs.peekMode({b"Signature": b"sig=:AAAA:"}) == "canonical"
+
+
+def test_verify_without_resolver():
+    """resolver=None means no key is known: malformed-key for a keyid that is
+    not an AID, otherwise unknown-key, in section 9 order."""
+    refused(craft(COVERED, params()), "unknown-key", resolver=None)
+    refused(craft(COVERED, params(keyid='"bad"')), "malformed-key",
+            resolver=None)
+    # key group comes after the covered list
+    refused(craft(['"@method"', '"@path"', '"content-digest"'],
+                  params(keyid='"bad"')), "insufficient-coverage",
+            resolver=None)
+    with pytest.raises(hs.UnknownKey):
+        hs.verifyRequest(method="POST", path="/boot", query=None,
+                         headers=keriaHeaders(), body=b"", resolver=None)
+    msg, kept = served()
+    with pytest.raises(hs.UnknownKey):
+        verifyResp(response(kept), kept, resolver=None)
+
+
+def test_verified_request():
+    """Verified.request is the verified request, ready for signResponse."""
+    msg = signed()
+    verified = verify(msg)
+    assert verified.request.method == "POST"
+    assert verified.request.path == msg["path"]
+    assert verified.request.query == msg["query"]
+    assert verified.request.authority == "keria.example"
+    assert verified.request.body == msg["body"]
+    rep = hs.signResponse(status=200, request=verified.request, body=b"{}",
+                          signer=ntSigner(b"\x02" * 32), created=NOW)
+    kept = hs.Requestage(method=msg["method"], authority=msg["authority"],
+                         path=msg["path"], query=msg["query"],
+                         headers=msg["headers"], body=msg["body"])
+    verifyResp(dict(status=200, headers=rep, body=b"{}"), kept)
+
+    # Host-derived authority; deferred body filled in by checkBody
+    msg = signed(authority=None,
+                 headers={"Host": "keria.example", "Content-Length": "7"})
+    owed = verify({**msg, "body": hs.Deferred})
+    assert owed.request.authority == "keria.example"
+    assert owed.request.body is hs.Deferred
+    done = hs.checkBody(owed, msg["headers"], msg["body"])
+    assert done.request.body == msg["body"]
+
+    with keriaController() as (hby, controller):
+        legacy = hs.verifyRequest(method="POST", path="/boot", query=None,
+                                  headers=keriaHeaders(), body=b"",
+                                  resolver=hs.keverResolver(controller.kevers))
+        assert legacy.request.path == "/boot"
+    assert verifyResp(dict(status=200, headers=rep, body=b"{}"),
+                      kept).request is None
+
+
 # Responses
 
 def served():
@@ -1274,7 +1337,7 @@ def test_verify_legacy_keria_vectors():
                     "alg": "ed25519"},
             covered=("signify-resource", "@method", "@path",
                      "signify-timestamp"),
-            verfer=verfer, bodyOwed=False)
+            verfer=verfer, bodyOwed=False, request=None)
 
         # falcon hands KERIA uppercase header names
         upper = {k.upper(): v for k, v in keriaHeaders().items()}

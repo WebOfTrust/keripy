@@ -781,8 +781,10 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
 #   verfer (Verfer): key that verified the signature
 #   bodyOwed (bool): True when the body was Deferred and checkBody has not yet
 #       run. A Verified with bodyOwed True is NOT a completed verification.
+#   request (Requestage): the verified request, from verifyRequest, ready to
+#       pass to signResponse; None from verifyResponse and verifyLegacy
 Verified = namedtuple("Verified",
-                      "mode keyid label params covered verfer bodyOwed")
+                      "mode keyid label params covered verfer bodyOwed request")
 
 
 class _DeferredType:
@@ -898,6 +900,22 @@ def detectMode(value):
         pass
     raise MalformedSignature("Signature is neither an RFC 9421 Byte Sequence "
                              "nor the legacy KERI form.")
+
+
+def peekMode(headers):
+    """
+    Returns the mode a message's Signature header selects, 'canonical' or
+    'legacy', or None when there is no Signature or it is neither form. Never
+    raises, and verifies nothing; the counterpart of signatureKeyid, so a
+    server can route before verifying.
+    """
+    signature = _fieldValue(_fieldLines(headers), "signature")
+    if signature is None:
+        return None
+    try:
+        return detectMode(signature)
+    except MalformedSignature:
+        return None
 
 
 def signatureKeyid(headers):
@@ -1034,7 +1052,11 @@ def effectiveVerfer(verfers, tholder):
 
 
 def _resolve(resolver, keyid, alg):
-    """Returns verfer for keyid, checking alg against the key (section 4)."""
+    """Returns verfer for keyid, checking alg against the key (section 4).
+    resolver None means no key is known for any keyid."""
+    if resolver is None:
+        _checkAid(keyid)
+        raise UnknownKey(f"No key state for {keyid}.")
     verfer = resolver(keyid)
     if verfer is None:
         raise UnknownKey(f"No key state for {keyid}.")
@@ -1082,13 +1104,14 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
 
     _checkFreshness(params, policy, now)
     return Verified(mode=Canonical, keyid=keyid, label=label, params=params,
-                    bodyOwed=False,
+                    bodyOwed=False, request=None,
                     covered=tuple(_serialize(item) for item in items),
                     verfer=verfer)
 
 
 def verifyRequest(*, method, path, query=None, authority=None, headers,
-                  body, resolver, policy=None, now=None, acceptLegacy=True):
+                  body, resolver=None, policy=None, now=None,
+                  acceptLegacy=True):
     """
     Verify a signed request in either mode (profile section 8).
 
@@ -1111,8 +1134,10 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
         headers: request header fields, mapping or iterable of pairs
         body (bytes | Deferred): content as received, b'' for none, or
             Deferred when not yet read. Required; None is a ValueError.
-        resolver (callable): keyid -> Verfer for canonical mode, with a
-            .legacy(aid) lookup for legacy mode; see KeverResolver
+        resolver (callable | None): keyid -> Verfer for canonical mode, with
+            a .legacy(aid) lookup for legacy mode; see KeverResolver. None
+            means no key is known: malformed-key for a keyid that is not an
+            AID, otherwise unknown-key.
         policy (Policy): default Policy()
         now (int): seconds since the epoch; None is now
         acceptLegacy (bool): False refuses legacy mode as malformed-signature
@@ -1132,8 +1157,11 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     if detectMode(signature) == Legacy:
         if not acceptLegacy:
             raise MalformedSignature("Legacy signatures are not accepted.")
-        return _verifyLegacyRequest(method=method, path=path, fields=fields,
-                                    resolver=resolver)
+        verified = _verifyLegacyRequest(method=method, path=path,
+                                        fields=fields, resolver=resolver)
+        return verified._replace(request=Requestage(
+            method=method, authority=authority, path=path, query=query,
+            headers=fields, body=body))
 
     required = list(policy.request)
     if policy.requireAuthority:
@@ -1149,6 +1177,9 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
         authority=normalizeAuthority(authority or "") if policy.requireAuthority else None,
         baseKwa=dict(method=method, authority=authority, path=path,
                      query=query, headers=fields))
+    verified = verified._replace(request=Requestage(
+        method=method, authority=authority, path=path, query=query,
+        headers=fields, body=body))
     return _bodyStage(verified, fields, body)
 
 
@@ -1181,6 +1212,9 @@ def checkBody(verified, headers, body):
     _checkBodyArg(body)
     if body is Deferred:
         raise ValueError("checkBody needs the body that was read.")
+    if verified.request is not None:
+        verified = verified._replace(
+            request=verified.request._replace(body=body))
     if verified.mode != Canonical:
         return verified._replace(bodyOwed=False)
     raw = _bytify(body)
@@ -1195,7 +1229,7 @@ def checkBody(verified, headers, body):
     return verified._replace(bodyOwed=False)
 
 
-def verifyResponse(*, status, headers, body, request, resolver, keyid,
+def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
                    requestMode=Canonical, policy=None, now=None):
     """
     Verify the response to a request this client signed.
@@ -1210,8 +1244,10 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
             or Deferred to check the headers first; then the result has
             bodyOwed True and checkBody must follow, as for verifyRequest.
         request (Requestage): the request as sent
-        resolver (callable): keyid -> Verfer for canonical mode, with a
-            .legacy(aid) lookup for legacy mode; see KeverResolver
+        resolver (callable | None): keyid -> Verfer for canonical mode, with
+            a .legacy(aid) lookup for legacy mode; see KeverResolver. None
+            means no key is known: malformed-key for a keyid that is not an
+            AID, otherwise unknown-key.
         keyid (str): AID the client expects to be talking to
         requestMode (str): mode the request was signed in, 'canonical' or
             'legacy'. A response in the other mode is mode-mismatch
@@ -1373,7 +1409,7 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
                            "alg")
               if getattr(inputage, name) is not None}
     resource = _fieldValue(fields, "signify-resource")
-    return Verified(mode=Legacy, bodyOwed=False,
+    return Verified(mode=Legacy, bodyOwed=False, request=None,
                     keyid=resource if resource is not None else inputage.keyid,
                     label=inputage.name, params=params,
                     covered=tuple(inputage.fields), verfer=verfer)
@@ -1381,6 +1417,9 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
 
 def _legacyVerfer(resolver, aid):
     """Legacy key lookup (profile section 8) through resolver.legacy."""
+    if resolver is None:
+        raise UnknownKey("Unknown or invalid controller (controller KEL not "
+                         "resolved)")
     lookup = getattr(resolver, "legacy", None)
     if lookup is None:
         raise UnknownKey("Resolver has no legacy lookup; legacy mode needs "
@@ -1403,6 +1442,18 @@ def _verifyLegacyRequest(*, method, path, fields, resolver):
 
 
 # Resolvers
+
+def _checkAid(keyid):
+    """Returns Prefixer of keyid, or raises MalformedKey when it is not a well
+    formed AID in qb64."""
+    try:
+        prefixer = Prefixer(qb64=keyid)
+    except Exception as ex:
+        raise MalformedKey(f"keyid {keyid!r} is not an AID.") from ex
+    if prefixer.qb64 != keyid or prefixer.code not in PreDex:
+        raise MalformedKey(f"keyid {keyid!r} is not an AID.")
+    return prefixer
+
 
 class KeverResolver:
     """
@@ -1432,12 +1483,7 @@ class KeverResolver:
         self.kevers = kevers
 
     def __call__(self, keyid):
-        try:
-            prefixer = Prefixer(qb64=keyid)
-        except Exception as ex:
-            raise MalformedKey(f"keyid {keyid!r} is not an AID.") from ex
-        if prefixer.qb64 != keyid or prefixer.code not in PreDex:
-            raise MalformedKey(f"keyid {keyid!r} is not an AID.")
+        prefixer = _checkAid(keyid)
 
         if prefixer.code in NonTransDex:
             try:
