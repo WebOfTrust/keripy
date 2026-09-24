@@ -1050,7 +1050,8 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
         body (bytes | None): content, or None when not yet read. With None
             only the header-time body test runs and the caller must call
             checkBody once the body is read.
-        resolver (callable): keyid -> Verfer, see keverResolver
+        resolver (callable): keyid -> Verfer for canonical mode, with a
+            .legacy(aid) lookup for legacy mode; see KeverResolver
         policy (Policy): default Policy()
         now (int): seconds since the epoch; None is now
         acceptLegacy (bool): False refuses legacy mode as malformed-signature
@@ -1128,7 +1129,8 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         headers: response header fields
         body (bytes): response content as received
         request (Requestage): the request as sent
-        resolver (callable): keyid -> Verfer
+        resolver (callable): keyid -> Verfer for canonical mode, with a
+            .legacy(aid) lookup for legacy mode; see KeverResolver
         keyid (str): AID the client expects to be talking to
         requestMode (str): mode the request was signed in. After a canonical
             request only a canonical response is accepted (section 8).
@@ -1161,9 +1163,7 @@ def verifyResponse(*, status, headers, body, request, resolver, keyid,
         resource = _fieldValue(fields, "signify-resource")
         if resource != keyid:
             raise UnknownKey(f"Response names {resource}, not {keyid}.")
-        verfer = resolver(keyid)
-        if verfer is None:
-            raise UnknownKey(f"No key state for {keyid}.")
+        verfer = _legacyVerfer(resolver, keyid)
         return verifyLegacy(method=request.method, path=request.path,
                             headers=fields, verfer=verfer)
 
@@ -1298,35 +1298,59 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
                     covered=tuple(inputage.fields), verfer=verfer)
 
 
+def _legacyVerfer(resolver, aid):
+    """Legacy key lookup (profile section 8) through resolver.legacy."""
+    lookup = getattr(resolver, "legacy", None)
+    if lookup is None:
+        raise UnknownKey("Resolver has no legacy lookup; legacy mode needs "
+                         "a KeverResolver or an object with .legacy(aid).")
+    verfer = lookup(aid)
+    if verfer is None:
+        raise UnknownKey("Unknown or invalid controller (controller KEL not "
+                         "resolved)")
+    return verfer
+
+
 def _verifyLegacyRequest(*, method, path, fields, resolver):
     """Legacy request: the signer is the AID named by Signify-Resource."""
     resource = _fieldValue(fields, "signify-resource")
     if resource is None:
         raise MissingComponent("Missing SIGNIFY-RESOURCE header")
-    verfer = resolver(resource)
-    if verfer is None:
-        raise UnknownKey(f"No key state for {resource}.")
+    verfer = _legacyVerfer(resolver, resource)
     return verifyLegacy(method=method, path=path, headers=fields,
                         verfer=verfer)
 
 
 # Resolvers
 
-def keverResolver(kevers):
+class KeverResolver:
     """
-    Returns resolver callable(keyid) -> Verfer over key state kevers (profile
-    section 7, R1 and R4).
+    Resolves keyids against key state kevers, e.g. hab.kevers or a Baser's
+    kevers.
 
-    The keyid is an AID in qb64 and is resolved by its derivation code, never
-    by its first character alone: a non-transferable code yields the key
-    directly; every transferable code, including the basic transferable
-    Ed25519 prefix, must have key state in kevers. The key returned is that
-    state's single effective signer (effectiveVerfer, R4).
+    Calling it resolves a canonical keyid (profile section 7, R1 and R4): the
+    keyid is an AID in qb64 resolved by its derivation code, never by its
+    first character alone. A non-transferable code yields the key directly;
+    every transferable code, including the basic transferable Ed25519 prefix,
+    must have key state in kevers, and the key returned is that state's single
+    effective signer (effectiveVerfer).
 
-    Parameters:
-        kevers (Mapping): prefix qb64 -> Kever, e.g. hab.kevers
+    .legacy(aid) is the legacy lookup (profile section 8), exactly as KERIA
+    does it: kevers[aid].verfers[0], with none of those rules, so legacy
+    traffic from multi-key controllers keeps verifying.
+
+    Both use in and [] on kevers, never get: Baser.kevers reads through to
+    the database on in and [] only, so get would miss key state that is
+    stored but not yet cached, as after a restart.
+
+    Attributes:
+        kevers (Mapping): prefix qb64 -> Kever
     """
-    def resolve(keyid):
+
+    def __init__(self, kevers):
+        self.kevers = kevers
+
+    def __call__(self, keyid):
         try:
             prefixer = Prefixer(qb64=keyid)
         except Exception as ex:
@@ -1341,12 +1365,20 @@ def keverResolver(kevers):
                 raise UnsupportedAlgorithm(f"Key {keyid} has an unsupported "
                                            f"algorithm.") from ex
 
-        # in and [], never get: Baser.kevers reads through to the database on
-        # in and [] only, so get would miss key state not yet cached, as
-        # after a restart.
-        if keyid not in kevers:
+        if keyid not in self.kevers:
             raise UnknownKey(f"No key state for {keyid}.")
-        kever = kevers[keyid]
+        kever = self.kevers[keyid]
         return effectiveVerfer(kever.verfers, kever.tholder)
 
-    return resolve
+    def legacy(self, aid):
+        """Returns the first current key of aid, as KERIA's legacy
+        authenticator takes it."""
+        if aid not in self.kevers:
+            raise UnknownKey("Unknown or invalid controller (controller KEL "
+                             "not resolved)")
+        return self.kevers[aid].verfers[0]
+
+
+def keverResolver(kevers):
+    """Returns KeverResolver(kevers)."""
+    return KeverResolver(kevers)

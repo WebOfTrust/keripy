@@ -1303,6 +1303,65 @@ def test_verify_request_legacy_mode():
                              now=1609459200)
 
 
+def legacySigned(hab, method="POST", path="/boot", resource=None):
+    """Headers of a legacy request signed as Signify does today."""
+    from keri.end import ending
+    headers = {"Content-Type": "application/json",
+               "Signify-Resource": resource or hab.pre,
+               "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00"}
+    header, qsig = ending.siginput(
+        "signify", method, path, headers,
+        fields=["Signify-Resource", "@method", "@path", "Signify-Timestamp"],
+        hab=hab, alg="ed25519", keyid=hab.pre)
+    headers.update(header)
+    headers.update(ending.signature([ending.Signage(
+        markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None,
+        digest=None, kind=None)]))
+    return headers
+
+
+def test_legacy_lookup_is_kerias():
+    """Legacy mode takes kevers[Signify-Resource].verfers[0], with none of
+    canonical mode's code or R4 rules (profile section 8)."""
+    with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
+                         temp=True) as (hby, hab):
+        group = hby.makeHab(name="group", icount=2, isith="2", ncount=2,
+                            nsith="2")
+        resolver = hs.keverResolver(hby.kevers)
+        with pytest.raises(hs.UnsupportedSigner):
+            resolver(group.pre)  # canonical refuses it
+        assert resolver.legacy(group.pre).qb64 == group.kever.verfers[0].qb64
+
+        headers = legacySigned(group)
+        verified = hs.verifyRequest(method="POST", path="/boot", query=None,
+                                    headers=headers, body=b"",
+                                    resolver=resolver)
+        assert verified.mode == "legacy"
+        assert verified.keyid == group.pre
+
+        # a Signify-Resource the verifier holds no key state for
+        with pytest.raises(hs.UnknownKey) as ex:
+            hs.verifyRequest(method="POST", path="/boot", query=None,
+                             headers={**headers, "Signify-Resource": "nope"},
+                             body=b"", resolver=resolver)
+        assert str(ex.value) == ("Unknown or invalid controller (controller "
+                                 "KEL not resolved)")
+
+        # a resolver without a legacy lookup refuses legacy traffic
+        with pytest.raises(hs.UnknownKey):
+            hs.verifyRequest(method="POST", path="/boot", query=None,
+                             headers=headers, body=b"",
+                             resolver=lambda keyid: resolver(keyid))
+
+        # legacy responses: the agent's first key, likewise
+        kept = hs.Requestage(method="POST", authority=None, path="/boot",
+                             query=None, headers={}, body=b"")
+        rep = dict(status=200, headers=legacySigned(group), body=b"{}")
+        verified = hs.verifyResponse(**rep, request=kept, resolver=resolver,
+                                     keyid=group.pre, requestMode="legacy")
+        assert verified.mode == "legacy"
+
+
 def test_verify_response_legacy():
     """A legacy request gets a legacy response, verified with the request's
     method and path, as signify-ts does today."""

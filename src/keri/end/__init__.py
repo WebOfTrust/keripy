@@ -30,6 +30,6 @@ from .httpsigning import (HttpSigError, MissingSignature,
                           responseCovered, Verified, Policy, detectMode,
                           effectiveVerfer,
                           signatureKeyid, verifyRequest, checkBody,
-                          verifyResponse, verifyLegacy,
+                          verifyResponse, verifyLegacy, KeverResolver,
                           keverResolver)
 from .priming import parseArgs
