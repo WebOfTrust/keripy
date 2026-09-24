@@ -1137,7 +1137,8 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
         body (bytes | Deferred): content as received, b'' for none, or
             Deferred when not yet read. Required; None is a ValueError.
         resolver (callable | None): keyid -> Verfer for canonical mode, with
-            a .legacy(aid) lookup for legacy mode; see KeverResolver. None
+            a .legacy(aid) lookup for legacy mode (without one, legacy mode
+            calls the resolver itself); see KeverResolver. None
             means no key is known: malformed-key for a keyid that is not an
             AID, otherwise unknown-key.
         policy (Policy): default Policy()
@@ -1247,7 +1248,8 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
             bodyOwed True and checkBody must follow, as for verifyRequest.
         request (Requestage): the request as sent
         resolver (callable | None): keyid -> Verfer for canonical mode, with
-            a .legacy(aid) lookup for legacy mode; see KeverResolver. None
+            a .legacy(aid) lookup for legacy mode (without one, legacy mode
+            calls the resolver itself); see KeverResolver. None
             means no key is known: malformed-key for a keyid that is not an
             AID, otherwise unknown-key.
         keyid (str): AID the client expects to be talking to
@@ -1420,14 +1422,12 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
 
 
 def _legacyVerfer(resolver, aid):
-    """Legacy key lookup (profile section 8) through resolver.legacy."""
+    """Legacy key lookup (profile section 8): resolver.legacy(aid) when the
+    resolver has it, else resolver(aid) itself; None is unknown-key."""
     if resolver is None:
         raise UnknownKey("Unknown or invalid controller (controller KEL not "
                          "resolved)")
-    lookup = getattr(resolver, "legacy", None)
-    if lookup is None:
-        raise UnknownKey("Resolver has no legacy lookup; legacy mode needs "
-                         "a KeverResolver or an object with .legacy(aid).")
+    lookup = getattr(resolver, "legacy", resolver)
     verfer = lookup(aid)
     if verfer is None:
         raise UnknownKey("Unknown or invalid controller (controller KEL not "

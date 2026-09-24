@@ -1542,11 +1542,25 @@ def test_legacy_lookup_is_kerias():
         assert str(ex.value) == ("Unknown or invalid controller (controller "
                                  "KEL not resolved)")
 
-        # a resolver without a legacy lookup refuses legacy traffic
+        # a plain callable resolver, without .legacy, is called itself
+        # (profile draft 7 section 8)
+        plain = lambda aid: resolver.legacy(aid)
+        verified = hs.verifyRequest(method="POST", path="/boot", query=None,
+                                    headers=headers, body=b"", resolver=plain)
+        assert verified.mode == "legacy"
+        rep = dict(status=200, headers=legacySigned(group), body=b"{}")
+        kept = hs.Requestage(method="POST", authority=None, path="/boot",
+                             query=None, headers={}, body=b"")
+        assert hs.verifyResponse(**rep, request=kept, resolver=plain,
+                                 keyid=group.pre,
+                                 requestMode="legacy").mode == "legacy"
         with pytest.raises(hs.UnknownKey):
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=headers, body=b"",
-                             resolver=lambda keyid: resolver(keyid))
+                             resolver=lambda aid: None)
+        with pytest.raises(hs.UnknownKey):
+            hs.verifyRequest(method="POST", path="/boot", query=None,
+                             headers=headers, body=b"", resolver=None)
 
         # legacy responses: the agent's first key, likewise
         kept = hs.Requestage(method="POST", authority=None, path="/boot",
