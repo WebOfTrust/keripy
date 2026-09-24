@@ -4,9 +4,9 @@
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "draft": 6,
+    "version": 1,
     "date": "2026-09-24",
-    "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
+    "where": "https://github.com/bakobo/fiki/blob/main/docs/keri-profile.md",
     "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
   },
   "encoding": {

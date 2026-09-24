@@ -4,9 +4,9 @@
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "draft": 6,
+    "version": 1,
     "date": "2026-09-24",
-    "where": "bakobo/keripy, .ignored/rfc9421/profile.md (not yet published)",
+    "where": "https://github.com/bakobo/fiki/blob/main/docs/keri-profile.md",
     "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
   },
   "encoding": {
@@ -31,11 +31,11 @@
       "\"@path\";req",
       "\"@query\";req"
     ],
-    "body_rule": "Profile section 3. A REQUEST has a body when it carries Content-Length above zero, any Transfer-Encoding, or a Content-Length that is not a plain decimal, or when a non-empty body arrives whatever the headers said. A RESPONSE has a body when it has content; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A body obliges a covered content-digest, and a response to a request that had a body must also cover \"content-digest\";req.",
+    "body_rule": "Profile section 3. A REQUEST has a body when it carries Content-Length above zero, any Transfer-Encoding, or a Content-Length that is not a plain decimal, or when a non-empty body arrives whatever the headers said. A RESPONSE has a body when it has content; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A body obliges a covered content-digest. A response to a request whose content was non-empty must also cover \"content-digest\";req; the request's headers do not count there, since both sides hold the whole request by the time a response is signed or verified.",
     "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch.",
     "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3)."
   },
-  "keys_rule": "A keyid is a well-formed AID when it is 44 characters, its first character is B, D or E, and the other 43 are base64url that decode, behind one leading pad character, to 32 bytes. A keyid that is not is malformed-key. A well-formed B keyid yields its key from the prefix. Every other well-formed keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, and an entry whose effective_key is null is unsupported-signer. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
+  "keys_rule": "A keyid is a well-formed AID when it is 44 characters, its first character is B, D or E, and the other 43 are base64url that decode, behind one leading pad character, to 32 bytes with a zero pad byte, so that re-encoding gives back the keyid exactly. A keyid that is not is malformed-key. A well-formed B keyid yields its key from the prefix. Every other well-formed keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, and an entry whose effective_key is null is unsupported-signer. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
   "keys": [
     {
       "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
