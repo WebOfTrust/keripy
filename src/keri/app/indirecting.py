@@ -750,7 +750,7 @@ class Poller(doing.DoDoer):
         self.version = version
         self.gvrsn = version if gvrsn is None else gvrsn
         self.kind = kind
-        self.msgs = None if msgs is not None else decking.Deck()
+        self.msgs = msgs if msgs is not None else decking.Deck()
         self.times = dict()
 
         doers = [doing.doify(self.eventDo)]
@@ -831,7 +831,7 @@ class Poller(doing.DoDoer):
                         logger.error(f"bad mailbox event: {evt}")
                         continue
 
-                    self.msgs.append(msg.encode("utf=8"))
+                    self.msgs.append(msg.encode("utf-8"))
                     yield self.tock
 
                     witrec.topics[tpc] = int(idx)
