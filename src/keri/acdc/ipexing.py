@@ -602,25 +602,15 @@ class IpexHandler:
 
             # Require Exchanger's fixed three-part evidence result.
             try:
-                extraTsgs, extraCigars, extraSeals = evidence
+                _, _, extraSeals = evidence
             except (TypeError, ValueError):
                 return False
-
-            # The KRAM-authenticated sender is always a Grantor.
-            grantors = {serder.pre}
-            # Add Grantors with accepted transferable endorsements.
-            grantors.update(prefixer.qb64 for prefixer, _, _, _ in extraTsgs)
-            # Add Grantors with accepted non-transferable endorsements.
-            grantors.update(cigar.verfer.qb64 for cigar in extraCigars)
-            # Add Grantors with accepted direct KEL anchors.
-            grantors.update(prefixer.qb64 for prefixer, _, _ in extraSeals)
 
             # Verify every presentation registry declared across the DAG.
             tethered = self._verifyPresentationAuthGraph(
                 serder=serder,
                 nodes=walked[0],
                 order=walked[1],
-                grantors=grantors,
             )
 
             # Reject any malformed, missing, or invalid presentation factor.
@@ -1500,7 +1490,7 @@ class IpexHandler:
         # Return every explicit presentation requirement.
         return declarations
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
+    def _verifyPresentationAuthGraph(self, serder, nodes, order):
         """Verify every presentation registry in the DAG."""
 
         required = []
@@ -1540,10 +1530,6 @@ class IpexHandler:
 
         # Vet every declared registry independently.
         for said, issuee, regk, nest in required:
-            # A registry supplements, but never replaces, a Grant endorsement.
-            if issuee not in grantors:
-                return None
-
             # Resolve the latest disclosed binding as of KRAM acceptance.
             sourceSeals = nest.get("ssts", []) if isinstance(nest, dict) else nest.ssts
             record = self._vetRegistry(regk=regk,

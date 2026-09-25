@@ -6202,21 +6202,18 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # A presentation registry cannot replace its Issuee's Grant endorsement.
+            # Sender authentication plus the Issuee's presentation TEL is
+            # sufficient; the Issuee does not need a redundant EXN endorsement.
             ims = bytearray(registryOnly)
-            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-            assert ims == bytearray()
-            assert hby.db.exns.get(keys=(grantExn.said,)) is None
-
-            # Both Issuee factors inside the KRAM window authenticate the grant.
-            ims = bytearray(complete)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
             assert hby.db.ests.get(keys=(grantExn.said, proxy.pre)) == []
             assert hby.db.ests.get(keys=(grantExn.said, issuee.pre)) == []
             assert len(list(hby.db.esigs.getTopItemIter(
-                keys=(grantExn.said, issuee.pre, "")))) == 1
+                keys=(grantExn.said, proxy.pre, "")))) == 1
+            assert list(hby.db.esigs.getTopItemIter(
+                keys=(grantExn.said, issuee.pre, ""))) == []
             storedNests = hby.db.enst.get(keys=(grantExn.said,))
             parsed = Parser(version=Vrsn_2_0).parse(
                 ims=bytearray(storedNests[0].encode("utf-8")
@@ -6475,18 +6472,6 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                               childIssuee.sign(ser=grantExn.raw, indexed=True))
             grantorTsgs = [senderTsg, originIssueeTsg, childIssueeTsg]
 
-            # Complete TEL proofs cannot replace either Issuee endorsement.
-            ims = messagize(
-                grantExn,
-                tsgs=[senderTsg],
-                nests=[_nest(proofedOrigin), _nest(proofedChild)],
-                framed=False,
-                gvrsn=Vrsn_2_0,
-            )
-            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
-            assert ims == bytearray()
-            assert hby.db.exns.get(keys=(grantExn.said,)) is None
-
             # Endorsements cannot replace the child presentation proof.
             incompleteChild = _proofed(child, childIssuerProof)
             ims = messagize(
@@ -6500,10 +6485,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # Both factors for both Issuees accept the Grant.
+            # The sender factor and both Issuee TEL factors accept the Grant.
             ims = messagize(
                 grantExn,
-                tsgs=grantorTsgs,
+                tsgs=[senderTsg],
                 nests=[_nest(proofedOrigin), _nest(proofedChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -6511,10 +6496,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
-            assert len(list(hby.db.esigs.getTopItemIter(
-                keys=(grantExn.said, originIssuee.pre, "")))) == 1
-            assert len(list(hby.db.esigs.getTopItemIter(
-                keys=(grantExn.said, childIssuee.pre, "")))) == 1
+            assert list(hby.db.esigs.getTopItemIter(
+                keys=(grantExn.said, originIssuee.pre, ""))) == []
+            assert list(hby.db.esigs.getTopItemIter(
+                keys=(grantExn.said, childIssuee.pre, ""))) == []
             assert len(recorder.items) == 1
             assert recorder.items[0]["r"] == "/exn/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
