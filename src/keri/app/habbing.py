@@ -16,7 +16,7 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger,  specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Ilks, Kinds, Roles, Schemes,
+from ..kering import (Version, Vrsn_1_0, Ilks, Kinds, Roles, Schemes, Decls,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
@@ -2290,6 +2290,107 @@ class BaseHab:
         return self.reply(route="/loc/scheme", data=data, stamp=stamp, **kwa)
 
 
+    def makeDeclTags(self, tags, eid=None, stamp=None, **kwa):
+        """Return a reply message declaring own ``tags``.
+
+        A tag is a bare name a consumer may act on, so the set of names is what unions across a
+        witness set -- which is why tags and attribs are declared separately rather than in one
+        message. The other reason is BADA: each route is ordered on its own, so amending an
+        attribute never re-stamps a tag declaration.
+
+        Parameters:
+            tags (list): bare tag names being declared. Empty nullifies the declaration.
+            eid (str or None): qb64 of the declaring identifier.
+                None means use own ``.pre``.
+            stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
+                datetime. None means use now.
+            **kwa: keyword arguments forwarded to ``eventing.reply``.
+
+        Returns:
+            bytearray: reply message."""
+        eid = eid if eid is not None else self.pre
+        data = dict(eid=eid, tags=list(tags))
+        return self.reply(route="/decl/tags", data=data, stamp=stamp, **kwa)
+
+
+    def makeDeclAttribs(self, attribs, eid=None, stamp=None, **kwa):
+        """Return a reply message declaring own ``attribs``.
+
+        Parameters:
+            attribs (dict): key/value attributes being declared. Empty nullifies the declaration.
+            eid (str or None): qb64 of the declaring identifier.
+                None means use own ``.pre``.
+            stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
+                datetime. None means use now.
+            **kwa: keyword arguments forwarded to ``eventing.reply``.
+
+        Returns:
+            bytearray: reply message."""
+        eid = eid if eid is not None else self.pre
+        data = dict(eid=eid, attribs=dict(attribs))
+        return self.reply(route="/decl/attribs", data=data, stamp=stamp, **kwa)
+
+
+    def loadDecls(self, eid, kind=None, framed=False, nested=False,
+                  gvrsn=None, genusify=False):
+        """Load and return messagized self-declaration records for ``eid``.
+
+        Replays the stored signed replies rather than re-signing, so a relay that is not itself
+        the declarer can still disseminate a declaration with its original signature intact. The
+        declarer re-signs instead, via :meth:`replyDecls`.
+
+        Parameters:
+            eid (str): declaring identifier prefix.
+            kind (str or None): one of kering.Decls. None means every kind.
+            framed (bool): True means frame the attachments.
+            nested (bool): True means nest the attachments.
+            gvrsn (Versionage or None): CESR genus version for attachments.
+            genusify (bool): True means prepend the genus version code.
+
+        Returns:
+            bytearray: messagized declaration records with attachments."""
+        msgs = bytearray()
+        keys = (eid, kind) if kind else (eid,)
+        for (_, _), said in self.db.dans.getTopItemIter(keys=keys):
+            serder = self.db.rpys.get(keys=(said.qb64,))
+            egvrsn = gvrsn if gvrsn is not None else Version
+            cigars = self.db.scgs.get(keys=(said.qb64,))
+            tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
+
+            if len(cigars) == 1:
+                (verfer, cigar) = cigars[0]
+                cigar.verfer = verfer
+            else:
+                cigar = None
+
+            msgs.extend(eventing.messagize(serder=serder,
+                                           cigars=[cigar] if cigar else [],
+                                           tsgs=tsgs,
+                                           framed=framed,
+                                           nested=nested,
+                                           gvrsn=egvrsn,
+                                           genusify=genusify))
+        return msgs
+
+
+    def replyDecls(self, eid, **kwa):
+        """Return a reply message stream of own self-declarations.
+
+        Parameters:
+            eid (str): declaring identifier prefix.
+            **kwa: keyword arguments forwarded to ``eventing.reply``.
+
+        Returns:
+            bytearray: reply message stream for declaration entries."""
+        msgs = bytearray()
+        for (_, kind), record in self.db.decls.getTopItemIter(keys=(eid,)):
+            if kind == Decls.tags:
+                msgs.extend(self.makeDeclTags(eid=eid, tags=record.tags, **kwa))
+            elif kind == Decls.attribs:
+                msgs.extend(self.makeDeclAttribs(eid=eid, attribs=record.attribs, **kwa))
+        return msgs
+
+
     def replyLocScheme(self, eid, scheme="", **kwa):
         """Return a reply message stream of location scheme entries authed by
         the given ``eid`` from the reply database, including associated
@@ -2454,9 +2555,11 @@ class BaseHab:
                 if not eids or eid in eids:
                     if eid == self.pre:
                         msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme, **kwa))
+                        msgs.extend(self.replyDecls(eid=eid, **kwa))
                     else:
                         msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
                                                        gvrsn=gvrsn))
+                        msgs.extend(self.loadDecls(eid=eid, gvrsn=gvrsn))
                     if not witness:  # we are not witness, send auth records
                         msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
 

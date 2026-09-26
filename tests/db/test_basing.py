@@ -1916,7 +1916,7 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
         assert state.f == '6'
-        assert natHab.db.env.stat()['entries'] <= 105 #68
+        assert natHab.db.env.stat()['entries'] <= 107 #68
 
         grant = exchange(sender=natHab.pre,
                          route="/test/grant",
@@ -2025,7 +2025,7 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
-            assert natHab.db.env.stat()['entries'] <= 105 #68
+            assert natHab.db.env.stat()['entries'] <= 107 #68
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)
