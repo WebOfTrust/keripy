@@ -6,6 +6,7 @@ Provides versioning support for Indexer classes and codes
 """
 from collections import namedtuple
 from dataclasses import dataclass, astuple, asdict
+import binascii
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
@@ -14,7 +15,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeSizeError
                       ShortageError, UnexpectedCodeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 
-from ..help import (sceil, intToB64, b64ToInt,
+from ..help import (sceil, intToB64, b64ToInt, decodeUtf8,
                     codeB64ToB2, codeB2ToB64, nabSextets)
 
 
@@ -530,8 +531,7 @@ class Indexer:
             raise ShortageError("Empty material.")
 
         first = qb64b[:1]  # extract first char code selector
-        if hasattr(first, "decode"):
-            first = first.decode("utf-8")
+        first = decodeUtf8(first)  # narrows non-UTF-8 to ConversionError
         if first not in self.Hards:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
@@ -547,8 +547,7 @@ class Indexer:
             raise ShortageError(f"Need {hs - len(qb64b)} more characters.")
 
         hard = qb64b[:hs]  # get hard code
-        if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")
+        hard = decodeUtf8(hard)  # narrows non-UTF-8 to ConversionError
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -564,13 +563,11 @@ class Indexer:
             raise ShortageError(f"Need {cs - len(qb64b)} more characters.")
 
         index = qb64b[hs:hs+ms]  # extract index/size chars
-        if hasattr(index, "decode"):
-            index = index.decode("utf-8")
+        index = decodeUtf8(index)  # narrows non-UTF-8 to ConversionError
         index = b64ToInt(index)  # compute int index
 
         ondex = qb64b[hs+ms:hs+ms+os]  # extract ondex chars
-        if hasattr(ondex, "decode"):
-            ondex = ondex.decode("utf-8")
+        ondex = decodeUtf8(ondex)  # narrows non-UTF-8 to ConversionError
 
         if hard in IdxCrtSigDex:  # if current sig then ondex from code must be 0
             ondex = b64ToInt(ondex) if os else None  # compute ondex from code
@@ -608,7 +605,10 @@ class Indexer:
         pbs = 2 * (ps if ps else ls)  # pad bit size in bits
         if ps:  # ps. IF ps THEN not ls (lead) and vice versa OR not ps and not ls
             base = ps * b'A' + qb64b[cs:]  # replace pre code with prepad chars of zero
-            paw = decodeB64(base)  # decode base to leave prepadded raw
+            try:
+                paw = decodeB64(base)  # decode base to leave prepadded raw
+            except binascii.Error as ex:
+                raise ConversionError(f"Invalid Base64 material = {qb64b}.") from ex
             pi = (int.from_bytes(paw[:ps], "big"))  # prepad as int
             if pi & (2 ** pbs - 1 ):  # masked pad bits non-zero
                 raise ValueError(f"Non zeroed prepad bits = "
@@ -618,7 +618,10 @@ class Indexer:
             base = qb64b[cs:]  # strip off code leaving lead chars if any and value
             # decode lead chars + val leaving lead bytes + raw bytes
             # then strip off ls lead bytes leaving raw
-            paw = decodeB64(base) # decode base to leave prepadded paw bytes
+            try:
+                paw = decodeB64(base) # decode base to leave prepadded paw bytes
+            except binascii.Error as ex:
+                raise ConversionError(f"Invalid Base64 material = {qb64b}.") from ex
             li = int.from_bytes(paw[:ls], "big")  # lead as int
             if li:  # pre pad lead bytes must be zero
                 if ls == 1:

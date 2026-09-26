@@ -6,6 +6,7 @@ import json
 from collections import namedtuple
 from collections.abc import Sequence, Mapping
 from dataclasses import dataclass, astuple, asdict
+import binascii
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from fractions import Fraction
@@ -31,7 +32,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       Kinds, Protocols, Ilks, TraitDex)
 
 from ..help import (sceil, isNonStringIterable, isNonStringSequence,
-                    intToB64, b64ToInt, codeB64ToB2, nabSextets,
+                    intToB64, b64ToInt, decodeUtf8, codeB64ToB2, nabSextets,
                     codeB2ToB64, Reb64, Reatt, Repath,
                     nowIso8601, fromIso8601)
 
@@ -142,7 +143,7 @@ def loads(raw, size=None, kind=Kinds.json):
             ked = json.loads(raw[:size].decode("utf-8"))
         except Exception as ex:
             raise DeserializeError("Error deserializing JSON: {}"
-                                       "".format(raw[:size].decode("utf-8")))
+                                       "".format(raw[:size].decode("utf-8", "replace"))) from ex
 
     elif kind == Kinds.mgpk:
         try:
@@ -1350,8 +1351,7 @@ class Matter:
         first = qb64b[:1]  # extract first char code selector
         if isinstance(first, memoryview):
             first = bytes(first)
-        if hasattr(first, "decode"):
-            first = first.decode()  # converts bytes/bytearray to str
+        first = decodeUtf8(first)  # converts bytes/bytearray to str (narrows non-UTF-8)
         if first not in self.Hards:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
@@ -1369,8 +1369,7 @@ class Matter:
         hard = qb64b[:hs]  # extract hard code
         if isinstance(hard, memoryview):
             hard = bytes(hard)
-        if hasattr(hard, "decode"):
-            hard = hard.decode()  # converts bytes/bytearray to str
+        hard = decodeUtf8(hard)  # converts bytes/bytearray to str (narrows non-UTF-8)
         if hard not in self.Sizes:
             raise UnexpectedCodeError(f"Unsupported code ={hard}.")
 
@@ -1380,14 +1379,15 @@ class Matter:
         # these are well formed.
         # when fs is None then ss > 0 otherwise fs > hs + ss when ss > 0
 
+        if len(qb64b) < cs:  # need more bytes to cover soft size field
+            raise ShortageError(f"Need {cs - len(qb64b)} more characters.")
 
         # extract soft chars including xtra, empty when ss==0 and xs == 0
         # assumes that when ss == 0 then xs must be 0
         soft = qb64b[hs:hs+ss]
         if isinstance(soft, memoryview):
             soft = bytes(soft)
-        if hasattr(soft, "decode"):
-            soft = soft.decode()  # converts bytes/bytearray to str
+        soft = decodeUtf8(soft)  # converts bytes/bytearray to str (narrows non-UTF-8)
         xtra = soft[:xs]  # extract xtra if any from front of soft
         soft = soft[xs:]  # strip xtra from soft
         if xtra != f"{self.Pad * xs}":
@@ -1413,7 +1413,10 @@ class Matter:
 
         ps = cs % 4  # net prepad bytes to ensure 24 bit align when encodeB64
         base =  ps * b'A' + qb64b[cs:]  # prepad ps 'A's to  B64 of (lead + raw)
-        paw = decodeB64(base)  # now should have ps + ls leading sextexts of zeros
+        try:
+            paw = decodeB64(base)  # now should have ps + ls leading sextexts of zeros
+        except binascii.Error as ex:
+            raise ConversionError(f"Invalid Base64 material = {qb64b}.") from ex
         raw = paw[ps+ls:]  # remove prepad midpat bytes to invert back to raw
         # ensure midpad bytes are zero
         pi = int.from_bytes(paw[:ps+ls], "big")
@@ -2679,7 +2682,7 @@ class Texter(Matter):
     def text(self):
         """
         Property text: raw as str"""
-        return self.raw.decode()
+        return decodeUtf8(self.raw)
 
 
 class Bexter(Matter):
@@ -2923,6 +2926,16 @@ class Pather(Matter):
         path = "AAA/BBB" with relative == True
         path = "/@AA/BBB" with pathive == False"""
 
+    # DoS-narrowing cap (deployment-tunable). Upper bound on path depth
+    # traversed by ._resolve. SAD paths are shallow in practice; this generous
+    # cap keeps a hostile path from recursing to a RecursionError and bounds
+    # resolution work. It is a local defensive limit, NOT a protocol maximum:
+    # a peer MAY send a wire-legal path deeper than this, and an operator whose
+    # data legitimately exceeds it may raise the value. One of a family of such
+    # caps (see Tholder.Limit/MaxSith below and the message/connection caps in
+    # the wider hardening set); tune them together for a given deployment.
+    MaxDepth = 256
+
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.StrB64_L0, parts=None, path=None, relative=False,
                  pathive=True, **kwa):
@@ -3013,7 +3026,10 @@ class Pather(Matter):
             path = '/'.join(parts)
 
         else:
-            path = self.raw.decode()
+            try:
+                path = decodeUtf8(self.raw)  # narrows non-UTF-8 raw bytes
+            except ConversionError as ex:  # to Pather's InvalidValueError contract
+                raise InvalidValueError(f"Non-UTF-8 Pather raw={self.raw!r}.") from ex
 
         return path
 
@@ -3033,7 +3049,10 @@ class Pather(Matter):
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
         else:
-            path = self.raw.decode()
+            try:
+                path = decodeUtf8(self.raw)  # narrows non-UTF-8 raw bytes
+            except ConversionError as ex:  # to Pather's InvalidValueError contract
+                raise InvalidValueError(f"Non-UTF-8 Pather raw={self.raw!r}.") from ex
             parts = path.split("/")
 
         return parts
@@ -3054,7 +3073,10 @@ class Pather(Matter):
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
         else:
-            path = self.raw.decode()
+            try:
+                path = decodeUtf8(self.raw)  # narrows non-UTF-8 raw bytes
+            except ConversionError as ex:  # to Pather's InvalidValueError contract
+                raise InvalidValueError(f"Non-UTF-8 Pather raw={self.raw!r}.") from ex
             parts = path.split("/")
 
         while parts and parts[0] == "":
@@ -3162,6 +3184,10 @@ class Pather(Matter):
         if len(parts) == 0:
             return val
 
+        if len(parts) > self.MaxDepth:  # bound recursion on a hostile path
+            raise InvalidValueError(f"Path depth {len(parts)} exceeds limit "
+                                    f"{self.MaxDepth}.")
+
         idx = parts.pop(0)
 
         if isinstance(val, dict):
@@ -3170,23 +3196,29 @@ class Pather(Matter):
 
                 keys = list(val)
                 if i >= len(keys):
-                    raise KeyError(f"invalid dict pointer index {i} for keys {keys}")
+                    raise InvalidValueError(f"invalid dict pointer index {i} for keys {keys}")
 
                 cur = val[list(val)[i]]
             elif idx == "":
                 return val
             else:
-                cur = val[idx]
+                try:
+                    cur = val[idx]
+                except KeyError as ex:
+                    raise InvalidValueError(f"invalid dict pointer key {idx}.") from ex
 
         elif isinstance(val, list):
-            i = int(idx)
+            try:
+                i = int(idx)
+            except (ValueError, TypeError) as ex:
+                raise InvalidValueError(f"invalid array pointer index {idx}.") from ex
             if i >= len(val):
-                raise KeyError(f"invalid array pointer index {i} for array {val}")
+                raise InvalidValueError(f"invalid array pointer index {i} for array {val}")
 
             cur = val[i]
 
         else:
-            raise KeyError("invalid traversal type")
+            raise InvalidValueError("invalid traversal type")
 
         return self._resolve(cur, parts)
 
@@ -3314,7 +3346,7 @@ class Labeler(Matter):
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
 
         else:
-            label = self.raw.decode()  # everything else is just raw as str
+            label = decodeUtf8(self.raw)  # narrows non-UTF-8 raw as str
 
         if not Reatt.match(label.encode()):
             raise InvalidValueError(f"Invalid {label=}")
@@ -3335,7 +3367,7 @@ class Labeler(Matter):
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
             return label
 
-        return self.raw.decode()  # everything else is just raw as str
+        return decodeUtf8(self.raw)  # narrows non-UTF-8 raw as str
 
 
 class Verfer(Matter):
@@ -4289,6 +4321,34 @@ class Tholder:
         ._satisfy_numeric is numeric threshold verification method
         ._satisfy_weighted is fractional weighted threshold verification method"""
 
+    # DoS-narrowing cap (deployment-tunable). Upper bound on the number of
+    # clauses in a weighted threshold, on the number of weights within any one
+    # clause, and on the TOTAL weight/leaf count across all clauses. Real
+    # multisig thresholds have at most tens of participants; this generous cap
+    # bounds the work done parsing a hostile sith (thousands of clauses/weights,
+    # or their product, were previously accepted). It is a local defensive
+    # limit, NOT a protocol maximum -- the KERI spec places no bound on multisig
+    # size, so a peer MAY send a wire-legal threshold with more leaves than this;
+    # an operator running a larger multisig may raise the value. MaxSith below is
+    # kept reconciled to this leaf cap so the string and list/limen paths agree.
+    Limit = 1000
+
+    # DoS-narrowing cap (deployment-tunable). Upper bound on the length of a
+    # JSON-string sith before it is handed to json.loads. This is a cheap coarse
+    # guard, reconciled with the Limit leaf
+    # cap (SEC-F3): any threshold within Limit leaves must FIT as a string, so
+    # the string API accepts exactly what the list/CESR-limen wire paths do.
+    # A flat 1000-leaf threshold of large fractions serializes to ~18000 chars;
+    # this bound (Limit x ~64 worst-case chars/leaf, incl. JSON quotes, commas
+    # and nested-map structure) is comfortably above that. The old 4096 value
+    # silently rejected ~450+ participant weighted thresholds the rest of the
+    # code accepted. The nesting RecursionError (P3) is handled separately, by
+    # catching RecursionError around json.loads below -- a deeply-nested string
+    # can overflow the decoder's C stack even while under this length bound.
+    # Like Limit this is a local defensive limit, not a protocol maximum; raise
+    # it together with Limit if a deployment's legitimate thresholds are larger.
+    MaxSith = 65536
+
     def __init__(self, *, thold=None , limen=None, sith=None, **kwa):
         """
         Accepts signing threshold in various forms so that may output correct
@@ -4494,14 +4554,35 @@ class Tholder:
             self._processUnweighted(thold=sith)
 
         elif isinstance(sith, str) and '[' not in sith:
-            self._processUnweighted(thold=int(sith, 16))
+            try:
+                thold = int(sith, 16)
+            except ValueError as ex:
+                raise ValidationError(f"Invalid threshold = {sith}.") from ex
+            self._processUnweighted(thold=thold)
 
         else:  # assumes sequence of weights or sequence of sequence of weights
             if isinstance(sith, str):  # json of weighted sith from cli
-                sith = json.loads(sith)  # deserialize
+                # bound length before json.loads: a deeply-nested string
+                # overflows the C stack inside the decoder (raw RecursionError)
+                if len(sith) > self.MaxSith:
+                    raise ValidationError(f"Threshold JSON length {len(sith)} "
+                                          f"exceeds limit {self.MaxSith}.")
+                try:
+                    sith = json.loads(sith)  # deserialize
+                except json.JSONDecodeError as ex:
+                    raise ValidationError(f"Invalid threshold JSON = {sith}.") from ex
+                except RecursionError as ex:
+                    # a deeply-nested string within the length bound overflows
+                    # the decoder's C stack (P3); narrow to ValidationError so
+                    # it cannot escape `except KeriError`.
+                    raise ValidationError(f"Threshold JSON nesting too deep.") from ex
+
+            if not isNonStringSequence(sith):  # e.g. float, mapping, or other scalar
+                raise ValidationError(f"Invalid sith = {sith}, expected a sequence "
+                                     f"of weights.")
 
             if not sith:  # empty or None
-                raise ValueError(f"Empty weight list = {sith}.")
+                raise ValidationError(f"Empty weight list = {sith}.")
 
             # is it non str sequence of sequences? or non str sequnce of strs?
             # must test for emply mask because all([]) == True
@@ -4509,11 +4590,42 @@ class Tholder:
             if mask and not all(mask):  # not empty and not sequence of sequenes
                 sith = [sith]  # attempt to make sequnce of sequqnces of strs
 
+            # bound resource use: reject pathological clause / weight counts
+            # before converting thousands of fractions (previously accepted).
+            if len(sith) > self.Limit:
+                raise ValidationError(f"Threshold clause count {len(sith)} "
+                                     f"exceeds limit {self.Limit}.")
+            for c in sith:
+                if isNonStringSequence(c) and len(c) > self.Limit:
+                    raise ValidationError(f"Threshold weight count {len(c)} in "
+                                         f"clause exceeds limit {self.Limit}.")
+
+            # bound the TOTAL weight/leaf count across all clauses, not just each
+            # dimension independently: clauses x weights (e.g. [["1/1000"]*1000]
+            # *1000) otherwise builds ~1e6 Fractions before any per-dimension cap
+            # trips. Count leaves (nested map values included) and stop early.
+            leaves = 0
+            for c in sith:
+                if isNonStringSequence(c):
+                    for e in c:
+                        if isinstance(e, Mapping):
+                            for k in e:
+                                v = e[k]
+                                leaves += 1 + (len(v) if isNonStringSequence(v)
+                                               else 1)
+                        else:
+                            leaves += 1
+                else:
+                    leaves += 1
+                if leaves > self.Limit:
+                    raise ValidationError(f"Threshold total weight count exceeds "
+                                          f"limit {self.Limit}.")
+
             for c in sith:  # get each clause
                 # each element of a clause must be a str or dict
                 mask = [(isinstance(w, str) or isinstance(w, Mapping)) for w in c]
                 if mask and not all(mask):  # not empty and not sequence of str or dicts
-                    raise ValueError(f"Invalid sith = {sith} some weights in"
+                    raise ValidationError(f"Invalid sith = {sith} some weights in"
                                      f"clause {c} are non string.")
 
             # replace weight str expression, int str or fractional strings with
@@ -4527,7 +4639,7 @@ class Tholder:
                 for e in c:  # each element of clause c
                     if isinstance(e, Mapping):
                         if len(e) != 1:
-                            raise ValueError(f"Invalid sith = {sith} nested "
+                            raise ValidationError(f"Invalid sith = {sith} nested "
                                              f"weight map {e} in clause {c} "
                                              f" not single key value.")
                         k = list(e)[0]  # zeroth key is used
@@ -4548,7 +4660,7 @@ class Tholder:
         Parameters:
             thold (int): non-negative threshold number M-of-N threshold"""
         if thold < 0:
-            raise ValueError(f"Non-positive int threshold = {thold}.")
+            raise ValidationError(f"Non-positive int threshold = {thold}.")
         self._thold = thold
         self._weighted = False
         self._size = self._thold  # used to verify that keys list size is at least size
@@ -4571,13 +4683,13 @@ class Tholder:
                 if isinstance(e, tuple):
                     top.append(e[0])
                     if not (sum(e[1]) >= 1):
-                        raise ValueError(f"Invalid sith clause = {clause}, "
+                        raise ValidationError(f"Invalid sith clause = {clause}, "
                                          f"element = {e}. All nested clause "
                                          f"weight sums must be >= 1.")
                 else:
                     top.append(e)
             if not (sum(top) >= 1):
-                raise ValueError(f"Invalid sith clause = {clause}, all top level"
+                raise ValidationError(f"Invalid sith clause = {clause}, all top level"
                                  f"clause weight sums must be >= 1.")
 
         self._thold = thold
@@ -4629,16 +4741,19 @@ class Tholder:
             w (str): threshold weight expression"""
         try:  # float str or ratio str raises ValueError
             if int(float(w)) != float(w):  # float str
-                raise TypeError("Invalid weight str got float w={w}.")
+                raise TypeError(f"Invalid weight str got float w={w}.")
             w = int(w)  # expression is int str
         except TypeError as ex:
-            raise  ValueError(str(ex)) from  ex
+            raise ValidationError(str(ex)) from ex
 
-        except ValueError as ex:  # not float str or int str so try ration str
-            w = Fraction(w)
+        except (ValueError, OverflowError) as ex:  # not float/int str so try ratio str
+            try:  # ratio str; narrows ZeroDivisionError/OverflowError/huge-int
+                w = Fraction(w)
+            except (ValueError, ZeroDivisionError, OverflowError, TypeError) as ex2:
+                raise ValidationError(f"Invalid weight = {w}.") from ex2
 
         if not 0 <= w <= 1:
-            raise ValueError(f"Invalid weight not 0 <= {w} <= 1.")
+            raise ValidationError(f"Invalid weight not 0 <= {w} <= 1.")
         return w
 
 
