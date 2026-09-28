@@ -708,6 +708,96 @@ def test_V23_no_salt_parameter_anywhere():
     assert checked > 0  # the sweep saw a real API surface
 
 
+def test_presentation_bindings_use_historical_cutoff():
+    """Presentation proof resolves the registry head at KRAM acceptance."""
+    with openIssuer("targeted-presentation") as (hby, hab):
+        ripper = makeRegistry(hab)
+
+        # Create two different Diger instances to represent two different grants
+        grantA = Diger(ser=b"grant A").qb64
+        grantB = Diger(ser=b"grant B").qb64
+
+        # Create one presentation proof and a vacuous update for grant A
+        proofA, eventA = makeUpdate(ripper.said, ripper.said, grantA,
+                                    "presented", sn=1, stamp=STAMP1)
+        vacuousA, eventVacuousA = makeUpdate(ripper.said, eventA.said, "", "",
+                                             sn=2, stamp=STAMP2)
+
+        # Create another presentation proof for grant B
+        proofB, eventB = makeUpdate(ripper.said, eventVacuousA.said, grantB,
+                                    "presented", sn=3, stamp=STAMP3)
+
+        # Anchor all events to the registry
+        anchor(hab, eventA, eventVacuousA, eventB)
+
+        recordA = regeventing.vetBinds(
+            rip=ripper,
+            updates=[eventA, eventVacuousA, eventB],
+            db=hby.db,
+            blinders=[proofA, vacuousA],
+            target=grantA,
+            controller=hab.pre,
+            cutoff=STAMP2,
+        )
+        assert recordA.sn == 2
+        assert recordA.acdc == grantA
+        assert recordA.state == "presented"
+        assert recordA.stamp == STAMP1
+        assert recordA.binding == "presentation"
+
+        recordB = regeventing.vetBinds(
+            rip=ripper,
+            updates=[eventA, eventVacuousA, eventB],
+            db=hby.db,
+            blinders=[proofB],
+            target=grantB,
+            controller=hab.pre,
+            cutoff=STAMP3,
+        )
+        assert recordB.sn == 3
+        assert recordB.acdc == grantB
+        assert recordB.state == "presented"
+        assert recordB.stamp == STAMP3
+        assert recordB.binding == "presentation"
+
+        # At STAMP2 the vacuous n=2 event is the historical head.
+        # But vacuousA is not disclosed
+        with pytest.raises(kering.UnverifiedBlindError):
+            regeventing.vetBinds(
+                rip=ripper,
+                updates=[eventA, eventVacuousA, eventB],
+                db=hby.db,
+                blinders=[proofA],
+                target=grantA,
+                controller=hab.pre,
+                cutoff=STAMP2,
+            )
+
+        # At STAMP3 event B is inside the historical prefix, but proofB is
+        # omitted, so the verifier cannot determine the cutoff-head state.
+        with pytest.raises(kering.UnverifiedBlindError):
+            regeventing.vetBinds(
+                rip=ripper,
+                updates=[eventA, eventVacuousA, eventB],
+                db=hby.db,
+                blinders=[proofA, vacuousA],
+                target=grantA,
+                controller=hab.pre,
+                cutoff=STAMP3,
+            )
+
+        # With every state disclosed, the latest non-vacuous event binds grant
+        # B, so the registry state at its current head cannot authenticate A.
+        with pytest.raises(kering.MisbindingError):
+            regeventing.vetBinds(
+                rip=ripper,
+                updates=[eventA, eventVacuousA, eventB],
+                db=hby.db,
+                blinders=[proofA, vacuousA, proofB],
+                target=grantA,  # wrong target, should be grantB
+            )
+
+
 if __name__ == "__main__":
     test_V1_rip_bup_issued_verifies()
     test_V2_revoking_bup_state_revoked()
@@ -724,7 +814,6 @@ if __name__ == "__main__":
     test_V13_seal_reference_without_seal_retryable()
     test_V14_substitution_sibling_registry_refused()
     test_acdc_issuer_mismatch_refused()
-    test_V15b_acdc_issuer_mismatch_refused()
     test_V16_rdless_acdc_oneway_binding()
     test_V16b_blinded_head_undisclosed_binds_nothing()
     test_V18_equal_n_duplicity_both_orders()
@@ -733,3 +822,4 @@ if __name__ == "__main__":
     test_V21_blind_not_reproducing_refused()
     test_V22_spec_blid_vectors()
     test_V23_no_salt_parameter_anywhere()
+    test_presentation_bindings_use_historical_cutoff()

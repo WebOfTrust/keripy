@@ -502,6 +502,7 @@ class TxnMsgCacheRecord:
     Attributes:
         mdt (str): message datetime stamp ISO-8601 from msg dt field
         xdt (str): exchange transaction start datetime ISO-8601 from xip dt field
+        rdt (str): receiver datetime when KRAM accepted the complete message
         d (int): drift in ms from cache-type at creation time
         ml (int): message lag in ms (sl or ll from cache-type)
         pml (int): prune message lag in ms (psl or pll from cache-type)
@@ -510,6 +511,7 @@ class TxnMsgCacheRecord:
     """
     mdt: str = ''
     xdt: str = ''
+    rdt: str = ''
     d: int = 0
     ml: int = 0
     pml: int = 0

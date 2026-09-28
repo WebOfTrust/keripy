@@ -1522,6 +1522,7 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # xip's xdt == its own dt
+            assert cache.rdt
             # Assert that KramXDT entry created for xip's SAID
             assert receiverHby.db.kramXDT.get(keys=(xip.said,)).dts == stamp
 
@@ -1551,6 +1552,7 @@ def test_transactioned(mockHelpingNowUTC):
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # inherited from xip's xdt
+            assert cache.rdt
             # Assert that KramXDT entry created for xip's SAID
             assert receiverHby.db.kramXDT.get(keys=(xip.said,)).dts == stamp
 
@@ -1689,6 +1691,7 @@ def test_transactioned(mockHelpingNowUTC):
             cache = receiverHby.db.kramTMSC.get(
                 keys=(mkHab.pre, mkXip.said, mkExn.said))
             assert cache is not None
+            assert cache.rdt == ""
 
             # Partials populated (keyed by (AID, MID) per spec)
             partialKey = (mkHab.pre, mkExn.said)
@@ -1707,6 +1710,9 @@ def test_transactioned(mockHelpingNowUTC):
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
             assert receiverHby.db.kramPMKS.get(keys=partialKey) == []
             assert receiverHby.db.kramPMSK.get(keys=partialKey) is None
+            cache = receiverHby.db.kramTMSC.get(
+                keys=(mkHab.pre, mkXip.said, mkExn.said))
+            assert cache.rdt
 
             # An invalid same-SAID delivery cannot erase a valid pending pool.
             rotateExn = exchange(sender=mkHab.pre,
