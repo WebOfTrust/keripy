@@ -238,20 +238,22 @@ def _buildSediCredentials(
         givenName=dict(d="", u=nonces[4], value="Guy"),
         middleName=dict(d="", u=nonces[5], value="Marty McFly"),
         familyName=dict(d="", u=nonces[6], value="Brown"),
-        birthDate=dict(d="", u=nonces[7], value="2002-08-22T00:00:00.000000+00:00"),
+        nameSuffix=dict(d="", u=nonces[7], value="Jr"),
+        birthDate=dict(d="", u=nonces[8], value="2002-08-22T00:00:00.000000+00:00"),
         facialImageProof=dict(
-            d="", u=nonces[8], value=Diger(ser=b"Guy facial image").qb64
+            d="", u=nonces[9], value=Diger(ser=b"Guy facial image").qb64
         ),
-        legalPresenceStatus=dict(d="", u=nonces[9], value="citizen"),
-        issuedDate=dict(d="", u=nonces[10], value="2026-09-01T00:00:00.000000+00:00"),
+        legalPresenceStatus=dict(d="", u=nonces[10], value="citizen"),
+        issuedDate=dict(d="", u=nonces[11], value="2026-09-01T00:00:00.000000+00:00"),
         expirationDate=dict(
-            d="", u=nonces[11], value="2028-09-01T00:00:00.000000+00:00"
+            d="", u=nonces[12], value="2028-09-01T00:00:00.000000+00:00"
         ),
     )
     coreAttributePaths = [
         ".givenName",
         ".middleName",
         ".familyName",
+        ".nameSuffix",
         ".birthDate",
         ".facialImageProof",
         ".legalPresenceStatus",
@@ -270,9 +272,9 @@ def _buildSediCredentials(
     # Create an edge that references the issuer's authority node for the Core SEDI credential
     coreEdgeMad = dict(
         d="",
-        u=nonces[12],
+        u=nonces[13],
         utahAgent=dict(
-            d="", u=nonces[13], n=authority.said, s=authority.sad["s"]["$id"], o="I2I"
+            d="", u=nonces[14], n=authority.said, s=authority.sad["s"]["$id"], o="I2I"
         ),
     )
     coreEdgePaths = [".utahAgent"]
@@ -303,19 +305,16 @@ def _buildSediCredentials(
     # Residence SEDI narrows disclosure and links back to the same holder's Core credential
     residenceAttributesMad = dict(
         d="",
-        u=nonces[15],
+        u=nonces[16],
         i=holder.pre,
         rd=presentationRegistry.regk,
-        street=dict(d="", u=nonces[16], value="157 E 300 N"),
-        city=dict(d="", u=nonces[17], value="Beaver"),
-        county=dict(d="", u=nonces[18], value="Beaver"),
-        state=dict(d="", u=nonces[19], value="Utah"),
-        postcode=dict(d="", u=nonces[20], value="84713"),
-        country=dict(d="", u=nonces[21], value="United States"),
-        issuedDate=dict(d="", u=nonces[22], value="2026-09-01T00:00:00.000000+00:00"),
-        expirationDate=dict(
-            d="", u=nonces[23], value="2028-09-01T00:00:00.000000+00:00"
-        ),
+        street=dict(d="", u=nonces[17], value="157 E 300 N"),
+        city=dict(d="", u=nonces[18], value="Beaver"),
+        county=dict(d="", u=nonces[19], value="Beaver"),
+        state=dict(d="", u=nonces[20], value="Utah"),
+        postcode=dict(d="", u=nonces[21], value="84713"),
+        country=dict(d="", u=nonces[22], value="United States"),
+        issuedDate=dict(d="", u=nonces[23], value="2026-09-01T00:00:00.000000+00:00"),
     )
     residenceAttributePaths = [
         ".street",
@@ -325,7 +324,6 @@ def _buildSediCredentials(
         ".postcode",
         ".country",
         ".issuedDate",
-        ".expirationDate",
     ]
     residenceAttributesCompactor = Compactor(
         mad=residenceAttributesMad,
@@ -359,7 +357,7 @@ def _buildSediCredentials(
     # Build reseidence ACDC
     residence = acdcmap(
         israid=issuer.pre,
-        uuid=nonces[14],
+        uuid=nonces[15],
         regid=residenceRegistry.regk,
         schema=ResidenceSchemaSaid,
         attribute=residenceAttributes,
