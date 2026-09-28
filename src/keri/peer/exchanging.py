@@ -4,17 +4,19 @@ keri.peer.exchanging module
 """
 import datetime
 import logging
+from base64 import urlsafe_b64encode as encodeB64
 from datetime import timedelta
 
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
+from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks, Colds, sniff,
                       Kinds, Version, versify,
                       ValidationError, MissingChainError, MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger, Number,
                     Prefixer, Seqner, Saider,
                     Serder, SerderKERI, Texter,
-                    Saids, Codens, BlindState, BoundState, FirstSeen, SealEvent, Parser,
+                    Saids, Codens, BlindState, BoundState, FirstSeen,
+                    SealSource, SealEvent, SealKind, TypeMedia, Parser,
                     messagize,
                     verifySigs)
 from ..db import fetchTsgs
@@ -60,20 +62,34 @@ class Exchanger:
 
         self.routes[handler.resource] = handler
 
-    def _raiseMissingKeyState(self, serder, missing):
-        """Request missing KEL events and reject the current exchange."""
+    def _cueMissingKeyState(self, missing):
+        """Request each missing KEL coordinate once."""
+        # Deduplicate repeated references in this processing attempt.
         seen = set()
+        # Convert each missing coordinate into one logs query.
         for prefixer, number in missing:
+            # Omit SN when even the latest establishment state is unknown.
             sn = number.snh if number is not None else None
+            # Identify one request by signer and optional sequence number.
             key = (prefixer.qb64, sn)
+            # Skip a coordinate already requested by another attachment.
             if key in seen:
                 continue
+            # Mark this coordinate before emitting its query.
             seen.add(key)
 
+            # Build the base KEL-log query for this signer.
             query = dict(r="logs", pre=prefixer.qb64)
+            # Request one event when its sequence number is known.
             if sn is not None:
                 query["sn"] = sn
+            # Queue retrieval for the application layer.
             self.cues.append(dict(kin="query", q=query))
+
+    def _raiseMissingKeyState(self, serder, missing):
+        """Request missing KEL events and reject the current exchange."""
+        # Request the evidence before preserving strict rejection behavior.
+        self._cueMissingKeyState(missing)
 
         msg = f"Missing key state for attached evidence on evt={serder.said}"
         logger.info(msg)
@@ -118,7 +134,12 @@ class Exchanger:
         sscs = kwa.get("sscs", [])
         ssts = kwa.get("ssts", [])
 
+        # Resolve route policy before classifying supplemental evidence.
         behavior = self.routes[route] if route in self.routes else None
+        # Read the route's optional evidence-selection hook.
+        evidenceVerifier = getattr(behavior, "verifyEvidence", None)
+        # Read whether unresolved extras may be dropped after querying.
+        acceptsMissingEvidence = getattr(behavior, "acceptsMissingEvidence", False)
         tsgs = list(tsgs or [])
         cigars = list(cigars or [])
 
@@ -136,8 +157,15 @@ class Exchanger:
                          Number(sn=kever.lastEst.s),
                          Diger(qb64=kever.lastEst.d),
                          sigers))
-        if missing:
-            self._raiseMissingKeyState(serder, missing)
+        # Preserve unresolved parsed groups for route-level policy.
+        missingEvidence = list(missing)
+        # Apply strict or optional handling before sender escrow can return.
+        if missingEvidence:
+            # Non-opted routes reject unresolved attached evidence.
+            if not acceptsMissingEvidence:
+                self._raiseMissingKeyState(serder, missingEvidence)
+            # Opted routes request the KEL and continue with known factors.
+            self._cueMissingKeyState(missingEvidence)
 
         # A seal couple implies the sender AID. Store both attachment forms as
         # an explicit sealing AID and historical event reference.
@@ -152,7 +180,6 @@ class Exchanger:
         extraSourceSeals = [seal for seal in sourceSeals
                             if seal[0].qb64 != sender]
 
-        evidenceVerifier = getattr(behavior, "verifyEvidence", None)
         if senderTsgs and evidenceVerifier is None:
             # Routes without an evidence policy preserve the existing
             # TSG-over-cigar precedence. A sender TSG causes all cigars to be
@@ -273,7 +300,13 @@ class Exchanger:
              sourceSeals=extraSourceSeals,
          )
         if missingExtra:
-            self._raiseMissingKeyState(serder, missingExtra)
+            # Non-opted routes retain fail-closed behavior.
+            if not acceptsMissingEvidence:
+                self._raiseMissingKeyState(serder, missingExtra)
+            # Request every explicitly referenced missing KEL event.
+            self._cueMissingKeyState(missingExtra)
+            # Combine parser-level and verifier-level missing coordinates.
+            missingEvidence.extend(missingExtra)
 
         e = Pather(parts=["e"])
 
@@ -287,7 +320,8 @@ class Exchanger:
                 attachments.append((np, pattach))
 
         kwa["attachments"] = attachments
-        if nests and (route.startswith("/multisig") or route.startswith("/ipex")):
+        if nests and (route.startswith("/multisig") or route.startswith("/ipex")
+                      or route == "/fwd"):
             kwa["nests"] = nests
         if essrs:
             kwa["essr"] = b''.join([texter.raw for texter in essrs])
@@ -303,25 +337,38 @@ class Exchanger:
                 raise ValidationError(f"essr diger={diger.qb64} is invalid against content")
 
         if evidenceVerifier is None:
+            # Routes without a policy accept no non-sender evidence.
             acceptedExtras = ([], [], [])
         else:
-            acceptedExtras = evidenceVerifier(
-                serder=serder,
-                tsgs=validExtraTsgs,
-                cigars=validExtraCigars,
-                sourceSeals=validExtraSourceSeals,
-                invalid=invalidExtra,
-            )
+            # Pass verified extras and invalid status into route policy.
+            evidenceKwa = dict(tsgs=validExtraTsgs,
+                               cigars=validExtraCigars,
+                               sourceSeals=validExtraSourceSeals,
+                               invalid=invalidExtra)
+            # Preserve older hook signatures unless the route opts in.
+            if acceptsMissingEvidence:
+                evidenceKwa["missing"] = missingEvidence
+            # Let the route select the supplemental factors to retain.
+            acceptedExtras = evidenceVerifier(serder=serder, **evidenceKwa)
+            # None signals permanent route-level evidence rejection.
             if acceptedExtras is None:
                 logger.error("exn evidence for route %s failed behavior verification. said=%s",
                              route, serder.said)
                 logger.debug("Exn Event Body=\n%s\n", serder.pretty())
                 return False
 
+        # Unpack only the supplemental factors approved by route policy.
         acceptedTsgs, acceptedCigars, acceptedSourceSeals = acceptedExtras
+        # Recombine approved extras with authenticated sender signatures.
         tsgs = validSenderTsgs + acceptedTsgs
         cigars = validSenderCigars + acceptedCigars
         sourceSeals = validSenderSourceSeals + acceptedSourceSeals
+        # Index each approved transferable endorser.
+        endorsers = {prefixer.qb64 for prefixer, _, _, _ in acceptedTsgs}
+        # Include each approved non-transferable endorser.
+        endorsers.update(cigar.verfer.qb64 for cigar in acceptedCigars)
+        # Include each approved source-seal anchorer.
+        endorsers.update(prefixer.qb64 for prefixer, _, _ in acceptedSourceSeals)
 
         # Only opted-in V2 handlers receive the validated sender seal couples;
         # legacy handlers keep their existing verify and handle signatures.
@@ -331,8 +378,15 @@ class Exchanger:
 
         # Perform behavior specific verification, think IPEX chaining requirements
         verifier = getattr(behavior, "verify", None)
+        # Isolate verification-only arguments from handler arguments.
+        verifyKwa = dict(kwa)
+        # Pass selected evidence only to handlers that advertise support.
+        if getattr(behavior, "acceptsEvidence", False):
+            # Only an opted-in V2 behavior sees the post-KRAM evidence selected
+            # by its policy.  Legacy handlers retain their existing signatures.
+            verifyKwa["evidence"] = acceptedExtras
         try:
-            if verifier is not None and not verifier(serder=serder, **kwa):
+            if verifier is not None and not verifier(serder=serder, **verifyKwa):
                 logger.error("exn event for route %s failed behavior verification. said=%s", route, serder.said)
                 logger.debug("Event=\n%s\n", serder.pretty())
                 return False
@@ -350,8 +404,10 @@ class Exchanger:
             return None
 
         # Always persist events
+        # Persist only sender authentication and policy-approved extras.
         self.logEvent(serder, ptds, tsgs, cigars, essrs,
-                      sourceSeals=sourceSeals, nests=nests)
+                      sourceSeals=sourceSeals, nests=nests,
+                      endorsers=endorsers)
         self.cues.append(dict(kin="saved", said=serder.said))
 
         # Execute any behavior specific handling, not sure if this should be different than verify
@@ -518,7 +574,7 @@ class Exchanger:
                 logger.debug("Event=\n%s\n", serder.pretty())
 
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None,
-                 sourceSeals=None, nests=None):
+                 sourceSeals=None, nests=None, endorsers=None):
         dig = serder.said
         pdig = serder.ked['p']
         pathed = pathed or []
@@ -526,6 +582,8 @@ class Exchanger:
         cigars = cigars or []
         essrs = essrs or []
         sourceSeals = sourceSeals or []
+        # Normalize the optional reverse-index input.
+        endorsers = endorsers or []
 
         escrowed = (self.hby.db.exns.get(keys=(dig,)) is None and
                     self.hby.db.epse.get(keys=(dig,)) is not None)
@@ -554,6 +612,12 @@ class Exchanger:
         for prefixer, number, diger in sourceSeals:
             self.hby.db.ests.add(keys=(serder.said, prefixer.qb64),
                                  val=(number, diger))
+
+        # Only behavior-approved non-sender endorsements enter this durable
+        # reverse index; sender authentication and escrow evidence do not.
+        # Add one Grant SAID entry under each accepted grantor AID.
+        for endorser in endorsers:
+            self.hby.db.eidx.add(keys=(endorser,), val=exnDiger)
         if pdig:
             self.hby.db.erpy.pin(keys=(pdig,), val=exnDiger)
 
@@ -1132,57 +1196,55 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
     """Serialize a parsed message subtree as a nested CESR substream."""
     parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
 
-    if any(parsed.get(name) for name in ("ptds", "essrs")):
-        raise ValueError("Unsupported attachments for nested substream serialization")
-
     serder = parsed["serder"]
     sigers = parsed.get("sigers") or None
     tsgs = parsed.get("tsgs") or None
     lsgs = parsed.get("lsgs") or None
-    if sigers and (tsgs or lsgs):
-        raise ValueError("Unsupported mixed signature groups for nested substream serialization")
-
     bonds = []
-    for name in ("sscs", "ssts", "tdcs"):
-        bonds.extend(parsed.get(name) or [])
-    # Parsed blind-state proof groups come back as plain tuples of primitive
-    # instances, but messagize() expects namedtuple bond records when it
-    # reserializes the nested node into storage.
-    bonds.extend(item if isinstance(item, BlindState) else BlindState(*item)
-                 for item in (parsed.get("bsqs") or []))
-    bonds.extend(item if isinstance(item, BoundState) else BoundState(*item)
-                 for item in (parsed.get("bsss") or []))
-    bonds.extend(parsed.get("tmqs") or [])
-    for item in parsed.get("frcs") or []:
-        bonds.append(item if isinstance(item, FirstSeen) else FirstSeen(*item))
+    # The parser returns tuples; messagize requires the corresponding bond clan.
+    for name, clan in (("sscs", SealSource), ("ssts", SealEvent),
+                       ("tdcs", SealKind), ("bsqs", BlindState),
+                       ("bsss", BoundState), ("tmqs", TypeMedia),
+                       ("frcs", FirstSeen)):
+        bonds.extend(item if isinstance(item, clan) else clan(*item)
+                     for item in (parsed.get(name) or []))
 
     wigers = parsed.get("wigers") or None
     cigars = parsed.get("cigars") or None
     nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
              for nest in (parsed.get("nests") or [])]
 
-    # Support bare nested artifacts, such as ACDCs carried inside IPEX messages.
-    # These have no signatures or attachment groups of their own, so rebuild the
-    # nested body-with-attachments wrapper directly from the parsed serder body.
-    if not (sigers or tsgs or lsgs or bonds or wigers or cigars or nests):
+    extra = bytearray()
+    for pathed in parsed.get("ptds") or []:
+        if sniff(pathed) == Colds.bny:
+            pathed = encodeB64(pathed)
+        extra.extend(Counter.enclose(qb64=pathed, code=Codens.PathedMaterialCouples,
+                                     version=gvrsn))
+    if parsed.get("essrs"):
+        extra.extend(Counter.enclose(qb64=b"".join(texter.qb64b for texter in parsed["essrs"]),
+                                     code=Codens.ESSRPayloadGroup, version=gvrsn))
+
+    # Build the wrapper directly when there is no authenticator for messagize.
+    if not (sigers or tsgs or lsgs or bonds or wigers or cigars):
         body = bytearray(serder.raw)
         if serder.kind != Kinds.cesr:
             body = Counter.enclose(qb64=Texter(raw=body).qb64b,
                                    code=Codens.NonNativeBodyGroup,
                                    version=gvrsn)
 
-        empty = Counter.enclose(qb64=b'',
-                                code=Codens.ControllerIdxSigs,
-                                version=gvrsn)
+        attachments = b"".join(nests) + extra
+        if not attachments:
+            attachments = Counter.enclose(qb64=b'', code=Codens.ControllerIdxSigs,
+                                          version=gvrsn)
         nested = bytearray(body)
-        nested.extend(Counter.enclose(qb64=empty,
+        nested.extend(Counter.enclose(qb64=attachments,
                                       code=Codens.AttachmentGroup,
                                       version=gvrsn))
         return Counter.enclose(qb64=nested,
                                code=Codens.BodyWithAttachmentGroup,
                                version=gvrsn)
 
-    return messagize(serder=serder,
+    msg = messagize(serder=serder,
                      sigers=sigers,
                      tsgs=tsgs,
                      lsgs=lsgs,
@@ -1192,6 +1254,13 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
                      nests=nests or None,
                      nested=True,
                      gvrsn=gvrsn)
+    if extra:
+        # messagize omits pathed/ESSR groups; include them in the outer group's size.
+        Counter(qb64b=msg, strip=True, version=gvrsn)
+        msg.extend(extra)
+        msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup,
+                              version=gvrsn)
+    return msg
 
 
 def loadParsedNestedSubstreams(hby, said):

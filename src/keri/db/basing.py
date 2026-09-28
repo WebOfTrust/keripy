@@ -588,6 +588,11 @@ class Baser(LMDBer):
             Multiple values per key are allowed. The exchange message in
             ``exns`` remains the acceptance marker.
 
+        .eidx is named subDB instance of CesrIoSetSuber (klas=Diger) mapping
+            an accepted exchange endorser AID to exchange message SAIDs.
+            subkey 'eidx.'
+            Multiple values per key.
+
         .chas is named subDB instance of CesrIoSetSuber (klas=Diger) for
             accepted signed 12-word challenge response exn messages. Keyed by
             prefix of signer.
@@ -1146,6 +1151,9 @@ class Baser(LMDBer):
         self.ests = subing.CatCesrIoSetSuber(db=self, subkey="ests.",
                                              klas=(coring.Number, coring.Diger))
 
+        # reverse lookup from authenticated AIDs to accepted exchange messages
+        self.eidx = subing.CesrIoSetSuber(db=self, subkey="eidx.", klas=coring.Diger)
+
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
@@ -1583,6 +1591,11 @@ class Baser(LMDBer):
         Database usage should be offline during cleaning as it will be cloned in
         readonly mode
 
+        Copy KRAM replay caches without reverification. Discard cache types
+        and partial state; Kramer rebuilds cache types from configuration.
+        Retained replay markers require retries to use a new datetime and
+        new signatures.
+
         Parameters:
             gvrsn (Versionage): CESR genus version for clone attachments and parser
             version (Versionage): legacy alias for gvrsn
@@ -1622,7 +1635,8 @@ class Baser(LMDBer):
                 unsecured = ["hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns", "erpy",
                              "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi", "mfa", "rmfa",
                              "cfld", "cons", "ccigs", "cdel", "migs",
-                             "ifld", "sids", "icigs"]
+                             "ifld", "sids", "icigs",
+                             "kramMSGC", "kramTMSC", "kramXDT"]
 
                 for name in unsecured:
                     srcdb = getattr(self, name)
@@ -1635,12 +1649,14 @@ class Baser(LMDBer):
                 # reprocess them.  We need a more secure method in the future
                 evidence = ["esigs", "ecigs", "epath", "enst", "essrs", "ests"]
                 accepted = {said for (said,), _ in self.exns.getTopItemIter()}
-                sets = evidence + ["chas", "reps", "wkas", "meids", "maids"]
+                sets = evidence + ["eidx", "chas", "reps", "wkas", "meids", "maids"]
                 for name in sets:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)
                     for keys, val in srcdb.getTopItemIter():
                         if name in evidence and keys[0] not in accepted:
+                            continue
+                        if name == "eidx" and val.qb64 not in accepted:
                             continue
                         cpydb.add(keys=keys, val=val)
 

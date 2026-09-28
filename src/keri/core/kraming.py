@@ -1460,6 +1460,8 @@ class Kramer:
                         if msg.ilk == Ilks.exn:
                             self._setVerifiedSenderTsg(
                                 senderId, kever, allSigs, kwa)
+                        cache.rdt = helping.nowIso8601()
+                        self.db.kramTMSC.pin(key, cache)
                         # The cache remains as the replay marker. Partial state
                         # is no longer retryable after the accepted handoff.
                         self.db.kramPMKM.rem(partialKey)
@@ -1540,8 +1542,8 @@ class Kramer:
                             raise KramError("Unexpected transactioned message type while kraming.")
 
                     xdt = helping.fromIso8601(xdts).timestamp() * 1000  # ms
-                    rdt = helping.fromIso8601(
-                        helping.nowIso8601()).timestamp() * 1000  # ms
+                    rdts = helping.nowIso8601()
+                    rdt = helping.fromIso8601(rdts).timestamp() * 1000  # ms
 
                     # Timeliness window
                     if not (rdt - d - ml) <= mdt <= (rdt + d):
@@ -1571,7 +1573,7 @@ class Kramer:
 
                         # Create txn cache and accept
                         mcr = TxnMsgCacheRecord(
-                            mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
+                            mdt=mdts, xdt=xdts, rdt=rdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.kramTMSC.pin(key, mcr)
                         # Keep the xid-level opener time in sync so later
@@ -1589,7 +1591,7 @@ class Kramer:
 
                         # Create txn cache and accept
                         mcr = TxnMsgCacheRecord(
-                            mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
+                            mdt=mdts, xdt=xdts, rdt=rdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.kramTMSC.pin(key, mcr)
                         # Single-key transactional replies also refresh the
@@ -1599,8 +1601,8 @@ class Kramer:
 
                 elif authType == AuthTypes.AttachedSignatureMultiKey:
                     # Per spec: for multi-key, mdt timeliness check comes before xdt resolution
-                    rdt = helping.fromIso8601(
-                        helping.nowIso8601()).timestamp() * 1000  # ms
+                    rdts = helping.nowIso8601()
+                    rdt = helping.fromIso8601(rdts).timestamp() * 1000  # ms
 
                     if not (rdt - d - ml) <= mdt <= (rdt + d):
                         return None  # outside mdt timeliness window
@@ -1649,19 +1651,22 @@ class Kramer:
                     if not sigResult.verified:
                         return None  # no sigs verified at all
 
-                    # At least one sig verified, create txn cache entry
+                    sigIndices = [sig.index for sig in sigResult.sigers]
+                    accepted = bool(kever.tholder and
+                                    kever.tholder.satisfy(indices=sigIndices))
+
+                    # A partial cache is only a replay marker. Receiver time is
+                    # recorded once the complete threshold is accepted.
                     mcr = TxnMsgCacheRecord(
-                        mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
+                        mdt=mdts, xdt=xdts, rdt=rdts if accepted else '',
+                        d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.kramTMSC.pin(key, mcr)
                     # Record the shared opener time once the transaction row is
                     # accepted so later cross-sender replies reuse the same xdt.
                     self.db.kramXDT.pin(keys=(exId,), val=Dater(dts=xdts))
 
-                    # Check if threshold is immediately satisfied
-                    sigIndices = [sig.index for sig in sigResult.sigers]
-
-                    if kever.tholder and kever.tholder.satisfy(indices=sigIndices):
+                    if accepted:
                         return msg
 
                     # Threshold not met, store partials for accumulation.

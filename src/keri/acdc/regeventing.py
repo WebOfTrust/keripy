@@ -50,16 +50,15 @@ Fields:
     said (str): qb64 SAID of the head (latest verified) registry event
     sn (int): sequence number of the head event
     ilk (str): message type of the head event (rip or bup)
-    acdc (str|None): qb64 SAID of the transaction ACDC the head state
-        commits to; None when the registry has no update yet or the head is
-        blinded and undisclosed
-    state (str|None): transaction state string at the head; None when the
-        registry has no update yet or the head is blinded and undisclosed
-    stamp (str): the head event's issuer-relative ISO datetime (dt field)
+    acdc (str|None): qb64 SAID of the disclosed transaction target; None when
+        the registry has no disclosed non-vacuous update
+    state (str|None): disclosed transaction state string; None when unavailable
+    stamp (str): the head event's ISO datetime from vet(), or the latest
+        non-vacuous binding event's datetime from vetBinds()
     binding (str|None): how the presented ACDC binds to the registry:
         'mutual' when td == acdc.d and acdc.rd == rip.d both hold, 'oneway'
-        when the ACDC carries no rd so only the registry commits to the ACDC
-        (registry->ACDC), None when no ACDC was presented
+        when the ACDC carries no rd, 'presentation' when the target is a grant
+        SAID, and None when no target binding was requested
     anchors (tuple): one (sn, said) couple per verified chain event, the
         issuer KEL event in which that TEL event's anchoring seal was found
 """
@@ -645,6 +644,128 @@ def vet(rip, updates=None, *, db, acdc=None, blinder=None, sources=None):
                           binding=binding, anchors=tuple(anchors))
 
 
+def vetBinds(rip, updates=None, *, db, blinders, target, controller=None,
+             acdc=None, sources=None, cutoff=None, requireSource=False):
+    """Verify a TEL and a disclosed non-vacuous target binding.
+
+    Every blinded update from the verified head back through the latest
+    non-vacuous update must have exactly one matching disclosure, and that
+    non-vacuous update must bind ``target``.  When ``cutoff`` is provided, the
+    verified head is the latest event whose timestamp is at or before that
+    receiver-observed time.  Presentation registries use the grant's KRAM
+    acceptance time as this historical cutoff; issuer registries use the
+    current head by omitting it.
+
+    Parameters:
+        rip (SerderACDC | bytes): Registry inception event.
+        updates (Iterable | None): Registry update events.
+        db (Baser): Preloaded verifier KEL database.
+        blinders (Iterable[Blinder]): Node-local disclosed state blocks.
+        target (str): Expected transaction SAID.
+        controller (str | None): Required registry-controlling AID.
+        acdc (SerderACDC | bytes | None): ACDC for issuer-registry bindings.
+        sources (Mapping | None): Optional TEL-event anchor locations.
+        cutoff (str | None): Optional receiver-observed ISO datetime limiting
+            the verified TEL prefix.
+        requireSource (bool): True requires an explicit source claim for the
+            selected non-vacuous binding event.
+
+    Returns:
+        RegStateRecord: Verified TEL state resolved to the selected non-vacuous
+            binding.  ``binding`` is ``presentation`` when ``acdc`` is omitted.
+    """
+    # Normalize the registry inception into a TEL serder.
+    rip = _coerce(rip)
+
+    # Normalize every supplied registry update before filtering.
+    updates = updates if updates is not None else ()
+    updates = [_coerce(update) for update in updates]
+
+    sources = sources if sources is not None else {}
+
+    # Restrict presentation verification to receiver-known history.
+    if cutoff is not None:
+        try:
+            # Parse the receiver's KRAM acceptance timestamp.
+            cutoffTime = help.fromIso8601(cutoff)
+
+            # Reject a registry created after the historical cutoff.
+            if help.fromIso8601(rip.sad['dt']) > cutoffTime:
+                raise MisbindingError(
+                    f"Registry {rip.said} did not exist by cutoff {cutoff}.")
+
+            # Ignore updates that occurred after Grant acceptance.
+            updates = [
+                update for update in updates
+                if help.fromIso8601(update.sad["dt"]) <= cutoffTime
+            ]
+
+        # Convert malformed timestamp input into a registry validation error.
+        except (TypeError, ValueError) as ex:
+            raise ValidationError(
+                f"Invalid registry historical cutoff {cutoff}.") from ex
+
+    # Verify the selected contiguous TEL prefix and all KEL anchors.
+    record = vet(rip=rip, updates=updates, db=db, sources=sources)
+
+    blinders = list(blinders)
+
+    # Check that the registry's controlling AID matches
+    if controller is not None and record.issuer != controller:
+        raise MisbindingError(f"Registry controller {record.issuer} does not match "
+                              f"required controller {controller}.")
+
+    # Search backward from the latest update in the verified prefix.
+    newestFirst = sorted(
+        updates,
+        key=lambda update: Number(numh=update.sad['n']).num,
+        reverse=True,
+    )
+
+    # Inspect each update until the latest non-vacuous state is found.
+    for update in newestFirst:
+
+        # Match this blinded update to exactly one disclosed state block.
+        matches = [blinder for blinder in blinders
+                   if blinder.said == update.sad['b']]
+
+        # Missing or duplicate disclosures cannot prove this update.
+        if len(matches) != 1:
+            raise UnverifiedBlindError(
+                f"Registry update {update.said} requires exactly one disclosure "
+                f"for blid={update.sad['b']}.")
+
+        # Verify and disclose this update's target and state.
+        td, state = vetBlind(blinder=matches[0], blid=update.sad['b'])
+
+        # Skip vacuous updates while retaining their chain validation.
+        if not td and not state:
+            continue
+
+        # Require the latest non-vacuous update to bind the expected target.
+        if td != target:
+            raise MisbindingError(f"Registry state's transaction said td={td} "
+                                  f"does not bind expected target {target}.")
+
+        # Presentation timing requires the Grant to carry this bup's KEL source.
+        if requireSource and update.said not in sources:
+            raise MisanchorError(
+                f"Registry binding event {update.said} has no attached KEL source.")
+
+        # Apply ACDC binding rules only for issuer registries.
+        binding = (vetBindings(acdc=acdc, regid=record.regid,
+                               issuer=record.issuer, td=td)
+                   if acdc is not None else 'presentation')
+
+        # Return state from the selected non-vacuous binding event.
+        return record._replace(acdc=td, state=state, stamp=update.sad['dt'],
+                               binding=binding)
+
+    # No disclosed non-vacuous update authenticated the requested target.
+    raise MisbindingError(f"Registry {record.regid} has no disclosed non-vacuous "
+                          f"state binding target {target}.")
+
+
 # Issuer-side local TEL engine
 class _RegEventer:
     """Private issuer-side TEL event engine for one local registry.
@@ -854,12 +975,6 @@ class _RegEventer:
                 this registry or issuer, or if a caller-supplied ``blinder``
                 override is provided.
         """
-        # Build the next bup off the effective staged frontier, not just the
-        # last committed head, so pipelined local issuance chains correctly.
-        tip = self._effectiveFrontier()
-        if tip is None:
-            raise ConfigurationError("registry must be anchored before updates")
-
         # The issuer-side blind path only accepts a full, self-verifying ACDC.
         if not isinstance(acdc, SerderACDC):
             raise ConfigurationError("acdc must be a SerderACDC")
@@ -879,27 +994,62 @@ class _RegEventer:
             issuer = acdc.sad.get("i")
         if issuer != self.hab.pre:
             raise ConfigurationError(f"acdc {acdc.said} has issuer {issuer} not {self.hab.pre}")
+
+        return self._blind(target=acdc.said, state=state, **kwa)
+
+    def present(self, grant, state="presented", **kwa):
+        """Create a blinded update that binds this registry to a grant SAID."""
+        # Accept either a Grant serder or its qb64 SAID.
+        target = grant.said if hasattr(grant, "said") else grant
+        # Require a syntactically valid self-addressing target.
+        try:
+            Diger(qb64=target)
+        except Exception as ex:
+            raise ConfigurationError("presentation target must be a valid grant SAID") from ex
+        # Reuse the shared blinded-update workflow.
+        return self._blind(target=target, state=state, **kwa)
+
+    def vacate(self, **kwa):
+        """Create a vacuous blinded update that preserves the prior binding."""
+        # Empty target and state mark an intentionally vacuous update.
+        return self._blind(target="", state="", **kwa)
+
+    def _blind(self, target, state, **kwa):
+        """Create the next staged blinded update for a validated target SAID."""
+        # Build from the staged frontier so callers may pipeline local updates.
+        tip = self._effectiveFrontier()
+        # Updates require an accepted or staged predecessor.
+        if tip is None:
+            raise ConfigurationError("registry must be anchored before updates")
+        # Always derive the blinder from validated inputs internally.
         if "blinder" in kwa:
             raise ConfigurationError("caller-supplied blinder overrides are not supported")
 
+        # Separate blinder options from TEL event options.
         blindkwa = {}
+        # Move each supported blinder-only option out of the event arguments.
         for key in ("raw", "salt", "tier", "bound", "bsn", "bd"):
             if key in kwa:
                 # These options belong to blinder construction, not the TEL
                 # event body, so peel them off before calling blindate().
                 blindkwa[key] = kwa.pop(key)
 
+        # Normalize the frontier before deriving the next sequence number.
         tipEvent = _normalizeEventRecord(tip)
+        # Advance exactly one TEL sequence number.
         sn = tipEvent.sn + 1
         # Derive the blinder from the next TEL sequence number so the bup and
         # blinded state commit to the same step in the chain.
-        blinder = Blinder.blind(sn=sn, acdc=acdc.said, state=state, **blindkwa)
+        blinder = Blinder.blind(sn=sn, acdc=target, state=state, **blindkwa)
+        # Create the bup that commits to the derived BLID.
         serder = messaging.blindate(regid=self.regk,
                                     prior=tipEvent.said,
                                     blid=blinder.said,
                                     sn=sn,
                                     **kwa)
+        # Stage or accept the new event through normal TEL processing.
         self.processEvent(serder)
+        # Return both the disclosure proof and its committed event.
         return blinder, serder
 
     # Shared local validation and acceptance helpers

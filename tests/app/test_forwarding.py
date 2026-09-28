@@ -5,88 +5,173 @@ tests.app.forwarding module
 
 """
 import time
+from types import SimpleNamespace
+
 import falcon
+import pytest
+from falcon import testing
 
 from hio.base import doing, tyming
 from hio.core import http
 
 from keri import help
-from keri.app import forwarding as forwarding_module
-from keri.core import (Salter, Pather, Prefixer,
-                       Bexter, Kevery, Parser, SerderKERI, exchange)
-from keri.kering import Vrsn_1_0, Version, Ilks, Roles, Schemes, Kinds
+from keri.acdc import (RegBaser, Regery, Registrar, acdcmap,
+                       grant as ipexGrant, loadHandlers)
+from keri.core import (Salter, Pather, Prefixer, Diger,
+                       Bexter, Kevery, Parser, SerderKERI, exchange, messagize, receipt)
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Ilks, Roles, Schemes, Kinds
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
                       openHab, openHby, setupWitness)
 
-from keri.peer import specialExchange, Exchanger
+from keri.db import openLMDB
+from keri.peer import specialExchange, Exchanger, serializeMessage, verify
+from keri.peer.exchanging import loadParsedNestedSubstreams
 from keri.spac import payloading
 
 
 
-def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environment_or_explicit_version(monkeypatch):
-    captures = []
-    real_special_exchange = forwarding_module.specialExchange
+@pytest.mark.parametrize("role", [Roles.witness, Roles.mailbox])
+@pytest.mark.parametrize("version, gvrsn", [(Vrsn_1_0, None), (Vrsn_2_0, None),
+                                            (Vrsn_2_0, Vrsn_1_0), (Vrsn_2_0, Vrsn_2_0)])
+def test_stream_poster_selects_forwarding_protocol_and_framing(monkeypatch, role, version, gvrsn):
+    with openHby(name="sender", temp=True, version=Vrsn_2_0) as hby, \
+            openHab(name="receiver", temp=True) as (_, recp):
+        hab = hby.makeHab(name="sender", version=Vrsn_1_0, kind=Kinds.json)
+        event = exchange(sender=hab.pre, route="/echo", attributes=dict(msg="test"),
+                         version=Vrsn_1_0, kind=Kinds.json)
+        incoming = gvrsn if gvrsn is not None else version
+        message = hab.endorse(event, last=False, framed=False, gvrsn=incoming)
+        original = Parser(version=incoming).parse(ims=bytearray(message), processive=False)[0]
+        poster = StreamPoster(hby=hby, hab=hab, recp=recp.pre,
+                              topic="echo", version=version if version == Vrsn_1_0 else None)
+        monkeypatch.setattr(hab, "endsFor", lambda pre: {role: {recp.pre: {}}})
+        kwa = dict(gvrsn=gvrsn) if gvrsn is not None else {}
+        poster.send(serder=event, attachment=message[event.size:], **kwa)
+        queued = poster.evts[0]
+        parsed = Parser(version=version).parse(
+            ims=bytearray(queued["serder"].raw + queued["attachment"]), processive=False)
+        assert len(parsed) == 1
+        assert parsed[0].serder.pvrsn == version
+        if version == Vrsn_2_0:
+            assert parsed[0].serder.gvrsn == Vrsn_2_0
+            assert parsed[0].serder.ked["a"] == dict(evt=Diger(ser=event.raw).qb64)
+            child = parsed[0].nests[0]
+            assert child.serder.raw == event.raw
+            assert child.serder.pvrsn == Vrsn_1_0
+            assert len(child.tsgs) == len(original.tsgs) == 1
+            assert [siger.qb64b for siger in child.tsgs[0][3]] == [
+                siger.qb64b for siger in original.tsgs[0][3]]
+        else:
+            assert parsed[0].serder.ked["e"]["evt"] == event.ked
+            assert len(parsed[0].ptds) == 1
 
-    class FakeCounter:
-        def __init__(self, *args, gvrsn=None, **kwargs):
-            captures.append(("counter", gvrsn))
-            self.qb64b = b""
 
-    def capture_special_exchange(*args, **kwargs):
-        captures.append(("specialExchange", kwargs["route"], kwargs["version"], kwargs["kind"]))
-        return real_special_exchange(*args, **kwargs)
+@pytest.mark.parametrize("hab_version", [Vrsn_1_0, Vrsn_2_0])
+@pytest.mark.parametrize("version", [None, Vrsn_1_0, Vrsn_2_0])
+def test_essr_wrapper_preserves_explicit_and_default_attachment_version(hab_version, version):
+    with openHab(name="sender", temp=True, version=hab_version) as (hby, hab), \
+            openHab(name="receiver", temp=True, transferable=False) as (_, recp):
+        poster = StreamPoster(hby=hby, hab=hab, recp=recp.pre, version=version)
+        original = b"encrypted forwarding payload"
+        stream = poster._essrWrapper(hab, original, recp.pre)
+        parsed = Parser(version=version or hab_version).parse(ims=stream, processive=False)
+        assert len(parsed) == 1
+        assert parsed[0].serder.pvrsn == Vrsn_1_0
+        assert len(parsed[0].essrs) == 1
+        assert recp.decrypt(parsed[0].essrs[0].raw) == original
 
-    with openHab(name="sender", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
-            openHab(name="recp", transferable=False, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (_, recpHab):
 
-        monkeypatch.setattr(forwarding_module, "specialExchange", capture_special_exchange)
-        monkeypatch.setattr(forwarding_module, "Counter", FakeCounter)
+@pytest.mark.parametrize("kind", [Kinds.json, Kinds.cbor, Kinds.mgpk])
+def test_stream_poster_forwards_native_grant_with_registry_proof(monkeypatch, kind):
+    with openHab(name="issuer", temp=True, version=Vrsn_2_0) as (hby, hab), \
+            openHab(name="holder", temp=True, version=Vrsn_2_0) as (rhby, recp), \
+            openHab(name="witness", transferable=False, temp=True, version=Vrsn_2_0) as (whby, wit), \
+            openLMDB(cls=RegBaser, name="issuer") as ibaser, \
+            openLMDB(cls=RegBaser, name="holder") as rbaser, \
+            openLMDB(cls=Mailboxer, name="witness") as mbx:
+        irgy = Regery(hby=hby, baser=ibaser)
+        rrgy = Regery(hby=rhby, baser=rbaser)
+        registrar = Registrar(rgy=irgy)
+        registry = registrar.makeRegistry(name="credential", prefix=hab.pre)
+        rip = irgy.store.event(registry.regk)
+        hab.interact(data=[dict(i=registry.regk, s=rip.sad["n"], d=rip.said)],
+                     gvrsn=Vrsn_2_0)
+        assert registry.anchorMsg(rip.said)
 
-        original_endorse = hab.endorse
+        acdc = acdcmap(israid=hab.pre, regid=registry.regk,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=recp.pre)
+        blinder, issued = registrar.issue(registry, acdc=acdc, state="issued")
+        hab.interact(data=[dict(i=registry.regk, s=issued.sad["n"], d=issued.said)],
+                     gvrsn=Vrsn_2_0)
+        assert registry.anchorMsg(issued.said)
+        origin = messagize(acdc, bonds=[blinder.data], gvrsn=Vrsn_2_0)
+        grant, atc = ipexGrant(hab, recp.pre, "Here is the credential", origin)
 
-        def capture_endorse(serder, *args, gvrsn=None, **kwargs):
-            if serder.ked["r"] in ("/fwd", "/essr/req"):
-                captures.append(("endorse", serder.ked["r"], gvrsn))
-            return original_endorse(serder, *args, gvrsn=gvrsn, **kwargs)
+        # Supply the receiver's proof history separately from transport.
+        rrgy.store.accept(registry.regk, 0, rip)
+        rrgy.store.accept(registry.regk, 1, issued)
+        notices = []
+        exc = Exchanger(hby=rhby, handlers=[])
+        loadHandlers(hby=rhby, exc=exc, rgy=rrgy,
+                     notifier=SimpleNamespace(add=lambda attrs: notices.append(attrs)))
+        receiver = Parser(kvy=rhby.kvy, exc=exc, framed=True, version=Vrsn_2_0)
+        receiver.parse(ims=hab.replay(gvrsn=Vrsn_2_0), local=False)
 
-        monkeypatch.setattr(hab, "endorse", capture_endorse)
+        witness = Parser(kvy=whby.kvy, framed=True, version=Vrsn_2_0,
+                         exc=Exchanger(hby=whby, handlers=[ForwardHandler(hby=whby, mbx=mbx)]))
+        endpoint = HttpEnd(rxbs=witness.ims, mbx=mbx)
+        monkeypatch.setattr(hab, "endsFor", lambda pre: {
+            Roles.witness: {wit.pre: {Schemes.http: "http://127.0.0.1:9999"}}
+        })
+        postman = StreamPoster(hby=hby, hab=hab, recp=recp.pre,
+                               topic="credential", kind=kind)
+        postman.send(serder=grant, attachment=atc)
+        assert postman.evts[0]["serder"].pvrsn == Vrsn_2_0
+        assert postman.evts[0]["serder"].gvrsn == Vrsn_2_0
+        messengers = postman.deliver()
+        assert len(messengers) == 1
+        requests = list(messengers[0].client.requests)
+        assert len(requests) == 1
+        request = requests[0]
+        assert request["method"] == "PUT"
+        req = falcon.Request(testing.create_environ(
+            method="PUT", body=bytes(request["body"]),
+            headers={key: str(value) for key, value in request["headers"].items()}))
+        rep = falcon.Response()
+        endpoint.on_put(req, rep)
+        assert rep.status == falcon.HTTP_204
+        witness.parse(local=False)
+        assert not witness.ims
+        assert hab.pre in whby.kevers
 
-        exn = exchange(route="/echo",
-                       attributes=dict(msg="test"),
-                       sender=hab.pre,
-                       version=Vrsn_1_0, kind=Kinds.json)
-        atc = original_endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
-        del atc[:exn.size]
+        rows = list(mbx.cloneTopicIter(topic=f"{recp.pre}/credential"))
+        assert len(rows) == 1
+        _, _, message = rows[0]
+        carried = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(message), processive=False)
+        assert len(carried) == 1
+        assert carried[0].serder.raw == grant.raw
+        assert not list(mbx.cloneTopicIter(topic=f"{hab.pre}/credential"))
+        receiver.parse(ims=bytearray(message), local=False)
+        assert exc.complete(grant.said)
+        assert verify(rhby, grant)
+        assert notices == [dict(r="/exn/ipex/grant", d=grant.said,
+                                m="Here is the credential")]
+        nested = loadParsedNestedSubstreams(rhby, grant.said)
+        assert len(nested) == 1
+        assert nested[0].serder.said == acdc.said
+        assert len(nested[0].bsqs) + len(nested[0].bsss) == 1
+        restored = Parser(version=Vrsn_2_0).parse(
+            ims=serializeMessage(rhby, grant.said), processive=False)[0]
+        assert restored.serder.raw == grant.raw
+        assert restored.nests[0].serder.raw == acdc.raw
+        proofs = restored.nests[0].bsqs + restored.nests[0].bsss
+        assert len(proofs) == 1
+        assert b"".join(item.qb64b for item in proofs[0]) == blinder.qb64b
 
-        default_stream = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo", essr=True)
-        explicit_stream = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo",
-                                       essr=True, version=Version, kind=Kinds.json)
-
-        default_stream.createForward(hab, ends={recpHab.pre: {}}, serder=exn, atc=atc, topic="echo")
-        default_stream._essrWrapper(hab, bytearray(b"payload"), recpHab.pre)
-        explicit_stream.createForward(hab, ends={recpHab.pre: {}}, serder=exn, atc=atc, topic="echo")
-        explicit_stream._essrWrapper(hab, bytearray(b"payload"), recpHab.pre)
-
-    special_caps = [entry for entry in captures if entry[0] == "specialExchange"]
-    assert [(route, version, kind) for _, route, version, kind in special_caps] == [
-        ("/fwd", Vrsn_1_0, Kinds.json),
-        ("/essr/req", Vrsn_1_0, Kinds.json),
-        ("/fwd", Vrsn_1_0, Kinds.json),
-        ("/essr/req", Vrsn_1_0, Kinds.json),
-    ]
-
-    endorse_caps = [entry for entry in captures if entry[0] == "endorse"]
-    assert [(route, gvrsn) for _, route, gvrsn in endorse_caps] == [
-        ("/fwd", Vrsn_1_0),
-        ("/essr/req", Vrsn_1_0),
-        ("/fwd", Version),
-        ("/essr/req", Version),
-    ]
-
-    counter_caps = [entry[1] for entry in captures if entry[0] == "counter"]
-    assert counter_caps == [Vrsn_1_0, Version]
 
 def test_postman(seeder, witnessPorter):
     with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
@@ -301,6 +386,49 @@ def test_forward_handler():
         count_after = len(list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo")))
         assert count_after == count_before
 
+        # Native forwarding must bind exactly one child before persisting it.
+        child = exchange(sender=hab.pre, route="/echo", attributes=dict(msg="native"),
+                         kind=Kinds.json)
+        nest = hab.endorse(child, nested=True)
+        exc = Exchanger(hby=hby, handlers=[forwarder])
+        parser = Parser(kvy=hby.kvy, exc=exc, version=Vrsn_2_0)
+        for attributes, nests in (({}, [nest]),
+                                   (dict(evt=inner_exn.said), [nest]),
+                                   (dict(evt=Diger(ser=child.raw).qb64), []),
+                                   (dict(evt=Diger(ser=child.raw).qb64), [nest, nest])):
+            native = exchange(sender=hab.pre, route="/fwd",
+                              modifiers=dict(pre=recpHab.pre, topic="native"),
+                              attributes=attributes, kind=Kinds.json)
+            parser.parse(ims=hab.endorse(native, nests=nests), local=False)
+            assert not exc.complete(native.said)
+            assert not list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/native"))
+
+        parser.parse(ims=hab.endorse(native, nests=[nest]), local=False)
+        assert exc.complete(native.said)
+        rows = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/native"))
+        assert len(rows) == 1
+        carried = Parser().parse(ims=bytearray(rows[0][2]), processive=False)
+        assert carried[0].serder.raw == child.raw
+
+        # A receipt's d identifies the receipted event, not the receipt body.
+        original = receipt(pre=hab.pre, sn=0, said=hab.kever.serder.said, kind=Kinds.json)
+        substituted = receipt(pre=hab.pre, sn=1, said=original.said, kind=Kinds.json)
+        assert original.said == substituted.said
+        native = exchange(sender=hab.pre, route="/fwd",
+                          modifiers=dict(pre=recpHab.pre, topic="receipt"),
+                          attributes=dict(evt=Diger(ser=original.raw).qb64), kind=Kinds.json)
+        parser.parse(ims=hab.endorse(native, nests=[hab.endorse(substituted, nested=True)]),
+                     local=False)
+        assert not exc.complete(native.said)
+        assert not list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/receipt"))
+        parser.parse(ims=hab.endorse(native, nests=[hab.endorse(original, nested=True)]),
+                     local=False)
+        assert exc.complete(native.said)
+        rows = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/receipt"))
+        assert len(rows) == 1
+        carried = Parser().parse(ims=bytearray(rows[0][2]), processive=False)
+        assert carried[0].serder.raw == original.raw
+
 def test_essr_stream(seeder, unused_tcp_port):
     with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
             openHab(name="recp", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recpHby, recpHab):
@@ -451,7 +579,7 @@ def test_essr_mbx(seeder, witnessPorter):
 
         # Test chunking
         saids = []
-        for i in range(0, 15):
+        for i in range(0, 30):
             exn = exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
@@ -521,7 +649,7 @@ def test_essr_mbx(seeder, witnessPorter):
             assert serder.ked["r"] == "/echo"
             mbxSaids.append(serder.said)
 
-        assert len(mbxSaids) == 15
+        assert len(mbxSaids) == 30
 
         # Chunks can come out of order, so check for difference of SAIDs
         assert set(saids) == set(mbxSaids)
