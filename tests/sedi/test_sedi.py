@@ -3997,10 +3997,10 @@ def test_sedi_acdcs():
     salter = Salter(raw=salt)
     galPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
                                                              for i in range(2)]
-    galRegSerders= [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in galPreRegUes]
+    galRegSerders= [regcept(israid=gal, uuid=ue, stamp=stamp) for ue in galPreRegUes]
     galPreRids = [rss.said for rss in galRegSerders]
-    assert galPreRids == ['ECRu2P7wZugBBeONZJuA3fOoS29iBOT5CkNzmEPDoHvZ',
-                          'EP2KF9K6cOvu2ByPDNTlhjO_xZpkto3L9zLR4bAP4ZWG']
+    assert galPreRids == ['EETKKNEzII7RVeqrIBWsSUifdAPYRp5qdTOQnsG_zzcm',
+                          'EBAeyX2ztgyP5qBek6xWBqkLp7pI080dFyzx8PWxJ-Jg']
 
     # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
     salt = b'galsedichallenge'  # raw challenge salt
@@ -4247,7 +4247,7 @@ def test_sedi_acdcs():
                                         '.expirationDate')].mad
     assert galCoreAttMad['i'] == gal
     galCoreAttMadSaid = compactor.said
-    assert  galCoreAttMadSaid == 'EJGQkMmDgLtD6tMcHoH3wFig8Azy7z7TcJXeFfWVPnt-'
+    assert  galCoreAttMadSaid == 'EHawLGZ4klbBzL3NvBVxEjjtO7hRaH_uaKKhW1-H27bl'
 
     assert galCoreAttMad == \
     {
@@ -4370,7 +4370,7 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EPsrrTgiA1gFtkZhxO8aIJUxXpsTjO-qxq16M9qma8ac'
+    assert galCoreSediSaid == 'EIKAfsa8V-dQQGl2rhfzRYymmWumR7Y68nNF0oipadSN'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAe2.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -4520,11 +4520,11 @@ def test_sedi_acdcs():
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad == \
     {
-        'd': 'EKBQvtnNGCNZVqKMKgvEzupZD4tHEn3HLkuHT4uYk_h_',
+        'd': 'EATDdy-bkJQAKrHaBTZxfYNnJdhbVTEJbWt_XxWZqkbp',
         'u': galUes[21],
         'coreIdentity':
         {
-            'd': 'ECPtI_fRxG2tpReXkYyz5_VQ2P5uZVyJkBSwSQPm-DQk',
+            'd': 'EPjYYCqoDxEVLSUHffaeEuckOrDRIIylqcYwg5YqRl3E',
             'u': galUes[22],
             'n': galCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4559,7 +4559,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EPsYz_6xZrFnmIPlbsxbJzBlo3zYWHAMmOP-4-Vapg_X'
+    assert galResidenceSediSaid == 'EAAvFB8NcNw4AS1TxZjU-jv6J8zs_Szjwxs-CSLaNWrQ'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
