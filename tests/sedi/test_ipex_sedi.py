@@ -2,6 +2,7 @@
 """Worked IPEX presentations for the current SEDI credential design."""
 
 from contextlib import contextmanager
+from types import SimpleNamespace
 
 from jsonschema import Draft202012Validator as SchemaValidator
 
@@ -36,12 +37,16 @@ from keri.peer import Exchanger, cloneMessage
 from keri.peer.exchanging import loadParsedNestedSubstreams
 
 from tests.sedi.test_sedi import (
+    AgentSchema,
+    AgentSchemaSaid,
     CoreSchema,
     CoreSchemaSaid,
     IarSchema,
     IarSchemaSaid,
     ResidenceSchema,
     ResidenceSchemaSaid,
+    UnitSchema,
+    UnitSchemaSaid,
 )
 
 
@@ -70,20 +75,28 @@ class Recorder:
 def _openSediHaberies(name):
     """Open one independent Habery for each SEDI workflow role."""
     with (
+        openHby(name=f"{name}-root", base="test", version=Vrsn_2_0) as rootHby,
+        openHby(name=f"{name}-org", base="test", version=Vrsn_2_0) as orgHby,
         openHby(name=f"{name}-proofer", base="test", version=Vrsn_2_0) as prooferHby,
         openHby(name=f"{name}-issuer", base="test", version=Vrsn_2_0) as issuerHby,
         openHby(name=f"{name}-holder", base="test", version=Vrsn_2_0) as holderHby,
         openHby(name=f"{name}-verifier", base="test", version=Vrsn_2_0) as verifierHby,
     ):
+        root = rootHby.makeHab(name="roy-state-root")
+        org = orgHby.makeHab(name="deb-sedi-program")
         proofer = prooferHby.makeHab(name="pat-proofer")
-        issuer = issuerHby.makeHab(name="sue-state-issuer")
+        issuer = issuerHby.makeHab(name="sue-issuing-agent")
         holder = holderHby.makeHab(name="guy-holder")
         verifier = verifierHby.makeHab(name="vic-verifier")
         yield (
+            rootHby,
+            orgHby,
             prooferHby,
             issuerHby,
             holderHby,
             verifierHby,
+            root,
+            org,
             proofer,
             issuer,
             holder,
@@ -92,14 +105,20 @@ def _openSediHaberies(name):
 
 
 @contextmanager
-def _openSediRegistries(name, issuerHby, holderHby, verifierHby):
-    """Open and close the registry stores used by the three relying roles."""
+def _openSediRegistries(
+    name, rootHby, orgHby, issuerHby, holderHby, verifierHby
+):
+    """Open registry stores for every SEDI issuer and relying role."""
+    rootRgy = Regery(hby=rootHby, name=f"{name}-root", temp=True)
+    orgRgy = Regery(hby=orgHby, name=f"{name}-org", temp=True)
     issuerRgy = Regery(hby=issuerHby, name=f"{name}-issuer", temp=True)
     holderRgy = Regery(hby=holderHby, name=f"{name}-holder", temp=True)
     verifierRgy = Regery(hby=verifierHby, name=f"{name}-verifier", temp=True)
     try:
-        yield issuerRgy, holderRgy, verifierRgy
+        yield rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy
     finally:
+        rootRgy.close()
+        orgRgy.close()
         issuerRgy.close()
         holderRgy.close()
         verifierRgy.close()
@@ -169,13 +188,24 @@ def _exchange(exn, atc, senderKvy, receiverKvy):
 
 
 def _buildSediCredentials(
-    proofer, issuer, holder, coreRegistry, residenceRegistry, presentationRegistry
+    root,
+    org,
+    proofer,
+    issuer,
+    holder,
+    unitRegistry,
+    agentRegistry,
+    coreRegistry,
+    residenceRegistry,
+    presentationRegistry,
+    residencePresentation=True,
+    residenceOperators=None,
 ):
-    """Build IAR, Core, and Residence ACDCs from the current SEDI schemas."""
+    """Build the Unit, Agent, IAR, Core, and Residence DAG."""
     salter = Salter(raw=b"sedi-ipex-tests!")
     nonces = [
         Noncer(raw=salter.stretch(size=16, path=f"{index:x}", temp=True)).qb64
-        for index in range(32)
+        for index in range(40)
     ]
 
     # The holder proves control of its SMAID challenge during identity proofing.
@@ -212,7 +242,7 @@ def _buildSediCredentials(
         kind=Kinds.json,
     ).mad
 
-    # Build the IAR ACDC with the proofer's signature
+    # Build the registry-less IAR issued by the identity proofer.
     iar = acdcmap(
         israid=proofer.pre,
         uuid=challenge,
@@ -221,12 +251,81 @@ def _buildSediCredentials(
         kind=Kinds.json,
     )
 
-    # Build the state issuer's authority node referenced by Core SEDI.
-    authority = acdcmap(
-        israid=proofer.pre,
-        uuid=nonces[1],
-        attribute=dict(d="", i=issuer.pre, role="Utah SEDI issuer"),
-        iseaid=issuer.pre,
+    # Reuse one policy block across the authority and SEDI credentials.
+    rule = Mapper(
+        mad=dict(d="", l="Use only for identity verification."),
+        makify=True,
+        saidive=True,
+        kind=Kinds.json,
+    ).mad
+
+    # The State root authorizes the organizational SEDI program.
+    unitAttributes = Mapper(
+        mad=dict(
+            d="",
+            u=nonces[27],
+            i=org.pre,
+            issuedDate="2026-09-01T00:00:00.000000+00:00",
+            unit="SediProgramOffice",
+        ),
+        makify=True,
+        saidive=True,
+        kind=Kinds.json,
+    ).mad
+    unit = acdcmap(
+        israid=root.pre,
+        uuid=nonces[26],
+        regid=unitRegistry.regk,
+        schema=UnitSchemaSaid,
+        attribute=unitAttributes,
+        rule=rule,
+        kind=Kinds.json,
+    )
+
+    # The organizational unit authorizes Sue as its issuing agent.
+    agentAttributesMad = dict(
+        d="",
+        u=nonces[29],
+        i=issuer.pre,
+        issuedDate="2026-09-01T00:00:00.000000+00:00",
+        role="SediIssuingAgent",
+        name=dict(d="", u=nonces[30], value="Susan Park"),
+    )
+    agentAttributesCompactor = Compactor(
+        mad=agentAttributesMad,
+        makify=True,
+        compactify=True,
+        saidive=True,
+        kind=Kinds.json,
+    )
+    agentAttributes = agentAttributesCompactor.partials[(".name",)].mad
+    agentEdgeMad = dict(
+        d="",
+        u=nonces[31],
+        orgUnit=dict(
+            d="",
+            u=nonces[32],
+            n=unit.said,
+            s=UnitSchemaSaid,
+            o="I2I",
+        ),
+    )
+    agentEdgeCompactor = Compactor(
+        mad=agentEdgeMad,
+        makify=True,
+        compactify=True,
+        saidive=True,
+        kind=Kinds.json,
+    )
+    agentEdge = agentEdgeCompactor.partials[(".orgUnit",)].mad
+    agent = acdcmap(
+        israid=org.pre,
+        uuid=nonces[28],
+        regid=agentRegistry.regk,
+        schema=AgentSchemaSaid,
+        attribute=agentAttributes,
+        edge=agentEdge,
+        rule=rule,
         kind=Kinds.json,
     )
 
@@ -270,12 +369,16 @@ def _buildSediCredentials(
     )
     coreAttributes = coreAttributesCompactor.partials[tuple(coreAttributePaths)].mad
 
-    # Create an edge that references the issuer's authority node for the Core SEDI credential
+    # Core delegates issuer authority through Sue's Agent credential.
     coreEdgeMad = dict(
         d="",
         u=nonces[13],
         utahAgent=dict(
-            d="", u=nonces[14], n=authority.said, s=authority.sad["s"]["$id"], o="I2I"
+            d="",
+            u=nonces[14],
+            n=agent.said,
+            s=AgentSchemaSaid,
+            o="I2I",
         ),
     )
     coreEdgePaths = [".utahAgent"]
@@ -284,14 +387,7 @@ def _buildSediCredentials(
     )
     coreEdge = coreEdgeCompactor.partials[tuple(coreEdgePaths)].mad
 
-    ruleMad = dict(d="", l="Use only for identity verification.")
-    rulePaths = [""]
-    ruleCompactor = Compactor(
-        mad=ruleMad, makify=True, compactify=True, saidive=True, kind=Kinds.json
-    )
-    rule = ruleCompactor.partials[tuple(rulePaths)].mad
-
-    # Build the Core SEDI ACDC with the issuer's authority edge and the holder's identity attributes
+    # Build Core with Sue as issuer and Guy as issuee.
     core = acdcmap(
         israid=issuer.pre,
         uuid=nonces[2],
@@ -308,7 +404,6 @@ def _buildSediCredentials(
         d="",
         u=nonces[16],
         i=holder.pre,
-        rd=presentationRegistry.regk,
         street=dict(d="", u=nonces[17], value="157 E 300 N"),
         city=dict(d="", u=nonces[18], value="Beaver"),
         county=dict(d="", u=nonces[19], value="Beaver"),
@@ -317,6 +412,8 @@ def _buildSediCredentials(
         country=dict(d="", u=nonces[22], value="United States"),
         issuedDate=dict(d="", u=nonces[23], value="2026-09-01T00:00:00.000000+00:00"),
     )
+    if residencePresentation:
+        residenceAttributesMad["rd"] = presentationRegistry.regk
     residenceAttributePaths = [
         ".street",
         ".city",
@@ -342,7 +439,15 @@ def _buildSediCredentials(
         d="",
         u=nonces[24],
         coreIdentity=dict(
-            d="", u=nonces[25], n=core.said, s=CoreSchemaSaid, o=["E1E", "NI2I"]
+            d="",
+            u=nonces[25],
+            n=core.said,
+            s=CoreSchemaSaid,
+            o=(
+                ["E1E", "NI2I"]
+                if residenceOperators is None
+                else residenceOperators
+            ),
         ),
     )
     residenceEdgePaths = [".coreIdentity"]
@@ -369,9 +474,137 @@ def _buildSediCredentials(
 
     # Prove each example conforms to the exact schema committed in its s field.
     SchemaValidator(schema=IarSchema).validate(iar.sad)
+    SchemaValidator(schema=UnitSchema).validate(unit.sad)
+    SchemaValidator(schema=AgentSchema).validate(agent.sad)
     SchemaValidator(schema=CoreSchema).validate(core.sad)
     SchemaValidator(schema=ResidenceSchema).validate(residence.sad)
-    return iar, authority, core, residence, challengeEvent
+    return iar, unit, agent, core, residence, challengeEvent
+
+
+def _setupSediCredentials(
+    root,
+    org,
+    proofer,
+    issuer,
+    holder,
+    rootRgy,
+    orgRgy,
+    issuerRgy,
+    holderRgy,
+    residencePresentation=True,
+    residenceOperators=None,
+):
+    """Issue the canonical Unit -> Agent -> Core/Residence credential chain."""
+    rootRegistrar = Registrar(rgy=rootRgy)
+    unitRegistry = rootRegistrar.makeRegistry(
+        name="unit-issuer-registry",
+        prefix=root.pre,
+    )
+    unitRip = rootRgy.store.event(unitRegistry.regk)
+    unitRipAnchor = _anchor(root, unitRegistry, unitRip)
+
+    orgRegistrar = Registrar(rgy=orgRgy)
+    agentRegistry = orgRegistrar.makeRegistry(
+        name="agent-issuer-registry",
+        prefix=org.pre,
+    )
+    agentRip = orgRgy.store.event(agentRegistry.regk)
+    agentRipAnchor = _anchor(org, agentRegistry, agentRip)
+
+    issuerRegistrar = Registrar(rgy=issuerRgy)
+    coreRegistry = issuerRegistrar.makeRegistry(
+        name="core-issuer-registry",
+        prefix=issuer.pre,
+    )
+    coreRip = issuerRgy.store.event(coreRegistry.regk)
+    coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
+    residenceRegistry = issuerRegistrar.makeRegistry(
+        name="residence-issuer-registry",
+        prefix=issuer.pre,
+    )
+    residenceRip = issuerRgy.store.event(residenceRegistry.regk)
+
+    holderRegistrar = Registrar(rgy=holderRgy)
+    presentationRegistry = holderRegistrar.makeRegistry(
+        name="holder-presentation-registry",
+        prefix=holder.pre,
+    )
+    presentationRip = holderRgy.store.event(presentationRegistry.regk)
+    presentationRipAnchor = _anchor(holder, presentationRegistry, presentationRip)
+
+    iar, unit, agent, core, residence, challengeEvent = _buildSediCredentials(
+        root,
+        org,
+        proofer,
+        issuer,
+        holder,
+        unitRegistry,
+        agentRegistry,
+        coreRegistry,
+        residenceRegistry,
+        presentationRegistry,
+        residencePresentation=residencePresentation,
+        residenceOperators=residenceOperators,
+    )
+
+    unitProof, unitIssued = rootRegistrar.issue(unitRegistry, acdc=unit)
+    unitIssuedAnchor = _anchor(root, unitRegistry, unitIssued)
+    agentProof, agentIssued = orgRegistrar.issue(agentRegistry, acdc=agent)
+    agentIssuedAnchor = _anchor(org, agentRegistry, agentIssued)
+    coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
+    coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
+    residenceRipAnchor = _anchor(issuer, residenceRegistry, residenceRip)
+    residenceProof, residenceIssued = issuerRegistrar.issue(
+        residenceRegistry,
+        acdc=residence,
+    )
+    residenceIssuedAnchor = _anchor(
+        issuer,
+        residenceRegistry,
+        residenceIssued,
+    )
+
+    return SimpleNamespace(
+        rootRegistrar=rootRegistrar,
+        orgRegistrar=orgRegistrar,
+        issuerRegistrar=issuerRegistrar,
+        holderRegistrar=holderRegistrar,
+        unitRegistry=unitRegistry,
+        agentRegistry=agentRegistry,
+        coreRegistry=coreRegistry,
+        residenceRegistry=residenceRegistry,
+        presentationRegistry=presentationRegistry,
+        unitRip=unitRip,
+        agentRip=agentRip,
+        coreRip=coreRip,
+        residenceRip=residenceRip,
+        presentationRip=presentationRip,
+        unitRipAnchor=unitRipAnchor,
+        agentRipAnchor=agentRipAnchor,
+        coreRipAnchor=coreRipAnchor,
+        residenceRipAnchor=residenceRipAnchor,
+        presentationRipAnchor=presentationRipAnchor,
+        challengeEvent=challengeEvent,
+        iar=iar,
+        unit=unit,
+        agent=agent,
+        core=core,
+        residence=residence,
+        unitProof=unitProof,
+        agentProof=agentProof,
+        coreProof=coreProof,
+        residenceProof=residenceProof,
+        unitIssued=unitIssued,
+        agentIssued=agentIssued,
+        coreIssued=coreIssued,
+        residenceIssued=residenceIssued,
+        unitIssuedAnchor=unitIssuedAnchor,
+        agentIssuedAnchor=agentIssuedAnchor,
+        coreIssuedAnchor=coreIssuedAnchor,
+        residenceIssuedAnchor=residenceIssuedAnchor,
+        proofedUnit=_proofed(unit, unitProof),
+        proofedAgent=_proofed(agent, agentProof),
+    )
 
 
 def test_signed_iar_through_ipex():
@@ -533,93 +766,67 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
     """Complete IPEX while synchronizing only new KEL suffixes between messages."""
     # Give every production role its own Habery and database.
     with _openSediHaberies("ipex-core") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
-        with _openSediRegistries("ipex-core", issuerHby, holderHby, verifierHby) as (
-            issuerRgy,
-            holderRgy,
-            verifierRgy,
-        ):
-            # Set up the issuer registry and anchor its inception event.
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-
-            # The shared credential builder also requires a Residence registry.
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="credential-factory-residence-registry",
-                prefix=issuer.pre,
-            )
-
-            # Set up the holder's presentation registry and anchor its inception.
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            # Build the credentials.
-            _, authority, core, _, challengeEvent = _buildSediCredentials(
+        with _openSediRegistries(
+            "ipex-core",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-
-            # Pat anchors Sue's authority credential once for perpetual reuse.
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
-
-            # Rotate afterward to prove the historical anchor remains valid.
-            prooferRot = proofer.rotate(
-                framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0
-            )
-
-            # Issue the Core SEDI credential and anchor its issuance event in the issuer's registry
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
+            presentationRipAnchor = sedi.presentationRipAnchor
+            challengeEvent = sedi.challengeEvent
 
             # Set up the holder's and verifier's independent IPEX pipelines.
             with _openIpexProcessors(
                 "ipex-core", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
             
-                # Replicate Pat's and Sue's complete required KEL prefixes.
-                prooferIcp = proofer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                # Replicate every authority issuer's required KEL prefix.
+                rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
 
                 # Feed the necessary anchors and events to the Holder and Verifier
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
-                    prooferRot,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    coreIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
                 ):
                     for kvy in (holderKvy, verifierKvy):
                         ims = bytearray(stream)
@@ -641,9 +848,17 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
 
                 # Simulate delivery of issuer and presentation TEL evidence.
                 for store in (holderRgy.store, verifierRgy.store):
-                    store.accept(coreRegistry.regk, 0, coreRip)
-                    store.accept(coreRegistry.regk, 1, coreIssued)
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                    store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                    store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                    store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                    store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                    store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                    store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                verifierRgy.store.accept(
+                    presentationRegistry.regk,
+                    0,
+                    sedi.presentationRip,
+                )
 
                 # Build Apply message from the verifier to the holder
                 coreApply, coreApplyAtc = ipexApply(
@@ -654,7 +869,8 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                         dp=[
                             [
                                 [CoreSchemaSaid, "/", []],
-                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [], ]
                             ]
                         ]
                     ),
@@ -760,7 +976,7 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                     recp=verifier.pre,
                     message="Present Core SEDI",
                     origin=core,
-                    artifacts=[authority],
+                    artifacts=[agent, unit],
                     agree=storedAgree,
                     dt=stamp,
                     ax=[True],
@@ -792,7 +1008,7 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
 
                 proofedCore = _proofed(
                     core,
-                    coreProof,
+                    sedi.coreProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
@@ -803,7 +1019,7 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                     recp=verifier.pre,
                     message="Present Core SEDI",
                     origin=proofedCore,
-                    artifacts=[anchoredAuthority],
+                    artifacts=[sedi.proofedAgent, sedi.proofedUnit],
                     agree=storedAgree,
                     dt=stamp,
                     ax=[True],
@@ -827,19 +1043,18 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 assert storedGrant.ked["a"]["ax"] == [True]
                 assert storedGrant.ked["a"]["o"] == [core.said]
 
-                # The authority node carries Pat's seal and no signature.
+                # The authority nodes carry their node-local registry proofs.
                 coreNests = loadParsedNestedSubstreams(
                     verifierHby,
                     grant.said,
                 )
                 assert [nest.serder.said for nest in coreNests] == [
                     core.said,
-                    authority.said,
+                    agent.said,
+                    unit.said,
                 ]
-                authorityNest = coreNests[1]
-                assert len(authorityNest.ssts) == 1
-                assert authorityNest.ssts[0][0].qb64 == proofer.pre
-                assert authorityNest.tsgs == []
+                assert len(coreNests[1].bsqs) == 1
+                assert len(coreNests[2].bsqs) == 1
 
                 # Advance Vic's KEL again before Admit creates its anchor.
                 verifierEventBeforeAdmit = verifier.interact(
@@ -888,78 +1103,73 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
             ]
             assert [item["m"] for item in holderRecorder.items] == expected
             assert [item["m"] for item in verifierRecorder.items] == expected
+            assert rootHby.db.exns.get(keys=(grant.said,)) is None
+            assert orgHby.db.exns.get(keys=(grant.said,)) is None
             assert prooferHby.db.exns.get(keys=(grant.said,)) is None
             assert issuerHby.db.exns.get(keys=(grant.said,)) is None
 
 
-def test_core_sedi_rejects_missing_authority_node():
-    """Reject Core SEDI when its referenced authority node is not disclosed."""
+def test_core_sedi_rejects_missing_authority_chain():
+    """Reject Core SEDI when its Agent and Unit authority chain is not disclosed."""
     with _openSediHaberies("ipex-missing-authority") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
         with _openSediRegistries(
-            "ipex-missing-authority", issuerHby, holderHby, verifierHby
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="credential-factory-residence-registry",
-                prefix=issuer.pre,
-            )
-
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            _, authority, core, _, challengeEvent = _buildSediCredentials(
+            "ipex-missing-authority",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             with _openIpexProcessors(
                 "ipex-missing-authority", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (holderRecorder, recorder, holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 holderIcp = holder.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    coreIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
                     holderIcp,
-                    presentationRipAnchor,
-                    challengeEvent,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
                 ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
@@ -970,9 +1180,13 @@ def test_core_sedi_rejects_missing_authority_node():
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=holderKvy)
                 assert ims == bytearray()
 
-                verifierRgy.store.accept(coreRegistry.regk, 0, coreRip)
-                verifierRgy.store.accept(coreRegistry.regk, 1, coreIssued)
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
 
                 apply, applyAtc = ipexApply(
                     hab=verifier,
@@ -982,7 +1196,8 @@ def test_core_sedi_rejects_missing_authority_node():
                         dp=[
                             [
                                 [CoreSchemaSaid, "/", []],
-                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -998,7 +1213,7 @@ def test_core_sedi_rejects_missing_authority_node():
                     recp=verifier.pre,
                     message="Present incomplete Core SEDI",
                     origin=core,
-                    artifacts=[authority],
+                    artifacts=[agent, unit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -1016,7 +1231,7 @@ def test_core_sedi_rejects_missing_authority_node():
 
                 proofedCore = _proofed(
                     core,
-                    coreProof,
+                    sedi.coreProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
@@ -1046,90 +1261,83 @@ def test_core_sedi_rejects_missing_authority_node():
 def test_sedi_rejects_presentation_proof_for_different_grant():
     """Reject a Grant carrying presentation evidence bound to another Grant."""
     with _openSediHaberies("ipex-wrong-binding") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
         with _openSediRegistries(
-            "ipex-wrong-binding", issuerHby, holderHby, verifierHby
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="credential-factory-residence-registry",
-                prefix=issuer.pre,
-            )
-
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            _, authority, core, _, challengeEvent = _buildSediCredentials(
+            "ipex-wrong-binding",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             with _openIpexProcessors(
                 "ipex-wrong-binding", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (_holderRecorder, recorder, _holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 holderIcp = holder.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    coreIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
                     holderIcp,
-                    presentationRipAnchor,
-                    challengeEvent,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
                 ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
                     assert ims == bytearray()
 
-                verifierRgy.store.accept(coreRegistry.regk, 0, coreRip)
-                verifierRgy.store.accept(coreRegistry.regk, 1, coreIssued)
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
 
                 boundGrant, _ = ipexGrant(
                     hab=holder,
                     recp=verifier.pre,
                     message="Grant bound by the presentation registry",
                     origin=core,
-                    artifacts=[authority],
+                    artifacts=[agent, unit],
                     ax=[True],
                     anchorers=[],
                 )
@@ -1145,7 +1353,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
 
                 proofedCore = _proofed(
                     core,
-                    coreProof,
+                    sedi.coreProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
@@ -1154,7 +1362,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                     recp=verifier.pre,
                     message="Different unbound Grant",
                     origin=proofedCore,
-                    artifacts=[anchoredAuthority],
+                    artifacts=[sedi.proofedAgent, sedi.proofedUnit],
                     ax=[True],
                     anchorers=[],
                 )
@@ -1171,76 +1379,46 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
 
 def test_sedi_flow_survives_holder_and_verifier_rotations():
     """Complete graduated Residence disclosures across both parties' rotations."""
-    # Keep the proofer, issuer, holder, and verifier in separate stores.
+    # Keep every authority and exchange role in a separate store.
     with _openSediHaberies("ipex-location") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
         with _openSediRegistries(
-            "ipex-location", issuerHby, holderHby, verifierHby
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            # Set up 2 registries for the issuer: Core and Residence
-            # Anchor the inception events
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="residence-issuer-registry",
-                prefix=issuer.pre,
-            )
-            residenceRip = issuerRgy.store.event(residenceRegistry.regk)
-            residenceRipAnchor = _anchor(issuer, residenceRegistry, residenceRip)
-
-            # Set up presentation registry for the holder and anchor the inception event
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            # Build the Sedi credentials
-            _, authority, core, residence, challengeEvent = _buildSediCredentials(
+            "ipex-location",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-
-            # Pat anchors the reusable issuer-authority node in her KEL.
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
-
-            # Issue core and residence credentials, anchor them in their registries
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
-            residenceProof, residenceIssued = issuerRegistrar.issue(
-                residenceRegistry, acdc=residence
-            )
-            residenceIssuedAnchor = _anchor(issuer, residenceRegistry, residenceIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            residence = sedi.residence
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             # Compact Core so its supporting edge and issuee remain usable
             # without disclosing unrelated identity attributes.
@@ -1325,19 +1503,23 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 "ipex-location", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
                 # Replicate the KEL prefixes needed for every nested proof.
-                prooferIcp = proofer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
 
-                # Feed the inception, registry, and issuance events of proofer
-                # and issuer to both Holder and Verifier.
+                # Feed every authority issuer's KEL to Holder and Verifier.
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    residenceRipAnchor,
-                    coreIssuedAnchor,
-                    residenceIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
+                    sedi.residenceRipAnchor,
+                    sedi.residenceIssuedAnchor,
                 ):
                     for kvy in (holderKvy, verifierKvy):
                         ims = bytearray(stream)
@@ -1348,7 +1530,11 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
 
                 # Feed Guy's inception, presentation-registry anchor, and
                 # challenge event to Vic.
-                for stream in (holderIcp, presentationRipAnchor, challengeEvent):
+                for stream in (
+                    holderIcp,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
+                ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
                     assert ims == bytearray()
@@ -1361,12 +1547,16 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
 
                 # Ingest the registry and issuance events into both stores.
                 for store in (holderRgy.store, verifierRgy.store):
-                    store.accept(coreRegistry.regk, 0, coreRip)
-                    store.accept(coreRegistry.regk, 1, coreIssued)
-                    store.accept(residenceRegistry.regk, 0, residenceRip)
-                    store.accept(residenceRegistry.regk, 1, residenceIssued)
+                    store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                    store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                    store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                    store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                    store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                    store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                    store.accept(sedi.residenceRegistry.regk, 0, sedi.residenceRip)
+                    store.accept(sedi.residenceRegistry.regk, 1, sedi.residenceIssued)
 
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
 
                 # First request and disclose only the state-level jurisdiction.
                 stateApply, stateApplyAtc = ipexApply(
@@ -1378,11 +1568,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                             [
                                 [ResidenceSchemaSaid, "/", ["a/state/"]],
                                 [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [
-                                    authority.sad["s"]["$id"],
-                                    "/e/coreIdentity/_/e/utahAgent/_/",
-                                    [],
-                                ],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -1427,7 +1614,7 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                     recp=verifier.pre,
                     message="Disclose Utah residence",
                     origin=stateResidence,
-                    artifacts=[compactCore, authority],
+                    artifacts=[compactCore, agent, unit],
                     apply=storedStateApply,
                     dt=stateStamp,
                     ax=[True],
@@ -1447,13 +1634,13 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
 
                 proofedStateResidence = _proofed(
                     stateResidence,
-                    residenceProof,
+                    sedi.residenceProof,
                     statePresentationProof,
                     source=(holder, statePresentedAnchor),
                 )
                 proofedStateCore = _proofed(
                     compactCore,
-                    coreProof,
+                    sedi.coreProof,
                     statePresentationProof,
                     source=(holder, statePresentedAnchor),
                 )
@@ -1464,7 +1651,11 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                     recp=verifier.pre,
                     message="Disclose Utah residence",
                     origin=proofedStateResidence,
-                    artifacts=[proofedStateCore, anchoredAuthority],
+                    artifacts=[
+                        proofedStateCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
                     apply=storedStateApply,
                     dt=stateStamp,
                     ax=[True],
@@ -1495,7 +1686,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert [nest.serder.said for nest in stateNests] == [
                     residence.said,
                     core.said,
-                    authority.said,
+                    agent.said,
+                    unit.said,
                 ]
                 carriedState = stateNests[0].serder
                 assert carriedState.said == residence.said
@@ -1544,17 +1736,10 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                     modifiers=dict(
                         dp=[
                             [
-                                [
-                                    ResidenceSchemaSaid,
-                                    "/",
-                                    ["a/state/", "a/county/", "a/postcode/"],
-                                ],
+                                [ResidenceSchemaSaid, "/", ["a/state/", "a/county/", "a/postcode/"]],
                                 [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [
-                                    authority.sad["s"]["$id"],
-                                    "/e/coreIdentity/_/e/utahAgent/_/",
-                                    [],
-                                ],
+                                [AgentSchemaSaid,"/e/coreIdentity/_/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -1582,7 +1767,7 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                     recp=verifier.pre,
                     message="Disclose county and postcode",
                     origin=districtResidence,
-                    artifacts=[compactCore, authority],
+                    artifacts=[compactCore, agent, unit],
                     apply=storedDistrictApply,
                     dt=districtStamp,
                     ax=[True],
@@ -1606,13 +1791,13 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
 
                 proofedDistrictResidence = _proofed(
                     districtResidence,
-                    residenceProof,
+                    sedi.residenceProof,
                     districtPresentationProof,
                     source=(holder, districtPresentedAnchor),
                 )
                 proofedDistrictCore = _proofed(
                     compactCore,
-                    coreProof,
+                    sedi.coreProof,
                     districtPresentationProof,
                     source=(holder, districtPresentedAnchor),
                 )
@@ -1621,7 +1806,11 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                     recp=verifier.pre,
                     message="Disclose county and postcode",
                     origin=proofedDistrictResidence,
-                    artifacts=[proofedDistrictCore, anchoredAuthority],
+                    artifacts=[
+                        proofedDistrictCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
                     apply=storedDistrictApply,
                     dt=districtStamp,
                     ax=[True],
@@ -1651,7 +1840,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert [nest.serder.said for nest in districtNests] == [
                     residence.said,
                     core.said,
-                    authority.said,
+                    agent.said,
+                    unit.said,
                 ]
                 carriedDistrict = districtNests[0].serder
                 assert carriedDistrict.said == carriedState.said
@@ -1704,64 +1894,45 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
 
 def test_selective_sedi_grant_does_not_leak_hidden_fields():
     """Reveal citizenship without leaking hidden Core values on the wire."""
-    # Keep all four roles in independent production-style stores.
+    # Keep every authority and exchange role in an independent store.
     with _openSediHaberies("ipex-citizenship") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
         with _openSediRegistries(
-            "ipex-citizenship", issuerHby, holderHby, verifierHby
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-            # The shared credential builder also requires a Residence registry.
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="credential-factory-residence-registry",
-                prefix=issuer.pre,
-            )
-
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            _, authority, core, _, challengeEvent = _buildSediCredentials(
+            "ipex-citizenship",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-
-            # Pat anchors Sue's authority credential for reusable verification.
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             # Collapse every independently saidified Core attribute block.
             compactor = Compactor(mad=dict(core.sad["a"]), makify=True, kind=Kinds.json)
@@ -1808,14 +1979,19 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
             with _openIpexProcessors(
                 "ipex-citizenship", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    coreIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
                 ):
                     for kvy in (holderKvy, verifierKvy):
                         ims = bytearray(stream)
@@ -1823,7 +1999,11 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                         assert ims == bytearray()
 
                 holderIcp = holder.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
-                for stream in (holderIcp, presentationRipAnchor, challengeEvent):
+                for stream in (
+                    holderIcp,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
+                ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
                     assert ims == bytearray()
@@ -1834,9 +2014,17 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 assert ims == bytearray()
 
                 for store in (holderRgy.store, verifierRgy.store):
-                    store.accept(coreRegistry.regk, 0, coreRip)
-                    store.accept(coreRegistry.regk, 1, coreIssued)
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                    store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                    store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                    store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                    store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                    store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                    store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                verifierRgy.store.accept(
+                    presentationRegistry.regk,
+                    0,
+                    sedi.presentationRip,
+                )
 
                 # Vic asks only for the citizenship factor needed by policy.
                 apply, applyAtc = ipexApply(
@@ -1847,7 +2035,8 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                         dp=[
                             [
                                 [CoreSchemaSaid, "/", ["a/legalPresenceStatus/"]],
-                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -1875,7 +2064,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                     recp=verifier.pre,
                     message="Disclose citizenship status",
                     origin=selectiveCore,
-                    artifacts=[authority],
+                    artifacts=[agent, unit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -1893,7 +2082,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
 
                 proofedCore = _proofed(
                     selectiveCore,
-                    coreProof,
+                    sedi.coreProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
@@ -1904,7 +2093,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                     recp=verifier.pre,
                     message="Disclose citizenship status",
                     origin=proofedCore,
-                    artifacts=[anchoredAuthority],
+                    artifacts=[sedi.proofedAgent, sedi.proofedUnit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -1940,7 +2129,8 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 )
                 assert [nest.serder.said for nest in selectiveNests] == [
                     core.said,
-                    authority.said,
+                    agent.said,
+                    unit.said,
                 ]
                 carriedCore = selectiveNests[0].serder
                 assert carriedCore.said == core.said
@@ -1978,71 +2168,44 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
 def test_residence_sedi_requires_every_rd_node_to_bind_grant():
     """Reject a DAG when one rd-bearing node omits presentation evidence."""
     with _openSediHaberies("ipex-missing-node-proof") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
         with _openSediRegistries(
-            "ipex-missing-node-proof", issuerHby, holderHby, verifierHby
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            # Set up issuer's 2 registries: Core and Residence registries
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="residence-issuer-registry",
-                prefix=issuer.pre,
-            )
-            residenceRip = issuerRgy.store.event(residenceRegistry.regk)
-            residenceRipAnchor = _anchor(issuer, residenceRegistry, residenceRip)
-
-            # Set up the Holder's presentation registry
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            # Build the Sedi Credentials
-            _, authority, core, residence, challengeEvent = _buildSediCredentials(
+            "ipex-missing-node-proof",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-            signedAuthority = proofer.endorse(
-                serder=authority,
-                framed=False,
-                gvrsn=Vrsn_2_0,
-            )
-
-            # Issue the core credential and anchor it in the core registry
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
-
-            # Issue the residence credential and anchor it in the residence registry
-            residenceProof, residenceIssued = issuerRegistrar.issue(
-                residenceRegistry,
-                acdc=residence,
-            )
-            residenceIssuedAnchor = _anchor(issuer, residenceRegistry, residenceIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            residence = sedi.residence
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             # Set up the Ipex
             with _openIpexProcessors(
@@ -2052,21 +2215,27 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                 holderRgy,
                 verifierRgy,
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 holderIcp = holder.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
 
-                # Feed the issuer and proofer's KEL events to the verifier
+                # Feed every authority issuer's KEL events to the verifier.
                 for stream in (
-                    prooferIcp,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    residenceRipAnchor,
-                    coreIssuedAnchor,
-                    residenceIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
+                    sedi.residenceRipAnchor,
+                    sedi.residenceIssuedAnchor,
                     holderIcp,
-                    presentationRipAnchor,
-                    challengeEvent,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
                 ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
@@ -2080,11 +2249,23 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
 
                 # Feed both parties local registry store with the registry events
                 for store in (holderRgy.store, verifierRgy.store):
-                    store.accept(coreRegistry.regk, 0, coreRip)
-                    store.accept(coreRegistry.regk, 1, coreIssued)
-                    store.accept(residenceRegistry.regk, 0, residenceRip)
-                    store.accept(residenceRegistry.regk, 1, residenceIssued)
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                    store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                    store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                    store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                    store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                    store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                    store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                    store.accept(sedi.residenceRegistry.regk, 0, sedi.residenceRip)
+                    store.accept(
+                        sedi.residenceRegistry.regk,
+                        1,
+                        sedi.residenceIssued,
+                    )
+                verifierRgy.store.accept(
+                    presentationRegistry.regk,
+                    0,
+                    sedi.presentationRip,
+                )
 
                 # Build the Apply Ipex message
                 apply, applyAtc = ipexApply(
@@ -2096,11 +2277,8 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                             [
                                 [ResidenceSchemaSaid, "/", []],
                                 [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [
-                                    authority.sad["s"]["$id"],
-                                    "/e/coreIdentity/_/e/utahAgent/_/",
-                                    [],
-                                ],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -2119,7 +2297,7 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                     recp=verifier.pre,
                     message="Present incomplete Residence DAG",
                     origin=residence,
-                    artifacts=[core, authority],
+                    artifacts=[core, agent, unit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -2141,19 +2319,23 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
 
                 proofedResidence = _proofed(
                     residence,
-                    residenceProof,
+                    sedi.residenceProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
                 # Build an incomplete core proof
                 # missing presentationProof and source=(holder, presentedAnchor)
-                issuerOnlyCore = _proofed(core, coreProof)
+                issuerOnlyCore = _proofed(core, sedi.coreProof)
                 incompleteGrant, incompleteGrantAtc = ipexGrant(
                     hab=holder,
                     recp=verifier.pre,
                     message="Present incomplete Residence DAG",
                     origin=proofedResidence,
-                    artifacts=[issuerOnlyCore, signedAuthority],
+                    artifacts=[
+                        issuerOnlyCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -2176,13 +2358,257 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                 )
 
 
-def test_sedi_grant_escrows_for_presentation_anchor():
-    """Accept an escrowed Grant after its presentation-anchor KEL event arrives."""
-    with _openSediHaberies("ipex-missing-presentation-anchor") as (
+def test_residence_sedi_uses_nested_core_presentation_registry():
+    """Validate Core a.rd when its Residence origin does not declare one."""
+    with _openSediHaberies("ipex-nested-core-registry") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
+        proofer,
+        issuer,
+        holder,
+        verifier,
+    ):
+        with _openSediRegistries(
+            "ipex-nested-core-registry",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
+                proofer,
+                issuer,
+                holder,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
+                residencePresentation=False,
+            )
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            residence = sedi.residence
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
+
+            assert residence.sad["rd"] == sedi.residenceRegistry.regk
+            assert "rd" not in residence.sad["a"]
+            assert core.sad["a"]["rd"] == presentationRegistry.regk
+
+            with _openIpexProcessors(
+                "ipex-nested-core-registry",
+                holderHby,
+                verifierHby,
+                holderRgy,
+                verifierRgy,
+            ) as (_holderRecorder, verifierRecorder, holderKvy, verifierKvy):
+                # Give the verifier each controller's contiguous KEL prefix.
+                rootIcp = root.msgOwnEvent(
+                    sn=0,
+                    framed=True,
+                    gvrsn=Vrsn_2_0,
+                )
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
+                issuerIcp = issuer.msgOwnEvent(
+                    sn=0,
+                    framed=True,
+                    gvrsn=Vrsn_2_0,
+                )
+                holderIcp = holder.msgOwnEvent(
+                    sn=0,
+                    framed=True,
+                    gvrsn=Vrsn_2_0,
+                )
+                for stream in (
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
+                    issuerIcp,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
+                    sedi.residenceRipAnchor,
+                    sedi.residenceIssuedAnchor,
+                    holderIcp,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
+                ):
+                    ims = bytearray(stream)
+                    Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
+                    assert ims == bytearray()
+
+                # Give the holder the verifier's key state for incoming Applies.
+                verifierIcp = verifier.msgOwnEvent(
+                    sn=0,
+                    framed=True,
+                    gvrsn=Vrsn_2_0,
+                )
+                ims = bytearray(verifierIcp)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=holderKvy)
+                assert ims == bytearray()
+
+                # Simulate observer delivery of the issuer and presentation TELs.
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                verifierRgy.store.accept(sedi.residenceRegistry.regk, 0, sedi.residenceRip)
+                verifierRgy.store.accept(sedi.residenceRegistry.regk, 1, sedi.residenceIssued)
+                verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
+
+                # Start one Apply-to-Grant flow to keep the draft body immutable.
+                apply, applyAtc = ipexApply(
+                    hab=verifier,
+                    recp=holder.pre,
+                    message="Request Residence with supporting Core",
+                    modifiers=dict(
+                        dp=[
+                            [
+                                [ResidenceSchemaSaid, "/", []],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
+                            ]
+                        ]
+                    ),
+                    ax=[True],
+                )
+                _exchange(apply, applyAtc, verifierKvy, holderKvy)
+                storedApply, _ = cloneMessage(holderHby, apply.said)
+                assert storedApply is not None
+
+                # Fix the Grant before binding it in Core's presentation registry.
+                stamp = helping.nowIso8601()
+                draftGrant, _ = ipexGrant(
+                    hab=holder,
+                    recp=verifier.pre,
+                    message="Present Residence with Core registry binding",
+                    origin=residence,
+                    artifacts=[core, agent, unit],
+                    apply=storedApply,
+                    dt=stamp,
+                    ax=[True],
+                    anchorers=[],
+                )
+                presentationProof, presented = holderRegistrar.present(
+                    presentationRegistry,
+                    grant=draftGrant,
+                )
+                presentedAnchor = _anchor(
+                    holder,
+                    presentationRegistry,
+                    presented,
+                )
+
+                # Deliver the Core presentation event and its KEL anchor.
+                ims = bytearray(presentedAnchor)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
+                assert ims == bytearray()
+                verifierRgy.store.accept(
+                    presentationRegistry.regk,
+                    1,
+                    presented,
+                )
+
+                # Residence needs only issuer proof; Core owns the presentation proof.
+                proofedResidence = _proofed(residence, sedi.residenceProof)
+                proofedCore = _proofed(
+                    core,
+                    sedi.coreProof,
+                    presentationProof,
+                    source=(holder, presentedAnchor),
+                )
+                grant, grantAtc = ipexGrant(
+                    hab=holder,
+                    recp=verifier.pre,
+                    message="Present Residence with Core registry binding",
+                    origin=proofedResidence,
+                    artifacts=[
+                        proofedCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
+                    apply=storedApply,
+                    dt=stamp,
+                    ax=[True],
+                    anchorers=[],
+                )
+                assert grant.said == draftGrant.said
+
+                # The nested Core binding satisfies the Grant's anchoring requirement.
+                ims = bytearray(grant.raw)
+                ims.extend(grantAtc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
+                assert ims == bytearray()
+                assert verifierHby.db.exns.get(keys=(grant.said,)) is not None
+                assert any(item["d"] == grant.said for item in verifierRecorder.items)
+
+                # Open another flow whose Grant is not bound by the TEL event.
+                wrongApply, wrongApplyAtc = ipexApply(
+                    hab=verifier,
+                    recp=holder.pre,
+                    message="Request another Residence presentation",
+                    modifiers=apply.ked["q"],
+                    ax=[True],
+                )
+                _exchange(wrongApply, wrongApplyAtc, verifierKvy, holderKvy)
+                storedWrongApply, _ = cloneMessage(holderHby, wrongApply.said)
+                assert storedWrongApply is not None
+
+                # Reusing the authentic Core proof for another Grant must fail.
+                wrongGrant, wrongGrantAtc = ipexGrant(
+                    hab=holder,
+                    recp=verifier.pre,
+                    message="Present a different unbound Residence Grant",
+                    origin=proofedResidence,
+                    artifacts=[
+                        proofedCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
+                    apply=storedWrongApply,
+                    ax=[True],
+                    anchorers=[],
+                )
+                assert wrongGrant.said != grant.said
+
+                acceptedNotices = list(verifierRecorder.items)
+                ims = bytearray(wrongGrant.raw)
+                ims.extend(wrongGrantAtc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
+                assert ims == bytearray()
+
+                # The TEL event targets the first Grant, so validation rejects this one.
+                assert verifierHby.db.exns.get(keys=(wrongGrant.said,)) is None
+                assert verifierHby.db.epse.get(keys=(wrongGrant.said,)) is None
+                assert verifierRecorder.items == acceptedNotices
+
+
+def test_sedi_grant_escrows_for_presentation_anchor():
+    """Accept an escrowed Grant after its presentation-anchor KEL event arrives."""
+    with _openSediHaberies("ipex-missing-presentation-anchor") as (
+        rootHby,
+        orgHby,
+        prooferHby,
+        issuerHby,
+        holderHby,
+        verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
@@ -2190,56 +2616,28 @@ def test_sedi_grant_escrows_for_presentation_anchor():
     ):
         with _openSediRegistries(
             "ipex-missing-presentation-anchor",
+            rootHby,
+            orgHby,
             issuerHby,
             holderHby,
             verifierHby,
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-
-            # The credential builder requires a Residence registry, but this
-            # focused Core presentation does not publish a Residence TEL.
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="credential-factory-residence-registry",
-                prefix=issuer.pre,
-            )
-
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder,
-                presentationRegistry,
-                presentationRip,
-            )
-
-            _, authority, core, _, challengeEvent = _buildSediCredentials(
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             with _openIpexProcessors(
                 "ipex-missing-presentation-anchor",
@@ -2248,11 +2646,12 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                 holderRgy,
                 verifierRgy,
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(
+                rootIcp = root.msgOwnEvent(
                     sn=0,
                     framed=True,
                     gvrsn=Vrsn_2_0,
                 )
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(
                     sn=0,
                     framed=True,
@@ -2266,14 +2665,18 @@ def test_sedi_grant_escrows_for_presentation_anchor():
 
                 # Give Vic every prerequisite except the later presentation anchor.
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    coreIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
                     holderIcp,
-                    presentationRipAnchor,
-                    challengeEvent,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
                 ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
@@ -2288,13 +2691,13 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                 Parser(version=Vrsn_2_0).parse(ims=ims, kvy=holderKvy)
                 assert ims == bytearray()
 
-                verifierRgy.store.accept(coreRegistry.regk, 0, coreRip)
-                verifierRgy.store.accept(coreRegistry.regk, 1, coreIssued)
-                verifierRgy.store.accept(
-                    presentationRegistry.regk,
-                    0,
-                    presentationRip,
-                )
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                verifierRgy.store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                verifierRgy.store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                verifierRgy.store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
 
                 apply, applyAtc = ipexApply(
                     hab=verifier,
@@ -2304,7 +2707,8 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                         dp=[
                             [
                                 [CoreSchemaSaid, "/", []],
-                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -2320,7 +2724,7 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                     recp=verifier.pre,
                     message="Present Core SEDI after anchor retrieval",
                     origin=core,
-                    artifacts=[authority],
+                    artifacts=[agent, unit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -2344,7 +2748,7 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                 )
                 proofedCore = _proofed(
                     core,
-                    coreProof,
+                    sedi.coreProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
@@ -2353,7 +2757,7 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                     recp=verifier.pre,
                     message="Present Core SEDI after anchor retrieval",
                     origin=proofedCore,
-                    artifacts=[anchoredAuthority],
+                    artifacts=[sedi.proofedAgent, sedi.proofedUnit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -2396,10 +2800,14 @@ def test_sedi_grant_escrows_for_presentation_anchor():
 def test_residence_sedi_rejects_invalid_issuee_relationship():
     """Reject authentic SEDI nodes whose declared I2I relationship is false."""
     with _openSediHaberies("ipex-invalid-sedi-edge") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
@@ -2407,106 +2815,35 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
     ):
         with _openSediRegistries(
             "ipex-invalid-sedi-edge",
+            rootHby,
+            orgHby,
             issuerHby,
             holderHby,
             verifierHby,
-        ) as (issuerRgy, holderRgy, verifierRgy):
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
-            )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="residence-issuer-registry",
-                prefix=issuer.pre,
-            )
-            residenceRip = issuerRgy.store.event(residenceRegistry.regk)
-            residenceRipAnchor = _anchor(
-                issuer,
-                residenceRegistry,
-                residenceRip,
-            )
-
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder,
-                presentationRegistry,
-                presentationRip,
-            )
-
-            _, authority, core, residence, challengeEvent = _buildSediCredentials(
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
                 proofer,
                 issuer,
                 holder,
-                coreRegistry,
-                residenceRegistry,
-                presentationRegistry,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
+                residenceOperators=["I2I"],
             )
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            invalidResidence = sedi.residence
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
-            # Replace the valid E1E/NI2I relationship with an I2I claim.
-            edge = residence.sad["e"]
-            relationship = edge["coreIdentity"]
-            invalidEdgeMad = dict(
-                d="",
-                u=edge["u"],
-                coreIdentity=dict(
-                    d="",
-                    u=relationship["u"],
-                    n=core.said,
-                    s=CoreSchemaSaid,
-                    o=["I2I"],
-                ),
-            )
-            invalidEdgeCompactor = Compactor(
-                mad=invalidEdgeMad,
-                makify=True,
-                compactify=True,
-                saidive=True,
-                kind=Kinds.json,
-            )
-            invalidEdge = invalidEdgeCompactor.partials[(".coreIdentity",)].mad
-            invalidResidence = acdcmap(
-                israid=residence.israid,
-                uuid=residence.sad["u"],
-                regid=residence.sad["rd"],
-                schema=ResidenceSchemaSaid,
-                attribute=residence.sad["a"],
-                edge=invalidEdge,
-                rule=residence.sad["r"],
-                kind=Kinds.json,
-            )
             SchemaValidator(schema=ResidenceSchema).validate(invalidResidence.sad)
             assert invalidResidence.israid == issuer.pre
             assert core.iseaid == holder.pre
             assert invalidResidence.israid != core.iseaid
-
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
-            residenceProof, residenceIssued = issuerRegistrar.issue(
-                residenceRegistry,
-                acdc=invalidResidence,
-            )
-            residenceIssuedAnchor = _anchor(
-                issuer,
-                residenceRegistry,
-                residenceIssued,
-            )
 
             with _openIpexProcessors(
                 "ipex-invalid-sedi-edge",
@@ -2515,11 +2852,12 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                 holderRgy,
                 verifierRgy,
             ) as (_holderRecorder, verifierRecorder, holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(
+                rootIcp = root.msgOwnEvent(
                     sn=0,
                     framed=True,
                     gvrsn=Vrsn_2_0,
                 )
+                orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 issuerIcp = issuer.msgOwnEvent(
                     sn=0,
                     framed=True,
@@ -2531,16 +2869,20 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                     gvrsn=Vrsn_2_0,
                 )
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    residenceRipAnchor,
-                    coreIssuedAnchor,
-                    residenceIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
+                    sedi.residenceRipAnchor,
+                    sedi.residenceIssuedAnchor,
                     holderIcp,
-                    presentationRipAnchor,
-                    challengeEvent,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
                 ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
@@ -2556,14 +2898,22 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                 assert ims == bytearray()
 
                 for store in (holderRgy.store, verifierRgy.store):
-                    store.accept(coreRegistry.regk, 0, coreRip)
-                    store.accept(coreRegistry.regk, 1, coreIssued)
-                    store.accept(residenceRegistry.regk, 0, residenceRip)
-                    store.accept(residenceRegistry.regk, 1, residenceIssued)
+                    store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                    store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                    store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                    store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                    store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                    store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                    store.accept(sedi.residenceRegistry.regk, 0, sedi.residenceRip)
+                    store.accept(
+                        sedi.residenceRegistry.regk,
+                        1,
+                        sedi.residenceIssued,
+                    )
                 verifierRgy.store.accept(
                     presentationRegistry.regk,
                     0,
-                    presentationRip,
+                    sedi.presentationRip,
                 )
 
                 apply, applyAtc = ipexApply(
@@ -2575,11 +2925,8 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                             [
                                 [ResidenceSchemaSaid, "/", []],
                                 [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [
-                                    authority.sad["s"]["$id"],
-                                    "/e/coreIdentity/_/e/utahAgent/_/",
-                                    [],
-                                ],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -2595,7 +2942,7 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                     recp=verifier.pre,
                     message="Present Residence SEDI with false I2I edge",
                     origin=invalidResidence,
-                    artifacts=[core, authority],
+                    artifacts=[core, agent, unit],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -2621,13 +2968,13 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
 
                 proofedResidence = _proofed(
                     invalidResidence,
-                    residenceProof,
+                    sedi.residenceProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
                 proofedCore = _proofed(
                     core,
-                    coreProof,
+                    sedi.coreProof,
                     presentationProof,
                     source=(holder, presentedAnchor),
                 )
@@ -2636,7 +2983,11 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                     recp=verifier.pre,
                     message="Present Residence SEDI with false I2I edge",
                     origin=proofedResidence,
-                    artifacts=[proofedCore, anchoredAuthority],
+                    artifacts=[
+                        proofedCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
                     apply=storedApply,
                     dt=stamp,
                     ax=[True],
@@ -2656,88 +3007,58 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
 
 
 def test_residence_sedi_supporting_dag_through_ipex():
-    """Present Residence, Core, and authority nodes as one verified DAG."""
-    # Open 4 independent Haberies for each party
+    """Present Residence through the complete Unit and Agent authority DAG."""
+    # Open one independent Habery for every authority and exchange role.
     with _openSediHaberies("ipex-sedi") as (
+        rootHby,
+        orgHby,
         prooferHby,
         issuerHby,
         holderHby,
         verifierHby,
+        root,
+        org,
         proofer,
         issuer,
         holder,
         verifier,
     ):
-        with _openSediRegistries("ipex-sedi", issuerHby, holderHby, verifierHby) as (
-            issuerRgy,
-            holderRgy,
-            verifierRgy,
-        ):
-            issuerRegistrar = Registrar(rgy=issuerRgy)
-
-            # Sue independently controls both issuing registries (residence and core).
-            # Initialize the registries and anchor their inception events in Sue's KEL
-            coreRegistry = issuerRegistrar.makeRegistry(
-                name="core-issuer-registry",
-                prefix=issuer.pre,
+        with _openSediRegistries(
+            "ipex-sedi",
+            rootHby,
+            orgHby,
+            issuerHby,
+            holderHby,
+            verifierHby,
+        ) as (rootRgy, orgRgy, issuerRgy, holderRgy, verifierRgy):
+            sedi = _setupSediCredentials(
+                root,
+                org,
+                proofer,
+                issuer,
+                holder,
+                rootRgy,
+                orgRgy,
+                issuerRgy,
+                holderRgy,
             )
-            coreRip = issuerRgy.store.event(coreRegistry.regk)
-            coreRipAnchor = _anchor(issuer, coreRegistry, coreRip)
-
-            residenceRegistry = issuerRegistrar.makeRegistry(
-                name="residence-issuer-registry",
-                prefix=issuer.pre,
-            )
-            residenceRip = issuerRgy.store.event(residenceRegistry.regk)
-            residenceRipAnchor = _anchor(issuer, residenceRegistry, residenceRip)
-
-            # Guy independently controls his presentation registry.
-            # Initialize the registry and anchor its inception event in Guy's KEL
-            holderRegistrar = Registrar(rgy=holderRgy)
-            presentationRegistry = holderRegistrar.makeRegistry(
-                name="holder-presentation-registry",
-                prefix=holder.pre,
-            )
-            presentationRip = holderRgy.store.event(presentationRegistry.regk)
-            presentationRipAnchor = _anchor(
-                holder, presentationRegistry, presentationRip
-            )
-
-            # Build Guy's 3 SEDI credentials and the SMAID challenge for the IAR
-            _, authority, core, residence, challengeEvent = _buildSediCredentials(
-                proofer,  # Pat proofing agent signs the IAR
-                issuer,  # Sue issues them
-                holder,  # Guy holds them
-                coreRegistry,  # Sue's 2 registries
-                residenceRegistry,
-                presentationRegistry,  # Guy's presentation registry
-            )
-
-            # Pat anchors the authority node once instead of re-signing it.
-            authorityAnchor = proofer.interact(
-                data=[dict(d=authority.said)],
-                framed=True,
-                gvrsn=Vrsn_2_0,
-            )
-            anchoredAuthority = _proofed(
-                authority,
-                source=(proofer, authorityAnchor),
-            )
-
-            # Sue issues and anchors Guy's two registry-backed credentials.
-            coreProof, coreIssued = issuerRegistrar.issue(coreRegistry, acdc=core)
-            coreIssuedAnchor = _anchor(issuer, coreRegistry, coreIssued)
-            residenceProof, residenceIssued = issuerRegistrar.issue(
-                residenceRegistry,
-                acdc=residence,
-            )
-            residenceIssuedAnchor = _anchor(issuer, residenceRegistry, residenceIssued)
+            unit = sedi.unit
+            agent = sedi.agent
+            core = sedi.core
+            residence = sedi.residence
+            holderRegistrar = sedi.holderRegistrar
+            presentationRegistry = sedi.presentationRegistry
 
             # Set up each exchange party's independent IPEX/KRAM pipeline.
             with _openIpexProcessors(
                 "ipex-sedi", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
-                prooferIcp = proofer.msgOwnEvent(
+                rootIcp = root.msgOwnEvent(
+                    sn=0,
+                    framed=True,
+                    gvrsn=Vrsn_2_0,
+                )
+                orgIcp = org.msgOwnEvent(
                     sn=0,
                     framed=True,
                     gvrsn=Vrsn_2_0,
@@ -2748,15 +3069,19 @@ def test_residence_sedi_supporting_dag_through_ipex():
                     gvrsn=Vrsn_2_0,
                 )
 
-                # Both Verifier (Vic) and Holder (Guy) need Pat's and Sue's KEL evidence.
+                # Both exchange parties need every authority issuer's KEL.
                 for stream in (
-                    prooferIcp,
-                    authorityAnchor,
+                    rootIcp,
+                    sedi.unitRipAnchor,
+                    sedi.unitIssuedAnchor,
+                    orgIcp,
+                    sedi.agentRipAnchor,
+                    sedi.agentIssuedAnchor,
                     issuerIcp,
-                    coreRipAnchor,
-                    residenceRipAnchor,
-                    coreIssuedAnchor,
-                    residenceIssuedAnchor,
+                    sedi.coreRipAnchor,
+                    sedi.coreIssuedAnchor,
+                    sedi.residenceRipAnchor,
+                    sedi.residenceIssuedAnchor,
                 ):
                     for kvy in (holderKvy, verifierKvy):
                         ims = bytearray(stream)
@@ -2772,7 +3097,11 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 # Replicate Guy's complete KEL so Vic can authenticate Guy's
                 # messages, verify the presentation-registry inception, and receive
                 # the SMAID proofing challenge before processing later KEL anchors.
-                for stream in (holderIcp, presentationRipAnchor, challengeEvent):
+                for stream in (
+                    holderIcp,
+                    sedi.presentationRipAnchor,
+                    sedi.challengeEvent,
+                ):
                     ims = bytearray(stream)
                     Parser(version=Vrsn_2_0).parse(ims=ims, kvy=verifierKvy)
                     assert ims == bytearray()
@@ -2789,15 +3118,23 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 assert ims == bytearray()
 
                 # Simulate observer delivery of foreign TEL evidence.
-                # Give the holder and verifier Sue's registry and issuance events.
+                # Give both parties every issuer-registry TEL chain.
                 for store in (holderRgy.store, verifierRgy.store):
-                    store.accept(coreRegistry.regk, 0, coreRip)
-                    store.accept(coreRegistry.regk, 1, coreIssued)
-                    store.accept(residenceRegistry.regk, 0, residenceRip)
-                    store.accept(residenceRegistry.regk, 1, residenceIssued)
+                    store.accept(sedi.unitRegistry.regk, 0, sedi.unitRip)
+                    store.accept(sedi.unitRegistry.regk, 1, sedi.unitIssued)
+                    store.accept(sedi.agentRegistry.regk, 0, sedi.agentRip)
+                    store.accept(sedi.agentRegistry.regk, 1, sedi.agentIssued)
+                    store.accept(sedi.coreRegistry.regk, 0, sedi.coreRip)
+                    store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
+                    store.accept(sedi.residenceRegistry.regk, 0, sedi.residenceRip)
+                    store.accept(sedi.residenceRegistry.regk, 1, sedi.residenceIssued)
 
                 # Feed the verifier with Guy's presentation registry inception
-                verifierRgy.store.accept(presentationRegistry.regk, 0, presentationRip)
+                verifierRgy.store.accept(
+                    presentationRegistry.regk,
+                    0,
+                    sedi.presentationRip,
+                )
 
                 # Request Residence and every credential in its supporting DAG.
                 residenceApply, residenceApplyAtc = ipexApply(
@@ -2809,11 +3146,8 @@ def test_residence_sedi_supporting_dag_through_ipex():
                             [
                                 [ResidenceSchemaSaid, "/", []],
                                 [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [
-                                    authority.sad["s"]["$id"],
-                                    "/e/coreIdentity/_/e/utahAgent/_/",
-                                    [],
-                                ],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
                             ]
                         ]
                     ),
@@ -2847,7 +3181,7 @@ def test_residence_sedi_supporting_dag_through_ipex():
                     recp=verifier.pre,
                     message="Present Residence and supporting Core SEDI",
                     origin=residence,
-                    artifacts=[core, authority],
+                    artifacts=[core, agent, unit],
                     apply=storedResidenceApply,
                     dt=residenceStamp,
                     ax=[True],
@@ -2878,7 +3212,7 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 # Each rd-bearing node carries its node-local Grant binding.
                 proofedResidence = _proofed(
                     residence,
-                    residenceProof,  # proof of issuance from Sue's registry
+                    sedi.residenceProof,  # proof of issuance from Sue's registry
                     residencePresentationProof,  # proof of presentation from Guy's registry
                     source=(
                         holder,
@@ -2887,7 +3221,7 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 )
                 proofedSupportingCore = _proofed(
                     core,
-                    coreProof,  # proof of issuance from Sue's registry
+                    sedi.coreProof,  # proof of issuance from Sue's registry
                     residencePresentationProof,  # proof of presentation from Guy's registry
                     source=(
                         holder,
@@ -2901,7 +3235,11 @@ def test_residence_sedi_supporting_dag_through_ipex():
                     recp=verifier.pre,
                     message="Present Residence and supporting Core SEDI",
                     origin=proofedResidence,
-                    artifacts=[proofedSupportingCore, anchoredAuthority],
+                    artifacts=[
+                        proofedSupportingCore,
+                        sedi.proofedAgent,
+                        sedi.proofedUnit,
+                    ],
                     apply=storedResidenceApply,
                     dt=residenceStamp,
                     ax=[True],
@@ -2936,7 +3274,8 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 assert [nest.serder.said for nest in residenceNests] == [
                     residence.said,
                     core.said,
-                    authority.said,
+                    agent.said,
+                    unit.said,
                 ]
 
                 # Build Admit message
@@ -2974,6 +3313,8 @@ def test_residence_sedi_supporting_dag_through_ipex():
             assert [item["m"] for item in verifierRecorder.items] == expectedMessages
 
             # Only the two exchange parties store the IPEX messages.
+            assert rootHby.db.exns.get(keys=(residenceGrant.said,)) is None
+            assert orgHby.db.exns.get(keys=(residenceGrant.said,)) is None
             assert (
                 prooferHby.db.exns.get(keys=(residenceGrant.said,)) is None
             )  # Pat is not a party to the IPEX exchange
