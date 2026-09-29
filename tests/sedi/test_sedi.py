@@ -4154,8 +4154,6 @@ def test_sedi_acdcs():
         }
     }
 
-
-
     # Setup Gal's SEDI ACDCs
 
     salt = b'galscoresedisalt'  # base salt
