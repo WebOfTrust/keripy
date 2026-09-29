@@ -17,16 +17,18 @@ from jsonschema.exceptions import ValidationError as SchemaValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Compactor,
-                       Structor,
+                       Structor, Aggor,
                        SealEvent, SealDigest, SealNonce, incept, interact)
-from keri.acdc import regcept, blindate, update, acdcmap
+from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 
+
+# ToDo  Add nameSuffix field to IAR
 # see test_sedi_schema() for generating and testing
-IarSchemaSaid = 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd'
+IarSchemaSaid = 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN'
 IarSchema = \
 {
-  '$id': 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd',
+  '$id': 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI IAR Schema',
   'description': 'SEDI IAR Identity Assurance Receipt JSON Schema for acm ACDC.',
@@ -66,6 +68,7 @@ IarSchema = \
           'givenName',
           'middleName',
           'familyName',
+          'nameSuffix',
           'birthDate',
           'facialImageProof',
           'legalPresenceStatus',
@@ -80,6 +83,7 @@ IarSchema = \
           'givenName': {'description': 'Given Name', 'type': 'string'},
           'middleName': {'description': 'Middle Name(s)', 'type': 'string'},
           'familyName': {'description': 'Family Name', 'type': 'string'},
+          'nameSuffix': {'description': 'Name Suffix', 'type': 'string'},
           'birthDate': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
           'facialImageProof': {'description': 'Image typed media block SAID', 'type': 'string'},
           'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen', 'type': 'string'},
@@ -128,6 +132,224 @@ IarSchema = \
             'l': {'description': 'Legal Language', 'type': 'string'}
           },
           'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+UnitSchemaSaid = 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4'
+UnitSchema = \
+{
+  '$id': 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Organizational Unit Schema',
+  'description': 'SEDI Oganizational Unit JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Org_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'issuedDate',
+            'unit',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+            'unit': {'description': 'Oganizational Unit', 'type': 'string'},
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+
+AgentSchemaSaid = 'EHuBfCSNTNIbsVPdOpfGoZbFzeBN7FZehUStBxEyo0mZ'
+AgentSchema = \
+{
+  '$id': 'EHuBfCSNTNIbsVPdOpfGoZbFzeBN7FZehUStBxEyo0mZ',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Issuing Agent Schema',
+  'description': 'SEDI Issuing Agent JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Agent_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'issuedDate',
+            'role',
+            'name',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+            'role': {'description': 'Issuing Agent Role', 'type': 'string'},
+            'name':
+            {
+              'description': 'Name Block',
+              'oneOf':
+              [
+                {'description': 'Name SAID', 'type': 'string'},
+                {
+                  'description': 'Name Detail',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Issuing Agent Name', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                }
+              ]
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'orgUnit'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'orgUnit':
+            {
+              'description': 'Utah Organizational Unit Edge Block',
+              'type': 'object',
+              'required': ['d', 'u', 'n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
         }
       ]
     }
@@ -699,6 +921,398 @@ ResidenceSchema = \
   'additionalProperties': False
 }
 
+# Age SEDI ACDC Schema
+AgeSchemaSaid = 'EIU_hzMGnI9rW85ndnHEQGzMvttkAGuUl3rgAtllY_yN'
+AgeSchema = \
+{
+  '$id': 'EIU_hzMGnI9rW85ndnHEQGzMvttkAGuUl3rgAtllY_yN',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Age Schema',
+  'description': 'SEDI Age JSON Schema for acg ACDC.',
+  'credentialType': 'SEDI_Age_ACDC_acg_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'A', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'A':
+    {
+      "description": "Aggregate Section",
+      "oneOf":
+      [
+        { "description": "Aggregate Section AGID", "type": "string"},
+        {
+          "description": "Aggregate Section Detail",
+          "type": "array",
+          "uniqueItems": True,
+          "items":
+          {
+            "anyOf":
+            [
+              {"description": "Aggregate Section AGID", "type": "string"},
+              {
+                "description": "Issuee Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "i"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "i": { "description": "Issuee SAID", "type": "string"}
+                    },
+                    "additionalProperties": False
+                  }
+                ]
+              },
+              {
+                'description': 'Issued Date Block',
+                'oneOf':
+                [
+                  {'description': 'Block SAID', 'type': 'string'},
+                  {
+                    'description': 'Block Detail',
+                    'type': 'object',
+                    'required': ['d', 'u', 'issuedDate'],
+                    'properties':
+                    {
+                      'd': {'description': 'Block SAID', 'type': 'string'},
+                      'u': {'description': 'Bock UE', 'type': 'string'},
+                     'issuedDate': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                    },
+                    'additionalProperties': False
+                  },
+                ]
+              },
+              {
+                'description': 'Expiration Date Block',
+                'oneOf':
+                [
+                  {'description': 'Block SAID', 'type': 'string'},
+                  {
+                    'description': 'Block Detail',
+                    'type': 'object',
+                    'required': ['d', 'u', 'expirationDate'],
+                    'properties':
+                    {
+                      'd': {'description': 'Block SAID', 'type': 'string'},
+                      'u': {'description': 'Bock UE', 'type': 'string'},
+                      'expirationDate': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                    },
+                    'additionalProperties': False
+                  }
+                ]
+              },
+              {
+                "description": "Over13 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over13"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over13": { "description": "Over13 True if age>=13 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over14 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over14"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over14": { "description": "Over14 True if age>=14 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                },
+                ]
+              },
+              {
+                "description": "Over15 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over15"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over15": { "description": "Over15 True if age>=15 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over16 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over16"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over16": { "description": "Over16 True if age>=16 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over18 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over18"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over18": { "description": "Over18 True if age>=18 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over21 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over21"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over21": { "description": "Over21 True if age>=21 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over40 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over40"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over40": { "description": "Over40 True if age>=40 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over62 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over62"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over62": { "description": "Over65 True if age>=62 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over65 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over65"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over65": { "description": "Over65 True if age>=65 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over67 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over67"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over67": { "description": "Over67 True if age>=67 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+              {
+                "description": "Over70 Block",
+                "oneOf":
+                [
+                  { "description": "Block SAID", "type": "string"},
+                  {
+                    "description": "Block Detail",
+                    "type": "object",
+                    "required":
+                    [ "d", "u", "over70"],
+                    "properties":
+                    {
+                      "d": {"description": "Block SAID", "type": "string"},
+                      "u": { "description": "Block UE", "type": "string"},
+                      "over70": { "description": "Over70 True if age>=70 else False", "type": "boolean"}
+                    },
+                    "additionalProperties": False
+                  },
+                ]
+              },
+            ]
+          }
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'coreIdentity'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'coreIdentity':
+            {
+              'description': 'Core Identity Edge Block',
+              'type': 'object',
+              'required': ['d', 'u', 'n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o':
+                {
+                    'description': 'Edge Unary Operator',
+                    'type': 'array',
+                    'items': {'type': 'string'},
+                    'minItems': 1,
+                }
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+
+
 
 def test_sedi_schema():
     """Test setup of schema for core SEDI acdcs"""
@@ -748,6 +1362,7 @@ def test_sedi_schema():
                             'givenName',
                             'middleName',
                             'familyName',
+                            'nameSuffix',
                             'birthDate',
                             'facialImageProof',
                             'legalPresenceStatus',
@@ -762,6 +1377,7 @@ def test_sedi_schema():
                             "givenName": {"description": "Given Name", "type": "string"},
                             "middleName": {"description": "Middle Name(s)", "type": "string"},
                             "familyName": {"description": "Family Name", "type": "string"},
+                            'nameSuffix': {'description': 'Name Suffix', 'type': 'string'},
                             "birthDate": {"description": "Date of birth RFC-3339/ISO-8601 time MBZ", "type": "string"},
                             "facialImageProof": {"description": "Image typed media block SAID", "type": "string"},
                             "legalPresenceStatus": {"description": "Legal presences status i.e. citizen", "type": "string"},
@@ -814,11 +1430,245 @@ def test_sedi_schema():
     mapper = Mapper(mad=iarSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     iarSchemaSaid = mapper.said
-    assert  iarSchemaSaid == 'EHp3Ik9q-6-sT0IFaLRJDEjd-j3zMRdy1aN6O6awCsZd'
+    assert  iarSchemaSaid == 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert iarSchemaSaid == IarSchemaSaid
     assert mapper.mad == IarSchema
     #mapper.raw   # compact json of mapper
+
+
+    # Organizational Unit Schema
+    unitSchemaMad = \
+    {
+      '$id': '',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Organizational Unit Schema',
+      'description': 'SEDI Oganizational Unit JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Org_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'issuedDate',
+                'unit',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                'unit': {'description': 'Oganizational Unit', 'type': 'string'},
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=unitSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    unitSchemaSaid = mapper.said
+    assert  unitSchemaSaid == 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert unitSchemaSaid == UnitSchemaSaid
+    assert mapper.mad == UnitSchema
+
+    # Issuing Agent Schema
+    agentSchemaMad = \
+    {
+      '$id': '',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Issuing Agent Schema',
+      'description': 'SEDI Issuing Agent JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Agent_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'issuedDate',
+                'role',
+                'name',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                'role': {'description': 'Issuing Agent Role', 'type': 'string'},
+                'name':
+                {
+                  'description': 'Name Block',
+                  'oneOf':
+                  [
+                    {'description': 'Name SAID', 'type': 'string'},
+                    {
+                      'description': 'Name Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Issuing Agent Name', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    }
+                  ]
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'orgUnit'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'orgUnit':
+                {
+                  'description': 'Utah Organizational Unit Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                }
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=agentSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    agentSchemaSaid = mapper.said
+    assert  agentSchemaSaid == 'EHuBfCSNTNIbsVPdOpfGoZbFzeBN7FZehUStBxEyo0mZ'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert agentSchemaSaid == AgentSchemaSaid
+    assert mapper.mad == AgentSchema
 
 
     # Core SEDI Schema
@@ -1404,11 +2254,408 @@ def test_sedi_schema():
 
     #assert mapper.mad == {}
 
+    # Age Schema Setup Test
+    ageSchemaMad = \
+    {
+      '$id': '',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Age Schema',
+      'description': 'SEDI Age JSON Schema for acg ACDC.',
+      'credentialType': 'SEDI_Age_ACDC_acg_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'A', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'A':
+        {
+          "description": "Aggregate Section",
+          "oneOf":
+          [
+            { "description": "Aggregate Section AGID", "type": "string"},
+            {
+              "description": "Aggregate Section Detail",
+              "type": "array",
+              "uniqueItems": True,
+              "items":
+              {
+                "anyOf":
+                [
+                  {"description": "Aggregate Section AGID", "type": "string"},
+                  {
+                    "description": "Issuee Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "i"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "i": { "description": "Issuee SAID", "type": "string"}
+                        },
+                        "additionalProperties": False
+                      }
+                    ]
+                  },
+                  {
+                    'description': 'Issued Date Block',
+                    'oneOf':
+                    [
+                      {'description': 'Block SAID', 'type': 'string'},
+                      {
+                        'description': 'Block Detail',
+                        'type': 'object',
+                        'required': ['d', 'u', 'issuedDate'],
+                        'properties':
+                        {
+                          'd': {'description': 'Block SAID', 'type': 'string'},
+                          'u': {'description': 'Bock UE', 'type': 'string'},
+                         'issuedDate': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                        },
+                        'additionalProperties': False
+                      },
+                    ]
+                  },
+                  {
+                    'description': 'Expiration Date Block',
+                    'oneOf':
+                    [
+                      {'description': 'Block SAID', 'type': 'string'},
+                      {
+                        'description': 'Block Detail',
+                        'type': 'object',
+                        'required': ['d', 'u', 'expirationDate'],
+                        'properties':
+                        {
+                          'd': {'description': 'Block SAID', 'type': 'string'},
+                          'u': {'description': 'Bock UE', 'type': 'string'},
+                          'expirationDate': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                        },
+                        'additionalProperties': False
+                      }
+                    ]
+                  },
+                  {
+                    "description": "Over13 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over13"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over13": { "description": "Over13 True if age>=13 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over14 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over14"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over14": { "description": "Over14 True if age>=14 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                    },
+                    ]
+                  },
+                  {
+                    "description": "Over15 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over15"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over15": { "description": "Over15 True if age>=15 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over16 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over16"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over16": { "description": "Over16 True if age>=16 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over18 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over18"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over18": { "description": "Over18 True if age>=18 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over21 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over21"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over21": { "description": "Over21 True if age>=21 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over40 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over40"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over40": { "description": "Over40 True if age>=40 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over62 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over62"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over62": { "description": "Over65 True if age>=62 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over65 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over65"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over65": { "description": "Over65 True if age>=65 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over67 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over67"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over67": { "description": "Over67 True if age>=67 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                  {
+                    "description": "Over70 Block",
+                    "oneOf":
+                    [
+                      { "description": "Block SAID", "type": "string"},
+                      {
+                        "description": "Block Detail",
+                        "type": "object",
+                        "required":
+                        [ "d", "u", "over70"],
+                        "properties":
+                        {
+                          "d": {"description": "Block SAID", "type": "string"},
+                          "u": { "description": "Block UE", "type": "string"},
+                          "over70": { "description": "Over70 True if age>=70 else False", "type": "boolean"}
+                        },
+                        "additionalProperties": False
+                      },
+                    ]
+                  },
+                ]
+              }
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'coreIdentity'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'coreIdentity':
+                {
+                  'description': 'Core Identity Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o':
+                    {
+                        'description': 'Edge Unary Operator',
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'minItems': 1,
+                    }
+                  },
+                  'additionalProperties': False
+                }
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=ageSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    ageSchemaSaid = mapper.said
+    assert  ageSchemaSaid == 'EIU_hzMGnI9rW85ndnHEQGzMvttkAGuUl3rgAtllY_yN'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert ageSchemaSaid == AgeSchemaSaid
+    assert mapper.mad == AgeSchema
+
     """done test"""
 
 
-def test_core_identity():
-    """Test core identity receipt and entitlement
+def test_sedi_acdcs():
+    """Test sedi receipt and entitlements
 
     IAL3 process
 
@@ -1452,6 +2699,11 @@ def test_core_identity():
         Create datetime stap for rip events
         Creeate a set of rip events for vacuous registrys
         Create list of rids (registry id as rip event said )
+
+    Notes for delegation chain
+    StateEntity Issuer  Roy is RootAID  Issuee is Department/Division Entity Descriptor Field
+    OrganizationalUnit  Deb Issuer is Dept/Division  Issuee is SEDI Program Label
+    IssuingAgent  Issuer Sue is SEDI Program Issuee is SEDI Program
     """
     kind = Kinds.json
 
@@ -1460,15 +2712,73 @@ def test_core_identity():
     assert salter.qb64 == '0ABzZWRpYWNkY3dvcmtzYWx0'  # CESR encoded
 
     # create signers, each contains siging key pair
-    signers = salter.signers(count=10, transferable=True, temp=True)  # two per
+    signers = salter.signers(count=16, transferable=True, temp=True)  # two per
 
     # create witness signers as nontransferable, each contains key pair
     walt = b'sediacdcworkwits'  # different salt for witness keys
     walter = Salter(raw=walt)
-    wigners = walter.signers(count=5,transferable=False, temp=True)  # one per
+    wigners = walter.signers(count=10,transferable=False, temp=True)  # one per
 
+    # Create State's three level delegation chain AIDs
+    # Root AID -> Org Unit (division/department/program) -> Issuing Agent
 
-    # Create Sue's AID (State Issuer) with single sig single wit inception event JSON
+    # Create Roy's AID (Root AID) with single sig single wit inception event JSON
+    royKeys = [signers[10].verfer.qb64]  # incepting public verification key(s)
+    royNKeys = [signers[11].verfer.qb64]  # next (rotation) public verification key(s)
+    royWits = [wigners[5].verfer.qb64]  # witness aids (same as public verkey)
+    royISerder = incept(royKeys, code=MtrDex.Blake3_256, ndigs=royNKeys, wits=royWits,
+                    version=Vrsn_2_0, kind=Kinds.json)
+
+    assert royISerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAAFb.',
+        't': 'icp',
+        'd': 'EAN4gwVu_a9EDxFn-camF6OoQvZAvi-_FyluyyZFKzs5',
+        'i': 'EAN4gwVu_a9EDxFn-camF6OoQvZAvi-_FyluyyZFKzs5',
+        's': '0',
+        'kt': '1',
+        'k': ['DJu5WX8jZ8CXRdNPbIjBtkf21bh0vENMWeYciabkDyQT'],
+        'nt': '1',
+        'n': ['DLILoKGcD8dqxTZKDe1WFqNGoxz-mtBQtuhxuc0KxDK6'],
+        'bt': '1',
+        'b': ['BDAzSC46GjoKWoOARwd3QfHSPj9BWRaMCAgcIJCMSqSD'],
+        'c': [],
+        'a': []
+    }
+    roy = royISerder.aid
+    assert roy == 'EAN4gwVu_a9EDxFn-camF6OoQvZAvi-_FyluyyZFKzs5'  # Root AID
+    assert royISerder.said == roy
+    raid = roy  # root AID
+
+    # Create Deb's AID (Org Unit Dept/Division/Program) with single-sig
+    # single-wit inception event JSON
+    debKeys = [signers[12].verfer.qb64]  # incepting public verification key(s)
+    debNKeys = [signers[13].verfer.qb64]  # next (rotation) public verification key(s)
+    debWits = [wigners[6].verfer.qb64]  # witness aids (same as public verkey)
+    debISerder = incept(debKeys, code=MtrDex.Blake3_256, ndigs=debNKeys, wits=debWits,
+                    version=Vrsn_2_0, kind=Kinds.json)
+
+    assert debISerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAAFb.',
+        't': 'icp',
+        'd': 'EMrUfTuv8j3vBVAgPSlDi1D_o35F5uwsIAWjBatLhK9E',
+        'i': 'EMrUfTuv8j3vBVAgPSlDi1D_o35F5uwsIAWjBatLhK9E',
+        's': '0',
+        'kt': '1',
+        'k': ['DO1JCVgu-xa3Zvrqfinmm2NirBsYtDAxca03_xFa6yv5'],
+        'nt': '1',
+        'n': ['DF4yQrug9NA7XEL-nO2zh-rtDjP7UFqimaQuiTR-9oUV'],
+        'bt': '1',
+        'b': ['BGcevQKxlqpFsVnxsOObpynodkDWG-Y063TKEcHTPafQ'],
+        'c': [],
+        'a': []
+    }
+    deb = debISerder.aid
+    assert deb == 'EMrUfTuv8j3vBVAgPSlDi1D_o35F5uwsIAWjBatLhK9E'  # Org Unit SEDI Program
+    assert debISerder.said == deb
+
+    # Create Sue's AID (State Issuing Agent) with single sig single wit inception event JSON
     sueKeys = [signers[0].verfer.qb64]  # incepting public verification key(s)
     sueNKeys = [signers[1].verfer.qb64]  # next (rotation) public verification key(s)
     sueWits = [wigners[0].verfer.qb64]  # witness aids (same as public verkey)
@@ -1605,21 +2915,26 @@ def test_core_identity():
     assert wynISerder.said == wyn
 
 
-    # Setup Registries for Sue as Issuer
+
+    # Setup Registries for Roy, Deb, and Sue as State Issuers
     # Create u field values for rip events
-    ueraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(8)]
+    ueraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(16)]
     uens = [Noncer(raw=raw).qb64 for raw in ueraws]  # unique entropy nonce qb64
     # create shared secret salts for bup events
-    ssraws = [b'sediacdcworkbup' + b'%0x'%(i, ) for i in range(8)]
+    ssraws = [b'sediacdcworkbup' + b'%0x'%(i, ) for i in range(32)]
     ssss = [Noncer(raw=raw).qb64 for raw in ssraws]  # shared secret salt qb64
 
     # create datetimek stamp
     stamp = '2026-09-01T08:30:00.000000+00:00'
 
     # create registry serders for sue as Issuer
-    sueRegSerders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in uens]
+    sueRegSerders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in uens[:8]]
     sueRids = [rss.said for rss in sueRegSerders]
-
+    assert sueRids[0] == sueRegSerders[0].said == 'EDO6lG8bbwNbd5dxtTPaycQvJKdR_OuLttmgmECBrqqe'
+    assert sueRegSerders[0].israid == sue
+    assert sueRegSerders[0].nonce == uens[0]
+    assert sueRegSerders[0].sner.num == 0
+    assert sueRegSerders[0].stamp == stamp
     assert sueRegSerders[0].sad == \
     {
         'v': 'ACDCCAACAAJSONAADa.',
@@ -1630,11 +2945,252 @@ def test_core_identity():
         'n': '0',
         'dt': '2026-09-01T08:30:00.000000+00:00'
     }
-    assert sueRids[0] == sueRegSerders[0].said == 'EDO6lG8bbwNbd5dxtTPaycQvJKdR_OuLttmgmECBrqqe'
-    assert sueRegSerders[0].israid == sue
-    assert sueRegSerders[0].nonce == uens[0]
-    assert sueRegSerders[0].sner.num == 0
-    assert sueRegSerders[0].stamp == stamp
+
+
+    # create registry serders for Deb as Issuer
+    debRegSerders = [regcept(israid=deb, uuid=ue, stamp=stamp) for ue in uens[8:12]]
+    debRids = [rss.said for rss in debRegSerders]
+    assert debRids[0] == debRegSerders[0].said == 'EIXhfDs7w1cUhb5VBtf1EXJ2kF-OjhW6EvXnLLT8vZCT'
+    assert debRegSerders[0].israid == deb
+    assert debRegSerders[0].nonce == uens[8]
+    assert debRegSerders[0].sner.num == 0
+    assert debRegSerders[0].stamp == stamp
+
+
+    # create registry serders for roy as Issuer
+    royRegSerders = [regcept(israid=roy, uuid=ue, stamp=stamp) for ue in uens[12:16]]
+    royRids = [rss.said for rss in royRegSerders]
+    assert royRids[0] == royRegSerders[0].said == 'EBsvzeauuwV-kspzeYoephLYW7ICiVISSLze85OcK3V9'
+    assert royRegSerders[0].israid == roy
+    assert royRegSerders[0].nonce == uens[12]
+    assert royRegSerders[0].sner.num == 0
+    assert royRegSerders[0].stamp == stamp
+
+    # Setup SEDI ACDC JsonSchema Validators
+
+    # Unit Validator Setup
+    unitValidator = SchemaValidator(schema=UnitSchema)  # create validator for unit ACDCs
+
+    # Agent Validator Setup
+    agentValidator = SchemaValidator(schema=AgentSchema)  # create validator for agent ACDCs
+
+    # IAR Validator Setup
+    iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
+
+    # Core SEDI Validator setup
+    coreValidator = SchemaValidator(schema=CoreSchema)  # create validator for core SEDI ACDCs
+
+    # Residence SEDI Validator setup
+    residenceValidator = SchemaValidator(schema=ResidenceSchema)  # create validator for residence SEDI ACDCs
+
+    # Age Schema Validator setup
+    ageValidator = SchemaValidator(schema=AgeSchema)  # create validator for age SEDI ACDCs
+
+
+    # Setup Utah State Delegation from root roy to unit deb to agent sue
+
+    # Setup Debs Unit Delegation SEDI ACDC
+    salt = b'debsunitsedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0ABkZWJzdW5pdHNlZGlzYWx0'  # CESR encoded
+    debUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(16)]
+    # Debs unit SEDI attribution section
+    debUnitAttBareMad = \
+    {
+        "d": "",
+        "u": debUes[1],
+        "i": deb,  # deb is issuee
+        "issuedDate": "2020-08-01T00:00:00.000000+00:00",  # Time MBZ
+        "unit": "SediProgramOffice"
+    }
+
+    compactor = Compactor(mad=debUnitAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    debUnitAttMad = compactor.partials[('',)].mad
+    assert debUnitAttMad['i'] == deb
+    debUnitAttMadSaid = compactor.said
+    assert  debUnitAttMadSaid == 'EHydQsy-4di85pJaiPqVN9_APpLtU15QXcmVFEN2FQE-'
+
+    assert debUnitAttMad == \
+    {
+        'd': debUnitAttMadSaid,
+        'u': debUes[1],
+        'i': deb,
+        'issuedDate': '2020-08-01T00:00:00.000000+00:00',  # Time MBZ
+        'unit': "SediProgramOffice"
+    }
+
+    debUnitRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=debUnitRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    debUnitRuleMad = compactor.partials[('',)].mad
+    assert debUnitRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    debSerderUnit = acdcmap(israid=roy,
+                            uuid=debUes[0],
+                            regid=royRids[0],
+                            schema=UnitSchemaSaid,
+                            attribute=debUnitAttMad,
+                            rule=debUnitRuleMad,
+                            kind=kind)
+
+    unitValidator.validate(debSerderUnit.sad)  # raises error if invalid
+
+    debUnitSediSaid = debSerderUnit.said
+    assert debUnitSediSaid == 'EMOga5BpSFk3n-qLa0wVt9zqRYXtR252Ugd0TpKG4wsw'
+    assert debSerderUnit.verstr == 'ACDCCAACAAJSONAAIn.'
+    assert debSerderUnit.israid == roy
+    assert debSerderUnit.regid == royRids[0]
+    assert debSerderUnit.iseaid == deb
+    assert debSerderUnit.sad['a'] == debUnitAttMad
+    assert debSerderUnit.sad == \
+    {
+        'v': debSerderUnit.verstr,
+        't': 'acm',
+        'd': debUnitSediSaid,
+        'u': debUes[0],
+        'i': roy,
+        'rd': royRids[0],
+        's': UnitSchemaSaid,
+        'a': debUnitAttMad,
+        'r': debUnitRuleMad,
+    }
+
+    # Setup Sue's Issuing Agent Delegation SEDI ACDC
+
+    salt = b'sueagentsedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0ABzdWVhZ2VudHNlZGlzYWx0'  # CESR encoded
+    sueUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(16)]
+    # Sues agent SEDI attribution section
+    sueAgentAttBareMad = \
+    {
+        "d": "",
+        "u": sueUes[1],
+        "i": sue,  # sue is issuee
+        "issuedDate": "2020-08-01T00:00:00.000000+00:00",  # Time MBZ
+        "role": "SediIssuingAgent",
+        "name":
+        {
+            "d": "",
+            "u": sueUes[2],
+            "value": "Susan Park",
+        },
+    }
+
+    compactor = Compactor(mad=sueAgentAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    sueAgentAttMad = compactor.partials[('.name',)].mad
+    assert sueAgentAttMad['i'] == sue
+    sueAgentAttMadSaid = compactor.said
+    assert sueAgentAttMadSaid == 'EFPQAD6XLlU9bnNPMWfjl1Q-Rf20Jwoip_1lkp8XGKKt'
+
+    assert sueAgentAttMad == \
+    {
+        'd': sueAgentAttMadSaid,
+        'u': sueUes[1],
+        'i': sue,
+        'issuedDate': '2020-08-01T00:00:00.000000+00:00',  # Time MBZ
+        'role': "SediIssuingAgent",
+        'name':
+        {
+            'd': 'EJj1BPhB8uGFLA8QtNjNJ9MXJ8fvOliIWj5w7YLzReWI',
+            'u': sueUes[2],
+            'value': "Susan Park",
+        },
+    }
+
+    sueAgentEdgeBareMad = \
+    {
+        "d": "",
+        "u": sueUes[3],
+        "orgUnit":
+        {
+            "d": "",
+            "u": sueUes[4],
+            "n": debUnitSediSaid,
+            "s": UnitSchemaSaid,
+            "o": "I2I",
+        },
+    }
+    compactor = Compactor(mad=sueAgentEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    sueAgentEdgeMad = compactor.partials[('.orgUnit',)].mad
+    assert sueAgentEdgeMad == \
+    {
+        'd': 'EMOIszsyUbGvkWG9dbE5fk8Vmjq2BUAzSBP1N-KSDdQ6',
+        'u': sueUes[3],
+        'orgUnit':
+        {
+            'd': 'EHaeN41ug5uzv97SLemY7Yh-xoUyGqXKJQ769AO9WWeJ',
+            'u': sueUes[4],
+            'n': debUnitSediSaid,
+            's': UnitSchemaSaid,
+            'o': 'I2I',
+        }
+    }
+
+
+    sueAgentRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=sueAgentRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    sueAgentRuleMad = compactor.partials[('',)].mad
+    assert sueAgentRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    sueSerderAgent = acdcmap(israid=deb,
+                            uuid=sueUes[0],
+                            regid=debRids[0],
+                            schema=AgentSchemaSaid,
+                            attribute=sueAgentAttMad,
+                            edge=sueAgentEdgeMad,
+                            rule=sueAgentRuleMad,
+                            kind=kind)
+
+    agentValidator.validate(sueSerderAgent.sad)  # raises error if invalid
+
+    sueAgentSediSaid = sueSerderAgent.said
+    assert sueAgentSediSaid == 'EBtrzZ2mj6jV6ZurtTSpmMggAiVwA7bkBi3aO_dF_wFt'
+    assert sueSerderAgent.verstr == 'ACDCCAACAAJSONAAO8.'
+    assert sueSerderAgent.israid == deb
+    assert sueSerderAgent.regid == debRids[0]
+    assert sueSerderAgent.iseaid == sue
+    assert sueSerderAgent.sad['a'] == sueAgentAttMad
+    assert sueSerderAgent.sad == \
+    {
+        'v': sueSerderAgent.verstr,
+        't': 'acm',
+        'd': sueAgentSediSaid,
+        'u': sueUes[0],
+        'i': deb,
+        'rd': debRids[0],
+        's': AgentSchemaSaid,
+        'a': sueAgentAttMad,
+        'e': sueAgentEdgeMad,
+        'r': sueAgentRuleMad,
+    }
+
+
+
 
     #create presentation registries for Guy
     salt = b'guypresntregsalt'  # base salt for presentation registries
@@ -1688,7 +3244,8 @@ def test_core_identity():
     assert guyAtc == bytearray(b'-TAXEDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JRMAABEEmZ6nuPKuq8'
                                b'd2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
 
-    iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
+
+
 
     # Guy's Identity Assurance Receipt (iar) ACDC
     # issued signed (not anchored) by proofing agent
@@ -1707,6 +3264,7 @@ def test_core_identity():
             "givenName": "Guy",  # given name first name(s)
             "middleName":"Marty McFly",  # middle name(s) other names
             "familyName": "Brown",  # last name family name
+            "nameSuffix": "",  # nameSuffix like Jr Sr etc
             "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
             "facialImageProof": "",  # SAID of typed media block containing image
             "legalPresenceStatus": "citizen",  # Class or type of legal presence
@@ -1728,7 +3286,7 @@ def test_core_identity():
 
     mapper = Mapper(mad=guyIarMad, makify=True, saidive=True, kind=kind)
     guyIarMadSaid = mapper.said
-    assert  guyIarMadSaid == 'EPYDIt6majjjR7saXuiBpPL8kWAQbtXN7Vge2fZp9zIf'
+    assert  guyIarMadSaid == 'EHJUa3M79igYnjM1oR_kwbx6QZtGUTt6X1gl0W4jhCDg'
     iarValidator.validate(mapper.mad)  # raises error if invalid
 
     guyIarAttBareMad = \
@@ -1738,6 +3296,7 @@ def test_core_identity():
         "givenName": "Guy",  # given name first name(s)
         "middleName":"Marty McFly",  # middle name(s) other names
         "familyName": "Brown",  # last name family name
+        "nameSuffix": "",
         "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
         "facialImageProof": "",  # SAID of typed media block containing image
         "legalPresenceStatus": "citizen",  # Class or type of legal presence
@@ -1758,7 +3317,7 @@ def test_core_identity():
     guyIarAttMad = mapper.mad
     assert guyIarAttMad['i'] == guy
     guyIarAttMadSaid = mapper.said
-    assert  guyIarAttMadSaid == 'EIAwt2gUPLL-BydfSx8ftkFrUk39G7seAm4l7DKLFFdl'
+    assert  guyIarAttMadSaid == 'EBvyK6QLiBkJqsCTCvPzP24Gb9BBEJRHsp6DGHDwQJOm'
 
     assert guyIarAttMad == \
     {
@@ -1767,6 +3326,7 @@ def test_core_identity():
         'givenName': 'Guy',
         'middleName': 'Marty McFly',
         'familyName': 'Brown',
+        "nameSuffix": "",
         'birthDate': '2002-08-22T00:00:00.000000+00:00',
         'facialImageProof': '',
         'legalPresenceStatus': 'citizen',
@@ -1788,14 +3348,16 @@ def test_core_identity():
                          attribute=guyIarAttMad, kind=kind)
     iarValidator.validate(guySerderIar.sad)  # raises error if invalid
 
+    guySerderIarSaid = guySerderIar.said
+    assert guySerderIarSaid == 'EOci_-BIIESmZ_TbIkc4UZO2ic0e-_RqGzVxAMYNvnO_'
+    assert guySerderIar.verstr == 'ACDCCAACAAJSONAALj.'
     assert guySerderIar.sad['a'] == guyIarAttMad
-    assert guySerderIar.said == 'EOmFbwu1YTdFJ4ltbA_Re3vahl0oaoKnHnQaTprGHJfX'
     assert guySerderIar.iseaid == guy
     assert guySerderIar.sad == \
     {
-        'v': 'ACDCCAACAAJSONAALT.',
+        'v': guySerderIar.verstr,
         't': 'acm',
-        'd': guySerderIar.said,
+        'd': guySerderIarSaid,
         'u': guyChallenge,
         'i': pat,
         's': IarSchemaSaid,
@@ -1806,6 +3368,7 @@ def test_core_identity():
             'givenName': 'Guy',
             'middleName': 'Marty McFly',
             'familyName': 'Brown',
+            "nameSuffix": "",
             'birthDate': '2002-08-22T00:00:00.000000+00:00',
             'facialImageProof': '',
             'legalPresenceStatus': 'citizen',
@@ -1823,175 +3386,7 @@ def test_core_identity():
         }
     }
 
-    #create presentation registries for Gal
-    salt = b'galpresntregsalt'  # base salt for presentation registries
-    salter = Salter(raw=salt)
-    galPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(2)]
-    galRegSerders= [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in galPreRegUes]
-    galPreRids = [rss.said for rss in galRegSerders]
-    assert galPreRids == ['ECRu2P7wZugBBeONZJuA3fOoS29iBOT5CkNzmEPDoHvZ',
-                          'EP2KF9K6cOvu2ByPDNTlhjO_xZpkto3L9zLR4bAP4ZWG']
 
-    # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
-    salt = b'galsedichallenge'  # raw challenge salt
-    salter = Salter(raw=salt)
-    galChallenge = salter.qb64
-    assert galChallenge == '0ABnYWxzZWRpY2hhbGxlbmdl'  # CESR encoded 128 bit nonce
-
-    # Challenge Nonce Seal to be anchored in gal's SMAID KEL
-    galCns = SealNonce(nd=galChallenge)
-    structor = Structor(crew=galCns, clan=SealNonce)
-    assert structor.qb64 == galChallenge
-    assert structor.crew == galCns
-    assert structor.crew._asdict() == {'nd': galChallenge}
-
-    #Create sealing interaction event for gal
-    data = [galCns._asdict()]
-    galIxnSerder = interact(gal, dig=galISerder.said, data=data, version=Vrsn_2_0, kind=Kinds.json)
-
-    assert galIxnSerder.sad == \
-    {
-        'v': 'KERICAACAAJSONAADu.',
-        't': 'ixn',
-        'd': 'EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr',
-        'i': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
-        's': '1',
-        'p': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
-        'a': [{'nd': '0ABnYWxzZWRpY2hhbGxlbmdl'}]
-    }
-
-    # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
-    # SAID and SN of event in Gals's KEL
-    galCsr = SealEvent(i=gal, s=galIxnSerder.snh, d=galIxnSerder.said)
-    assert galCsr == SealEvent(i='EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
-                               s='1',
-                               d='EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
-
-    structor = Structor(crew=galCsr)
-    galAtc = Structor.enclose([Structor(crew=galCsr)])  # CESR streamable attachment
-    assert galAtc == bytearray(b'-TAXEIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegYMAABEGpG0MnNDI37'
-                               b'DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
-
-
-
-    # Gal's Identity Assurance Receipt (iar) ACDC
-    # issued signed (not anchored) by proofing agent
-    galIarMad = \
-    {
-        "v": "",  # VersionString
-        "t": "acm",
-        "d": "",  # SAID
-        "u": galChallenge,  # 128 bit entropy challenge salty nonce
-        "i": pat,  # pat as identity assurance proofing agent AID
-        "s": "",  # schema of identity assurance receipt
-        "a":
-        {
-            "d": "",  # SAID
-            "i": gal,  # citizens SEDI managment AID (SMAID)
-            "givenName": "Gal",  # given name first name(s)
-            "middleName":"Parker",  # middle name(s) other names
-            "familyName": "Brown",  # last name family name
-            "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
-            "facialImageProof": "",  # SAID of typed media block containing image
-            "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
-            "residence": \
-            {
-                "street": "157 E 300 N",
-                "city": "Beaver",
-                "county": "Beaver",
-                "state": "Utah",
-                "postcode": "84713",
-                "country": "United States",
-            },
-            "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
-            "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
-        }
-    }
-
-    iarValidator.validate(galIarMad)  # raises error if invalid
-
-    galIarAttBareMad = \
-    {
-        "d": "",  # SAID
-        "i": gal,  # citizens SEDI managment AID (SMAID)
-        "givenName": "Gal",  # given name first name(s)
-        "middleName":"Parker",  # middle name(s) other names
-        "familyName": "Brown",  # last name family name
-        "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
-        "facialImageProof": "",  # SAID of typed media block containing image
-        "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
-        "residence": \
-        {
-            "street": "157 E 300 N",
-            "city": "Beaver",
-            "county": "Beaver",
-            "state": "Utah",
-            "postcode": "84713",
-            "country": "United States",
-        },
-        "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
-        "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
-    }
-    mapper = Mapper(mad=galIarAttBareMad, makify=True, saidive=True, kind=kind)
-    galIarAttMad = mapper.mad
-    galIarAttMadSaid = mapper.said
-    assert galIarAttMadSaid == 'EGrLfrJGwHHPVpHQMU2-bfzntCesFU_Q8rK7nbDBcTPz'
-    assert galIarAttMad['i'] == gal
-
-    galSerderIar = acdcmap(pat, uuid=galChallenge, schema=IarSchemaSaid,
-                           attribute=galIarAttMad, kind=kind)
-    iarValidator.validate(galSerderIar.sad)  # raises error if invalid
-
-    assert galSerderIar.sad['a'] == galIarAttMad
-    assert galSerderIar.said == 'EItXy59_XvP0VKOPJy3rQLtwob3fa6smQz9J7MAVUSZ0'
-    assert galSerderIar.iseaid == gal
-
-    assert galSerderIar.sad == \
-    {
-        'v': 'ACDCCAACAAJSONAALO.',
-        't': 'acm',
-        'd': galSerderIar.said,
-        'u': galChallenge,
-        'i': pat,
-        's': IarSchemaSaid,
-        'a':
-        {
-            'd': galIarAttMadSaid,
-            'i': gal,
-            'givenName': 'Gal',
-            'middleName': 'Parker',
-            'familyName': 'Brown',
-            'birthDate': '2002-11-01T00:00:00.000000+00:00',
-            'facialImageProof': '',
-            'legalPresenceStatus': 'citizen',
-            'residence':
-            {
-                'street': '157 E 300 N',
-                'city': 'Beaver',
-                'county': 'Beaver',
-                'state': 'Utah',
-                'postcode': '84713',
-                'country': 'United States'
-            },
-            'proofingDatetime': '2026-09-02T09:45:00.000000+00:00',
-            'sediURL': 'https://example.com/sedi/here'
-        }
-    }
-
-    # Setup Utah State Sue issuer pretend delegation
-    utahAgentAcdcSaid = Diger(ser=b"PretendUtahAgentAcdc").qb64
-    assert utahAgentAcdcSaid == 'EE-Lz-snXwc5VCKOZSQGVXeCO0HfrpXLabNqYP9QWgj_'
-
-    utahAgentSchemaSaid = Diger(ser=b"PretendUtahAgentSchema").qb64
-    assert utahAgentSchemaSaid == 'EPclO424AuAiGqlvfCfzrgsCirXA2Rj6fg5vo4Wv3I4m'
-
-    # Setup SEDI ACDC JsonSchema Validators
-    # CoreSEDI ACDC setup
-    coreValidator = SchemaValidator(schema=CoreSchema)  # create validator for core SEDI ACDCs
-
-    # CoreSEDI ACDC setup
-    residenceValidator = SchemaValidator(schema=ResidenceSchema)  # create validator for residence SEDI ACDCs
 
     # Guy and Gal have same residence
     street = "157 E 300 N"
@@ -2007,42 +3402,7 @@ def test_core_identity():
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
     guyUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(32)]
-    assert guyUes == \
-    [
-        '0ABQNZNkD1y0W4mglDB4ei5Y',
-        '0ACd8yXBMGBLNDwr-MMgtris',
-        '0ADGYtYEzEdGpaq_sDXwamDm',
-        '0ACEZIR6pk97xr2cy-gBdod4',
-        '0ACUdqI4OVtXDL5BBO13QdrJ',
-        '0ACXabyEAzJ1U-4qOek3adv5',
-        '0ABR4UtpgSSmCSVF1eNJ6joz',
-        '0ABqxMB1vXX4RL4tFUOLzn8y',
-        '0AAvTJo84OMiipKf_90mn7bZ',
-        '0ACqPN2zhcII6TVGRKYC1ckJ',
-        '0AAfMYErqhjBCf4cgG5huzT2',
-        '0AADjz761fupJiCvj4GWFBfg',
-        '0AAsHaHfgfNEaRuRwI1Y77ry',
-        '0ABZHwn29_HgPlO7tRDEONUK',
-        '0AA2UPIBJ6WKRMVk_xgeHpSd',
-        '0AC2TvvDIyT60xBlRG9CjFI9',
-        '0AARGwC82gXbtRbQXs4cGBpC',
-        '0ACkFgtF3ee459teQu6OJBRc',
-        '0AC9HltcQYMY0fjn-9zQftZW',
-        '0AAkcR_gzffjPL-mrjiJg9rv',
-        '0AAuZ1oTBZ6jqFp8Z7UrpKJs',
-        '0ABCJgPmvnyuDB_Bj34sb7ec',
-        '0ADYpt736nc2ZcVYFJDImwuy',
-        '0ACbDaiZmKZcyZLHmfVLpJYQ',
-        '0AA-hoK5ewZYxB5hXEMwxq5X',
-        '0ACyPy93wKHIWAvzu92ooj2c',
-        '0AAYbJl5lc9BwGOLiIaQVWQ8',
-        '0ACd7KIJHwn_s5kNHDqmQg8t',
-        '0ABQe9skiMkZBj86zvt6gtCY',
-        '0ACnZNwFbDOLXr65EDNIE--9',
-        '0ADwRPjDS8n94le48SRUTPZn',
-        '0ABnfpH75cVvRDh0giU6e1mn'
-    ]
+                                                             for i in range(64)]
 
     # Setup Guy's Core SEDI
 
@@ -2200,8 +3560,8 @@ def test_core_identity():
         {
             "d": "",
             "u": guyUes[12],
-            "n": utahAgentAcdcSaid,
-            "s": utahAgentSchemaSaid,
+            "n": sueAgentSediSaid,
+            "s": AgentSchemaSaid,
             "o": "I2I",
         },
     }
@@ -2210,14 +3570,14 @@ def test_core_identity():
     guyCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyCoreEdgeMad == \
     {
-        'd': 'EFQti6HFHHz8i3NbrBMT7xjrGjnlYjpvkBOCMCfYZVOZ',
+        'd': 'ELxliDwk7N1vQi4LQh9ajAzmSuBwySI3nT_E5WOlS2y9',
         'u': guyUes[11],
         'utahAgent':
         {
-            'd': 'EJCRDVAuP9dx5cx5gfwEpSi8l_7_qw4EbnseD6gY_1Js',
+            'd': 'EBx2vWWqX_cTeftJf5_k_1EATdq7h_ARzYrVFRi0ZDs5',
             'u': guyUes[12],
-            'n': utahAgentAcdcSaid,
-            's': utahAgentSchemaSaid,
+            'n': sueAgentSediSaid,
+            's': AgentSchemaSaid,
             'o': 'I2I',
         }
     }
@@ -2250,14 +3610,13 @@ def test_core_identity():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EBXWXjzSRR_Vvf2vBQCTypQlR8cYmP8r7HuDkQiBP5rQ'
+    assert guyCoreSediSaid == 'EPTZoxcK0d1aHS5N1bZjCPWdRjJybBn6827B_S-It7Ct'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAe9.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
     assert guySerderCore.iseaid == guy
     assert guySerderCore.sad['a'] == guyCoreAttMad
 
-    # add nameSuffix field
 
     assert guySerderCore.sad == \
     {
@@ -2329,24 +3688,8 @@ def test_core_identity():
                 'value': '2028-09-01T00:00:00.000000+00:00'
             }
         },
-        'e':
-        {
-            'd': 'EFQti6HFHHz8i3NbrBMT7xjrGjnlYjpvkBOCMCfYZVOZ',
-            'u': guyUes[11],
-            'utahAgent':
-            {
-                'd': 'EJCRDVAuP9dx5cx5gfwEpSi8l_7_qw4EbnseD6gY_1Js',
-                'u': guyUes[12],
-                'n': utahAgentAcdcSaid,
-                's': utahAgentSchemaSaid,
-                'o': 'I2I',
-            }
-        },
-        'r':
-        {
-            'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
-            'l': ''
-        }
+        'e': guyCoreEdgeMad,
+        'r': guyCoreRuleMad,
     }
 
     # Guy residence SEDI attribution section
@@ -2480,11 +3823,11 @@ def test_core_identity():
     guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyResidenceEdgeMad == \
     {
-        'd': 'EI0U9PdD0A8Qy-SeH99xmoRDtzF9XUefNcPKvchmhngQ',
+        'd': 'EPxY64lmpx32tlCDM_nzteo3CU9cGt5u_KHVfO9HLWaD',
         'u': guyUes[21],
         'coreIdentity':
         {
-            'd': 'EKBmu8c-pwMMacvxTlF2HxY7-sXsZKBNwoMlhDH_4htd',
+            'd': 'EFL5Wr5Im9eGteM0_vsG6QOYXXNUpYK5OQ8-x3n-MnuF',
             'u': guyUes[22],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -2522,7 +3865,7 @@ def test_core_identity():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'EExylaDDR4s8twA0mtRGY9EO5-eC9gqtELp9y_3_zJIk'
+    assert guyResidenceSediSaid == 'EDMgFosfiAEMvWuGqRKvkdVCwYmdxAzLq1HYaAPUdL94'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAZt.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -2545,48 +3888,282 @@ def test_core_identity():
 
 
 
+    #Setup Guys Age credentials
+    iael = \
+    [
+        "",
+        dict(d='', u=guyUes[27], i=guy),
+        dict(d='', u=guyUes[28], issuedDate='2020-08-22T00:00:00.000000+00:00'),
+        dict(d='', u=guyUes[29], expirationDate='20400-08-31T00:00:00.000000+00:00'),
+        dict(d='', u=guyUes[31], over13=True),
+        dict(d='', u=guyUes[32], over14=True),
+        dict(d='', u=guyUes[33], over15=True),
+        dict(d='', u=guyUes[34], over16=True),
+        dict(d='', u=guyUes[35], over18=True),
+        dict(d='', u=guyUes[36], over21=True),
+        dict(d='', u=guyUes[37], over40=True),
+        dict(d='', u=guyUes[38], over62=False),
+        dict(d='', u=guyUes[39], over65=False),
+        dict(d='', u=guyUes[40], over67=False),
+        dict(d='', u=guyUes[41], over70=False),
+    ]
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+    guyAgid = aggor.agid
+    assert guyAgid =='EPq_ss81RMpzgVaPLdnB8s1qK7yoSpocwPGVeoJ4Ew1L'
+    guyAgeAggAel = aggor.ael
+
+    guyAgeEdgeBareMad = \
+    {
+        "d": "",
+        "u": guyUes[25],
+        "coreIdentity":
+        {
+            "d": "",
+            "u": guyUes[26],
+            "n": guyCoreSediSaid,
+            "s": CoreSchemaSaid,
+            "o": ["E1E", "NI2I"],
+        },
+    }
+    compactor = Compactor(mad=guyAgeEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
+    assert guyAgeEdgeMad == \
+    {
+        'd': 'EBldI-SVVpDj8ne4fKptk6bOlOkIdfZAC27GkiDX9Y33',
+        'u': guyUes[25],
+        'coreIdentity':
+        {
+            'd': 'EMvR3hL7gxMqwgIXJXjpVCk9iylg9Wp29naEMBQsjUGY',
+            'u': guyUes[26],
+            'n': guyCoreSediSaid,
+            's': CoreSchemaSaid,
+            'o': ['E1E', 'NI2I']
+        }
+    }
+
+    guyAgeRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=guyAgeRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    guyAgeRuleMad = compactor.partials[('',)].mad
+    assert guyAgeRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    guySerderAge = acdcagg(israid=sue,
+                           uuid=guyUes[24],
+                           regid=sueRids[4],
+                           schema=AgeSchemaSaid,
+                           aggregate=aggor.ael,
+                           edge=guyAgeEdgeMad,
+                           rule=guyAgeRuleMad,
+                           kind=kind)
+
+
+    ageValidator.validate(guySerderAge.sad)  # raises error if invalid
+
+    guyAgeSediSaid = guySerderAge.said
+    assert guyAgeSediSaid == 'EKvLErTc_AYbDg15mzyXfJYetjmDYnsoBJPgSHRcHMTJ'
+    assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiI.'
+    assert guySerderAge.israid == sue
+    assert guySerderAge.regid == sueRids[4]
+    assert guySerderAge.iseaid == guy
+    assert guySerderAge.sad['A'] == guyAgeAggAel
+
+    assert guySerderAge.sad == \
+    {
+        'v': guySerderAge.verstr,
+        't': 'acg',
+        'd': guyAgeSediSaid,
+        'u': guyUes[24],
+        'i': sue,
+        'rd': sueRids[4],
+        's': AgeSchemaSaid,
+        'A': guyAgeAggAel,
+        'e': guyAgeEdgeMad,
+        'r': guyAgeRuleMad
+    }
+
+    # Setup Gal's Receipt and ACDCs
+
+    #create presentation registries for Gal
+    salt = b'galpresntregsalt'  # base salt for presentation registries
+    salter = Salter(raw=salt)
+    galPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(2)]
+    galRegSerders= [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in galPreRegUes]
+    galPreRids = [rss.said for rss in galRegSerders]
+    assert galPreRids == ['ECRu2P7wZugBBeONZJuA3fOoS29iBOT5CkNzmEPDoHvZ',
+                          'EP2KF9K6cOvu2ByPDNTlhjO_xZpkto3L9zLR4bAP4ZWG']
+
+    # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
+    salt = b'galsedichallenge'  # raw challenge salt
+    salter = Salter(raw=salt)
+    galChallenge = salter.qb64
+    assert galChallenge == '0ABnYWxzZWRpY2hhbGxlbmdl'  # CESR encoded 128 bit nonce
+
+    # Challenge Nonce Seal to be anchored in gal's SMAID KEL
+    galCns = SealNonce(nd=galChallenge)
+    structor = Structor(crew=galCns, clan=SealNonce)
+    assert structor.qb64 == galChallenge
+    assert structor.crew == galCns
+    assert structor.crew._asdict() == {'nd': galChallenge}
+
+    #Create sealing interaction event for gal
+    data = [galCns._asdict()]
+    galIxnSerder = interact(gal, dig=galISerder.said, data=data, version=Vrsn_2_0, kind=Kinds.json)
+
+    assert galIxnSerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAADu.',
+        't': 'ixn',
+        'd': 'EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr',
+        'i': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+        's': '1',
+        'p': 'EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+        'a': [{'nd': '0ABnYWxzZWRpY2hhbGxlbmdl'}]
+    }
+
+    # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
+    # SAID and SN of event in Gals's KEL
+    galCsr = SealEvent(i=gal, s=galIxnSerder.snh, d=galIxnSerder.said)
+    assert galCsr == SealEvent(i='EIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegY',
+                               s='1',
+                               d='EGpG0MnNDI37DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
+
+    structor = Structor(crew=galCsr)
+    galAtc = Structor.enclose([Structor(crew=galCsr)])  # CESR streamable attachment
+    assert galAtc == bytearray(b'-TAXEIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegYMAABEGpG0MnNDI37'
+                               b'DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
+
+
+
+    # Gal's Identity Assurance Receipt (iar) ACDC
+    # issued signed (not anchored) by proofing agent
+    galIarMad = \
+    {
+        "v": "",  # VersionString
+        "t": "acm",
+        "d": "",  # SAID
+        "u": galChallenge,  # 128 bit entropy challenge salty nonce
+        "i": pat,  # pat as identity assurance proofing agent AID
+        "s": "",  # schema of identity assurance receipt
+        "a":
+        {
+            "d": "",  # SAID
+            "i": gal,  # citizens SEDI managment AID (SMAID)
+            "givenName": "Gal",  # given name first name(s)
+            "middleName":"Parker",  # middle name(s) other names
+            "familyName": "Brown",  # last name family name
+            "nameSuffix": "",
+            "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
+            "facialImageProof": "",  # SAID of typed media block containing image
+            "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
+            "residence": \
+            {
+                "street": "157 E 300 N",
+                "city": "Beaver",
+                "county": "Beaver",
+                "state": "Utah",
+                "postcode": "84713",
+                "country": "United States",
+            },
+            "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
+            "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
+        }
+    }
+
+    iarValidator.validate(galIarMad)  # raises error if invalid
+
+    galIarAttBareMad = \
+    {
+        "d": "",  # SAID
+        "i": gal,  # citizens SEDI managment AID (SMAID)
+        "givenName": "Gal",  # given name first name(s)
+        "middleName":"Parker",  # middle name(s) other names
+        "familyName": "Brown",  # last name family name
+        "nameSuffix": "",
+        "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
+        "facialImageProof": "",  # SAID of typed media block containing image
+        "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
+        "residence": \
+        {
+            "street": "157 E 300 N",
+            "city": "Beaver",
+            "county": "Beaver",
+            "state": "Utah",
+            "postcode": "84713",
+            "country": "United States",
+        },
+        "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
+        "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
+    }
+    mapper = Mapper(mad=galIarAttBareMad, makify=True, saidive=True, kind=kind)
+    galIarAttMad = mapper.mad
+    galIarAttMadSaid = mapper.said
+    assert galIarAttMadSaid == 'ECL3hRdthn1d2m_wklWeX9P6ngpOxtf-x6bWUQgEpLBv'
+    assert galIarAttMad['i'] == gal
+
+    galSerderIar = acdcmap(pat, uuid=galChallenge, schema=IarSchemaSaid,
+                           attribute=galIarAttMad, kind=kind)
+    iarValidator.validate(galSerderIar.sad)  # raises error if invalid
+
+    galSerderIarSaid = galSerderIar.said
+    assert galSerderIarSaid == 'EBTgH9X0yI56qOWePTRjbd1DMkhY-3pm0DdPn2tOmO_F'
+    assert galSerderIar.verstr == 'ACDCCAACAAJSONAALe.'
+    assert galSerderIar.sad['a'] == galIarAttMad
+
+    assert galSerderIar.iseaid == gal
+
+    assert galSerderIar.sad == \
+    {
+        'v': galSerderIar.verstr,
+        't': 'acm',
+        'd': galSerderIarSaid,
+        'u': galChallenge,
+        'i': pat,
+        's': IarSchemaSaid,
+        'a':
+        {
+            'd': galIarAttMadSaid,
+            'i': gal,
+            'givenName': 'Gal',
+            'middleName': 'Parker',
+            'familyName': 'Brown',
+            "nameSuffix": "",
+            'birthDate': '2002-11-01T00:00:00.000000+00:00',
+            'facialImageProof': '',
+            'legalPresenceStatus': 'citizen',
+            'residence':
+            {
+                'street': '157 E 300 N',
+                'city': 'Beaver',
+                'county': 'Beaver',
+                'state': 'Utah',
+                'postcode': '84713',
+                'country': 'United States'
+            },
+            'proofingDatetime': '2026-09-02T09:45:00.000000+00:00',
+            'sediURL': 'https://example.com/sedi/here'
+        }
+    }
+
+
+
     # Setup Gal's SEDI ACDCs
 
     salt = b'galscoresedisalt'  # base salt
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABnYWxzY29yZXNlZGlzYWx0'  # CESR encoded
     galUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(32)]
-    assert galUes == \
-    [
-        '0AAgHaUeg5Pvr7KQMPBeYfIs',
-        '0ADkNrf84O_sw7WGXVMSkFWh',
-        '0AAe7cgRQjYZAcd0TVbjIxM-',
-        '0AAEbE87_XRwLHjbvj16wKqX',
-        '0AAa6B2FyXtFiWpXFbJrMg3n',
-        '0ABDbo5XZIfCSAsfTVl9jZfF',
-        '0ADXx6eI6thDHeHaKi9vWVaj',
-        '0AAUr_yhAHP31X1ZHOwUJE1z',
-        '0AAsG7_ogfBljU-7OuuYg8eG',
-        '0ADyZipGvcuOxw1ChYws3pig',
-        '0ACDMVtW0LTB2zvojqA3idZS',
-        '0ADPO0qUnzzehhLuLlOE104a',
-        '0AChBh2pZwiOkTy675JP3L-f',
-        '0AC9zE_ETWdeUUs3yP9kkJ0F',
-        '0AA5ZKSBfBOgjiWeqCoCu1V5',
-        '0ABbhr2o_M834GMWCYngZC3s',
-        '0ABlOWnun7rNDUmzXlIk0OEe',
-        '0ADhxScWmTYdq8FrNGvcrYpZ',
-        '0AAnwG5mRUe5Et7RQ2TTUUEK',
-        '0ADQrYfARrpfPhWdHuz_gHPX',
-        '0ADGmcRPXhfi5kG6oQdU4fHW',
-        '0AADKjTvIy2bbrS-lXyI9VCS',
-        '0ACK5s1TfhDkVlr64Pg1gDl1',
-        '0AC2exiiWkYKfrZwUycP4SY9',
-        '0AAp2vdhFdWTt9O4E6Wi98VT',
-        '0ACjsqsuL-DOKmxTaJ7txUuZ',
-        '0ACJEGGAO0WbfqWL0QgHfjfS',
-        '0AABy0qynv8r9j8TVlm0E3Eb',
-        '0ADdsSxYps95HI5ZD9s6gQH0',
-        '0AA2XQraY1bu2gNAuP1TepSL',
-        '0AAe0fk7QDnX230fu_jsGYY4',
-        '0AArNPcT5h05Wxm0SUKpeL9O'
-    ]
+                                                             for i in range(64)]
+
 
     # Setup Gal's Core SEDI
 
@@ -2743,8 +4320,8 @@ def test_core_identity():
         {
             "d": "",
             "u": galUes[12],
-            "n": utahAgentAcdcSaid,
-            "s": utahAgentSchemaSaid,
+            "n": sueAgentSediSaid,
+            "s": AgentSchemaSaid,
             "o": "I2I",
         },
     }
@@ -2753,14 +4330,14 @@ def test_core_identity():
     galCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert galCoreEdgeMad == \
     {
-        'd': 'EC8vYsnBvBjkibZsZ7xmDpPO6rMo8OdB_bPXzNgYTrCo',
+        'd': 'EG9KFrkR75Z75FlQ30iy9M-FMR_G8n9duefxGk0CiSe-',
         'u': galUes[11],
         'utahAgent':
         {
-            'd': 'EEtJ5MHnBsErDdmOgpF4IuHmeJscflKQOwJfQUc3HweY',
+            'd': 'ED8sRt0kZMyWkTCGoXkQc9HYYx8JdimmW78rHl0ErXAq',
             'u': galUes[12],
-            'n': utahAgentAcdcSaid,
-            's': utahAgentSchemaSaid,
+            'n': sueAgentSediSaid,
+            's': AgentSchemaSaid,
             'o': 'I2I',
         }
     }
@@ -2793,7 +4370,7 @@ def test_core_identity():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'ECHH32kIOlAikl6LjbUpZCabFvzx4JQeZ6ouQSGZbK3B'
+    assert galCoreSediSaid == 'ENslotJ8X4uRCbQoLUbZjTbS9f70CbR1uGBdPuRfVUpo'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAe2.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -2945,11 +4522,11 @@ def test_core_identity():
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad == \
     {
-        'd': 'EGbfWnP3gNNgK_GIJU1M9_t4PrickJcPzkVQBt3n73ho',
+        'd': 'EMShrPKtNDOWeg4QMavPBJQ5AEbdvF_0YG_KzPRZoH0Y',
         'u': galUes[21],
         'coreIdentity':
         {
-            'd': 'EAD1MX9m6FWFTeLjmyl5flHza6tWY5T6Ew9nfdwwRc9z',
+            'd': 'ECtx2KlyHYzoWx1zKOaVHAWNURLhC1RarvWWLFCPD6-k',
             'u': galUes[22],
             'n': galCoreSediSaid,
             's': CoreSchemaSaid,
@@ -2985,7 +4562,7 @@ def test_core_identity():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EL0lov_lqFS0mmKGODtOKL8WRwn4oVML9-6O7UMFtbd6'
+    assert galResidenceSediSaid == 'EGtH3uc17XVZSl-3dcs_JU_rcGqmG4GBTdupd6d2GnJ4'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAZt.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
@@ -3014,4 +4591,4 @@ def test_core_identity():
 
 if __name__ == "__main__":
     test_sedi_schema()
-    test_core_identity()
+    test_sedi_acdcs()
