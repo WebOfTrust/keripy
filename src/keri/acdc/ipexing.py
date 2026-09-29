@@ -602,7 +602,8 @@ class IpexHandler:
             if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
                 return False
 
-            # Resolve the disclosure contract accepted by the Grant's prior.
+            # Resolve the latest Apply or accepted Offer that defines the
+            # effective disclosure contract for this Grant.
             planSerder = pserder
             if pserder is not None and pserder.ked["r"] == "/ipex/agree":
                 planSerder, _ = cloneMessage(self.hby, said=pserder.ked["p"])
