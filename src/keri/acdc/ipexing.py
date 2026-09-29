@@ -18,9 +18,9 @@ from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
                       MissingSenderKeyStateError, MisdigestError,
                       MisregistryError, MissequenceError, RootSealError,
                       UnverifiedBlindError, ValidationError, Vrsn_2_0, sniff)
-from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
-                    Number, Prefixer, Saider, Schemer, SealEvent, SealSource, Serdery, Texter,
-                    exchange, messagize)
+from ..core import (BlindState, Blinder, BoundState, Compactor, Counter, Codens, Diger,
+                    GenDex, Noncer, Number, Pather, Prefixer, Saider, Schemer, SealEvent,
+                    SealSource, Serdery, Texter, exchange, messagize)
 from ..peer.exchanging import cloneMessage, verifyAttachments
 
 logger = ogler.getLogger()
@@ -273,6 +273,13 @@ def _validDisclosurePath(value):
             return False
         if any(not isinstance(field, str) or not field for field in fields):
             return False
+        for field in fields:
+            if field.startswith("/"):
+                return False
+            try:
+                Pather(path=field, relative=True)
+            except Exception:
+                return False
 
     return True
 
@@ -595,7 +602,26 @@ class IpexHandler:
             if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
                 return False
 
-            # Stage 6: after the disclosed graph shape is accepted, each walked
+            # Resolve the disclosure contract accepted by the Grant's prior.
+            planSerder = pserder
+            if pserder is not None and pserder.ked["r"] == "/ipex/agree":
+                planSerder, _ = cloneMessage(self.hby, said=pserder.ked["p"])
+                if planSerder is None or planSerder.ked.get("r") != "/ipex/offer":
+                    return False
+
+            # Bare Grants have no negotiated disclosure contract to enforce.
+            if planSerder is not None:
+                plan = planSerder.ked.get("q", {}).get("dp")
+                if (not _validSingleDagList(plan, list)
+                        or not _validDisclosurePath(plan[0])):
+                    return False
+                if not self._verifyDisclosurePlan(plan=plan[0],
+                                                  origin=attrs["o"][0],
+                                                  nodes=walked[0],
+                                                  order=walked[1]):
+                    return False
+
+            # Stage 6: after the disclosed graph and plan are accepted, each walked
             # registry-backed node must vet its own node-local proof group.
             if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
                 return False
@@ -777,6 +803,93 @@ class IpexHandler:
 
         return pserder
 
+    def _verifyDisclosurePlan(self, plan, origin, nodes, order):
+        """Verify a disclosed Grant DAG against its negotiated disclose paths.
+
+        Each plan entry must select the corresponding node in breadth-first
+        graph order, match that node's schema, and expose every requested field.
+        For mapping sections, the received partial must also equal the canonical
+        partial produced by ``Compactor`` for those field paths.
+        """
+        selected = []
+        for schema, prefix, fields in plan:
+            said = origin
+            nest = nodes.get(said)
+            if nest is None:
+                return False
+            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+            value = nserder.sad
+
+            # Follow each virtual `_` hop from a near edge to its far ACDC.
+            if prefix != "/":
+                for part in prefix.strip("/").split("/"):
+                    if part == "_":
+                        if not isinstance(value, Mapping):
+                            return False
+                        said = value.get("n")
+                        nest = nodes.get(said)
+                        if nest is None:
+                            return False
+                        nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+                        value = nserder.sad
+                    elif isinstance(value, Mapping):
+                        if part not in value:
+                            return False
+                        value = value[part]
+                    elif isinstance(value, list) and part.isdigit():
+                        index = int(part)
+                        if index >= len(value):
+                            return False
+                        value = value[index]
+                    else:
+                        return False
+
+            selected.append(said)
+
+            # The tuple's schema must identify the selected disclosed node.
+            nodeSchema = nserder.schema
+            if isinstance(nodeSchema, Mapping):
+                nodeSchema = nodeSchema.get("$id")
+            if nodeSchema != schema:
+                return False
+
+            # Group paths by top-level section for canonical partial checks.
+            sections = {}
+            for field in fields:
+                try:
+                    pather = Pather(path=field, relative=True)
+                    pather.resolve(nserder.sad)
+                except Exception:
+                    return False
+
+                parts = pather.rparts
+                if parts:
+                    sections.setdefault(parts[0], []).append(field)
+
+            for root, paths in sections.items():
+                section = nserder.sad.get(root)
+                if not isinstance(section, Mapping):
+                    continue
+                try:
+                    compactor = Compactor(mad=deepcopy(section),
+                                          makify=True,
+                                          kind=nserder.kind)
+                    compactor.compact(paths=paths, root=root)
+                    partial = compactor.partials.get(tuple(paths))
+                except Exception:
+                    return False
+                if partial is None:
+                    return False
+                expected = partial.mad
+                if section.get("d") == "" and expected.get("d"):
+                    expected = dict(expected)
+                    expected["d"] = ""
+                if expected != section:
+                    return False
+
+        # The plan must account for every disclosed node in canonical BFS order.
+        return selected == order
+
     def _walkGraph(self, origin, nests, *, closed):
         """Walk the disclosed origin DAG and return the visited node order.
 
@@ -834,9 +947,9 @@ class IpexHandler:
 
                 # Expanded edge sections may contain nested edge groups
                 for edge in blocks:
-                    groups = [(edge, False)]
+                    groups = deque([(edge, False)])
                     while groups:
-                        group, nested = groups.pop()
+                        group, nested = groups.popleft()
                         labels = EdgeGroupLabels if nested else EdgeSectionLabels   # Leaf vs group labels
                         if "n" in group:
                             for label in group:

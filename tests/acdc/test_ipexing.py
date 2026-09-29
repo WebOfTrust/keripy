@@ -14,9 +14,9 @@ from keri.acdc import (IpexHandler, Regery, Registrar, acdcmap, blindate,
                        loadHandlers, offer as ipexOffer, regcept,
                        spurn as ipexSpurn)
 from keri.app import openCF, openHby
-from keri.core import (Blinder, Codens, Counter, Diger, GenDex, Kevery, Kramer, Noncer,
-                       Number, Parser, Schemer, SealEvent, SealSource, messagize,
-                       SerderKERI, Serdery, Texter, exchange)
+from keri.core import (Blinder, Codens, Compactor, Counter, Diger, GenDex, Kevery,
+                       Kramer, Noncer, Number, Parser, Schemer, SealEvent, SealSource,
+                       messagize, SerderKERI, Serdery, Texter, exchange)
 from keri.db import reopenDB
 from keri.kering import Colds, MissingSignatureError, sniff
 from keri.help import helping
@@ -2297,7 +2297,8 @@ def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
                             attribute=dict(d="", rules="club-entry"),
                             iseaid=hab.pre)
         grantOrigin = acdcmap(israid=hab.pre,
-                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36",
+                                             role="member"),
                               iseaid=hab.pre)
         schema = grantOrigin.sad["s"]["$id"]
         applyExn, applyAtc = ipexApply(hab=hab,
@@ -2342,6 +2343,83 @@ def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
         ]
 
 
+def test_ipex_v2_grant_must_honor_negotiated_disclosure_plan():
+    """Grant rejects over-disclosure and accepts the requested canonical partial."""
+    with openHby(name="ipex-v2-disclosure-plan",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        credential = acdcmap(
+            israid=hab.pre,
+            uuid=Noncer().qb64,
+            attribute=dict(
+                d="",
+                u=Noncer().qb64,
+                status=dict(d="", u=Noncer().qb64, value="citizen"),
+                private=dict(d="", u=Noncer().qb64, value="hidden"),
+            ),
+            iseaid=hab.pre,
+        )
+        schema = credential.sad["s"]["$id"]
+        applyExn, applyAtc = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose status only",
+            modifiers=dict(dp=[[[schema, "/", ["a/status/"]]]]),
+        )
+
+        ims = bytearray(applyExn.raw)
+        ims.extend(applyAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+
+        overDisclosed, overDisclosedAtc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose too much",
+            origin=_signed(credential, hab),
+            apply=applyExn,
+        )
+        ims = bytearray(overDisclosed.raw)
+        ims.extend(overDisclosedAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(overDisclosed.said,)) is None
+
+        compactor = Compactor(mad=dict(credential.sad["a"]),
+                              makify=True,
+                              kind=Kinds.json)
+        paths = ["a/status/"]
+        compactor.compact(paths=paths, root="a")
+        attributes = dict(compactor.partials[tuple(paths)].mad)
+        selective = acdcmap(
+            israid=credential.israid,
+            uuid=credential.sad["u"],
+            schema=credential.sad["s"],
+            attribute=attributes,
+            kind=Kinds.json,
+        )
+        assert selective.said == credential.said
+        assert isinstance(selective.sad["a"]["private"], str)
+
+        grant, grantAtc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose status only",
+            origin=_signed(selective, hab),
+            apply=applyExn,
+        )
+        ims = bytearray(grant.raw)
+        ims.extend(grantAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(grant.said,)) is not None
+
+
 def test_ipex_v2_dispatch_linear_and_spurn():
     """Exercise linear routing, rejection, and spurn handling through Exchanger."""
     with openHby(name="ipex-v2-dispatch",
@@ -2352,7 +2430,8 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                                     transferable=False)
         registry = regcept(israid=hab.pre)
         acdc = acdcmap(israid=hab.pre,
-                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36",
+                                      role="member"),
                        iseaid=hab.pre)
         schema = acdc.sad["s"]["$id"]
 
@@ -2681,7 +2760,8 @@ def test_ipex_v2_nontransferable_nested_artifacts():
 
         # Create one ACDC node for the nested grant body
         acdc = acdcmap(israid=hab.pre,
-                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36",
+                                      role="member"),
                        iseaid=hab.pre)
         schema = acdc.sad["s"]["$id"]
 
