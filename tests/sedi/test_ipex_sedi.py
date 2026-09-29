@@ -354,7 +354,7 @@ def _buildSediCredentials(
     )
     residenceEdge = residenceEdgeCompactor.partials[tuple(residenceEdgePaths)].mad
 
-    # Build reseidence ACDC
+    # Build residence ACDC
     residence = acdcmap(
         israid=issuer.pre,
         uuid=nonces[15],
@@ -648,7 +648,14 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                     hab=verifier,
                     recp=holder.pre,
                     message="Please present Core SEDI",
-                    modifiers=dict(dp=[[[CoreSchemaSaid, "/", []]]]),
+                    modifiers=dict(
+                        dp=[
+                            [
+                                [CoreSchemaSaid, "/", []],
+                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
+                            ]
+                        ]
+                    ),
                     ax=[True],
                 )
 
@@ -969,7 +976,14 @@ def test_core_sedi_rejects_missing_authority_node():
                     hab=verifier,
                     recp=holder.pre,
                     message="Request Core SEDI",
-                    modifiers=dict(dp=[[[CoreSchemaSaid, "/", []]]]),
+                    modifiers=dict(
+                        dp=[
+                            [
+                                [CoreSchemaSaid, "/", []],
+                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
+                            ]
+                        ]
+                    ),
                     ax=[True],
                 )
                 _exchange(apply, applyAtc, verifierKvy, holderKvy)
@@ -1023,6 +1037,7 @@ def test_core_sedi_rejects_missing_authority_node():
                 assert ims == bytearray()
 
                 assert verifierHby.db.exns.get(keys=(incompleteGrant.said,)) is None
+                assert verifierHby.db.epse.get(keys=(incompleteGrant.said,)) is None
                 assert all(item["d"] != incompleteGrant.said for item in recorder.items)
 
 
@@ -1359,9 +1374,13 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                     modifiers=dict(
                         dp=[
                             [
-                                [ResidenceSchemaSaid, "/", ["/a/state"]],
-                                [ResidenceSchemaSaid, "/e/coreIdentity/_/", []],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [ResidenceSchemaSaid, "/", ["a/state/"]],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
+                                [
+                                    authority.sad["s"]["$id"],
+                                    "/e/coreIdentity/_/e/utahAgent/_/",
+                                    [],
+                                ],
                             ]
                         ]
                     ),
@@ -1526,10 +1545,14 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                                 [
                                     ResidenceSchemaSaid,
                                     "/",
-                                    ["/a/state", "/a/county", "/a/postcode"],
+                                    ["a/state/", "a/county/", "a/postcode/"],
                                 ],
-                                [ResidenceSchemaSaid, "/e/coreIdentity/_/", []],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
+                                [
+                                    authority.sad["s"]["$id"],
+                                    "/e/coreIdentity/_/e/utahAgent/_/",
+                                    [],
+                                ],
                             ]
                         ]
                     ),
@@ -1770,6 +1793,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 "givenName",
                 "middleName",
                 "familyName",
+                "nameSuffix",
                 "birthDate",
                 "facialImageProof",
                 "issuedDate",
@@ -1820,8 +1844,8 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                     modifiers=dict(
                         dp=[
                             [
-                                [CoreSchemaSaid, "/", ["/a/legalPresenceStatus"]],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [CoreSchemaSaid, "/", ["a/legalPresenceStatus/"]],
+                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
                             ]
                         ]
                     ),
@@ -1892,6 +1916,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 assert b'"value":"Guy"' not in grantWire
                 assert b"Marty McFly" not in grantWire
                 assert b'"value":"Brown"' not in grantWire
+                assert b'"value":"Jr"' not in grantWire
                 assert b"2002-08-22" not in grantWire
 
                 # Send the Grant and assert it was stored
@@ -1918,8 +1943,10 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 carriedCore = selectiveNests[0].serder
                 assert carriedCore.said == core.said
                 assert carriedCore.sad["a"]["legalPresenceStatus"]["value"] == "citizen"
+                assert isinstance(carriedCore.sad["a"]["nameSuffix"], str)
                 assert isinstance(carriedCore.sad["a"]["birthDate"], str)
                 assert b"Marty McFly" not in carriedCore.raw
+                assert b'"value":"Jr"' not in carriedCore.raw
                 assert b"2002-08-22" not in carriedCore.raw
 
                 admit, admitAtc = ipexAdmit(
@@ -2066,8 +2093,12 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                         dp=[
                             [
                                 [ResidenceSchemaSaid, "/", []],
-                                [ResidenceSchemaSaid, "/e/coreIdentity/_/", []],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
+                                [
+                                    authority.sad["s"]["$id"],
+                                    "/e/coreIdentity/_/e/utahAgent/_/",
+                                    [],
+                                ],
                             ]
                         ]
                     ),
@@ -2137,6 +2168,7 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                 # but carries only its issuer proof, not the presentation-registry proof
                 # _verifyPresentationAuthGraph() returns a failure
                 assert verifierHby.db.exns.get(keys=(incompleteGrant.said,)) is None
+                assert verifierHby.db.epse.get(keys=(incompleteGrant.said,)) is None
                 assert all(
                     item["d"] != incompleteGrant.said for item in verifierRecorder.items
                 )
@@ -2270,7 +2302,7 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                         dp=[
                             [
                                 [CoreSchemaSaid, "/", []],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [authority.sad["s"]["$id"], "/e/utahAgent/_/", []],
                             ]
                         ]
                     ),
@@ -2540,8 +2572,12 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                         dp=[
                             [
                                 [ResidenceSchemaSaid, "/", []],
-                                [ResidenceSchemaSaid, "/e/coreIdentity/_/", []],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
+                                [
+                                    authority.sad["s"]["$id"],
+                                    "/e/coreIdentity/_/e/utahAgent/_/",
+                                    [],
+                                ],
                             ]
                         ]
                     ),
@@ -2770,8 +2806,12 @@ def test_residence_sedi_supporting_dag_through_ipex():
                         dp=[
                             [
                                 [ResidenceSchemaSaid, "/", []],
-                                [ResidenceSchemaSaid, "/e/coreIdentity/_/", []],
-                                [CoreSchemaSaid, "/e/utahAgent/_/", []],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
+                                [
+                                    authority.sad["s"]["$id"],
+                                    "/e/coreIdentity/_/e/utahAgent/_/",
+                                    [],
+                                ],
                             ]
                         ]
                     ),
