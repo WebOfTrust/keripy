@@ -446,10 +446,10 @@ AgentSchema = \
   'additionalProperties': False
 }
 
-CoreSchemaSaid = 'EEexzr1-5wfSO4ncPegl8Vl3GoNvVgluCvsDMvcwzdYm'
+CoreSchemaSaid = 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs'
 CoreSchema = \
 {
-  '$id': 'EEexzr1-5wfSO4ncPegl8Vl3GoNvVgluCvsDMvcwzdYm',
+  '$id': 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Core Schema',
   'description': 'SEDI Core Identity JSON Schema for acm ACDC.',
@@ -488,6 +488,7 @@ CoreSchema = \
             'd',
             'u',
             'i',
+            'primary',
             'givenName',
             'middleName',
             'familyName',
@@ -504,6 +505,7 @@ CoreSchema = \
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
             'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            "primary": { "description": "Primary True if not bulk issued else False", "type": "boolean"},
             'givenName':
             {
               'description': 'Given Name Block',
@@ -1802,6 +1804,7 @@ def test_sedi_schema():
                             'd',
                             'u',
                             'i',
+                            'primary',
                             'givenName',
                             'middleName',
                             'familyName',
@@ -1818,6 +1821,7 @@ def test_sedi_schema():
                             "u": {"description": "Attribute Section UE", "type": "string"},
                             "i": {"description": "Issuee AID", "type": "string"},
                             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                            "primary": { "description": "Primary True if not bulk issued else False", "type": "boolean"},
                             'givenName':
                             {
                               'description': 'Given Name Block',
@@ -2062,7 +2066,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=coreSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     coreSchemaSaid = mapper.said
-    assert  coreSchemaSaid == 'EEexzr1-5wfSO4ncPegl8Vl3GoNvVgluCvsDMvcwzdYm'
+    assert  coreSchemaSaid == 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert coreSchemaSaid == CoreSchemaSaid
     assert mapper.mad == CoreSchema
@@ -3506,6 +3510,7 @@ def test_sedi_acdcs():
         "u": guyUes[1],
         "i": guy,  #guySMAID
         "rd": guyPreRids[0],
+        'primary': True,
         "givenName": \
         {
             "d": "",
@@ -3575,7 +3580,7 @@ def test_sedi_acdcs():
                                         '.expirationDate')].mad
     assert guyCoreAttMad['i'] == guy
     guyCoreAttMadSaid = compactor.said
-    assert  guyCoreAttMadSaid == 'EFNaESg9xyCchizpBAPQR8jlC_ETSJ02SD1DQSyzzddM'
+    assert guyCoreAttMadSaid == 'EPIuMf4tkzdqVMSuq59rBD14LZpmFtFjhnh8Io1BWdbt'
 
     assert guyCoreAttMad == \
     {
@@ -3583,6 +3588,7 @@ def test_sedi_acdcs():
         'u': guyUes[1],
         'i': guy,
         "rd": guyPreRids[0],
+        'primary': True,
         'givenName':
         {
             'd': 'EBu_EdUcstZq6woZ7NMe2pyU7jjcQOdC9w1ryHa1P_Sq',
@@ -3696,8 +3702,8 @@ def test_sedi_acdcs():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EKdjZorv5zsnxIaQTzli9bgcfU4FtUjR9nSQkv1yW_bo'
-    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAe9.'
+    assert guyCoreSediSaid == 'EBIUAXCkiPCIlzrb88CwPQQc2XJZ1OcDNuij09Shwjcw'
+    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAfM.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
     assert guySerderCore.iseaid == guy
@@ -3719,6 +3725,7 @@ def test_sedi_acdcs():
             'u': guyUes[1],
             'i': guy,
             "rd": guyPreRids[0],
+            'primary': True,
             'givenName':
             {
                 'd': 'EBu_EdUcstZq6woZ7NMe2pyU7jjcQOdC9w1ryHa1P_Sq',
@@ -3907,11 +3914,11 @@ def test_sedi_acdcs():
     guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyResidenceEdgeMad == \
     {
-        'd': 'EMAeigjuGXOWmSIDf6eyUQXOhIWKj96j91Jlzoh_XRUa',
+        'd': 'EEumse7AhAJQfQPlcJ-_CNYxhpjvezZ92MK7LHoo-apL',
         'u': guyUes[21],
         'coreIdentity':
         {
-            'd': 'EDWOUgD7qBSdaqDR2VzJRr7eQ3nj99B3uHsy2qT8YYm_',
+            'd': 'EG1pcwDZphpQKT0th1FblJkkVOd39WjtXJuwIotXOjJ3',
             'u': guyUes[22],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -3949,7 +3956,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'EKTjwOw7RU2cPG1NI1OPt7DvmgMkgbbiffo3Nh-FtNoF'
+    assert guyResidenceSediSaid == 'ECpmURCMNF7n9Ri-ESJ-P9MWrZlbn9O7fEoQIeXgpqm0'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -4014,11 +4021,11 @@ def test_sedi_acdcs():
     guyAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyAgeEdgeMad == \
     {
-        'd': 'EPQhFro_dTLnGyxLbtx7E4FSGA3qT1sHhkWOQVb-XKML',
+        'd': 'EEdpPdgAUq4bM91qlYN8FavzlYOp9UCiEBTBWber3v7u',
         'u': guyUes[25],
         'coreIdentity':
         {
-            'd': 'EKcu_FtUIrcv73mxQApOJB7InbQy4jLO6g73VQClWtwr',
+            'd': 'EL3rkrAd7_2bNCy42ctPw6-QDHsASZCP5Vf-1g97atN8',
             'u': guyUes[26],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4053,7 +4060,7 @@ def test_sedi_acdcs():
     ageValidator.validate(guySerderAge.sad)  # raises error if invalid
 
     guyAgeSediSaid = guySerderAge.said
-    assert guyAgeSediSaid == 'EO4jzGy2FNoPLQDD4p1w9mujP1iLP7zvSGdT4oR7h6TO'
+    assert guyAgeSediSaid == 'EFRROrmCm2onj1czPAlO7jpm8vQArMOln9WGpK5dYd1_'
     assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiI.'
     assert guySerderAge.israid == sue
     assert guySerderAge.regid == sueRids[4]
@@ -4260,6 +4267,7 @@ def test_sedi_acdcs():
         "u": galUes[1],
         "i": gal,  #galSMAID
         "rd": galPreRids[0],
+        'primary': True,
         "givenName": \
         {
             "d": "",
@@ -4329,7 +4337,7 @@ def test_sedi_acdcs():
                                         '.expirationDate')].mad
     assert galCoreAttMad['i'] == gal
     galCoreAttMadSaid = compactor.said
-    assert  galCoreAttMadSaid == 'EHawLGZ4klbBzL3NvBVxEjjtO7hRaH_uaKKhW1-H27bl'
+    assert  galCoreAttMadSaid == 'EAOShXJ0qsL90sE1-zoWFXyV7dKYDNhQ9wTzBw8yu2XE'
 
     assert galCoreAttMad == \
     {
@@ -4337,6 +4345,7 @@ def test_sedi_acdcs():
         'u': galUes[1],
         'i': gal,
         "rd": galPreRids[0],
+        'primary': True,
         'givenName':
         {
             'd': 'ECSb6A4qHXtoh1STpC-aBCvP4NTTh1UAudlbam0rBZ9i',
@@ -4450,8 +4459,8 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EMbtj_JHpmaL8TnewzSz4SDfMQvpZDKhw8F8hBXgPmaW'
-    assert galSerderCore.verstr == 'ACDCCAACAAJSONAAe2.'
+    assert galCoreSediSaid == 'EOzdhtGF0qR35h634WAMnMAgzvb3zhfWriT3rLNrveJT'
+    assert galSerderCore.verstr == 'ACDCCAACAAJSONAAfF.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
     assert galSerderCore.iseaid == gal
@@ -4600,11 +4609,11 @@ def test_sedi_acdcs():
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad == \
     {
-        'd': 'EI4GnCUDjOzTojw1c0YmsmTa_btKAkIFscL18ppsyvLX',
+        'd': 'EPuorWRUtKEpo7QoIGo-FbEOQa61H-xUw43xdKfMHcKJ',
         'u': galUes[21],
         'coreIdentity':
         {
-            'd': 'ECZ2rA5OXcIwBtCjWayO2IbCc_rDwR8AtP6Vi2re2a9-',
+            'd': 'EIeZNzgI6eqULJwIxIB7XVbGgR8y9LwykRTj4NAJ2N6_',
             'u': galUes[22],
             'n': galCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4639,7 +4648,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EIOKObNMTip5HzEu0TIegrsl_Nm6ajI43Ib96Gg1UD9h'
+    assert galResidenceSediSaid == 'EDlJ97PqFfh99evvQnWJ2JjXp2bsm0mXHQiUxtqa5WfC'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
