@@ -616,6 +616,14 @@ class IpexHandler:
                 if (not _validSingleDagList(plan, list)
                         or not _validDisclosurePath(plan[0])):
                     return False
+                if planSerder.ked["r"] == "/ipex/offer" and not plan[0]:
+                    planSerder, _ = cloneMessage(self.hby, said=planSerder.ked["p"])
+                    if planSerder is None or planSerder.ked.get("r") != "/ipex/apply":
+                        return False
+                    plan = planSerder.ked.get("q", {}).get("dp")
+                    if (not _validSingleDagList(plan, list)
+                            or not _validDisclosurePath(plan[0])):
+                        return False
                 if not self._verifyDisclosurePlan(plan=plan[0],
                                                   origin=attrs["o"][0],
                                                   nodes=walked[0],

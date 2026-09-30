@@ -2309,7 +2309,9 @@ def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
         offerExn, offerAtc = ipexOffer(hab=hab,
                                        message="Here is the metadata offer",
                                        origin=offerMeta,
-                                       apply=applyExn)
+                                       apply=applyExn,
+                                       modifiers=dict(dp=[[]]))
+        assert offerExn.ked["q"]["dp"] == [[]]
         agreeExn, agreeAtc = ipexAgree(hab=hab,
                                        message="I agree to the metadata offer",
                                        offer=offerExn)
