@@ -1374,6 +1374,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                 assert ims == bytearray()
 
                 assert verifierHby.db.exns.get(keys=(wrongGrant.said,)) is None
+                assert verifierHby.db.epse.get(keys=(wrongGrant.said,)) is None
                 assert recorder.items == []
 
 
