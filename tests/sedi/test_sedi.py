@@ -781,10 +781,10 @@ CoreSchema = \
 }
 
 
-WardCoreSchemaSaid = 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs'
+WardCoreSchemaSaid = 'EObxOWfcPJcS_E5mgq2JuthDlt483SJigeRRizcCnT1N'
 WardCoreSchema = \
 {
-  '$id': 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs',
+  '$id': 'EObxOWfcPJcS_E5mgq2JuthDlt483SJigeRRizcCnT1N',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Ward Core Schema',
   'description': 'SEDI Ward Core Identity JSON Schema for acm ACDC.',
@@ -1035,7 +1035,7 @@ WardCoreSchema = \
         {
           'description': 'Edge Section Detail',
           'type': 'object',
-          'required': ['d', 'u', 'utahAgent', 'guardian'],
+          'required': ['d', 'u', 'utahAgent', 'guardians'],
           'properties':
           {
             'd': {'description': 'Edge Section SAID', 'type': 'string'},
@@ -1055,16 +1055,76 @@ WardCoreSchema = \
               },
               'additionalProperties': False
             },
-            'guardian':
+            'guardians':
             {
               'description': 'Guardian Edge Group Block',
               'type': 'object',
-              'required': ['d', 'u', 'o'],
+              'required': ['d', 'u', 'o', 'first'],
               'properties':
               {
                 'd': {'description': 'Edge Group SAID', 'type': 'string'},
                 'u': {'description': 'Edge Group UE', 'type': 'string'},
-                'o': {'description': 'Edge Group M-ary Operator', 'type': 'string'}
+                'o': {'description': 'Edge Group M-ary Operator', 'type': 'string'},
+                'first':
+                {
+                  'description': 'First Guardian Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'second':
+                {
+                  'description': 'Second Guardian Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'third':
+                {
+                  'description': 'Third Guardian Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'fourth':
+                {
+                  'description': 'Fourth Guardian Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
               },
               'additionalProperties': False
             },
@@ -2545,7 +2605,386 @@ def test_sedi_schema():
     assert coreSchemaSaid == CoreSchemaSaid
     assert mapper.mad == CoreSchema
 
-
+    wardCoreSchemaMad = \
+    {
+      '$id': 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Ward Core Schema',
+      'description': 'SEDI Ward Core Identity JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Ward_Core_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'primary',
+                'givenName',
+                'middleName',
+                'familyName',
+                'nameSuffix',
+                'birthDate',
+                'facialImageProof',
+                'legalPresenceStatus',
+                'issuedDate',
+                'expirationDate',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                "primary": { "description": "Primary True if not bulk issued else False", "type": "boolean"},
+                'givenName':
+                {
+                  'description': 'Given Name Block',
+                  'oneOf':
+                  [
+                    {'description': 'Given Name SAID', 'type': 'string'},
+                    {
+                      'description': 'Given Name Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Given Name Value', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    }
+                  ]
+                },
+                'middleName':
+                {
+                  'description': 'Middle Name(s) Block',
+                  'oneOf':
+                  [
+                    {'description': 'Middle Name SAID','type': 'string'},
+                    {
+                      'description': 'Middle Name Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Middle Name(s) Value', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+                'familyName':
+                {
+                  'description': 'Family Name Block',
+                  'oneOf':
+                  [
+                    {'description': 'Family Name SAID', 'type': 'string'},
+                    {
+                      'description': 'Family Name Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Family Name Value', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+                'nameSuffix':
+                {
+                  'description': 'Name Suffix Block',
+                  'oneOf':
+                  [
+                    {'description': 'Name Suffix SAID', 'type': 'string'},
+                    {
+                      'description': 'Name Suffix Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Name Suffix Value', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+                'birthDate':
+                {
+                  'description': 'Birth Date Block',
+                  'oneOf':
+                  [
+                    {'description': 'Birth Date SAID','type': 'string'},
+                    {
+                      'description': 'Birth Date Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Birth Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                      },
+                    'additionalProperties': False
+                    },
+                  ]
+                },
+                'facialImageProof':
+                {
+                  'description': 'Facial Image Proof Block',
+                  'oneOf':
+                  [
+                    {'description': 'Facial Image Proof SAID', 'type': 'string'},
+                    {
+                      'description': 'Facial Image Proof Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Facial Image Proof Value as SAID of typed media block', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+                'legalPresenceStatus':
+                {
+                  'description': 'Legal Presense Status Block',
+                  'oneOf':
+                  [
+                    {'description': 'Legal Presense Status SAID', 'type': 'string'},
+                    {
+                      'description': 'Legal Presense Status Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Legal Presense Status Value i.e. citizen', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+                'issuedDate':
+                {
+                  'description': 'Issued Date Block',
+                  'oneOf':
+                  [
+                    {'description': 'Issued Date SAID', 'type': 'string'},
+                    {
+                      'description': 'Issued Date Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                       'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+                'expirationDate':
+                {
+                  'description': 'Expiration Date Block',
+                  'oneOf':
+                  [
+                    {'description': 'Expiration Date SAID', 'type': 'string'},
+                    {
+                      'description': 'Expiration Date Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    }
+                  ]
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'utahAgent', 'guardians'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'utahAgent':
+                {
+                  'description': 'Utah Agent Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'guardians':
+                {
+                  'description': 'Guardian Edge Group Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'o', 'first'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge Group SAID', 'type': 'string'},
+                    'u': {'description': 'Edge Group UE', 'type': 'string'},
+                    'o': {'description': 'Edge Group M-ary Operator', 'type': 'string'},
+                    'first':
+                    {
+                      'description': 'First Guardian Edge Block',
+                      'type': 'object',
+                      'required': ['d', 'u', 'n', 's', 'o'],
+                      'properties':
+                      {
+                        'd': {'description': 'Edge SAID', 'type': 'string'},
+                        'u': {'description': 'Edge UE', 'type': 'string'},
+                        'n': {'description': 'Far Node SAID', 'type': 'string'},
+                        's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                        'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                      },
+                      'additionalProperties': False
+                    },
+                    'second':
+                    {
+                      'description': 'Second Guardian Edge Block',
+                      'type': 'object',
+                      'required': ['d', 'u', 'n', 's', 'o'],
+                      'properties':
+                      {
+                        'd': {'description': 'Edge SAID', 'type': 'string'},
+                        'u': {'description': 'Edge UE', 'type': 'string'},
+                        'n': {'description': 'Far Node SAID', 'type': 'string'},
+                        's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                        'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                      },
+                      'additionalProperties': False
+                    },
+                    'third':
+                    {
+                      'description': 'Third Guardian Edge Block',
+                      'type': 'object',
+                      'required': ['d', 'u', 'n', 's', 'o'],
+                      'properties':
+                      {
+                        'd': {'description': 'Edge SAID', 'type': 'string'},
+                        'u': {'description': 'Edge UE', 'type': 'string'},
+                        'n': {'description': 'Far Node SAID', 'type': 'string'},
+                        's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                        'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                      },
+                      'additionalProperties': False
+                    },
+                    'fourth':
+                    {
+                      'description': 'Fourth Guardian Edge Block',
+                      'type': 'object',
+                      'required': ['d', 'u', 'n', 's', 'o'],
+                      'properties':
+                      {
+                        'd': {'description': 'Edge SAID', 'type': 'string'},
+                        'u': {'description': 'Edge UE', 'type': 'string'},
+                        'n': {'description': 'Far Node SAID', 'type': 'string'},
+                        's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                        'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                      },
+                      'additionalProperties': False
+                    },
+                  },
+                  'additionalProperties': False
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+    mapper = Mapper(mad=wardCoreSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    wardCoreSchemaSaid = mapper.said
+    assert  wardCoreSchemaSaid == 'EObxOWfcPJcS_E5mgq2JuthDlt483SJigeRRizcCnT1N'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert wardCoreSchemaSaid == WardCoreSchemaSaid
+    assert mapper.mad == WardCoreSchema
 
     # Setup Residence Schema
     residenceSchemaMad = \
