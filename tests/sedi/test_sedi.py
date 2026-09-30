@@ -147,10 +147,10 @@ IarSchema = \
   'additionalProperties': False
 }
 
-ReplaceSchemaSaid = 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4'
+ReplaceSchemaSaid = 'EJrKOCD9us07aYil3823zfB1rEUe90KNKbmDZeQN8j5G'
 ReplaceSchema = \
 {
-  '$id': 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4',
+  '$id': 'EJrKOCD9us07aYil3823zfB1rEUe90KNKbmDZeQN8j5G',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI AID Replace Schema',
   'description': 'SEDI AID Replace JSON Schema for acm ACDC.',
@@ -1526,6 +1526,97 @@ def test_sedi_schema():
     assert iarSchemaSaid == IarSchemaSaid
     assert mapper.mad == IarSchema
     #mapper.raw   # compact json of mapper
+
+
+    # AID Replacement Schema
+
+    replaceSchemaMad = \
+    {
+      '$id': '',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI AID Replace Schema',
+      'description': 'SEDI AID Replace JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Replace_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'issuedDate',
+                'unit',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee Replacement AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                'obsolete': {'description': 'Obsolete AID', 'type': 'string'},
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=replaceSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    replaceSchemaSaid = mapper.said
+    assert  replaceSchemaSaid == 'EJrKOCD9us07aYil3823zfB1rEUe90KNKbmDZeQN8j5G'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert replaceSchemaSaid == ReplaceSchemaSaid
+    assert mapper.mad == ReplaceSchema
 
 
     # Organizational Unit Schema
