@@ -22,8 +22,14 @@ from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Compacto
 from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 
+# add primary field to core SEDI  (so any presenation of unlinked SEDI does not primary field must
+# also present to the core sedi with matching AID to know that its primary in the unlinked ACDC)
+# Replace credential
 # high rez image biometric credential
-# no presentation registries on linked dependenent ACDC becaue core has pres regis
+# ward core credential with link to guardian
+# Guardian credential with link to core?
+# Guardian auth credential ward
+# Bespoke ACDC Schema for presenting both age and residence or any set of E1E leaves
 
 
 # see test_sedi_schema() for generating and testing
@@ -141,10 +147,91 @@ IarSchema = \
   'additionalProperties': False
 }
 
-UnitSchemaSaid = 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4'
-UnitSchema = \
+ReplaceSchemaSaid = 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4'
+ReplaceSchema = \
 {
   '$id': 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI AID Replace Schema',
+  'description': 'SEDI AID Replace JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Replace_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'issuedDate',
+            'unit',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee Replacement AID', 'type': 'string'},
+            'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+            'obsolete': {'description': 'Obsolete AID', 'type': 'string'},
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+UnitSchemaSaid = 'ELjJlSaExu9ss766dDpQoLE5aT6-wIRyR72X5YLC3ILc'
+UnitSchema = \
+{
+  '$id': 'ELjJlSaExu9ss766dDpQoLE5aT6-wIRyR72X5YLC3ILc',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Organizational Unit Schema',
   'description': 'SEDI Oganizational Unit JSON Schema for acm ACDC.',
@@ -190,7 +277,7 @@ UnitSchema = \
           {
             'd': {'description': 'Attribute Section SAID', 'type': 'string'},
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
-            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
             'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
             'unit': {'description': 'Oganizational Unit', 'type': 'string'},
@@ -223,10 +310,10 @@ UnitSchema = \
 }
 
 
-AgentSchemaSaid = 'EHuBfCSNTNIbsVPdOpfGoZbFzeBN7FZehUStBxEyo0mZ'
+AgentSchemaSaid = 'EMnswUTHQ11HzWlqYVUJGVVtOelwW_bRckn622CkObDQ'
 AgentSchema = \
 {
-  '$id': 'EHuBfCSNTNIbsVPdOpfGoZbFzeBN7FZehUStBxEyo0mZ',
+  '$id': 'EMnswUTHQ11HzWlqYVUJGVVtOelwW_bRckn622CkObDQ',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Issuing Agent Schema',
   'description': 'SEDI Issuing Agent JSON Schema for acm ACDC.',
@@ -273,7 +360,7 @@ AgentSchema = \
           {
             'd': {'description': 'Attribute Section SAID', 'type': 'string'},
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
-            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
             'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
             'role': {'description': 'Issuing Agent Role', 'type': 'string'},
@@ -359,10 +446,10 @@ AgentSchema = \
   'additionalProperties': False
 }
 
-CoreSchemaSaid = 'EDydx4yv_AZUQJcEVuLCl9RwWXNDi4uuDN1DLutKHQh_'
+CoreSchemaSaid = 'EEexzr1-5wfSO4ncPegl8Vl3GoNvVgluCvsDMvcwzdYm'
 CoreSchema = \
 {
-  '$id': 'EDydx4yv_AZUQJcEVuLCl9RwWXNDi4uuDN1DLutKHQh_',
+  '$id': 'EEexzr1-5wfSO4ncPegl8Vl3GoNvVgluCvsDMvcwzdYm',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Core Schema',
   'description': 'SEDI Core Identity JSON Schema for acm ACDC.',
@@ -415,7 +502,7 @@ CoreSchema = \
           {
             'd': {'description': 'Attribute Section SAID', 'type': 'string'},
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
-            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
             'givenName':
             {
@@ -659,10 +746,10 @@ CoreSchema = \
   'additionalProperties': False
 }
 
-ResidenceSchemaSaid = 'EM9Nqv1rqJzGTfbbnM865hk8VhvxPAIyArmGboskVuBF'
+ResidenceSchemaSaid = 'EH7ayivQLHwfBKwFhg7mcpOzHEWcvvJ24EO0OyzvPVKQ'
 ResidenceSchema = \
 {
-  '$id': 'EM9Nqv1rqJzGTfbbnM865hk8VhvxPAIyArmGboskVuBF',
+  '$id': 'EH7ayivQLHwfBKwFhg7mcpOzHEWcvvJ24EO0OyzvPVKQ',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Residence Schema',
   'description': 'SEDI Residence JSON Schema for acm ACDC.',
@@ -713,7 +800,7 @@ ResidenceSchema = \
           {
             'd': {'description': 'Attribute Section SAID', 'type': 'string'},
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
-            'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
             'street':
             {
@@ -924,10 +1011,10 @@ ResidenceSchema = \
 }
 
 # Age SEDI ACDC Schema
-AgeSchemaSaid = 'EIU_hzMGnI9rW85ndnHEQGzMvttkAGuUl3rgAtllY_yN'
+AgeSchemaSaid = 'EH-ZOEzzWm5hw351zL3IBJiEMDnJiKrv17lQp2JFj8Sb'
 AgeSchema = \
 {
-  '$id': 'EIU_hzMGnI9rW85ndnHEQGzMvttkAGuUl3rgAtllY_yN',
+  '$id': 'EH-ZOEzzWm5hw351zL3IBJiEMDnJiKrv17lQp2JFj8Sb',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Age Schema',
   'description': 'SEDI Age JSON Schema for acg ACDC.',
@@ -981,7 +1068,7 @@ AgeSchema = \
                     {
                       "d": {"description": "Block SAID", "type": "string"},
                       "u": { "description": "Block UE", "type": "string"},
-                      "i": { "description": "Issuee SAID", "type": "string"}
+                      "i": { "description": "Issuee AID", "type": "string"}
                     },
                     "additionalProperties": False
                   }
@@ -1488,7 +1575,7 @@ def test_sedi_schema():
               {
                 'd': {'description': 'Attribute Section SAID', 'type': 'string'},
                 'u': {'description': 'Attribute Section UE', 'type': 'string'},
-                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
                 'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
                 'unit': {'description': 'Oganizational Unit', 'type': 'string'},
@@ -1523,7 +1610,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=unitSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     unitSchemaSaid = mapper.said
-    assert  unitSchemaSaid == 'ECIdMGgfBZbTibrVVWSQYTcTEIP7HaZhDk2qvQmrfJb4'
+    assert  unitSchemaSaid == 'ELjJlSaExu9ss766dDpQoLE5aT6-wIRyR72X5YLC3ILc'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert unitSchemaSaid == UnitSchemaSaid
     assert mapper.mad == UnitSchema
@@ -1578,7 +1665,7 @@ def test_sedi_schema():
               {
                 'd': {'description': 'Attribute Section SAID', 'type': 'string'},
                 'u': {'description': 'Attribute Section UE', 'type': 'string'},
-                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
                 'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
                 'role': {'description': 'Issuing Agent Role', 'type': 'string'},
@@ -1667,7 +1754,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=agentSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     agentSchemaSaid = mapper.said
-    assert  agentSchemaSaid == 'EHuBfCSNTNIbsVPdOpfGoZbFzeBN7FZehUStBxEyo0mZ'
+    assert  agentSchemaSaid == 'EMnswUTHQ11HzWlqYVUJGVVtOelwW_bRckn622CkObDQ'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert agentSchemaSaid == AgentSchemaSaid
     assert mapper.mad == AgentSchema
@@ -1729,7 +1816,7 @@ def test_sedi_schema():
                         {
                             "d": {"description": "Attribute Section SAID", "type": "string"},
                             "u": {"description": "Attribute Section UE", "type": "string"},
-                            "i": {"description": "Issuee SMAID SEDI Management AID", "type": "string"},
+                            "i": {"description": "Issuee AID", "type": "string"},
                             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
                             'givenName':
                             {
@@ -1975,7 +2062,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=coreSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     coreSchemaSaid = mapper.said
-    assert  coreSchemaSaid == 'EDydx4yv_AZUQJcEVuLCl9RwWXNDi4uuDN1DLutKHQh_'
+    assert  coreSchemaSaid == 'EEexzr1-5wfSO4ncPegl8Vl3GoNvVgluCvsDMvcwzdYm'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert coreSchemaSaid == CoreSchemaSaid
     assert mapper.mad == CoreSchema
@@ -2036,7 +2123,7 @@ def test_sedi_schema():
               {
                 'd': {'description': 'Attribute Section SAID', 'type': 'string'},
                 'u': {'description': 'Attribute Section UE', 'type': 'string'},
-                'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
                 'street':
                 {
@@ -2249,7 +2336,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=residenceSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     residenceSchemaSaid = mapper.said
-    assert  residenceSchemaSaid == 'EM9Nqv1rqJzGTfbbnM865hk8VhvxPAIyArmGboskVuBF'
+    assert  residenceSchemaSaid == 'EH7ayivQLHwfBKwFhg7mcpOzHEWcvvJ24EO0OyzvPVKQ'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert residenceSchemaSaid == ResidenceSchemaSaid
     assert mapper.mad == ResidenceSchema
@@ -2313,7 +2400,7 @@ def test_sedi_schema():
                         {
                           "d": {"description": "Block SAID", "type": "string"},
                           "u": { "description": "Block UE", "type": "string"},
-                          "i": { "description": "Issuee SAID", "type": "string"}
+                          "i": { "description": "Issuee AID", "type": "string"}
                         },
                         "additionalProperties": False
                       }
@@ -2648,7 +2735,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=ageSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     ageSchemaSaid = mapper.said
-    assert  ageSchemaSaid == 'EIU_hzMGnI9rW85ndnHEQGzMvttkAGuUl3rgAtllY_yN'
+    assert  ageSchemaSaid == 'EH-ZOEzzWm5hw351zL3IBJiEMDnJiKrv17lQp2JFj8Sb'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert ageSchemaSaid == AgeSchemaSaid
     assert mapper.mad == AgeSchema
@@ -3049,7 +3136,7 @@ def test_sedi_acdcs():
     unitValidator.validate(debSerderUnit.sad)  # raises error if invalid
 
     debUnitSediSaid = debSerderUnit.said
-    assert debUnitSediSaid == 'EMOga5BpSFk3n-qLa0wVt9zqRYXtR252Ugd0TpKG4wsw'
+    assert debUnitSediSaid == 'ELzFC6b-X12dLECB3pW6Dn12MzdggzAZ39oUX5r6qpic'
     assert debSerderUnit.verstr == 'ACDCCAACAAJSONAAIn.'
     assert debSerderUnit.israid == roy
     assert debSerderUnit.regid == royRids[0]
@@ -3131,11 +3218,11 @@ def test_sedi_acdcs():
     sueAgentEdgeMad = compactor.partials[('.orgUnit',)].mad
     assert sueAgentEdgeMad == \
     {
-        'd': 'EMOIszsyUbGvkWG9dbE5fk8Vmjq2BUAzSBP1N-KSDdQ6',
+        'd': 'ENO63vZGzdLqwSLyAGGR14yP6DTe3fVqaW09BRntYCkR',
         'u': sueUes[3],
         'orgUnit':
         {
-            'd': 'EHaeN41ug5uzv97SLemY7Yh-xoUyGqXKJQ769AO9WWeJ',
+            'd': 'EOSxyRdSpFi8kumuTMEmD_b9ZC42PIC4vKrcE1TYgup0',
             'u': sueUes[4],
             'n': debUnitSediSaid,
             's': UnitSchemaSaid,
@@ -3171,7 +3258,7 @@ def test_sedi_acdcs():
     agentValidator.validate(sueSerderAgent.sad)  # raises error if invalid
 
     sueAgentSediSaid = sueSerderAgent.said
-    assert sueAgentSediSaid == 'EBtrzZ2mj6jV6ZurtTSpmMggAiVwA7bkBi3aO_dF_wFt'
+    assert sueAgentSediSaid == 'EIgzkUVRsCRRpLWQKKtG9TIOlcJN_1HO6SQHSRs58OWI'
     assert sueSerderAgent.verstr == 'ACDCCAACAAJSONAAO8.'
     assert sueSerderAgent.israid == deb
     assert sueSerderAgent.regid == debRids[0]
@@ -3552,8 +3639,6 @@ def test_sedi_acdcs():
         }
     }
 
-
-
     guyCoreEdgeBareMad = \
     {
         "d": "",
@@ -3572,18 +3657,17 @@ def test_sedi_acdcs():
     guyCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyCoreEdgeMad == \
     {
-        'd': 'ELxliDwk7N1vQi4LQh9ajAzmSuBwySI3nT_E5WOlS2y9',
+        'd': 'ENHsIbWmUKSAGskOTptbTWstTMvUWBGuUzxHyikSuKaM',
         'u': guyUes[11],
         'utahAgent':
         {
-            'd': 'EBx2vWWqX_cTeftJf5_k_1EATdq7h_ARzYrVFRi0ZDs5',
+            'd': 'EHSYgpnNOq_ESRkhfbjHchTwBhKosaS-yCdX0dkQCCqv',
             'u': guyUes[12],
             'n': sueAgentSediSaid,
             's': AgentSchemaSaid,
             'o': 'I2I',
         }
     }
-
 
     guyCoreRuleBareMad = \
     {
@@ -3612,7 +3696,7 @@ def test_sedi_acdcs():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EPTZoxcK0d1aHS5N1bZjCPWdRjJybBn6827B_S-It7Ct'
+    assert guyCoreSediSaid == 'EKdjZorv5zsnxIaQTzli9bgcfU4FtUjR9nSQkv1yW_bo'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAe9.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
@@ -3823,11 +3907,11 @@ def test_sedi_acdcs():
     guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyResidenceEdgeMad == \
     {
-        'd': 'EPxY64lmpx32tlCDM_nzteo3CU9cGt5u_KHVfO9HLWaD',
+        'd': 'EMAeigjuGXOWmSIDf6eyUQXOhIWKj96j91Jlzoh_XRUa',
         'u': guyUes[21],
         'coreIdentity':
         {
-            'd': 'EFL5Wr5Im9eGteM0_vsG6QOYXXNUpYK5OQ8-x3n-MnuF',
+            'd': 'EDWOUgD7qBSdaqDR2VzJRr7eQ3nj99B3uHsy2qT8YYm_',
             'u': guyUes[22],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -3865,7 +3949,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'EFhD63q3dSkfwjfOH23D6zLFkVtZHgWabgQf2YlRjE-a'
+    assert guyResidenceSediSaid == 'EKTjwOw7RU2cPG1NI1OPt7DvmgMkgbbiffo3Nh-FtNoF'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -3930,11 +4014,11 @@ def test_sedi_acdcs():
     guyAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyAgeEdgeMad == \
     {
-        'd': 'EBldI-SVVpDj8ne4fKptk6bOlOkIdfZAC27GkiDX9Y33',
+        'd': 'EPQhFro_dTLnGyxLbtx7E4FSGA3qT1sHhkWOQVb-XKML',
         'u': guyUes[25],
         'coreIdentity':
         {
-            'd': 'EMvR3hL7gxMqwgIXJXjpVCk9iylg9Wp29naEMBQsjUGY',
+            'd': 'EKcu_FtUIrcv73mxQApOJB7InbQy4jLO6g73VQClWtwr',
             'u': guyUes[26],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -3969,7 +4053,7 @@ def test_sedi_acdcs():
     ageValidator.validate(guySerderAge.sad)  # raises error if invalid
 
     guyAgeSediSaid = guySerderAge.said
-    assert guyAgeSediSaid == 'EKvLErTc_AYbDg15mzyXfJYetjmDYnsoBJPgSHRcHMTJ'
+    assert guyAgeSediSaid == 'EO4jzGy2FNoPLQDD4p1w9mujP1iLP7zvSGdT4oR7h6TO'
     assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiI.'
     assert guySerderAge.israid == sue
     assert guySerderAge.regid == sueRids[4]
@@ -4309,7 +4393,6 @@ def test_sedi_acdcs():
         }
     }
 
-
     galCoreEdgeBareMad = \
     {
         "d": "",
@@ -4328,18 +4411,17 @@ def test_sedi_acdcs():
     galCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert galCoreEdgeMad == \
     {
-        'd': 'EG9KFrkR75Z75FlQ30iy9M-FMR_G8n9duefxGk0CiSe-',
+        'd': 'EFsE15zkuJKrEJUroqs1y_2pqb5Y7fIhTUmDSxubZg5m',
         'u': galUes[11],
         'utahAgent':
         {
-            'd': 'ED8sRt0kZMyWkTCGoXkQc9HYYx8JdimmW78rHl0ErXAq',
+            'd': 'EIOwJBTM3Vd_VWSg5000WC1fymtHg1oH8bRKLnn7b25n',
             'u': galUes[12],
             'n': sueAgentSediSaid,
             's': AgentSchemaSaid,
             'o': 'I2I',
         }
     }
-
 
     galCoreRuleBareMad = \
     {
@@ -4368,7 +4450,7 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EIKAfsa8V-dQQGl2rhfzRYymmWumR7Y68nNF0oipadSN'
+    assert galCoreSediSaid == 'EMbtj_JHpmaL8TnewzSz4SDfMQvpZDKhw8F8hBXgPmaW'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAe2.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -4518,11 +4600,11 @@ def test_sedi_acdcs():
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad == \
     {
-        'd': 'EATDdy-bkJQAKrHaBTZxfYNnJdhbVTEJbWt_XxWZqkbp',
+        'd': 'EI4GnCUDjOzTojw1c0YmsmTa_btKAkIFscL18ppsyvLX',
         'u': galUes[21],
         'coreIdentity':
         {
-            'd': 'EPjYYCqoDxEVLSUHffaeEuckOrDRIIylqcYwg5YqRl3E',
+            'd': 'ECZ2rA5OXcIwBtCjWayO2IbCc_rDwR8AtP6Vi2re2a9-',
             'u': galUes[22],
             'n': galCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4557,7 +4639,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EAAvFB8NcNw4AS1TxZjU-jv6J8zs_Szjwxs-CSLaNWrQ'
+    assert galResidenceSediSaid == 'EIOKObNMTip5HzEu0TIegrsl_Nm6ajI43Ib96Gg1UD9h'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
