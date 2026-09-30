@@ -147,17 +147,17 @@ IarSchema = \
   'additionalProperties': False
 }
 
-ReplaceSchemaSaid = 'EJrKOCD9us07aYil3823zfB1rEUe90KNKbmDZeQN8j5G'
+ReplaceSchemaSaid = 'EPVlX-S-eWERGiXJmb7FcW75I4J08ptQ-jGglq4VRwou'
 ReplaceSchema = \
 {
-  '$id': 'EJrKOCD9us07aYil3823zfB1rEUe90KNKbmDZeQN8j5G',
+  '$id': 'EPVlX-S-eWERGiXJmb7FcW75I4J08ptQ-jGglq4VRwou',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI AID Replace Schema',
   'description': 'SEDI AID Replace JSON Schema for acm ACDC.',
   'credentialType': 'SEDI_Replace_ACDC_acm_message',
   'version': '0.1.0',
   'type': 'object',
-  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'r'],
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
   'properties':
   {
     'v': {'description': 'ACDC version string', 'type': 'string'},
@@ -190,7 +190,7 @@ ReplaceSchema = \
             'u',
             'i',
             'issuedDate',
-            'unit',
+            'obsolete',
           ],
           'properties':
           {
@@ -200,6 +200,40 @@ ReplaceSchema = \
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
             'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
             'obsolete': {'description': 'Obsolete AID', 'type': 'string'},
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+        'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'utahAgent'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'utahAgent':
+            {
+              'description': 'Utah Agent Edge Block',
+              'type': 'object',
+              'required': ['d', 'u', 'n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            }
           },
           'additionalProperties': False
         }
@@ -1539,7 +1573,7 @@ def test_sedi_schema():
       'credentialType': 'SEDI_Replace_ACDC_acm_message',
       'version': '0.1.0',
       'type': 'object',
-      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'r'],
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
       'properties':
       {
         'v': {'description': 'ACDC version string', 'type': 'string'},
@@ -1572,7 +1606,7 @@ def test_sedi_schema():
                 'u',
                 'i',
                 'issuedDate',
-                'unit',
+                'obsolete',
               ],
               'properties':
               {
@@ -1582,6 +1616,40 @@ def test_sedi_schema():
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
                 'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
                 'obsolete': {'description': 'Obsolete AID', 'type': 'string'},
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'utahAgent'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'utahAgent':
+                {
+                  'description': 'Utah Agent Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                }
               },
               'additionalProperties': False
             }
@@ -1613,7 +1681,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=replaceSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     replaceSchemaSaid = mapper.said
-    assert  replaceSchemaSaid == 'EJrKOCD9us07aYil3823zfB1rEUe90KNKbmDZeQN8j5G'
+    assert replaceSchemaSaid == 'EPVlX-S-eWERGiXJmb7FcW75I4J08ptQ-jGglq4VRwou'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert replaceSchemaSaid == ReplaceSchemaSaid
     assert mapper.mad == ReplaceSchema
@@ -3098,77 +3166,114 @@ def test_sedi_acdcs():
     assert wyn == 'EKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1'  # Ward Wyn's AID
     assert wynISerder.said == wyn
 
+    # Create Wyn's replacement AID ryn to demo replaceACDC
+    rynKeys = [signers[14].verfer.qb64]  # incepting public verification key(s)
+    rynNKeys = [signers[15].verfer.qb64]  # next (rotation) public verification key(s)
+    rynWits = [wigners[7].verfer.qb64]  # witness aids (same as public verkey)
+    rynISerder = incept(rynKeys, code=MtrDex.Blake3_256, ndigs=rynNKeys, wits=rynWits,
+                        version=Vrsn_2_0, kind=Kinds.json)
+
+    assert rynISerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAAFb.',
+        't': 'icp',
+        'd': 'EPvkhZTKfAte3QhfD-O3eKY2dwZqcLQ9OVIVGjT9edmR',
+        'i': 'EPvkhZTKfAte3QhfD-O3eKY2dwZqcLQ9OVIVGjT9edmR',
+        's': '0',
+        'kt': '1',
+        'k': ['DITXXIsWZgSLa9kf3pMqPyKtD6_XzZD2EpzPZM2qCq2T'],
+        'nt': '1',
+        'n': ['DEz8QW3ch4emtSzwLjZX_2tB-RdaU1V4K_mpWY374p4j'],
+        'bt': '1',
+        'b': ['BDTnSfTkg2X5zqXNCj0ERVUoe4oyr32gxyu4B18r6lMW'],
+        'c': [],
+        'a': []
+    }
+    ryn = rynISerder.aid
+    assert ryn == 'EPvkhZTKfAte3QhfD-O3eKY2dwZqcLQ9OVIVGjT9edmR'  # Ward  Ryn replacment Wyn's AID
+    assert rynISerder.said == ryn
 
 
     # Setup Registries for Roy, Deb, and Sue as State Issuers
-    # Create u field values for rip events
-    ueraws = [b'sediacdcworkreg' + b'%0x'%(i, ) for i in range(16)]
-    uens = [Noncer(raw=raw).qb64 for raw in ueraws]  # unique entropy nonce qb64
-    # create shared secret salts for bup events
-    ssraws = [b'sediacdcworkbup' + b'%0x'%(i, ) for i in range(32)]
-    ssss = [Noncer(raw=raw).qb64 for raw in ssraws]  # shared secret salt qb64
 
     # create datetimek stamp
     stamp = '2026-09-01T08:30:00.000000+00:00'
 
+    # Create Roy's UES for registry events
+    salt = b'roysregistrysalt'  # base salt for registry events
+    salter = Salter(raw=salt)
+    royRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                            for i in range(8)]
+    # create registry serders for roy as Issuer
+    royRegSerders = [regcept(israid=roy, uuid=ue, stamp=stamp) for ue in royRegUes]
+    royRids = [rss.said for rss in royRegSerders]
+    assert royRids[0] == royRegSerders[0].said == 'EA3Y6LeoyNFjnLS1xZoRQnzX0fWgUw0XjD4IgIf8ZHxD'
+    assert royRegSerders[0].israid == roy
+    assert royRegSerders[0].nonce == royRegUes[0]
+    assert royRegSerders[0].sner.num == 0
+    assert royRegSerders[0].stamp == stamp
+
+    # Create Deb's UES for registry events
+    salt = b'debsregistrysalt'  # base salt for registry events
+    salter = Salter(raw=salt)
+    debRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                            for i in range(8)]
+    # create registry serders for Deb as Issuer
+    debRegSerders = [regcept(israid=deb, uuid=ue, stamp=stamp) for ue in debRegUes]
+    debRids = [rss.said for rss in debRegSerders]
+    assert debRids[0] == debRegSerders[0].said == 'EEy3daQxc9NrgzA1V7KjgOqLF_te2gs2-sYElTHsPzYE'
+    assert debRegSerders[0].israid == deb
+    assert debRegSerders[0].nonce == debRegUes[0]
+    assert debRegSerders[0].sner.num == 0
+    assert debRegSerders[0].stamp == stamp
+
+    # Create Sues's UES for registry events
+    salt = b'suesregistrysalt'  # base salt for registry events
+    salter = Salter(raw=salt)
+    sueRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                            for i in range(64)]
     # create registry serders for sue as Issuer
-    sueRegSerders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in uens[:8]]
+    sueRegSerders = [regcept(israid=sue, uuid=ue, stamp=stamp) for ue in sueRegUes]
     sueRids = [rss.said for rss in sueRegSerders]
-    assert sueRids[0] == sueRegSerders[0].said == 'EDO6lG8bbwNbd5dxtTPaycQvJKdR_OuLttmgmECBrqqe'
+    assert sueRids[0] == sueRegSerders[0].said == 'EDOfxmEeOsWdi5ZQyuy98W4s15vmV1RWVFuqm4GZflTn'
     assert sueRegSerders[0].israid == sue
-    assert sueRegSerders[0].nonce == uens[0]
+    assert sueRegSerders[0].nonce == sueRegUes[0]
     assert sueRegSerders[0].sner.num == 0
     assert sueRegSerders[0].stamp == stamp
     assert sueRegSerders[0].sad == \
     {
         'v': 'ACDCCAACAAJSONAADa.',
         't': 'rip',
-        'd': 'EDO6lG8bbwNbd5dxtTPaycQvJKdR_OuLttmgmECBrqqe',
-        'u': '0ABzZWRpYWNkY3dvcmtyZWcw',
+        'd': 'EDOfxmEeOsWdi5ZQyuy98W4s15vmV1RWVFuqm4GZflTn',
+        'u': '0ADX782wlYptYlK0MqR6ebA-',
         'i': 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-',
         'n': '0',
         'dt': '2026-09-01T08:30:00.000000+00:00'
     }
 
 
-    # create registry serders for Deb as Issuer
-    debRegSerders = [regcept(israid=deb, uuid=ue, stamp=stamp) for ue in uens[8:12]]
-    debRids = [rss.said for rss in debRegSerders]
-    assert debRids[0] == debRegSerders[0].said == 'EIXhfDs7w1cUhb5VBtf1EXJ2kF-OjhW6EvXnLLT8vZCT'
-    assert debRegSerders[0].israid == deb
-    assert debRegSerders[0].nonce == uens[8]
-    assert debRegSerders[0].sner.num == 0
-    assert debRegSerders[0].stamp == stamp
-
-
-    # create registry serders for roy as Issuer
-    royRegSerders = [regcept(israid=roy, uuid=ue, stamp=stamp) for ue in uens[12:16]]
-    royRids = [rss.said for rss in royRegSerders]
-    assert royRids[0] == royRegSerders[0].said == 'EBsvzeauuwV-kspzeYoephLYW7ICiVISSLze85OcK3V9'
-    assert royRegSerders[0].israid == roy
-    assert royRegSerders[0].nonce == uens[12]
-    assert royRegSerders[0].sner.num == 0
-    assert royRegSerders[0].stamp == stamp
-
     # Setup SEDI ACDC JsonSchema Validators
 
+    # Replace Validator Setup
+    replaceValidator = SchemaValidator(schema=ReplaceSchema)
+
     # Unit Validator Setup
-    unitValidator = SchemaValidator(schema=UnitSchema)  # create validator for unit ACDCs
+    unitValidator = SchemaValidator(schema=UnitSchema)
 
     # Agent Validator Setup
-    agentValidator = SchemaValidator(schema=AgentSchema)  # create validator for agent ACDCs
+    agentValidator = SchemaValidator(schema=AgentSchema)
 
     # IAR Validator Setup
-    iarValidator = SchemaValidator(schema=IarSchema)  # create validator for proofing reciepts
+    iarValidator = SchemaValidator(schema=IarSchema)
 
     # Core SEDI Validator setup
-    coreValidator = SchemaValidator(schema=CoreSchema)  # create validator for core SEDI ACDCs
+    coreValidator = SchemaValidator(schema=CoreSchema)
 
     # Residence SEDI Validator setup
-    residenceValidator = SchemaValidator(schema=ResidenceSchema)  # create validator for residence SEDI ACDCs
+    residenceValidator = SchemaValidator(schema=ResidenceSchema)
 
     # Age Schema Validator setup
-    ageValidator = SchemaValidator(schema=AgeSchema)  # create validator for age SEDI ACDCs
+    ageValidator = SchemaValidator(schema=AgeSchema)
 
 
     # Setup Utah State Delegation from root roy to unit deb to agent sue
@@ -3231,7 +3336,7 @@ def test_sedi_acdcs():
     unitValidator.validate(debSerderUnit.sad)  # raises error if invalid
 
     debUnitSediSaid = debSerderUnit.said
-    assert debUnitSediSaid == 'ELzFC6b-X12dLECB3pW6Dn12MzdggzAZ39oUX5r6qpic'
+    assert debUnitSediSaid == 'EP6uB4TN40MCT2ayCVoZ7NekTME3WTCTByH68kvQEnkY'
     assert debSerderUnit.verstr == 'ACDCCAACAAJSONAAIn.'
     assert debSerderUnit.israid == roy
     assert debSerderUnit.regid == royRids[0]
@@ -3313,11 +3418,11 @@ def test_sedi_acdcs():
     sueAgentEdgeMad = compactor.partials[('.orgUnit',)].mad
     assert sueAgentEdgeMad == \
     {
-        'd': 'ENO63vZGzdLqwSLyAGGR14yP6DTe3fVqaW09BRntYCkR',
+        'd': 'EPvTUlgeFWN-da-GVFY6X02koGypjLnEt1ZjpqLf_iOC',
         'u': sueUes[3],
         'orgUnit':
         {
-            'd': 'EOSxyRdSpFi8kumuTMEmD_b9ZC42PIC4vKrcE1TYgup0',
+            'd': 'EPa0Jf4VF_uq26Cye07CFGZrw7_sSKQ-aG2xYdWGjo4_',
             'u': sueUes[4],
             'n': debUnitSediSaid,
             's': UnitSchemaSaid,
@@ -3353,7 +3458,7 @@ def test_sedi_acdcs():
     agentValidator.validate(sueSerderAgent.sad)  # raises error if invalid
 
     sueAgentSediSaid = sueSerderAgent.said
-    assert sueAgentSediSaid == 'EIgzkUVRsCRRpLWQKKtG9TIOlcJN_1HO6SQHSRs58OWI'
+    assert sueAgentSediSaid == 'EM62a9na-h-m81HgCPOJpx3h9iJHVmNeIb3n1EGV24HS'
     assert sueSerderAgent.verstr == 'ACDCCAACAAJSONAAO8.'
     assert sueSerderAgent.israid == deb
     assert sueSerderAgent.regid == debRids[0]
@@ -3373,9 +3478,17 @@ def test_sedi_acdcs():
         'r': sueAgentRuleMad,
     }
 
+    # Setup Address for Residence ACDCs
+    # Guy, Gal, and Wyn have same residence address
+    street = "157 E 300 N"
+    city = "Beaver"
+    county = "Beaver"
+    state = "Utah"
+    postcode = "84713"
+    country = "United States"
 
 
-
+    # Setup Guys Registries and Receipt and ACDCs
     #create presentation registries for Guy
     salt = b'guypresntregsalt'  # base salt for presentation registries
     salter = Salter(raw=salt)
@@ -3386,7 +3499,15 @@ def test_sedi_acdcs():
     assert guyPreRids == ['ELUW5D0X0pMFM30ZHZKB997lad86PISushrKkKzlhQrl',
                           'EKhN2CBz3b_4fFj9mA3j5URZf2ULQTG7on32rX7V9yFe']
 
+    # Create Guy's unique entropy for ACDCs issued to Guy
+    salt = b'guyscoresedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
+    guyUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(64)]
 
+
+    # setup Guys Receipt
     # Guy's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
     salt = b'guysedichallenge'  # raw challenge salt
     salter = Salter(raw=salt)
@@ -3427,8 +3548,6 @@ def test_sedi_acdcs():
     guyAtc = Structor.enclose([Structor(crew=guyCsr)])  # CESR streamable attachment
     assert guyAtc == bytearray(b'-TAXEDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JRMAABEEmZ6nuPKuq8'
                                b'd2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
-
-
 
 
     # Guy's Identity Assurance Receipt (iar) ACDC
@@ -3571,25 +3690,8 @@ def test_sedi_acdcs():
     }
 
 
-
-    # Guy and Gal have same residence
-    street = "157 E 300 N"
-    city = "Beaver"
-    county = "Beaver"
-    state = "Utah"
-    postcode = "84713"
-    country = "United States"
-
-
     # Setup Guy's SEDI ACDCs
-    salt = b'guyscoresedisalt'  # base salt
-    salter = Salter(raw=salt)
-    assert salter.qb64 =='0ABndXlzY29yZXNlZGlzYWx0'  # CESR encoded
-    guyUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(64)]
-
     # Setup Guy's Core SEDI
-
     guyImageProof = Diger(ser=b"PretendImageOfGuy").qb64
     assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
 
@@ -3754,11 +3856,11 @@ def test_sedi_acdcs():
     guyCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyCoreEdgeMad == \
     {
-        'd': 'ENHsIbWmUKSAGskOTptbTWstTMvUWBGuUzxHyikSuKaM',
+        'd': 'EJHkFDojLaEkGHoyKUAb51bX-Hs80KidadO8YRESkGM3',
         'u': guyUes[11],
         'utahAgent':
         {
-            'd': 'EHSYgpnNOq_ESRkhfbjHchTwBhKosaS-yCdX0dkQCCqv',
+            'd': 'EIuekCZmpq3772hyQYfDAT_tMH9Zwix7yWmeCkCQqrwh',
             'u': guyUes[12],
             'n': sueAgentSediSaid,
             's': AgentSchemaSaid,
@@ -3793,7 +3895,7 @@ def test_sedi_acdcs():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EBIUAXCkiPCIlzrb88CwPQQc2XJZ1OcDNuij09Shwjcw'
+    assert guyCoreSediSaid == 'ENOVdsuMryEUCyZ1qQ26VSqtIMEzgOdyqZ2WCx2S11Nf'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAfM.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
@@ -4005,11 +4107,11 @@ def test_sedi_acdcs():
     guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyResidenceEdgeMad == \
     {
-        'd': 'EEumse7AhAJQfQPlcJ-_CNYxhpjvezZ92MK7LHoo-apL',
+        'd': 'EEiocTKXFr-yIS5L2EKkYKu-6Q0ZbVXR-ziwqay-VvLo',
         'u': guyUes[21],
         'coreIdentity':
         {
-            'd': 'EG1pcwDZphpQKT0th1FblJkkVOd39WjtXJuwIotXOjJ3',
+            'd': 'EJXSu5PIbOVXjQjkHJFc_NB25WA4qYcbk6aHDQ2rHg86',
             'u': guyUes[22],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4047,7 +4149,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'ECpmURCMNF7n9Ri-ESJ-P9MWrZlbn9O7fEoQIeXgpqm0'
+    assert guyResidenceSediSaid == 'EPb1xxIaIvPTckSE80yTOsKwECWvTYW_stqpzWvpI2PH'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -4112,11 +4214,11 @@ def test_sedi_acdcs():
     guyAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyAgeEdgeMad == \
     {
-        'd': 'EEdpPdgAUq4bM91qlYN8FavzlYOp9UCiEBTBWber3v7u',
+        'd': 'EH8QZQtYDmFrwCBOyY71G-BF59nQ38juVzL_Ywwr-SkJ',
         'u': guyUes[25],
         'coreIdentity':
         {
-            'd': 'EL3rkrAd7_2bNCy42ctPw6-QDHsASZCP5Vf-1g97atN8',
+            'd': 'EDhh4tQRORfb489i9PNSf53rOIplnQ1T0GBfFX1uT6Xo',
             'u': guyUes[26],
             'n': guyCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4151,7 +4253,7 @@ def test_sedi_acdcs():
     ageValidator.validate(guySerderAge.sad)  # raises error if invalid
 
     guyAgeSediSaid = guySerderAge.said
-    assert guyAgeSediSaid == 'EFRROrmCm2onj1czPAlO7jpm8vQArMOln9WGpK5dYd1_'
+    assert guyAgeSediSaid == 'EL_TknAe1H0HFAO3GiFL3OFLDVCyIbo5e9C978_sKPwI'
     assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiI.'
     assert guySerderAge.israid == sue
     assert guySerderAge.regid == sueRids[4]
@@ -4172,8 +4274,7 @@ def test_sedi_acdcs():
         'r': guyAgeRuleMad
     }
 
-    # Setup Gal's Receipt and ACDCs
-
+    # Setup Gals Registries and ACDCs
     #create presentation registries for Gal
     salt = b'galpresntregsalt'  # base salt for presentation registries
     salter = Salter(raw=salt)
@@ -4184,6 +4285,14 @@ def test_sedi_acdcs():
     assert galPreRids == ['EETKKNEzII7RVeqrIBWsSUifdAPYRp5qdTOQnsG_zzcm',
                           'EBAeyX2ztgyP5qBek6xWBqkLp7pI080dFyzx8PWxJ-Jg']
 
+    # Setup Gal's unique entropy for ACDCs issued to Gal
+    salt = b'galscoresedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0ABnYWxzY29yZXNlZGlzYWx0'  # CESR encoded
+    galUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(64)]
+
+    # Setup Gal's reciept
     # Gal's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
     salt = b'galsedichallenge'  # raw challenge salt
     salter = Salter(raw=salt)
@@ -4337,16 +4446,8 @@ def test_sedi_acdcs():
     }
 
     # Setup Gal's SEDI ACDCs
-
-    salt = b'galscoresedisalt'  # base salt
-    salter = Salter(raw=salt)
-    assert salter.qb64 =='0ABnYWxzY29yZXNlZGlzYWx0'  # CESR encoded
-    galUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
-                                                             for i in range(64)]
-
-
     # Setup Gal's Core SEDI
-
+    # Setup Gal's biometric image proof
     galImageProof = Diger(ser=b"PretendImageOfGal").qb64
     assert galImageProof == 'EGh8sVJumVosTZVgT95YAb0Vor_7JRKGjgCX_2C7I9h4'
 
@@ -4511,11 +4612,11 @@ def test_sedi_acdcs():
     galCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert galCoreEdgeMad == \
     {
-        'd': 'EFsE15zkuJKrEJUroqs1y_2pqb5Y7fIhTUmDSxubZg5m',
+        'd': 'EJ2og1IbznbtGXXCsUVDc6Jyk1Pjwl31ABEhqgjKJ0L5',
         'u': galUes[11],
         'utahAgent':
         {
-            'd': 'EIOwJBTM3Vd_VWSg5000WC1fymtHg1oH8bRKLnn7b25n',
+            'd': 'ECIzJ7Yj_fZNVV2jme6AEgBZPLD_8VS69uNe2111wEba',
             'u': galUes[12],
             'n': sueAgentSediSaid,
             's': AgentSchemaSaid,
@@ -4550,7 +4651,7 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EOzdhtGF0qR35h634WAMnMAgzvb3zhfWriT3rLNrveJT'
+    assert galCoreSediSaid == 'EA4iEqsUF-Fu6aT1DgBkqPWeT3Rw0W367veAkYSCkRMV'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAfF.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -4700,11 +4801,11 @@ def test_sedi_acdcs():
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad == \
     {
-        'd': 'EPuorWRUtKEpo7QoIGo-FbEOQa61H-xUw43xdKfMHcKJ',
+        'd': 'ELrB2N0vAgWJF4qodgtiXZdiULQVACKRr0n_PwpqBdjw',
         'u': galUes[21],
         'coreIdentity':
         {
-            'd': 'EIeZNzgI6eqULJwIxIB7XVbGgR8y9LwykRTj4NAJ2N6_',
+            'd': 'EKKjzyedaIpXn9ih2ZpumO-Usvz-N346TVZb_Ee4UGZ_',
             'u': galUes[22],
             'n': galCoreSediSaid,
             's': CoreSchemaSaid,
@@ -4739,7 +4840,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EDlJ97PqFfh99evvQnWJ2JjXp2bsm0mXHQiUxtqa5WfC'
+    assert galResidenceSediSaid == 'EAjNpZVjwiFxiEvLmTureyFdRQxOiSROxGxv1ob49LTg'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAY5.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
@@ -4760,7 +4861,150 @@ def test_sedi_acdcs():
         'r': galResidenceRuleMad
     }
 
+    # Setup Wyn's Registries
+    #create presentation registries for Wyn
+    salt = b'wynpresntregsalt'  # base salt for presentation registries
+    salter = Salter(raw=salt)
+    wynPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(2)]
+    wynRegSerders= [regcept(israid=wyn, uuid=ue, stamp=stamp) for ue in wynPreRegUes]
+    wynPreRids = [rss.said for rss in wynRegSerders]
+    assert wynPreRids == ['EAbxluMtNsPnHFu9texttH3G6B1s3ZqmJwpLhNbgc6ib',
+                          'EGDiYWJ_i59XIjCkVT1pH9cA9aOKz0lO4lrkkf1IL2t-']
 
+    # setup Wyn's Unique Entropy for ACDCs issued to Wyn
+    salt = b'wynscoresedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 == '0AB3eW5zY29yZXNlZGlzYWx0'  # CESR encoded
+    wynUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(64)]
+
+
+
+    # Setup Ryn's Registries
+    #create presentation registries for Ryn
+    salt = b'rynpresntregsalt'  # base salt for presentation registries
+    salter = Salter(raw=salt)
+    rynPreRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(2)]
+    rynRegSerders= [regcept(israid=ryn, uuid=ue, stamp=stamp) for ue in rynPreRegUes]
+    rynPreRids = [rss.said for rss in rynRegSerders]
+    assert rynPreRids == ['EIXFfKoXlTCYQF_duHt2Gw62mvhrQfd4b-2tbeWkZnGG',
+                          'EEt4vAQKmMYZY8xnPhzr8689VLs4fSLwedWdAexdCOus']
+
+    # setup Ryn's Unique Entropy for ACDCs issued to Ryn
+    salt = b'rynscoresedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 =='0AByeW5zY29yZXNlZGlzYWx0'  # CESR encoded
+    rynUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(64)]
+
+    # Setup Ryn;s replacement SEDI ACDC to replace wyn AID with Ryn
+    # Setup replace SEDI attribution section
+    rynReplaceAttBareMad = \
+    {
+        "d": "",
+        "u": rynUes[1],
+        "i": ryn,  # ryn is issuee as replacement AID
+        "issuedDate": "2020-10-15T00:00:00.000000+00:00",  # Time MBZ
+        "obsolete": wyn,  # obsoleted AID for Wyn now Ryn
+    }
+
+    compactor = Compactor(mad=rynReplaceAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    rynReplaceAttMad = compactor.partials[('',)].mad
+    assert rynReplaceAttMad['i'] == ryn
+    rynReplaceAttMadSaid = compactor.said
+    assert  rynReplaceAttMadSaid == 'EFAl_GXl1vxkCYb0vhBkDklrYkut-RePW1meTaib1ZdQ'
+
+    assert rynReplaceAttMad == \
+    {
+        'd': rynReplaceAttMadSaid,
+        'u': rynUes[1],
+        'i': ryn,
+        'issuedDate': "2020-10-15T00:00:00.000000+00:00",  # Time MBZ
+        'obsolete': wyn
+    }
+
+    # setup edge section
+    rynReplaceEdgeBareMad = \
+    {
+        "d": "",
+        "u": rynUes[2],
+        "utahAgent":
+        {
+            "d": "",
+            "u": rynUes[3],
+            "n": sueAgentSediSaid,
+            "s": AgentSchemaSaid,
+            "o": "I2I",
+        },
+    }
+    compactor = Compactor(mad=rynReplaceEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    rynReplaceEdgeMad = compactor.partials[('.utahAgent',)].mad
+    assert rynReplaceEdgeMad == \
+    {
+        'd': 'EHofKRngvvhWVzH_n6c9Ai2qD82cmvFFQjGi970M-DAH',
+        'u': rynUes[2],
+        'utahAgent':
+        {
+            'd': 'EHWniEqtmyqEXlqh8RkcfFOn-SEcxWUMNDQfukkQLXnl',
+            'u': rynUes[3],
+            'n': sueAgentSediSaid,
+            's': AgentSchemaSaid,
+            'o': 'I2I',
+        }
+    }
+
+    # setup rule section
+    rynReplaceRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=rynReplaceRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    rynReplaceRuleMad = compactor.partials[('',)].mad
+    assert rynReplaceRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    rynSerderReplace = acdcmap(israid=sue,
+                              uuid=rynUes[0],
+                              regid=sueRids[6],
+                              schema=ReplaceSchemaSaid,
+                              attribute=rynReplaceAttMad,
+                              edge=rynReplaceEdgeMad,
+                              rule=rynReplaceRuleMad,
+                              kind=kind)
+
+    replaceValidator.validate(rynSerderReplace.sad)  # raises error if invalid
+
+    rynReplaceSediSaid = rynSerderReplace.said
+    assert rynReplaceSediSaid == 'EBRXDVyQRpuT04etQlFgr4sDpKR-zM_ewvupvExc69WQ'
+    assert rynSerderReplace.verstr == 'ACDCCAACAAJSONAANu.'
+    assert rynSerderReplace.israid == sue
+    assert rynSerderReplace.regid == sueRids[6]
+    assert rynSerderReplace.iseaid == ryn
+    assert rynSerderReplace.sad['a'] == rynReplaceAttMad
+    assert rynSerderReplace.sad['a']['obsolete'] == wyn
+    assert rynSerderReplace.sad == \
+    {
+        'v': rynSerderReplace.verstr,
+        't': 'acm',
+        'd': rynReplaceSediSaid,
+        'u': rynUes[0],
+        'i': sue,
+        'rd': sueRids[6],
+        's': ReplaceSchemaSaid,
+        'a': rynReplaceAttMad,
+        'e': rynReplaceEdgeMad,
+        'r': rynReplaceRuleMad,
+    }
 
     """Done Test"""
 
