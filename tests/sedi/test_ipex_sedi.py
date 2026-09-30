@@ -335,6 +335,7 @@ def _buildSediCredentials(
         u=nonces[3],
         i=holder.pre,
         rd=presentationRegistry.regk,
+        primary=True,
         givenName=dict(d="", u=nonces[4], value="Guy"),
         middleName=dict(d="", u=nonces[5], value="Marty McFly"),
         familyName=dict(d="", u=nonces[6], value="Brown"),
@@ -810,7 +811,7 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
             with _openIpexProcessors(
                 "ipex-core", holderHby, verifierHby, holderRgy, verifierRgy
             ) as (holderRecorder, verifierRecorder, holderKvy, verifierKvy):
-            
+
                 # Replicate every authority issuer's required KEL prefix.
                 rootIcp = root.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
                 orgIcp = org.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)
