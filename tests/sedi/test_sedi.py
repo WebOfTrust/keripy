@@ -3713,46 +3713,7 @@ def test_sedi_acdcs():
 
 
     # Guy's Identity Assurance Receipt (iar) ACDC
-    # issued signed (not anchored) by proofing agent
-    guyIarMad = \
-    {
-        "v": "",  # VersionString
-        "t": "acm",
-        "d": "",  # SAID
-        "u": guyChallenge,  # 128 bit entropy challenge salty nonce
-        "i": pat,  # pat as identity assurance proofing agent AID
-        "s": "",  # schema of identity assurance receipt
-        "a":
-        {
-            "d": "",  # SAID
-            "i": guy,  # citizens SEDI managment AID (SMAID)
-            "givenName": "Guy",  # given name first name(s)
-            "middleName":"Marty McFly",  # middle name(s) other names
-            "familyName": "Brown",  # last name family name
-            "nameSuffix": "",  # nameSuffix like Jr Sr etc
-            "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
-            "facialImageProof": "",  # SAID of typed media block containing image
-            "legalPresenceStatus": "citizen",  # Class or type of legal presence
-            "residence": \
-            {
-                "street": "157 E 300 N",
-                "city": "Beaver",
-                "county": "Beaver",
-                "state": "Utah",
-                "postcode": "84713",
-                "country": "United States",
-            },
-            "proofingDatetime": "2026-09-01T09:30:00.000000+00:00",
-            "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
-        }
-    }
 
-    iarValidator.validate(guyIarMad)  # raises error if invalid
-
-    mapper = Mapper(mad=guyIarMad, makify=True, saidive=True, kind=kind)
-    guyIarMadSaid = mapper.said
-    assert  guyIarMadSaid == 'EHJUa3M79igYnjM1oR_kwbx6QZtGUTt6X1gl0W4jhCDg'
-    iarValidator.validate(mapper.mad)  # raises error if invalid
 
     guyIarAttBareMad = \
     {
@@ -3767,12 +3728,12 @@ def test_sedi_acdcs():
         "legalPresenceStatus": "citizen",  # Class or type of legal presence
         "residence": \
         {
-            "street": "157 E 300 N",
-            "city": "Beaver",
-            "county": "Beaver",
-            "state": "Utah",
-            "postcode": "84713",
-            "country": "United States",
+            "street": street,
+            "city": city,
+            "county": county,
+            "state": state,
+            "postcode": postcode,
+            "country": country,
         },
         "proofingDatetime": "2026-09-01T09:30:00.000000+00:00",
         "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
@@ -3797,12 +3758,12 @@ def test_sedi_acdcs():
         'legalPresenceStatus': 'citizen',
         'residence':
         {
-            'street': '157 E 300 N',
-            'city': 'Beaver',
-            'county': 'Beaver',
-            'state': 'Utah',
-            'postcode': '84713',
-            'country': 'United States'
+            "street": street,
+            "city": city,
+            "county": county,
+            "state": state,
+            "postcode": postcode,
+            "country": country,
         },
         'proofingDatetime': '2026-09-01T09:30:00.000000+00:00',
         'sediURL': 'https://example.com/sedi/here'
@@ -3839,12 +3800,12 @@ def test_sedi_acdcs():
             'legalPresenceStatus': 'citizen',
             'residence':
             {
-                'street': '157 E 300 N',
-                          'city': 'Beaver',
-                          'county': 'Beaver',
-                          'state': 'Utah',
-                          'postcode': '84713',
-                          'country': 'United States'
+                "street": street,
+                "city": city,
+                "county": county,
+                "state": state,
+                "postcode": postcode,
+                "country": country,
             },
             'proofingDatetime': '2026-09-01T09:30:00.000000+00:00',
             'sediURL': 'https://example.com/sedi/here'
@@ -4496,44 +4457,8 @@ def test_sedi_acdcs():
                                b'DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
 
 
-
     # Gal's Identity Assurance Receipt (iar) ACDC
     # issued signed (not anchored) by proofing agent
-    galIarMad = \
-    {
-        "v": "",  # VersionString
-        "t": "acm",
-        "d": "",  # SAID
-        "u": galChallenge,  # 128 bit entropy challenge salty nonce
-        "i": pat,  # pat as identity assurance proofing agent AID
-        "s": "",  # schema of identity assurance receipt
-        "a":
-        {
-            "d": "",  # SAID
-            "i": gal,  # citizens SEDI managment AID (SMAID)
-            "givenName": "Gal",  # given name first name(s)
-            "middleName":"Parker",  # middle name(s) other names
-            "familyName": "Brown",  # last name family name
-            "nameSuffix": "",
-            "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
-            "facialImageProof": "",  # SAID of typed media block containing image
-            "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
-            "residence": \
-            {
-                "street": "157 E 300 N",
-                "city": "Beaver",
-                "county": "Beaver",
-                "state": "Utah",
-                "postcode": "84713",
-                "country": "United States",
-            },
-            "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
-            "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
-        }
-    }
-
-    iarValidator.validate(galIarMad)  # raises error if invalid
-
     galIarAttBareMad = \
     {
         "d": "",  # SAID
@@ -4547,12 +4472,12 @@ def test_sedi_acdcs():
         "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
         "residence": \
         {
-            "street": "157 E 300 N",
-            "city": "Beaver",
-            "county": "Beaver",
-            "state": "Utah",
-            "postcode": "84713",
-            "country": "United States",
+            "street": street,
+            "city": city,
+            "county": county,
+            "state": state,
+            "postcode": postcode,
+            "country": country,
         },
         "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
         "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
@@ -4595,12 +4520,12 @@ def test_sedi_acdcs():
             'legalPresenceStatus': 'citizen',
             'residence':
             {
-                'street': '157 E 300 N',
-                'city': 'Beaver',
-                'county': 'Beaver',
-                'state': 'Utah',
-                'postcode': '84713',
-                'country': 'United States'
+                "street": street,
+                "city": city,
+                "county": county,
+                "state": state,
+                "postcode": postcode,
+                "country": country,
             },
             'proofingDatetime': '2026-09-02T09:45:00.000000+00:00',
             'sediURL': 'https://example.com/sedi/here'
@@ -5145,6 +5070,118 @@ def test_sedi_acdcs():
     wynUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
                                                              for i in range(64)]
 
+    # Setup Wyn's reciept
+    # Wyn's 128 bit Challenge Nonce derived fromSalty Nonce 128 bit entropy
+    salt = b'wynsedichallenge'  # raw challenge salt
+    salter = Salter(raw=salt)
+    wynChallenge = salter.qb64
+    assert wynChallenge == '0AB3eW5zZWRpY2hhbGxlbmdl'  # CESR encoded 128 bit nonce
+
+    # Challenge Nonce Seal to be anchored in wyn's SMAID KEL
+    wynCns = SealNonce(nd=wynChallenge)
+    structor = Structor(crew=wynCns, clan=SealNonce)
+    assert structor.qb64 == wynChallenge
+    assert structor.crew == wynCns
+    assert structor.crew._asdict() == {'nd': wynChallenge}
+
+    #Create sealing interaction event for wyn
+    data = [wynCns._asdict()]
+    wynIxnSerder = interact(wyn, dig=wynISerder.said, data=data, version=Vrsn_2_0, kind=Kinds.json)
+
+    assert wynIxnSerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAADu.',
+        't': 'ixn',
+        'd': 'EBn5zkdsr1jxUJLIteNnpypbuMujGvY8MPPtSAPH2poq',
+        'i': wyn,
+        's': '1',
+        'p': 'EKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1',
+        'a': [{'nd': wynChallenge}]
+    }
+
+    # Challenge Seal Reference to sealing (anchoring) event in KEL of SMAID
+    # SAID and SN of event in Gals's KEL
+    wynCsr = SealEvent(i=wyn, s=wynIxnSerder.snh, d=wynIxnSerder.said)
+    assert wynCsr == SealEvent(i=wyn, s='1', d=wynIxnSerder.said)
+
+    structor = Structor(crew=wynCsr)
+    wynAtc = Structor.enclose([Structor(crew=wynCsr)])  # CESR streamable attachment
+    assert wynAtc == bytearray(b'-TAXEKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1MAABEBn5zkdsr1jx'
+                               b'UJLIteNnpypbuMujGvY8MPPtSAPH2poq')
+
+    # Wyn's Identity Assurance Receipt (iar) ACDC
+    wynIarAttBareMad = \
+    {
+        "d": "",  # SAID
+        "i": wyn,  # citizens SEDI managment AID (SMAID)
+        "givenName": "Wyn",  # given name first name(s)
+        "middleName":"Biff",  # middle name(s) other names
+        "familyName": "Brown",  # last name family name
+        "nameSuffix": "",
+        "birthDate": "2012-06-21T00:00:00.000000+00:00",  # time MBZ
+        "facialImageProof": "",  # SAID of typed media block containing image
+        "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
+        "residence": \
+        {
+            "street": street,
+            "city": city,
+            "county": county,
+            "state": state,
+            "postcode": postcode,
+            "country": country,
+        },
+        "proofingDatetime": "2026-09-02T09:45:00.000000+00:00",
+        "sediURL": "https://example.com/sedi/here", # place to go to get core sedi
+    }
+    mapper = Mapper(mad=wynIarAttBareMad, makify=True, saidive=True, kind=kind)
+    wynIarAttMad = mapper.mad
+    wynIarAttMadSaid = mapper.said
+    assert wynIarAttMadSaid == 'EJ5L0s3iisMjKdIO8G3altLJdbVu7Dm4Yk1Uavl6W4Gi'
+    assert wynIarAttMad['i'] == wyn
+
+    wynSerderIar = acdcmap(pat, uuid=wynChallenge, schema=IarSchemaSaid,
+                           attribute=wynIarAttMad, kind=kind)
+    iarValidator.validate(wynSerderIar.sad)  # raises error if invalid
+
+    wynSerderIarSaid = wynSerderIar.said
+    assert wynSerderIarSaid == 'EGDU6XQ-48aE0lU00l91KaKoHYaGjKn75CeGaJO77rJS'
+    assert wynSerderIar.verstr == 'ACDCCAACAAJSONAALc.'
+    assert wynSerderIar.sad['a'] == wynIarAttMad
+
+    assert wynSerderIar.iseaid == wyn
+
+    assert wynSerderIar.sad == \
+    {
+        'v': wynSerderIar.verstr,
+        't': 'acm',
+        'd': wynSerderIarSaid,
+        'u': wynChallenge,
+        'i': pat,
+        's': IarSchemaSaid,
+        'a':
+        {
+            'd': wynIarAttMadSaid,
+            'i': wyn,
+            'givenName': 'Wyn',
+            'middleName': 'Biff',
+            'familyName': 'Brown',
+            "nameSuffix": "",
+            'birthDate': '2012-06-21T00:00:00.000000+00:00',
+            'facialImageProof': '',
+            'legalPresenceStatus': 'citizen',
+            'residence':
+            {
+                "street": street,
+                "city": city,
+                "county": county,
+                "state": state,
+                "postcode": postcode,
+                "country": country,
+            },
+            'proofingDatetime': '2026-09-02T09:45:00.000000+00:00',
+            'sediURL': 'https://example.com/sedi/here'
+        }
+    }
 
 
     # Setup Ryn's Registries
