@@ -2605,6 +2605,7 @@ def test_sedi_schema():
     assert coreSchemaSaid == CoreSchemaSaid
     assert mapper.mad == CoreSchema
 
+    # test wardCoreSchema
     wardCoreSchemaMad = \
     {
       '$id': 'EAyyREL1r5OL8Z9HGl47df26rn_JRLsC7PVDBH5RtwLs',
