@@ -2346,6 +2346,101 @@ def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
         ]
 
 
+def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
+    """An empty opener plan is valid but authorizes no Grant disclosure."""
+    with openHby(name="ipex-v2-empty-opener-dp",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Build a credential 
+        credential = acdcmap(
+            israid=hab.pre,
+            attribute=dict(d="", status="citizen"),
+            iseaid=hab.pre,
+        )
+
+        # Build an Apply with an empty dp and send it
+        applyExn, applyAtc = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Request no disclosure",
+            modifiers=dict(dp=[[]]),
+        )
+        ims = bytearray(applyExn.raw)
+        ims.extend(applyAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(applyExn.said,)) is not None
+
+        # Build a Grant that attempts to disclose the credential even though 
+        # the Apply requested no disclosure
+        applyGrant, applyGrantAtc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose despite empty Apply",
+            origin=_signed(credential, hab),
+            apply=applyExn,
+        )
+        ims = bytearray(applyGrant.raw)
+        ims.extend(applyGrantAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(applyGrant.said,)) is None
+        assert hby.db.epse.get(keys=(applyGrant.said,)) is None
+
+        # Build an Offer with an empty dp
+        offerExn, offerAtc = ipexOffer(
+            hab=hab,
+            recp=hab.pre,
+            message="Offer no disclosure",
+            origin=None,
+            modifiers=dict(dp=[[]]),
+        )
+        ims = bytearray(offerExn.raw)
+        ims.extend(offerAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(offerExn.said,)) is not None
+
+        # Agree to the terms of the Offer
+        agreeExn, agreeAtc = ipexAgree(
+            hab=hab,
+            message="Agree to no disclosure",
+            offer=offerExn,
+        )
+        ims = bytearray(agreeExn.raw)
+        ims.extend(agreeAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(agreeExn.said,)) is not None
+
+        # Build a Grant that attempts to disclose the credential
+        offerGrant, offerGrantAtc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose despite empty Offer",
+            origin=_signed(credential, hab),
+            agree=agreeExn,
+        )
+        ims = bytearray(offerGrant.raw)
+        ims.extend(offerGrantAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(offerGrant.said,)) is None
+        assert hby.db.epse.get(keys=(offerGrant.said,)) is None
+
+        # Assert that only Apply, Offer and Agree were recorded
+        assert [item["r"] for item in recorder.items] == [
+            "/exn/ipex/apply",
+            "/exn/ipex/offer",
+            "/exn/ipex/agree",
+        ]
+
+
 def test_ipex_v2_grant_must_honor_negotiated_disclosure_plan():
     """Grant rejects over-disclosure and accepts the requested canonical partial."""
     with openHby(name="ipex-v2-disclosure-plan",

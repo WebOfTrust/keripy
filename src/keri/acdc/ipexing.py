@@ -233,10 +233,12 @@ def _validSingleDagList(value, itemtype):
 def _validDisclosurePath(value):
     """Validate one DAG's disclose-path plan.
 
-    An empty field list requires only the selected node and schema and permits
-    any valid compaction level. A sole empty-string path requests the whole
-    selected ACDC. Any other field list requests the canonical disclosure
-    closure for those relative paths.
+    Callers interpret an empty plan as inheriting the prior plan when one
+    exists and requesting no disclosure otherwise. Within a plan entry, an
+    empty field list requires only the selected node and schema and permits any
+    valid compaction level. A sole empty-string path requests the whole selected
+    ACDC. Any other field list requests the canonical disclosure closure for
+    those relative paths.
 
     Parameters:
         value: Candidate disclose-path list for one DAG.
@@ -513,8 +515,6 @@ class IpexHandler:
                     or not _validSingleDagList(q["dp"], list)
                     or not _validDisclosurePath(q["dp"][0])):
                 return False
-            if verb == Ipex.offer and not dig and not q["dp"][0]:
-                return False
 
         if verb == Ipex.offer:
             if "o" in attrs:
@@ -623,7 +623,7 @@ class IpexHandler:
                 if (not _validSingleDagList(plan, list)
                         or not _validDisclosurePath(plan[0])):
                     return False
-                if planSerder.ked["r"] == "/ipex/offer" and not plan[0]:
+                if (planSerder.ked["r"] == "/ipex/offer" and not plan[0] and planSerder.ked["p"]):
                     planSerder, _ = cloneMessage(self.hby, said=planSerder.ked["p"])
                     if planSerder is None or planSerder.ked.get("r") != "/ipex/apply":
                         return False
@@ -1931,8 +1931,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
 
     # Retrieve dp from modifiers if present. When the offer answers an apply,
     # inherit the requested disclose-path plan unless the caller overrides it.
-    # Offer-first flows have no earlier disclosure request to inherit, so they
-    # must provide their own explicit disclosure plan.
+    # Offer-first flows have no earlier disclosure request to inherit, so an
+    # explicitly empty plan requests no disclosure.
     mods = dict(modifiers) if modifiers else {}
     if "dp" not in mods:
         if apply is not None:
@@ -1945,8 +1945,6 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     # Offer uses the same canonical q.dp builder contract as apply.
     if not _validSingleDagList(mods["dp"], list) or not _validDisclosurePath(mods["dp"][0]):
         raise ValueError("modifiers['dp'] must carry one disclose-path list per DAG")
-    if apply is None and not mods["dp"][0]:
-        raise ValueError("offer-first modifiers['dp'] must include at least one disclosure-path entry")
 
     # Validate ax if present
     if ax is not None:
