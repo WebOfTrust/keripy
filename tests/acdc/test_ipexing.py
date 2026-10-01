@@ -13,6 +13,7 @@ from keri.acdc import (IpexHandler, Regery, Registrar, acdcmap, blindate,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
                        spurn as ipexSpurn)
+from keri.acdc.ipexing import _validDisclosurePath
 from keri.app import openCF, openHby
 from keri.core import (Blinder, Codens, Compactor, Counter, Diger, GenDex, Kevery,
                        Kramer, Noncer, Number, Parser, Schemer, SealEvent, SealSource,
@@ -442,7 +443,7 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=applicant.pre)
         schema = acdc.sad["s"]["$id"]
-        dp = dict(dp=[[[schema, "/", []]]])
+        dp = dict(dp=[[[schema, "/", [""]]]])
 
         # Apply opens a truthy negotiation but does not bind or anchor itself.
         applicantSn = applicant.kever.sn
@@ -1360,7 +1361,7 @@ def test_ipex_v2_required_anchors_fail_closed_through_kram(fakeHelpingClock):
                 recp=applicant.pre,
                 message="Anchored offer",
                 origin=acdc,
-                modifiers=dict(dp=[[[schema, "/", []]]]),
+                modifiers=dict(dp=[[[schema, "/", [""]]]]),
                 dt=helping.nowIso8601(),
                 ax=[True])
             deliver(bytearray(offerExn.raw) + offerAtc)
@@ -1469,7 +1470,7 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
                                            recp=applicant.pre,
                                            message="Optional offer",
                                            origin=acdc,
-                                           modifiers=dict(dp=[[[schema, "/", []]]]),
+                                           modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                            dt=helping.nowIso8601(),
                                            ax=[False])
             deliver(bytearray(offerExn.raw) + offerAtc)
@@ -1494,7 +1495,7 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
             applyExn, applyAtc = ipexApply(hab=applicant,
                                            recp=grantor.pre,
                                            message="Optional apply",
-                                           modifiers=dict(dp=[[[schema, "/", []]]]),
+                                           modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                            dt=helping.nowIso8601(),
                                            ax=[False])
             deliver(bytearray(applyExn.raw) + applyAtc)
@@ -2420,6 +2421,80 @@ def test_ipex_v2_grant_must_honor_negotiated_disclosure_plan():
         Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(grant.said,)) is not None
+
+
+def test_ipex_v2_disclosure_plan_distinguishes_presence_from_whole_node():
+    """Empty fields require a node; an empty path requires its full sections."""
+    with openHby(name="ipex-v2-whole-node-plan",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        compactor = Compactor(
+            mad=dict(
+                d="",
+                status=dict(d="", value="citizen"),
+                private=dict(d="", value="hidden"),
+            ),
+            makify=True,
+            kind=Kinds.json,
+        )
+        compactor.compact(paths=[""])
+        attributes = dict(compactor.partials[("",)].mad)
+
+        full = acdcmap(
+            israid=hab.pre,
+            uuid=Noncer().qb64,
+            attribute=attributes,
+        )
+        compact = acdcmap(
+            israid=full.israid,
+            uuid=full.sad["u"],
+            schema=full.sad["s"],
+            attribute=attributes["d"],
+        )
+        assert compact.said == full.said
+
+        handler = IpexHandler(
+            resource="/ipex/grant",
+            hby=hby,
+            notifier=Recorder(),
+        )
+        schema = full.sad["s"]["$id"]
+        order = [full.said]
+        fullNodes = {full.said: dict(serder=full)}
+        compactNodes = {compact.said: dict(serder=compact)}
+
+        presencePlan = [[schema, "/", []]]
+        assert _validDisclosurePath(presencePlan) is True
+        assert handler._verifyDisclosurePlan(
+            plan=presencePlan,
+            origin=full.said,
+            nodes=fullNodes,
+            order=order,
+        ) is True
+        assert handler._verifyDisclosurePlan(
+            plan=presencePlan,
+            origin=compact.said,
+            nodes=compactNodes,
+            order=order,
+        ) is True
+
+        wholeNodePlan = [[schema, "/", [""]]]
+        assert _validDisclosurePath(wholeNodePlan) is True
+        assert _validDisclosurePath([[schema, "/", ["", "a/status/"]]]) is False
+        assert handler._verifyDisclosurePlan(
+            plan=wholeNodePlan,
+            origin=full.said,
+            nodes=fullNodes,
+            order=order,
+        ) is True
+        assert handler._verifyDisclosurePlan(
+            plan=wholeNodePlan,
+            origin=compact.said,
+            nodes=compactNodes,
+            order=order,
+        ) is False
 
 
 def test_ipex_v2_dispatch_linear_and_spurn():
@@ -4096,7 +4171,7 @@ def test_ipex_v2_blind_registry_update_roundtrip():
                                            recp=hab.pre,
                                            message="Please issue the blind credential",
                                            attrs=dict(flow="blind"),
-                                           modifiers=dict(dp=[[[schema, "/", []]]]))
+                                           modifiers=dict(dp=[[[schema, "/", [""]]]]))
             offerExn, offerAtc = ipexOffer(hab=hab,
                                            message="Here is the blind credential",
                                            origin=acdc,
@@ -4261,7 +4336,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                                                recp=hab.pre,
                                                message="Please issue the blind credential",
                                                attrs={},
-                                               modifiers=dict(dp=[[[schema, "/", []]]]),
+                                               modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=applyStamp)
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
@@ -4650,7 +4725,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                                                recp=issuerHab.pre,
                                                message="Please issue the blind credential",
                                                attrs={},
-                                               modifiers=dict(dp=[[[schema, "/", []]]]),
+                                               modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=applyStamp)
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
@@ -5325,14 +5400,14 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                message="Please issue the DAG credential",
                                                attrs={},
                                                modifiers=dict(dp=[[
-                                                   [schema, "/", []],
-                                                   [schema, "/e/holder/_/", []],
+                                                   [schema, "/", [""]],
+                                                   [schema, "/e/holder/_/", [""]],
                                                ]]),
                                                dt=applyStamp)
 
                 assert applyExn.ked["q"]["dp"] == [[
-                    [schema, "/", []],
-                    [schema, "/e/holder/_/", []],
+                    [schema, "/", [""]],
+                    [schema, "/e/holder/_/", [""]],
                 ]]
 
                 applyMsg = bytearray(applyExn.raw)
@@ -5591,7 +5666,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                                                message="Offer starts the blind credential flow",
                                                origin=acdc,
                                                recp=recipient.pre,
-                                               modifiers=dict(dp=[[[schema, "/", []]]]),
+                                               modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=offerStamp)
                 agreeExn, agreeAtc = ipexAgree(hab=recipient,
                                                message="I agree to the offer-first credential",
@@ -5962,7 +6037,7 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
                                                        recp=hab.pre,
                                                        message="Please issue the issued blind credential",
                                                        attrs=None,
-                                                       modifiers=dict(dp=[[[schema, "/", []]]]))
+                                                       modifiers=dict(dp=[[[schema, "/", [""]]]]))
             issuedOfferExn, issuedOfferAtc = ipexOffer(hab=hab,
                                                        message="Here is the issued blind credential",
                                                        origin=acdc,
@@ -6036,7 +6111,7 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
                                                          recp=hab.pre,
                                                          message="Please issue the revoked blind credential",
                                                          attrs=dict(flow="revoked"),
-                                                         modifiers=dict(dp=[[[schema, "/", []]]]))
+                                                         modifiers=dict(dp=[[[schema, "/", [""]]]]))
             revokedOfferExn, revokedOfferAtc = ipexOffer(hab=hab,
                                                          message="Here is the revoked blind credential",
                                                          origin=acdc,
@@ -6933,7 +7008,7 @@ def test_ipex_v2_full_authentication_flow_across_three_haberies():
                     hab=verifier,
                     recp=proxy.pre,
                     message="Please disclose the entitlement",
-                    modifiers=dict(dp=[[[schema, "/", []]]]),
+                    modifiers=dict(dp=[[[schema, "/", [""]]]]),
                     ax=[True],
                 )
 

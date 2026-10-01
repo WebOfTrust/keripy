@@ -233,6 +233,11 @@ def _validSingleDagList(value, itemtype):
 def _validDisclosurePath(value):
     """Validate one DAG's disclose-path plan.
 
+    An empty field list requires only the selected node and schema and permits
+    any valid compaction level. A sole empty-string path requests the whole
+    selected ACDC. Any other field list requests the canonical disclosure
+    closure for those relative paths.
+
     Parameters:
         value: Candidate disclose-path list for one DAG.
 
@@ -271,6 +276,8 @@ def _validDisclosurePath(value):
 
         if not isinstance(fields, list):
             return False
+        if fields == [""]:
+            continue
         if any(not isinstance(field, str) or not field for field in fields):
             return False
         for field in fields:
@@ -816,9 +823,10 @@ class IpexHandler:
         """Verify a disclosed Grant DAG against its negotiated disclose paths.
 
         Each plan entry must select the corresponding node in breadth-first
-        graph order, match that node's schema, and expose every requested field.
-        For mapping sections, the received partial must also equal the canonical
-        partial produced by ``Compactor`` for those field paths.
+        graph order and match that node's schema. An empty field list ([]) permits
+        any valid compaction level, a sole empty-string path ([""]) requires the whole
+        ACDC, and other paths require their canonical ``Compactor`` disclosure
+        closure.
         """
         selected = []
         for schema, prefix, fields in plan:
@@ -861,6 +869,18 @@ class IpexHandler:
                 nodeSchema = nodeSchema.get("$id")
             if nodeSchema != schema:
                 return False
+
+            # The empty path selects the whole ACDC. Every present compactable
+            # section must therefore be carried instead of its bare SAID/AGID.
+            if fields == [""]:
+                for label in ("a", "e", "r"):
+                    section = nserder.sad.get(label)
+                    if section and not isinstance(section, Mapping):
+                        return False
+                aggregate = nserder.sad.get("A")
+                if aggregate and not isinstance(aggregate, list):
+                    return False
+                continue
 
             # Group paths by top-level section for canonical partial checks.
             sections = {}
