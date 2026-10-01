@@ -2,7 +2,34 @@
 """
 tests.sedi.test_sedi module
 
+
+Decentralized power separation of powers
+entitlements should not require continuing approval by bureaucrats
+absence of action or delay in action gives power without accountability
+effective revocation via inaction (not refreshing entitlement)
+revocation requires positive action by bureaucrats and can therefy be constrained
+with accountability to the actor
+architecturally ephemeral continuing refresh of credentials due to key managament
+is a centralizing force that cedes power via inaction to bureaucrats
+
+Edges allow revocation without continuing reissuance. This better balances power.
+
+Advantages  of E1E edges to core are:
+1- leaf can be reissued without reissuing core
+so rapid changes in leafs minimize reissuances.
+2- all leaves are revoked when core is revoked. So leaves only need one edge
+to core not separate delegation chained edge direct to issuer
+because revoking core revokes them. And validating leaf requires validating
+core which does have delegation chain. This simplifies rapid revocation.
+
+Disadvantages of E1E edges to core:
+is all leaves must be reissued if core is reissued.
+
+should revoke leaves also. Leaf registies allow reissuance of leaf without
+# revoking core. breaking chain is swift.
+
 """
+
 import json
 import os
 from base64 import urlsafe_b64encode as encodeB64
@@ -22,22 +49,9 @@ from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Compacto
 from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 
-# decentralized power separation of powers
-# entitlements should not require continuing approval by bureaucrats
-# absence of action or delay in action gives power without accountability
-# effective revocation via inaction (not refreshing entitlement)
-# revocation requires positive action by bureaucrats and can therefy be constrained
-# with accountability to the actor
-# architecturally ephemeral continuing refresh of credentials due to key managament
-# is a centralizing force that cedes power via inaction to bureaucrats
 
-# edges allow revocation without continuing reissuance. This better balances power.
 
-# advantage of E1Eedges to core is that all leaves are revoked when core is
-# revoked disadvantage is all leaves must be reissued if core is reissued.
-# should revoke leaves also. Leaf registies allow reissuance of leaf without
-# revoking core. breaking chain is swift.
-
+# Deb and Sue issuances edges should be DI2I so they can horizontally scale themselves
 # put optional guardian edge group in core credential with links to guardian
 # Guardianship credential with link to agent auth and link to guardian's core?)
 # Guardian auth credential ward with auth link to guardianship credenital and link to ward age credential
