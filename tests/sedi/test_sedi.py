@@ -21,6 +21,16 @@ so rapid changes in leafs minimize reissuances.
 to core not separate delegation chained edge direct to issuer
 because revoking core revokes them. And validating leaf requires validating
 core which does have delegation chain. This simplifies rapid revocation.
+However reissued leaf may use different issuer. So in that case
+the new issuer must reissue core and all leaves so all share same delegation
+chain. problem when issuer of leaf is not entitled to issue core.
+So maybe need to have delegation chain from leaves as well? make delegation
+edge optional for leaves so if core issuer differs from leaf issuer AID then
+must have separate delegation edge to leaf.
+ add optional utahAgent delegation edge to leaf credentials schema
+so can add delegation chain when issuer of leaf is not same as issuer of core
+(residence, age, guaridanship)  Need new edge operator. I1I  for Issuer
+must be Issuer  DI1I for E1E edges so know to test for same Issuer
 
 Disadvantages of E1E edges to core:
 is all leaves must be reissued if core is reissued.
@@ -50,7 +60,10 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 
 
-
+# add optional utahAgent delegation edge to leaf credentials schema
+# so can add delegation chain when issuer of leaf is not same as issuer of core
+# (residence, age, guaridanship)  Need new edge operator. I1I  for Issuer
+# must be Issuer  DI1I for E1E edges so know to test for same Issuer
 # Deb and Sue issuances edges should be DI2I so they can horizontally scale themselves
 # put optional guardian edge group in core credential with links to guardian
 # Guardianship credential with link to agent auth and link to guardian's core?)
