@@ -4333,9 +4333,7 @@ def test_sedi_acdcs():
         'r': guyResidenceRuleMad
     }
 
-
-
-    #Setup Guys Age credentials
+    #Setup Guys Age credential
     iael = \
     [
         "",
@@ -5024,6 +5022,109 @@ def test_sedi_acdcs():
         'a': galResidenceAttMad,
         'e': galResidenceEdgeMad,
         'r': galResidenceRuleMad
+    }
+
+    #Setup Gals Age credential
+    iael = \
+    [
+        "",
+        dict(d='', u=galUes[27], i=gal),
+        dict(d='', u=galUes[28], issuedDate='2020-08-22T00:00:00.000000+00:00'),
+        dict(d='', u=galUes[29], expirationDate='20400-08-31T00:00:00.000000+00:00'),
+        dict(d='', u=galUes[31], over13=True),
+        dict(d='', u=galUes[32], over14=True),
+        dict(d='', u=galUes[33], over15=True),
+        dict(d='', u=galUes[34], over16=True),
+        dict(d='', u=galUes[35], over18=True),
+        dict(d='', u=galUes[36], over21=True),
+        dict(d='', u=galUes[37], over40=True),
+        dict(d='', u=galUes[38], over62=False),
+        dict(d='', u=galUes[39], over65=False),
+        dict(d='', u=galUes[40], over67=False),
+        dict(d='', u=galUes[41], over70=False),
+    ]
+    aggor = Aggor(ael=iael, makify=True, kind=kind)
+    galAgid = aggor.agid
+    assert galAgid == 'EC4dAHAP8DffjRQZ1YabXpilFJAxGxt7BCRWSBv_AIxQ'
+    galAgeAggAel = aggor.ael
+
+    galAgeEdgeBareMad = \
+    {
+        "d": "",
+        "u": galUes[25],
+        "coreIdentity":
+        {
+            "d": "",
+            "u": galUes[26],
+            "n": galCoreSediSaid,
+            "s": CoreSchemaSaid,
+            "o": ["E1E", "NI2I"],
+        },
+    }
+    compactor = Compactor(mad=galAgeEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
+    assert galAgeEdgeMad['coreIdentity']['n'] == galCoreSediSaid
+    #assert galAgeEdgeMad == \
+    #{
+        #'d': 'EH8QZQtYDmFrwCBOyY71G-BF59nQ38juVzL_Ywwr-SkJ',
+        #'u': galUes[25],
+        #'coreIdentity':
+        #{
+            #'d': 'EDhh4tQRORfb489i9PNSf53rOIplnQ1T0GBfFX1uT6Xo',
+            #'u': galUes[26],
+            #'n': galCoreSediSaid,
+            #'s': CoreSchemaSaid,
+            #'o': ['E1E', 'NI2I']
+        #}
+    #}
+
+    galAgeRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=galAgeRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    galAgeRuleMad = compactor.partials[('',)].mad
+    assert galAgeRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    galSerderAge = acdcagg(israid=sue,
+                           uuid=galUes[24],
+                           regid=sueRids[5],
+                           schema=AgeSchemaSaid,
+                           aggregate=aggor.ael,
+                           edge=galAgeEdgeMad,
+                           rule=galAgeRuleMad,
+                           kind=kind)
+
+
+    ageValidator.validate(galSerderAge.sad)  # raises error if invalid
+
+    galAgeSediSaid = galSerderAge.said
+    assert galAgeSediSaid == 'EHAx-0gvefq8IxYrEl4un6PHKTkfcSs_dymlie5FLOJD'
+    assert galSerderAge.verstr == 'ACDCCAACAAJSONAAiI.'
+    assert galSerderAge.israid == sue
+    assert galSerderAge.regid == sueRids[5]
+    assert galSerderAge.iseaid == gal
+    assert galSerderAge.sad['A'] == galAgeAggAel
+
+    assert galSerderAge.sad == \
+    {
+        'v': galSerderAge.verstr,
+        't': 'acg',
+        'd': galAgeSediSaid,
+        'u': galUes[24],
+        'i': sue,
+        'rd': sueRids[5],
+        's': AgeSchemaSaid,
+        'A': galAgeAggAel,
+        'e': galAgeEdgeMad,
+        'r': galAgeRuleMad
     }
 
     # Setup Wyn's Registries
