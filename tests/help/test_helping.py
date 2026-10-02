@@ -11,6 +11,7 @@ import time
 
 from dataclasses import dataclass, asdict
 
+from keri import kering
 from keri.help import (isign, sceil, extractValues, dictify, datify, klasify,
                         intToB64, intToB64b, b64ToInt, B64_CHARS, fromIso8601,
                         codeB64ToB2, codeB2ToB64, Reb64, nabSextets,
@@ -292,12 +293,12 @@ def test_b64_conversions():
 
     cs = intToB64(0, l=0)
     assert cs == ""
-    with pytest.raises(ValueError):
+    with pytest.raises(kering.ConversionError):
         i = b64ToInt(cs)
 
     cs = intToB64(None, l=0)
     assert cs == ""
-    with pytest.raises(ValueError):
+    with pytest.raises(kering.ConversionError):
         i = b64ToInt(cs)
 
     cs = intToB64b(0)
