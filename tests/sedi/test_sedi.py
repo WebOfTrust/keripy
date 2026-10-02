@@ -30,7 +30,9 @@ must have separate delegation edge to leaf.
  add optional utahAgent delegation edge to leaf credentials schema
 so can add delegation chain when issuer of leaf is not same as issuer of core
 (residence, age, guaridanship)  Need new edge operator. I1I  for Issuer
-must be Issuer  DI1I for E1E edges so know to test for same Issuer
+must be Issuer  DI1I so can have delegation edge group that uses either a
+leaf to core edge for authority with I2I or (E1E) edges or a differnt edge to
+a different authority.
 
 Disadvantages of E1E edges to core:
 is all leaves must be reissued if core is reissued.
