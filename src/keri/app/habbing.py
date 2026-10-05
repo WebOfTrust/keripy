@@ -1166,7 +1166,9 @@ class BaseHab:
                     "dt": "2021-01-01T00:00:00.000000+00:00",
                     "curls": [
                         "tcp://localhost:5621/"
-                    ]
+                    ],
+                    "tags": ["testnet"],
+                    "attribs": {"operator": "Example Org"}
                 },
                 "iurls": [
                     "tcp://localhost:5620/?role=peer&name=tam"
@@ -1188,9 +1190,15 @@ class BaseHab:
             database, not as a database. Config file may have named sections
             for Habery or individual Habs as needed.
 
+            ``tags`` and ``attribs`` in a Hab's section become its own
+            /decl/tags and /decl/attribs declarations, stamped with the
+            section's ``dt`` exactly as ``curls`` are, so an operator changes
+            them by editing the values and advancing ``dt``.
+
         Parameters:
-            **kwa: keyword arguments forwarded to ``makeEndRole`` and
-                ``makeLocScheme``, including ``version`` and ``kind``."""
+            **kwa: keyword arguments forwarded to ``makeEndRole``,
+                ``makeLocScheme``, ``makeDeclTags`` and ``makeDeclAttribs``,
+                including ``version`` and ``kind``."""
 
         conf = self.cf.get()
         if self.name not in conf:
@@ -1214,6 +1222,14 @@ class BaseHab:
                                                    scheme=scheme,
                                                    stamp=toIso8601(dt=dt),
                                                    **kwa))
+            if "tags" in conf:
+                msgs.extend(self.makeDeclTags(tags=conf["tags"],
+                                              stamp=toIso8601(dt=dt),
+                                              **kwa))
+            if "attribs" in conf:
+                msgs.extend(self.makeDeclAttribs(attribs=conf["attribs"],
+                                                 stamp=toIso8601(dt=dt),
+                                                 **kwa))
             self.psr.parse(ims=msgs)
 
     @property
