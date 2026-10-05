@@ -914,10 +914,10 @@ CoreSchema = \
   'additionalProperties': False
 }
 
-GuardianSchemaSaid = 'EGx4BLclkjhaK1501guyBifxuTTJLwuK61InBTdkKF7v'
+GuardianSchemaSaid = 'EFRvzONMl8CsggRrUZxWsVxkjTbdAN1U3J5U8hm8cvA5'
 GuardianSchema = \
 {
-  '$id': 'EGx4BLclkjhaK1501guyBifxuTTJLwuK61InBTdkKF7v',
+  '$id': 'EFRvzONMl8CsggRrUZxWsVxkjTbdAN1U3J5U8hm8cvA5',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Guardianship Schema',
   'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
@@ -1003,14 +1003,14 @@ GuardianSchema = \
         {
           'description': 'Edge Section Detail',
           'type': 'object',
-          'required': ['d', 'u', 'orgUnit'],
+          'required': ['d', 'u', 'utahAgent'],
           'properties':
           {
             'd': {'description': 'Edge Section SAID', 'type': 'string'},
             'u': {'description': 'Edge Section UE', 'type': 'string'},
-            'orgUnit':
+            'utahAgent':
             {
-              'description': 'Utah Organizational Unit Edge Block',
+              'description': 'Utah Agent Edge Block',
               'type': 'object',
               'required': ['n', 's', 'o'],
               'properties':
@@ -1022,7 +1022,7 @@ GuardianSchema = \
                 'o': {'description': 'Edge Unary Operator', 'type': 'string'}
               },
               'additionalProperties': False
-            }
+            },
           },
           'additionalProperties': False
         }
@@ -2603,6 +2603,153 @@ def test_sedi_schema():
     assert coreSchemaSaid == CoreSchemaSaid
     assert mapper.mad == CoreSchema
 
+
+    # SEDI Guardian Schema
+    guardianSchemaMad = \
+    {
+      '$id': 'EGx4BLclkjhaK1501guyBifxuTTJLwuK61InBTdkKF7v',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Guardianship Schema',
+      'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Guardian_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'issuedDate',
+                'role',
+                'name',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                'role': {'description': 'Guardian Role', 'type': 'string'},
+                'ward': {'description': 'Ward AID', 'type': 'string'},
+                'wardName':
+                {
+                  'description': 'Ward Name Block',
+                  'oneOf':
+                  [
+                    {'description': 'Ward Name Block SAID', 'type': 'string'},
+                    {
+                      'description': 'Ward Name Block Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Ward Name', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    }
+                  ]
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'utahAgent'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'utahAgent':
+                {
+                  'description': 'Utah Agent Edge Block',
+                  'type': 'object',
+                  'required': ['n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=guardianSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    guardianSchemaSaid = mapper.said
+    assert guardianSchemaSaid == 'EFRvzONMl8CsggRrUZxWsVxkjTbdAN1U3J5U8hm8cvA5'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert guardianSchemaSaid == GuardianSchemaSaid
+    assert mapper.mad == GuardianSchema
+
+
     # Setup Residence Schema
     residenceSchemaMad = \
     {
@@ -3710,6 +3857,9 @@ def test_sedi_acdcs():
 
     # Core SEDI Validator setup
     coreValidator = SchemaValidator(schema=CoreSchema)
+
+    # Guardian SEDI Validator setup
+    guardianValidator = SchemaValidator(schema=GuardianSchema)
 
     # Residence SEDI Validator setup
     residenceValidator = SchemaValidator(schema=ResidenceSchema)
