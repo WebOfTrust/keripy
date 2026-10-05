@@ -76,7 +76,8 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 # ? Should guardianship expired Date be optional or mandittory
 
 # ToDo
-# Bespoke ACDC Schema for presenting  any set of E1E leaves  (residence, age, high res) and non
+# Bespoke ACDC Schema for presenting  any set of E1E leaves  (residence, age, high res)
+# as well as guardian and social auth
 
 # high rez image biometric credential with link to guardian core
 
@@ -1766,6 +1767,137 @@ AgeSchema = \
   'additionalProperties': False
 }
 
+# social auth schema
+SocialSchemaSaid = 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5'
+SocialSchema = \
+{
+  '$id': 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Social Authorization Schema',
+  'description': 'SEDI Guardian Issued to Ward Social Authorization JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Socail_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'issuedDatetime',
+            'expirationDatetime',
+            'rc',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
+            'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            'issuedDatetime': { 'description': 'Issued Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+            'expirationDatetime': { 'description': 'Expiration Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+            'rc':
+            {
+              'description': 'Authorized Resource Capabilities',
+              'type': 'object',
+              'properties':
+              {
+                'myEmptySpace':
+                {
+                  'description': "Access to My Empty Space",
+                  'type': 'array',
+                  'items': {'type': 'string'},
+                },
+              },
+              'additionalProperties': True
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'guardian'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'guardian':
+            {
+              'description': 'Guardian Edge Block',
+              'type': 'object',
+              'required': ['n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
 
 
 
@@ -3502,6 +3634,145 @@ def test_sedi_schema():
     assert ageSchemaSaid == AgeSchemaSaid
     assert mapper.mad == AgeSchema
 
+    # Social Media Access Authorization Schema
+    socialSchemaMad = \
+    {
+      '$id': 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Social Authorization Schema',
+      'description': 'SEDI Guardian Issued to Ward Social Authorization JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Socail_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'issuedDatetime',
+                'expirationDatetime',
+                'rc',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                'issuedDatetime': { 'description': 'Issued Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+                'expirationDatetime': { 'description': 'Expiration Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+                'rc':
+                {
+                    'description': 'Authorized Resource Capabilities',
+                    'type': 'object',
+                    'properties':
+                    {
+                      'myEmptySpace':
+                      {
+                        'description':  "Access to My Empty Space",
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                      },
+                    },
+                    'additionalProperties': True
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'guardian'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'guardian':
+                {
+                  'description': 'Guardian Edge Block',
+                  'type': 'object',
+                  'required': ['n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=socialSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    socialSchemaSaid = mapper.said
+    assert socialSchemaSaid == 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert socialSchemaSaid == SocialSchemaSaid
+    assert mapper.mad == SocialSchema
+
     """done test"""
 
 
@@ -3895,6 +4166,34 @@ def test_sedi_acdcs():
     assert stuRegSerders[0].sner.num == 0
     assert stuRegSerders[0].stamp == stamp
 
+    # Create Guy's UES for registry events
+    salt = b'guysregistrysalt'  # base salt for registry events
+    salter = Salter(raw=salt)
+    guyRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                            for i in range(8)]
+    # create registry serders for guy as Issuer
+    guyRegSerders = [regcept(israid=guy, uuid=ue, stamp=stamp) for ue in guyRegUes]
+    guyRids = [rss.said for rss in guyRegSerders]
+    assert guyRids[0] == guyRegSerders[0].said == 'EKuAljh08_m1CXluTeogXxHHlX93iqpmVfjMZ1cufhR-'
+    assert guyRegSerders[0].israid == guy
+    assert guyRegSerders[0].nonce == guyRegUes[0]
+    assert guyRegSerders[0].sner.num == 0
+    assert guyRegSerders[0].stamp == stamp
+
+    # Create Gal's UES for registry events
+    salt = b'galsregistrysalt'  # base salt for registry events
+    salter = Salter(raw=salt)
+    galRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                            for i in range(8)]
+    # create registry serders for gal as Issuer
+    galRegSerders = [regcept(israid=gal, uuid=ue, stamp=stamp) for ue in galRegUes]
+    galRids = [rss.said for rss in galRegSerders]
+    assert galRids[0] == galRegSerders[0].said == 'EFh-_d-O5-SbkC888zJOOiwHkDSC0hSRJTQkHC7MhF8R'
+    assert galRegSerders[0].israid == gal
+    assert galRegSerders[0].nonce == galRegUes[0]
+    assert galRegSerders[0].sner.num == 0
+    assert galRegSerders[0].stamp == stamp
+
 
     # Setup SEDI ACDC JsonSchema Validators
 
@@ -3921,6 +4220,9 @@ def test_sedi_acdcs():
 
     # Age Schema Validator setup
     ageValidator = SchemaValidator(schema=AgeSchema)
+
+    # Social Schema Validator setup
+    socialValidator = SchemaValidator(schema=SocialSchema)
 
 
     # Setup Utah State Delegation from root roy to unit deb to agent's sue and stu
@@ -4064,19 +4366,6 @@ def test_sedi_acdcs():
     sueAgentEdgeMad = compactor.partials[('.orgUnit',)].mad
     assert sueAgentEdgeMad['orgUnit']['n'] == debUnitSediSaid
     assert sueAgentEdgeMad['orgUnit']['o'] == "DI2I"
-    #assert sueAgentEdgeMad == \
-    #{
-        #'d': 'EPvTUlgeFWN-da-GVFY6X02koGypjLnEt1ZjpqLf_iOC',
-        #'u': sueUes[3],
-        #'orgUnit':
-        #{
-            #'d': 'EPa0Jf4VF_uq26Cye07CFGZrw7_sSKQ-aG2xYdWGjo4_',
-            #'u': sueUes[4],
-            #'n': debUnitSediSaid,
-            #'s': UnitSchemaSaid,
-            #'o': 'DI2I',
-        #}
-    #}
 
     sueAgentRuleBareMad = \
     {
@@ -5074,6 +5363,7 @@ def test_sedi_acdcs():
         'e': guyGuardianEdgeMad,
         'r': guyGuardianRuleMad,
     }
+
 
     # Setup Gals Registries and ACDCs
     #create presentation registries for Gal
@@ -6469,6 +6759,110 @@ def test_sedi_acdcs():
         'e': wynAgeEdgeMad,
         'r': wynAgeRuleMad
     }
+
+    # Wyn social authz as Issuee as Issued by Guardian parent Guy
+    # Wyn social authz SEDI attribution section
+    wynSocialAttBareMad = \
+    {
+        "d": "",
+        "u": wynUes[42],
+        "i": wyn,
+        "rd": wynPreRids[0],
+        "issuedDatetime": '2026-10-24T09:30:00.000000+00:00',
+        "expirationDatetime": '2026-10-31T22:00:00.000000+00:00',
+        "rc":
+        {
+            "myEmptySpace": ["all"],
+        },
+    }
+
+    compactor = Compactor(mad=wynSocialAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynSocialAttMad = compactor.partials[('',)].mad
+    assert wynSocialAttMad['i'] == wyn
+    wynSocialAttMadSaid = compactor.said
+    assert wynSocialAttMadSaid == 'EEqgTrtibFbgVI2_UbwJ3_tKLGjacL2aIEF2O4N21QPr'
+
+    assert wynSocialAttMad == \
+    {
+        "d": wynSocialAttMadSaid,
+        "u": wynUes[42],
+        "i": wyn,
+        "rd": wynPreRids[0],
+        "issuedDatetime": '2026-10-24T09:30:00.000000+00:00',
+        "expirationDatetime": '2026-10-31T22:00:00.000000+00:00',
+        "rc":
+        {
+            "myEmptySpace": ["all"],
+        },
+    }
+
+    wynSocialEdgeBareMad = \
+    {
+        "d": "",
+        "u": wynUes[43],
+        "guardian":
+        {
+            "d": "",
+            "u": wynUes[44],
+            "n": guyGuardianSediSaid,
+            "s": GuardianSchemaSaid,
+            "o": "I2I",
+        },
+    }
+    compactor = Compactor(mad=wynSocialEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynSocialEdgeMad = compactor.partials[('.guardian',)].mad
+    assert wynSocialEdgeMad['guardian']['n'] == guyGuardianSediSaid
+    assert wynSocialEdgeMad['guardian']['o'] == "I2I"
+
+    wynSocialRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=wynSocialRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    wynSocialRuleMad = compactor.partials[('',)].mad
+    assert wynSocialRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    wynSerderSocial = acdcmap(israid=guy,
+                                uuid=wynUes[41],
+                                regid=guyRids[0],
+                                schema=SocialSchemaSaid,
+                                attribute=wynSocialAttMad,
+                                edge=wynSocialEdgeMad,
+                                rule=wynSocialRuleMad,
+                                kind=kind)
+
+    socialValidator.validate(wynSerderSocial.sad)  # raises error if invalid
+
+    wynSocialSediSaid = wynSerderSocial.said
+    assert wynSocialSediSaid == 'EKUGop-A9YEiDWGC26v1VbhbGnQULPFKvZyS7gCaG-Em'
+    assert wynSerderSocial.verstr == 'ACDCCAACAAJSONAAPB.'
+    assert wynSerderSocial.israid == guy
+    assert wynSerderSocial.regid == guyRids[0]
+    assert wynSerderSocial.iseaid == wyn
+    assert wynSerderSocial.sad['a'] == wynSocialAttMad
+
+    assert wynSerderSocial.sad == \
+    {
+        'v': wynSerderSocial.verstr,
+        't': 'acm',
+        'd': wynSocialSediSaid,
+        'u': wynUes[41],
+        'i': guy,
+        'rd': guyRids[0],
+        's': SocialSchemaSaid,
+        'a': wynSocialAttMad,
+        'e': wynSocialEdgeMad,
+        'r': wynSocialRuleMad,
+    }
+
 
 
     # Setup Ryn's Registries
