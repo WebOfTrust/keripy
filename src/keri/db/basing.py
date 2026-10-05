@@ -502,6 +502,21 @@ class Baser(LMDBer):
             subkey 'locs.'
             Key: eid.scheme.
 
+        .dans is named subDB instance of CesrSuber (klas=Diger) for
+            self-declaration authorizations. Maps eid.kind to SAID of the reply
+            SAD that authN by declarer eid declares its own tags or attribs.
+            kind is one of kering.Decls. Routes /decl/tags and /decl/attribs;
+            an empty tags list or attribs map nullifies.
+            subkey 'dans.'
+            Key: eid.kind.
+            Only one value per DB key is allowed.
+
+        .decls is named subDB instance of Komer (schema=DeclRecord) mapping
+            declarer prefix eid and declaration kind to what eid declares about
+            itself. Data extracted from reply /decl/tags or /decl/attribs.
+            subkey 'decls.'
+            Key: eid.kind.
+
         .obvs is named subDB instance of Komer (schema=ObservedRecord) for
             observed OIDs by watcher. Maps (cid, aid, oid) to ObservedRecord.
             subkey 'obvs.'
