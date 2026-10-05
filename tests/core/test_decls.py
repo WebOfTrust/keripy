@@ -143,6 +143,22 @@ def test_a_malformed_tag_declaration_is_refused(data):
         assert valhby.db.decls.get(keys=(withab.pre, "tags")) is None
 
 
+def test_a_declaration_is_keyed_on_the_normalized_eid():
+    """Prefixer ignores trailing characters, so the raw eid field is not always the prefix it parses
+    to. The handler keys on the parsed prefix, as /loc/scheme does, so junk after a valid eid can
+    neither mint a second key for the same declarer nor fail BADA's signer-is-aid check."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        junked = withab.pre + "JUNK"
+        valhab.psr.parse(_decl(withab, eid=junked, tags=["testnet"]))
+
+        assert valhby.db.decls.get(keys=(junked, "tags")) is None
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
 def test_a_declaration_travels_over_oobi_to_a_third_party():
     """The step that makes this a broadcast rather than a private answer.
 
