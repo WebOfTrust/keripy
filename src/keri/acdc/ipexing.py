@@ -2171,7 +2171,7 @@ def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
     mods = dict(modifiers) if modifiers else {}
     if "dp" not in mods:
         if previous is not None or origin is None:
-            mods["dp"] = [[]]   # ditto the prior's dp
+            mods["dp"] = [[]]   # ditto the prior's dp or empty for a vacuous Grant
         elif not artifacts:
             schema = originSerder.schema
             if isinstance(schema, Mapping):
