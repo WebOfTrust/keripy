@@ -29,10 +29,16 @@ edge optional for leaves so if core issuer differs from leaf issuer AID then
 must have separate delegation edge to leaf.
  add optional utahAgent delegation edge to leaf credentials schema
 so can add delegation chain when issuer of leaf is not same as issuer of core
-(residence, age, guaridanship)  Need new edge operator. I1I  for Issuer
-must be Issuer  DI1I so can have delegation edge group that uses either a
-leaf to core edge for authority with I2I or (E1E) edges or a differnt edge to
-a different authority.
+(residence, age, guaridanship)
+
+Need new edge operators:
+I1I  for Issuer near is Issuer far
+DI1I for Issuer of near side is either Issuer of far side or a delegate of far side Issuer
+
+Both so can have delegation edge group that uses either a leaf to core edge
+for authority with I2I, DI1I of E1E edges.
+Otherwise need a different edge for different chain of authority when near side
+Issuer of E1E leaf is not the same as far side issuer.
 
 Disadvantages of E1E edges to core:
 All leaves must be reissued if core is reissued. When core is reissued should
@@ -64,11 +70,14 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 
 
-# add optional utahAgent delegation edge to leaf credentials schema
+# added optional utahAgent delegation edge to leaf credentials schema
 # so can add delegation chain when issuer of leaf is not same as issuer of core
-# (residence, age, guaridanship)  Need new edge operator. I1I  for Issuer
-# must be Issuer  DI1I for E1E edges so know to test for same Issuer
-# Deb and Sue issuances edges should be DI2I so they can horizontally scale themselves
+# (residence, age, guaridanship)
+#
+# Need new edge operators. I1I and DI1I for E1E edges so know to test for same
+# Issuer or delegated Issuer of leaf as Core otherwise need different edge
+# chain of authority for leaf.
+
 # put optional guardian edge group in core credential with links to guardian
 # Guardianship credential with link to agent auth and link to guardian's core?)
 # Guardian auth credential ward with auth link to guardianship credenital and link to ward age credential
@@ -4218,13 +4227,14 @@ def test_sedi_acdcs():
             "u": guyUes[12],
             "n": sueAgentSediSaid,
             "s": AgentSchemaSaid,
-            "o": "I2I",
+            "o": "DI2I",
         },
     }
     compactor = Compactor(mad=guyCoreEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     guyCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyCoreEdgeMad['utahAgent']['n'] == sueAgentSediSaid
+    assert guyCoreEdgeMad['utahAgent']['o'] == "DI2I"
     #assert guyCoreEdgeMad == \
     #{
         #'d': 'EJHkFDojLaEkGHoyKUAb51bX-Hs80KidadO8YRESkGM3',
@@ -4266,8 +4276,8 @@ def test_sedi_acdcs():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EP6utV8N3sJ8sVOwkWHFvqiI-VPcVrogTqt4k1Uck0nh'
-    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAfM.'
+    assert guyCoreSediSaid == 'EJ3q2Hn11knNaXg7BcYVM0-uzWVlyU11SlvffbKmT-3V'
+    assert guySerderCore.verstr == 'ACDCCAACAAJSONAAfN.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
     assert guySerderCore.iseaid == guy
@@ -4470,27 +4480,14 @@ def test_sedi_acdcs():
             "u": guyUes[22],
             "n": guyCoreSediSaid,
             "s": CoreSchemaSaid,
-            "o": ["E1E", "I1I", "NI2I"],
+            "o": ["E1E", "DI1I", "NI2I"],
         },
     }
     compactor = Compactor(mad=guyResidenceEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     guyResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyResidenceEdgeMad['coreIdentity']['n'] == guyCoreSediSaid
-    assert guyResidenceEdgeMad['coreIdentity']['o'] == ["E1E", "I1I", "NI2I"]
-    #assert guyResidenceEdgeMad == \
-    #{
-        #'d': 'EEiocTKXFr-yIS5L2EKkYKu-6Q0ZbVXR-ziwqay-VvLo',
-        #'u': guyUes[21],
-        #'coreIdentity':
-        #{
-            #'d': 'EJXSu5PIbOVXjQjkHJFc_NB25WA4qYcbk6aHDQ2rHg86',
-            #'u': guyUes[22],
-            #'n': guyCoreSediSaid,
-            #'s': CoreSchemaSaid,
-            #'o': ["E1E", "NI2I"],
-        #}
-    #}
+    assert guyResidenceEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
 
 
     guyResidenceRuleBareMad = \
@@ -4522,8 +4519,8 @@ def test_sedi_acdcs():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'ECRHifnIHkJvBuT5MfKxdCkh7Hz9yyETpNitn1sz4WVL'
-    assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAY_.'
+    assert guyResidenceSediSaid == 'EOQM5YYYaFnlV2g927r7BlT1jxJyOaZkO1bwTB1iKDPa'
+    assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
     assert guySerderResidence.iseaid == guy
@@ -4577,27 +4574,14 @@ def test_sedi_acdcs():
             "u": guyUes[26],
             "n": guyCoreSediSaid,
             "s": CoreSchemaSaid,
-            "o": ["E1E", "I1I", "NI2I"],
+            "o": ["E1E", "DI1I", "NI2I"],
         },
     }
     compactor = Compactor(mad=guyAgeEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     guyAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert guyAgeEdgeMad['coreIdentity']['n'] == guyCoreSediSaid
-    assert guyAgeEdgeMad['coreIdentity']['o'] == ["E1E", "I1I", "NI2I"]
-    #assert guyAgeEdgeMad == \
-    #{
-        #'d': 'EH8QZQtYDmFrwCBOyY71G-BF59nQ38juVzL_Ywwr-SkJ',
-        #'u': guyUes[25],
-        #'coreIdentity':
-        #{
-            #'d': 'EDhh4tQRORfb489i9PNSf53rOIplnQ1T0GBfFX1uT6Xo',
-            #'u': guyUes[26],
-            #'n': guyCoreSediSaid,
-            #'s': CoreSchemaSaid,
-            #'o': ['E1E', 'NI2I']
-        #}
-    #}
+    assert guyAgeEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
 
     guyAgeRuleBareMad = \
     {
@@ -4626,8 +4610,8 @@ def test_sedi_acdcs():
     ageValidator.validate(guySerderAge.sad)  # raises error if invalid
 
     guyAgeSediSaid = guySerderAge.said
-    assert guyAgeSediSaid == 'EDoeVOlw7oeesaWdCNrsKrxWw8MAZXbKTr2CRLqAt7WO'
-    assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiO.'
+    assert guyAgeSediSaid == 'EHzsqajMN7V8yFtpMcpsOfz_krQnh7TDQ_7QUgiLxOgA'
+    assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiP.'
     assert guySerderAge.israid == sue
     assert guySerderAge.regid == sueRids[4]
     assert guySerderAge.iseaid == guy
@@ -4941,13 +4925,14 @@ def test_sedi_acdcs():
             "u": galUes[12],
             "n": sueAgentSediSaid,
             "s": AgentSchemaSaid,
-            "o": "I2I",
+            "o": "DI2I",
         },
     }
     compactor = Compactor(mad=galCoreEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     galCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert galCoreEdgeMad['utahAgent']['n'] == sueAgentSediSaid
+    assert galCoreEdgeMad['utahAgent']['o'] == "DI2I"
     #assert galCoreEdgeMad == \
     #{
         #'d': 'EJ2og1IbznbtGXXCsUVDc6Jyk1Pjwl31ABEhqgjKJ0L5',
@@ -4989,8 +4974,8 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EF_LTb_EEizVF0a2tNticff1qXuQ0EB2h-8NZtp5tOy0'
-    assert galSerderCore.verstr == 'ACDCCAACAAJSONAAfF.'
+    assert galCoreSediSaid == 'ENw_tr09zURe6YKiAGnV2zAO1eI9mM-Eq6-a8kAwzG-y'
+    assert galSerderCore.verstr == 'ACDCCAACAAJSONAAfG.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
     assert galSerderCore.iseaid == gal
@@ -5131,27 +5116,14 @@ def test_sedi_acdcs():
             "u": galUes[22],
             "n": galCoreSediSaid,
             "s": CoreSchemaSaid,
-            "o": ["E1E", "I1I", "NI2I"],
+            "o": ["E1E", "DI1I", "NI2I"],
         },
     }
     compactor = Compactor(mad=galResidenceEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     galResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galResidenceEdgeMad['coreIdentity']['n'] == galCoreSediSaid
-    assert galResidenceEdgeMad['coreIdentity']['o'] == ["E1E", "I1I", "NI2I"]
-    #assert galResidenceEdgeMad == \
-    #{
-        #'d': 'ELrB2N0vAgWJF4qodgtiXZdiULQVACKRr0n_PwpqBdjw',
-        #'u': galUes[21],
-        #'coreIdentity':
-        #{
-            #'d': 'EKKjzyedaIpXn9ih2ZpumO-Usvz-N346TVZb_Ee4UGZ_',
-            #'u': galUes[22],
-            #'n': galCoreSediSaid,
-            #'s': CoreSchemaSaid,
-            #'o': ["E1E", "NI2I"],
-        #}
-    #}
+    assert galResidenceEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
 
     galResidenceRuleBareMad = \
     {
@@ -5180,8 +5152,8 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EKOU8E0PTEbW52c-LVcsL6yY7aHldWhEgiDniFeXgmoL'
-    assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAY_.'
+    assert galResidenceSediSaid == 'EEw02a3d9NORPxTBZag1123Czt7g_FG_Ioj0goZpkvjk'
+    assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
     assert galSerderResidence.iseaid == gal
@@ -5235,14 +5207,14 @@ def test_sedi_acdcs():
             "u": galUes[26],
             "n": galCoreSediSaid,
             "s": CoreSchemaSaid,
-            "o": ["E1E", "I1I", "NI2I"],
+            "o": ["E1E", "DI1I", "NI2I"],
         },
     }
     compactor = Compactor(mad=galAgeEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     galAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galAgeEdgeMad['coreIdentity']['n'] == galCoreSediSaid
-    assert galAgeEdgeMad['coreIdentity']['o'] == ["E1E", "I1I", "NI2I"]
+    assert galAgeEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
     #assert galAgeEdgeMad == \
     #{
         #'d': 'EH8QZQtYDmFrwCBOyY71G-BF59nQ38juVzL_Ywwr-SkJ',
@@ -5284,8 +5256,8 @@ def test_sedi_acdcs():
     ageValidator.validate(galSerderAge.sad)  # raises error if invalid
 
     galAgeSediSaid = galSerderAge.said
-    assert galAgeSediSaid == 'EHQIEqEz-hnyNb4Ld9E6KJYFAb0mcn8oE1g38q_SBbpK'
-    assert galSerderAge.verstr == 'ACDCCAACAAJSONAAiO.'
+    assert galAgeSediSaid == 'ECSMLk2NiM0jmYUfCt8spzVat6nlnvjP7TZT6iCng4WW'
+    assert galSerderAge.verstr == 'ACDCCAACAAJSONAAiP.'
     assert galSerderAge.israid == sue
     assert galSerderAge.regid == sueRids[5]
     assert galSerderAge.iseaid == gal
