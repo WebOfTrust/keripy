@@ -4777,9 +4777,6 @@ def test_sedi_acdcs():
         'l': ''
     }
 
-   # delete expiration date on residence credential
-   # tBD on street or street1 street2
-    # core sedi credential ACDC issued by Sue AID to Guy SMAID
     guySerderResidence = acdcmap(israid=sue,
                             uuid=guyUes[23],
                             regid=sueRids[2],
@@ -4910,7 +4907,7 @@ def test_sedi_acdcs():
     {
         "d": "",
         "u": guyUes[42],
-        "i": guy,  #guySMAID
+        "i": guy,
         "rd": guyPreRids[0],
         'primary': True,
         "role": "parent",
@@ -4932,9 +4929,9 @@ def test_sedi_acdcs():
 
     assert guyGuardianAttMad == \
     {
-        "d": 'EE0lre2I-rhdyxSp20MEhlkhqU5Btf3luDaeKvxtJuMv',
+        "d": guyGuardianAttMadSaid,
         "u": guyUes[42],
-        "i": guy,  #guySMAID
+        "i": guy,
         "rd": guyPreRids[0],
         'primary': True,
         "role": "parent",
@@ -4980,7 +4977,6 @@ def test_sedi_acdcs():
         'l': ''
     }
 
-    # core sedi credential ACDC issued by Sue AID to Guy SMAID
     guySerderGuardian = acdcmap(israid=sue,
                             uuid=guyUes[41],
                             regid=sueRids[0],
@@ -5316,19 +5312,6 @@ def test_sedi_acdcs():
     galCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert galCoreEdgeMad['utahAgent']['n'] == sueAgentSediSaid
     assert galCoreEdgeMad['utahAgent']['o'] == "DI2I"
-    #assert galCoreEdgeMad == \
-    #{
-        #'d': 'EJ2og1IbznbtGXXCsUVDc6Jyk1Pjwl31ABEhqgjKJ0L5',
-        #'u': galUes[11],
-        #'utahAgent':
-        #{
-            #'d': 'ECIzJ7Yj_fZNVV2jme6AEgBZPLD_8VS69uNe2111wEba',
-            #'u': galUes[12],
-            #'n': sueAgentSediSaid,
-            #'s': AgentSchemaSaid,
-            #'o': 'I2I',
-        #}
-    #}
 
     galCoreRuleBareMad = \
     {
@@ -5344,7 +5327,7 @@ def test_sedi_acdcs():
         'l': ''
     }
 
-    # core sedi credential ACDC issued by Sue AID to Gal SMAID
+    # core sedi credential ACDC issued by Sue AID to Gal
     galSerderCore = acdcmap(israid=sue,
                             uuid=galUes[0],
                             regid=sueRids[1],
@@ -5522,7 +5505,6 @@ def test_sedi_acdcs():
         'l': ''
     }
 
-    # core sedi credential ACDC issued by Sue AID to Gal SMAID
     galSerderResidence = acdcmap(israid=sue,
                             uuid=galUes[23],
                             regid=sueRids[3],
@@ -5598,19 +5580,6 @@ def test_sedi_acdcs():
     galAgeEdgeMad = compactor.partials[('.coreIdentity',)].mad
     assert galAgeEdgeMad['coreIdentity']['n'] == galCoreSediSaid
     assert galAgeEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
-    #assert galAgeEdgeMad == \
-    #{
-        #'d': 'EH8QZQtYDmFrwCBOyY71G-BF59nQ38juVzL_Ywwr-SkJ',
-        #'u': galUes[25],
-        #'coreIdentity':
-        #{
-            #'d': 'EDhh4tQRORfb489i9PNSf53rOIplnQ1T0GBfFX1uT6Xo',
-            #'u': galUes[26],
-            #'n': galCoreSediSaid,
-            #'s': CoreSchemaSaid,
-            #'o': ['E1E', 'NI2I']
-        #}
-    #}
 
     galAgeRuleBareMad = \
     {
@@ -5658,6 +5627,116 @@ def test_sedi_acdcs():
         'A': galAgeAggAel,
         'e': galAgeEdgeMad,
         'r': galAgeRuleMad
+    }
+
+    # Gal guardian of ward Wyn
+    # Gal guardian SEDI attribution section
+    galGuardianAttBareMad = \
+    {
+        "d": "",
+        "u": galUes[42],
+        "i": gal,
+        "rd": galPreRids[0],
+        'primary': True,
+        "role": "parent",
+        "ward": wyn,
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  galUes[43],
+            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=galGuardianAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galGuardianAttMad = compactor.partials[('.issuedDate',)].mad
+    assert galGuardianAttMad['i'] == gal
+    galGuardianAttMadSaid = compactor.said
+    assert galGuardianAttMadSaid == 'EDVz8jlxSGcpOXSmBL7oPt2pR66hj8RzPPLPsC0NTDhH'
+
+    assert galGuardianAttMad == \
+    {
+        "d": galGuardianAttMadSaid,
+        "u": galUes[42],
+        "i": gal,
+        "rd": galPreRids[0],
+        'primary': True,
+        "role": "parent",
+        "ward": wyn,
+        "issuedDate": \
+        {
+            "d": 'EKu4PqSjpakCIDAjItZsIWGSvvprJrZiZGO3q9TfS78r',
+            "u":  galUes[43],
+            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    galGuardianEdgeBareMad = \
+    {
+        "d": "",
+        "u": galUes[44],
+        "utahAgent":
+        {
+            "d": "",
+            "u": galUes[45],
+            "n": sueAgentSediSaid,
+            "s": AgentSchemaSaid,
+            "o": "DI2I",
+        },
+    }
+    compactor = Compactor(mad=galGuardianEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galGuardianEdgeMad = compactor.partials[('.utahAgent',)].mad
+    assert galGuardianEdgeMad['utahAgent']['n'] == sueAgentSediSaid
+    assert galGuardianEdgeMad['utahAgent']['o'] == "DI2I"
+
+    galGuardianRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=galGuardianRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    galGuardianRuleMad = compactor.partials[('',)].mad
+    assert galGuardianRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # guardian sedi credential ACDC issued by Sue AID to Gal
+    galSerderGuardian = acdcmap(israid=sue,
+                            uuid=galUes[41],
+                            regid=sueRids[0],
+                            schema=GuardianSchemaSaid,
+                            attribute=galGuardianAttMad,
+                            edge=galGuardianEdgeMad,
+                            rule=galGuardianRuleMad,
+                            kind=kind)
+
+    guardianValidator.validate(galSerderGuardian.sad)  # raises error if invalid
+
+    galGuardianSediSaid = galSerderGuardian.said
+    assert galGuardianSediSaid == 'EM1iisIMPWQkqf0DI5i9NCWnhhwLSJflB4SFr0xJi6U3'
+    assert galSerderGuardian.verstr == 'ACDCCAACAAJSONAAQa.'
+    assert galSerderGuardian.israid == sue
+    assert galSerderGuardian.regid == sueRids[0]
+    assert galSerderGuardian.iseaid == gal
+    assert galSerderGuardian.sad['a'] == galGuardianAttMad
+
+    assert galSerderGuardian.sad == \
+    {
+        'v': galSerderGuardian.verstr,
+        't': 'acm',
+        'd': galGuardianSediSaid,
+        'u': galUes[41],
+        'i': sue,
+        'rd': sueRids[0],
+        's': GuardianSchemaSaid,
+        'a': galGuardianAttMad,
+        'e': galGuardianEdgeMad,
+        'r': galGuardianRuleMad,
     }
 
     # Setup Wyn's Registries
