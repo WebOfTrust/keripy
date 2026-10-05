@@ -159,6 +159,24 @@ def test_a_declaration_is_keyed_on_the_normalized_eid():
         assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
 
 
+def test_a_witness_declares_from_its_config_file():
+    """How a live witness gets its declarations: from its own section of the config file, the same
+    way it gets its curls, so an operator never has to write code to say testnet."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby:
+        withby.cf.put(dict(wit=dict(dt="2021-01-01T00:00:00.000000+00:00",
+                                    curls=["tcp://localhost:5632/"],
+                                    tags=["testnet"],
+                                    attribs={"operator": "Example Org"})))
+        withab = withby.makeHab(
+            name="wit", isith="1", icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json
+        )
+
+        assert withby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+        assert withby.db.decls.get(keys=(withab.pre, "attribs")).attribs == \
+            {"operator": "Example Org"}
+
+
 def test_a_declaration_travels_over_oobi_to_a_third_party():
     """The step that makes this a broadcast rather than a private answer.
 
