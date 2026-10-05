@@ -5252,9 +5252,9 @@ class Kevery:
             cigars (list): of Cigar instances that contain nontrans signing couple
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers])"""
-        tags = self._declAttribute(serder=serder, route=route, kind=Decls.tags, klas=list)
-        self._acceptDecl(serder=serder, diger=diger, kind=Decls.tags, cigars=cigars, tsgs=tsgs,
-                         value=dict(tags=list(tags)))
+        eid, tags = self._declAttribute(serder=serder, route=route, kind=Decls.tags, klas=list)
+        self._acceptDecl(serder=serder, diger=diger, eid=eid, kind=Decls.tags, cigars=cigars,
+                         tsgs=tsgs, value=dict(tags=list(tags)))
 
 
     def processReplyDeclAttribs(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
@@ -5267,16 +5267,19 @@ class Kevery:
             cigars (list): of Cigar instances that contain nontrans signing couple
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers])"""
-        attribs = self._declAttribute(serder=serder, route=route, kind=Decls.attribs, klas=dict)
-        self._acceptDecl(serder=serder, diger=diger, kind=Decls.attribs, cigars=cigars, tsgs=tsgs,
-                         value=dict(attribs=dict(attribs)))
+        eid, attribs = self._declAttribute(serder=serder, route=route, kind=Decls.attribs,
+                                           klas=dict)
+        self._acceptDecl(serder=serder, diger=diger, eid=eid, kind=Decls.attribs, cigars=cigars,
+                         tsgs=tsgs, value=dict(attribs=dict(attribs)))
 
 
     def _declAttribute(self, *, serder, route, kind, klas):
-        """Validate the shape of a decl reply and return its payload for the given kind.
+        """Validate the shape of a decl reply and return (eid, payload) for the given kind.
 
         Shape is checked before BADA and before anything is written, so a malformed declaration
-        leaves no trace at all rather than a half-applied one."""
+        leaves no trace at all rather than a half-applied one. The eid returned is the Prefixer's
+        normalized qb64, as /loc/scheme uses, because Prefixer ignores trailing characters and the
+        raw field is therefore not always the prefix it parses to."""
         expected = f"/decl/{kind}"
         if not route.startswith(expected):
             raise ValidationError("Unsupported route={} in {} msg={}."
@@ -5287,23 +5290,24 @@ class Kevery:
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
                                       "msg={}.".format(k, Ilks.rpy, serder.ked))
-        Prefixer(qb64=data["eid"])  # raises error if unsupported code
+        eid = Prefixer(qb64=data["eid"]).qb64  # raises error if unsupported code
         value = data[kind]
         if not isinstance(value, klas):
             raise ValidationError("Invalid {}={} in {} msg={}."
                                   "".format(kind, value, Ilks.rpy, serder.ked))
-        return value
+        return eid, value
 
 
-    def _acceptDecl(self, *, serder, diger, kind, cigars, tsgs, value):
-        """Apply BADA to a decl reply and store it if it is the latest from its declarer."""
+    def _acceptDecl(self, *, serder, diger, eid, kind, cigars, tsgs, value):
+        """Apply BADA to a decl reply and store it if it is the latest from its declarer.
+
+        A declaration is about, and authorized by, the same identifier, so ``eid`` is also the
+        authorizing aid passed to BADA."""
         route = f"/decl/{kind}"
-        eid = serder.ked["a"]["eid"]
-        aid = eid  # a declaration is about, and authorized by, the same identifier
-        keys = (aid, kind)
+        keys = (eid, kind)
         osaider = self.db.dans.get(keys=keys)  # get old said if any
         accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
-                                        aid=aid, osaider=osaider, cigars=cigars, tsgs=tsgs)
+                                        aid=eid, osaider=osaider, cigars=cigars, tsgs=tsgs)
         if not accepted:
             msg = f"Unverified decl reply kind={kind} SAID={serder.said}"
             logger.debug(msg)
