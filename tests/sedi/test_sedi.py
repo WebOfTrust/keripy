@@ -6192,7 +6192,182 @@ def test_sedi_acdcs():
         'r': wynCoreRuleMad
     }
 
+    # Wyn Residence ACDC
+    wynResidenceAttBareMad = \
+    {
+        "d": "",
+        "u": wynUes[13],
+        "i": wyn,
+        "street": \
+        {
+            "d": "",
+            "u": wynUes[14],
+            "value": street,
+        },
+        "city": \
+        {
+            "d": "",
+            "u": wynUes[15],
+            "value": city,
+        },
+        "county": \
+        {
+            "d": "",
+            "u":wynUes[16],
+            "value": county,
+        },
+        "state": \
+        {
+            "d": "",
+            "u": wynUes[17],
+            "value": state,
+        },
+        "postcode": \
+        {
+            "d": "",
+            "u": wynUes[18],
+            "value": postcode,
+        },
+        "country": \
+        {
+            "d": "",
+            "u": wynUes[19],
+            "value": country,
+        },
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  wynUes[20],
+            "value": "2020-08-25T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
 
+    compactor = Compactor(mad=wynResidenceAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynResidenceAttMad = compactor.partials[('.street',
+                                             '.city',
+                                             '.county',
+                                             '.state',
+                                             '.postcode',
+                                             '.country',
+                                             '.issuedDate')].mad
+    assert wynResidenceAttMad['i'] == wyn
+    wynResidenceAttMadSaid = compactor.said
+    assert wynResidenceAttMadSaid == 'EH_C-WhC3ddA_4SYyrDMh-3qk2KfjgzvFBgwicPKyvzS'
+    assert wynResidenceAttMad == \
+    {
+        'd': wynResidenceAttMadSaid,
+        'u': wynUes[13],
+        'i': wyn,
+        'street':
+        {
+            'd': 'ECpbebsXRhloMPhtMMl_wNX_xOgFVBs0N9RZd9zD9PrK',
+            'u': wynUes[14],
+            'value': street
+        },
+        'city':
+        {
+            'd': 'EJJQe6VcmuAFp1e8TxwCWWAUcPp3JM2lpKjZLxjciujS',
+            'u': wynUes[15],
+            'value': city
+        },
+        'county':
+        {
+            'd': 'EC1XotsZMg8xfVL1b2ezX70XE-cgxuAK3BOhVSoBOZYO',
+            'u': wynUes[16],
+            'value': county
+        },
+        'state':
+        {
+            'd': 'EO3U513t8sk2FPrbv1ruyUmTZqZTbgBtZLNG6U2F9fAE',
+            'u': wynUes[17],
+            'value': state
+        },
+        'postcode':
+        {
+            'd': 'EG-o4RCn6U0ZK0C7nsWf9-KAEwtzi-LcMDYZqb4BdIVL',
+            'u': wynUes[18],
+            'value': postcode
+        },
+        'country':
+        {
+            'd': 'EHNWVs5YF9d26LCKPLv-ehg9erOV4Dx3oGIGgB2sf3J9',
+            'u': wynUes[19],
+            'value': country
+        },
+        'issuedDate':
+        {
+            'd': 'EHJJsNtl7FHo3Xq0IqRSlt23D6Wd7GQ98YxI_HDSONcw',
+            'u': wynUes[20],
+            'value': '2020-08-25T00:00:00.000000+00:00'
+        },
+    }
+
+    wynResidenceEdgeBareMad = \
+    {
+        "d": "",
+        "u": wynUes[21],
+        "coreIdentity":
+        {
+            "d": "",
+            "u": wynUes[22],
+            "n": wynCoreSediSaid,
+            "s": CoreSchemaSaid,
+            "o": ["E1E", "DI1I", "NI2I"],
+        },
+    }
+    compactor = Compactor(mad=wynResidenceEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynResidenceEdgeMad = compactor.partials[('.coreIdentity',)].mad
+    assert wynResidenceEdgeMad['coreIdentity']['n'] == wynCoreSediSaid
+    assert wynResidenceEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
+
+    wynResidenceRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=wynResidenceRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    wynResidenceRuleMad = compactor.partials[('',)].mad
+    assert wynResidenceRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    wynSerderResidence = acdcmap(israid=sue,
+                            uuid=wynUes[23],
+                            regid=sueRids[3],
+                            schema=ResidenceSchemaSaid,
+                            attribute=wynResidenceAttMad,
+                            edge=wynResidenceEdgeMad,
+                            rule=wynResidenceRuleMad,
+                            kind=kind)
+
+    residenceValidator.validate(wynSerderResidence.sad)  # raises error if invalid
+
+    wynResidenceSediSaid = wynSerderResidence.said
+    assert wynResidenceSediSaid == 'EPK7rfNEZYGM9B-TkjxjhZ0JaFZSjAzZBoD6M_mtM65c'
+    assert wynSerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
+    assert wynSerderResidence.israid == sue
+    assert wynSerderResidence.regid == sueRids[3]
+    assert wynSerderResidence.iseaid == wyn
+    assert wynSerderResidence.sad['a'] == wynResidenceAttMad
+
+    assert wynSerderResidence.sad == \
+    {
+        'v': wynSerderResidence.verstr,
+        't': 'acm',
+        'd': wynResidenceSediSaid,
+        'u': wynUes[23],
+        'i': sue,
+        'rd': sueRids[3],
+        's': ResidenceSchemaSaid,
+        'a': wynResidenceAttMad,
+        'e': wynResidenceEdgeMad,
+        'r': wynResidenceRuleMad
+    }
 
 
     # Setup Ryn's Registries
