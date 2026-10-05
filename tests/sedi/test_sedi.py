@@ -914,10 +914,10 @@ CoreSchema = \
   'additionalProperties': False
 }
 
-GuardianSchemaSaid = 'EFRvzONMl8CsggRrUZxWsVxkjTbdAN1U3J5U8hm8cvA5'
+GuardianSchemaSaid = 'ELi-sq4FRkTBq7AfalzO4q3UFPk5HfMRf-cB85lSFZER'
 GuardianSchema = \
 {
-  '$id': 'EFRvzONMl8CsggRrUZxWsVxkjTbdAN1U3J5U8hm8cvA5',
+  '$id': 'ELi-sq4FRkTBq7AfalzO4q3UFPk5HfMRf-cB85lSFZER',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Guardianship Schema',
   'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
@@ -956,9 +956,10 @@ GuardianSchema = \
             'd',
             'u',
             'i',
-            'issuedDate',
+            'primary',
             'role',
-            'name',
+            'ward',
+            'issuedDate',
           ],
           'properties':
           {
@@ -966,27 +967,27 @@ GuardianSchema = \
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
             'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
-            'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+            'primary': { 'description': 'Primary True if not bulk issued else False', 'type': 'boolean'},
             'role': {'description': 'Guardian Role', 'type': 'string'},
             'ward': {'description': 'Ward AID', 'type': 'string'},
-            'wardName':
+            'issuedDate':
             {
-              'description': 'Ward Name Block',
+              'description': 'Issued Date Block',
               'oneOf':
               [
-                {'description': 'Ward Name Block SAID', 'type': 'string'},
+                {'description': 'Issued Date SAID', 'type': 'string'},
                 {
-                  'description': 'Ward Name Block Detail',
+                  'description': 'Issued Date Detail',
                   'type': 'object',
                   'required': ['d', 'u', 'value'],
                   'properties':
                   {
                     'd': {'description': 'Block SAID', 'type': 'string'},
                     'u': {'description': 'Bock UE', 'type': 'string'},
-                    'value': {'description': 'Ward Name', 'type': 'string'},
+                   'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
                   },
                   'additionalProperties': False
-                }
+                },
               ]
             },
           },
@@ -2646,9 +2647,10 @@ def test_sedi_schema():
                 'd',
                 'u',
                 'i',
-                'issuedDate',
+                'primary',
                 'role',
-                'name',
+                'ward',
+                'issuedDate',
               ],
               'properties':
               {
@@ -2656,27 +2658,27 @@ def test_sedi_schema():
                 'u': {'description': 'Attribute Section UE', 'type': 'string'},
                 'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
-                'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                'primary': { "description": 'Primary True if not bulk issued else False', 'type': 'boolean'},
                 'role': {'description': 'Guardian Role', 'type': 'string'},
                 'ward': {'description': 'Ward AID', 'type': 'string'},
-                'wardName':
+                'issuedDate':
                 {
-                  'description': 'Ward Name Block',
+                  'description': 'Issued Date Block',
                   'oneOf':
                   [
-                    {'description': 'Ward Name Block SAID', 'type': 'string'},
+                    {'description': 'Issued Date SAID', 'type': 'string'},
                     {
-                      'description': 'Ward Name Block Detail',
+                      'description': 'Issued Date Detail',
                       'type': 'object',
                       'required': ['d', 'u', 'value'],
                       'properties':
                       {
                         'd': {'description': 'Block SAID', 'type': 'string'},
                         'u': {'description': 'Bock UE', 'type': 'string'},
-                        'value': {'description': 'Ward Name', 'type': 'string'},
+                        'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
                       },
                       'additionalProperties': False
-                    }
+                    },
                   ]
                 },
               },
@@ -2744,7 +2746,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=guardianSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     guardianSchemaSaid = mapper.said
-    assert guardianSchemaSaid == 'EFRvzONMl8CsggRrUZxWsVxkjTbdAN1U3J5U8hm8cvA5'
+    assert guardianSchemaSaid == 'ELi-sq4FRkTBq7AfalzO4q3UFPk5HfMRf-cB85lSFZER'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert guardianSchemaSaid == GuardianSchemaSaid
     assert mapper.mad == GuardianSchema
@@ -4360,7 +4362,6 @@ def test_sedi_acdcs():
     assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
 
     # Guy core SEDI attribution section
-
     guyCoreAttBareMad = \
     {
         "d": "",
@@ -4520,19 +4521,6 @@ def test_sedi_acdcs():
     guyCoreEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyCoreEdgeMad['utahAgent']['n'] == sueAgentSediSaid
     assert guyCoreEdgeMad['utahAgent']['o'] == "DI2I"
-    #assert guyCoreEdgeMad == \
-    #{
-        #'d': 'EJHkFDojLaEkGHoyKUAb51bX-Hs80KidadO8YRESkGM3',
-        #'u': guyUes[11],
-        #'utahAgent':
-        #{
-            #'d': 'EIuekCZmpq3772hyQYfDAT_tMH9Zwix7yWmeCkCQqrwh',
-            #'u': guyUes[12],
-            #'n': sueAgentSediSaid,
-            #'s': AgentSchemaSaid,
-            #'o': 'I2I',
-        #}
-    #}
 
     guyCoreRuleBareMad = \
     {
@@ -4914,6 +4902,116 @@ def test_sedi_acdcs():
         'A': guyAgeAggAel,
         'e': guyAgeEdgeMad,
         'r': guyAgeRuleMad
+    }
+
+    # Guy guardian of ward Wyn
+    # Guy guardian SEDI attribution section
+    guyGuardianAttBareMad = \
+    {
+        "d": "",
+        "u": guyUes[42],
+        "i": guy,  #guySMAID
+        "rd": guyPreRids[0],
+        'primary': True,
+        "role": "parent",
+        "ward": wyn,
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  guyUes[43],
+            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=guyGuardianAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyGuardianAttMad = compactor.partials[('.issuedDate',)].mad
+    assert guyGuardianAttMad['i'] == guy
+    guyGuardianAttMadSaid = compactor.said
+    assert guyGuardianAttMadSaid == 'EE0lre2I-rhdyxSp20MEhlkhqU5Btf3luDaeKvxtJuMv'
+
+    assert guyGuardianAttMad == \
+    {
+        "d": 'EE0lre2I-rhdyxSp20MEhlkhqU5Btf3luDaeKvxtJuMv',
+        "u": guyUes[42],
+        "i": guy,  #guySMAID
+        "rd": guyPreRids[0],
+        'primary': True,
+        "role": "parent",
+        "ward": wyn,
+        "issuedDate": \
+        {
+            "d": 'EG7549EgByzDws1DefXOr11tkWVUdhyAmRyIqNSci2Qe',
+            "u":  guyUes[43],
+            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    guyGuardianEdgeBareMad = \
+    {
+        "d": "",
+        "u": guyUes[44],
+        "utahAgent":
+        {
+            "d": "",
+            "u": guyUes[45],
+            "n": sueAgentSediSaid,
+            "s": AgentSchemaSaid,
+            "o": "DI2I",
+        },
+    }
+    compactor = Compactor(mad=guyCoreEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyGuardianEdgeMad = compactor.partials[('.utahAgent',)].mad
+    assert guyGuardianEdgeMad['utahAgent']['n'] == sueAgentSediSaid
+    assert guyGuardianEdgeMad['utahAgent']['o'] == "DI2I"
+
+    guyGuardianRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=guyGuardianRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    guyGuardianRuleMad = compactor.partials[('',)].mad
+    assert guyGuardianRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    guySerderGuardian = acdcmap(israid=sue,
+                            uuid=guyUes[41],
+                            regid=sueRids[0],
+                            schema=GuardianSchemaSaid,
+                            attribute=guyGuardianAttMad,
+                            edge=guyGuardianEdgeMad,
+                            rule=guyGuardianRuleMad,
+                            kind=kind)
+
+    guardianValidator.validate(guySerderGuardian.sad)  # raises error if invalid
+
+    guyGuardianSediSaid = guySerderGuardian.said
+    assert guyGuardianSediSaid == 'EDUlgev0rZ2YGgXCOYWwxpDbtFw_cjh9ELjnSobH3gYM'
+    assert guySerderGuardian.verstr == 'ACDCCAACAAJSONAAQa.'
+    assert guySerderGuardian.israid == sue
+    assert guySerderGuardian.regid == sueRids[0]
+    assert guySerderGuardian.iseaid == guy
+    assert guySerderGuardian.sad['a'] == guyGuardianAttMad
+
+    assert guySerderGuardian.sad == \
+    {
+        'v': guySerderGuardian.verstr,
+        't': 'acm',
+        'd': guyGuardianSediSaid,
+        'u': guyUes[41],
+        'i': sue,
+        'rd': sueRids[0],
+        's': GuardianSchemaSaid,
+        'a': guyGuardianAttMad,
+        'e': guyGuardianEdgeMad,
+        'r': guyGuardianRuleMad,
     }
 
     # Setup Gals Registries and ACDCs
