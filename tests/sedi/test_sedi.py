@@ -539,11 +539,10 @@ IarSchema = \
 }
 
 
-
-CoreSchemaSaid = 'EN6Anu3Drlq6t5A3xwzVy-XwQHTS4gYhflOf8IqANA7Q'
+CoreSchemaSaid = 'EN0JtdzBmFuTUzyJG9CXZhtdu-bW0V6L95bsVBzi-cY-'
 CoreSchema = \
 {
-  '$id': 'EN6Anu3Drlq6t5A3xwzVy-XwQHTS4gYhflOf8IqANA7Q',
+  '$id': 'EN0JtdzBmFuTUzyJG9CXZhtdu-bW0V6L95bsVBzi-cY-',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Core Schema',
   'description': 'SEDI Core Identity JSON Schema for acm ACDC.',
@@ -722,19 +721,19 @@ CoreSchema = \
             },
             'legalPresenceStatus':
             {
-              'description': 'Legal Presense Status Block',
+              'description': 'Legal Presence Status Block',
               'oneOf':
               [
-                {'description': 'Legal Presense Status SAID', 'type': 'string'},
+                {'description': 'Legal Presence Status SAID', 'type': 'string'},
                 {
-                  'description': 'Legal Presense Status Detail',
+                  'description': 'Legal Presence Status Detail',
                   'type': 'object',
                   'required': ['d', 'u', 'value'],
                   'properties':
                   {
                     'd': {'description': 'Block SAID', 'type': 'string'},
                     'u': {'description': 'Bock UE', 'type': 'string'},
-                    'value': {'description': 'Legal Presense Status Value i.e. citizen', 'type': 'string'},
+                    'value': {'description': 'Legal Presence Status Value i.e. citizen', 'type': 'string'},
                   },
                   'additionalProperties': False
                 },
@@ -915,6 +914,142 @@ CoreSchema = \
   'additionalProperties': False
 }
 
+GuardianSchemaSaid = 'EGx4BLclkjhaK1501guyBifxuTTJLwuK61InBTdkKF7v'
+GuardianSchema = \
+{
+  '$id': 'EGx4BLclkjhaK1501guyBifxuTTJLwuK61InBTdkKF7v',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Guardianship Schema',
+  'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Guardian_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'issuedDate',
+            'role',
+            'name',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
+            'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+            'role': {'description': 'Guardian Role', 'type': 'string'},
+            'ward': {'description': 'Ward AID', 'type': 'string'},
+            'wardName':
+            {
+              'description': 'Ward Name Block',
+              'oneOf':
+              [
+                {'description': 'Ward Name Block SAID', 'type': 'string'},
+                {
+                  'description': 'Ward Name Block Detail',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Ward Name', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                }
+              ]
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'orgUnit'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'orgUnit':
+            {
+              'description': 'Utah Organizational Unit Edge Block',
+              'type': 'object',
+              'required': ['n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            }
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
 
 
 ResidenceSchemaSaid = 'EH5hn7CbtDFxhS3IKioC8P-e4YyZoxqzhRpr4X_e32BD'
@@ -2268,19 +2403,19 @@ def test_sedi_schema():
                             },
                             'legalPresenceStatus':
                             {
-                              'description': 'Legal Presense Status Block',
+                              'description': 'Legal Presence Status Block',
                               'oneOf':
                               [
-                                {'description': 'Legal Presense Status SAID', 'type': 'string'},
+                                {'description': 'Legal Presence Status SAID', 'type': 'string'},
                                 {
-                                  'description': 'Legal Presense Status Detail',
+                                  'description': 'Legal Presence Status Detail',
                                   'type': 'object',
                                   'required': ['d', 'u', 'value'],
                                   'properties':
                                   {
                                     'd': {'description': 'Block SAID', 'type': 'string'},
                                     'u': {'description': 'Bock UE', 'type': 'string'},
-                                    'value': {'description': 'Legal Presense Status Value i.e. citizen', 'type': 'string'},
+                                    'value': {'description': 'Legal Presence Status Value i.e. citizen', 'type': 'string'},
                                   },
                                   'additionalProperties': False
                                 },
@@ -2463,7 +2598,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=coreSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     coreSchemaSaid = mapper.said
-    assert  coreSchemaSaid == 'EN6Anu3Drlq6t5A3xwzVy-XwQHTS4gYhflOf8IqANA7Q'
+    assert coreSchemaSaid == 'EN0JtdzBmFuTUzyJG9CXZhtdu-bW0V6L95bsVBzi-cY-'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert coreSchemaSaid == CoreSchemaSaid
     assert mapper.mad == CoreSchema
@@ -4276,7 +4411,7 @@ def test_sedi_acdcs():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'EJ3q2Hn11knNaXg7BcYVM0-uzWVlyU11SlvffbKmT-3V'
+    assert guyCoreSediSaid == 'ENTYxv_drZOsO9aAS1w9VupOX_y1t7HRR9C7rhJeEX1j'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAfN.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
@@ -4519,7 +4654,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'EOQM5YYYaFnlV2g927r7BlT1jxJyOaZkO1bwTB1iKDPa'
+    assert guyResidenceSediSaid == 'EI9K1dzx1HPGrz9ROoieZo2PuQ5mC6aSEfXuxeBUE8Cs'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -4610,7 +4745,7 @@ def test_sedi_acdcs():
     ageValidator.validate(guySerderAge.sad)  # raises error if invalid
 
     guyAgeSediSaid = guySerderAge.said
-    assert guyAgeSediSaid == 'EHzsqajMN7V8yFtpMcpsOfz_krQnh7TDQ_7QUgiLxOgA'
+    assert guyAgeSediSaid == 'EEN4glOvaTXmsqRlyWvXiuSrWtGpR2RlX-DlxZmlCAbm'
     assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiP.'
     assert guySerderAge.israid == sue
     assert guySerderAge.regid == sueRids[4]
@@ -4974,7 +5109,7 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'ENw_tr09zURe6YKiAGnV2zAO1eI9mM-Eq6-a8kAwzG-y'
+    assert galCoreSediSaid == 'EDt8t1jfBlxnAdHN3RD9ssKg-aSzswu10cqSJF7s7CHL'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAfG.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -5152,7 +5287,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EEw02a3d9NORPxTBZag1123Czt7g_FG_Ioj0goZpkvjk'
+    assert galResidenceSediSaid == 'EHGdpNxXKqwfPgszWXnGIZkutY51wZoxHx6w6Cn30i_U'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
@@ -5256,7 +5391,7 @@ def test_sedi_acdcs():
     ageValidator.validate(galSerderAge.sad)  # raises error if invalid
 
     galAgeSediSaid = galSerderAge.said
-    assert galAgeSediSaid == 'ECSMLk2NiM0jmYUfCt8spzVat6nlnvjP7TZT6iCng4WW'
+    assert galAgeSediSaid == 'ED2CBAk2-1UYiqEclNwIDS1E8uv8gyj_d8rwnFiUoey8'
     assert galSerderAge.verstr == 'ACDCCAACAAJSONAAiP.'
     assert galSerderAge.israid == sue
     assert galSerderAge.regid == sueRids[5]
