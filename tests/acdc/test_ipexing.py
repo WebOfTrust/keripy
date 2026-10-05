@@ -220,6 +220,7 @@ def test_ipex_v2_builders_parse_happypath():
 
         assert agreeExn.ked["a"]["m"] == "I agree to the offer"
         assert agreeExn.ked["p"] == offerExn.said
+        assert agreeExn.ked["q"]["dp"] == [[]]  # ditto the prior dp
 
         assert grantExn.ked["a"]["m"] == "Here is the granted credential"
         assert grantExn.ked["a"]["o"] == [acdc.said]
@@ -227,6 +228,7 @@ def test_ipex_v2_builders_parse_happypath():
         assert "iss" not in grantExn.ked["a"]
         assert "anc" not in grantExn.ked["a"]
         assert grantExn.ked["p"] == agreeExn.said
+        assert grantExn.ked["q"]["dp"] == [[]]  # ditto the prior dp
 
         assert admitExn.ked["a"]["m"] == "Thanks for the credential"
         assert admitExn.ked["p"] == grantExn.said
@@ -1575,7 +1577,11 @@ def test_ipex_v2_grant_carries_multiple_dag_nodes():
                                        recp=hab.pre,
                                        message="Here is the disclosed DAG",
                                        origin=_signed(acdc, hab),
-                                       artifacts=[_signed(child, hab)])
+                                       artifacts=[_signed(child, hab)],
+                                       modifiers=dict(dp=[[
+                                           [acdc.sad["s"]["$id"], "/", []],
+                                           [child.sad["s"]["$id"], "/e/holder/_/", []],
+                                       ]]))
 
         assert grantExn.ked["a"]["o"] == [acdc.said]
         assert "iss" not in grantExn.ked["a"]
@@ -1968,13 +1974,17 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        def assert_accepted(message, origin, artifacts):
+        def assert_accepted(message, origin, artifacts, prefixes):
+            plan = [[origin.sad["s"]["$id"], "/", []]]
+            plan.extend([artifact.sad["s"]["$id"], prefix, []]
+                        for artifact, prefix in zip(artifacts, prefixes, strict=True))
             exn, atc = ipexGrant(hab=issuer,
                                  recp=subject.pre,
                                  message=message,
                                  origin=_signed(origin, issuer),
                                  artifacts=[_signed(artifact, issuer)
-                                            for artifact in artifacts])
+                                            for artifact in artifacts],
+                                 modifiers=dict(dp=[plan]))
             ims = bytearray(exn.raw)
             ims.extend(atc)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
@@ -2005,7 +2015,8 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                                iseaid=subject.pre)
         assert_accepted("Here is the schema-pinned DAG",
                         schemaOrigin,
-                        [schemaChild])
+                        [schemaChild],
+                        ["/e/holder/_/"])
 
         # Case 2: the edge schema allows `s` on a nested edge group. IPEX
         # interprets that as one shared far-node schema pin for the group's
@@ -2031,7 +2042,8 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                                       iseaid=subject.pre)
         assert_accepted("Here is the grouped-schema DAG",
                         groupedSchemaOrigin,
-                        [groupedSchemaMember, groupedSchemaStaff])
+                        [groupedSchemaMember, groupedSchemaStaff],
+                        ["/e/reports/member/_/", "/e/reports/staff/_/"])
 
         # Case 3: a grouped OR succeeds when at least one child edge relation
         # is satisfied, instead of requiring every branch to pass.
@@ -2052,7 +2064,8 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                                 iseaid=subject.pre)
         assert_accepted("Here is the grouped-OR DAG",
                         groupedOrigin,
-                        [orMember, orStaff])
+                        [orMember, orStaff],
+                        ["/e/either/member/_/", "/e/either/staff/_/"])
 
         # Case 4: a leaf edge may omit `o`. The V2 edge shape allows that, and
         # IPEX does not infer an I2I/NI2I default when the operator is absent.
@@ -2065,7 +2078,8 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                              iseaid=subject.pre)
         assert_accepted("Here is the no-operator DAG",
                         noOpOrigin,
-                        [noOpChild])
+                        [noOpChild],
+                        ["/e/holder/_/"])
 
         # Case 5: SEDI edges may combine non-delegative and same-Issuee
         # constraints in one conjunctive unary-operator list.
@@ -2079,7 +2093,8 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                                iseaid=subject.pre)
         assert_accepted("Here is the conjunctive-operator DAG",
                         listOpOrigin,
-                        [listOpChild])
+                        [listOpChild],
+                        ["/e/holder/_/"])
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
@@ -2106,11 +2121,16 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
 
         def assert_rejected(message, origin, artifacts=None):
             before = len(recorder.items)
+            plan = [[origin.sad["s"]["$id"], "/", []]]
+            for idx, artifact in enumerate(artifacts or []):
+                plan.append([artifact.sad["s"]["$id"],
+                             f"/e/rejected{idx}/_/", []])
             exn, atc = ipexGrant(hab=issuer,
                                  recp=subject.pre,
                                  message=message,
                                  origin=origin,
-                                 artifacts=artifacts)
+                                 artifacts=artifacts,
+                                 modifiers=dict(dp=[plan]))
             ims = bytearray(exn.raw)
             ims.extend(atc)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
@@ -2439,6 +2459,75 @@ def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
+
+
+def test_ipex_v2_empty_bare_grant_is_vacuous():
+    """An unsolicited empty plan permits interaction but no disclosure."""
+    with openHby(name="ipex-v2-vacuous-grant",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        grant, atc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose nothing",
+            modifiers=dict(dp=[[]]),    # Empty dp
+        )
+        assert grant.ked["p"] == ""
+        assert grant.ked["q"]["dp"] == [[]]
+        assert grant.ked["a"]["o"] == []
+
+        ims = bytearray(grant.raw)
+        ims.extend(atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(grant.said,)) is not None
+        assert [item["d"] for item in recorder.items] == [grant.said]
+
+        # Create a credential and attempt to disclose it in a Grant with an empty dp
+        credential = acdcmap(
+            israid=hab.pre,
+            attribute=dict(d="", status="citizen"),
+            iseaid=hab.pre,
+        )
+        credentialStream = _signed(credential, hab)
+        disclosed, _ = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose a credential",
+            origin=credentialStream,
+        )
+        sad = dict(disclosed.ked)
+        sad["q"] = dict(disclosed.ked["q"])
+        sad["q"]["dp"] = [[]]
+        badGrant = SerderKERI(sad=sad, makify=True, verify=False)
+        badAtc = bytearray(hab.endorse(
+            serder=badGrant,
+            framed=False,
+            gvrsn=Vrsn_2_0,
+            nests=[_nest(credentialStream)],
+        ))
+        del badAtc[:badGrant.size]
+
+        # Send the bad Grant and assert that it is rejected
+        ims = bytearray(badGrant.raw)
+        ims.extend(badAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(badGrant.said,)) is None
+        assert [item["d"] for item in recorder.items] == [grant.said]
+
+        with pytest.raises(ValueError, match="non-empty disclosure plan"):
+            ipexGrant(
+                hab=hab,
+                recp=hab.pre,
+                message="Missing disclosed origin",
+                modifiers=dict(dp=[[[credential.schema["$id"], "/", []]]]),
+            )
 
 
 def test_ipex_v2_grant_must_honor_negotiated_disclosure_plan():
@@ -3258,7 +3347,11 @@ def test_ipex_v2_rejects_grant_without_origin_nested_artifact():
                            recp=hab.pre,
                            message="Here is the granted credential",
                            origin=acdc,
-                           artifacts=[sibling])
+                           artifacts=[sibling],
+                           modifiers=dict(dp=[[
+                               [acdc.sad["s"]["$id"], "/", []],
+                               [sibling.sad["s"]["$id"], "/e/sibling/_/", []],
+                           ]]))
 
         # Re-endorse the same body but omit the origin artifact. In V2 the grant
         # must carry the presentation/ACDC as the first nested artifact matching a.o.
@@ -6675,6 +6768,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                 origin=origin,
                 artifacts=[child],
                 dt=grantStamp,
+                modifiers=dict(dp=[[
+                    [origin.sad["s"]["$id"], "/", []],
+                    [child.sad["s"]["$id"], "/e/child/_/", []],
+                ]]),
             )
             originPresentationProof, originPresented = registrar.present(
                 originPresentationRegistry, grant=draftGrant)

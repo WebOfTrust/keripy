@@ -1333,6 +1333,11 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                 verifierRgy.store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
                 verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
 
+                modifiers = dict(dp=[[
+                    [CoreSchemaSaid, "/", [""]],
+                    [AgentSchemaSaid, "/e/utahAgent/_/", [""]],
+                    [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [""]],
+                ]])
                 boundGrant, _ = ipexGrant(
                     hab=holder,
                     recp=verifier.pre,
@@ -1340,6 +1345,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                     origin=core,
                     artifacts=[agent, unit],
                     ax=[True],
+                    modifiers=modifiers,
                     anchorers=[],
                 )
                 presentationProof, presented = holderRegistrar.present(
@@ -1365,6 +1371,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                     origin=proofedCore,
                     artifacts=[sedi.proofedAgent, sedi.proofedUnit],
                     ax=[True],
+                    modifiers=modifiers,
                     anchorers=[],
                 )
                 assert wrongGrant.said != boundGrant.said
