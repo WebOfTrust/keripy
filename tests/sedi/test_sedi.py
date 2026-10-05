@@ -68,7 +68,19 @@ from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Compacto
                        SealEvent, SealDigest, SealNonce, incept, interact)
 from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
+# Questions:
+# ? no link to core for credentials that persist even when no longer a citizen
+# or should core be reissued when presence status changes?
 
+# ? should guardian ACDC have edge to guardian core with E1E?)
+# ? Should guardianship expired Date be optional or mandittory
+
+# ToDo
+# Bespoke ACDC Schema for presenting  any set of E1E leaves  (residence, age, high res) and non
+
+# high rez image biometric credential with link to guardian core
+
+# fix facial image proof in receipts now blank but set to that in core
 
 # added optional utahAgent delegation edge to leaf credentials schema
 # so can add delegation chain when issuer of leaf is not same as issuer of core
@@ -78,15 +90,12 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 # Issuer or delegated Issuer of leaf as Core otherwise need different edge
 # chain of authority for leaf.
 
-# put optional guardian edge group in core credential with links to guardian
-# Guardianship credential with link to agent auth and link to guardian's core?)
+# Added optional guardian edge group in core credential with links to guardian
+# Guardianship credential with link to agent auth
 # Guardian auth credential ward with auth link to guardianship credenital and link to ward age credential
-# Bespoke ACDC Schema for presenting  any set of E1E leaves  (residence, age, high res) and non
-# E1E leaves  guardianship
-# high rez image biometric credential with link to guardian core
 
-# no link to core for credentials that persist even when no longer a citizen
-# or should core be reissued when presence status changes?
+
+
 
 
 
@@ -914,10 +923,10 @@ CoreSchema = \
   'additionalProperties': False
 }
 
-GuardianSchemaSaid = 'ELi-sq4FRkTBq7AfalzO4q3UFPk5HfMRf-cB85lSFZER'
+GuardianSchemaSaid = 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY'
 GuardianSchema = \
 {
-  '$id': 'ELi-sq4FRkTBq7AfalzO4q3UFPk5HfMRf-cB85lSFZER',
+  '$id': 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Guardianship Schema',
   'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
@@ -988,6 +997,26 @@ GuardianSchema = \
                   },
                   'additionalProperties': False
                 },
+              ]
+            },
+            'expirationDate':
+            {
+              'description': 'Expiration Date Block',
+              'oneOf':
+              [
+                {'description': 'Expiration Date SAID', 'type': 'string'},
+                {
+                  'description': 'Expiration Date Detail',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                }
               ]
             },
           },
@@ -2681,6 +2710,26 @@ def test_sedi_schema():
                     },
                   ]
                 },
+                'expirationDate':
+                {
+                  'description': 'Expiration Date Block',
+                  'oneOf':
+                  [
+                    {'description': 'Expiration Date SAID', 'type': 'string'},
+                    {
+                      'description': 'Expiration Date Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    }
+                  ]
+                },
               },
               'additionalProperties': False
             }
@@ -2746,7 +2795,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=guardianSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     guardianSchemaSaid = mapper.said
-    assert guardianSchemaSaid == 'ELi-sq4FRkTBq7AfalzO4q3UFPk5HfMRf-cB85lSFZER'
+    assert guardianSchemaSaid == 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert guardianSchemaSaid == GuardianSchemaSaid
     assert mapper.mad == GuardianSchema
@@ -3464,11 +3513,15 @@ def test_sedi_acdcs():
     Proof-of-control over SMAID by citizen
 
     Create incepting key states for participants:
-        Sue as State Issuer Department Level
+        Roy as State Root of Trust
+        Deb as State Organizational Unit (Dept/Division) Level
+        Sue as State Issuer Agent  Level
+        Stu as State Alterante Issuer Agent  Level
         Pat as Proofer (Identity)
         Guy as Guardian Parent Citizen
         Gal as Guardian Parent Citizen
         Wyn as Ward Child Citizen
+        Ryn as Replacement Citizen AID for Wyn
 
     use same salter for a set of keys where each uses same salt but different path.
           salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
@@ -4916,16 +4969,22 @@ def test_sedi_acdcs():
         {
             "d": "",
             "u":  guyUes[43],
-            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+            "value": '2012-06-21T00:00:00.000000+00:00',  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  guyUes[44],
+            "value": '2030-06-21T00:00:00.000000+00:00',  # Time MBZ
         },
     }
 
     compactor = Compactor(mad=guyGuardianAttBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
-    guyGuardianAttMad = compactor.partials[('.issuedDate',)].mad
+    guyGuardianAttMad = compactor.partials[('.issuedDate', '.expirationDate')].mad
     assert guyGuardianAttMad['i'] == guy
     guyGuardianAttMadSaid = compactor.said
-    assert guyGuardianAttMadSaid == 'EE0lre2I-rhdyxSp20MEhlkhqU5Btf3luDaeKvxtJuMv'
+    assert guyGuardianAttMadSaid == 'EHPnpFgPhgYQmnLgMUvJYcUqgvagRclCoGKfdNjdz73H'
 
     assert guyGuardianAttMad == \
     {
@@ -4938,9 +4997,15 @@ def test_sedi_acdcs():
         "ward": wyn,
         "issuedDate": \
         {
-            "d": 'EG7549EgByzDws1DefXOr11tkWVUdhyAmRyIqNSci2Qe',
+            "d": 'EHDyi3drPTNJ6WDAvPIbcOqtRV03mTPLRuRyTSzQUfpS',
             "u":  guyUes[43],
-            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+            "value": '2012-06-21T00:00:00.000000+00:00',  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": 'EPtJr5V6lRCBvT4QudVp7ucFspyjWPRhedf9MRG_CaEa',
+            "u":  guyUes[44],
+            "value": '2030-06-21T00:00:00.000000+00:00',  # Time MBZ
         },
     }
 
@@ -4989,8 +5054,8 @@ def test_sedi_acdcs():
     guardianValidator.validate(guySerderGuardian.sad)  # raises error if invalid
 
     guyGuardianSediSaid = guySerderGuardian.said
-    assert guyGuardianSediSaid == 'EKHZz1QNaaCxk8sBc1kexdiuWagvoFG-KmJEeRQxDgkW'
-    assert guySerderGuardian.verstr == 'ACDCCAACAAJSONAAQa.'
+    assert guyGuardianSediSaid == 'EP0aoeuK-4I1ETjR_TltV_nXziaz-chfDGS0IkPRX1IF'
+    assert guySerderGuardian.verstr == 'ACDCCAACAAJSONAASq.'
     assert guySerderGuardian.israid == sue
     assert guySerderGuardian.regid == sueRids[0]
     assert guySerderGuardian.iseaid == guy
@@ -5644,16 +5709,22 @@ def test_sedi_acdcs():
         {
             "d": "",
             "u":  galUes[43],
-            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+            "value": '2012-06-21T00:00:00.000000+00:00',  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  galUes[44],
+            "value": '2030-06-21T00:00:00.000000+00:00',  # Time MBZ
         },
     }
 
     compactor = Compactor(mad=galGuardianAttBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
-    galGuardianAttMad = compactor.partials[('.issuedDate',)].mad
+    galGuardianAttMad = compactor.partials[('.issuedDate', '.expirationDate')].mad
     assert galGuardianAttMad['i'] == gal
     galGuardianAttMadSaid = compactor.said
-    assert galGuardianAttMadSaid == 'EDVz8jlxSGcpOXSmBL7oPt2pR66hj8RzPPLPsC0NTDhH'
+    assert galGuardianAttMadSaid == 'EGJXU81iDbXHzU1aLT_FwvB-TNin2W_Ze6j-AnTNO_yh'
 
     assert galGuardianAttMad == \
     {
@@ -5666,9 +5737,15 @@ def test_sedi_acdcs():
         "ward": wyn,
         "issuedDate": \
         {
-            "d": 'EKu4PqSjpakCIDAjItZsIWGSvvprJrZiZGO3q9TfS78r',
+            "d": 'ELspENyn_TjT7HHSpNq_pFT-6tCN5K-hJTNW3sg4vXvS',
             "u":  galUes[43],
-            "value": "2020-08-22T00:00:00.000000+00:00",  # Time MBZ
+            "value": '2012-06-21T00:00:00.000000+00:00',  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": 'EDx5Jmnrj0rUufq3eilSLbQ9P3PZ0dU60D4mjLIAeYkV',
+            "u":  galUes[44],
+            "value": '2030-06-21T00:00:00.000000+00:00',  # Time MBZ
         },
     }
 
@@ -5718,8 +5795,8 @@ def test_sedi_acdcs():
     guardianValidator.validate(galSerderGuardian.sad)  # raises error if invalid
 
     galGuardianSediSaid = galSerderGuardian.said
-    assert galGuardianSediSaid == 'EM1iisIMPWQkqf0DI5i9NCWnhhwLSJflB4SFr0xJi6U3'
-    assert galSerderGuardian.verstr == 'ACDCCAACAAJSONAAQa.'
+    assert galGuardianSediSaid == 'ENnGph1aXP8iryzc2MSvYhMvL0aRXDYHZQqL3bLYlgG7'
+    assert galSerderGuardian.verstr == 'ACDCCAACAAJSONAASq.'
     assert galSerderGuardian.israid == sue
     assert galSerderGuardian.regid == sueRids[0]
     assert galSerderGuardian.iseaid == gal
@@ -5869,6 +5946,253 @@ def test_sedi_acdcs():
             'sediURL': 'https://example.com/sedi/here'
         }
     }
+
+    # Setup Wyn's SEDI ACDCs
+    # Setup Wyn's Core SEDI
+    # Setup Wyn's biometric image proof
+    wynImageProof = Diger(ser=b"PretendImageOfWyn").qb64
+    assert wynImageProof == 'EJFuvB2J1bShwbGmRV4Ignf25r6Pzo8bHg_BeMKmc9wV'
+
+    # Guy core SEDI attribution section
+
+    wynCoreAttBareMad = \
+    {
+        "d": "",
+        "u": wynUes[1],
+        "i": wyn,
+        "rd": wynPreRids[0],
+        'primary': True,
+        "givenName": \
+        {
+            "d": "",
+            "u": wynUes[2],
+            "value": "Wyn",
+        },
+        "middleName": \
+        {
+            "d": "",
+            "u": wynUes[3],
+            "value": "Biff",
+        },
+        "familyName": \
+        {
+            "d": "",
+            "u":wynUes[4],
+            "value": "Brown",
+        },
+        "nameSuffix": \
+        {
+            "d": 'EFDPwXKE-3wg-WTUVu4GWfMeu4bj8rGNkvdFrMo4Ja4N',
+            "u":wynUes[5],
+            "value": "",
+        },
+        "birthDate": \
+        {
+            "d": "",
+            "u": wynUes[6],
+            "value": '2012-06-21T00:00:00.000000+00:00', # time MBZ
+        },
+        "facialImageProof": \
+        {
+            "d": "",
+            "u": wynUes[7],
+            "value": wynImageProof,  # Digest of image, actual image is attached as blindable typed media block
+        },
+        "legalPresenceStatus": \
+        {
+            "d": "",
+            "u": wynUes[8],
+            "value": "citizen",
+        },
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  wynUes[9],
+            "value": "2026-10-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  wynUes[10],
+            "value": "2028-06-21T00:00:00.000000+00:00",  # Time MBZ
+        },
+    }
+
+    compactor = Compactor(mad=wynCoreAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynCoreAttMad = compactor.partials[('.givenName',
+                                        '.middleName',
+                                        '.familyName',
+                                        '.nameSuffix',
+                                        '.birthDate',
+                                        '.facialImageProof',
+                                        '.legalPresenceStatus',
+                                        '.issuedDate',
+                                        '.expirationDate')].mad
+    assert wynCoreAttMad['i'] == wyn
+    wynCoreAttMadSaid = compactor.said
+    assert  wynCoreAttMadSaid == 'EAO8EoXIY6j3ijYbZx2D9FbV5atkUejkwBLoqPkDHF-m'
+
+    assert wynCoreAttMad == \
+    {
+        'd': wynCoreAttMadSaid,
+        'u': wynUes[1],
+        'i': wyn,
+        "rd": wynPreRids[0],
+        'primary': True,
+        'givenName':
+        {
+            'd': 'EKCbI7LM2X4t8JsVHtMAOOoVb5QQYHq6DeSHD28mywQm',
+            'u': wynUes[2],
+            'value': 'Wyn'
+        },
+        'middleName':
+        {
+            'd': 'EPDk6T5mEGjVX1FTti3iaiIH9kHzgywDclD1rLJyaikS',
+            'u': wynUes[3],
+            'value': 'Biff'
+        },
+        'familyName':
+        {
+            'd': 'EFE_tlePMMqIE-p_kSpAGHS8XXC8wUlEChsKVAimOO4f',
+            'u': wynUes[4],
+            'value': 'Brown'
+        },
+        "nameSuffix": \
+        {
+            "d": 'EHGYewGuju4W-Nj0IRVlXg0mEld9Nvh8hDMIX56GFEyF',
+            "u":wynUes[5],
+            "value": "",
+        },
+        'birthDate':
+        {
+            'd': 'EBaEu3HRO-HIe_XUuX7mZtdi1O3mMD0hpTJt_qr6dBxV',
+            'u': wynUes[6],
+            'value': '2012-06-21T00:00:00.000000+00:00'
+        },
+        'facialImageProof':
+        {
+            'd': 'EIdvmGO9ewW7yEPJPr6ExQ3SY9lEYJgKT8NwPy81d0yv',
+            'u': wynUes[7],
+            'value': wynImageProof
+        },
+        'legalPresenceStatus':
+        {
+            'd': 'EA5TD6VPhiTTg4lCK2SnbUip8dI4VYwhot3qlr9Y3bLA',
+            'u': wynUes[8],
+            'value': 'citizen'
+        },
+        'issuedDate':
+        {
+            'd': 'EG8ZYQnOx7LLTN2WaurlQ3WFi6pHAtDlAEu3U-v0uMZE',
+            'u':  wynUes[9],
+            'value': "2026-10-01T00:00:00.000000+00:00"
+        },
+        'expirationDate':
+        {
+            'd': 'EC-Zrgr4tgbUp4IzrBhWNfMaUThXCpTB1vAmdKR8HCuS',
+            'u':  wynUes[10],
+            'value': "2028-06-21T00:00:00.000000+00:00"
+        }
+    }
+
+    wynCoreEdgeBareMad = \
+    {
+        "d": "",
+        "u": wynUes[11],
+        "utahAgent":
+        {
+            "d": "",
+            "u": wynUes[12],
+            "n": sueAgentSediSaid,
+            "s": AgentSchemaSaid,
+            "o": "DI2I",
+        },
+        "guardians":
+        {
+            "d": "",
+            "u": wynUes[45],
+            "o": "OR",
+            "first":
+            {
+                "d": "",
+                "u": wynUes[46],
+                "n": guyGuardianSediSaid,
+                "s": GuardianSchemaSaid,
+                "o": "NI2I",
+            },
+            "second":
+            {
+                "d": "",
+                "u": wynUes[46],
+                "n": galGuardianSediSaid,
+                "s": GuardianSchemaSaid,
+                "o": "NI2I",
+            },
+        },
+    }
+    compactor = Compactor(mad=wynCoreEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynCoreEdgeMad = compactor.partials[('.utahAgent',
+                                         '.guardians.first',
+                                         '.guardians.second')].mad
+    assert wynCoreEdgeMad['utahAgent']['n'] == sueAgentSediSaid
+    assert wynCoreEdgeMad['utahAgent']['o'] == "DI2I"
+    assert wynCoreEdgeMad['guardians']['o'] == "OR"
+    assert wynCoreEdgeMad['guardians']['first']['n'] == guyGuardianSediSaid
+    assert wynCoreEdgeMad['guardians']['first']['o'] == 'NI2I'
+    assert wynCoreEdgeMad['guardians']['second']['n'] == galGuardianSediSaid
+    assert wynCoreEdgeMad['guardians']['second']['o'] == 'NI2I'
+
+    wynCoreRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=wynCoreRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    wynCoreRuleMad = compactor.partials[('',)].mad
+    assert wynCoreRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # core sedi credential ACDC issued by Sue AID to Wyn
+    wynSerderCore = acdcmap(israid=sue,
+                            uuid=wynUes[0],
+                            regid=sueRids[1],
+                            schema=CoreSchemaSaid,
+                            attribute=wynCoreAttMad,
+                            edge=wynCoreEdgeMad,
+                            rule=wynCoreRuleMad,
+                            kind=kind)
+
+    coreValidator.validate(wynSerderCore.sad)  # raises error if invalid
+
+    wynCoreSediSaid = wynSerderCore.said
+    assert wynCoreSediSaid == 'EBoTMXi0t2nvA2edpBrch5glIEOHZ4VnShLA30yqiY7F'
+    assert wynSerderCore.verstr == 'ACDCCAACAAJSONAAnI.'
+    assert wynSerderCore.israid == sue
+    assert wynSerderCore.regid == sueRids[1]
+    assert wynSerderCore.iseaid == wyn
+    assert wynSerderCore.sad['a'] == wynCoreAttMad
+
+    assert wynSerderCore.sad == \
+    {
+        'v': wynSerderCore.verstr,
+        't': 'acm',
+        'd': wynCoreSediSaid,
+        'u': wynUes[0],
+        'i': sue,
+        'rd': sueRids[1],
+        's': CoreSchemaSaid,
+        'a': wynCoreAttMad,
+        'e': wynCoreEdgeMad,
+        'r': wynCoreRuleMad
+    }
+
+
 
 
     # Setup Ryn's Registries
