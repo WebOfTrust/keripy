@@ -35,10 +35,12 @@ leaf to core edge for authority with I2I or (E1E) edges or a differnt edge to
 a different authority.
 
 Disadvantages of E1E edges to core:
-is all leaves must be reissued if core is reissued.
+All leaves must be reissued if core is reissued. When core is reissued should
+clean up by revoking leaves as well but breaking the chain immediately stops
+verifiabilty so minimizes latency of stop. Breaking chain is swift.
 
-should revoke leaves also. Leaf registies allow reissuance of leaf without
-# revoking core. breaking chain is swift.
+Despite chain break we need leaf registies to allow revoke and reissuance of
+leaf without revoking and reissuing core.
 
 """
 
@@ -3219,12 +3221,12 @@ def test_sedi_acdcs():
     assert salter.qb64 == '0ABzZWRpYWNkY3dvcmtzYWx0'  # CESR encoded
 
     # create signers, each contains siging key pair
-    signers = salter.signers(count=16, transferable=True, temp=True)  # two per
+    signers = salter.signers(count=32, transferable=True, temp=True)  # two per
 
     # create witness signers as nontransferable, each contains key pair
     walt = b'sediacdcworkwits'  # different salt for witness keys
     walter = Salter(raw=walt)
-    wigners = walter.signers(count=10,transferable=False, temp=True)  # one per
+    wigners = walter.signers(count=16,transferable=False, temp=True)  # one per
 
     # Create State's three level delegation chain AIDs
     # Root AID -> Org Unit (division/department/program) -> Issuing Agent
@@ -3312,6 +3314,33 @@ def test_sedi_acdcs():
     assert sue == 'EKBCU6u_xObNhFc9uuz1VdntNt99xmB2fA5qz7Li-Sl-'  # State Issuer Sue's AID
     assert sueISerder.said == sue
 
+    # Create Stu's AID (Alternate State Issuing Agent) with single sig single
+    # with inception event JSON
+    stuKeys = [signers[16].verfer.qb64]  # incepting public verification key(s)
+    stuNKeys = [signers[17].verfer.qb64]  # next (rotation) public verification key(s)
+    stuWits = [wigners[8].verfer.qb64]  # witness aids (same as public verkey)
+    stuISerder = incept(stuKeys, code=MtrDex.Blake3_256, ndigs=stuNKeys, wits=stuWits,
+                    version=Vrsn_2_0, kind=Kinds.json)
+
+    assert stuISerder.sad == \
+    {
+        'v': 'KERICAACAAJSONAAFb.',
+        't': 'icp',
+        'd': 'EDOP0lrGzY0VdsRfbcLhOTYw0yrYrtglnGoJsScZtY5o',
+        'i': 'EDOP0lrGzY0VdsRfbcLhOTYw0yrYrtglnGoJsScZtY5o',
+        's': '0',
+        'kt': '1',
+        'k': ['DHaQ5aNslyubC9aBJ9nTHLlL5Bed1Ak7kUiWM6TMBdDW'],
+        'nt': '1',
+        'n': ['DIAcV-NVdH7uy3vu6pskWaeCPzdlr7bcEvbAhGrHBEuv'],
+        'bt': '1',
+        'b': ['BFUJj6kDo4ocS__nYUfKV_kN9RLEtlFY78MHjgzAOmLF'],
+        'c': [],
+        'a': []
+    }
+    stu = stuISerder.aid
+    assert stu == 'EDOP0lrGzY0VdsRfbcLhOTYw0yrYrtglnGoJsScZtY5o'  # Alt State Issuer Stu's AID
+    assert stuISerder.said == stu
 
     # Create Pat's AID (Identity Proofer) with single sig single wit inception event JSON
     patKeys = [signers[2].verfer.qb64]  # incepting public verification key(s)
@@ -3449,7 +3478,7 @@ def test_sedi_acdcs():
     assert rynISerder.said == ryn
 
 
-    # Setup Registries for Roy, Deb, and Sue as State Issuers
+    # Setup Registries for Roy, Deb, Sue, and Stu as State Delegation chain Issuers
 
     # create datetimek stamp
     stamp = '2026-09-01T08:30:00.000000+00:00'
@@ -3506,6 +3535,20 @@ def test_sedi_acdcs():
         'dt': '2026-09-01T08:30:00.000000+00:00'
     }
 
+    # Create Stu's UES for registry events
+    salt = b'stusregistrysalt'  # base salt for registry events
+    salter = Salter(raw=salt)
+    stuRegUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                            for i in range(32)]
+    # create registry serders for stu as Issuer
+    stuRegSerders = [regcept(israid=stu, uuid=ue, stamp=stamp) for ue in stuRegUes]
+    stuRids = [rss.said for rss in stuRegSerders]
+    assert stuRids[0] == stuRegSerders[0].said == 'ELm6OhvWprcGl8Ej8rpJXivzAl0NwaVpvwI8V7REHZMm'
+    assert stuRegSerders[0].israid == stu
+    assert stuRegSerders[0].nonce == stuRegUes[0]
+    assert stuRegSerders[0].sner.num == 0
+    assert stuRegSerders[0].stamp == stamp
+
 
     # Setup SEDI ACDC JsonSchema Validators
 
@@ -3531,7 +3574,7 @@ def test_sedi_acdcs():
     ageValidator = SchemaValidator(schema=AgeSchema)
 
 
-    # Setup Utah State Delegation from root roy to unit deb to agent sue
+    # Setup Utah State Delegation from root roy to unit deb to agent's sue and stu
 
     # Setup Debs Unit Delegation SEDI ACDC
     salt = b'debsunitsedisalt'  # base salt
@@ -3579,7 +3622,7 @@ def test_sedi_acdcs():
         'l': ''
     }
 
-    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    # deb's authorizing OrgUnit ACDC
     debSerderUnit = acdcmap(israid=roy,
                             uuid=debUes[0],
                             regid=royRids[0],
@@ -3610,8 +3653,7 @@ def test_sedi_acdcs():
         'r': debUnitRuleMad,
     }
 
-    # Setup Sue's Issuing Agent Delegation SEDI ACDC
-
+    # Setup Sue's Issuing Agent Delegation AgentSchema SEDI ACDC
     salt = b'sueagentsedisalt'  # base salt
     salter = Salter(raw=salt)
     assert salter.qb64 =='0ABzdWVhZ2VudHNlZGlzYWx0'  # CESR encoded
@@ -3687,7 +3729,6 @@ def test_sedi_acdcs():
         #}
     #}
 
-
     sueAgentRuleBareMad = \
     {
         "d": "",
@@ -3702,7 +3743,7 @@ def test_sedi_acdcs():
         'l': ''
     }
 
-    # core sedi credential ACDC issued by Sue AID to Guy SMAID
+    # Sue's Agent SEDI ACDC
     sueSerderAgent = acdcmap(israid=deb,
                             uuid=sueUes[0],
                             regid=debRids[0],
@@ -3733,6 +3774,117 @@ def test_sedi_acdcs():
         'a': sueAgentAttMad,
         'e': sueAgentEdgeMad,
         'r': sueAgentRuleMad,
+    }
+
+
+    # Setup Stu's Issuing Agent Delegation AgentSchema SEDI ACDC
+    salt = b'stuagentsedisalt'  # base salt
+    salter = Salter(raw=salt)
+    assert salter.qb64 == '0ABzdHVhZ2VudHNlZGlzYWx0'  # CESR encoded
+    stuUes = [ Noncer(raw=salter.stretch(size=16, path=f'{i:x}', temp=True)).qb64
+                                                             for i in range(16)]
+    # Stu's agent SEDI attribution section
+    stuAgentAttBareMad = \
+    {
+        "d": "",
+        "u": stuUes[1],
+        "i": stu,  # stu is issuee
+        "issuedDate": "2020-08-01T00:00:00.000000+00:00",  # Time MBZ
+        "role": "SediIssuingAgent",
+        "name":
+        {
+            "d": "",
+            "u": stuUes[2],
+            "value": "Stuart Black",
+        },
+    }
+
+    compactor = Compactor(mad=stuAgentAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    stuAgentAttMad = compactor.partials[('.name',)].mad
+    assert stuAgentAttMad['i'] == stu
+    stuAgentAttMadSaid = compactor.said
+    assert stuAgentAttMadSaid == 'EK4yVDaY7-RHcZY2A9RTG-eWUwJoz_STt6sxRlyzD7-B'
+
+    assert stuAgentAttMad == \
+    {
+        'd': stuAgentAttMadSaid,
+        'u': stuUes[1],
+        'i': stu,
+        'issuedDate': '2020-08-01T00:00:00.000000+00:00',  # Time MBZ
+        'role': "SediIssuingAgent",
+        'name':
+        {
+            'd': 'EO7zg2QSbE3-T8xGVL_xwLE7GtYgtoV6sIt2N1FVF3JR',
+            'u': stuUes[2],
+            'value': "Stuart Black",
+        },
+    }
+
+    stuAgentEdgeBareMad = \
+    {
+        "d": "",
+        "u": stuUes[3],
+        "orgUnit":
+        {
+            "d": "",
+            "u": stuUes[4],
+            "n": debUnitSediSaid,
+            "s": UnitSchemaSaid,
+            "o": "DI2I",
+        },
+    }
+    compactor = Compactor(mad=stuAgentEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    stuAgentEdgeMad = compactor.partials[('.orgUnit',)].mad
+    assert stuAgentEdgeMad['orgUnit']['n'] == debUnitSediSaid
+    assert stuAgentEdgeMad['orgUnit']['o'] == "DI2I"
+
+    stuAgentRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=stuAgentRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    stuAgentRuleMad = compactor.partials[('',)].mad
+    assert stuAgentRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    # Stu's Agent SEDI ACDC
+    stuSerderAgent = acdcmap(israid=deb,
+                            uuid=stuUes[0],
+                            regid=debRids[0],
+                            schema=AgentSchemaSaid,
+                            attribute=stuAgentAttMad,
+                            edge=stuAgentEdgeMad,
+                            rule=stuAgentRuleMad,
+                            kind=kind)
+
+    agentValidator.validate(stuSerderAgent.sad)  # raises error if invalid
+
+    stuAgentSediSaid = stuSerderAgent.said
+    assert stuAgentSediSaid == 'ELDv-zdEZ8lUXoDkLFd8LGRJs41R2_RwscWsqBw4BmFw'
+    assert stuSerderAgent.verstr == 'ACDCCAACAAJSONAAO_.'
+    assert stuSerderAgent.israid == deb
+    assert stuSerderAgent.regid == debRids[0]
+    assert stuSerderAgent.iseaid == stu
+    assert stuSerderAgent.sad['a'] == stuAgentAttMad
+    assert stuSerderAgent.sad == \
+    {
+        'v': stuSerderAgent.verstr,
+        't': 'acm',
+        'd': stuAgentSediSaid,
+        'u': stuUes[0],
+        'i': deb,
+        'rd': debRids[0],
+        's': AgentSchemaSaid,
+        'a': stuAgentAttMad,
+        'e': stuAgentEdgeMad,
+        'r': stuAgentRuleMad,
     }
 
     # Setup Address for Residence ACDCs
