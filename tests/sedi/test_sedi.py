@@ -4960,7 +4960,7 @@ def test_sedi_acdcs():
             "o": "DI2I",
         },
     }
-    compactor = Compactor(mad=guyCoreEdgeBareMad, makify=True, compactify=True,
+    compactor = Compactor(mad=guyGuardianEdgeBareMad, makify=True, compactify=True,
                        saidive=True, kind=kind)
     guyGuardianEdgeMad = compactor.partials[('.utahAgent',)].mad
     assert guyGuardianEdgeMad['utahAgent']['n'] == sueAgentSediSaid
@@ -4993,7 +4993,7 @@ def test_sedi_acdcs():
     guardianValidator.validate(guySerderGuardian.sad)  # raises error if invalid
 
     guyGuardianSediSaid = guySerderGuardian.said
-    assert guyGuardianSediSaid == 'EDUlgev0rZ2YGgXCOYWwxpDbtFw_cjh9ELjnSobH3gYM'
+    assert guyGuardianSediSaid == 'EKHZz1QNaaCxk8sBc1kexdiuWagvoFG-KmJEeRQxDgkW'
     assert guySerderGuardian.verstr == 'ACDCCAACAAJSONAAQa.'
     assert guySerderGuardian.israid == sue
     assert guySerderGuardian.regid == sueRids[0]
