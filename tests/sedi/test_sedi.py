@@ -1763,10 +1763,10 @@ AgeSchema = \
 }
 
 # social auth schema
-SocialSchemaSaid = 'EEalX9A-jg7b0HIAkxTKHdGFb4oh_Pl2r8JnubLEAtcM'
+SocialSchemaSaid = 'EB8MUTKRg8284YPduyhDgUVvNM192-247KcRaXhIxoni'
 SocialSchema = \
 {
-  '$id': 'EEalX9A-jg7b0HIAkxTKHdGFb4oh_Pl2r8JnubLEAtcM',
+  '$id': 'EB8MUTKRg8284YPduyhDgUVvNM192-247KcRaXhIxoni',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Social Authorization Schema',
   'description': 'SEDI Guardian Issued to Ward Social Authorization JSON Schema for acm ACDC.',
@@ -1805,8 +1805,8 @@ SocialSchema = \
             'd',
             'u',
             'i',
-            'issuedDatetime',
-            'expirationDatetime',
+            'issued',
+            'expires',
             'rc',
           ],
           'properties':
@@ -1815,8 +1815,8 @@ SocialSchema = \
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
             'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
-            'issuedDatetime': { 'description': 'Issued Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
-            'expirationDatetime': { 'description': 'Expiration Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+            'issued': { 'description': 'Issued Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+            'expires': { 'description': 'Expiration Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
             'rc':
             {
               'description': 'Authorized Resource Capabilities',
@@ -3843,8 +3843,8 @@ def test_sedi_schema():
                 'd',
                 'u',
                 'i',
-                'issuedDatetime',
-                'expirationDatetime',
+                'issued',
+                'expires',
                 'rc',
               ],
               'properties':
@@ -3853,8 +3853,8 @@ def test_sedi_schema():
                 'u': {'description': 'Attribute Section UE', 'type': 'string'},
                 'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
-                'issuedDatetime': { 'description': 'Issued Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
-                'expirationDatetime': { 'description': 'Expiration Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+                'issued': { 'description': 'Issued Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
+                'expires': { 'description': 'Expiration Datetime Value as RFC-3339/ISO-8601', 'type': 'string'},
                 'rc':
                 {
                     'description': 'Authorized Resource Capabilities',
@@ -3935,7 +3935,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=socialSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     socialSchemaSaid = mapper.said
-    assert socialSchemaSaid == 'EEalX9A-jg7b0HIAkxTKHdGFb4oh_Pl2r8JnubLEAtcM'
+    assert socialSchemaSaid == 'EB8MUTKRg8284YPduyhDgUVvNM192-247KcRaXhIxoni'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert socialSchemaSaid == SocialSchemaSaid
     assert mapper.mad == SocialSchema
@@ -7215,8 +7215,8 @@ def test_sedi_acdcs():
         "u": wynUes[42],
         "i": wyn,
         "rd": wynPreRids[0],
-        "issuedDatetime": '2026-10-24T09:30:00.000000+00:00',
-        "expirationDatetime": '2026-10-31T22:00:00.000000+00:00',
+        "issued": '2026-10-24T09:30:00.000000+00:00',
+        "expires": '2026-10-31T22:00:00.000000+00:00',
         "rc":
         {
             "myEmptySpace": ["all"],
@@ -7228,7 +7228,7 @@ def test_sedi_acdcs():
     wynSocialAttMad = compactor.partials[('',)].mad
     assert wynSocialAttMad['i'] == wyn
     wynSocialAttMadSaid = compactor.said
-    assert wynSocialAttMadSaid == 'EEqgTrtibFbgVI2_UbwJ3_tKLGjacL2aIEF2O4N21QPr'
+    assert wynSocialAttMadSaid == 'ELD17t_hP-FJFTV5Iev7awrNVB8uABFAn0_xVEFrIm-t'
 
     assert wynSocialAttMad == \
     {
@@ -7236,8 +7236,8 @@ def test_sedi_acdcs():
         "u": wynUes[42],
         "i": wyn,
         "rd": wynPreRids[0],
-        "issuedDatetime": '2026-10-24T09:30:00.000000+00:00',
-        "expirationDatetime": '2026-10-31T22:00:00.000000+00:00',
+        "issued": '2026-10-24T09:30:00.000000+00:00',
+        "expires": '2026-10-31T22:00:00.000000+00:00',
         "rc":
         {
             "myEmptySpace": ["all"],
@@ -7289,8 +7289,8 @@ def test_sedi_acdcs():
     socialValidator.validate(wynSerderSocial.sad)  # raises error if invalid
 
     wynSocialSediSaid = wynSerderSocial.said
-    assert wynSocialSediSaid == 'EAjEJDYShdakQngOijjPosiFZRYKyBq_ZnXIxP5gZS_c'
-    assert wynSerderSocial.verstr == 'ACDCCAACAAJSONAAPB.'
+    assert wynSocialSediSaid == 'EDaJzDdlu8ooTmjkPzEfzCZYjN6wPAgLf7iMOUIvuAqi'
+    assert wynSerderSocial.verstr == 'ACDCCAACAAJSONAAOu.'
     assert wynSerderSocial.israid == guy
     assert wynSerderSocial.regid == guyRids[0]
     assert wynSerderSocial.iseaid == wyn
@@ -7390,7 +7390,7 @@ def test_sedi_acdcs():
     bespokeValidator.validate(wynSerderBespoke.sad)  # raises error if invalid
 
     wynBespokeSediSaid = wynSerderBespoke.said
-    assert wynBespokeSediSaid == 'EMPjcBmQ4BtHdWJ8sSOrBQAsNhDSrUvpb-FgqgylgIGl'
+    assert wynBespokeSediSaid == 'EHgYdFmRPZEIhaL33pYWJVNI-EADUTJW_9Grk9zNOcot'
     assert wynSerderBespoke.verstr == 'ACDCCAACAAJSONAAMx.'
     assert wynSerderBespoke.israid == wyn
     assert wynSerderBespoke.iseaid == wyn
