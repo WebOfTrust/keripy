@@ -2096,10 +2096,10 @@ SocialSchema = \
 
 
 # SEDI Bespoke Presentation schema
-BespokeSchemaSaid = 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8'
+BespokeSchemaSaid = 'EGcqmkrnaQz8F1PEekLOaySiW-uDaJ0SfoqtSuqCvEif'
 BespokeSchema = \
 {
-  '$id': 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8',
+  '$id': 'EGcqmkrnaQz8F1PEekLOaySiW-uDaJ0SfoqtSuqCvEif',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Bespoke Presentation Schema',
   'description': 'SEDI Bespoke Presentation JSON Schema for acm ACDC.',
@@ -2196,6 +2196,21 @@ BespokeSchema = \
             'age':
             {
               'description': 'Age Edge Block',
+              'type': 'object',
+              'required': ['n'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+            'image':
+            {
+              'description': 'High Resolution Image Proof Edge Block',
               'type': 'object',
               'required': ['n'],
               'properties':
@@ -4455,6 +4470,21 @@ def test_sedi_schema():
                   },
                   'additionalProperties': False
                 },
+                'image':
+                {
+                  'description': 'High Resolution Image Proof Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
                 'guardian':
                 {
                   'description': 'Guardian Edge Block',
@@ -4516,7 +4546,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=bespokeSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     bespokeSchemaSaid = mapper.said
-    assert bespokeSchemaSaid == 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8'
+    assert bespokeSchemaSaid == 'EGcqmkrnaQz8F1PEekLOaySiW-uDaJ0SfoqtSuqCvEif'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert bespokeSchemaSaid == BespokeSchemaSaid
     assert mapper.mad == BespokeSchema
@@ -7065,7 +7095,7 @@ def test_sedi_acdcs():
     bespokeValidator.validate(galSerderBespoke.sad)  # raises error if invalid
 
     galBespokeSediSaid = galSerderBespoke.said
-    assert galBespokeSediSaid == 'ELBY34HrWHHmheIzBVJZ6nQ2Jh4GLTl1ZjtC2q-nu6Zj'
+    assert galBespokeSediSaid == 'ENDGamDksxYRpB_r-xbz5m2trTk2ZasxlvE88S-g2p-Q'
     assert galSerderBespoke.verstr == 'ACDCCAACAAJSONAAM5.'
     assert galSerderBespoke.israid == gal
     assert galSerderBespoke.iseaid == gal
@@ -7921,7 +7951,7 @@ def test_sedi_acdcs():
     bespokeValidator.validate(wynSerderBespoke.sad)  # raises error if invalid
 
     wynBespokeSediSaid = wynSerderBespoke.said
-    assert wynBespokeSediSaid == 'EHgYdFmRPZEIhaL33pYWJVNI-EADUTJW_9Grk9zNOcot'
+    assert wynBespokeSediSaid == 'EOdWI9EE6ALRApdALHIW24yTt94QA07OwztNH8RTKb4S'
     assert wynSerderBespoke.verstr == 'ACDCCAACAAJSONAAMx.'
     assert wynSerderBespoke.israid == wyn
     assert wynSerderBespoke.iseaid == wyn
