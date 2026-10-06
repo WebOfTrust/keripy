@@ -4944,10 +4944,11 @@ def test_sedi_acdcs():
     assert guyAtc == bytearray(b'-TAXEDB8gKNwzurf33pV2hsyGR9XFOmitDhc0LUzDamcU2JRMAABEEmZ6nuPKuq8'
                                b'd2rY3DnQaPApFRPNTjXY4xZSlbCq1Iub')
 
+    # Guys biometric facial image proof
+    guyImageProof = Diger(ser=b"PretendImageOfGuy").qb64
+    assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
 
     # Guy's Identity Assurance Receipt (iar) ACDC
-
-
     guyIarAttBareMad = \
     {
         "d": "",  # SAID
@@ -4957,7 +4958,7 @@ def test_sedi_acdcs():
         "familyName": "Brown",  # last name family name
         "nameSuffix": "",
         "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
-        "facialImageProof": "",  # SAID of typed media block containing image
+        "facialImageProof": guyImageProof,  # SAID of typed media block containing image
         "legalPresenceStatus": "citizen",  # Class or type of legal presence
         "residence": \
         {
@@ -4976,7 +4977,7 @@ def test_sedi_acdcs():
     guyIarAttMad = mapper.mad
     assert guyIarAttMad['i'] == guy
     guyIarAttMadSaid = mapper.said
-    assert  guyIarAttMadSaid == 'EBvyK6QLiBkJqsCTCvPzP24Gb9BBEJRHsp6DGHDwQJOm'
+    assert guyIarAttMadSaid == 'EB4wL7gz5HVhxSEdlLfRvT7P0ynCx0IdeRl9huf0wzwt'
 
     assert guyIarAttMad == \
     {
@@ -4987,7 +4988,7 @@ def test_sedi_acdcs():
         'familyName': 'Brown',
         "nameSuffix": "",
         'birthDate': '2002-08-22T00:00:00.000000+00:00',
-        'facialImageProof': '',
+        'facialImageProof': guyImageProof,
         'legalPresenceStatus': 'citizen',
         'residence':
         {
@@ -5008,8 +5009,8 @@ def test_sedi_acdcs():
     iarValidator.validate(guySerderIar.sad)  # raises error if invalid
 
     guySerderIarSaid = guySerderIar.said
-    assert guySerderIarSaid == 'EOci_-BIIESmZ_TbIkc4UZO2ic0e-_RqGzVxAMYNvnO_'
-    assert guySerderIar.verstr == 'ACDCCAACAAJSONAALj.'
+    assert guySerderIarSaid == 'EC-p_x5AJQS21gg2KnKfOVwzgFFpCuebBrah5diko1Zl'
+    assert guySerderIar.verstr == 'ACDCCAACAAJSONAAMP.'
     assert guySerderIar.sad['a'] == guyIarAttMad
     assert guySerderIar.iseaid == guy
     assert guySerderIar.sad == \
@@ -5029,7 +5030,7 @@ def test_sedi_acdcs():
             'familyName': 'Brown',
             "nameSuffix": "",
             'birthDate': '2002-08-22T00:00:00.000000+00:00',
-            'facialImageProof': '',
+            'facialImageProof': guyImageProof,
             'legalPresenceStatus': 'citizen',
             'residence':
             {
@@ -5048,9 +5049,6 @@ def test_sedi_acdcs():
 
     # Setup Guy's SEDI ACDCs
     # Setup Guy's Core SEDI
-    guyImageProof = Diger(ser=b"PretendImageOfGuy").qb64
-    assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
-
     # Guy core SEDI attribution section
     guyCoreAttBareMad = \
     {
@@ -5772,6 +5770,9 @@ def test_sedi_acdcs():
     assert galAtc == bytearray(b'-TAXEIaSWASllNlAuAFcDG1xbXGEkVw_oL0CX8_o1XkFTegYMAABEGpG0MnNDI37'
                                b'DpydkReez_N7uiWzHDSPZN8osxuJ2SCr')
 
+    # Setup Gal's biometric image proof
+    galImageProof = Diger(ser=b"PretendImageOfGal").qb64
+    assert galImageProof == 'EGh8sVJumVosTZVgT95YAb0Vor_7JRKGjgCX_2C7I9h4'
 
     # Gal's Identity Assurance Receipt (iar) ACDC
     # issued signed (not anchored) by proofing agent
@@ -5784,7 +5785,7 @@ def test_sedi_acdcs():
         "familyName": "Brown",  # last name family name
         "nameSuffix": "",
         "birthDate": "2002-11-01T00:00:00.000000+00:00",  # time MBZ
-        "facialImageProof": "",  # SAID of typed media block containing image
+        "facialImageProof": galImageProof,  # SAID of typed media block containing image
         "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
         "residence": \
         {
@@ -5801,7 +5802,7 @@ def test_sedi_acdcs():
     mapper = Mapper(mad=galIarAttBareMad, makify=True, saidive=True, kind=kind)
     galIarAttMad = mapper.mad
     galIarAttMadSaid = mapper.said
-    assert galIarAttMadSaid == 'ECL3hRdthn1d2m_wklWeX9P6ngpOxtf-x6bWUQgEpLBv'
+    assert galIarAttMadSaid == 'EABdFp9rdBlbUydYr1t_NMuNgvjL5jVwfBCNsa1fTqj-'
     assert galIarAttMad['i'] == gal
 
     galSerderIar = acdcmap(pat, uuid=galChallenge, schema=IarSchemaSaid,
@@ -5809,8 +5810,8 @@ def test_sedi_acdcs():
     iarValidator.validate(galSerderIar.sad)  # raises error if invalid
 
     galSerderIarSaid = galSerderIar.said
-    assert galSerderIarSaid == 'EBTgH9X0yI56qOWePTRjbd1DMkhY-3pm0DdPn2tOmO_F'
-    assert galSerderIar.verstr == 'ACDCCAACAAJSONAALe.'
+    assert galSerderIarSaid == 'EIkWgUAtmGQQf3N4MZxW780LCE_E3GVDR1sp21RX9rs6'
+    assert galSerderIar.verstr == 'ACDCCAACAAJSONAAMK.'
     assert galSerderIar.sad['a'] == galIarAttMad
 
     assert galSerderIar.iseaid == gal
@@ -5832,7 +5833,7 @@ def test_sedi_acdcs():
             'familyName': 'Brown',
             "nameSuffix": "",
             'birthDate': '2002-11-01T00:00:00.000000+00:00',
-            'facialImageProof': '',
+            'facialImageProof': galImageProof,
             'legalPresenceStatus': 'citizen',
             'residence':
             {
@@ -5850,12 +5851,7 @@ def test_sedi_acdcs():
 
     # Setup Gal's SEDI ACDCs
     # Setup Gal's Core SEDI
-    # Setup Gal's biometric image proof
-    galImageProof = Diger(ser=b"PretendImageOfGal").qb64
-    assert galImageProof == 'EGh8sVJumVosTZVgT95YAb0Vor_7JRKGjgCX_2C7I9h4'
-
     # Guy core SEDI attribution section
-
     galCoreAttBareMad = \
     {
         "d": "",
@@ -6610,6 +6606,11 @@ def test_sedi_acdcs():
     assert wynAtc == bytearray(b'-TAXEKr8JLtfqWCmHrxO3yu8ocS2n9o0Tlspeaqm9ZOf3FM1MAABEBn5zkdsr1jx'
                                b'UJLIteNnpypbuMujGvY8MPPtSAPH2poq')
 
+    # Setup Wyn's biometric image proof
+    wynImageProof = Diger(ser=b"PretendImageOfWyn").qb64
+    assert wynImageProof == 'EJFuvB2J1bShwbGmRV4Ignf25r6Pzo8bHg_BeMKmc9wV'
+
+
     # Wyn's Identity Assurance Receipt (iar) ACDC
     wynIarAttBareMad = \
     {
@@ -6620,7 +6621,7 @@ def test_sedi_acdcs():
         "familyName": "Brown",  # last name family name
         "nameSuffix": "",
         "birthDate": "2012-06-21T00:00:00.000000+00:00",  # time MBZ
-        "facialImageProof": "",  # SAID of typed media block containing image
+        "facialImageProof": wynImageProof,  # SAID of typed media block containing image
         "legalPresenceStatus": "citizen",  # Status of legal presence, citizen, visitor, etc
         "residence": \
         {
@@ -6637,7 +6638,7 @@ def test_sedi_acdcs():
     mapper = Mapper(mad=wynIarAttBareMad, makify=True, saidive=True, kind=kind)
     wynIarAttMad = mapper.mad
     wynIarAttMadSaid = mapper.said
-    assert wynIarAttMadSaid == 'EJ5L0s3iisMjKdIO8G3altLJdbVu7Dm4Yk1Uavl6W4Gi'
+    assert wynIarAttMadSaid == 'EGpd_X4ssqLAFwlSEUnqGWavsAMADZG-RKDmi4DZvDkQ'
     assert wynIarAttMad['i'] == wyn
 
     wynSerderIar = acdcmap(pat, uuid=wynChallenge, schema=IarSchemaSaid,
@@ -6645,8 +6646,8 @@ def test_sedi_acdcs():
     iarValidator.validate(wynSerderIar.sad)  # raises error if invalid
 
     wynSerderIarSaid = wynSerderIar.said
-    assert wynSerderIarSaid == 'EGDU6XQ-48aE0lU00l91KaKoHYaGjKn75CeGaJO77rJS'
-    assert wynSerderIar.verstr == 'ACDCCAACAAJSONAALc.'
+    assert wynSerderIarSaid == 'EHLoFbo_a03TolMSALOobS1rpkjGLW_oSu8FdRT-Zslr'
+    assert wynSerderIar.verstr == 'ACDCCAACAAJSONAAMI.'
     assert wynSerderIar.sad['a'] == wynIarAttMad
 
     assert wynSerderIar.iseaid == wyn
@@ -6668,7 +6669,7 @@ def test_sedi_acdcs():
             'familyName': 'Brown',
             "nameSuffix": "",
             'birthDate': '2012-06-21T00:00:00.000000+00:00',
-            'facialImageProof': '',
+            'facialImageProof': wynImageProof,
             'legalPresenceStatus': 'citizen',
             'residence':
             {
@@ -6686,12 +6687,7 @@ def test_sedi_acdcs():
 
     # Setup Wyn's SEDI ACDCs
     # Setup Wyn's Core SEDI
-    # Setup Wyn's biometric image proof
-    wynImageProof = Diger(ser=b"PretendImageOfWyn").qb64
-    assert wynImageProof == 'EJFuvB2J1bShwbGmRV4Ignf25r6Pzo8bHg_BeMKmc9wV'
-
-    # Guy core SEDI attribution section
-
+    # Wyn's core SEDI attribution section
     wynCoreAttBareMad = \
     {
         "d": "",
