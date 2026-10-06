@@ -325,14 +325,16 @@ class Habery:
             if habord.mid and not habord.sid:
                 hab = GroupHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
-                               name=habord.name, pre=pre, temp=self.temp, smids=habord.smids)
+                               name=habord.name, pre=pre, temp=self.temp, smids=habord.smids,
+                               rmids=habord.rmids)
                 groups.append(habord)
             elif habord.sid and not habord.mid:
                 hab = SignifyHab(ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                  rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                  name=habord.name, pre=habord.sid)
             elif habord.sid and habord.mid:
-                hab = SignifyGroupHab(smids=habord.smids, ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
+                hab = SignifyGroupHab(smids=habord.smids, rmids=habord.rmids,
+                                      ks=self.ks, db=self.db, cf=self.cf, mgr=self.mgr,
                                       rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                                       name=habord.name, pre=pre)
                 groups.append(habord)
@@ -645,7 +647,8 @@ class Habery:
 
         hab.pre = pre
         habord = HabitatRecord(hid=hab.pre,
-                                      sid=mhab.pre,
+                                      sid=hab.pre,
+                                      mid=mhab.pre,
                                       name=name,
                                       domain=ns,
                                       smids=smids,
@@ -3535,7 +3538,7 @@ class SignifyGroupHab(SignifyHab):
     def __init__(self, smids, mhab=None, rmids=None, **kwa):
         self.mhab = mhab
         self.smids = smids  # group signing member aids in this group hab
-        self.rmids = rmids or smids # group rotating member aids in this group hab
+        self.rmids = smids if rmids is None else rmids  # Empty means no rotation members.
 
         super(SignifyGroupHab, self).__init__(**kwa)
 
@@ -3680,7 +3683,7 @@ class GroupHab(BaseHab):
                 ``pre``, and ``temp``."""
         self.mhab = mhab  # local participant Hab of this group hab
         self.smids = smids  # group signing member aids in this group hab
-        self.rmids = rmids or smids  # group rotating member aids in this group hab
+        self.rmids = smids if rmids is None else rmids  # Empty means no rotation members.
 
         super(GroupHab, self).__init__(**kwa)
 
