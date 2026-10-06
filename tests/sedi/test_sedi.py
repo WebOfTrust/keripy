@@ -69,19 +69,24 @@ from keri.core import (MtrDex, NonceDex, Noncer, Salter, Diger, Mapper, Compacto
 from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 # Questions:
-# ? no link to core for credentials that persist even when no longer a citizen
-# or should core be reissued when presence status changes?
 
+# ? Should guardianship expired Date field be optional or required
 # ? should guardian ACDC have edge to guardian core with E1E?)
-# ? Should guardianship expired Date be optional or mandittory
+
+# ? Visitors with core SEDI. Should there be no link to core for credentials
+# that persist even when citizen becomes no longer a citizen
+# or should core be reissued when presence status changes for visitors?
+
 
 # ToDo
-# high rez image biometric credential with link to guardian core
-# fix facial image proof in receipts now blank but set to that in core
+# document schema and examples in draft implementation guide
 
 # Notable
-# added bespoke presentation ACDC example gal and wyn so can present combined
-# SEDIs in one dag
+# Added optional guardian edge group in core credential with links to guardian(s)
+# so that wards use the same schema as non-wards for core SEDI
+
+# added bespoke presentation ACDC examples for each of gal and wyn so can show
+# presentations of different combined SEDIs in one DAG
 
 # added optional utahAgent delegation edge to leaf credentials schema
 # so can add delegation chain when issuer of leaf is not same as issuer of core
@@ -91,8 +96,6 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 # Issuer or delegated Issuer of leaf as Core otherwise need different edge
 # chain of authority for leaf.
 
-# Added optional guardian edge group in core credential with links to guardian(s)
-# so that wards use the same schema as non-wards for core SEDI
 
 
 ReplaceSchemaSaid = 'EPVlX-S-eWERGiXJmb7FcW75I4J08ptQ-jGglq4VRwou'
