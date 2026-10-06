@@ -37,7 +37,9 @@ class Verifier:
     # operator to this verifier and is skipped when resolving a list-valued `o` (see
     # .verifyChain). DI2I and NOT are recognized but unimplemented: they are listed so
     # they fail closed diagnosably instead of being dropped and silently defaulting.
-    # E1E is a keripy extension not yet in the spec's normative operator table.
+    # E1E is normative on the spec's v1.1 branch (kswg-acdc-specification#197). It is
+    # absent from the 1.0 text currently under ToIP ratification, so a validator built
+    # against 1.0 alone will not recognize it.
     UnaryOps = ('I2I', 'NI2I', 'DI2I', 'E1E', 'NOT')
 
     # The delegative subset of .UnaryOps: each constrains the near ACDC's issuer
@@ -422,12 +424,13 @@ class Verifier:
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
         # `o` is either a single unary operator or a list of them. Latest-wins applies
-        # only "among the conflicting Operators" (ACDC spec-body.md L1186), so the list
-        # is resolved in two parts: the delegative operators constrain the same thing
-        # (the near issuer relative to the far issuee) and therefore conflict, so the
-        # latest of those wins; E1E constrains the near issuee instead, so it does not
-        # conflict with them and composes (AND) rather than overriding or being
-        # overridden. Tokens this verifier does not recognize are skipped.
+        # only "among the conflicting Operators" (ACDC spec, Edge Section > Edge >
+        # Operator, `o` field), so the list is resolved in two parts: the delegative
+        # operators constrain the same thing (the near issuer relative to the far
+        # issuee) and therefore conflict, so the latest of those wins; E1E constrains
+        # the near issuee instead, so it does not conflict with them and composes
+        # (AND) rather than overriding or being overridden. Tokens this verifier does
+        # not recognize are skipped.
         ops = op if isinstance(op, (list, tuple)) else [op]
         ops = [cand for cand in ops if cand in self.UnaryOps]
         op = next((cand for cand in reversed(ops) if cand in self.DelegativeOps), None)

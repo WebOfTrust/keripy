@@ -16,25 +16,14 @@ from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
                       ConfigurationError, ValidationError)
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
-                    Counter, SerderKERI,
+                    Counter, SerderKERI, Parser, exchange,
                     MtrDex, Codens, NonTransDex)
 from ..db import dgKey
 from ..peer import specialExchange
+from ..peer.exchanging import serializeParsedSubstream
 from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
-
-
-def _exchangeVersion(version=None, kind=None):
-    """Return embedded EXN and outer framing versions for forwarding wrappers
-
-    `/fwd` and `/essr/req` still use the legacy `specialExchange` body shape, so
-    keep that embedded body at v1 while allowing the surrounding framing to
-    follow the explicit caller version or the global default
-    """
-    gvrsn = version if version is not None else Version
-    kind = kind if kind is not None else Kinds.json
-    return dict(version=Vrsn_1_0, kind=kind), gvrsn
 
 
 class Poster(doing.DoDoer):
@@ -42,6 +31,9 @@ class Poster(doing.DoDoer):
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
     delivers them to one of the target receiver's witnesses for store and forward
     to the intended receiver
+
+    Forwarding bodies remain V1; attachment framing follows this poster's version.
+    Use StreamPoster for native V2 forwarding with nested payloads.
 
     """
 
@@ -218,14 +210,13 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         fwd, atc = specialExchange(sender=hab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
                                    embeds=dict(evt=evt),
-                                   **kwa)
-        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
+                                   version=Vrsn_1_0, kind=self.kind)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=self.version)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -256,14 +247,13 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         fwd, atc = specialExchange(sender=hab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
                                    embeds=dict(evt=evt),
-                                   **kwa)
-        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
+                                   version=Vrsn_1_0, kind=self.kind)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=self.version)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -365,7 +355,7 @@ class StreamPoster:
             logger.error(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
             return []
 
-    def send(self, serder, attachment=None):
+    def send(self, serder, attachment=None, *, gvrsn=None):
         """
         Utility function to queue a msg on the Poster's buffer for
         enveloping and forwarding to a witness
@@ -373,6 +363,9 @@ class StreamPoster:
         Parameters:
             serder (Serder) KERI event message to envelope and forward:
             attachment (bytes): attachment bytes
+            gvrsn (Versionage | None): input attachment genus version when forwarding.
+                Defaults to this poster's version. The outgoing envelope keeps
+                this poster's version even when the input uses another version.
 
         """
         ends = self.hab.endsFor(self.recp)
@@ -383,12 +376,14 @@ class StreamPoster:
                     if role in ends:
                         if role == Roles.mailbox:
                             serder, attachment = self.createForward(self.hab, serder=serder, ends=ends,
-                                                                    atc=attachment, topic=self.topic)
+                                                                    atc=attachment, topic=self.topic,
+                                                                    gvrsn=gvrsn)
 
             # otherwise send to one witness
             elif Roles.witness in ends:
                 serder, attachment = self.createForward(self.hab, ends=ends, serder=serder,
-                                                        atc=attachment, topic=self.topic)
+                                                        atc=attachment, topic=self.topic,
+                                                        gvrsn=gvrsn)
             else:
                 logger.info(f"No end roles for {self.recp} to send evt={self.recp}")
                 raise ValidationError(f"No end roles for {self.recp} to send evt={self.recp}")
@@ -423,19 +418,20 @@ class StreamPoster:
 
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
-        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         essr, _ = specialExchange(sender=hab.pre,
                                   route='/essr/req',
                                   modifiers=dict(src=hab.pre, dest=ctrl),
                                   diger=diger,
-                                  **kwa)
-        ims = hab.endorse(serder=essr, framed=True, gvrsn=gvrsn)
-        ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                           gvrsn=gvrsn).qb64b)
+                                  version=Vrsn_1_0, kind=self.kind)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=self.version)
+        ims.extend(Counter(Codens.ESSRPayloadGroup,
+                           count=1 if self.version.major < 2 else len(texter.qb64b) // 4,
+                           gvrsn=self.version).qb64b)
         ims.extend(texter.qb64b)
         return ims
 
-    def createForward(self, hab, ends, serder, atc, topic):
+    def createForward(self, hab, ends, serder, atc, topic, *, gvrsn=None):
+        """Wrap a child with input attachment genus gvrsn in this poster's version."""
         # If we are one of the mailboxes, just store locally in mailbox
         owits = oset(ends.keys())
         if self.mbx and owits.intersection(hab.prefixes):
@@ -448,15 +444,32 @@ class StreamPoster:
         # Its not us, randomly select a mailbox and forward it on
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
+        if self.version.major >= 2:
+            gvrsn = gvrsn if gvrsn is not None else self.version
+            parsed = Parser(version=gvrsn).parse(ims=evt, framed=True,
+                                                processive=False)
+            if not parsed or len(parsed) != 1:
+                raise ValueError("Expected one forwarding payload stream")
+            nest = serializeParsedSubstream(parsed[0], gvrsn=self.version)
+            # Bind the body bytes: a receipt's d identifies the receipted event.
+            fwd = exchange(sender=hab.pre,
+                           route='/fwd',
+                           modifiers=dict(pre=self.recp, topic=topic),
+                           attributes=dict(evt=Diger(ser=serder.raw).qb64),
+                           version=self.version, gvrsn=self.version,
+                           kind=self.kind)
+            ims = hab.endorse(serder=fwd, last=False, framed=False,
+                              gvrsn=self.version, nests=[nest])
+            return fwd, ims[fwd.size:]
+
         fwd, atc = specialExchange(sender=hab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=self.recp, topic=topic),
                                    attributes={},
                                    embeds=dict(evt=evt),
-                                   **kwa)
-        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
-        return fwd, ims + atc
+                                   version=Vrsn_1_0, kind=self.kind)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=self.version)
+        return fwd, ims[fwd.size:] + atc
 
     def forward(self, hab, ends, msg, topic):
         # If we are one of the mailboxes, just store locally in mailbox
@@ -485,36 +498,11 @@ class StreamPoster:
 
 
 class ForwardHandler:
-    """
-    Handler for forward `exn` messages used to envelope other KERI messages intended for another receiver.
-    This handler acts as a mailbox for other identifiers and stores the messages in a local database.
+    """Store forwarded messages in the recipient's mailbox.
 
-    Example message::\n\n        {
-           "v": "KERI10JSON00011c_",                               // KERI Version String
-           "t": "exn",                                             // peer to peer message ilk
-           "dt": "2020-08-22T17:50:12.988921+00:00"
-           "r": "/fwd",
-           "q": {
-              "pre": "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",
-              "topic": "delegate"
-            }
-           "a": '{
-              "v":"KERI10JSON000154_",
-              "t":"dip",
-              "d":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI",
-              "i":"Er4bHXd4piEtsQat1mquwsNZXItvuoj_auCUyICmwyXI",
-              "s":"0",
-              "kt":"1",
-              "k":["DuK1x8ydpucu3480Jpd1XBfjnCwb3dZ3x5b1CJmuUphA"],
-              "n":"EWWkjZkZDXF74O2bOQ4H5hu4nXDlKg2m4CBEBkUxibiU",
-              "bt":"0",
-              "b":[],
-              "c":[],
-              "a":[],
-              "di":"Et78eYkh8A3H9w6Q87EC5OcijiVEJT8KyNtEGdpPVWV8"
-           }
-        }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
-
+    The signed ``q.pre`` and ``q.topic`` fields select the mailbox resource.
+    A V2 envelope binds one nested message to its body digest in ``a.evt``. The
+    recipient verifies that message after it retrieves the mailbox stream.
     """
 
     resource = "/fwd"
@@ -530,22 +518,39 @@ class ForwardHandler:
         self.hby = hby
         self.mbx = mbx
 
-    def handle(self, serder, attachments=None):
-        """  Do route specific processsing of IPEX protocol exn messages
+    def verify(self, serder, attachments=None, nests=None):
+        """Check that the V2 payload matches the signed child reference."""
+        if serder.pvrsn.major < 2:
+            return True
+        if not nests or len(nests) != 1:
+            return False
+        signed = serder.ked["a"].get("evt")
+        if signed is None:
+            return False
+        child = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
+        return child.verify() and Diger(qb64=signed).verify(ser=child.raw)
+
+    def handle(self, serder, attachments=None, nests=None):
+        """Store the carried message after envelope verification.
 
         Parameters:
-            serder (Serder): Serder of the IPEX protocol exn message
-            attachments (list): list of tuples of root pathers and CESR SAD path attachments to the exn event
+            serder (Serder): Forwarding exchange message.
+            attachments (list): Pathed attachments for an embedded V1 body.
+            nests (list): Parsed child substream for a V2 body.
 
         """
 
-        embeds = serder.ked['e']
         modifiers = serder.ked['q'] if 'q' in serder.ked else {}
 
         receiver = modifiers["pre"]
         topic = modifiers["topic"]
         resource = f"{receiver}/{topic}"
 
+        if serder.pvrsn.major >= 2:
+            self.mbx.storeMsg(topic=resource, msg=serializeParsedSubstream(nests[0]))
+            return
+
+        embeds = serder.ked['e']
         pevt = bytearray()
         for pather, atc in attachments:
             ked = pather.resolve(embeds)

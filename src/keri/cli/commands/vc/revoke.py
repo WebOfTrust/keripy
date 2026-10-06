@@ -138,7 +138,10 @@ class RevokeDoer(doing.DoDoer):
             while not self.registrar.complete(creder.said, sn=1):
                 yield self.tock
 
-            recps = [creder.attrib['i']] if 'i' in creder.attrib else []
+            # Resolve the issuee via .iseaid so an aggregate ('acg') credential is notified of
+            # its own revocation too: its .attrib is None and the issuee lives at
+            # .sad["A"][1]["i"]. An untargeted credential still yields no recipient. (#1529)
+            recps = [creder.iseaid] if creder.iseaid is not None else []
             if self.send is not None:
                 recps.extend(self.send)
 

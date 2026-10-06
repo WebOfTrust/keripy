@@ -100,7 +100,11 @@ class GrantDoer(doing.DoDoer):
         acdc = serialize(creder, prefixer, seqner, saider)
 
         if self.recp is None:
-            recp = creder.attrib['i'] if 'i' in creder.attrib else None
+            # Default the recipient to the issuee, resolved via .iseaid so an
+            # aggregate ('acg') credential works here too: its .attrib is None
+            # and its issuee lives at .sad["A"][1]["i"]. Same defect as the one
+            # sendArtifacts had, one step earlier on the same grant path.
+            recp = creder.iseaid
         elif self.recp in self.hby.kevers:
             recp = self.recp
         else:
@@ -141,7 +145,7 @@ class GrantDoer(doing.DoDoer):
             for part in smids:  # this goes to other participants
                 postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
-                             attachment=watc)
+                             attachment=watc, gvrsn=Vrsn_1_0)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
@@ -156,12 +160,13 @@ class GrantDoer(doing.DoDoer):
             credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
             for source, atc in sources:
                 credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
-                postman.send(serder=source, attachment=atc)
+                postman.send(serder=source, attachment=atc, gvrsn=source.pvrsn)
 
             atc = exchanging.serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
+            # serializeMessage rebuilds this legacy pathed grant with V1 attachments.
             postman.send(serder=exn,
-                         attachment=atc)
+                         attachment=atc, gvrsn=Vrsn_1_0)
 
             doer = doing.DoDoer(doers=postman.deliver())
             self.extend([doer])

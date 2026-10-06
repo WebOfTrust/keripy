@@ -1763,7 +1763,7 @@ class Serder:
                             gcode = None  # code for counter for consecutive same type seals
                             gframe = bytearray()  # consecutive same type seals
                             for e in v:  # list of seals as crew, oneof  NamedTuple|dict|Iterable
-                                try:  # groups consequetive seals of same type with same counter
+                                try:  # groups consecutive seals of same type with same counter
                                     sealer = Sealer(crew=e)
                                     code = self.ClanCodes[sealer.name]  # code by sealer type name
                                     if gcode and gcode == code:  # same counter code
