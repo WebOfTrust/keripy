@@ -1762,6 +1762,203 @@ AgeSchema = \
   'additionalProperties': False
 }
 
+
+ImageSchemaSaid = 'EKuGAkHNpj5ujsEWQuZFe8bbuSrIOwojUNjgirDtWIAb'
+ImageSchema = \
+{
+  '$id': 'EKuGAkHNpj5ujsEWQuZFe8bbuSrIOwojUNjgirDtWIAb',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI High Resolution Facial Image Proof Schema',
+  'description': 'SEDI High Resolution Facial Image Proof JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Image_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+            'issuedDate',
+            'expirationDate',
+            'proof',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
+            'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+            'issuedDate':
+            {
+              'description': 'Issued Date Block',
+              'oneOf':
+              [
+                {'description': 'Issued Date SAID', 'type': 'string'},
+                {
+                  'description': 'Issued Date Detail',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                'additionalProperties': False
+                },
+              ]
+            },
+            'expirationDate':
+            {
+              'description': 'Expiration Date Block',
+              'oneOf':
+              [
+                {'description': 'Expiration Date SAID', 'type': 'string'},
+                {
+                  'description': 'Expiration Date Detail',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                    'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                }
+              ]
+            },
+            'proof':
+            {
+              'description': 'Image Proof Block',
+              'oneOf':
+              [
+                {'description': 'Image Proof Block SAID', 'type': 'string'},
+                {
+                  'description': 'Image Proof Block Detail',
+                  'type': 'object',
+                  'required': ['d', 'u', 'value'],
+                  'properties':
+                  {
+                    'd': {'description': 'Block SAID', 'type': 'string'},
+                    'u': {'description': 'Bock UE', 'type': 'string'},
+                   'value': {'description': 'Image Proof Value', 'type': 'string'},
+                  },
+                  'additionalProperties': False
+                },
+              ]
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u', 'coreIdentity'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'coreIdentity':
+            {
+              'description': 'Core Identity Edge Block',
+              'type': 'object',
+              'required': ['d', 'u', 'n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o':
+                {
+                    'description': 'Edge Unary Operator',
+                    'type': 'array',
+                    'items': {'type': 'string'},
+                    'minItems': 1,
+                }
+              },
+              'additionalProperties': False
+            },
+            'utahAgent':
+            {
+              'description': 'Utah Agent Edge Block',
+              'type': 'object',
+              'required': ['n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+
 # social auth schema
 SocialSchemaSaid = 'EB8MUTKRg8284YPduyhDgUVvNM192-247KcRaXhIxoni'
 SocialSchema = \
@@ -2936,7 +3133,7 @@ def test_sedi_schema():
     # SEDI Guardian Schema
     guardianSchemaMad = \
     {
-      '$id': 'EGx4BLclkjhaK1501guyBifxuTTJLwuK61InBTdkKF7v',
+      '$id': '',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'title': 'SEDI Guardianship Schema',
       'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
@@ -3801,10 +3998,213 @@ def test_sedi_schema():
     assert ageSchemaSaid == AgeSchemaSaid
     assert mapper.mad == AgeSchema
 
+
+    imageSchemaMad = \
+    {
+      '$id': '',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI High Resolution Facial Image Proof Schema',
+      'description': 'SEDI High Resolution Facial Image Proof JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Image_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+                'issuedDate',
+                'expirationDate',
+                'proof',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
+                'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
+                'issuedDate':
+                {
+                  'description': 'Issued Date Block',
+                  'oneOf':
+                  [
+                    {'description': 'Issued Date SAID', 'type': 'string'},
+                    {
+                      'description': 'Issued Date Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Issued Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                      },
+                    'additionalProperties': False
+                    },
+                  ]
+                },
+                'expirationDate':
+                {
+                  'description': 'Expiration Date Block',
+                  'oneOf':
+                  [
+                    {'description': 'Expiration Date SAID', 'type': 'string'},
+                    {
+                      'description': 'Expiration Date Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                        'value': {'description': 'Expiration Date Value as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    }
+                  ]
+                },
+                'proof':
+                {
+                  'description': 'Image Proof Block',
+                  'oneOf':
+                  [
+                    {'description': 'Image Proof Block SAID', 'type': 'string'},
+                    {
+                      'description': 'Image Proof Block Detail',
+                      'type': 'object',
+                      'required': ['d', 'u', 'value'],
+                      'properties':
+                      {
+                        'd': {'description': 'Block SAID', 'type': 'string'},
+                        'u': {'description': 'Bock UE', 'type': 'string'},
+                       'value': {'description': 'Image Proof Value', 'type': 'string'},
+                      },
+                      'additionalProperties': False
+                    },
+                  ]
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u', 'coreIdentity'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'coreIdentity':
+                {
+                  'description': 'Core Identity Edge Block',
+                  'type': 'object',
+                  'required': ['d', 'u', 'n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o':
+                    {
+                        'description': 'Edge Unary Operator',
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'minItems': 1,
+                    }
+                  },
+                  'additionalProperties': False
+                },
+                'utahAgent':
+                {
+                  'description': 'Utah Agent Edge Block',
+                  'type': 'object',
+                  'required': ['n', 's', 'o'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=imageSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    imageSchemaSaid = mapper.said
+    assert imageSchemaSaid == 'EKuGAkHNpj5ujsEWQuZFe8bbuSrIOwojUNjgirDtWIAb'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert imageSchemaSaid == ImageSchemaSaid
+    assert mapper.mad == ImageSchema
+
     # Social Media Access Authorization Schema
     socialSchemaMad = \
     {
-      '$id': 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY',
+      '$id': '',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'title': 'SEDI Social Authorization Schema',
       'description': 'SEDI Guardian Issued to Ward Social Authorization JSON Schema for acm ACDC.',
@@ -3943,7 +4343,7 @@ def test_sedi_schema():
     # Bespoke Schema Setup
     bespokeSchemaMad = \
     {
-      '$id': 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5',
+      '$id': '',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'title': 'SEDI Bespoke Presentation Schema',
       'description': 'SEDI Bespoke Presentation JSON Schema for acm ACDC.',
@@ -4566,6 +4966,9 @@ def test_sedi_acdcs():
     # Age Schema Validator setup
     ageValidator = SchemaValidator(schema=AgeSchema)
 
+    # Image Schema Validator setup
+    imageValidator = SchemaValidator(schema=ImageSchema)
+
     # Social Schema Validator setup
     socialValidator = SchemaValidator(schema=SocialSchema)
 
@@ -4947,6 +5350,10 @@ def test_sedi_acdcs():
     # Guys biometric facial image proof
     guyImageProof = Diger(ser=b"PretendImageOfGuy").qb64
     assert guyImageProof == 'EIQw_2CqmmC96YYUFXTW8XSkLQU2-v9bDCyItazmKhTW'
+
+    # Guys High Rez Image biometric facial image proof
+    guyHRImageProof = Diger(ser=b"HighRezImageOfGuy").qb64
+    assert guyHRImageProof == 'EPnX7JmOsTrPyFP8lqdyUmpo6Nr30AluLfnCYKd6PSEj'
 
     # Guy's Identity Assurance Receipt (iar) ACDC
     guyIarAttBareMad = \
@@ -5587,6 +5994,131 @@ def test_sedi_acdcs():
         'A': guyAgeAggAel,
         'e': guyAgeEdgeMad,
         'r': guyAgeRuleMad
+    }
+
+    #Setup Guy's High Resolution Image Proof SEDI ACDC
+    # Guy residence SEDI attribution section
+    guyImageAttBareMad = \
+    {
+        "d": "",
+        "u": guyUes[47],
+        "i": guy,
+        "issuedDate": \
+        {
+            "d": "",
+            "u":  guyUes[48],
+            "value": "2026-08-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": "",
+            "u":  guyUes[49],
+            "value": "2034-08-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "proof": \
+        {
+            "d": "",
+            "u": guyUes[50],
+            "value": guyHRImageProof,
+        },
+    }
+
+    compactor = Compactor(mad=guyImageAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyImageAttMad = compactor.partials[('.issuedDate', '.expirationDate', '.proof')].mad
+    assert guyImageAttMad['i'] == guy
+    guyImageAttMadSaid = compactor.said
+    assert guyImageAttMadSaid == 'EJ49D3m_0cmFN4dnTQfOYzCIcTvJ9dTa9uDHRPCKrHv7'
+    assert guyImageAttMad == \
+    {
+        'd': guyImageAttMadSaid,
+        'u': guyUes[47],
+        'i': guy,
+        "issuedDate": \
+        {
+            "d": 'EA3QrH6l2YKNrT0P18zhPJywlkenSgnkHNMFazCm8ikj',
+            "u":  guyUes[48],
+            "value": "2026-08-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "expirationDate": \
+        {
+            "d": 'EGJOt2PclwMcagcuPp8OopAbsfOmWxdq_ekz2IMfiIGT',
+            "u":  guyUes[49],
+            "value": "2034-08-01T00:00:00.000000+00:00",  # Time MBZ
+        },
+        "proof": \
+        {
+            "d": 'EGbZuJRXCHcQlvIa5WVZ1p30_ykpBKyDzEknQ1Q97WGq',
+            "u": guyUes[50],
+            "value": guyHRImageProof,
+        },
+    }
+
+    guyImageEdgeBareMad = \
+    {
+        "d": "",
+        "u": guyUes[51],
+        "coreIdentity":
+        {
+            "d": "",
+            "u": guyUes[52],
+            "n": guyCoreSediSaid,
+            "s": CoreSchemaSaid,
+            "o": ["E1E", "DI1I", "NI2I"],
+        },
+    }
+    compactor = Compactor(mad=guyImageEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    guyImageEdgeMad = compactor.partials[('.coreIdentity',)].mad
+    assert guyImageEdgeMad['coreIdentity']['n'] == guyCoreSediSaid
+    assert guyImageEdgeMad['coreIdentity']['o'] == ["E1E", "DI1I", "NI2I"]
+
+
+    guyImageRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=guyImageRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    guyImageRuleMad = compactor.partials[('',)].mad
+    assert guyImageRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    guySerderImage = acdcmap(israid=sue,
+                            uuid=guyUes[46],
+                            regid=sueRids[7],
+                            schema=ImageSchemaSaid,
+                            attribute=guyImageAttMad,
+                            edge=guyImageEdgeMad,
+                            rule=guyImageRuleMad,
+                            kind=kind)
+
+    imageValidator.validate(guySerderImage.sad)  # raises error if invalid
+
+    guyImageSediSaid = guySerderImage.said
+    assert guyImageSediSaid == 'EJPr7dOPJjqiRJaJGVZCxh7qB5hDr7yVOrOM42fK8RdD'
+    assert guySerderImage.verstr == 'ACDCCAACAAJSONAATG.'
+    assert guySerderImage.israid == sue
+    assert guySerderImage.regid == sueRids[7]
+    assert guySerderImage.iseaid == guy
+    assert guySerderImage.sad['a'] == guyImageAttMad
+
+    assert guySerderImage.sad == \
+    {
+        'v': guySerderImage.verstr,
+        't': 'acm',
+        'd': guyImageSediSaid,
+        'u': guyUes[46],
+        'i': sue,
+        'rd': sueRids[7],
+        's': ImageSchemaSaid,
+        'a': guyImageAttMad,
+        'e': guyImageEdgeMad,
+        'r': guyImageRuleMad
     }
 
     # Guy guardian of ward Wyn
