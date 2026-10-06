@@ -252,3 +252,8 @@ def test_an_old_v2_declaration_survives_kram_as_a_location_does():
         assert valhby.db.locs.get(keys=(withab.pre, "http")) is not None
         decl = valhby.db.decls.get(keys=(withab.pre, "tags"))
         assert decl is not None and decl.tags == ["testnet"]
+
+        # Denials match by string prefix, so the trailing slash keeps /declare and the like out.
+        assert any(d.endswith(".rpy./decl/") for d in valhab.kvy.kramer.denials)
+        assert not any("/declare".startswith(d.split(".rpy.")[-1])
+                       for d in valhab.kvy.kramer.denials if ".rpy." in d)
