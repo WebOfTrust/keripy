@@ -83,6 +83,37 @@ class RegistryStore:
         self.baser.tels.put(keys=regk, on=sn, val=saider)
         self.baser.heads.pin(keys=regk, val=saider)
 
+    def cloneTelIter(self, regk, sn=0):
+        """Yield accepted TEL event bodies in sequence from sn inclusive.
+
+        Parameters:
+            regk (str): registry SAID (rip.d).
+            sn (int): first sequence number to include. Default 0.
+
+        Returns:
+            Iterator[bytes]: raw CESR bodies of accepted ``rip``/``bup`` events.
+        """
+        for _keys, _on, saider in self.baser.tels.getAllItemIter(keys=regk, on=sn):
+            serder = self.event(saider.qb64)
+            if serder is not None:
+                yield bytes(serder.raw)
+
+    def cloneTel(self, regk, sn=0):
+        """Concatenate accepted TEL event bodies as a CESR stream from sn.
+
+        Parameters:
+            regk (str): registry SAID (rip.d).
+            sn (int): first sequence number to include. Default 0.
+
+        Returns:
+            bytes: concatenated event bodies. Empty when the registry has no
+                accepted events at or after ``sn``.
+        """
+        stream = bytearray()
+        for raw in self.cloneTelIter(regk, sn=sn):
+            stream.extend(raw)
+        return bytes(stream)
+
     def escrowMissingAnchor(self, regk, sn, said):
         return self.baser.maes.add(keys=regk, on=sn, val=said)
 
