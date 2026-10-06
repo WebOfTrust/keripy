@@ -1768,14 +1768,14 @@ AgeSchema = \
 }
 
 # social auth schema
-SocialSchemaSaid = 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5'
+SocialSchemaSaid = 'EEalX9A-jg7b0HIAkxTKHdGFb4oh_Pl2r8JnubLEAtcM'
 SocialSchema = \
 {
-  '$id': 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5',
+  '$id': 'EEalX9A-jg7b0HIAkxTKHdGFb4oh_Pl2r8JnubLEAtcM',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Social Authorization Schema',
   'description': 'SEDI Guardian Issued to Ward Social Authorization JSON Schema for acm ACDC.',
-  'credentialType': 'SEDI_Socail_ACDC_acm_message',
+  'credentialType': 'SEDI_Social_ACDC_acm_message',
   'version': '0.1.0',
   'type': 'object',
   'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
@@ -1861,6 +1861,178 @@ SocialSchema = \
               'description': 'Guardian Edge Block',
               'type': 'object',
               'required': ['n', 's', 'o'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+          },
+          'additionalProperties': False
+        }
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+        'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
+
+
+# SEDI Bespoke Presentation schema
+BespokeSchemaSaid = 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8'
+BespokeSchema = \
+{
+  '$id': 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI Bespoke Presentation Schema',
+  'description': 'SEDI Bespoke Presentation JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_Bespoke_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 's', 'a', 'e', 'r'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    'rd': {'description': 'Registry SAID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail','type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID','type': 'string'},
+        {
+          'description': 'Attribute Section Detail',
+          'type': 'object',
+          'required':
+          [
+            'd',
+            'u',
+            'i',
+          ],
+          'properties':
+          {
+            'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+            'u': {'description': 'Attribute Section UE', 'type': 'string'},
+            'i': {'description': 'Issuee AID', 'type': 'string'},
+          },
+          'additionalProperties': True
+        }
+      ]
+    },
+    'e':
+    {
+      'description': 'Edge Section',
+      'oneOf':
+      [
+        {'description': 'Edge Section SAID', 'type': 'string'},
+        {
+          'description': 'Edge Section Detail',
+          'type': 'object',
+          'required': ['d', 'u'],
+          'properties':
+          {
+            'd': {'description': 'Edge Section SAID', 'type': 'string'},
+            'u': {'description': 'Edge Section UE', 'type': 'string'},
+            'core':
+            {
+              'description': 'Core Edge Block',
+              'type': 'object',
+              'required': ['n'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+            'residence':
+            {
+              'description': 'Residence Edge Block',
+              'type': 'object',
+              'required': ['n'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+            'age':
+            {
+              'description': 'Age Edge Block',
+              'type': 'object',
+              'required': ['n'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+            'guardian':
+            {
+              'description': 'Guardian Edge Block',
+              'type': 'object',
+              'required': ['n'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+            'social':
+            {
+              'description': 'Social Edge Block',
+              'type': 'object',
+              'required': ['n'],
               'properties':
               {
                 'd': {'description': 'Edge SAID', 'type': 'string'},
@@ -3641,7 +3813,7 @@ def test_sedi_schema():
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'title': 'SEDI Social Authorization Schema',
       'description': 'SEDI Guardian Issued to Ward Social Authorization JSON Schema for acm ACDC.',
-      'credentialType': 'SEDI_Socail_ACDC_acm_message',
+      'credentialType': 'SEDI_Social_ACDC_acm_message',
       'version': '0.1.0',
       'type': 'object',
       'required': ['v', 'd', 'i', 'rd', 's', 'a', 'e', 'r'],
@@ -3768,10 +3940,188 @@ def test_sedi_schema():
     mapper = Mapper(mad=socialSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     socialSchemaSaid = mapper.said
-    assert socialSchemaSaid == 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5'
+    assert socialSchemaSaid == 'EEalX9A-jg7b0HIAkxTKHdGFb4oh_Pl2r8JnubLEAtcM'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert socialSchemaSaid == SocialSchemaSaid
     assert mapper.mad == SocialSchema
+
+    # Bespoke Schema Setup
+    bespokeSchemaMad = \
+    {
+      '$id': 'ELFn0r4Z8kRDuJnkLRD-xPdyb3ZhkTnZ4_Nn3MlBw9R5',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'title': 'SEDI Bespoke Presentation Schema',
+      'description': 'SEDI Bespoke Presentation JSON Schema for acm ACDC.',
+      'credentialType': 'SEDI_Bespoke_ACDC_acm_message',
+      'version': '0.1.0',
+      'type': 'object',
+      'required': ['v', 'd', 'i', 's', 'a', 'e', 'r'],
+      'properties':
+      {
+        'v': {'description': 'ACDC version string', 'type': 'string'},
+        't': {'description': 'Message type', 'type': 'string'},
+        'd': {'description': 'Message SAID', 'type': 'string'},
+        'u': {'description': 'Message UE', 'type': 'string'},
+        'i': {'description': 'Issuer AID', 'type': 'string'},
+        'rd': {'description': 'Registry SAID', 'type': 'string'},
+        's':
+        {
+          'description': 'Schema Section',
+          'oneOf':
+          [
+            {'description': 'Schema Section SAID', 'type': 'string'},
+            {'description': 'Schema Section Detail','type': 'object'}
+          ]
+        },
+        'a':
+        {
+          'description': 'Attribute Section',
+          'oneOf':
+          [
+            {'description': 'Attribute Section SAID','type': 'string'},
+            {
+              'description': 'Attribute Section Detail',
+              'type': 'object',
+              'required':
+              [
+                'd',
+                'u',
+                'i',
+              ],
+              'properties':
+              {
+                'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+                'u': {'description': 'Attribute Section UE', 'type': 'string'},
+                'i': {'description': 'Issuee AID', 'type': 'string'},
+              },
+              'additionalProperties': True
+            }
+          ]
+        },
+        'e':
+        {
+          'description': 'Edge Section',
+          'oneOf':
+          [
+            {'description': 'Edge Section SAID', 'type': 'string'},
+            {
+              'description': 'Edge Section Detail',
+              'type': 'object',
+              'required': ['d', 'u'],
+              'properties':
+              {
+                'd': {'description': 'Edge Section SAID', 'type': 'string'},
+                'u': {'description': 'Edge Section UE', 'type': 'string'},
+                'core':
+                {
+                  'description': 'Core Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'residence':
+                {
+                  'description': 'Residence Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'age':
+                {
+                  'description': 'Age Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'guardian':
+                {
+                  'description': 'Guardian Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+                'social':
+                {
+                  'description': 'Social Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
+              },
+              'additionalProperties': False
+            }
+          ]
+        },
+        'r':
+        {
+          'description': 'Rule Section',
+          'oneOf':
+          [
+            {'description': 'Rule Section SAID', 'type': 'string'},
+            {
+              'description': 'Rule Section Detail',
+              'type': 'object',
+              'required': ['d', 'l'],
+              'properties':
+              {
+                'd': {'description': 'Rule Section SAID', 'type': 'string'},
+                'l': {'description': 'Legal Language', 'type': 'string'}
+              },
+            'additionalProperties': False
+            }
+          ]
+        }
+      },
+      'additionalProperties': False
+    }
+
+    mapper = Mapper(mad=bespokeSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
+                    saidive=True, kind=kind)
+    bespokeSchemaSaid = mapper.said
+    assert bespokeSchemaSaid == 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8'
+    SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
+    assert bespokeSchemaSaid == BespokeSchemaSaid
+    assert mapper.mad == BespokeSchema
 
     """done test"""
 
@@ -4223,6 +4573,9 @@ def test_sedi_acdcs():
 
     # Social Schema Validator setup
     socialValidator = SchemaValidator(schema=SocialSchema)
+
+    # Bespoke Schema Validator setup
+    bespokeValidator = SchemaValidator(schema=BespokeSchema)
 
 
     # Setup Utah State Delegation from root roy to unit deb to agent's sue and stu
@@ -6842,7 +7195,7 @@ def test_sedi_acdcs():
     socialValidator.validate(wynSerderSocial.sad)  # raises error if invalid
 
     wynSocialSediSaid = wynSerderSocial.said
-    assert wynSocialSediSaid == 'EKUGop-A9YEiDWGC26v1VbhbGnQULPFKvZyS7gCaG-Em'
+    assert wynSocialSediSaid == 'EAjEJDYShdakQngOijjPosiFZRYKyBq_ZnXIxP5gZS_c'
     assert wynSerderSocial.verstr == 'ACDCCAACAAJSONAAPB.'
     assert wynSerderSocial.israid == guy
     assert wynSerderSocial.regid == guyRids[0]
@@ -6863,7 +7216,103 @@ def test_sedi_acdcs():
         'r': wynSocialRuleMad,
     }
 
+    # Wyn bespoke presentation Schema to convert multiple SEDI ACDCs into one DAG
+    # where bespoke ACDC is origin of the DAG
+    # Wyn is both Issuer and Issuee with I2I edges so that signing the origin
+    # counts as timely proof of control over Wyn's keystate everywhere wyn AID
+    # shows up as an issuee in the resulting DAG
+    # Wyn bespoke attribution section
+    wynBespokeAttBareMad = \
+    {
+        "d": "",
+        "u": wynUes[50],
+        "i": wyn,
+    }
 
+    compactor = Compactor(mad=wynBespokeAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynBespokeAttMad = compactor.partials[('',)].mad
+    assert wynBespokeAttMad['i'] == wyn
+    wynBespokeAttMadSaid = compactor.said
+    assert wynBespokeAttMadSaid == 'EP9aY5tjVfzqV3CCyB3KnIGRPKuB_NO9ajAFYKOC20cN'
+
+    assert wynBespokeAttMad == \
+    {
+        "d": wynBespokeAttMadSaid,
+        "u": wynUes[50],
+        "i": wyn,
+    }
+
+    wynBespokeEdgeBareMad = \
+    {
+        "d": "",
+        "u": wynUes[51],
+        "age":
+        {
+            "d": "",
+            "u": wynUes[52],
+            "n": wynAgeSediSaid,
+            "o": "I2I",
+        },
+        "social":
+        {
+            "d": "",
+            "u": wynUes[53],
+            "n": wynSocialSediSaid,
+            "o": "I2I",
+        },
+    }
+    compactor = Compactor(mad=wynBespokeEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    wynBespokeEdgeMad = compactor.partials[('.age', '.social')].mad
+    assert wynBespokeEdgeMad['age']['n'] == wynAgeSediSaid
+    assert wynBespokeEdgeMad['age']['o'] == "I2I"
+    assert wynBespokeEdgeMad['social']['n'] == wynSocialSediSaid
+    assert wynBespokeEdgeMad['social']['o'] == "I2I"
+
+    wynBespokeRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=wynBespokeRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    wynBespokeRuleMad = compactor.partials[('',)].mad
+    assert wynBespokeRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    wynSerderBespoke = acdcmap(israid=wyn,
+                                uuid=wynUes[49],
+                                schema=BespokeSchemaSaid,
+                                attribute=wynBespokeAttMad,
+                                edge=wynBespokeEdgeMad,
+                                rule=wynBespokeRuleMad,
+                                kind=kind)
+
+    bespokeValidator.validate(wynSerderBespoke.sad)  # raises error if invalid
+
+    wynBespokeSediSaid = wynSerderBespoke.said
+    assert wynBespokeSediSaid == 'EMPjcBmQ4BtHdWJ8sSOrBQAsNhDSrUvpb-FgqgylgIGl'
+    assert wynSerderBespoke.verstr == 'ACDCCAACAAJSONAAMx.'
+    assert wynSerderBespoke.israid == wyn
+    assert wynSerderBespoke.iseaid == wyn
+    assert wynSerderBespoke.sad['a'] == wynBespokeAttMad
+
+    assert wynSerderBespoke.sad == \
+    {
+        'v': wynSerderBespoke.verstr,
+        't': 'acm',
+        'd': wynBespokeSediSaid,
+        'u': wynUes[49],
+        'i': wyn,
+        's': BespokeSchemaSaid,
+        'a': wynBespokeAttMad,
+        'e': wynBespokeEdgeMad,
+        'r': wynBespokeRuleMad,
+    }
 
     # Setup Ryn's Registries
     #create presentation registries for Ryn
