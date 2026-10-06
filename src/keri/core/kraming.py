@@ -100,6 +100,7 @@ class Kramer:
     OobiDenials = (
         [[2, 0], Ilks.rpy, "/end/role"],
         [[2, 0], Ilks.rpy, "/loc/scheme"],
+        [[2, 0], Ilks.rpy, "/decl"],
     )
 
     def __init__(self, db, cf=None, cues=None):

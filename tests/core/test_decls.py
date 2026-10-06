@@ -216,3 +216,39 @@ def test_a_declaration_travels_over_oobi_to_a_third_party():
         valhab.psr.parse(bytearray(stream))
 
         assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
+def test_an_old_v2_declaration_survives_kram_as_a_location_does():
+    """A relay furnishes another party's OOBI replies as originally signed, so their stamps are old.
+
+    KRAM would drop such a reply as stale, which is why Kramer.OobiDenials exempts v2 /loc/scheme
+    and /end/role from it. Declarations travel in the same replay and need the same exemption.
+    """
+    from keri.core import Kramer
+    from keri.kering import Vrsn_2_0
+
+    stamp = "2021-01-01T00:00:00.000000+00:00"
+    opts = dict(version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0, stamp=stamp)
+    salt = Salter(raw=b"abcdef0123456789").qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_2_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_2_0) as valhby:
+        withab = withby.makeHab(name="wit", isith="1", icount=1, transferable=False,
+                                version=Vrsn_2_0, kind=Kinds.json)
+        valhab = valhby.makeHab(name="val", isith="1", icount=1, transferable=True,
+                                version=Vrsn_2_0, kind=Kinds.json)
+        valhab.psr.parse(bytearray(withab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)))
+
+        valhby.cf.put({"kram": {"enabled": True, "denials": [],
+                                "caches": {"~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]}}})
+        valhab.kvy.kramer = Kramer(db=valhby.db, cf=valhby.cf, cues=valhab.kvy.cues)
+
+        for msg in (withab.makeDeclTags(tags=["testnet"], **opts),
+                    withab.makeLocScheme(url="http://localhost:5632/", **opts)):
+            withab.psr.parse(bytearray(msg))
+
+        valhab.psr.parse(withab.loadDecls(eid=withab.pre, gvrsn=Vrsn_2_0))
+        valhab.psr.parse(withab.loadLocScheme(eid=withab.pre, gvrsn=Vrsn_2_0))
+
+        assert valhby.db.locs.get(keys=(withab.pre, "http")) is not None
+        decl = valhby.db.decls.get(keys=(withab.pre, "tags"))
+        assert decl is not None and decl.tags == ["testnet"]
