@@ -76,28 +76,23 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 # ? Should guardianship expired Date be optional or mandittory
 
 # ToDo
-# Bespoke ACDC Schema for presenting  any set of E1E leaves  (residence, age, high res)
-# as well as guardian and social auth
-
 # high rez image biometric credential with link to guardian core
-
 # fix facial image proof in receipts now blank but set to that in core
+
+# Notable
+# added bespoke presentation ACDC example gal and wyn so can present combined
+# SEDIs in one dag
 
 # added optional utahAgent delegation edge to leaf credentials schema
 # so can add delegation chain when issuer of leaf is not same as issuer of core
 # (residence, age, guaridanship)
-#
-# Need new edge operators. I1I and DI1I for E1E edges so know to test for same
+
+# Using new edge operators. I1I and DI1I for E1E edges so know to test for same
 # Issuer or delegated Issuer of leaf as Core otherwise need different edge
 # chain of authority for leaf.
 
-# Added optional guardian edge group in core credential with links to guardian
-# Guardianship credential with link to agent auth
-# Guardian auth credential ward with auth link to guardianship credenital and link to ward age credential
-
-
-
-
+# Added optional guardian edge group in core credential with links to guardian(s)
+# so that wards use the same schema as non-wards for core SEDI
 
 
 ReplaceSchemaSaid = 'EPVlX-S-eWERGiXJmb7FcW75I4J08ptQ-jGglq4VRwou'
@@ -6459,6 +6454,105 @@ def test_sedi_acdcs():
         'r': galGuardianRuleMad,
     }
 
+    # Gal bespoke presentation Schema to convert multiple SEDI ACDCs into one DAG
+    # where bespoke ACDC is origin of the DAG
+    # Gal is both Issuer and Issuee with I2I edges so that signing the origin
+    # counts as timely proof of control over Gals's keystate everywhere gal AID
+    # shows up as an issuee in the resulting DAG
+    # This one is  guardian  and residence (which links to core)
+    # Gal bespoke attribution section
+    galBespokeAttBareMad = \
+    {
+        "d": "",
+        "u": galUes[50],
+        "i": gal,
+    }
+
+    compactor = Compactor(mad=galBespokeAttBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galBespokeAttMad = compactor.partials[('',)].mad
+    assert galBespokeAttMad['i'] == gal
+    galBespokeAttMadSaid = compactor.said
+    assert galBespokeAttMadSaid == 'EFfhhIL-0qCzbKkvXBcH1sDAakjfTFgMC9TNcFMYnaN-'
+
+    assert galBespokeAttMad == \
+    {
+        "d": galBespokeAttMadSaid,
+        "u": galUes[50],
+        "i": gal,
+    }
+
+    galBespokeEdgeBareMad = \
+    {
+        "d": "",
+        "u": galUes[51],
+        "residence":
+        {
+            "d": "",
+            "u": galUes[52],
+            "n": galResidenceSediSaid,
+            "o": "I2I",
+        },
+        "guardian":
+        {
+            "d": "",
+            "u": galUes[53],
+            "n": galGuardianSediSaid,
+            "o": "I2I",
+        },
+    }
+    compactor = Compactor(mad=galBespokeEdgeBareMad, makify=True, compactify=True,
+                       saidive=True, kind=kind)
+    galBespokeEdgeMad = compactor.partials[('.residence', '.guardian')].mad
+    assert galBespokeEdgeMad['residence']['n'] == galResidenceSediSaid
+    assert galBespokeEdgeMad['residence']['o'] == "I2I"
+    assert galBespokeEdgeMad['guardian']['n'] == galGuardianSediSaid
+    assert galBespokeEdgeMad['guardian']['o'] == "I2I"
+
+    galBespokeRuleBareMad = \
+    {
+        "d": "",
+        "l": "",
+    }
+    compactor = Compactor(mad=galBespokeRuleBareMad, makify=True, compactify=True,
+                          saidive=True, kind=kind)
+    galBespokeRuleMad = compactor.partials[('',)].mad
+    assert galBespokeRuleMad == \
+    {
+        'd': 'EFPxq4WPl29szUqbrQIviOh_Ls_RlrYbp4L-fdQH0XrX',
+        'l': ''
+    }
+
+    galSerderBespoke = acdcmap(israid=gal,
+                                uuid=galUes[49],
+                                schema=BespokeSchemaSaid,
+                                attribute=galBespokeAttMad,
+                                edge=galBespokeEdgeMad,
+                                rule=galBespokeRuleMad,
+                                kind=kind)
+
+    bespokeValidator.validate(galSerderBespoke.sad)  # raises error if invalid
+
+    galBespokeSediSaid = galSerderBespoke.said
+    assert galBespokeSediSaid == 'ELBY34HrWHHmheIzBVJZ6nQ2Jh4GLTl1ZjtC2q-nu6Zj'
+    assert galSerderBespoke.verstr == 'ACDCCAACAAJSONAAM5.'
+    assert galSerderBespoke.israid == gal
+    assert galSerderBespoke.iseaid == gal
+    assert galSerderBespoke.sad['a'] == galBespokeAttMad
+
+    assert galSerderBespoke.sad == \
+    {
+        'v': galSerderBespoke.verstr,
+        't': 'acm',
+        'd': galBespokeSediSaid,
+        'u': galUes[49],
+        'i': gal,
+        's': BespokeSchemaSaid,
+        'a': galBespokeAttMad,
+        'e': galBespokeEdgeMad,
+        'r': galBespokeRuleMad,
+    }
+
     # Setup Wyn's Registries
     #create presentation registries for Wyn
     salt = b'wynpresntregsalt'  # base salt for presentation registries
@@ -7221,6 +7315,7 @@ def test_sedi_acdcs():
     # Wyn is both Issuer and Issuee with I2I edges so that signing the origin
     # counts as timely proof of control over Wyn's keystate everywhere wyn AID
     # shows up as an issuee in the resulting DAG
+    # This one is social authz (which links to guardian) and age (which links to core)
     # Wyn bespoke attribution section
     wynBespokeAttBareMad = \
     {
