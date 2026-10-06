@@ -2256,10 +2256,15 @@ class Kever:
         Returns:
             indices list[int]: list of indices of keys contributed by local members"""
         habord = self.db.habs.get(keys=(self.prefixer.qb64,))
-        kever = self.kevers[habord.mid]
-
-        idx = [verfer.qb64 for verfer in verfers].index(kever.verfers[0].qb64)
-        return [idx]
+        # Every key the local member has ever held, not only its current one: a member that
+        # has rotated its own AID since the group's event contributed an older key, and a
+        # member the others removed contributed nothing at all. Indexing the current key alone
+        # missed the first and raised ValueError on the second, so a removed member could never
+        # process the rotation that removed it.
+        held = set()
+        for msg in self.db.clonePreIter(pre=habord.mid):
+            held.update(SerderKERI(raw=bytes(msg)).ked.get("k") or ())
+        return [idx for idx, verfer in enumerate(verfers) if verfer.qb64 in held]
 
 
     def reload(self, state):
