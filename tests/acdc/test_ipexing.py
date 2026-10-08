@@ -1682,6 +1682,7 @@ def test_ipex_v2_offer_builder_accepts_metadata_dag_nodes():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        hby.db.schema.pin(schema, Schemer(sed=origin.sad["s"]))
 
         applyExn, applyAtc = ipexApply(hab=verifier,
                                        recp=holder.pre,
@@ -1920,6 +1921,142 @@ def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
             {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Show me the metadata path"},
             {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here is the partial metadata DAG"},
         ]
+
+
+def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
+    """Validate metadata schemas without requiring Issuer commitments."""
+    with openHby(name="ipex-v2-offer-node-schema",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="issuer")
+
+        # Record when schema validation runs
+        stages = []
+        verifyNodeSchemas = IpexHandler._verifyNodeSchemas
+
+        def recordNodeSchemas(self, *args, **kwa):
+            stages.append("node-schema")
+            return verifyNodeSchemas(self, *args, **kwa)
+
+        monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
+
+        # Set up the IPEX receiver
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Create a schema that requires status
+        schemer = Schemer(sed={
+            "$id": "",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "version": "1.0.0",
+            "type": "object",
+            "required": ["v", "d", "i", "s", "a"],
+            "properties": {
+                "v": {"type": "string"},
+                "t": {"type": "string"},
+                "d": {"type": "string"},
+                "i": {"type": "string"},
+                "s": {"type": "string"},
+                "a": {
+                    "type": "object",
+                    "required": ["d", "status"],
+                    "properties": {
+                        "d": {"type": "string"},
+                        "status": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "additionalProperties": False,
+        })
+        # Create valid metadata for the Offer
+        valid = acdcmap(israid=hab.pre,
+                        schema=schemer.said,
+                        attribute=dict(d="", status="member"))
+        modifiers = dict(dp=[[[schemer.said, "/", []]]])
+
+        # Process the Offer without caching its schema
+        offer, offerAtc = ipexOffer(
+            hab=hab,
+            recp=hab.pre,
+            message="Metadata waits for its schema",
+            origin=valid,
+            artifacts=[],
+            modifiers=modifiers,
+        )
+        ims = bytearray(offer.raw + offerAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        escrowKey = (offer.said, schemer.said)
+        assert ims == bytearray()
+        assert stages == ["node-schema"]
+        assert hby.db.exns.get(keys=(offer.said,)) is None
+
+        # Missing Schema escrow entry is created
+        assert hby.db.emse.get(keys=escrowKey) is not None
+
+        # Cache the schema and replay the Offer
+        hby.db.schema.pin(schemer.said, schemer)
+        exc.processEscrow()
+
+        # Offer is accepted and stored
+        assert hby.db.exns.get(keys=(offer.said,)) is not None
+
+        # Escrow is processed and cleared
+        assert hby.db.emse.get(keys=escrowKey) is None
+
+        # Create metadata without the required status
+        stages.clear()
+        invalid = acdcmap(israid=hab.pre,
+                          schema=schemer.said,
+                          attribute=dict(d=""))
+        rejected, rejectedAtc = ipexOffer(
+            hab=hab,
+            recp=hab.pre,
+            message="Schema-invalid metadata must fail",
+            origin=invalid,
+            artifacts=[],
+            modifiers=modifiers,
+        )
+        # Reject the invalid Offer without escrowing it because an invalid schema
+        # is rejected immediately and cannot be processed afterwards
+        ims = bytearray(rejected.raw + rejectedAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert stages == ["node-schema"]
+        assert hby.db.exns.get(keys=(rejected.said,)) is None
+        assert list(hby.db.emse.getTopItemIter(keys=(rejected.said,))) == []
+
+        # Create a schema whose reference points to data instead of a schema
+        malformedSchema = dict(schemer.sed)
+        malformedSchema["properties"] = dict(malformedSchema["properties"])
+        malformedSchema["properties"]["a"] = {"$ref": "#/notASchema"}
+        malformedSchema["notASchema"] = 5
+        malformedSchemer = Schemer(sed=malformedSchema)
+        hby.db.schema.pin(malformedSchemer.said, malformedSchemer)
+        malformed = acdcmap(israid=hab.pre,
+                            schema=malformedSchemer.said,
+                            attribute=dict(d="", status="member"))
+        malformedModifiers = dict(
+            dp=[[[malformedSchemer.said, "/", []]]],
+        )
+        rejected, rejectedAtc = ipexOffer(
+            hab=hab,
+            recp=hab.pre,
+            message="Malformed schema references must fail",
+            origin=malformed,
+            artifacts=[],
+            modifiers=malformedModifiers,
+        )
+
+        # Reject the malformed schema without leaking a resolver exception
+        stages.clear()
+        ims = bytearray(rejected.raw + rejectedAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert stages == ["node-schema"]
+        assert hby.db.exns.get(keys=(rejected.said,)) is None
+        assert list(hby.db.emse.getTopItemIter(keys=(rejected.said,))) == []
 
 
 def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
@@ -2366,6 +2503,357 @@ def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
         ]
 
 
+def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
+    """A missing edge schema is queried and succeeds after it is cached."""
+    # Configure KRAM for the Grant
+    kramConfig = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+            },
+        },
+    }
+
+    with openHby(name="ipex-v2-edge-schema-escrow",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+
+        # Set up the IPEX receiver
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Create a child and an uncached edge schema
+        child = acdcmap(israid=issuer.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=issuer.pre)
+        compatible = dict(child.sad["s"])
+        compatible["title"] = "Compatible edge schema loaded after Grant"
+        edgeSchemer = Schemer(sed=compatible)
+
+        # Require the edge schema from the origin
+        origin = acdcmap(israid=issuer.pre,
+                         attribute=dict(d="", purpose="schema escrow"),
+                         edge=_edge("member", child, schema=edgeSchemer.said),
+                         iseaid=recipient.pre)
+
+        grant, atc = ipexGrant(hab=issuer,
+                               recp=recipient.pre,
+                               message="Disclose after resolving the edge schema",
+                               origin=_signed(origin, issuer),
+                               artifacts=[_signed(child, issuer)],
+                               dt=helping.nowIso8601(),
+                               modifiers=dict(dp=[[
+                                   [origin.sad["s"]["$id"], "/", []],
+                                   [child.sad["s"]["$id"], "/e/member/_/", []],
+                               ]]))
+
+        with openCF(name="ipex-v2-edge-schema-escrow",
+                    base="test", temp=True) as cf:
+            # Process the Grant through KRAM and IPEX
+            cf.put(kramConfig)
+            kramer = Kramer(db=hby.db, cf=cf)
+            kvy = Kevery(db=hby.db,
+                         lax=False,
+                         local=False,
+                         kramer=kramer,
+                         exc=exc)
+
+            # Confirm the Grant waits for the edge schema
+            ims = bytearray(grant.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+            escrowKey = (grant.said, edgeSchemer.said)
+            kramKey = (issuer.pre, grant.ked["x"], grant.said)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(grant.said,)) is None
+            assert hby.db.kramTMSC.get(keys=kramKey) is not None
+            assert hby.db.kramXDT.get(keys=(grant.ked["x"],)) is not None
+
+            # Missing Schema escrow entry is created and a query cue is generated
+            assert hby.db.emse.get(keys=escrowKey) is not None
+            assert hby.db.emsd.get(keys=(grant.said,)) is not None
+            assert dict(r="schema", said=edgeSchemer.said) in [
+                cue.get("q") for cue in exc.cues if cue.get("kin") == "query"
+            ]
+
+            # Cache the schema and replay the Grant
+            hby.db.schema.pin(edgeSchemer.said, edgeSchemer)
+            exc.processEscrow()
+
+            # Assert Grant was stored and escrow was cleared
+            assert hby.db.exns.get(keys=(grant.said,)) is not None
+            assert hby.db.emse.get(keys=escrowKey) is None
+            assert hby.db.emsd.get(keys=(grant.said,)) is None
+            assert hby.db.kramTMSC.get(keys=kramKey) is not None
+            assert [item["r"] for item in recorder.items] == [
+                "/exn/ipex/grant",
+            ]
+
+
+def test_ipex_v2_edge_schema_escrow_expires_after_kram_timeout(
+        fakeHelpingClock):
+    """An unresolved edge schema is discarded after its KRAM flow expires."""
+    # Configure the KRAM deadline
+    kramConfig = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 10000, 10000, 5000, 10000, 10000],
+            },
+        },
+    }
+    pxl = kramConfig["kram"]["caches"]["~"][6]
+    assert pxl < Exchanger.TimeoutMSE * 1000
+
+    with openHby(name="ipex-v2-edge-schema-kram-timeout",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+
+        # Set up the IPEX receiver
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Create an edge schema that will stay unavailable
+        child = acdcmap(israid=issuer.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=issuer.pre)
+        compatible = dict(child.sad["s"])
+        compatible["title"] = "Compatible edge schema that never arrives"
+        edgeSchemer = Schemer(sed=compatible)
+        # Create a Grant that requires the missing schema
+        origin = acdcmap(israid=issuer.pre,
+                         attribute=dict(d="", purpose="schema timeout"),
+                         edge=_edge("member", child, schema=edgeSchemer.said),
+                         iseaid=recipient.pre)
+        grant, atc = ipexGrant(hab=issuer,
+                               recp=recipient.pre,
+                               message="Disclose unless schema retrieval times out",
+                               origin=_signed(origin, issuer),
+                               artifacts=[_signed(child, issuer)],
+                               dt=helping.nowIso8601(),
+                               modifiers=dict(dp=[[
+                                   [origin.sad["s"]["$id"], "/", []],
+                                   [child.sad["s"]["$id"], "/e/member/_/", []],
+                               ]]))
+
+        with openCF(name="ipex-v2-edge-schema-kram-timeout",
+                    base="test", temp=True) as cf:
+            # Process the Grant through KRAM and IPEX
+            cf.put(kramConfig)
+            kramer = Kramer(db=hby.db, cf=cf)
+            kvy = Kevery(db=hby.db,
+                         lax=False,
+                         local=False,
+                         kramer=kramer,
+                         exc=exc)
+
+            # Confirm the Grant uses the KRAM deadline
+            ims = bytearray(grant.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+            escrowKey = (grant.said, edgeSchemer.said)
+            kramKey = (issuer.pre, grant.ked["x"], grant.said)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(grant.said,)) is None
+            assert hby.db.kramTMSC.get(keys=kramKey) is not None
+            assert hby.db.emse.get(keys=escrowKey) is not None
+            deadline = hby.db.emsd.get(keys=(grant.said,))
+            assert deadline is not None
+            cache = hby.db.kramTMSC.get(keys=kramKey)
+            assert deadline.datetime == (
+                helping.fromIso8601(cache.xdt)
+                + timedelta(milliseconds=cache.pxl)
+            )
+
+            # Expire the KRAM transaction
+            fakeHelpingClock.advance(milliseconds=pxl + 1)
+            now = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+            assert kramer._pruneExchanges(rdt_ms=now)
+            assert hby.db.kramTMSC.get(keys=kramKey) is None
+            assert hby.db.kramXDT.get(keys=(grant.ked["x"],)) is None
+
+            # Reject the Grant when the schema arrives too late
+            hby.db.schema.pin(edgeSchemer.said, edgeSchemer)
+            exc.processEscrow()
+            assert hby.db.exns.get(keys=(grant.said,)) is None
+            assert hby.db.emse.get(keys=escrowKey) is None
+            assert hby.db.emsd.get(keys=(grant.said,)) is None
+            assert list(hby.db.esigs.getTopItemIter(
+                keys=(grant.said, ""))) == []
+            assert hby.db.ecigs.get(keys=(grant.said,)) == []
+            assert list(hby.db.ests.getTopItemIter(
+                keys=(grant.said, ""))) == []
+            assert hby.db.epath.get(keys=(grant.said,)) == []
+            assert hby.db.enst.get(keys=(grant.said,)) == []
+            assert recorder.items == []
+
+
+def test_ipex_v2_grant_validates_disclosed_node_schema(monkeypatch):
+    """Resolve root and referenced schemas before rejecting invalid ACDCs."""
+    with openHby(name="ipex-v2-node-schema",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+
+        # Record issuer and schema validation order
+        stages = []
+        verifyIssuerAuth = IpexHandler._verifyIssuerAuthGraph
+        verifyNodeSchemas = IpexHandler._verifyNodeSchemas
+
+        def recordIssuerAuth(self, *args, **kwa):
+            stages.append("issuer-auth")
+            return verifyIssuerAuth(self, *args, **kwa)
+
+        def recordNodeSchemas(self, *args, **kwa):
+            stages.append("node-schema")
+            return verifyNodeSchemas(self, *args, **kwa)
+
+        monkeypatch.setattr(IpexHandler, "_verifyIssuerAuthGraph", recordIssuerAuth)
+        monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
+
+        # Set up the IPEX receiver
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Create a referenced attribute schema
+        attributeSchemer = Schemer(sed={
+            "$id": "",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "version": "1.0.0",
+            "type": "object",
+            "required": ["d", "status"],
+            "properties": {
+                "d": {"type": "string"},
+                "status": {"type": "string"},
+            },
+            "additionalProperties": False,
+        })
+        # Create a root schema that references it
+        schema = {
+            "$id": "",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "version": "1.0.0",
+            "type": "object",
+            "required": ["v", "d", "i", "s", "a"],
+            "properties": {
+                "v": {"type": "string"},
+                "t": {"type": "string"},
+                "d": {"type": "string"},
+                "i": {"type": "string"},
+                "s": {"type": "string"},
+                "a": {"$ref": f"sad:{attributeSchemer.said}"},
+            },
+            "additionalProperties": False,
+        }
+        schemer = Schemer(sed=schema)
+
+        # Create a valid ACDC and Grant
+        valid = acdcmap(
+            israid=hab.pre,
+            schema=schemer.said,
+            attribute=dict(d="", status="citizen"),
+        )
+        grant, grantAtc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Disclose a schema-valid credential",
+            origin=_signed(valid, hab),
+        )
+
+        # Process the Grant without caching its root schema
+        ims = bytearray(grant.raw)
+        ims.extend(grantAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert stages[:2] == ["issuer-auth", "node-schema"]
+
+        # Assert the Grant is escrowed for its missing root schema
+        assert hby.db.exns.get(keys=(grant.said,)) is None
+        escrowKey = (grant.said, schemer.said)
+        assert hby.db.emse.get(keys=escrowKey) is not None
+        deadline = hby.db.emsd.get(keys=(grant.said,))
+        assert deadline is not None
+        assert hby.db.epse.get(keys=(grant.said,)) is None
+        expectedQuery = dict(r="schema", said=schemer.said)
+        schemaQueries = [cue.get("q") for cue in exc.cues
+                         if cue.get("kin") == "query"]
+        assert expectedQuery in schemaQueries
+
+        # Replay without creating another query
+        exc.cues.clear()
+        exc.processEscrow()
+        assert hby.db.emse.get(keys=escrowKey) is not None
+        assert hby.db.emsd.get(keys=(grant.said,)).qb64 == deadline.qb64
+        assert hby.db.epse.get(keys=(grant.said,)) is None
+        schemaQueries = [cue.get("q") for cue in exc.cues
+                         if cue.get("kin") == "query"]
+        assert expectedQuery not in schemaQueries
+
+        # Cache the root and request its missing dependency
+        exc.cues.clear()
+        hby.db.schema.pin(schemer.said, schemer)
+        exc.processEscrow()
+        dependencyEscrowKey = (grant.said, attributeSchemer.said)
+        assert hby.db.exns.get(keys=(grant.said,)) is None
+        assert hby.db.emse.get(keys=escrowKey) is None
+        assert hby.db.emse.get(keys=dependencyEscrowKey) is not None
+        assert hby.db.emsd.get(keys=(grant.said,)).qb64 == deadline.qb64
+        schemaQueries = [cue.get("q") for cue in exc.cues
+                         if cue.get("kin") == "query"]
+        assert dict(r="schema", said=attributeSchemer.said) in schemaQueries
+
+        # Cache the dependency and accept the Grant
+        hby.db.schema.pin(attributeSchemer.said, attributeSchemer)
+        exc.processEscrow()
+        assert hby.db.exns.get(keys=(grant.said,)) is not None
+        assert hby.db.emse.get(keys=dependencyEscrowKey) is None
+        assert hby.db.emsd.get(keys=(grant.said,)) is None
+
+        # Remove a required field
+        missingStatus = acdcmap(
+            israid=hab.pre,
+            schema=schemer.said,
+            attribute=dict(d=""),
+        )
+        assert "status" not in missingStatus.sad["a"]
+
+        # Add a prohibited field
+        unexpectedField = acdcmap(
+            israid=hab.pre,
+            schema=schemer.said,
+            attribute=dict(d="", status="citizen", random="unexpected"),
+        )
+        assert unexpectedField.sad["a"]["random"] == "unexpected"
+
+        invalidCredentials = (
+            ("missing its required status", missingStatus),
+            ("carrying an unexpected field", unexpectedField),
+        )
+        for description, credential in invalidCredentials:
+            invalidGrant, invalidAtc = ipexGrant(
+                hab=hab,
+                recp=hab.pre,
+                message=f"Disclose a credential {description}",
+                origin=_signed(credential, hab),
+            )
+
+            # Reject known schema violations without escrow
+            ims = bytearray(invalidGrant.raw)
+            ims.extend(invalidAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(invalidGrant.said,)) is None
+            assert hby.db.epse.get(keys=(invalidGrant.said,)) is None
+
+
 def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
     """An empty opener plan is valid but authorizes no Grant disclosure."""
     with openHby(name="ipex-v2-empty-opener-dp",
@@ -2376,7 +2864,7 @@ def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        # Build a credential 
+        # Build a credential
         credential = acdcmap(
             israid=hab.pre,
             attribute=dict(d="", status="citizen"),
@@ -2396,7 +2884,7 @@ def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(applyExn.said,)) is not None
 
-        # Build a Grant that attempts to disclose the credential even though 
+        # Build a Grant that attempts to disclose the credential even though
         # the Apply requested no disclosure
         applyGrant, applyGrantAtc = ipexGrant(
             hab=hab,
