@@ -33,6 +33,6 @@ from .helping import (nowUTC, nowIso8601, toIso8601, fromIso8601, sceil,
                       isNonStringSequence, isNonStringIterable,
                       Reb64, Reatt, Repath, isign, sceil,
                       extractValues, dictify, datify, klasify,
-                      intToB64, intToB64b, b64ToInt, B64_CHARS,
+                      intToB64, intToB64b, b64ToInt, decodeUtf8, B64_CHARS,
                       nabSextets, codeB64ToB2, codeB2ToB64,
                       DTS_BASE_0, DTS_BASE_1)

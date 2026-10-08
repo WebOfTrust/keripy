@@ -14,6 +14,24 @@ The intermediate 2.0.0 branch largely
 provides that backwards compatibility but does not fully implement all the new
 features.
 
+*** Breaking for callers that catch builtin exceptions: malformed input to several parsers
+now raises a keri.kering error (a KeriError) instead of a raw Python exception.
+- Tholder: an invalid sith raises kering.ValidationError instead of ValueError,
+  ZeroDivisionError, OverflowError or TypeError. Thresholds with more than Tholder.Limit
+  clauses, weights per clause, or total weights, and JSON sith strings longer than
+  Tholder.MaxSith, are now rejected.
+- Pather.resolve: a missing key, traversal into a scalar, or a non-digit list index raises
+  kering.InvalidValueError instead of KeyError or ValueError, and paths deeper than
+  Pather.MaxDepth are rejected. KERIA's exchange indexer (src/keria/db/basing.py) catches
+  KeyError around Pather.resolve to skip messages lacking an indexed field, and needs
+  `except (KeyError, kering.InvalidValueError)` before it moves to this version.
+- helping.b64ToInt and the Matter/Counter/Indexer/Texter/Labeler decode paths raise
+  kering.ConversionError instead of KeyError, UnicodeDecodeError or binascii.Error.
+- A truncated variable-size Matter primitive raises kering.ShortageError instead of
+  ValueError, matching Indexer.
+Code that catches ValueError or KeyError around these calls should catch the kering error
+named above, or KeriError.
+
 
 ## 2.0.0-dev6
 
