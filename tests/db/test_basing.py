@@ -1916,7 +1916,7 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
         state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.s == '6'
         assert state.f == '6'
-        assert natHab.db.env.stat()['entries'] <= 106 #68
+        assert natHab.db.env.stat()['entries'] <= 108 #68
 
         grant = exchange(sender=natHab.pre,
                          route="/test/grant",
@@ -2029,7 +2029,7 @@ def test_clean_baser(tmp_path, fakeHelpingClock):
             assert ldig == natHab.kever.serder.saidb
             serder = natHab.db.evts.get(keys=(natHab.pre, ldig))
             assert serder.said == natHab.kever.serder.said
-            assert natHab.db.env.stat()['entries'] <= 106 #68
+            assert natHab.db.env.stat()['entries'] <= 108 #68
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.pre)
@@ -2734,6 +2734,10 @@ def test_clear_escrows():
         db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=Dater())
         assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
 
+        schema = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        db.emsd.put(keys=('dig',), val=Dater())
+        assert db.emsd.get(keys=('dig',)) is not None
+
         db.eoobi.pin(keys=('url',), val=OobiRecord())
         assert db.eoobi.cnt() == 1
 
@@ -2756,6 +2760,9 @@ def test_clear_escrows():
         db.epse.put(keys=('dig',), val=serder)
         assert db.epse.get(keys=('dig',)) is not None
 
+        db.emse.put(keys=('dig', schema), val=serder)
+        assert db.emse.get(keys=('dig', schema)) is not None
+
         db.dune.pin(keys=(pre, 'said'), val=serder)
         assert db.dune.get(keys=(pre, 'said')) is not None
 
@@ -2764,9 +2771,9 @@ def test_clear_escrows():
         for escrow in [db.ures, db.vres, db.pses, db.pwes, db.ooes,
                        db.qnfs, db.uwes,
                        db.qnfs, db.misfits, db.delegables, db.pdes,
-                       db.udes, db.rpes, db.ldes, db.epsd, db.eoobi,
+                       db.udes, db.rpes, db.ldes, db.epsd, db.emsd, db.eoobi,
                        db.dpub, db.gpwe, db.gdee, db.dpwe, db.gpse,
-                       db.epse, db.dune]:
+                       db.epse, db.emse, db.dune]:
             assert escrow.cntAll() == 0
 
 
@@ -2818,6 +2825,7 @@ def test_trim_all_escrows_during_migration():
         assert db.rpes.cntAll() == 0
         assert db.ldes.cntAll() == 0
         assert db.epsd.cntAll() == 0
+        assert db.emsd.cntAll() == 0
         assert db.eoobi.cnt() == 0
         assert db.dpub.cntAll() == 0
         assert db.gpwe.cntAll() == 0
@@ -2825,6 +2833,7 @@ def test_trim_all_escrows_during_migration():
         assert db.dpwe.cntAll() == 0
         assert db.gpse.cntAll() == 0
         assert db.epse.cntAll() == 0
+        assert db.emse.cntAll() == 0
         assert db.dune.cntAll() == 0
 
 

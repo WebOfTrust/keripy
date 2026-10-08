@@ -8,20 +8,21 @@ IPEx protocol service support (Issuance and Presentation Exchange)
 
 from collections import deque, namedtuple
 from collections.abc import Mapping
-from copy import deepcopy
 
 from hio.help import ogler
 
 from .. import Kinds, Protocols
 from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
-                      MisbindingError, MissingAnchorError, MissingChainError,
-                      MissingSenderKeyStateError, MisdigestError,
-                      MisregistryError, MissequenceError, RootSealError,
-                      UnverifiedBlindError, ValidationError, Vrsn_2_0, sniff)
+                      FailedSchemaValidationError, MisbindingError,
+                      MissingAnchorError, MissingChainError, MissingSchemaError,
+                      MissingSenderKeyStateError, MisdigestError, MisregistryError,
+                      MissequenceError, RootSealError, UnverifiedBlindError,
+                      ValidationError, Vrsn_2_0, sniff)
 from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
-                    Number, Prefixer, Saider, Schemer, SealEvent, SealSource, Serdery, Texter,
+                    Number, Prefixer, Saider, SealEvent, SealSource, Serdery, Texter,
                     exchange, messagize)
 from ..peer.exchanging import cloneMessage, verifyAttachments
+from . import scheming
 
 logger = ogler.getLogger()
 
@@ -457,9 +458,11 @@ class IpexHandler:
                 False otherwise.
 
         Raises:
-            MissingChainError: When a grant's issuer-auth proof needs TEL
+            MissingChainError: When a disclosed ACDC's issuer-auth proof needs
                 evidence that is not yet available locally and the exchange
                 should be retried from escrow later.
+            MissingSchemaError: When a disclosed ACDC names a schema that is not
+                yet available locally and the exchange should be retried later.
             MissingSenderKeyStateError: When a required sender anchor refers
                 to KEL evidence that is not yet available locally.
         """
@@ -586,18 +589,29 @@ class IpexHandler:
         # while grant must disclose one fully closed reachable DAG rooted at
         # the message's `a.o[0]`.
         if verb == Ipex.offer and nests:
-            if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False) is None:
+            walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False)
+            if walked is None:
+                return False
+
+            # Metadata offers carry only the Discloser's outer commitment. The
+            # Issuer's authentication evidence is withheld until the Grant.
+            if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
                 return False
         elif verb == Ipex.grant:
             walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=True)
             if walked is None:
                 return False
-            if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
+
+            # Authenticate every issuer before validating schemas
+            if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
                 return False
 
-            # Stage 6: after the disclosed graph shape is accepted, each walked
-            # registry-backed node must vet its own node-local proof group.
-            if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
+            # Validate each authenticated node against its own
+            # schema before evaluating graph semantics.
+            if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
+                return False
+
+            if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
                 return False
 
             # Require Exchanger's fixed three-part evidence result.
@@ -947,44 +961,13 @@ class IpexHandler:
         # inherits the schema pin from its parent group.
         edgeSchema = group["s"] if "s" in group else inheritedSchema
         if matched and edgeSchema is not None:
-            edgeSchemer = None
-            if isinstance(edgeSchema, str):
-                edgeSchemaId = edgeSchema
-            elif isinstance(edgeSchema, Mapping):
-                declared = edgeSchema.get("$id")
-                if not isinstance(declared, str):
-                    return None
-                try:
-                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
-                except (ValidationError, ValueError):
-                    return None
-                if edgeSchemer.said != declared:
-                    return None
-                edgeSchemaId = edgeSchemer.said
-            else:
-                return None
-
-            farSchema = fserder.schema
-            if isinstance(farSchema, Mapping):
-                farSchemaId = farSchema.get("$id")
-            elif isinstance(farSchema, str):
-                farSchemaId = farSchema
-            else:
-                return None
-            if not isinstance(farSchemaId, str):
-                return None
-
-            # A direct schema SAID match is enough. Otherwise load or build
-            # the schema and verify the far node against it.
-            if edgeSchemaId != farSchemaId:
-                if edgeSchemer is None:
-                    edgeSchemer = self.hby.db.schema.get(edgeSchemaId)
-                    if edgeSchemer is None:
-                        return None
-                try:
-                    edgeSchemer.verify(fserder.raw)
-                except ValidationError:
-                    matched = False
+            try:
+                scheming.validateSchema(acdc=fserder, db=self.hby.db,
+                                        schema=edgeSchema)
+            except MissingSchemaError:
+                raise
+            except (FailedSchemaValidationError, ValidationError, ValueError):
+                matched = False
 
         return matched
 
@@ -1051,6 +1034,20 @@ class IpexHandler:
 
         # Reduce the child booleans according to the group's operator.
         return any(results) if groupOp == "OR" else all(results)
+
+    def _verifyNodeSchemas(self, nodes, order):
+        """Validate each disclosed ACDC against its embedded or cached schema."""
+        for said in order:
+            nest = nodes[said]
+            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+            try:
+                scheming.validateSchema(acdc=nserder, db=self.hby.db)
+            except MissingSchemaError:
+                raise
+            except (FailedSchemaValidationError, ValidationError, ValueError):
+                return False
+
+        return True
 
     def _verifyGraphSemantics(self, nodes, order):
         """Verify grant edge operators and edge-schema pins across walked nodes.

@@ -34,7 +34,7 @@ from ..kering import (Ilks, ValidationError, ConfigurationError,
                       MisbindingError, DuplicitousRegistryError,
                       UnverifiedBlindError)
 from ..core import Blinder, BlindState, BoundState, Diger, Number, SerderACDC
-from . import messaging
+from . import messaging, scheming
 
 logger = help.ogler.getLogger()
 
@@ -974,6 +974,8 @@ class _RegEventer:
                 frontier yet, if ``acdc`` is invalid, if it does not belong to
                 this registry or issuer, or if a caller-supplied ``blinder``
                 override is provided.
+            MissingSchemaError: if the ACDC's external schema is unavailable.
+            FailedSchemaValidationError: if the ACDC violates its schema.
         """
         # The issuer-side blind path only accepts a full, self-verifying ACDC.
         if not isinstance(acdc, SerderACDC):
@@ -994,6 +996,9 @@ class _RegEventer:
             issuer = acdc.sad.get("i")
         if issuer != self.hab.pre:
             raise ConfigurationError(f"acdc {acdc.said} has issuer {issuer} not {self.hab.pre}")
+
+        # Reject malformed credentials before deriving or staging an issuance event.
+        scheming.validateSchema(acdc=acdc, db=self.hab.db)
 
         return self._blind(target=acdc.said, state=state, **kwa)
 
