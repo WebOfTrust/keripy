@@ -70,13 +70,9 @@ from keri.acdc import regcept, blindate, update, acdcmap,  acdcagg
 
 # Questions:
 
-# ? Should guardianship expired Date field be optional or required
-# ? should guardian ACDC have edge to guardian core with E1E?)
-
 # ? Visitors with core SEDI. Should there be no link to core for credentials
 # that persist even when citizen becomes no longer a citizen
 # or should core be reissued when presence status changes for visitors?
-
 
 # ToDo
 # document schema and examples in draft implementation guide
@@ -213,10 +209,10 @@ ReplaceSchema = \
   'additionalProperties': False
 }
 
-UnitSchemaSaid = 'ELjJlSaExu9ss766dDpQoLE5aT6-wIRyR72X5YLC3ILc'
+UnitSchemaSaid = 'EBbOpBe0lP_epHhakeiXdOmeal3leDfLRf0PAItsanoQ'
 UnitSchema = \
 {
-  '$id': 'ELjJlSaExu9ss766dDpQoLE5aT6-wIRyR72X5YLC3ILc',
+  '$id': 'EBbOpBe0lP_epHhakeiXdOmeal3leDfLRf0PAItsanoQ',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Organizational Unit Schema',
   'description': 'SEDI Oganizational Unit JSON Schema for acm ACDC.',
@@ -265,7 +261,7 @@ UnitSchema = \
             'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
             'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
-            'unit': {'description': 'Oganizational Unit', 'type': 'string'},
+            'unit': {'description': 'Organizational Unit', 'type': 'string'},
           },
           'additionalProperties': False
         }
@@ -922,10 +918,10 @@ CoreSchema = \
   'additionalProperties': False
 }
 
-GuardianSchemaSaid = 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY'
+GuardianSchemaSaid = 'EDJzXg34opr6-odFix6lpiccfHF7ksITHuIES_MQRH4b'
 GuardianSchema = \
 {
-  '$id': 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY',
+  '$id': 'EDJzXg34opr6-odFix6lpiccfHF7ksITHuIES_MQRH4b',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Guardianship Schema',
   'description': 'SEDI Guardianship JSON Schema for acm ACDC.',
@@ -964,7 +960,6 @@ GuardianSchema = \
             'd',
             'u',
             'i',
-            'primary',
             'role',
             'ward',
             'issuedDate',
@@ -975,7 +970,6 @@ GuardianSchema = \
             'u': {'description': 'Attribute Section UE', 'type': 'string'},
             'i': {'description': 'Issuee AID', 'type': 'string'},
             'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
-            'primary': { 'description': 'Primary True if not bulk issued else False', 'type': 'boolean'},
             'role': {'description': 'Guardian Role', 'type': 'string'},
             'ward': {'description': 'Ward AID', 'type': 'string'},
             'issuedDate':
@@ -2096,10 +2090,10 @@ SocialSchema = \
 
 
 # SEDI Bespoke Presentation schema
-BespokeSchemaSaid = 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8'
+BespokeSchemaSaid = 'EGcqmkrnaQz8F1PEekLOaySiW-uDaJ0SfoqtSuqCvEif'
 BespokeSchema = \
 {
-  '$id': 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8',
+  '$id': 'EGcqmkrnaQz8F1PEekLOaySiW-uDaJ0SfoqtSuqCvEif',
   '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'title': 'SEDI Bespoke Presentation Schema',
   'description': 'SEDI Bespoke Presentation JSON Schema for acm ACDC.',
@@ -2196,6 +2190,21 @@ BespokeSchema = \
             'age':
             {
               'description': 'Age Edge Block',
+              'type': 'object',
+              'required': ['n'],
+              'properties':
+              {
+                'd': {'description': 'Edge SAID', 'type': 'string'},
+                'u': {'description': 'Edge UE', 'type': 'string'},
+                'n': {'description': 'Far Node SAID', 'type': 'string'},
+                's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+              },
+              'additionalProperties': False
+            },
+            'image':
+            {
+              'description': 'High Resolution Image Proof Edge Block',
               'type': 'object',
               'required': ['n'],
               'properties':
@@ -2568,7 +2577,7 @@ def test_sedi_schema():
                 'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
                 'issuedDate': {'description': 'Issued Date as RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
-                'unit': {'description': 'Oganizational Unit', 'type': 'string'},
+                'unit': {'description': 'Organizational Unit', 'type': 'string'},
               },
               'additionalProperties': False
             }
@@ -2600,7 +2609,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=unitSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     unitSchemaSaid = mapper.said
-    assert  unitSchemaSaid == 'ELjJlSaExu9ss766dDpQoLE5aT6-wIRyR72X5YLC3ILc'
+    assert  unitSchemaSaid == 'EBbOpBe0lP_epHhakeiXdOmeal3leDfLRf0PAItsanoQ'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert unitSchemaSaid == UnitSchemaSaid
     assert mapper.mad == UnitSchema
@@ -3175,7 +3184,6 @@ def test_sedi_schema():
                 'd',
                 'u',
                 'i',
-                'primary',
                 'role',
                 'ward',
                 'issuedDate',
@@ -3186,7 +3194,6 @@ def test_sedi_schema():
                 'u': {'description': 'Attribute Section UE', 'type': 'string'},
                 'i': {'description': 'Issuee AID', 'type': 'string'},
                 'rd': {'description': 'Issuee Presentation Registry SAID', 'type': 'string'},
-                'primary': { "description": 'Primary True if not bulk issued else False', 'type': 'boolean'},
                 'role': {'description': 'Guardian Role', 'type': 'string'},
                 'ward': {'description': 'Ward AID', 'type': 'string'},
                 'issuedDate':
@@ -3294,7 +3301,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=guardianSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     guardianSchemaSaid = mapper.said
-    assert guardianSchemaSaid == 'EPAYIl4Dy1Zi7Gf8rFiHCRMdxtkjv7tv9uFBtBw5t1zY'
+    assert guardianSchemaSaid == 'EDJzXg34opr6-odFix6lpiccfHF7ksITHuIES_MQRH4b'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert guardianSchemaSaid == GuardianSchemaSaid
     assert mapper.mad == GuardianSchema
@@ -4455,6 +4462,21 @@ def test_sedi_schema():
                   },
                   'additionalProperties': False
                 },
+                'image':
+                {
+                  'description': 'High Resolution Image Proof Edge Block',
+                  'type': 'object',
+                  'required': ['n'],
+                  'properties':
+                  {
+                    'd': {'description': 'Edge SAID', 'type': 'string'},
+                    'u': {'description': 'Edge UE', 'type': 'string'},
+                    'n': {'description': 'Far Node SAID', 'type': 'string'},
+                    's': {'description': 'Far Node Schema SAID', 'type': 'string'},
+                    'o': {'description': 'Edge Unary Operator', 'type': 'string'}
+                  },
+                  'additionalProperties': False
+                },
                 'guardian':
                 {
                   'description': 'Guardian Edge Block',
@@ -4516,7 +4538,7 @@ def test_sedi_schema():
     mapper = Mapper(mad=bespokeSchemaMad, makify=True, strict=False, saids={"$id": 'E',},
                     saidive=True, kind=kind)
     bespokeSchemaSaid = mapper.said
-    assert bespokeSchemaSaid == 'ELNJljAHLvAL4ycL2xQhUib1HngH-m_y8azFKXH7dBS8'
+    assert bespokeSchemaSaid == 'EGcqmkrnaQz8F1PEekLOaySiW-uDaJ0SfoqtSuqCvEif'
     SchemaValidator.check_schema(schema=mapper.mad)  # raises error if invalid format
     assert bespokeSchemaSaid == BespokeSchemaSaid
     assert mapper.mad == BespokeSchema
@@ -5039,7 +5061,7 @@ def test_sedi_acdcs():
     unitValidator.validate(debSerderUnit.sad)  # raises error if invalid
 
     debUnitSediSaid = debSerderUnit.said
-    assert debUnitSediSaid == 'EP6uB4TN40MCT2ayCVoZ7NekTME3WTCTByH68kvQEnkY'
+    assert debUnitSediSaid == 'EIojbncOpuCoMFWZSutjfkLf5KNu_nbCOsqgFClk3SMK'
     assert debSerderUnit.verstr == 'ACDCCAACAAJSONAAIn.'
     assert debSerderUnit.israid == roy
     assert debSerderUnit.regid == royRids[0]
@@ -5148,7 +5170,7 @@ def test_sedi_acdcs():
     agentValidator.validate(sueSerderAgent.sad)  # raises error if invalid
 
     sueAgentSediSaid = sueSerderAgent.said
-    assert sueAgentSediSaid == 'EH0Mvs2ZE3tttGr0xUPgnzXhYFPVbckqNyW8_CRcp5Dc'
+    assert sueAgentSediSaid == 'EOD4QiWo1oa6UtiEr456Lu0ba3v1Cmd6qOPoRbAdx2hD'
     assert sueSerderAgent.verstr == 'ACDCCAACAAJSONAAO9.'
     assert sueSerderAgent.israid == deb
     assert sueSerderAgent.regid == debRids[0]
@@ -5259,7 +5281,7 @@ def test_sedi_acdcs():
     agentValidator.validate(stuSerderAgent.sad)  # raises error if invalid
 
     stuAgentSediSaid = stuSerderAgent.said
-    assert stuAgentSediSaid == 'ELDv-zdEZ8lUXoDkLFd8LGRJs41R2_RwscWsqBw4BmFw'
+    assert stuAgentSediSaid == 'EB4QhQdELR7HN6ACcRc-OeOa1x-AsXicNwXOXzZ4r5LC'
     assert stuSerderAgent.verstr == 'ACDCCAACAAJSONAAO_.'
     assert stuSerderAgent.israid == deb
     assert stuSerderAgent.regid == debRids[0]
@@ -5647,7 +5669,7 @@ def test_sedi_acdcs():
     coreValidator.validate(guySerderCore.sad)  # raises error if invalid
 
     guyCoreSediSaid = guySerderCore.said
-    assert guyCoreSediSaid == 'ENTYxv_drZOsO9aAS1w9VupOX_y1t7HRR9C7rhJeEX1j'
+    assert guyCoreSediSaid == 'EGsPyGCyHtDSWP61rVsRh3F8qooP_jrX6qPHqHn7-FOg'
     assert guySerderCore.verstr == 'ACDCCAACAAJSONAAfN.'
     assert guySerderCore.israid == sue
     assert guySerderCore.regid == sueRids[0]
@@ -5887,7 +5909,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(guySerderResidence.sad)  # raises error if invalid
 
     guyResidenceSediSaid = guySerderResidence.said
-    assert guyResidenceSediSaid == 'EI9K1dzx1HPGrz9ROoieZo2PuQ5mC6aSEfXuxeBUE8Cs'
+    assert guyResidenceSediSaid == 'EBmFqhgpZL_Dc6PLgZBuKtsYfl6ajXYihYLyp7qgcbPb'
     assert guySerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert guySerderResidence.israid == sue
     assert guySerderResidence.regid == sueRids[2]
@@ -5978,7 +6000,7 @@ def test_sedi_acdcs():
     ageValidator.validate(guySerderAge.sad)  # raises error if invalid
 
     guyAgeSediSaid = guySerderAge.said
-    assert guyAgeSediSaid == 'EIDR_uFu1OaV9tkRHYNKy3VBF6RcyPvKS-Vm1tH-z4xK'
+    assert guyAgeSediSaid == 'ECfZCyLfleF3zA8qsHJ0WZYXW5xyR-aPDC8dl6RfLd27'
     assert guySerderAge.verstr == 'ACDCCAACAAJSONAAiO.'
     assert guySerderAge.israid == sue
     assert guySerderAge.regid == sueRids[4]
@@ -6103,7 +6125,7 @@ def test_sedi_acdcs():
     imageValidator.validate(guySerderImage.sad)  # raises error if invalid
 
     guyImageSediSaid = guySerderImage.said
-    assert guyImageSediSaid == 'EJPr7dOPJjqiRJaJGVZCxh7qB5hDr7yVOrOM42fK8RdD'
+    assert guyImageSediSaid == 'EGXMjXaIb0YMnvahN4i0LwjildB0wwNAA-eCi2COPNnk'
     assert guySerderImage.verstr == 'ACDCCAACAAJSONAATG.'
     assert guySerderImage.israid == sue
     assert guySerderImage.regid == sueRids[7]
@@ -6132,7 +6154,6 @@ def test_sedi_acdcs():
         "u": guyUes[42],
         "i": guy,
         "rd": guyPreRids[0],
-        'primary': True,
         "role": "parent",
         "ward": wyn,
         "issuedDate": \
@@ -6154,7 +6175,7 @@ def test_sedi_acdcs():
     guyGuardianAttMad = compactor.partials[('.issuedDate', '.expirationDate')].mad
     assert guyGuardianAttMad['i'] == guy
     guyGuardianAttMadSaid = compactor.said
-    assert guyGuardianAttMadSaid == 'EHPnpFgPhgYQmnLgMUvJYcUqgvagRclCoGKfdNjdz73H'
+    assert guyGuardianAttMadSaid == 'EDhdyFmwvPUkniyoHMNDQOpk_cJsN_FYPEUqiklW4NMs'
 
     assert guyGuardianAttMad == \
     {
@@ -6162,7 +6183,6 @@ def test_sedi_acdcs():
         "u": guyUes[42],
         "i": guy,
         "rd": guyPreRids[0],
-        'primary': True,
         "role": "parent",
         "ward": wyn,
         "issuedDate": \
@@ -6224,8 +6244,8 @@ def test_sedi_acdcs():
     guardianValidator.validate(guySerderGuardian.sad)  # raises error if invalid
 
     guyGuardianSediSaid = guySerderGuardian.said
-    assert guyGuardianSediSaid == 'EP0aoeuK-4I1ETjR_TltV_nXziaz-chfDGS0IkPRX1IF'
-    assert guySerderGuardian.verstr == 'ACDCCAACAAJSONAASq.'
+    assert guyGuardianSediSaid == 'EONzgE0pcYF7hz1E_VVN4ea9iv75Q_C2ifhsZV1j6uQp'
+    assert guySerderGuardian.verstr == 'ACDCCAACAAJSONAASb.'
     assert guySerderGuardian.israid == sue
     assert guySerderGuardian.regid == sueRids[0]
     assert guySerderGuardian.iseaid == guy
@@ -6574,7 +6594,7 @@ def test_sedi_acdcs():
     coreValidator.validate(galSerderCore.sad)  # raises error if invalid
 
     galCoreSediSaid = galSerderCore.said
-    assert galCoreSediSaid == 'EDt8t1jfBlxnAdHN3RD9ssKg-aSzswu10cqSJF7s7CHL'
+    assert galCoreSediSaid == 'ENIxm13eUECS_QAdqfKTnvIyjL4gI39F4Fo6HQADtfzn'
     assert galSerderCore.verstr == 'ACDCCAACAAJSONAAfG.'
     assert galSerderCore.israid == sue
     assert galSerderCore.regid == sueRids[1]
@@ -6751,7 +6771,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(galSerderResidence.sad)  # raises error if invalid
 
     galResidenceSediSaid = galSerderResidence.said
-    assert galResidenceSediSaid == 'EHGdpNxXKqwfPgszWXnGIZkutY51wZoxHx6w6Cn30i_U'
+    assert galResidenceSediSaid == 'EOsxMfKdzgCtSR53uBRpysnvAViIsuIaNSmjQc30HDs2'
     assert galSerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert galSerderResidence.israid == sue
     assert galSerderResidence.regid == sueRids[3]
@@ -6842,7 +6862,7 @@ def test_sedi_acdcs():
     ageValidator.validate(galSerderAge.sad)  # raises error if invalid
 
     galAgeSediSaid = galSerderAge.said
-    assert galAgeSediSaid == 'EA7yXspp8zuJqrzwE2huo-4O8rmGMIGzAwfuag8gHibM'
+    assert galAgeSediSaid == 'EOunAyf3Z0RZBBWavqSEdNoeKrz63isukPRKbNj92zAa'
     assert galSerderAge.verstr == 'ACDCCAACAAJSONAAiO.'
     assert galSerderAge.israid == sue
     assert galSerderAge.regid == sueRids[5]
@@ -6871,7 +6891,6 @@ def test_sedi_acdcs():
         "u": galUes[42],
         "i": gal,
         "rd": galPreRids[0],
-        'primary': True,
         "role": "parent",
         "ward": wyn,
         "issuedDate": \
@@ -6893,7 +6912,7 @@ def test_sedi_acdcs():
     galGuardianAttMad = compactor.partials[('.issuedDate', '.expirationDate')].mad
     assert galGuardianAttMad['i'] == gal
     galGuardianAttMadSaid = compactor.said
-    assert galGuardianAttMadSaid == 'EGJXU81iDbXHzU1aLT_FwvB-TNin2W_Ze6j-AnTNO_yh'
+    assert galGuardianAttMadSaid == 'EP7n0N0UOHsnITfP-0wWAaWBqPWFuQsVR2F9Kh94VGli'
 
     assert galGuardianAttMad == \
     {
@@ -6901,7 +6920,6 @@ def test_sedi_acdcs():
         "u": galUes[42],
         "i": gal,
         "rd": galPreRids[0],
-        'primary': True,
         "role": "parent",
         "ward": wyn,
         "issuedDate": \
@@ -6964,8 +6982,8 @@ def test_sedi_acdcs():
     guardianValidator.validate(galSerderGuardian.sad)  # raises error if invalid
 
     galGuardianSediSaid = galSerderGuardian.said
-    assert galGuardianSediSaid == 'ENnGph1aXP8iryzc2MSvYhMvL0aRXDYHZQqL3bLYlgG7'
-    assert galSerderGuardian.verstr == 'ACDCCAACAAJSONAASq.'
+    assert galGuardianSediSaid == 'ENTwQxDFnVXigOTcymAXSHCgl26a0p3POYiRFnTL1lb0'
+    assert galSerderGuardian.verstr == 'ACDCCAACAAJSONAASb.'
     assert galSerderGuardian.israid == sue
     assert galSerderGuardian.regid == sueRids[0]
     assert galSerderGuardian.iseaid == gal
@@ -7065,7 +7083,7 @@ def test_sedi_acdcs():
     bespokeValidator.validate(galSerderBespoke.sad)  # raises error if invalid
 
     galBespokeSediSaid = galSerderBespoke.said
-    assert galBespokeSediSaid == 'ELBY34HrWHHmheIzBVJZ6nQ2Jh4GLTl1ZjtC2q-nu6Zj'
+    assert galBespokeSediSaid == 'EHmafMoTjFeHzmdu9GiXy5sWm_ExYz42LuqyKq_lFK2p'
     assert galSerderBespoke.verstr == 'ACDCCAACAAJSONAAM5.'
     assert galSerderBespoke.israid == gal
     assert galSerderBespoke.iseaid == gal
@@ -7439,7 +7457,7 @@ def test_sedi_acdcs():
     coreValidator.validate(wynSerderCore.sad)  # raises error if invalid
 
     wynCoreSediSaid = wynSerderCore.said
-    assert wynCoreSediSaid == 'EA061ydZXK-r9p7ZlmRNnJJPkgeLujYwmySiSZj_bmp_'
+    assert wynCoreSediSaid == 'EO2_WbE5hiB3HpwD2XDQShBDXSLsh7cYaIil_pWOBplX'
     assert wynSerderCore.verstr == 'ACDCCAACAAJSONAAnI.'
     assert wynSerderCore.israid == sue
     assert wynSerderCore.regid == sueRids[1]
@@ -7616,7 +7634,7 @@ def test_sedi_acdcs():
     residenceValidator.validate(wynSerderResidence.sad)  # raises error if invalid
 
     wynResidenceSediSaid = wynSerderResidence.said
-    assert wynResidenceSediSaid == 'EMKZOIbeUYeRfFi-hK7k7FES3izvJUuIP55xjAGPuVQf'
+    assert wynResidenceSediSaid == 'EO_D31ZbZBqKOLjKoOKKr6t3gXdKfWNPFUHXjQBgSZ-y'
     assert wynSerderResidence.verstr == 'ACDCCAACAAJSONAAZA.'
     assert wynSerderResidence.israid == sue
     assert wynSerderResidence.regid == sueRids[3]
@@ -7717,7 +7735,7 @@ def test_sedi_acdcs():
     ageValidator.validate(wynSerderAge.sad)  # raises error if invalid
 
     wynAgeSediSaid = wynSerderAge.said
-    assert wynAgeSediSaid == 'EJ_IrohXhDC-p3Pw4L5V14NqDh4pz_yjFKs8yUBnDP-X'
+    assert wynAgeSediSaid == 'EJICGrKf1Lr1xg0EwSFViU_hJALJQcZSyI9gKk1tEkMr'
     assert wynSerderAge.verstr == 'ACDCCAACAAJSONAAld.'
     assert wynSerderAge.israid == stu
     assert wynSerderAge.regid == stuRids[0]
@@ -7820,7 +7838,7 @@ def test_sedi_acdcs():
     socialValidator.validate(wynSerderSocial.sad)  # raises error if invalid
 
     wynSocialSediSaid = wynSerderSocial.said
-    assert wynSocialSediSaid == 'EDaJzDdlu8ooTmjkPzEfzCZYjN6wPAgLf7iMOUIvuAqi'
+    assert wynSocialSediSaid == 'EGdxe5u7SRt__mJBvjRc0LdJycRDYgdnrjwdce9UQDE6'
     assert wynSerderSocial.verstr == 'ACDCCAACAAJSONAAOu.'
     assert wynSerderSocial.israid == guy
     assert wynSerderSocial.regid == guyRids[0]
@@ -7921,7 +7939,7 @@ def test_sedi_acdcs():
     bespokeValidator.validate(wynSerderBespoke.sad)  # raises error if invalid
 
     wynBespokeSediSaid = wynSerderBespoke.said
-    assert wynBespokeSediSaid == 'EHgYdFmRPZEIhaL33pYWJVNI-EADUTJW_9Grk9zNOcot'
+    assert wynBespokeSediSaid == 'EACZWEWeUKMw0d59M30OmlxpQfxUK0_OW9FkUT25iokI'
     assert wynSerderBespoke.verstr == 'ACDCCAACAAJSONAAMx.'
     assert wynSerderBespoke.israid == wyn
     assert wynSerderBespoke.iseaid == wyn
@@ -8046,7 +8064,7 @@ def test_sedi_acdcs():
     replaceValidator.validate(rynSerderReplace.sad)  # raises error if invalid
 
     rynReplaceSediSaid = rynSerderReplace.said
-    assert rynReplaceSediSaid == 'EBETSVmFmF3-OdazBEVoi-x2qlLveH7HkxKREIlGyLb2'
+    assert rynReplaceSediSaid == 'EPF4V1wuieZE15yOoWOsvCm0_1C-I0G7efTmIiUQ5sWa'
     assert rynSerderReplace.verstr == 'ACDCCAACAAJSONAANu.'
     assert rynSerderReplace.israid == sue
     assert rynSerderReplace.regid == sueRids[6]

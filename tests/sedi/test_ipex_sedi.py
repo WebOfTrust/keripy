@@ -1071,9 +1071,9 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                     modifiers=dict(
                         dp=[
                             [
-                                [CoreSchemaSaid, "/", []],
-                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [], ]
+                                [CoreSchemaSaid, "/", [""]],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
@@ -1398,9 +1398,9 @@ def test_core_sedi_rejects_missing_authority_chain():
                     modifiers=dict(
                         dp=[
                             [
-                                [CoreSchemaSaid, "/", []],
-                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", []],
+                                [CoreSchemaSaid, "/", [""]],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
@@ -1535,6 +1535,11 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                 verifierRgy.store.accept(sedi.coreRegistry.regk, 1, sedi.coreIssued)
                 verifierRgy.store.accept(presentationRegistry.regk, 0, sedi.presentationRip)
 
+                modifiers = dict(dp=[[
+                    [CoreSchemaSaid, "/", [""]],
+                    [AgentSchemaSaid, "/e/utahAgent/_/", [""]],
+                    [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [""]],
+                ]])
                 boundGrant, _ = ipexGrant(
                     hab=holder,
                     recp=verifier.pre,
@@ -1542,6 +1547,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                     origin=core,
                     artifacts=[agent, unit],
                     ax=[True],
+                    modifiers=modifiers,
                     anchorers=[],
                 )
                 presentationProof, presented = holderRegistrar.present(
@@ -1567,6 +1573,7 @@ def test_sedi_rejects_presentation_proof_for_different_grant():
                     origin=proofedCore,
                     artifacts=[sedi.proofedAgent, sedi.proofedUnit],
                     ax=[True],
+                    modifiers=modifiers,
                     anchorers=[],
                 )
                 assert wrongGrant.said != boundGrant.said
@@ -2479,10 +2486,10 @@ def test_residence_sedi_requires_every_rd_node_to_bind_grant():
                     modifiers=dict(
                         dp=[
                             [
-                                [ResidenceSchemaSaid, "/", []],
-                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
+                                [ResidenceSchemaSaid, "/", [""]],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", [""]],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
@@ -2682,10 +2689,10 @@ def test_residence_sedi_uses_nested_core_presentation_registry():
                     modifiers=dict(
                         dp=[
                             [
-                                [ResidenceSchemaSaid, "/", []],
-                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
+                                [ResidenceSchemaSaid, "/", [""]],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", [""]],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
@@ -2910,9 +2917,9 @@ def test_sedi_grant_escrows_for_presentation_anchor():
                     modifiers=dict(
                         dp=[
                             [
-                                [CoreSchemaSaid, "/", []],
-                                [AgentSchemaSaid, "/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", []],
+                                [CoreSchemaSaid, "/", [""]],
+                                [AgentSchemaSaid, "/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
@@ -3127,10 +3134,10 @@ def test_residence_sedi_rejects_invalid_issuee_relationship():
                     modifiers=dict(
                         dp=[
                             [
-                                [ResidenceSchemaSaid, "/", []],
-                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
+                                [ResidenceSchemaSaid, "/", [""]],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", [""]],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
@@ -3348,10 +3355,10 @@ def test_residence_sedi_supporting_dag_through_ipex():
                     modifiers=dict(
                         dp=[
                             [
-                                [ResidenceSchemaSaid, "/", []],
-                                [CoreSchemaSaid, "/e/coreIdentity/_/", []],
-                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", []],
-                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", []],
+                                [ResidenceSchemaSaid, "/", [""]],
+                                [CoreSchemaSaid, "/e/coreIdentity/_/", [""]],
+                                [AgentSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/", [""]],
+                                [UnitSchemaSaid, "/e/coreIdentity/_/e/utahAgent/_/e/orgUnit/_/", [""]],
                             ]
                         ]
                     ),
