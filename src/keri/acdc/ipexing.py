@@ -18,9 +18,9 @@ from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
                       MissingSenderKeyStateError, MisdigestError,
                       MisregistryError, MissequenceError, RootSealError,
                       UnverifiedBlindError, ValidationError, Vrsn_2_0, sniff)
-from ..core import (BlindState, Blinder, BoundState, Counter, Codens, Diger, GenDex, Noncer,
-                    Number, Prefixer, Saider, Schemer, SealEvent, SealSource, Serdery, Texter,
-                    exchange, messagize)
+from ..core import (BlindState, Blinder, BoundState, Compactor, Counter, Codens, Diger,
+                    GenDex, Noncer, Number, Pather, Prefixer, Saider, Schemer, SealEvent,
+                    SealSource, Serdery, Texter, exchange, messagize)
 from ..peer.exchanging import cloneMessage, verifyAttachments
 
 logger = ogler.getLogger()
@@ -233,6 +233,13 @@ def _validSingleDagList(value, itemtype):
 def _validDisclosurePath(value):
     """Validate one DAG's disclose-path plan.
 
+    Callers interpret an empty plan as inheriting the prior plan when one
+    exists and requesting no disclosure otherwise. Within a plan entry, an
+    empty field list requires only the selected node and schema and permits any
+    valid compaction level. A sole empty-string path requests the whole selected
+    ACDC. Any other field list requests the canonical disclosure closure for
+    those relative paths.
+
     Parameters:
         value: Candidate disclose-path list for one DAG.
 
@@ -271,8 +278,17 @@ def _validDisclosurePath(value):
 
         if not isinstance(fields, list):
             return False
+        if fields == [""]:
+            continue
         if any(not isinstance(field, str) or not field for field in fields):
             return False
+        for field in fields:
+            if field.startswith("/"):
+                return False
+            try:
+                Pather(path=field, relative=True)
+            except Exception:
+                return False
 
     return True
 
@@ -489,18 +505,18 @@ class IpexHandler:
         if "ax" in attrs and not _validSingleDagList(attrs["ax"], bool):
             return False
 
-        # Stage 2: apply/offer carry disclose-paths. The wire shape is now one
-        # disclose-path list per DAG, so today's single-DAG form is a one-item
-        # outer list. Offer may optionally name or carry a metadata DAG in
-        # `a.o[0]`, while grant must name and carry the final disclosed DAG
-        # root.
-        if verb in (Ipex.apply, Ipex.offer):
+        # Stage 2: disclosure messages carry one disclose-path list per DAG.
+        # An empty plan inherits from a prior message and means no disclosure
+        # when the message opens a thread.
+        if verb in (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant):
             if ("dp" not in q
                     or not _validSingleDagList(q["dp"], list)
                     or not _validDisclosurePath(q["dp"][0])):
                 return False
-            if verb == Ipex.offer and not dig and not q["dp"][0]:
-                return False
+
+        # Agree changes no disclosure terms; its empty plan always means ditto.
+        if verb == Ipex.agree and q["dp"][0]:
+            return False
 
         if verb == Ipex.offer:
             if "o" in attrs:
@@ -512,16 +528,8 @@ class IpexHandler:
                     return False
             elif nests:
                 return False
-        elif verb == Ipex.grant:
-            if "o" not in attrs or not _validSingleDagList(attrs["o"], str) or not nests:
-                return False
-            try:
-                Saider(qb64=attrs["o"][0])
-            except Exception:
-                return False
-
         # The other verbs never disclose nested ACDC nodes.
-        elif nests:
+        elif verb != Ipex.grant and nests:
             return False
 
         # Stage 3: opener flows validate directly from the message itself,
@@ -582,74 +590,100 @@ class IpexHandler:
                                             diger=sscs[-1][1]):
                 return False
 
-        # Stage 5: offer may disclose only a reachable metadata subgraph,
-        # while grant must disclose one fully closed reachable DAG rooted at
-        # the message's `a.o[0]`.
+        # Stage 5: offer may disclose only a reachable metadata subgraph.
         if verb == Ipex.offer and nests:
             if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False) is None:
                 return False
+
+        # If the message is a Grant, resolve dp if it is empty or not
         elif verb == Ipex.grant:
-            walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=True)
-            if walked is None:
-                return False
-            if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
+            plan = self._resolveDisclosurePlan(serder)
+            if plan is None:
                 return False
 
-            # Stage 6: after the disclosed graph shape is accepted, each walked
-            # registry-backed node must vet its own node-local proof group.
-            if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
-                return False
-
-            # Require Exchanger's fixed three-part evidence result.
-            try:
-                _, _, extraSeals = evidence
-            except (TypeError, ValueError):
-                return False
-
-            # Verify every presentation registry declared across the DAG.
-            tethered = self._verifyPresentationAuthGraph(
-                serder=serder,
-                nodes=walked[0],
-                order=walked[1],
-            )
-
-            # Reject any malformed, missing, or invalid presentation factor.
-            if tethered is None:
-                return False
-
-            # A truthy ax requires one permitted Grant anchorer.
-            if requiresAnchor:
-                # Resolve the origin ACDC named by the Grant.
-                origin = walked[0][attrs["o"][0]]
-                origin = origin["serder"] if isinstance(origin, dict) else origin.serder
-
-                # Presentation registries authenticate their controlling Issuees.
-                anchorers = set(tethered)
-
-                # Count a valid direct sender anchor when supplied.
-                if sscs and self._verifySourceAnchor(serder=serder,
-                                                     aid=serder.pre,
-                                                     number=sscs[-1][0],
-                                                     diger=sscs[-1][1]):
-                    anchorers.add(serder.pre)
-
-                # Check each accepted non-sender source seal.
-                for prefixer, number, diger in extraSeals:
-                    if self._verifySourceAnchor(serder=serder,
-                                                aid=prefixer.qb64,
-                                                number=number,
-                                                diger=diger):
-                        # Record the AID whose KEL actually seals this Grant.
-                        anchorers.add(prefixer.qb64)
-
-                # Default IPEX policy deliberately stops at these three AIDs;
-                # credential-specific policy may impose a narrower requirement.
-                # Restrict default qualification to sender, Issuee, or issuer.
-                candidates = (serder.pre, origin.iseaid, origin.israid)
-
-                # Require at least one qualifying authenticated anchorer.
-                if not any(aid and aid in anchorers for aid in candidates):
+            # A Grant may repeat but may not renegotiate an accepted prior plan.
+            if pserder is not None:
+                priorPlan = self._resolveDisclosurePlan(pserder)
+                if priorPlan is None or plan != priorPlan:
                     return False
+
+            origins = attrs.get("o")
+
+            # If dp is empty
+            if not plan:
+                # With nothing to disclose, both the origin and body are empty.
+                if origins != [] or nests:
+                    return False
+
+                # With no credential AID, only the sender can satisfy Grant ax.
+                if requiresAnchor:
+                    if not sscs or not self._verifySourceAnchor(
+                            serder=serder,
+                            aid=serder.pre,
+                            number=sscs[-1][0],
+                            diger=sscs[-1][1]):
+                        return False
+            else:
+                # A non-empty dp requires one disclosed origin DAG.
+                if not _validSingleDagList(origins, str) or not nests:
+                    return False
+                try:
+                    Saider(qb64=origins[0])
+                except Exception:
+                    return False
+
+                walked = self._walkGraph(origin=origins[0], nests=nests, closed=True)
+                if walked is None:
+                    return False
+                if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
+                    return False
+                if not self._verifyDisclosurePlan(plan=plan,
+                                                  origin=origins[0],
+                                                  nodes=walked[0],
+                                                  order=walked[1]):
+                    return False
+
+                # Stage 6: authenticate each disclosed node's issuer.
+                if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
+                    return False
+
+                # Require Exchanger's fixed three-part evidence result.
+                try:
+                    _, _, extraSeals = evidence
+                except (TypeError, ValueError):
+                    return False
+
+                # Verify every presentation registry declared across the DAG.
+                tethered = self._verifyPresentationAuthGraph(
+                    serder=serder,
+                    nodes=walked[0],
+                    order=walked[1],
+                )
+                if tethered is None:
+                    return False
+
+                # A truthy ax requires one permitted Grant anchorer.
+                if requiresAnchor:
+                    origin = walked[0][origins[0]]
+                    origin = origin["serder"] if isinstance(origin, dict) else origin.serder
+                    anchorers = set(tethered)
+
+                    if sscs and self._verifySourceAnchor(serder=serder,
+                                                        aid=serder.pre,
+                                                        number=sscs[-1][0],
+                                                        diger=sscs[-1][1]):
+                        anchorers.add(serder.pre)
+
+                    for prefixer, number, diger in extraSeals:
+                        if self._verifySourceAnchor(serder=serder,
+                                                    aid=prefixer.qb64,
+                                                    number=number,
+                                                    diger=diger):
+                            anchorers.add(prefixer.qb64)
+
+                    candidates = (serder.pre, origin.iseaid, origin.israid)
+                    if not any(aid and aid in anchorers for aid in candidates):
+                        return False
 
         return True
 
@@ -777,6 +811,140 @@ class IpexHandler:
 
         return pserder
 
+    def _resolveDisclosurePlan(self, serder):
+        """Resolve one disclosure plan through empty prior-message dittos."""
+        seen = set()
+        current = serder
+
+        # Walk the prior chain until we find a non-empty dp
+        while current is not None:
+            if current.said in seen:
+                return None
+            seen.add(current.said)
+
+            route = current.ked.get("r")
+            if route not in ("/ipex/apply", "/ipex/offer",
+                             "/ipex/agree", "/ipex/grant"):
+                return None
+
+            # Retrieve the current message's dp and validate it
+            plan = current.ked.get("q", {}).get("dp")
+            if (not _validSingleDagList(plan, list)
+                    or not _validDisclosurePath(plan[0])):
+                return None
+
+            # If dp is non-empty, return it
+            if plan[0]:
+                return plan[0]
+
+            # Otherwise continue the chain
+            prior = current.ked.get("p", "")
+            if not prior:
+                return []
+            current, _ = cloneMessage(self.hby, said=prior)
+
+        return None
+
+    def _verifyDisclosurePlan(self, plan, origin, nodes, order):
+        """Verify a disclosed Grant DAG against its negotiated disclose paths.
+
+        Each plan entry must select the corresponding node in breadth-first
+        graph order and match that node's schema. An empty field list ([]) permits
+        any valid compaction level, a sole empty-string path ([""]) requires the whole
+        ACDC, and other paths require their canonical ``Compactor`` disclosure
+        closure.
+        """
+        selected = []
+        for schema, prefix, fields in plan:
+            said = origin
+            nest = nodes.get(said)
+            if nest is None:
+                return False
+            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+            value = nserder.sad
+
+            # Follow each virtual `_` hop from a near edge to its far ACDC.
+            if prefix != "/":
+                for part in prefix.strip("/").split("/"):
+                    if part == "_":
+                        if not isinstance(value, Mapping):
+                            return False
+                        said = value.get("n")
+                        nest = nodes.get(said)
+                        if nest is None:
+                            return False
+                        nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+                        value = nserder.sad
+                    elif isinstance(value, Mapping):
+                        if part not in value:
+                            return False
+                        value = value[part]
+                    elif isinstance(value, list) and part.isdigit():
+                        index = int(part)
+                        if index >= len(value):
+                            return False
+                        value = value[index]
+                    else:
+                        return False
+
+            selected.append(said)
+
+            # The tuple's schema must identify the selected disclosed node.
+            nodeSchema = nserder.schema
+            if isinstance(nodeSchema, Mapping):
+                nodeSchema = nodeSchema.get("$id")
+            if nodeSchema != schema:
+                return False
+
+            # The empty path selects the whole ACDC. Every present compactable
+            # section must therefore be carried instead of its bare SAID/AGID.
+            if fields == [""]:
+                for label in ("a", "e", "r"):
+                    section = nserder.sad.get(label)
+                    if section and not isinstance(section, Mapping):
+                        return False
+                aggregate = nserder.sad.get("A")
+                if aggregate and not isinstance(aggregate, list):
+                    return False
+                continue
+
+            # Group paths by top-level section for canonical partial checks.
+            sections = {}
+            for field in fields:
+                try:
+                    pather = Pather(path=field, relative=True)
+                    pather.resolve(nserder.sad)
+                except Exception:
+                    return False
+
+                parts = pather.rparts
+                if parts:
+                    sections.setdefault(parts[0], []).append(field)
+
+            for root, paths in sections.items():
+                section = nserder.sad.get(root)
+                if not isinstance(section, Mapping):
+                    continue
+                try:
+                    compactor = Compactor(mad=deepcopy(section),
+                                          makify=True,
+                                          kind=nserder.kind)
+                    compactor.compact(paths=paths, root=root)
+                    partial = compactor.partials.get(tuple(paths))
+                except Exception:
+                    return False
+                if partial is None:
+                    return False
+                expected = partial.mad
+                if section.get("d") == "" and expected.get("d"):
+                    expected = dict(expected)
+                    expected["d"] = ""
+                if expected != section:
+                    return False
+
+        # The plan must account for every disclosed node in canonical BFS order.
+        return selected == order
+
     def _walkGraph(self, origin, nests, *, closed):
         """Walk the disclosed origin DAG and return the visited node order.
 
@@ -834,9 +1002,9 @@ class IpexHandler:
 
                 # Expanded edge sections may contain nested edge groups
                 for edge in blocks:
-                    groups = [(edge, False)]
+                    groups = deque([(edge, False)])
                     while groups:
-                        group, nested = groups.pop()
+                        group, nested = groups.popleft()
                         labels = EdgeGroupLabels if nested else EdgeSectionLabels   # Leaf vs group labels
                         if "n" in group:
                             for label in group:
@@ -1789,8 +1957,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
 
     # Retrieve dp from modifiers if present. When the offer answers an apply,
     # inherit the requested disclose-path plan unless the caller overrides it.
-    # Offer-first flows have no earlier disclosure request to inherit, so they
-    # must provide their own explicit disclosure plan.
+    # Offer-first flows have no earlier disclosure request to inherit, so an
+    # explicitly empty plan requests no disclosure.
     mods = dict(modifiers) if modifiers else {}
     if "dp" not in mods:
         if apply is not None:
@@ -1803,8 +1971,6 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     # Offer uses the same canonical q.dp builder contract as apply.
     if not _validSingleDagList(mods["dp"], list) or not _validDisclosurePath(mods["dp"][0]):
         raise ValueError("modifiers['dp'] must carry one disclose-path list per DAG")
-    if apply is None and not mods["dp"][0]:
-        raise ValueError("offer-first modifiers['dp'] must include at least one disclosure-path entry")
 
     # Validate ax if present
     if ax is not None:
@@ -1909,6 +2075,7 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
         xid=xid,
         prior=offer.said,
         route="/ipex/agree",
+        modifiers=dict(dp=[[]]),
         stamp=dt,
         attributes=data,
         pvrsn=Vrsn_2_0,
@@ -1921,17 +2088,18 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
     return serder, atc
 
 
-def grant(hab, recp, message, origin, artifacts=None, agree=None,
+def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
           dt=None, kind=None, gvrsn=None, attrs=None, *, apply=None, ax=None,
-          endorsers=None, anchorers=None):
+          modifiers=None, endorsers=None, anchorers=None):
     """Create a signed V2 IPEX ``grant`` exchange with nested disclosure artifacts.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         recp (str): Recipient AID for the disclosure.
         message (str): Human-readable disclosure message.
-        origin (Serder | bytes | bytearray): Origin ACDC node identified in
-            ``a.o[0]`` and carried as the first nested artifact.
+        origin (Serder | bytes | bytearray | None): Origin ACDC node identified
+            in ``a.o[0]`` and carried as the first nested artifact. None creates
+            a vacuous Grant when the effective disclosure plan is empty.
         artifacts (list[Serder | bytes | bytearray] | None): Optional
             additional disclosed ACDC nodes carried after ``origin``.
         agree (Serder | None): Optional prior ``agree`` exchange.
@@ -1943,6 +2111,9 @@ def grant(hab, recp, message, origin, artifacts=None, agree=None,
             apply-to-grant flow. Mutually exclusive with ``agree``.
         ax (list[bool] | None): Single-DAG anchoring requirement. None omits
             the field; otherwise exactly one boolean is required.
+        modifiers (dict | None): Query-section fields. A prior-linked Grant
+            defaults to an empty ``dp`` ditto. A bare one-node Grant derives a
+            root-presence plan; a multi-node Grant requires an explicit plan.
         endorsers (list[Hab] | None): Additional local grantors that sign the
             grant. The sender remains the KRAM-authenticated outer sender.
         anchorers (list[Hab] | None): Explicit local AIDs that KEL-anchor the
@@ -1981,6 +2152,43 @@ def grant(hab, recp, message, origin, artifacts=None, agree=None,
         raise ValueError("use the ax parameter instead of attrs['ax']")
     data["m"] = message
 
+    originSerder = None
+    if origin is not None:
+        originSerder = _streamSerder(origin)
+        if (originSerder.proto != Protocols.acdc
+                or originSerder.ilk not in DisclosedNodeIlks):
+            raise ValueError("grant origin and artifacts must be disclosed ACDC nodes")
+
+    if artifacts is not None:
+        if not isinstance(artifacts, list):
+            raise TypeError("artifacts must be a list when provided")
+        for artifact in artifacts:
+            artifactSerder = _streamSerder(artifact)
+            if (artifactSerder.proto != Protocols.acdc
+                    or artifactSerder.ilk not in DisclosedNodeIlks):
+                raise ValueError("grant origin and artifacts must be disclosed ACDC nodes")
+
+    mods = dict(modifiers) if modifiers else {}
+    if "dp" not in mods:
+        if previous is not None or origin is None:
+            mods["dp"] = [[]]   # ditto the prior's dp or empty for a vacuous Grant
+        elif not artifacts:
+            schema = originSerder.schema
+            if isinstance(schema, Mapping):
+                schema = schema.get("$id")
+            mods["dp"] = [[[schema, "/", []]]]
+        else:
+            raise ValueError("a bare multi-node Grant requires an explicit disclosure plan")
+    if (not _validSingleDagList(mods["dp"], list)
+            or not _validDisclosurePath(mods["dp"][0])):
+        raise ValueError("modifiers['dp'] must carry one disclose-path list per DAG")
+
+    if previous is None:
+        if mods["dp"][0] and origin is None:
+            raise ValueError("a non-empty disclosure plan requires an origin")
+        if not mods["dp"][0] and (origin is not None or artifacts):
+            raise ValueError("a bare Grant with an empty disclosure plan must be vacuous")
+
     if ax is not None:
         if not _validSingleDagList(ax, bool):
             raise ValueError("ax must be a one-item list of booleans")
@@ -1994,14 +2202,17 @@ def grant(hab, recp, message, origin, artifacts=None, agree=None,
         if grantRequiresAnchor != previousRequiresAnchor:
             raise ValueError("grant must echo the prior exchange's anchoring requirement")
 
-    # Grant mirrors offer framing: a.o[0] names the origin node, and any later
-    # nests are more disclosed ACDC nodes from that same origin DAG.
-    data["o"] = [_streamSerder(origin).said]
-    nests = [_normalizeNodeStream(origin)]
+    # A vacuous Grant explicitly names no origin and carries no nested body.
+    if origin is None:
+        if artifacts:
+            raise ValueError("grant artifacts require an origin")
+        data["o"] = []
+        nests = None
+    else:
+        data["o"] = [originSerder.said]
+        nests = [_normalizeNodeStream(origin)]
 
     if artifacts is not None:
-        if not isinstance(artifacts, list):
-            raise TypeError("artifacts must be a list when provided")
         for artifact in artifacts:
             nests.append(_normalizeNodeStream(artifact))
 
@@ -2011,6 +2222,7 @@ def grant(hab, recp, message, origin, artifacts=None, agree=None,
         xid=xid,
         prior=prior,
         route="/ipex/grant",
+        modifiers=mods,
         stamp=dt,
         attributes=data,
         pvrsn=Vrsn_2_0,
