@@ -427,121 +427,6 @@ AgentSchema = \
   'additionalProperties': False
 }
 
-# see test_sedi_schema() for generating and testing
-IarSchemaSaid = 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN'
-IarSchema = \
-{
-  '$id': 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN',
-  '$schema': 'https://json-schema.org/draft/2020-12/schema',
-  'title': 'SEDI IAR Schema',
-  'description': 'SEDI IAR Identity Assurance Receipt JSON Schema for acm ACDC.',
-  'credentialType': 'SEDI_IAR_ACDC_acm_message',
-  'version': '0.1.0',
-  'type': 'object',
-  'required': ['v', 'd', 'i', 's', 'a'],
-  'properties':
-  {
-    'v': {'description': 'ACDC version string', 'type': 'string'},
-    't': {'description': 'Message type', 'type': 'string'},
-    'd': {'description': 'Message SAID', 'type': 'string'},
-    'u': {'description': 'Message UE', 'type': 'string'},
-    'i': {'description': 'Issuer AID', 'type': 'string'},
-    's':
-    {
-      'description': 'Schema Section',
-      'oneOf':
-      [
-        {'description': 'Schema Section SAID', 'type': 'string'},
-        {'description': 'Schema Section Detail', 'type': 'object'}
-      ]
-    },
-    'a':
-    {
-      'description': 'Attribute Section',
-      'oneOf':
-      [
-        {'description': 'Attribute Section SAID', 'type': 'string'},
-        {
-        'description': 'Attribute Section Detail',
-        'type': 'object',
-        'required':
-        [
-          'd',
-          'i',
-          'givenName',
-          'middleName',
-          'familyName',
-          'nameSuffix',
-          'birthDate',
-          'facialImageProof',
-          'legalPresenceStatus',
-          'residence',
-          'proofingDatetime',
-          'sediURL'
-        ],
-        'properties':
-        {
-          'd': {'description': 'Attribute Section SAID', 'type': 'string'},
-          'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
-          'givenName': {'description': 'Given Name', 'type': 'string'},
-          'middleName': {'description': 'Middle Name(s)', 'type': 'string'},
-          'familyName': {'description': 'Family Name', 'type': 'string'},
-          'nameSuffix': {'description': 'Name Suffix', 'type': 'string'},
-          'birthDate': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
-          'facialImageProof': {'description': 'Image typed media block SAID', 'type': 'string'},
-          'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen', 'type': 'string'},
-          'residence':
-          {
-            'description': 'Residence detail',
-            'type': 'object',
-            'required':
-            [
-              'street',
-              'city',
-              'county',
-              'state',
-              'postcode',
-              'country'
-            ],
-            'properties':
-            {
-              'street': {'description': 'Street address with unit', 'type': 'string'},
-              'city': {'description': 'City name', 'type': 'string'},
-              'county': {'description': 'County name', 'type': 'string'},
-              'state': {'description': 'State name', 'type': 'string'},
-              'postcode': {'description': 'Postal (zip) code', 'type': 'string'},
-              'country': {'description': 'Country name', 'type': 'string'}
-            }
-          },
-          'proofingDatetime': {'description': 'Proofing session datetime RFC-3339/ISO-8601', 'type': 'string'},
-          'sediURL': {'description': 'URL to obtain SEDI', 'type': 'string'}
-        },
-        'additionalProperties': False}
-      ]
-    },
-    'r':
-    {
-      'description': 'Rule Section',
-      'oneOf':
-      [
-        {'description': 'Rule Section SAID', 'type': 'string'},
-        {
-          'description': 'Rule Section Detail',
-          'type': 'object',
-          'required': ['d', 'l'],
-          'properties':
-          {
-            'd': {'description': 'Rule Section SAID', 'type': 'string'},
-            'l': {'description': 'Legal Language', 'type': 'string'}
-          },
-          'additionalProperties': False
-        }
-      ]
-    }
-  },
-  'additionalProperties': False
-}
-
 
 CoreSchemaSaid = 'EN0JtdzBmFuTUzyJG9CXZhtdu-bW0V6L95bsVBzi-cY-'
 CoreSchema = \
@@ -2275,6 +2160,121 @@ BespokeSchema = \
   'additionalProperties': False
 }
 
+
+# see test_sedi_schema() for generating and testing
+IarSchemaSaid = 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN'
+IarSchema = \
+{
+  '$id': 'EFAB6k77bXHs6bg9PORW7UYF79GD_OuEcEjmBpwhcfRN',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'title': 'SEDI IAR Schema',
+  'description': 'SEDI IAR Identity Assurance Receipt JSON Schema for acm ACDC.',
+  'credentialType': 'SEDI_IAR_ACDC_acm_message',
+  'version': '0.1.0',
+  'type': 'object',
+  'required': ['v', 'd', 'i', 's', 'a'],
+  'properties':
+  {
+    'v': {'description': 'ACDC version string', 'type': 'string'},
+    't': {'description': 'Message type', 'type': 'string'},
+    'd': {'description': 'Message SAID', 'type': 'string'},
+    'u': {'description': 'Message UE', 'type': 'string'},
+    'i': {'description': 'Issuer AID', 'type': 'string'},
+    's':
+    {
+      'description': 'Schema Section',
+      'oneOf':
+      [
+        {'description': 'Schema Section SAID', 'type': 'string'},
+        {'description': 'Schema Section Detail', 'type': 'object'}
+      ]
+    },
+    'a':
+    {
+      'description': 'Attribute Section',
+      'oneOf':
+      [
+        {'description': 'Attribute Section SAID', 'type': 'string'},
+        {
+        'description': 'Attribute Section Detail',
+        'type': 'object',
+        'required':
+        [
+          'd',
+          'i',
+          'givenName',
+          'middleName',
+          'familyName',
+          'nameSuffix',
+          'birthDate',
+          'facialImageProof',
+          'legalPresenceStatus',
+          'residence',
+          'proofingDatetime',
+          'sediURL'
+        ],
+        'properties':
+        {
+          'd': {'description': 'Attribute Section SAID', 'type': 'string'},
+          'i': {'description': 'Issuee SMAID SEDI Management AID', 'type': 'string'},
+          'givenName': {'description': 'Given Name', 'type': 'string'},
+          'middleName': {'description': 'Middle Name(s)', 'type': 'string'},
+          'familyName': {'description': 'Family Name', 'type': 'string'},
+          'nameSuffix': {'description': 'Name Suffix', 'type': 'string'},
+          'birthDate': {'description': 'Date of birth RFC-3339/ISO-8601 time MBZ', 'type': 'string'},
+          'facialImageProof': {'description': 'Image typed media block SAID', 'type': 'string'},
+          'legalPresenceStatus': {'description': 'Legal presences status i.e. citizen', 'type': 'string'},
+          'residence':
+          {
+            'description': 'Residence detail',
+            'type': 'object',
+            'required':
+            [
+              'street',
+              'city',
+              'county',
+              'state',
+              'postcode',
+              'country'
+            ],
+            'properties':
+            {
+              'street': {'description': 'Street address with unit', 'type': 'string'},
+              'city': {'description': 'City name', 'type': 'string'},
+              'county': {'description': 'County name', 'type': 'string'},
+              'state': {'description': 'State name', 'type': 'string'},
+              'postcode': {'description': 'Postal (zip) code', 'type': 'string'},
+              'country': {'description': 'Country name', 'type': 'string'}
+            }
+          },
+          'proofingDatetime': {'description': 'Proofing session datetime RFC-3339/ISO-8601', 'type': 'string'},
+          'sediURL': {'description': 'URL to obtain SEDI', 'type': 'string'}
+        },
+        'additionalProperties': False}
+      ]
+    },
+    'r':
+    {
+      'description': 'Rule Section',
+      'oneOf':
+      [
+        {'description': 'Rule Section SAID', 'type': 'string'},
+        {
+          'description': 'Rule Section Detail',
+          'type': 'object',
+          'required': ['d', 'l'],
+          'properties':
+          {
+            'd': {'description': 'Rule Section SAID', 'type': 'string'},
+            'l': {'description': 'Legal Language', 'type': 'string'}
+          },
+          'additionalProperties': False
+        }
+      ]
+    }
+  },
+  'additionalProperties': False
+}
 
 
 def test_sedi_schema():
@@ -5388,7 +5388,7 @@ def test_sedi_acdcs():
         "givenName": "Guy",  # given name first name(s)
         "middleName":"Marty McFly",  # middle name(s) other names
         "familyName": "Brown",  # last name family name
-        "nameSuffix": "",
+        "nameSuffix": "Jr",
         "birthDate": "2002-08-22T00:00:00.000000+00:00",  # time MBZ
         "facialImageProof": guyImageProof,  # SAID of typed media block containing image
         "legalPresenceStatus": "citizen",  # Class or type of legal presence
@@ -5409,7 +5409,7 @@ def test_sedi_acdcs():
     guyIarAttMad = mapper.mad
     assert guyIarAttMad['i'] == guy
     guyIarAttMadSaid = mapper.said
-    assert guyIarAttMadSaid == 'EB4wL7gz5HVhxSEdlLfRvT7P0ynCx0IdeRl9huf0wzwt'
+    assert guyIarAttMadSaid == 'EM6r7vSi3Egpp0KB5O6WjB2g-wfwLey1J_NI3K1vJ_PR'
 
     assert guyIarAttMad == \
     {
@@ -5418,7 +5418,7 @@ def test_sedi_acdcs():
         'givenName': 'Guy',
         'middleName': 'Marty McFly',
         'familyName': 'Brown',
-        "nameSuffix": "",
+        "nameSuffix": "Jr",
         'birthDate': '2002-08-22T00:00:00.000000+00:00',
         'facialImageProof': guyImageProof,
         'legalPresenceStatus': 'citizen',
@@ -5441,8 +5441,8 @@ def test_sedi_acdcs():
     iarValidator.validate(guySerderIar.sad)  # raises error if invalid
 
     guySerderIarSaid = guySerderIar.said
-    assert guySerderIarSaid == 'EC-p_x5AJQS21gg2KnKfOVwzgFFpCuebBrah5diko1Zl'
-    assert guySerderIar.verstr == 'ACDCCAACAAJSONAAMP.'
+    assert guySerderIarSaid == 'EByqzW5jFrrXhC_b9jYkHJaWAoc3L5GTqmmWUnq4KGQ9'
+    assert guySerderIar.verstr == 'ACDCCAACAAJSONAAMR.'
     assert guySerderIar.sad['a'] == guyIarAttMad
     assert guySerderIar.iseaid == guy
     assert guySerderIar.sad == \
@@ -5460,7 +5460,7 @@ def test_sedi_acdcs():
             'givenName': 'Guy',
             'middleName': 'Marty McFly',
             'familyName': 'Brown',
-            "nameSuffix": "",
+            "nameSuffix": "Jr",
             'birthDate': '2002-08-22T00:00:00.000000+00:00',
             'facialImageProof': guyImageProof,
             'legalPresenceStatus': 'citizen',
