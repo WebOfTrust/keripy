@@ -154,13 +154,13 @@ def registryStanding(acdc, rip, updates=(), *, db, blinder=None,
     """Returns a far node's standing in its v2 registry as an EdgeVerdict.
 
     Wraps keri.acdc.regeventing.vet, which verifies the registry chain (rip plus
-    upd/bup updates) against the issuer's KEL in db and binds the ACDC to the head,
+    its updates) against the issuer's KEL in db and binds the ACDC to the head,
     and reads the head's transaction state the way the v2 IPEX evaluator does.
 
     Parameters:
         acdc (SerderACDC): the far node
         rip (SerderACDC|bytes): registry inception event
-        updates (Iterable): the registry's upd/bup events
+        updates (Iterable): the registry's update events, as vet reads them
         db (Baser): KEL database already holding the issuer's KEL
         blinder (Blinder|None): disclosed blinded state for a bup head
         accepted (Iterable): states read as good standing

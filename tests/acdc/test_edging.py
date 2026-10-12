@@ -20,7 +20,7 @@ import pytest
 
 from keri import kering
 from keri import Vrsn_2_0
-from keri.acdc import acdcmap, regcept, update, blindate
+from keri.acdc import acdcmap, regcept, blindate
 from keri.acdc import chaining, edging
 from keri.acdc.chaining import Verdicts
 from keri.app import habbing
@@ -570,15 +570,26 @@ def openIssuer(name):
     return habbing.openHab(name=name, temp=True, version=Vrsn_2_0)
 
 
+def disclosed(rip, prior, acdc, state, sn, stamp):
+    """A bup update and the blinder that discloses its state.
+
+    keripy's vet reads a registry head's state from the disclosed blinder, so
+    every update here is a bup and each test hands vet the head's disclosure.
+    """
+    blinder = Blinder.blind(acdc=acdc, state=state, salt=SALT, sn=sn)
+    bup = blindate(regid=rip.said, prior=prior, blid=blinder.said, sn=sn,
+                   stamp=stamp)
+    return bup, blinder
+
+
 def test_an_issued_far_node_stands():
     with openIssuer("rs-issued") as (hby, hab):
         rip = regcept(israid=hab.pre, stamp=STAMP0)
         hab.interact(data=[seal(rip)])
         far = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="x"))
-        upd = update(regid=rip.said, prior=rip.said, acdc=far.said, state="issued",
-                     sn=1, stamp=STAMP1)
-        hab.interact(data=[seal(upd)])
-        verdict = edging.registryStanding(far, rip, [upd], db=hby.db)
+        bup, blinder = disclosed(rip, rip.said, far.said, "issued", 1, STAMP1)
+        hab.interact(data=[seal(bup)])
+        verdict = edging.registryStanding(far, rip, [bup], db=hby.db, blinder=blinder)
         assert verdict.verdict == Verdicts.valid
         record, = verdict.causes
         assert record.state == "issued" and record.regid == rip.said
@@ -589,12 +600,11 @@ def test_a_revoked_far_node_does_not_stand():
         rip = regcept(israid=hab.pre, stamp=STAMP0)
         hab.interact(data=[seal(rip)])
         far = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="x"))
-        upd1 = update(regid=rip.said, prior=rip.said, acdc=far.said, state="issued",
-                      sn=1, stamp=STAMP1)
-        upd2 = update(regid=rip.said, prior=upd1.said, acdc=far.said, state="revoked",
-                      sn=2, stamp=STAMP2)
-        hab.interact(data=[seal(upd1), seal(upd2)])
-        verdict = edging.registryStanding(far, rip, [upd1, upd2], db=hby.db)
+        bup1, _ = disclosed(rip, rip.said, far.said, "issued", 1, STAMP1)
+        bup2, blinder = disclosed(rip, bup1.said, far.said, "revoked", 2, STAMP2)
+        hab.interact(data=[seal(bup1), seal(bup2)])
+        verdict = edging.registryStanding(far, rip, [bup1, bup2], db=hby.db,
+                                          blinder=blinder)
         assert verdict.verdict == Verdicts.invalid
         assert verdict.causes[0].state == "revoked"
 
@@ -604,12 +614,11 @@ def test_a_state_outside_the_vocabulary_is_undecided_for_good():
         rip = regcept(israid=hab.pre, stamp=STAMP0)
         hab.interact(data=[seal(rip)])
         far = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="x"))
-        upd = update(regid=rip.said, prior=rip.said, acdc=far.said, state="suspended",
-                     sn=1, stamp=STAMP1)
-        hab.interact(data=[seal(upd)])
-        verdict = edging.registryStanding(far, rip, [upd], db=hby.db)
+        bup, blinder = disclosed(rip, rip.said, far.said, "suspended", 1, STAMP1)
+        hab.interact(data=[seal(bup)])
+        verdict = edging.registryStanding(far, rip, [bup], db=hby.db, blinder=blinder)
         assert verdict.verdict == Verdicts.unknown and not verdict.retryable
-        custom = edging.registryStanding(far, rip, [upd], db=hby.db,
+        custom = edging.registryStanding(far, rip, [bup], db=hby.db, blinder=blinder,
                                          accepted=("issued", "suspended"))
         assert custom.verdict == Verdicts.valid
 
@@ -635,10 +644,9 @@ def test_a_registry_that_states_nothing_is_undecided_for_good():
         rip = regcept(israid=hab.pre, stamp=STAMP0)
         hab.interact(data=[seal(rip)])
         far = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="x"))
-        upd = update(regid=rip.said, prior=rip.said, acdc=far.said, state="",
-                     sn=1, stamp=STAMP1)
-        hab.interact(data=[seal(upd)])
-        verdict = edging.registryStanding(far, rip, [upd], db=hby.db)
+        bup, blinder = disclosed(rip, rip.said, far.said, "", 1, STAMP1)
+        hab.interact(data=[seal(bup)])
+        verdict = edging.registryStanding(far, rip, [bup], db=hby.db, blinder=blinder)
         assert verdict.verdict == Verdicts.unknown and not verdict.retryable
 
 
@@ -647,9 +655,9 @@ def test_an_unanchored_update_is_undecided_and_retryable():
         rip = regcept(israid=hab.pre, stamp=STAMP0)
         hab.interact(data=[seal(rip)])
         far = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="x"))
-        upd = update(regid=rip.said, prior=rip.said, acdc=far.said, state="issued",
-                     sn=1, stamp=STAMP1)  # never anchored
-        verdict = edging.registryStanding(far, rip, [upd], db=hby.db)
+        bup, blinder = disclosed(rip, rip.said, far.said, "issued", 1, STAMP1)
+        # bup never anchored
+        verdict = edging.registryStanding(far, rip, [bup], db=hby.db, blinder=blinder)
         assert verdict.verdict == Verdicts.unknown and verdict.retryable
         assert isinstance(verdict.causes[0], kering.MissingAnchorError)
 
@@ -660,10 +668,9 @@ def test_evidence_that_binds_a_different_acdc_does_not_stand():
         hab.interact(data=[seal(rip)])
         far = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="x"))
         other = acdcmap(israid=hab.pre, regid=rip.said, attribute=dict(d='', name="y"))
-        upd = update(regid=rip.said, prior=rip.said, acdc=other.said, state="issued",
-                     sn=1, stamp=STAMP1)
-        hab.interact(data=[seal(upd)])
-        verdict = edging.registryStanding(far, rip, [upd], db=hby.db)
+        bup, blinder = disclosed(rip, rip.said, other.said, "issued", 1, STAMP1)
+        hab.interact(data=[seal(bup)])
+        verdict = edging.registryStanding(far, rip, [bup], db=hby.db, blinder=blinder)
         assert verdict.verdict == Verdicts.invalid
         assert isinstance(verdict.causes[0], kering.MisbindingError)
 
