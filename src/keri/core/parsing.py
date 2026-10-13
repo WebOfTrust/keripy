@@ -464,108 +464,49 @@ class Parser:
         return result
 
 
-    def parseAllBare(self, ims=None, framed=None, piped=None, kvy=None,
-                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                     version=None, processive=True):
-        """Processes all messages from incoming message stream, ims, like .parse
-        but raises the first error to the caller instead of logging it.
-
-        .parse logs and drops every error because a long running service facing
-        the open internet should not tell a remote sender why its message
-        failed. A caller that is not such a service, for example one vetting a
-        stream it was handed, may need the reason. This gives it the reason and
-        leaves the choice of what to do next to it.
-
-        Errors raised:
-            ExtractionError: msg could not be extracted so stream framing is
-                lost. The originating error, such as ShortageError or
-                ColdStartError, is on the exception chain via __cause__.
-                What is left of ims should be discarded as .parse would.
-            SizedGroupError: extraction failed inside a generic group. The group
-                was already stripped from ims so the rest of ims may be parsed.
-            any other: msg extracted but processing it failed. That msg is
-                consumed from ims so calling again resumes at the next msg.
-                Kevery escrows some events before raising, such as
-                OutOfOrderError, so the error does not mean the event was
-                discarded. When raised inside a generic group the rest of that
-                group is lost.
-
-        Parameters:
-            ims (bytearray): incoming message stream. May contain one or more
-                sets each of a serialized message with attached cryptographic
-                material such as signatures or receipts.
-            framed (bool): True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-            piped (bool):  True means use pipeline processor to process
-                ims msgs when stream includes pipelineable count codes.
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
-            rvy (Revery): reply (RPY) message handler
-            vry (Verfifier): credential verifier with wallet storage
-            local (bool): True means event source is local (protected) for validation
-                False means event source is remote (unprotected) for validation
-                None means use default .local
-            version (Versionage): default version of CESR to use
-                None means do not change default
-            processive (bool): True means process messages as they are parsed
-                False means do not process parse only and return the list of
-                    extracted msgs
-        """
-        if ims is not None:  # needs bytearray not bytes since deletes as processes
-            if not isinstance(ims, bytearray):
-                ims = bytearray(ims)  # so make bytearray copy
-        else:
-            ims = self.ims  # use instance attribute by default
-
-        framed = framed if framed is not None else self.framed
-        piped = piped if piped is not None else self.piped
-        kvy = kvy if kvy is not None else self.kvy
-        tvy = tvy if tvy is not None else self.tvy
-        exc = exc if exc is not None else self.exc
-        rvy = rvy if rvy is not None else self.rvy
-        vry = vry if vry is not None else self.vry
-        local = local if local is not None else self.local
-        local = True if local else False
-
-        parsator = self.groupParsator(ims=ims,
-                                      framed=framed,
-                                      piped=piped,
-                                      kvy=kvy,
-                                      tvy=tvy,
-                                      exc=exc,
-                                      rvy=rvy,
-                                      vry=vry,
-                                      local=local,
-                                      version=version,
-                                      processive=processive,
-                                      bare=True)
-        while True:
-            try:
-                next(parsator)
-            except StopIteration as ex:
-                result = ex.value
-                break
-
-        return result
-
-
     def parseOneBare(self, ims=None, framed=True, piped=False, kvy=None,
                      tvy=None, exc=None, rvy=None, vry=None, local=None,
                      version=None, processive=True):
         """Processes one message from incoming message stream, ims, like
         .parseOne but raises any error to the caller instead of logging it.
-        See .parseAllBare for why and for what each error means.
 
-        With processive False the extracted msg is returned unprocessed, so a
-        caller can learn whose msg it is before passing it to .msgProcess and
-        so attribute any processing error to it.
+        .parse and .parseOne log and drop every error because a long running
+        service facing the open internet should not tell a remote sender why
+        its message failed. A caller that is not such a service, for example
+        one vetting a stream it was handed, may need the reason. This gives it
+        the reason and leaves the choice of what to do next to it.
 
-        Errors raised:
-            ExtractionError: msg could not be extracted. The originating error
-                is on the exception chain via __cause__.
-            any other: msg extracted but processing it failed. That msg is
-                consumed from ims.
+        Which step raised is what tells extraction from processing apart, not
+        the class of the error, since some processing errors are subclasses of
+        ExtractionError. So a caller that needs to know the phase uses
+        processive=False, which only extracts, and then passes asdict() of the
+        returned msg to .msgProcess itself.
+
+        Extraction errors are raised as ExtractionError with the originating
+        error on the exception chain via __cause__:
+            SizedGroupError on the chain: an enclosed attachment group failed.
+                The group was stripped first so the rest of ims is intact. Any
+                ShortageError beneath it is about the group's contents and does
+                not mean the stream ran short.
+            TopLevelStreamError on the chain: ims begins with a generic group,
+                which like .parseOne this does not descend into. Nothing was
+                consumed. Under CESR v1 such a stream currently fails with an
+                AttributeError on the chain instead.
+            otherwise: stream framing is lost. ShortageError on the chain
+                means more bytes may complete it. Anything else, such as
+                ColdStartError, means more bytes will not. What is left of ims
+                should be discarded as .parse would.
+
+        Processing errors are raised as themselves, with the msg already
+        consumed from ims, so calling again resumes at the next msg. An error
+        does not say whether Kevery escrowed the event before raising, as it
+        does for OutOfOrderError and others, so look in the escrows for that.
+        Malformed peer input can raise errors outside the KeriError hierarchy,
+        such as ValueError, so such an error does not by itself mean a local
+        defect.
+
+        ims is consumed in place only when it is a bytearray. Any other type
+        is copied first, so resuming requires passing a bytearray.
 
         Parameters:
             ims (bytearray): serialized incoming message stream.
@@ -618,7 +559,7 @@ class Parser:
                     exts = ex.value
                     break
         except Exception as ex:  # same shift groupParsator makes
-            raise ExtractionError from ex
+            raise ExtractionError("Error extracting msg+atc") from ex
 
         if not processive:
             return exts
@@ -924,7 +865,7 @@ class Parser:
 
     def groupParsator(self, ims=None, framed=True, piped=False, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    version=None, processive=True, bare=False):
+                    version=None, processive=True):
         """Returns generator to parse nested GenericGroups whose outermost nesting
         appears at the top-level of an incoming message stream.
 
@@ -950,10 +891,7 @@ class Parser:
                 None means do not change default
             processive (bool): True means process messages as they are parsed
                 False means do not process parse only, useful for
-                    testing and debugging
-            bare (bool): True means raise post extraction errors to the caller
-                instead of logging them and resuming. See .parseAllBare
-                False means log and resume"""
+                    testing and debugging"""
         if ims is None:
             ims = self.ims
 
@@ -1054,8 +992,6 @@ class Parser:
                         # after a message+attachments has been successfully extracted
                         # from stream so we drop extraction without flushing rest
                         # of stream but resume extracting next message.
-                        if bare:  # caller handles it, msg already consumed
-                            raise
                         if logger.isEnabledFor(logging.TRACE):
                             logger.exception("GroupParsator error post extraction of"
                                              "msg+atc : %s", ex)
