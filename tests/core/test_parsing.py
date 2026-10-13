@@ -5373,3 +5373,30 @@ def test_parse_one_bare_leaves_parse_unchanged():
 
         assert parser.parseOne(ims=bytearray(unsigned), kvy=kvy) is True
         parser.parse(ims=bytearray(msg)[:-20], kvy=kvy)  # does not raise
+
+
+def test_parse_one_bare_non_extraction_error_propagates():
+    """Test that an error outside the ExtractionError hierarchy raised while
+    extracting propagates unchanged rather than being shifted to an
+    ExtractionError, so that a real bug surfaces as ref/ErrorHandling.md asks.
+
+    Under CESR v1 a stream led by a generic group currently reaches a lookup
+    of the v2 only FixBodyGroup code and raises AttributeError"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    inner = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
+                              version=Vrsn_1_0).qb64b)
+    inner.extend(signers[0].sign(serder.raw, index=0).qb64b)
+    ims = bytearray(Counter(Codens.GenericGroup, count=len(inner) // 4,
+                            version=Vrsn_1_0).qb64b)
+    ims.extend(inner)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        with pytest.raises(AttributeError):
+            parser.parseOneBare(ims=bytearray(ims), kvy=kvy, processive=False)
+
+        parser.parse(ims=bytearray(ims), kvy=kvy)  # still swallowed here

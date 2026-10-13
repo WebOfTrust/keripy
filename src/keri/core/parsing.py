@@ -482,16 +482,18 @@ class Parser:
         processive=False, which only extracts, and then passes asdict() of the
         returned msg to .msgProcess itself.
 
-        Extraction errors are raised as ExtractionError with the originating
-        error on the exception chain via __cause__:
+        Extraction errors, those in the ExtractionError hierarchy, are raised
+        as ExtractionError with the originating error on the exception chain
+        via __cause__. Any other error raised while extracting propagates
+        unchanged, since ref/ErrorHandling.md presumes it a bug:
             SizedGroupError on the chain: an enclosed attachment group failed.
                 The group was stripped first so the rest of ims is intact. Any
                 ShortageError beneath it is about the group's contents and does
                 not mean the stream ran short.
             TopLevelStreamError on the chain: ims begins with a generic group,
                 which like .parseOne this does not descend into. Nothing was
-                consumed. Under CESR v1 such a stream currently fails with an
-                AttributeError on the chain instead.
+                consumed. Under CESR v1 such a stream currently fails earlier
+                instead, with an AttributeError.
             otherwise: stream framing is lost. ShortageError on the chain
                 means more bytes may complete it. Anything else, such as
                 ColdStartError, means more bytes will not. What is left of ims
@@ -546,11 +548,12 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        parsator = self.msgParsator(ims=ims,
+        parsator = self._extractMsg(ims=ims,
                                     framed=framed,
                                     piped=piped,
                                     local=local,
-                                    version=version)
+                                    version=version,
+                                    narrow=True)
         try:
             while True:
                 try:
@@ -558,8 +561,8 @@ class Parser:
                 except StopIteration as ex:
                     exts = ex.value
                     break
-        except Exception as ex:  # same shift groupParsator makes
-            raise ExtractionError("Error extracting msg+atc") from ex
+        except TopLevelStreamError as ex:  # not descending, so report it
+            raise ExtractionError from ex
 
         if not processive:
             return exts
@@ -962,20 +965,17 @@ class Parser:
 
                 # extract substream at current nesting level
                 try:
-                    exts = yield from self.msgParsator(ims=ims,
-                                                          framed=framed,
-                                                          piped=piped,
-                                                          local=local,
-                                                          version=self.version)
+                    exts = yield from self._extractMsg(ims=ims,
+                                                       framed=framed,
+                                                       piped=piped,
+                                                       local=local,
+                                                       version=self.version)
 
                 except TopLevelStreamError as ex:  # encountered GenericGroup
                     # before getting a message so need to nest down into new
                     # generic group which has been not extracted yet
                     # this is the normal way to handle it, so do not log
                     continue  # control thrown here to parse new generic group
-
-                except (ExtractionError, Exception) as ex:  # error while extracting
-                    raise ExtractionError from ex
 
                 # process successful extraction at current nexting level)
                 if processive:
@@ -1022,6 +1022,46 @@ class Parser:
                 if svrsn:
                     self.version = svrsn
         return result if processive else results
+
+
+    def _extractMsg(self, ims, framed, piped, local, version, narrow=False):
+        """Returns generator that extracts one msg plus attachments from ims via
+        .msgParsator and returns it, shifting a failure to ExtractionError with
+        the original on __cause__. The one extraction step shared by
+        .groupParsator and .parseOneBare, each of which applies its own policy
+        to what this raises. Use `yield from` to call.
+
+        TopLevelStreamError is raised as itself so .groupParsator can nest down
+        into the generic group that caused it.
+
+        Parameters:
+            ims (bytearray): incoming message stream
+            framed (bool): True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor
+            local (bool): True means event source is local (protected)
+            version (Versionage): default version of CESR to use
+                None means do not change default
+            narrow (bool): True means shift only ExtractionError subclasses and
+                let any other error propagate unchanged, so that a bug is not
+                mistaken for bad input. See ref/ErrorHandling.md
+                False means shift every Exception, as .groupParsator has
+        """
+        try:
+            exts = yield from self.msgParsator(ims=ims,
+                                               framed=framed,
+                                               piped=piped,
+                                               local=local,
+                                               version=version)
+        except TopLevelStreamError:
+            raise
+        except ExtractionError as ex:
+            raise ExtractionError from ex
+        except Exception as ex:
+            if narrow:
+                raise
+            raise ExtractionError from ex
+        return exts
 
 
     def msgParsator(self, ims=None, framed=True, piped=False, local=None,
