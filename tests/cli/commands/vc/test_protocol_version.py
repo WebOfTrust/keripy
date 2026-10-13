@@ -13,6 +13,7 @@ create_cmd = importlib.import_module("keri.cli.commands.vc.create")
 list_cmd = importlib.import_module("keri.cli.commands.ipex.list")
 grant_cmd = importlib.import_module("keri.cli.commands.ipex.grant")
 admit_cmd = importlib.import_module("keri.cli.commands.ipex.admit")
+revoke_cmd = importlib.import_module("keri.cli.commands.vc.revoke")
 
 
 def advance_once(doer, method):
@@ -112,13 +113,15 @@ def test_ipex_list_parser_selects_genus(monkeypatch, version):
             rgy.reger.close(clear=True)
 
 
-def seed_credential(hby, hab, rgy):
+def seed_credential(hby, hab, rgy, *, est_only=False):
     """Store a real anchored v1 registry and issuance for command replay tests."""
     from keri.core import Diger, Number, Prefixer, Saider, SealEvent
     from keri.vc import credential
-    registry = rgy.makeRegistry(name="registry", prefix=hab.pre, version=Vrsn_1_0, kind=Kinds.json)
+    registry = rgy.makeRegistry(name="registry", prefix=hab.pre, version=Vrsn_1_0,
+                               kind=Kinds.json, estOnly=est_only)
+    anchor = hab.rotate if est_only else hab.interact
     serder = registry.vcp
-    hab.interact(data=[SealEvent(serder.pre, serder.snh, serder.said)._asdict()], version=hab.kever.serder.pvrsn)
+    anchor(data=[SealEvent(serder.pre, serder.snh, serder.said)._asdict()], version=hab.kever.serder.pvrsn)
     registry.anchorMsg(pre=serder.pre, regd=serder.said, seqner=Number(num=hab.kever.sn),
                        saider=Diger(qb64=hab.kever.serder.said))
     rgy.processEscrows()
@@ -127,7 +130,7 @@ def seed_credential(hby, hab, rgy):
     creder = credential(issuer=hab.pre, recipient=hab.pre, schema=schema.said, status=registry.regk,
                         data={}, version=Vrsn_1_0, kind=Kinds.json)
     issuance = registry.issue(said=creder.said)
-    hab.interact(data=[SealEvent(issuance.pre, issuance.snh, issuance.said)._asdict()], version=hab.kever.serder.pvrsn)
+    anchor(data=[SealEvent(issuance.pre, issuance.snh, issuance.said)._asdict()], version=hab.kever.serder.pvrsn)
     registry.anchorMsg(pre=issuance.pre, regd=issuance.said, seqner=Number(num=hab.kever.sn),
                        saider=Diger(qb64=hab.kever.serder.said))
     rgy.processEscrows()
@@ -136,6 +139,66 @@ def seed_credential(hby, hab, rgy):
     rgy.reger.cancs.pin(keys=(creder.said,), val=(Prefixer(qb64=issuance.pre), Number(num=issuance.sn), Diger(qb64=issuance.said)))
     rgy.reger.saved.pin(keys=(creder.said,), val=Saider(qb64=creder.said))
     return creder
+
+
+@pytest.mark.parametrize("version", [None, Vrsn_1_0, Vrsn_2_0], ids=["default", "v1", "v2"])
+@pytest.mark.parametrize("est_only", [False, True], ids=["interaction", "rotation"])
+def test_revoke_anchor_and_evidence_versions(monkeypatch, version, est_only):
+    """Real revocation anchors and replay proofs reach the selected transport genus."""
+    selected = version or Version
+    with openHab(name="issuer", temp=True, version=Vrsn_1_0) as (hby, hab):
+        rgy = Regery(hby=hby, name="issuer", temp=True)
+        tasks = []
+        try:
+            creder = seed_credential(hby, hab, rgy, est_only=est_only)
+            def setup(**kwargs):
+                """Keep the real fixture while applying the command's selected version."""
+                assert kwargs["version"] == version
+                hby.version = selected
+                return hby
+            monkeypatch.setattr(revoke_cmd, "setupHby", setup)
+            monkeypatch.setattr(revoke_cmd, "Regery", lambda **kwargs: rgy)
+            argv = ["--name", "issuer", "--alias", "issuer", "--registry-name", "registry",
+                    "--said", creder.said]
+            if version is not None:
+                argv.extend(["--version", f"{version.major}.{version.minor}"])
+            args = revoke_cmd.parser.parse_args(argv)
+            doer, = args.handler(args)
+            task = advance_once(doer, "revokeDo")
+            tasks.append(task)
+            # Complete real TEL escrows and the no-witness publisher before replay is queued.
+            rgy.processEscrows()
+            doer.registrar.processEscrows()
+            tasks.append(advance_once(doer.registrar.witPub, "sendDo"))
+            assert doer.registrar.complete(creder.said, sn=1)
+            next(task)
+            assert doer.postman.version == selected
+            queued = list(doer.postman.evts)
+            assert len(queued) == 6  # Four KEL events followed by issuance and revocation.
+            frames = []
+            for event in queued:
+                frame, = Parser(version=selected).parse(
+                    ims=bytearray(event["serder"].raw + event["attachment"]), processive=False)
+                assert frame.serder.raw == event["serder"].raw
+                frames.append(frame)
+            anchor, issuance, revocation = frames[-3:]
+            assert anchor.serder.pvrsn == selected
+            assert anchor.serder.ilk == ("rot" if est_only else "ixn")
+            signature, = anchor.sigers
+            assert hab.kever.verfers[signature.index].verify(signature.raw, anchor.serder.raw)
+            assert issuance.serder.ilk == "iss"
+            assert revocation.serder.ilk == "rev"
+            assert revocation.serder.pvrsn == Vrsn_1_0
+            assert revocation.serder.pre == creder.said
+            assert anchor.serder.ked["a"] == [dict(i=creder.said, s="1", d=revocation.serder.said)]
+            number, diger = revocation.sscs[0]
+            assert len(revocation.sscs) == 1
+            assert number.num == anchor.serder.sn
+            assert diger.qb64 == anchor.serder.said
+        finally:
+            for task in tasks:
+                task.close()
+            rgy.reger.close(clear=True)
 
 
 @pytest.mark.parametrize("version", [None, Vrsn_1_0, Vrsn_2_0], ids=["default", "v1", "v2"])
