@@ -11,7 +11,9 @@ import pytest
 from hio.help import ogler
 
 
-from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
+from keri.kering import (ValidationError, ExtractionError, ShortageError,
+                         ColdStartError, SizedGroupError, OutOfOrderError,
+                         Vrsn_1_0, Vrsn_2_0, Kinds)
 
 from keri.core import (Counter, Diger, GenDex, Codens, Seqner, Dater, Texter, Pather,
                        Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser,
@@ -5113,3 +5115,221 @@ def test_a_clean_parse_still_reports_success():
 
     assert parser.parseOne(ims=bytearray(b"any")) is True
     assert parser.processed == 1
+
+
+def bareFixture():
+    """Returns (signers, serder, msg) for a well formed v1 inception plus its
+    attached controller signature. Shared setup for the bare parse tests below.
+
+    Returns:
+        signers (list[Signer]): transferable signers, [0] signs the inception
+        serder (SerderKERI): the inception event
+        msg (bytearray): serder.raw plus a ControllerIdxSigs group of one sig"""
+    signers = Salter(raw=b"ABCDEFGH01234567").signers(count=8, path='psr', temp=True)
+    serder = incept(keys=[signers[0].verfer.qb64],
+                    ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **V1_KWA)
+    msg = bytearray(serder.raw)
+    msg.extend(Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0).qb64b)
+    msg.extend(signers[0].sign(serder.raw, index=0).qb64b)
+    return signers, serder, msg
+
+
+def chain(ex):
+    """Returns list of the classes in the exception chain of ex, outermost
+    first, following __cause__ where explicit and __context__ otherwise"""
+    classes = []
+    while ex is not None:
+        classes.append(type(ex))
+        ex = ex.__cause__ or ex.__context__
+    return classes
+
+
+def test_parse_all_bare_clean():
+    """Test that .parseAllBare processes a well formed stream like .parse"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        ims = bytearray(msg)
+        parser.parseAllBare(ims=ims, kvy=kvy)
+        assert not ims  # consumed
+        assert serder.pre in kvy.kevers  # and accepted
+
+
+def test_parse_all_bare_truncated():
+    """Test that a stream cut short raises an ExtractionError to the caller
+    whose chain still names the ShortageError beneath it"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        with pytest.raises(ExtractionError) as info:
+            parser.parseAllBare(ims=bytearray(msg)[:-20], kvy=kvy)
+        assert ShortageError in chain(info.value)  # more bytes may help
+        assert serder.pre not in kvy.kevers
+
+
+def test_parse_all_bare_cold_start():
+    """Test that a desynced stream raises an ExtractionError whose chain names
+    the ColdStartError, so it is distinguishable from a shortage"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    orphan = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
+                               version=Vrsn_2_0).qb64b)
+    orphan.extend(signers[0].sign(serder.raw, index=0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_2_0)
+
+        with pytest.raises(ExtractionError) as info:
+            parser.parseAllBare(ims=bytearray(orphan), kvy=kvy)
+        assert ColdStartError in chain(info.value)  # more bytes will not help
+        assert ShortageError not in chain(info.value)
+
+
+def test_parse_all_bare_post_extraction():
+    """Test that a msg which extracts but fails validation raises its own
+    error class to the caller, not an ExtractionError"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    unsigned = bytearray(serder.raw)
+    unsigned.extend(Counter(Codens.ControllerIdxSigs, count=0,
+                            version=Vrsn_1_0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        with pytest.raises(ValidationError) as info:
+            parser.parseAllBare(ims=bytearray(unsigned), kvy=kvy)
+        assert not isinstance(info.value, ExtractionError)
+        assert serder.pre not in kvy.kevers
+
+
+def test_parse_all_bare_caller_resumes():
+    """Test that after a post extraction error the stream is left positioned
+    at the next msg, so the caller may resume by calling again.
+
+    The out of order event is escrowed and then raised, which is ordinary KEL
+    traffic, so a caller that wants the rest of the stream must be able to
+    carry on past it"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    ixn = interact(pre=serder.pre, dig=serder.said, sn=5, **V1_KWA)
+    ims = bytearray(ixn.raw)
+    ims.extend(Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0).qb64b)
+    ims.extend(signers[0].sign(ixn.raw, index=0).qb64b)
+    ims.extend(msg)  # the well formed inception follows it
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        with pytest.raises(OutOfOrderError):
+            parser.parseAllBare(ims=ims, kvy=kvy)
+        assert ims == msg  # only the failed msg was consumed
+        assert serder.pre not in kvy.kevers
+
+        parser.parseAllBare(ims=ims, kvy=kvy)  # caller chooses to resume
+        assert not ims
+        assert serder.pre in kvy.kevers
+
+
+def test_parse_all_bare_sized_group():
+    """Test that a failure inside a generic group raises SizedGroupError and
+    leaves the stream positioned after the group, since only it was lost"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    inner = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
+                              version=Vrsn_1_0).qb64b)
+    inner.extend(signers[0].sign(serder.raw, index=0).qb64b)
+    assert len(inner) % 4 == 0
+
+    ims = bytearray(Counter(Codens.GenericGroup, count=len(inner) // 4,
+                            version=Vrsn_1_0).qb64b)
+    ims.extend(inner)
+    ims.extend(msg)  # the well formed inception follows the bad group
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        with pytest.raises(SizedGroupError):
+            parser.parseAllBare(ims=ims, kvy=kvy)
+        assert ims == msg  # group stripped, rest of stream intact
+
+        parser.parseAllBare(ims=ims, kvy=kvy)
+        assert serder.pre in kvy.kevers
+
+
+def test_parse_one_bare_extract_only():
+    """Test that .parseOneBare with processive False returns the extracted msg
+    and leaves the stream at the next one, so a caller may process it itself
+    and still know whose msg failed"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    unsigned = bytearray(serder.raw)
+    unsigned.extend(Counter(Codens.ControllerIdxSigs, count=0,
+                            version=Vrsn_1_0).qb64b)
+    ims = bytearray(unsigned)
+    ims.extend(msg)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        exts = parser.parseOneBare(ims=ims, kvy=kvy, processive=False)
+        assert exts.serder.said == serder.said  # identity known before processing
+        assert ims == msg  # one msg consumed, nothing processed
+        assert serder.pre not in kvy.kevers
+
+        with pytest.raises(ValidationError):
+            parser.msgProcess(exts=asdict(exts), kvy=kvy, tvy=None, exc=None,
+                              rvy=None, vry=None)
+
+        exts = parser.parseOneBare(ims=ims, kvy=kvy, processive=False)
+        parser.msgProcess(exts=asdict(exts), kvy=kvy, tvy=None, exc=None,
+                          rvy=None, vry=None)
+        assert not ims
+        assert serder.pre in kvy.kevers
+
+
+def test_parse_one_bare_raises():
+    """Test that .parseOneBare raises what .parseOne logs and drops"""
+    logger.setLevel("ERROR")
+    signers, serder, msg = bareFixture()
+
+    unsigned = bytearray(serder.raw)
+    unsigned.extend(Counter(Codens.ControllerIdxSigs, count=0,
+                            version=Vrsn_1_0).qb64b)
+
+    with openDB(name="validator") as valDB:
+        kvy = Kevery(db=valDB, lax=False, local=False)
+        parser = Parser(version=Vrsn_1_0)
+
+        with pytest.raises(ValidationError) as info:
+            parser.parseOneBare(ims=bytearray(unsigned), kvy=kvy)
+        assert not isinstance(info.value, ExtractionError)
+
+        with pytest.raises(ExtractionError) as info:
+            parser.parseOneBare(ims=bytearray(msg)[:-20], kvy=kvy)
+        assert ShortageError in chain(info.value)
+
+        assert parser.parseOneBare(ims=bytearray(msg), kvy=kvy) is True
+        assert serder.pre in kvy.kevers
+
+        # the swallowing entry points are unchanged
+        assert parser.parseOne(ims=bytearray(unsigned), kvy=kvy) is True
+        parser.parse(ims=bytearray(msg)[:-20], kvy=kvy)  # does not raise
