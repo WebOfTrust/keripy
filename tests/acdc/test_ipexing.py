@@ -2318,7 +2318,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
             notOrigin.sad["e"]["holder"],
             nodes={notChild.said: {"serder": notChild}},
             nserder=notOrigin,
-            memo={},
+            memo={notChild.said: chaining.valid("far node vetted elsewhere")},
             inheritedPins=())
         assert notVerdict.verdict == Verdicts.unknown
         assert notVerdict.retryable is False
@@ -2337,7 +2337,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
             diOrigin.sad["e"]["holder"],
             nodes={diChild.said: {"serder": diChild}},
             nserder=diOrigin,
-            memo={},
+            memo={diChild.said: chaining.valid("far node vetted elsewhere")},
             inheritedPins=())
         assert diVerdict.verdict == Verdicts.unknown
         assert diVerdict.retryable is False
@@ -7601,12 +7601,15 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                     kvy=kvy)
                 return registry, rip
 
+            issuedNodes = {}  # SAID to ACDC, for deriving disclosure plans
+
             def issue(registry, role):
                 """Issue one registry-backed ACDC targeted at the issuer itself."""
                 acdc = acdcmap(israid=issuerHab.pre,
                                regid=registry.regk,
                                attribute=dict(d="", role=role),
                                iseaid=issuerHab.pre)
+                issuedNodes[acdc.said] = acdc
                 blinder, serder = registrar.issue(registry, acdc=acdc, state="issued")
                 Parser(version=Vrsn_2_0).parse(
                     ims=bytearray(_anchor(issuerHab, registry, serder, framed=False)),
@@ -7663,11 +7666,18 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                                edge=edge,
                                iseaid=recipientHab.pre)
 
-            def planFor(originSerder):
+            def planFor(originSerder, artifacts):
                 """Disclosure plan selecting every node, in the walk's BFS order."""
-                known = {node.said: node
-                         for node in (good, spare, pending, forged, revoked)}
-                plan = [[originSerder.sad["s"]["$id"], "/", []]]
+                known = dict(issuedNodes)
+                known[forged.said] = forged
+                known.update((node.said, node) for node in artifacts
+                             if hasattr(node, "sad"))
+
+                def schemaId(node):
+                    schema = node.sad["s"]
+                    return schema if isinstance(schema, str) else schema["$id"]
+
+                plan = [[schemaId(originSerder), "/", []]]
                 seen = {originSerder.said}
                 groups = deque([(originSerder.sad["e"], "/e/")])
                 while groups:
@@ -7675,11 +7685,13 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                     if "n" in grp:
                         if grp["n"] not in seen:
                             seen.add(grp["n"])
-                            plan.append([known[grp["n"]].sad["s"]["$id"],
+                            plan.append([schemaId(known[grp["n"]]),
                                          f"{path}_/", []])
                         continue
                     for label, node in grp.items():
-                        if label not in ("d", "u", "s", "o", "w"):
+                        # A compact Edge (a block SAID) names no node to disclose.
+                        if (label not in ("d", "u", "s", "o", "w")
+                                and isinstance(node, dict)):
                             groups.append((node, f"{path}{label}/"))
                 return plan
 
@@ -7693,7 +7705,8 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                 exc = Exchanger(hby=recipientHby, handlers=[])
                 loadHandlers(hby=recipientHby, exc=exc, notifier=recorder,
                              rgy=recipientRgy)
-                modifiers = (dict(dp=[planFor(originSerder)]) if artifacts else None)
+                modifiers = (dict(dp=[planFor(originSerder, artifacts)])
+                             if artifacts else None)
                 exn, atc = ipexGrant(hab=issuerHab,
                                      recp=recipientHab.pre,
                                      message=message,

@@ -28,6 +28,7 @@ from keri.core import (
     Noncer,
     Parser,
     Salter,
+    Schemer,
     SealEvent,
     SerderKERI,
     messagize,
@@ -71,6 +72,13 @@ class Recorder:
         self.items.append(attrs)
 
 
+def _cacheSediSchemas(hby):
+    """Cache every SEDI schema document in one Habery's schema store."""
+    for schema in (IarSchema, UnitSchema, AgentSchema, CoreSchema, ResidenceSchema):
+        schemer = Schemer(sed=dict(schema))
+        hby.db.schema.pin(schemer.said, schemer)
+
+
 @contextmanager
 def _openSediHaberies(name):
     """Open one independent Habery for each SEDI workflow role."""
@@ -82,6 +90,10 @@ def _openSediHaberies(name):
         openHby(name=f"{name}-holder", base="test", version=Vrsn_2_0) as holderHby,
         openHby(name=f"{name}-verifier", base="test", version=Vrsn_2_0) as verifierHby,
     ):
+        # A recipient validates each far node against the schemas its edges pin,
+        # so it must hold them, as a deployed verifier would.
+        for hby in (holderHby, verifierHby):
+            _cacheSediSchemas(hby)
         root = rootHby.makeHab(name="roy-state-root")
         org = orgHby.makeHab(name="deb-sedi-program")
         proofer = prooferHby.makeHab(name="pat-proofer")
