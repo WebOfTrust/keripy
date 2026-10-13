@@ -1144,12 +1144,12 @@ def test_verifier_list_valued_operator(seeder):
         # An unrecognized token is refused rather than skipped, which REVERSES what
         # #1552 decided and this test previously pinned ("unrecognized tokens are
         # skipped: the latest recognized operator wins"). The reversal is argued in
-        # test_verifier_unknown_edge_operator_fails_closed: every unary operator
-        # narrows what satisfies an edge, so skipping one applies a more permissive
-        # rule than the Issuer wrote. Note this is orthogonal to the default-append
-        # at spec-body.md:1197 -- that clause keys on the three delegative operators
-        # and still appends I2I here; the refusal is about the token that remains in
-        # the effective list and cannot be evaluated.
+        # test_verifier_unknown_edge_operator_fails_closed: every unary operator narrows
+        # what satisfies an edge, so skipping one applies a more permissive rule than
+        # the Issuer wrote. Note this is orthogonal to the default-append in the ACDC
+        # spec, Edge Section > Edge > Operator, `o` field -- that clause keys on the
+        # three delegative operators and still appends I2I here; the refusal is about
+        # the token that remains in the effective list and cannot be evaluated.
         near = nearWithOp(["NI2I", "BOGUS"], "unrecognized token refused")
         assert verfer.reger.saved.get(keys=near.saidb) is None
 
@@ -2182,14 +2182,14 @@ def test_verifier_reduces_the_edge_section_before_disposing(seeder):
 def test_verifier_mary_reducers_are_a_named_policy_hook(seeder):
     """Which Operators reduce, and how, is a policy a deployment can change.
 
-    ACDC assigns "the actual logic for interpreting the validity of a set of chained
-    or treed ACDCs" to the Ecosystem Governance Framework (spec-body.md:1112), and
-    the normative m-ary table is written over two values: it says an ``AND`` group is
-    "valid only if all members are valid" and an ``OR`` group "is valid if one of the
-    members is valid", and says nothing about a member whose validity is not
-    determined. The Kleene lattice in ``acdc.chaining`` is keripy's answer to that
-    deferral, not something the protocol imposes -- so it has to be reachable as one
-    named thing rather than compiled into the verifier.
+    ACDC assigns "the actual logic for interpreting the validity of a set of chained or
+    treed ACDCs" to the Ecosystem Governance Framework (ACDC spec, Edge Section >
+    Edge-group > Operator, `o` field), and the normative m-ary table is written over two
+    values: it says an ``AND`` group is "valid only if all members are valid" and an
+    ``OR`` group "is valid if one of the members is valid", and says nothing about a
+    member whose validity is not determined. The Kleene lattice in ``acdc.chaining`` is
+    keripy's answer to that deferral, not something the protocol imposes -- so it has to
+    be reachable as one named thing rather than compiled into the verifier.
 
     That matters concretely for the dossier profile, whose operators are weighted
     sums against unity rather than ``AND`` or ``OR``. A profile that has to fork the
@@ -2297,14 +2297,14 @@ def test_verifier_unknown_edge_operator_fails_closed():
     than rejected: for a targeted far node the substitute is ``I2I``, and for an
     untargeted one ``NI2I``, which constrains nothing at all.
 
-    Every reason to add a unary operator is to narrow what satisfies an edge --
-    ``DI2I`` widens the issuer class, ``E1E`` swaps the delegative constraint for an
-    identity one, and anything future (a time bound, an issuer-set restriction) is
-    the same shape. Silently dropping the token therefore relaxes the Issuer's
-    stated rule, in the direction of accepting more, with nothing on the wire or in
-    the log to say a divergence happened. The ACDC unary table
-    (spec-body.md:1190-1195) defines four operators and says nothing about a fifth,
-    so this is keripy choosing to fail closed where the spec is silent.
+    Every reason to add a unary operator is to narrow what satisfies an edge -- ``DI2I``
+    widens the issuer class, ``E1E`` swaps the delegative constraint for an identity
+    one, and anything future (a time bound, an issuer-set restriction) is the same
+    shape. Silently dropping the token therefore relaxes the Issuer's stated rule, in
+    the direction of accepting more, with nothing on the wire or in the log to say a
+    divergence happened. The ACDC unary table (ACDC spec, Edge Section > Edge >
+    Operator, `o` field) defines four operators and says nothing about a fifth, so this
+    is keripy choosing to fail closed where the spec is silent.
 
     The check runs before the far-node lookup. An edge whose operator cannot be
     evaluated cannot be evaluated no matter what arrives later, so escrowing it on
@@ -2327,9 +2327,10 @@ def test_verifier_unknown_edge_operator_fails_closed():
         with pytest.raises(UnsupportedOperatorError):
             verfer.verifyChain(unsavedSaid, ['I1I'], ian.pre)
 
-        # Absent and empty are not unknown: the spec applies the default rule to
-        # both (spec-body.md:1197). Each therefore proceeds to the far-node lookup
-        # and reports it missing -- transiently, with None.
+        # Absent and empty are not unknown: the spec applies the default rule to both
+        # (ACDC spec, Edge Section > Edge > Operator, `o` field). Each therefore
+        # proceeds to the far-node lookup and reports it missing -- transiently, with
+        # None.
         assert verfer.verifyChain(unsavedSaid, None, ian.pre) is None
         assert verfer.verifyChain(unsavedSaid, [], ian.pre) is None
 
@@ -2347,11 +2348,12 @@ def test_verifier_edge_group_schema_pin(seeder):
     direction.
 
     `s` on an Edge-group is a keripy extension: ACDC reserves ``[d, u, o, w]`` there
-    (spec-body.md:1076-1083) and excludes `s` from the labels a nested block may use
-    (:1126), so it is a reserved label the group table does not define. It is
-    honoured rather than rejected because it is exactly a compaction of writing the
-    same `s` on every child, which is unambiguously legal per-edge, and because
-    rejecting it would revert behaviour merged upstream in #1643.
+    (ACDC spec, Edge Section > Edge-group) and excludes `s` from the labels a nested
+    block may use (Edge Section > Edge-group > Labeled nested edge and edge-group
+    fields), so it is a reserved label the group table does not define. It is honoured
+    rather than rejected because it is exactly a compaction of writing the same `s` on
+    every child, which is unambiguously legal per-edge, and because rejecting it would
+    revert behaviour merged upstream in #1643.
 
     Composition is conjunction, not override. An inherited pin is a floor: a child
     that carries its own `s` must satisfy both. This follows the settled reading of

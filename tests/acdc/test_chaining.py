@@ -53,10 +53,11 @@ def test_verdict_values():
 def test_reduce_and_or_over_the_lattice():
     """Kleene three-valued AND and OR, as the ACDC m-ary table's first two rows.
 
-    spec-body.md:1103-1104: AND means the "Edge-group is valid only if all members
-    are valid"; OR means it "is valid if one of the members is valid". Over three
-    values those read as Kleene strong logic, which is the only reading that leaves
-    an unknown member unable to change a verdict its siblings already decide.
+    ACDC spec, Edge Section > Edge-group > Operator, `o` field: AND means the
+    "Edge-group is valid only if all members are valid"; OR means it "is valid if one of
+    the members is valid". Over three values those read as Kleene strong logic, which is
+    the only reading that leaves an unknown member unable to change a verdict its
+    siblings already decide.
 
     The two rows that carry the design are OR(unknown, valid) = valid, so a group
     already satisfied on evidence in hand does not wait on a member it does not

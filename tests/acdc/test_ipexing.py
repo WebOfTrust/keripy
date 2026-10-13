@@ -2368,11 +2368,11 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                         [bogusChild])
 
         # A bare edge is not an unconstrained edge: the spec appends I2I when the far
-        # node is targeted (spec-body.md:1199), and here the far node's issuee is
-        # subject while the near node's issuer is issuer, so the appended operator is
-        # violated. Before the default was applied on this path, this was the
-        # cheapest edge to satisfy -- one pointed at any targeted ACDC the Discloser
-        # could obtain, with no relation checked at all.
+        # node is targeted (ACDC spec, Edge Section > Edge > Operator, `o` field), and
+        # here the far node's issuee is subject while the near node's issuer is issuer,
+        # so the appended operator is violated. Before the default was applied on this
+        # path, this was the cheapest edge to satisfy -- one pointed at any targeted
+        # ACDC the Discloser could obtain, with no relation checked at all.
         defaultedChild = acdcmap(israid=issuer.pre,
                                  attribute=dict(d="", role="member"),
                                  iseaid=subject.pre)

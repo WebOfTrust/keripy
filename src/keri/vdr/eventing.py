@@ -54,16 +54,16 @@ EdgeGroupLabels = ('d', 'u', 'o', 'w')
 # appearance (ACDC spec-body.md, "#### Edge").
 EdgeLabels = ('d', 'u', 'n', 's', 'o', 'w')
 
-# The union of both, which is what bounds the labels a nested block may use:
-# Edge-groups and Edges nested within a given Edge-group "MAY appear as labeled
-# fields whose labels are not any of the reserved field labels for either
-# Edge-groups or Edges, namely, [d, u, n, s, o, w]" (spec-body.md:1126). So a label
-# in the union is a property of the block that carries it, even when that block is
-# an Edge-group and the label is one only an Edge defines. Skipping only the
-# Edge-group's own four would read such a label as structure -- and for `s`, whose
-# value keripy's v2 IPEX path allows to be an inline schema document
-# (acdc/ipexing.py:806-820), reading it as structure walks that document as a nest
-# of Edge-groups and yields a fabricated Edge for any subschema label carrying `n`.
+# The union of both, which is what bounds the labels a nested block may use: Edge-groups
+# and Edges nested within a given Edge-group "MAY appear as labeled fields whose labels
+# are not any of the reserved field labels for either Edge-groups or Edges, namely,
+# [d, u, n, s, o, w]" (ACDC spec, Edge Section > Edge-group > Labeled nested edge and
+# edge-group fields). So a label in the union is a property of the block that carries
+# it, even when that block is an Edge-group and the label is one only an Edge defines.
+# Skipping only the Edge-group's own four would read such a label as structure -- and
+# for `s`, whose value keripy's v2 IPEX path allows to be an inline schema document
+# (acdc/ipexing.py:806-820), reading it as structure walks that document as a nest of
+# Edge-groups and yields a fabricated Edge for any subschema label carrying `n`.
 ReservedEdgeLabels = tuple(sorted(set(EdgeGroupLabels) | set(EdgeLabels)))
 
 # Maximum Edge-group nesting depth this implementation will traverse. SAID-based
@@ -101,11 +101,11 @@ def walkEdgeSection(section, maxDepth=MaxEdgeGroupDepth, path=()):
     m-ary Operator semantics need the Edge-group blocks too, which is why both are
     yielded from one walk.
 
-    Nested blocks appear under non-reserved labels only; a label in the reserved
-    union, .ReservedEdgeLabels, carries a property of the enclosing block and is
-    skipped -- including a label the enclosing block type does not itself define,
-    since the spec bounds nested-block labels by the union of both label sets
-    (spec-body.md:1126).
+    Nested blocks appear under non-reserved labels only; a label in the reserved union,
+    .ReservedEdgeLabels, carries a property of the enclosing block and is skipped --
+    including a label the enclosing block type does not itself define, since the spec
+    bounds nested-block labels by the union of both label sets (ACDC spec, Edge Section
+    > Edge-group > Labeled nested edge and edge-group fields).
 
     Parameters:
         section (dict): the Edge Section, or a nested Edge-group block within it

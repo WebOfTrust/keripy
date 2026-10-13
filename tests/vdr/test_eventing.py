@@ -789,11 +789,11 @@ def test_walk_edge_section():
     arbitrary depth. Edges and Edge-groups are told apart by one thing only: "An Edge
     block MUST have a node, `n`, field. This differentiates an Edge block from an
     Edge-group block," and "An Edge-group MUST NOT have a node, `n`, field"
-    (spec-body.md, "#### Block Types"). A label in the reserved union
-    [d, u, n, s, o, w] carries a property of its own block; every other label names a
-    nested block. The union, rather than each block type's own labels, is what bounds
-    nested-block labels (spec-body.md:1126) -- see
-    test_walk_edge_section_skips_the_reserved_label_union.
+    (spec-body.md, "#### Block Types"). A label in the reserved union [d, u, n, s, o, w]
+    carries a property of its own block; every other label names a nested block. The
+    union, rather than each block type's own labels, is what bounds nested-block labels
+    (ACDC spec, Edge Section > Edge-group > Labeled nested edge and edge-group fields)
+    -- see test_walk_edge_section_skips_the_reserved_label_union.
     """
     said = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
     other = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
@@ -887,12 +887,13 @@ def test_walk_edge_section_skips_the_reserved_label_union():
     """A reserved label is a property of its block, even one the block does not define.
 
     The walker skipped only the Edge-group's own reserved labels, [d, u, o, w], and
-    treated everything else as a nested block. But the spec bounds nested blocks by
-    the *union* of both label sets: Edge-groups and Edges nested in an Edge-group
-    "MAY appear as labeled fields whose labels are not any of the reserved field
-    labels for either Edge-groups or Edges, namely, [d, u, n, s, o, w]"
-    (spec-body.md:1126). So `s` on an Edge-group can never name a nested block, and a
-    walker that treats it as one is reading a property as structure.
+    treated everything else as a nested block. But the spec bounds nested blocks by the
+    *union* of both label sets: Edge-groups and Edges nested in an Edge-group "MAY
+    appear as labeled fields whose labels are not any of the reserved field labels for
+    either Edge-groups or Edges, namely, [d, u, n, s, o, w]" (ACDC spec, Edge Section >
+    Edge-group > Labeled nested edge and edge-group fields). So `s` on an Edge-group can
+    never name a nested block, and a walker that treats it as one is reading a property
+    as structure.
 
     The consequence is not a dropped constraint, it is a fabricated edge. keripy's v2
     IPEX path accepts an inline schema *document* as a group's `s` (ipexing.py:806-820,

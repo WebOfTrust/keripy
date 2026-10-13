@@ -49,13 +49,13 @@ EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
 DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
 
-# Unary operators whose presence suppresses the default rule. "When the Operator,
-# `o`, field is missing or empty or is present but does not include any of the
-# `I2I`, `NI2I`, `DI2I`, or `E1E` Operators" then the default is appended
-# (spec-body.md:1209 on the ACDC v1.1 line, which added E1E to the list; the 2.0
-# line still names only the delegative three because E1E has not been forward-ported
-# there). Keyed on this set rather than on the list being empty, so an `o` carrying
-# only a non-delegative operator still takes the default the spec appends.
+# Unary operators whose presence suppresses the default rule. "When the Operator, `o`,
+# field is missing or empty or is present but does not include any of the `I2I`, `NI2I`,
+# `DI2I`, or `E1E` Operators" then the default is appended (ACDC spec, Edge Section >
+# Edge > Operator, `o` field, on the ACDC v1.1 line, which added E1E to the list; the
+# 2.0 line still names only the delegative three because E1E has not been forward-ported
+# there). Keyed on this set rather than on the list being empty, so an `o` carrying only
+# a non-delegative operator still takes the default the spec appends.
 DefaultSuppressingEdgeOps = ("I2I", "NI2I", "DI2I", "E1E")
 EdgeGroupOps = ("AND", "OR")
 
@@ -446,13 +446,13 @@ class IpexHandler:
     # Receive route-filtered non-sender evidence from Exchanger.
     acceptsEvidence = True
 
-    # A registry's transaction state is "a string from a small finite set of
-    # strings" defined *per registry* (spec-body.md:2041, :2092), with `issued` and
-    # `revoked` only the specification's example -- keripy already takes the
-    # vocabulary from the caller elsewhere (Blinder.unblind(states=[...])). So both
+    # A registry's transaction state is "a string from a small finite set of strings"
+    # defined *per registry* (ACDC spec, the TEL Transaction state, `ts` field), with
+    # `issued` and `revoked` only the specification's example -- keripy already takes
+    # the vocabulary from the caller elsewhere (Blinder.unblind(states=[...])). So both
     # of these are policy attributes rather than constants, and a deployment whose
-    # registries speak a different vocabulary overrides them rather than patching
-    # the handler.
+    # registries speak a different vocabulary overrides them rather than patching the
+    # handler.
     #
     # Two lists rather than one, because a single denylist decides the wrong way for
     # every word not on it. A state this handler does not recognize is not a state
@@ -467,10 +467,11 @@ class IpexHandler:
 
     # The m-ary Operator reducers this handler applies to an Edge-group. Named here
     # rather than reached for inline because ACDC assigns "the actual logic for
-    # interpreting the validity of a set of chained or treed ACDCs" to the EGF
-    # (spec-body.md:1112); the Kleene lattice in acdc.chaining is keripy's default
-    # answer to that deferral, not something the protocol imposes, so a profile
-    # overrides this attribute rather than forking the handler.
+    # interpreting the validity of a set of chained or treed ACDCs" to the EGF (ACDC
+    # spec, Edge Section > Edge-group > Operator, `o` field); the Kleene lattice in
+    # acdc.chaining is keripy's default answer to that deferral, not something the
+    # protocol imposes, so a profile overrides this attribute rather than forking the
+    # handler.
     MAryReducers = chaining.MAryReducers
 
     def __init__(self, resource, hby, notifier, rgy=None):

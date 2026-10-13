@@ -92,12 +92,12 @@ class Verifier:
     #
     # An attribute rather than a direct reach for chaining.MAryReducers because ACDC
     # assigns "the actual logic for interpreting the validity of a set of chained or
-    # treed ACDCs" to the Ecosystem Governance Framework (spec-body.md:1112), and its
-    # m-ary table is written over two values: it says nothing about a member whose
-    # validity is not determined. The Kleene reading is keripy's answer to that
-    # deferral, not something the protocol imposes, and a profile with its own
-    # Operators -- the dossier's weighted thresholds, for instance -- registers them
-    # here instead of growing a second evaluator.
+    # treed ACDCs" to the Ecosystem Governance Framework (ACDC spec, Edge Section >
+    # Edge-group > Operator, `o` field), and its m-ary table is written over two values:
+    # it says nothing about a member whose validity is not determined. The Kleene
+    # reading is keripy's answer to that deferral, not something the protocol imposes,
+    # and a profile with its own Operators -- the dossier's weighted thresholds, for
+    # instance -- registers them here instead of growing a second evaluator.
     #
     # NAND, NOR, AVG and WAVG are recognized by the spec and not reduced by default:
     # a group asking for one is unknown rather than silently treated as AND, which
@@ -816,9 +816,9 @@ class Verifier:
         # Dropping an unrecognized token and defaulting would validate the edge under a
         # substituted operator, and since every unary operator exists to narrow what
         # satisfies an edge, the substitute is always the more permissive rule -- a
-        # silent relaxation of what the Issuer wrote. The ACDC unary table
-        # (spec-body.md:1190-1195) says nothing about a fifth token, so failing closed
-        # here is keripy's choice where the spec is silent.
+        # silent relaxation of what the Issuer wrote. The ACDC unary table (ACDC spec,
+        # Edge Section > Edge > Operator, `o` field) says nothing about a fifth token,
+        # so failing closed here is keripy's choice where the spec is silent.
         #
         # Checked before the far-node lookup on purpose: an operator this validator
         # cannot evaluate stays that way however much evidence arrives, so reporting a
