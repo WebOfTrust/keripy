@@ -9,10 +9,11 @@ from ..core import Pather, Seqner, Diger, SealEvent, messagize
 from ..kering import Version
 
 
-def serialize(creder, prefixer, seqner, saider):
+def serialize(creder, prefixer, seqner, saider, *, gvrsn=Version):
+    """Serialize credential proof attachments with an explicit CESR genus."""
     return bytes(messagize(creder,
                            bonds=[SealEvent(i=prefixer, s=seqner, d=saider)],
-                           framed=True, gvrsn=Version))
+                           framed=True, gvrsn=gvrsn))
 
 
 #def ratify(hab, serder, paths=None, pipelined=False):
