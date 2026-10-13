@@ -32,6 +32,22 @@ from keri.spac import payloading
 
 
 
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+def test_introduce_transferable_peer_without_receipt(version):
+    """A first contact consults the real receipt table and emits our introduction."""
+    from keri.app.forwarding import introduce
+
+    with openHab(name="intro-sender", temp=True, version=version) as (_, hab), \
+            openHab(name="intro-peer", temp=True, version=version) as (_, peer):
+        # Neither party has receipted the other; a transferable peer still needs
+        # the complete local history and endpoint authorization before a query.
+        message = introduce(hab, peer.pre, gvrsn=version)
+        expected = hab.replay(gvrsn=version)
+        expected.extend(hab.replyEndRole(cid=hab.pre, gvrsn=version))
+        assert message == expected
+        assert message
+
+
 @pytest.mark.parametrize("role", [Roles.witness, Roles.mailbox])
 @pytest.mark.parametrize("version, gvrsn", [(Vrsn_1_0, None), (Vrsn_2_0, None),
                                             (Vrsn_2_0, Vrsn_1_0), (Vrsn_2_0, Vrsn_2_0)])
