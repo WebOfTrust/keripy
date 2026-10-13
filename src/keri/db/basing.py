@@ -544,6 +544,16 @@ class Baser(LMDBer):
             timestamp of the escrowed message.
             subkey 'epsd.'
 
+        .emse is named subDB instance of SerderSuber for exchange messages
+            awaiting an ACDC schema. Maps (exchange SAID, schema SAID) to the
+            escrowed exchange message.
+            subkey 'emse.'
+
+        .emsd is named subDB instance of CesrSuber (klas=Dater) for exchange
+            message missing-schema escrow deadlines. Maps exchange SAID to the
+            absolute deadline shared by all sequential schema dependencies.
+            subkey 'emsd.'
+
         .exns is named subDB instance of SerderSuber for accepted exchange
             messages. Maps key to serialized Serder of the exchange message.
             subkey 'exns.'
@@ -1121,6 +1131,13 @@ class Baser(LMDBer):
         self.epsd = subing.CesrSuber(db=self, subkey="epsd.",
                                      klas=coring.Dater)
 
+        # exchange messages awaiting an ACDC schema
+        self.emse = subing.SerderSuber(db=self, subkey="emse.")
+
+        # exchange message missing-schema escrow deadline
+        self.emsd = subing.CesrSuber(db=self, subkey="emsd.",
+                                     klas=coring.Dater)
+
         # exchange messages
         # TODO: clean
         self.exns = subing.SerderSuber(db=self, subkey="exns.")
@@ -1496,9 +1513,9 @@ class Baser(LMDBer):
         escrows = [
             self.ures, self.vres, self.pses, self.pwes, self.ooes,
             self.qnfs, self.uwes, self.misfits, self.delegables,
-            self.pdes, self.udes, self.rpes, self.ldes, self.epsd,
+            self.pdes, self.udes, self.rpes, self.ldes, self.epsd, self.emsd,
             self.eoobi, self.dpub, self.gpwe, self.gdee, self.dpwe,
-            self.gpse, self.epse, self.dune,
+            self.gpse, self.epse, self.emse, self.dune,
         ]
         total = 0
         for escrow in escrows:
@@ -1516,9 +1533,10 @@ class Baser(LMDBer):
         for escrow in [self.ures, self.vres, self.pses, self.pwes, self.ooes,
                        self.qnfs, self.uwes,
                        self.qnfs, self.misfits, self.delegables, self.pdes,
-                       self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
+                       self.udes, self.rpes, self.ldes, self.epsd, self.emsd,
+                       self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
-                       self.epse, self.dune]:
+                       self.epse, self.emse, self.dune]:
             count = escrow.cntAll()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")

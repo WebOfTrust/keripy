@@ -4,22 +4,26 @@
 from contextlib import contextmanager
 from types import SimpleNamespace
 
+import pytest
 from jsonschema import Draft202012Validator as SchemaValidator
 
 from keri import Kinds, Vrsn_2_0
 from keri.acdc import (
+    IpexHandler,
     Regery,
     Registrar,
     acdcmap,
     admit as ipexAdmit,
     agree as ipexAgree,
     apply as ipexApply,
+    blindate,
     grant as ipexGrant,
     loadHandlers,
     offer as ipexOffer,
 )
 from keri.app import openCF, openHby
 from keri.core import (
+    Blinder,
     Compactor,
     Diger,
     Kevery,
@@ -28,11 +32,13 @@ from keri.core import (
     Noncer,
     Parser,
     Salter,
+    Schemer,
     SealEvent,
     SerderKERI,
     messagize,
 )
 from keri.help import helping
+from keri.kering import FailedSchemaValidationError
 from keri.peer import Exchanger, cloneMessage
 from keri.peer.exchanging import loadParsedNestedSubstreams
 
@@ -60,6 +66,14 @@ _KRAM_CONFIG = {
     },
 }
 
+_SEDI_SCHEMAS = (
+    (IarSchemaSaid, IarSchema),
+    (UnitSchemaSaid, UnitSchema),
+    (AgentSchemaSaid, AgentSchema),
+    (CoreSchemaSaid, CoreSchema),
+    (ResidenceSchemaSaid, ResidenceSchema),
+)
+
 
 class Recorder:
     """Collect accepted IPEX notices for workflow assertions."""
@@ -69,6 +83,12 @@ class Recorder:
 
     def add(self, attrs):
         self.items.append(attrs)
+
+
+def _cacheSediSchemas(db):
+    """Cache every schema used by the SEDI presentation workflows."""
+    for said, schema in _SEDI_SCHEMAS:
+        db.schema.pin(said, Schemer(sed=dict(schema)))
 
 
 @contextmanager
@@ -127,6 +147,9 @@ def _openSediRegistries(
 @contextmanager
 def _openIpexProcessors(name, holderHby, verifierHby, holderRgy, verifierRgy):
     """Open the independent holder and verifier IPEX/KRAM processors."""
+    _cacheSediSchemas(holderHby.db)
+    _cacheSediSchemas(verifierHby.db)
+
     holderRecorder = Recorder()
     holderExc = Exchanger(hby=holderHby, handlers=[])
     loadHandlers(hby=holderHby, exc=holderExc, notifier=holderRecorder, rgy=holderRgy)
@@ -548,6 +571,10 @@ def _setupSediCredentials(
         residenceOperators=residenceOperators,
     )
 
+    # Issuers must have external schemas before creating registry state.
+    for hab in (root, org, issuer):
+        _cacheSediSchemas(hab.db)
+
     unitProof, unitIssued = rootRegistrar.issue(unitRegistry, acdc=unit)
     unitIssuedAnchor = _anchor(root, unitRegistry, unitIssued)
     agentProof, agentIssued = orgRegistrar.issue(agentRegistry, acdc=agent)
@@ -606,6 +633,179 @@ def _setupSediCredentials(
         proofedUnit=_proofed(unit, unitProof),
         proofedAgent=_proofed(agent, agentProof),
     )
+
+
+def test_sedi_issuer_rejects_schema_invalid_credential():
+    """Reject malformed SEDI before creating its issuer-registry update."""
+    with openHby(name="invalid-sedi-issuance",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        issuee = hby.makeHab(name="issuee")
+
+        # Create the issuer registry
+        rgy = Regery(hby=hby, name="invalid-sedi-issuance", temp=True)
+        try:
+            registrar = Registrar(rgy=rgy)
+            registry = registrar.makeRegistry(name="sedi-unit", prefix=issuer.pre)
+            rip = rgy.store.event(registry.regk)
+            _anchor(issuer, registry, rip)
+
+            # Cache the Unit schema
+            schemer = Schemer(sed=dict(UnitSchema))
+            assert schemer.said == UnitSchemaSaid
+            hby.db.schema.pin(schemer.said, schemer)
+
+            # Omit the required unit attribute
+            malformed = acdcmap(
+                israid=issuer.pre,
+                uuid=Noncer().qb64,
+                regid=registry.regk,
+                schema=UnitSchemaSaid,
+                attribute=dict(
+                    d="",
+                    u=Noncer().qb64,
+                    issuedDate="2026-09-01T00:00:00.000000+00:00",
+                ),
+                iseaid=issuee.pre,
+                rule=dict(d="", l="Use only for identity verification."),
+            )
+            assert "unit" not in malformed.sad["a"]
+
+            # Reject issuance before creating an update
+            with pytest.raises(FailedSchemaValidationError):
+                registrar.issue(registry, acdc=malformed, state="issued")
+
+            # Assert the registry hasn't stored the malformed credential
+            assert rgy.store.headEvent(registry.regk).said == rip.said
+            assert rgy.store.seqEvent(registry.regk, 1) is None
+        finally:
+            rgy.close()
+
+
+def test_ipex_v2_rejects_schema_invalid_sedi_with_valid_issuer_registry():
+    """A maliciously constructed issuer TEL cannot authenticate invalid SEDI."""
+    with (openHby(name="ipex-v2-invalid-sedi-issuer",
+                  base="test",
+                  version=Vrsn_2_0) as issuerHby,
+          openHby(name="ipex-v2-invalid-sedi-recipient",
+                  base="test",
+                  version=Vrsn_2_0) as recipientHby):
+        issuer = issuerHby.makeHab(name="issuer")
+        recipient = recipientHby.makeHab(name="recipient")
+
+        # Create separate issuer and recipient registries
+        issuerRgy = Regery(hby=issuerHby,
+                           name="ipex-v2-invalid-sedi-issuer",
+                           temp=True)
+        recipientRgy = Regery(hby=recipientHby,
+                              name="ipex-v2-invalid-sedi-recipient",
+                              temp=True)
+        try:
+            registrar = Registrar(rgy=issuerRgy)
+            registry = registrar.makeRegistry(name="sedi-unit", prefix=issuer.pre)
+            rip = issuerRgy.store.event(registry.regk)
+            ripAnchor = _anchor(issuer, registry, rip)
+
+            # Create a Unit without its required unit attribute
+            malformed = acdcmap(
+                israid=issuer.pre,
+                uuid=Noncer().qb64,
+                regid=registry.regk,
+                schema=UnitSchemaSaid,
+                attribute=dict(
+                    d="",
+                    u=Noncer().qb64,
+                    issuedDate="2026-09-01T00:00:00.000000+00:00",
+                ),
+                iseaid=recipient.pre,
+                rule=dict(d="", l="Use only for identity verification."),
+            )
+            assert "unit" not in malformed.sad["a"]
+
+            # Bypass the validating Registrar API
+            issuedProof = Blinder.blind(
+                sn=1,
+                acdc=malformed.said,
+                state="issued",
+            )
+            issued = blindate(
+                regid=registry.regk,
+                prior=rip.said,
+                blid=issuedProof.said,
+                sn=1,
+            )
+            assert registry.processEvent(issued) is False
+            issuedAnchor = _anchor(issuer, registry, issued)
+
+            # Give the recipient the issuer KEL
+            recipientKvy = Kevery(db=recipientHby.db, lax=False, local=False)
+            issuerInception = issuer.msgOwnEvent(
+                sn=0,
+                framed=True,
+                gvrsn=Vrsn_2_0,
+            )
+            for stream in (issuerInception, ripAnchor, issuedAnchor):
+                ims = bytearray(stream)
+                Parser(version=Vrsn_2_0).parse(ims=ims, kvy=recipientKvy)
+                assert ims == bytearray()
+
+            # Give the recipient the issuer TEL
+            recipientRgy.store.accept(registry.regk, 0, rip)
+            recipientRgy.store.accept(registry.regk, 1, issued)
+
+            # Cache the Unit schema for the recipient
+            schemer = Schemer(sed=dict(UnitSchema))
+            assert schemer.said == UnitSchemaSaid
+            recipientHby.db.schema.pin(schemer.said, schemer)
+
+            # Grant the malformed Unit to the recipient
+            grant, grantAtc = ipexGrant(
+                hab=issuer,
+                recp=recipient.pre,
+                message="Disclose malformed SEDI Unit",
+                origin=_proofed(malformed, issuedProof),
+            )
+            parsed, = Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(grant.raw + grantAtc),
+                framed=False,
+                processive=False,
+            )
+
+            # Confirm the issuer proof is valid
+            handler = IpexHandler(
+                resource="/ipex/grant",
+                hby=recipientHby,
+                notifier=Recorder(),
+                rgy=recipientRgy,
+            )
+            node = parsed.nests[0]
+            assert handler._verifyIssuerAuthNode(
+                serder=node.serder,
+                nest=node,
+            ) is True
+
+            # Set up the recipient's IPEX processor
+            recorder = Recorder()
+            exc = Exchanger(hby=recipientHby, handlers=[])
+            loadHandlers(
+                hby=recipientHby,
+                exc=exc,
+                notifier=recorder,
+                rgy=recipientRgy,
+            )
+
+            # Reject the schema-invalid Grant without escrow
+            ims = bytearray(grant.raw)
+            ims.extend(grantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert recipientHby.db.exns.get(keys=(grant.said,)) is None
+            assert recipientHby.db.epse.get(keys=(grant.said,)) is None
+            assert recorder.items == []
+        finally:
+            issuerRgy.close()
+            recipientRgy.close()
 
 
 def test_signed_iar_through_ipex():
@@ -669,6 +869,8 @@ def test_signed_iar_through_ipex():
             kind=Kinds.json,
         )
         SchemaValidator(schema=IarSchema).validate(iar.sad)
+        _cacheSediSchemas(holderHby.db)
+        _cacheSediSchemas(verifierHby.db)
 
         # Set up Ipex
         holderRecorder = Recorder()

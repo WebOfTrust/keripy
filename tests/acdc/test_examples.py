@@ -25,7 +25,7 @@ from jsonschema.exceptions import SchemaError, ValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (Noncer, Blinder, GenDex, Aggor, Compactor, Diger,
-                       DigDex, Parser, messagize)
+                       DigDex, Parser, Schemer, messagize)
 from keri.acdc import (Regery, Registrar, regcept, blindate, acdcmap, acdcagg, loadHandlers,
                        grant as ipexGrant, admit as ipexAdmit)
 from keri.app import openHby
@@ -807,7 +807,11 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert expanded.said == compact.said             # same commitment either way
         schema = assert_acdc_schema_valid(expanded)
         assert_acdc_schema_valid(compact, schema=schema)
-        
+
+        # Cache the schema that compact disclosures identify only by SAID.
+        schemer = Schemer(sed=dict(schema))
+        hby.db.schema.pin(schemer.said, schemer)
+
         assert b"Bob Student" not in compact.raw
         assert b"MUST NOT" not in compact.raw
 

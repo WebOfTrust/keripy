@@ -11,7 +11,8 @@ from hio.help import decking, ogler
 
 from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks, Colds, sniff,
                       Kinds, Version, versify,
-                      ValidationError, MissingChainError, MissingSignatureError)
+                      ValidationError, MissingChainError, MissingSchemaError,
+                      MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger, Number,
                     Prefixer, Seqner, Saider,
                     Serder, SerderKERI, Texter,
@@ -32,6 +33,7 @@ class Exchanger:
      Peer to Peer KERI message Exchanger."""
 
     TimeoutPSE = 10  # seconds to timeout partially signed or delegated escrows
+    TimeoutMSE = 20  # missing-schema escrow timeout in seconds
 
     def __init__(self, hby, handlers, cues=None, delta=ExchangeMessageTimeWindow):
         """ Initialize instance
@@ -403,6 +405,27 @@ class Exchanger:
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             return None
 
+        # Escrow the exchange when a schema is missing
+        except MissingSchemaError as ex:
+            # Get the missing schema SAID
+            schema = ex.args[0]
+
+            # Store the exchange and its evidence
+            stored = self.escrowMSEvent(
+                serder=serder, schema=schema, tsgs=tsgs, pathed=ptds,
+                cigars=cigars, sourceSeals=sourceSeals, nests=nests)
+
+            # Request each new schema once
+            if stored:
+                self.cues.append(dict(
+                    kin="query",
+                    q=dict(r="schema", said=schema),
+                ))
+            logger.info("Escrowed exchange %s awaiting schema %s",
+                        serder.said, schema)
+            logger.debug("Exchange message body=\n%s\n", serder.pretty())
+            return None
+
         # Always persist events
         # Persist only sender authentication and policy-approved extras.
         self.logEvent(serder, ptds, tsgs, cigars, essrs,
@@ -422,6 +445,49 @@ class Exchanger:
     def processEscrow(self):
         """ Process all escrows for `exn` messages"""
         self.processEscrowPartialSigned()
+        self.processEscrowMissingSchema()
+
+    def _storeEscrowEvidence(self, serder, tsgs, cigars, sourceSeals):
+        """Persist exchange authentication evidence for later replay."""
+        dig = serder.said
+        for prefixer, seqner, ssaider, sigers in tsgs:
+            quadkeys = (dig, prefixer.qb64,
+                        f"{seqner.sn:032x}", ssaider.qb64)
+            for siger in sigers:
+                self.hby.db.esigs.add(keys=quadkeys, val=siger)
+        for cigar in cigars:
+            self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
+        for prefixer, number, diger in sourceSeals:
+            self.hby.db.ests.add(keys=(dig, prefixer.qb64),
+                                 val=(number, diger))
+
+    def _escrowEvent(self, serder, keys, escrow, dater, tsgs, pathed,
+                     cigars=None, sourceSeals=None, nests=None):
+        """Persist one retryable exchange and all evidence needed to replay it."""
+        dig = serder.said
+
+        # Skip an accepted exchange
+        if self.hby.db.exns.get(keys=(dig,)) is not None:
+            return False
+
+        cigars = cigars or []
+        sourceSeals = sourceSeals or []
+
+        # Store the authentication evidence
+        self._storeEscrowEvidence(serder=serder, tsgs=tsgs,
+                                  cigars=cigars,
+                                  sourceSeals=sourceSeals)
+
+        # Store the entry time when required
+        if dater is not None:
+            dater.put(keys=keys, val=Dater())
+        self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        if nests:
+            self.hby.db.enst.pin(
+                keys=(dig,),
+                vals=[bytes(serializeParsedSubstream(nest)) for nest in nests],
+            )
+        return escrow.put(keys=keys, val=serder)
 
     def escrowPSEvent(self, serder, tsgs, pathed, cigars=None,
                       sourceSeals=None, nests=None):
@@ -437,35 +503,79 @@ class Exchanger:
 
         """
         dig = serder.said
-        if self.hby.db.exns.get(keys=(dig,)) is not None:
-            return False
+        return self._escrowEvent(
+            serder=serder,
+            keys=(dig,),
+            escrow=self.hby.db.epse,
+            dater=self.hby.db.epsd,
+            tsgs=tsgs,
+            pathed=pathed,
+            cigars=cigars,
+            sourceSeals=sourceSeals,
+            nests=nests,
+        )
 
-        cigars = cigars or []
-        sourceSeals = sourceSeals or []
-        for prefixer, seqner, ssaider, sigers in tsgs:
-            quadkeys = (serder.said, prefixer.qb64,
-                        f"{seqner.sn:032x}", ssaider.qb64)
-            for siger in sigers:
-                self.hby.db.esigs.add(keys=quadkeys, val=siger)
-        for cigar in cigars:
-            self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
-        for prefixer, number, diger in sourceSeals:
-            self.hby.db.ests.add(keys=(serder.said, prefixer.qb64),
-                                 val=(number, diger))
+    def escrowMSEvent(self, serder, schema, tsgs, pathed, cigars=None,
+                      sourceSeals=None, nests=None):
+        """Escrow an exchange until its declared ACDC schema is available."""
+        Saider(qb64=schema)
+        dig = serder.said
+        stored = self._escrowEvent(
+            serder=serder,
+            keys=(dig, schema),
+            escrow=self.hby.db.emse,
+            dater=None,
+            tsgs=tsgs,
+            pathed=pathed,
+            cigars=cigars,
+            sourceSeals=sourceSeals,
+            nests=nests,
+        )
 
-        self.hby.db.epsd.put(keys=(dig,), val=Dater())
-        self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
-        if nests:
-            self.hby.db.enst.pin(keys=(dig,),
-                                 vals=[bytes(serializeParsedSubstream(nest)) for nest in nests])
-        return self.hby.db.epse.put(keys=(dig,), val=serder)
+        # Keep one deadline for all missing schemas in this exchange
+        if stored and self.hby.db.emsd.get(keys=(dig,)) is None:
+            expiry = helping.nowUTC() + datetime.timedelta(seconds=self.TimeoutMSE)
+            xid = serder.ked.get("x")
+            if xid:
+                cache = self.hby.db.kramTMSC.get(
+                    keys=(serder.pre, xid, dig))
+                if cache is not None:
+                    expiry = (helping.fromIso8601(cache.xdt)
+                              + datetime.timedelta(milliseconds=cache.pxl))
+            self.hby.db.emsd.put(
+                keys=(dig,), val=Dater(dts=helping.toIso8601(expiry)))
+
+        return stored
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages"""
-        for (dig,), serder in self.hby.db.epse.getTopItemIter():
+        self._replayEscrowType(
+            escrow=self.hby.db.epse,
+            dater=self.hby.db.epsd,
+            timeout=self.TimeoutPSE,
+            label="partially signed",
+        )
+
+    def processEscrowMissingSchema(self):
+        """Process exchanges waiting for an ACDC schema."""
+        self._replayEscrowType(
+            escrow=self.hby.db.emse,
+            dater=self.hby.db.emsd,
+            label="missing schema",
+            absolute=True,
+        )
+
+    def _replayEscrowType(self, escrow, dater, label, timeout=None,
+                          absolute=False):
+        """Replay every exchange in one specified escrow category."""
+        for escrowKeys, serder in escrow.getTopItemIter():
+            dig = escrowKeys[0]
+            dateKeys = (dig,) if absolute else escrowKeys
             if self.hby.db.exns.get(keys=(dig,)) is not None:
-                self.hby.db.epse.rem(dig)
-                self.hby.db.epsd.rem(dig)
+                escrow.rem(keys=escrowKeys)
+                if not absolute or not any(
+                        self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                    dater.rem(keys=dateKeys)
                 continue
 
             try:
@@ -475,20 +585,22 @@ class Exchanger:
                 sigers = []
 
                 dtnow = helping.nowUTC()
-                dater = self.hby.db.epsd.get(keys=(dig,))
-                if dater is None:
+                escrowedAt = dater.get(keys=dateKeys)
+                if escrowedAt is None:
                     raise ValidationError("Missing exn escrowed event datetime "
                                           f"at dig = {dig}.")
 
-                dte = dater.datetime
-                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
+                dte = escrowedAt.datetime
+                stale = dtnow > dte if absolute else (
+                    dtnow - dte) > datetime.timedelta(seconds=timeout)
+                if stale:
                     # escrow stale so raise ValidationError which unescrows below
                     raise ValidationError("Stale exn event escrow "
                                           f"at dig = {dig}.")
 
                 old = None  # empty keys
-                for keys, siger in self.hby.db.esigs.getTopItemIter(keys=(dig, "")):
-                    quad = keys[1:]
+                for sigKeys, siger in self.hby.db.esigs.getTopItemIter(keys=(dig, "")):
+                    quad = sigKeys[1:]
                     if quad != old:  # new tsg
                         if sigers:  # append tsg made for old and sigers
                             prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
@@ -508,9 +620,9 @@ class Exchanger:
                     cigar.verfer = verfer
                     cigars.append(cigar)
                 sourceSeals = []
-                for keys, (number, diger) in self.hby.db.ests.getTopItemIter(
+                for sealKeys, (number, diger) in self.hby.db.ests.getTopItemIter(
                         keys=(dig, "")):
-                    sourceSeals.append((Prefixer(qb64=keys[1]), number, diger))
+                    sourceSeals.append((Prefixer(qb64=sealKeys[1]), number, diger))
                 nests = loadParsedNestedSubstreams(self.hby, dig)
 
                 # The same stores hold escrowed and accepted evidence. Remove
@@ -524,45 +636,68 @@ class Exchanger:
                                            essrs=essrs, ssts=sourceSeals, nests=nests)
 
             except MissingSignatureError as ex:
-                for prefixer, seqner, ssaider, sigers in tsgs:
-                    quadkeys = (serder.said, prefixer.qb64,
-                                f"{seqner.sn:032x}", ssaider.qb64)
-                    for siger in sigers:
-                        self.hby.db.esigs.add(keys=quadkeys, val=siger)
-                for cigar in cigars:
-                    self.hby.db.ecigs.add(
-                        keys=(serder.said,), val=(cigar.verfer, cigar))
-                for prefixer, number, diger in sourceSeals:
-                    self.hby.db.ests.add(
-                        keys=(serder.said, prefixer.qb64),
-                        val=(number, diger))
+                self._storeEscrowEvidence(serder=serder, tsgs=tsgs,
+                                          cigars=cigars,
+                                          sourceSeals=sourceSeals)
+                if (escrow is self.hby.db.emse and
+                        self.hby.db.epse.get(keys=(dig,)) is not None):
+                    escrow.rem(keys=escrowKeys)
+                    if not any(self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                        dater.rem(keys=dateKeys)
                 if logger.isEnabledFor(logging.TRACE):
-                    logger.trace("Exchange partially signed unescrow failed: %s\n", ex.args[0])
+                    logger.trace("Exchange %s unescrow failed: %s\n",
+                                 label, ex.args[0])
                     logger.debug("Event body=\n%s\n", serder.pretty())
             except Exception as ex:
                 saved = self.hby.db.exns.get(keys=(dig,)) is not None
-                self.hby.db.epse.rem(dig)
-                self.hby.db.epsd.rem(dig)
-                if not saved:
+                escrow.rem(keys=escrowKeys)
+                if not absolute or not any(
+                        self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                    dater.rem(keys=dateKeys)
+                pending = (self.hby.db.epse.get(keys=(dig,)) is not None
+                           or any(self.hby.db.emse.getTopItemIter(keys=(dig,))))
+                if not saved and not pending:
                     self.hby.db.esigs.trim(keys=(dig, ""))
                     self.hby.db.ecigs.rem(keys=(dig,))
                     self.hby.db.ests.trim(keys=(dig, ""))
                     self.hby.db.epath.rem(keys=(dig,))
                     self.hby.db.enst.rem(keys=(dig,))
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Exchange partially signed unescrowed: %s", ex.args[0])
+                    logger.exception("Exchange %s unescrowed: %s",
+                                     label, ex.args[0])
                 else:
-                    logger.error("Exchange partially signed unescrowed: %s", ex.args[0])
+                    logger.error("Exchange %s unescrowed: %s",
+                                 label, ex.args[0])
             else:
                 if result is None:
+                    moved = False
+                    if escrow is self.hby.db.epse:
+                        moved = any(self.hby.db.emse.getTopItemIter(keys=(dig,)))
+                    else:
+                        moved = self.hby.db.epse.get(keys=(dig,)) is not None
+                        moved = moved or any(
+                            other != escrowKeys
+                            for other, _ in self.hby.db.emse.getTopItemIter(
+                                keys=(dig,))
+                        )
+                    if moved:
+                        escrow.rem(keys=escrowKeys)
+                        if not absolute or not any(
+                                self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                            dater.rem(keys=dateKeys)
                     if logger.isEnabledFor(logging.TRACE):
-                        logger.trace("Exchange proof unescrow still pending: said=%s", serder.said)
+                        logger.trace("Exchange %s unescrow still pending: said=%s",
+                                     label, serder.said)
                     continue
 
                 saved = self.hby.db.exns.get(keys=(dig,)) is not None
-                self.hby.db.epse.rem(dig)
-                self.hby.db.epsd.rem(dig)
-                if not saved:
+                escrow.rem(keys=escrowKeys)
+                if not absolute or not any(
+                        self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                    dater.rem(keys=dateKeys)
+                pending = (self.hby.db.epse.get(keys=(dig,)) is not None
+                           or any(self.hby.db.emse.getTopItemIter(keys=(dig,))))
+                if not saved and not pending:
                     self.hby.db.esigs.trim(keys=(dig, ""))
                     self.hby.db.ecigs.rem(keys=(dig,))
                     self.hby.db.ests.trim(keys=(dig, ""))
@@ -570,7 +705,8 @@ class Exchanger:
                     self.hby.db.enst.rem(keys=(dig,))
                     logger.info("Exchanger unescrow rejected exchange: said=%s", serder.said)
                     continue
-                logger.info("Exchanger unescrow succeeded in valid exchange: creder=%s", serder.said)
+                logger.info("Exchanger %s unescrow succeeded: said=%s",
+                            label, serder.said)
                 logger.debug("Event=\n%s\n", serder.pretty())
 
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None,
