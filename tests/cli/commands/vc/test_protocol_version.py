@@ -14,6 +14,7 @@ list_cmd = importlib.import_module("keri.cli.commands.ipex.list")
 grant_cmd = importlib.import_module("keri.cli.commands.ipex.grant")
 admit_cmd = importlib.import_module("keri.cli.commands.ipex.admit")
 revoke_cmd = importlib.import_module("keri.cli.commands.vc.revoke")
+vc_list_cmd = importlib.import_module("keri.cli.commands.vc.list")
 
 
 def advance_once(doer, method):
@@ -109,6 +110,58 @@ def test_ipex_list_parser_selects_genus(monkeypatch, version):
             frame, = doer.mbx.parser.parse(ims=bytearray(wire), processive=False)
             assert frame.serder.said == serder.said
             assert doer.mbx.parser.version == selected
+        finally:
+            rgy.reger.close(clear=True)
+
+
+@pytest.mark.parametrize("version", [None, Vrsn_1_0, Vrsn_2_0], ids=["default", "v1", "v2"])
+def test_vc_list_poll_query_selects_version(monkeypatch, version):
+    """The CLI's actual mailbox poller signs queries in the selected version."""
+    from hio.base import doing
+    from keri.app import indirecting
+    selected = version or Version
+    messages = []
+
+    class CapturedRequest(Exception):
+        """Stop at the HTTP seam after the real poller constructs signed wire."""
+
+    def capture(message, client, dest):
+        """Retain exact serialized query bytes without opening a socket."""
+        messages.append(bytes(message))
+        raise CapturedRequest()
+
+    monkeypatch.setattr(indirecting, "createCESRRequest", capture)
+    monkeypatch.setattr(indirecting, "httpClient", lambda *args: (None, doing.DoDoer()))
+    with openHab(name="reader", temp=True, version=Vrsn_1_0) as (hby, hab):
+        rgy = Regery(hby=hby, name="reader", temp=True)
+        try:
+            def setup(**kwargs):
+                """Reuse existing v1 identity state with the command's requested context."""
+                assert kwargs["version"] == version
+                hby.version = selected
+                return hby
+            monkeypatch.setattr(vc_list_cmd, "setupHby", setup)
+            monkeypatch.setattr(vc_list_cmd, "Regery", lambda **kwargs: rgy)
+            argv = ["--name", "reader", "--alias", "reader", "--poll"]
+            if version is not None:
+                argv.extend(["--version", f"{version.major}.{version.minor}"])
+            args = vc_list_cmd.parser.parse_args(argv)
+            doer, = args.handler(args)
+            doer.mbx.addPoller(hab, hab.pre)
+            poller, = doer.mbx.pollers
+            task = poller.eventDo(tymth=lambda: 0.0)
+            next(task)
+            with pytest.raises(CapturedRequest):
+                next(task)
+            frame, = Parser(version=selected).parse(ims=bytearray(messages[0]), processive=False)
+            assert doer.mbx.parser.version == selected
+            assert frame.serder.pvrsn == selected
+            assert frame.serder.ked["r"] == "mbx"
+            assert frame.serder.ked["q"]["topics"] == {"/credential": 0}
+            prefixer, sigers = frame.lsgs[0]
+            assert prefixer.qb64 == hab.pre
+            siger, = sigers
+            assert hab.kever.verfers[siger.index].verify(siger.raw, frame.serder.raw)
         finally:
             rgy.reger.close(clear=True)
 
