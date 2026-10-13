@@ -7,6 +7,10 @@ Mailbox host command line interface.
 
 This command starts the standalone mailbox host composition from
 ``keri.app.mailboxing`` around an existing non-transferable local habitat.
+
+``--protocol-version 1.0`` selects KERI v1 bodies and CESR v1 attachments
+through bootstrap, reconciliation, replay, and ingress. Omission keeps the
+current v2 default. ``-V`` / ``--version`` still prints the distribution version.
 """
 import argparse
 import logging
@@ -16,10 +20,10 @@ from hio.help import ogler
 
 from keri import __version__
 
-from ...common import Parsery, setupHby
+from ...common import Parsery, setupHby, parseVersion
 
 from ....app import runController, setupMailbox, Habery, HaberyDoer, Keeper, Configer
-from ....kering import Roles, Schemes
+from ....kering import Kinds, Roles, Schemes, Version
 d = "Runs KERI mailbox host.\n"
 d += "Example:\nmailbox start --alias relay --http 9000\n"
 parser = argparse.ArgumentParser(description=d, parents=[Parsery.keystore()], conflict_handler='resolve')
@@ -28,6 +32,8 @@ parser.add_argument('-V', '--version',
                     action='version',
                     version=__version__,
                     help="Prints out version of script runner.")
+parser.add_argument("--protocol-version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0 (default: current version)")
 parser.add_argument('-H', '--http',
                     action='store',
                     default=None,
@@ -65,12 +71,13 @@ def launch(args):
                configFile=args.configFile,
                keypath=args.keypath,
                certpath=args.certpath,
-               cafilepath=args.cafilepath)
+               cafilepath=args.cafilepath,
+               version=args.protocol_version)
 
 
 def runMailbox(name="mailbox", base="", alias="mailbox", bran="", http=None, expire=0.0,
                configDir="", configFile=None,
-               keypath=None, certpath=None, cafilepath=None):
+               keypath=None, certpath=None, cafilepath=None, version=None):
     """Set up and run one mailbox host over an existing local mailbox habitat.
 
     The selected alias resolves to the hosted non-transferable mailbox AID used for:
@@ -78,6 +85,9 @@ def runMailbox(name="mailbox", base="", alias="mailbox", bran="", http=None, exp
         - forwarded-message storage authorization
         - mailbox-admin routing relative to the stored mailbox URL path when
           its ``/loc/scheme`` record includes a non-root path
+
+    ``version`` selects both newly generated bodies and the host parser genus.
+    None retains the current default; existing stored events are not rewritten.
 
     Startup behavior:
         - create the keystore when it does not yet exist
@@ -87,7 +97,7 @@ def runMailbox(name="mailbox", base="", alias="mailbox", bran="", http=None, exp
     """
 
     cf = _mailboxConfig(name=name, configDir=configDir, configFile=configFile)
-    hby = _openMailboxHabery(name=name, base=base, bran=bran, cf=cf)
+    hby = _openMailboxHabery(name=name, base=base, bran=bran, cf=cf, version=version)
     hbyDoer = HaberyDoer(habery=hby)
 
     #
@@ -127,11 +137,12 @@ def _mailboxConfig(name, configDir="", configFile=None):
     return Configer(name=cfgName, base="", headDirPath=configDir, temp=False, reopen=True, clear=False)
 
 
-def _openMailboxHabery(name, base="", bran="", cf=None, temp=False):
+def _openMailboxHabery(name, base="", bran="", cf=None, temp=False, version=None):
     """Open or create the Habery used by mailbox start.
 
     This mirrors the witness-start lifecycle instead of using the
-    existing-keystore-only helper from `cli.common.existing`.
+    existing-keystore-only helper from `cli.common.existing`. The selected
+    version is passed on both creation and reopening paths.
     """
     ks = Keeper(name=name,
                 base=base,
@@ -140,9 +151,10 @@ def _openMailboxHabery(name, base="", bran="", cf=None, temp=False):
     aeid = ks.gbls.get('aeid')
     ks.close()
 
+    version = version if version is not None else Version
     if aeid is None:
-        return Habery(name=name, base=base, bran=bran, cf=cf, temp=temp)
-    return setupHby(name=name, base=base, bran=bran, cf=cf, temp=temp)
+        return Habery(name=name, base=base, bran=bran, cf=cf, temp=temp, version=version)
+    return setupHby(name=name, base=base, bran=bran, cf=cf, temp=temp, version=version)
 
 
 def _normalizeMailboxUrl(url):
@@ -205,23 +217,25 @@ def _hasConfigSection(cf, alias):
 
 def _reconcileMailboxIdentity(hby, hab, url):
     """Apply self location/controller/mailbox state needed for mailbox hosting."""
+    # Stored body versions do not select the parser's attachment genus.
+    replyKwargs = dict(version=hby.version, gvrsn=hby.version, kind=Kinds.json)
     msgs = bytearray()
 
     if _storedMailboxUrl(hab) != url:
         scheme = urlsplit(url).scheme
         msgs.extend(hab.makeLocScheme(url=url,
                                       eid=hab.pre,
-                                      scheme=scheme))
+                                      scheme=scheme, **replyKwargs))
 
     if not _roleEnabled(hby, hab.pre, Roles.controller, hab.pre):
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
-                                    allow=True))
+                                    allow=True, **replyKwargs))
 
     if not _roleEnabled(hby, hab.pre, Roles.mailbox, hab.pre):
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.mailbox,
-                                    allow=True))
+                                    allow=True, **replyKwargs))
 
     if msgs:
         hab.psr.parse(ims=msgs)
@@ -238,9 +252,9 @@ def _prepareMailboxHabitat(hby, alias, requireConfig=False):
         if not _hasConfigSection(hby.cf, alias):
             raise ValueError("Mailbox startup requires a matching config alias section when the alias does not already exist")
 
-        hab = hby.makeHab(name=alias, transferable=False)
+        hab = hby.makeHab(name=alias, transferable=False, version=hby.version)
     else:
-        hab.reconfigure()
+        hab.reconfigure(version=hby.version, gvrsn=hby.version, kind=Kinds.json)
 
     if hab.kever is None:
         raise ValueError(f"Mailbox alias {alias} is missing accepted key state")

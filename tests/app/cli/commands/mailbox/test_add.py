@@ -1,25 +1,30 @@
 import os
 import importlib
 
+import pytest
+
 from hio.base import doing
 from hio.help import decking
 
 from keri.app import openHby, runController
-from keri.core import SerderKERI
-from keri.kering import Roles
+from keri.core import Parser, SerderKERI
+from keri.kering import Roles, Version, Vrsn_1_0, Vrsn_2_0
 
 
 # imported with import_module since the name add resolves to the identically named function "add" in the same module.
 mailbox_add = importlib.import_module("keri.cli.commands.mailbox.add")
 
 
-def test_mailbox_add_posts_multipart_fields(monkeypatch, capsys, helpers):
+@pytest.mark.parametrize("version", [None, Vrsn_1_0, Vrsn_2_0], ids=["default", "v1", "v2"])
+@pytest.mark.parametrize("delegated", [False, True], ids=["direct", "delegated"])
+def test_mailbox_add_posts_multipart_fields(monkeypatch, capsys, helpers, version, delegated):
     """`kli mailbox add` keeps the existing multipart admin envelope.
 
     The command should only stub the outbound HTTP transport seam.  The rest of
     the test intentionally exercises the real local habitat logic so the posted
     `rpy` still reflects current KERIpy reply construction.
     """
+    effective = version if version is not None else Version
     name = f"test-mailbox-add-{os.urandom(4).hex()}"
     requests = []
 
@@ -66,22 +71,37 @@ def test_mailbox_add_posts_multipart_fields(monkeypatch, capsys, helpers):
     monkeypatch.setattr(mailbox_add, "httpClient", stub_http_client)
     monkeypatch.setattr(mailbox_add, "WitnessPublisher", WitnessPublisherStub)
 
-    with openHby(name=name, temp=True) as hby:
+    with openHby(name=name, temp=True, version=effective) as hby:
         # Reuse the already-open temp Habery so the test does not touch the
         # persistent `~/.keri` tree.
-        monkeypatch.setattr(mailbox_add, "setupHby", lambda **kwargs: hby)
-        alice = hby.makeHab(name="alice", transferable=True)
-        mailbox = hby.makeHab(name="mbx", transferable=False)
+        def setup_habery(**kwargs):
+            """Keep the real fixture open while asserting the CLI carries its version."""
+            assert kwargs["version"] == version
+            return hby
+
+        monkeypatch.setattr(mailbox_add, "setupHby", setup_habery)
+        delegator = hby.makeHab(name="delegator", version=effective) if delegated else None
+        alice = hby.makeHab(name="alice", transferable=True, version=effective,
+                            delpre=delegator.pre if delegator else None)
+        if delegator:
+            # Seal the delegated inception before the CLI gathers its evidence.
+            delegator.interact(data=[dict(i=alice.pre, s="0", d=alice.pre)], version=effective)
+            for msg in delegator.db.clonePreIter(pre=delegator.pre, gvrsn=effective):
+                alice.psr.parse(ims=msg)
+        mailbox = hby.makeHab(name="mbx", transferable=False, version=effective)
         alice_pre = alice.pre
         mailbox_pre = mailbox.pre
-        args = mailbox_add.parser.parse_args([
+        argv = [
             "--name",
             name,
             "--alias",
             "alice",
             "--mailbox",
             mailbox_pre,
-        ])
+        ]
+        if version is not None:
+            argv.extend(["--version", f"{version.major}.{version.minor}"])
+        args = mailbox_add.parser.parse_args(argv)
         doers = args.handler(args)
 
         runController(doers=doers)
@@ -97,6 +117,32 @@ def test_mailbox_add_posts_multipart_fields(monkeypatch, capsys, helpers):
         assert "Content-Disposition" not in request["fargs"]["kel"]
         assert request["fargs"]["rpy"].startswith('{"v":"')
         serder = SerderKERI(raw=request["fargs"]["rpy"].encode("utf-8"))
+        assert serder.pvrsn == effective
+        # Parse the exact multipart wire, not just its JSON prefix: the reply and
+        # replay attachment counters must agree with the selected ingress genus.
+        frames = Parser(version=effective).parse(
+            ims=bytearray((request["fargs"]["kel"] + request["fargs"]["rpy"]).encode()),
+            framed=True, processive=False,
+        )
+        # Habitat replay includes delegator events before a delegated controller.
+        expected = [delegator.pre, delegator.pre, alice_pre] if delegator else [alice_pre]
+        assert [frame.serder.pre for frame in frames[:-1]] == expected
+        assert all(frame.sigers for frame in frames[:-1])
+        assert frames[-1].serder.said == serder.said
+        assert frames[-1].tsgs
+        if delegator:
+            ancestors = Parser(version=effective).parse(
+                ims=bytearray(request["fargs"]["delkel"].encode()), framed=True, processive=False,
+            )
+            assert [frame.serder.pre for frame in ancestors] == [delegator.pre, delegator.pre]
+            assert all(frame.sigers for frame in ancestors)
+        else:
+            assert "delkel" not in request["fargs"]
+        # The accepted role publication uses the same genus as admission.
+        published = doers[0].witpub.cues[0]["msg"]
+        replies = Parser(version=effective).parse(ims=bytearray(published),
+                                                  framed=True, processive=False)
+        assert any(frame.serder.said == serder.said for frame in replies)
         assert serder.ked["r"] == "/end/role/add"
         assert serder.ked["a"] == {
             "cid": alice_pre,

@@ -13,22 +13,22 @@ import pytest
 from hio.help import decking
 
 from keri.app import AuthorizedForwardHandler, Mailboxer, openHby
-from keri.app.mailboxing import MailboxAddRemoveEnd, _mailboxAdminPath, setupMailbox
+from keri.app.mailboxing import MailboxAddRemoveEnd, MailboxStart, _mailboxAdminPath, setupMailbox
 from keri.app.configing import Configer
 from keri.core import Diger, Kevery, Parser, Salter, exchange, routing
-from keri.kering import Kinds, Roles, Vrsn_1_0, Vrsn_2_0
+from keri.kering import Kinds, Roles, Version, Vrsn_1_0, Vrsn_2_0
 from keri.peer import Exchanger, specialExchange
 
 
 mailbox_start = importlib.import_module("keri.cli.commands.mailbox.start")
 
 
-def _collect_replay(hab):
+def _collect_replay(hab, gvrsn=Version):
     """Collect one habitat replay in the same delegation-first order used by mailbox admin."""
     body = bytearray()
-    for msg in hab.db.clonePreIter(pre=hab.pre):
+    for msg in hab.db.clonePreIter(pre=hab.pre, gvrsn=gvrsn):
         body.extend(msg)
-    for msg in hab.db.cloneDelegation(hab.kever):
+    for msg in hab.db.cloneDelegation(hab.kever, gvrsn=gvrsn):
         body.extend(msg)
     return body
 
@@ -75,17 +75,19 @@ def _post_mailbox_admin(client, *, path="/mailboxes", fields=None, content_type=
     )
 
 
-def test_mailbox_add_remove_end_accepts_multipart_add():
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0], ids=["v1", "v2"])
+def test_mailbox_add_remove_end_accepts_multipart_add(version):
     """Mailbox admin accepts the legacy multipart add envelope for a direct controller."""
-    with openHby(name="mailbox-provider", salt=Salter(raw=b"mailbox-provider0").qb64) as providerHby, \
-            openHby(name="mailbox-controller", salt=Salter(raw=b"mailbox-controller").qb64) as controllerHby:
-        mailboxHab = providerHby.makeHab(name="mbx", transferable=False)
-        controller = controllerHby.makeHab(name="alice", transferable=True)
+    with openHby(name="mailbox-provider", version=version, salt=Salter(raw=b"mailbox-provider0").qb64) as providerHby, \
+            openHby(name="mailbox-controller", version=version, salt=Salter(raw=b"mailbox-controller").qb64) as controllerHby:
+        mailboxHab = providerHby.makeHab(name="mbx", transferable=False, version=version)
+        controller = controllerHby.makeHab(name="alice", transferable=True, version=version)
         client = _mailbox_admin_client(providerHby, mailboxHab)
 
         rep = _post_mailbox_admin(client, fields={
-            "kel": _collect_replay(controller).decode("utf-8"),
-            "rpy": controller.makeEndRole(mailboxHab.pre, Roles.mailbox, allow=True).decode("utf-8"),
+            "kel": _collect_replay(controller, gvrsn=version).decode("utf-8"),
+            "rpy": controller.makeEndRole(mailboxHab.pre, Roles.mailbox, allow=True,
+                                          version=version, gvrsn=version).decode("utf-8"),
         })
 
         assert rep.status_code == 200
@@ -234,8 +236,10 @@ def test_setup_mailbox_requires_self_identity_state_before_boot():
                     doer.server.close()
 
 
-def test_mailbox_start_creates_missing_alias_from_config_startup_material():
+@pytest.mark.parametrize("version", [None, Vrsn_1_0, Vrsn_2_0], ids=["default", "v1", "v2"])
+def test_mailbox_start_creates_missing_alias_from_config_startup_material(version):
     """Mailbox start bootstrap reuses Hab config application for alias startup material."""
+    effective = version if version is not None else Version
     cf = Configer(name=f"mailbox-start-cf-{os.urandom(4).hex()}",
                   temp=True,
                   reopen=True,
@@ -253,14 +257,34 @@ def test_mailbox_start_creates_missing_alias_from_config_startup_material():
             name=f"mailbox-start-config-{os.urandom(4).hex()}",
             cf=cf,
             temp=True,
+            version=version,
         )
         hab, startup = mailbox_start._prepareMailboxHabitat(hby=hby, alias="relay")
 
+        assert hby.version == effective
+        assert hab.kever.serder.pvrsn == effective
+        assert hby.psr.version == effective
+        # Reconciliation of an existing alias must use the same selected genus.
+        same, _ = mailbox_start._prepareMailboxHabitat(hby=hby, alias="relay")
+        assert same is hab
+        wire = hab.replyEndRole(cid=hab.pre, gvrsn=effective, version=effective)
+        frames = Parser(version=effective).parse(ims=wire, framed=True, processive=False)
+        assert frames
+        assert all(frame.serder.pvrsn == effective for frame in frames)
         assert startup["source"] == "stored"
         assert not hab.kever.prefixer.transferable
         assert hab.fetchUrls(eid=hab.pre, scheme="http")["http"] == "http://127.0.0.1:5632/relay"
         assert hby.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre)).allowed
         assert hby.db.ends.get(keys=(hab.pre, Roles.mailbox, hab.pre)).allowed
+        # The actual host composition must receive the same context as bootstrap.
+        doers = setupMailbox(hby, alias="relay", httpPort=0)
+        try:
+            runtime = next(doer for doer in doers if isinstance(doer, MailboxStart))
+            assert runtime.parser.version == effective
+        finally:
+            for doer in doers:
+                if hasattr(doer, "server"):
+                    doer.server.close()
     finally:
         if hby is not None:
             hby.close(clear=hby.temp)
@@ -441,3 +465,20 @@ def test_authorized_forwarder_preserves_versioned_payloads(version):
                     assert parsed[0].serder.raw == child.raw
         finally:
             mbx.close(clear=True)
+
+
+@pytest.mark.parametrize("version", ["1.0", "2.0"])
+def test_mailbox_start_selects_protocol_without_changing_version_output(version, monkeypatch, capsys):
+    """Keep distribution-version output separate from the host's protocol context."""
+    launches = []
+    monkeypatch.setattr(mailbox_start, "runMailbox", lambda **kwargs: launches.append(kwargs))
+    args = mailbox_start.parser.parse_args([
+        "--name", "mailbox", "--alias", "relay", "--protocol-version", version,
+    ])
+    args.handler(args)
+    expected = Vrsn_1_0 if version == "1.0" else Vrsn_2_0
+    assert launches[0]["version"] == expected
+    with pytest.raises(SystemExit) as printed:
+        mailbox_start.parser.parse_args(["--version"])
+    assert printed.value.code == 0
+    assert mailbox_start.__version__ in capsys.readouterr().out
