@@ -5,7 +5,7 @@ from typing import Optional
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import existing
+from ...common import existing, parseVersion
 from ...common.parsing import Parsery
 
 from ....kering import ConfigurationError, Vrsn_1_0
@@ -27,6 +27,8 @@ logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Issue a verifiable credential',
                                  parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: issueCredential(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
@@ -112,6 +114,7 @@ def issueCredential(args):
                                  private=args.private,
                                  private_credential_nonce=args.private_credential_nonce,
                                  private_subject_nonce=args.private_subject_nonce,
+                                 version=args.version,
                                  )
 
     doers = [issueDoer]
@@ -126,7 +129,7 @@ class CredentialIssuer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
                  rules=None, credential=None, timestamp=None, private:bool=False, private_credential_nonce:Optional[str]=None,
-                 private_subject_nonce:Optional[str]=None,):
+                 private_subject_nonce:Optional[str]=None, version=None):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
@@ -141,6 +144,7 @@ class CredentialIssuer(doing.DoDoer):
              private (bool): apply nonce used for privacy preserving ACDC
              private_credential_nonce (Optional[str]): nonce used for privacy vc
              private_subject_nonce (Optional[str]): nonce used for subject
+             version (Versionage | None): explicit anchor protocol and proof genus
 
         """
         if schema is not None and schema == "":
@@ -149,7 +153,9 @@ class CredentialIssuer(doing.DoDoer):
         self.name = name
         self.registryName = registryName
         self.timestamp = timestamp
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
+        self.hby = existing.setupHby(name=name, base=base, bran=bran, version=version)
         self.hab = self.hby.habByName(alias)
         if self.hab is None:
             raise ValueError(f"invalid alias {alias}")
@@ -159,7 +165,7 @@ class CredentialIssuer(doing.DoDoer):
         self.counselor = Counselor(hby=self.hby)
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.org = Organizer(hby=self.hby)
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version)
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
@@ -167,7 +173,7 @@ class CredentialIssuer(doing.DoDoer):
 
         self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                              verifier=self.verifier, exc=exc)
+                              verifier=self.verifier, exc=exc, version=version)
         self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
@@ -234,10 +240,10 @@ class CredentialIssuer(doing.DoDoer):
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if registry.estOnly:
-            anc = hab.rotate(data=[rseal], framed=True)
+            anc = hab.rotate(data=[rseal], framed=True, **self.eventKwargs)
 
         else:
-            anc = hab.interact(data=[rseal], framed=True)
+            anc = hab.interact(data=[rseal], framed=True, **self.eventKwargs)
 
         aserder = SerderKERI(raw=anc)
         self.credentialer.issue(self.creder, iserder)
@@ -245,7 +251,7 @@ class CredentialIssuer(doing.DoDoer):
 
         acdc = serialize(self.creder, Prefixer(qb64=iserder.pre),
                          Number(num=iserder.sn, code=NumDex.Huge),
-                         Diger(qb64=iserder.said))
+                         Diger(qb64=iserder.said), gvrsn=self.hby.version)
 
         if isinstance(self.hab, GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
@@ -253,7 +259,7 @@ class CredentialIssuer(doing.DoDoer):
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 exn, atc = multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc,
-                                            version=Vrsn_1_0)
+                                            version=self.version if self.version is not None else Vrsn_1_0)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

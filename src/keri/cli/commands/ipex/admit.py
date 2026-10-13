@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from ...common import existing, Parsery
+from ...common import existing, Parsery, parseVersion
 
 from ....kering import Vrsn_1_0
 from ....app import (Notifier, Organizer, GroupHab,
@@ -16,7 +16,7 @@ from ....app import (Notifier, Organizer, GroupHab,
                      multisigExn)
 from ....app.grouping import loadHandlers
 
-from ....core import Parser, Sadder, Kevery
+from ....core import Parser, SerderACDC, SerderKERI, Kevery
 from ....peer import Exchanger, cloneMessage, serializeMessage
 from ....vc import ipexAdmitExn
 from ....vc.protocoling import loadHandlers as loadHandlersProtocoling
@@ -26,6 +26,8 @@ from ....vdr import Regery, Verifier, Tevery
 parser = argparse.ArgumentParser(description='Accept a credential being issued or presented in response to an IPEX '
                                              'grant',
                                  parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
@@ -43,17 +45,20 @@ def handler(args):
                    bran=args.bran,
                    said=args.said,
                    message=args.message,
-                   timestamp=args.time)
+                   timestamp=args.time, version=args.version)
     return [ed]
 
 
 class AdmitDoer(doing.DoDoer):
+    """Consume grant evidence and emit an admit under an explicit optional version."""
 
-    def __init__(self, name, alias, base, bran, said, message, timestamp ):
+    def __init__(self, name, alias, base, bran, said, message, timestamp, version=None):
+        """Keep parsing and forwarding in the caller-selected CESR genus."""
         self.said = said
         self.message = message
         self.timestamp = timestamp
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.hby = existing.setupHby(name=name, base=base, bran=bran, version=version)
         self.hab = self.hby.habByName(alias)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.org = Organizer(hby=self.hby)
@@ -63,7 +68,7 @@ class AdmitDoer(doing.DoDoer):
         self.tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry)
+        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry, version=self.hby.version)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
@@ -74,7 +79,7 @@ class AdmitDoer(doing.DoDoer):
 
         mbx = MailboxDirector(hby=self.hby,
                               topics=["/receipt", "/multisig", "/replay", "/credential"],
-                              exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
+                              exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry, version=version)
 
         self.toRemove = [mbx, self.witq]
         super(AdmitDoer, self).__init__(doers=self.toRemove + [doing.doify(self.admitDo)])
@@ -115,7 +120,8 @@ class AdmitDoer(doing.DoDoer):
 
         for label in ("anc", "iss", "acdc"):
             ked = embeds[label]
-            sadder = Sadder(ked=ked)
+            # Rehydrate the embedded protocol; legacy Sadder only accepts the default version.
+            sadder = SerderACDC(sad=ked) if label == "acdc" else SerderKERI(sad=ked)
             ims = bytearray(sadder.raw) + pathed[label]
             self.psr.parseOne(ims=ims)
 
@@ -124,24 +130,24 @@ class AdmitDoer(doing.DoDoer):
             yield self.tock
 
         recp = grant.ked['i']
-        exn, atc = ipexAdmitExn(hab=self.hab, message=self.message, grant=grant, dt=self.timestamp)
+        exn, atc = ipexAdmitExn(hab=self.hab, message=self.message, grant=grant, dt=self.timestamp, version=self.version)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        Parser().parseOne(ims=bytes(msg), exc=self.exc)
+        Parser(version=self.hby.version).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, GroupHab):
             sender = self.hab.mhab
-            wexn, watc = multisigExn(self.hab, exn=msg, version=Vrsn_1_0)
+            wexn, watc = multisigExn(self.hab, exn=msg, version=self.version if self.version is not None else Vrsn_1_0)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for part in smids:  # this goes to other participants only as a signaling mechanism
-                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
+                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig", version=self.version)
                 postman.send(serder=wexn,
-                             attachment=watc, gvrsn=Vrsn_1_0)
+                             attachment=watc, gvrsn=self.version if self.version is not None else Vrsn_1_0)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
@@ -150,7 +156,7 @@ class AdmitDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending admit message to {recp}")
-            postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
+            postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential", version=self.version)
 
             atc = serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]

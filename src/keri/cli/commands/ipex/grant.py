@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from ...common import Parsery, setupHby
+from ...common import Parsery, setupHby, parseVersion
 
 from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
@@ -27,6 +27,8 @@ from ....vdr import credentialing
 parser = argparse.ArgumentParser(description='Reply to IPEX agree message or initiate an IPEX exchange with a '
                                              'credential issuance or presentation',
                                 parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
@@ -47,18 +49,21 @@ def handler(args):
                    said=args.said,
                    recp=args.recipient,
                    message=args.message,
-                   timestamp=args.time)
+                   timestamp=args.time, version=args.version)
     return [ed]
 
 
 class GrantDoer(doing.DoDoer):
+    """Emit a legacy pathed grant with explicitly selected protocol and evidence genus."""
 
-    def __init__(self, name, alias, base, bran, said, recp, message, timestamp):
+    def __init__(self, name, alias, base, bran, said, recp, message, timestamp, version=None):
+        """Preserve existing defaults unless the caller supplies a version override."""
         self.said = said
         self.recp = recp
         self.message = message
         self.timestamp = timestamp
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = Organizer(hby=self.hby)
@@ -71,7 +76,7 @@ class GrantDoer(doing.DoDoer):
 
         mbx = MailboxDirector(hby=self.hby,
                               topics=["/receipt", "/multisig", "/replay", "/credential"],
-                              exc=self.exc)
+                              exc=self.exc, version=version)
 
         self.toRemove = [mbx]
         super(GrantDoer, self).__init__(doers=self.toRemove + [doing.doify(self.grantDo)])
@@ -97,7 +102,7 @@ class GrantDoer(doing.DoDoer):
         if creder is None:
             raise ValueError(f"invalid credential SAID to grant={self.said}")
 
-        acdc = serialize(creder, prefixer, seqner, saider)
+        acdc = serialize(creder, prefixer, seqner, saider, gvrsn=self.hby.version)
 
         if self.recp is None:
             # Default the recipient to the issuee, resolved via .iseaid so an
@@ -118,34 +123,34 @@ class GrantDoer(doing.DoDoer):
         if recp is None:
             raise ValueError("unable to find recipient")
 
-        iss = self.rgy.reger.cloneTvtAt(creder.said)
+        iss = self.rgy.reger.cloneTvtAt(creder.said, gvrsn=self.hby.version)
 
         iserder = serdering.SerderKERI(raw=bytes(iss))
         seqner = coring.Seqner(sn=iserder.sn)
 
         serder = self.hby.db.fetchLastSealingEventByEventSeal(creder.sad['i'],
                                                               seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
-        anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+        anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said, gvrsn=self.hby.version)
 
         exn, atc = ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
-                                dt=self.timestamp)
+                                dt=self.timestamp, version=self.version)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        parsing.Parser(version=self.version if self.version is not None else Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, GroupHab):
             sender = self.hab.mhab
-            wexn, watc = multisigExn(self.hab, exn=msg, version=Vrsn_1_0)
+            wexn, watc = multisigExn(self.hab, exn=msg, version=self.version if self.version is not None else Vrsn_1_0)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for part in smids:  # this goes to other participants
-                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
+                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig", version=self.version)
                 postman.send(serder=wexn,
-                             attachment=watc, gvrsn=Vrsn_1_0)
+                             attachment=watc, gvrsn=self.version if self.version is not None else Vrsn_1_0)
                 doer = doing.DoDoer(doers=postman.deliver())
                 self.extend([doer])
 
@@ -154,13 +159,13 @@ class GrantDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending message {exn.said} to {recp}")
-            postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
+            postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential", version=self.version)
 
-            sources = self.rgy.reger.sources(self.hby.db, creder)
-            credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)
+            sources = self.rgy.reger.sources(self.hby.db, creder, gvrsn=self.version)
+            credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp, gvrsn=self.hby.version)
             for source, atc in sources:
-                credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
-                postman.send(serder=source, attachment=atc, gvrsn=source.pvrsn)
+                credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp, gvrsn=self.hby.version)
+                postman.send(serder=source, attachment=atc, gvrsn=self.version if self.version is not None else source.pvrsn)
 
             atc = exchanging.serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]

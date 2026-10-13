@@ -15,7 +15,7 @@ from hio.base import doing
 from hio.help import ogler
 
 from ...common import (Parsery, Colors, Symbols,
-                       setupHby, aliasInput)
+                       setupHby, aliasInput, parseVersion)
 
 from ....kering import ConfigurationError
 from ....app import MailboxDirector, Notifier, Organizer
@@ -30,6 +30,8 @@ logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages',
                                  parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: listNotes(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     default=None)
@@ -55,13 +57,13 @@ def listNotes(args):
                   verbose=args.verbose,
                   said=args.said,
                   typ=args.type,
-                  sent=args.sent)
+                  sent=args.sent, version=args.version)
     return [ld]
 
 
 class ListDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, poll=False, verbose=False, said=False, typ=None, sent=False):
+    def __init__(self, name, alias, base, bran, poll=False, verbose=False, said=False, typ=None, sent=False, version=None):
         self.poll = poll
         self.type = typ
         self.verbose = verbose
@@ -69,7 +71,7 @@ class ListDoer(doing.DoDoer):
         self.sent = sent
         self.notes = []
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         if alias is None:
             alias = aliasInput(self.hby)
 
@@ -81,7 +83,7 @@ class ListDoer(doing.DoDoer):
         self.exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(self.hby, self.exc, self.notifier)
         self.mbx = MailboxDirector(hby=self.hby, topics=['/replay', '/reply', '/credential'],
-                                               exc=self.exc, verifier=self.vry)
+                                               exc=self.exc, verifier=self.vry, version=version)
 
         self.doers = [self.mbx]
 

@@ -1051,7 +1051,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     postman.send(serder=creder, attachment=atc)
 
 
-def sendArtifacts(hby, reger, postman, creder, recp):
+def sendArtifacts(hby, reger, postman, creder, recp, gvrsn=Version):
     """ Stream credential artifacts to recipient using postman
 
     Parameters:
@@ -1060,6 +1060,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
         postman (StreamPoster): poster to stream credential artifacts with
         creder (Creder): the credential to pull artifacts for and send
         recp (str): qb64 prefix of the recipient to send the artifacts to
+        gvrsn (Versionage): explicit genus shared by cloned evidence and transport.
     """
     issr = creder.israid
     # Resolve the issuee via .iseaid so an aggregate ('acg') credential streams its
@@ -1069,38 +1070,38 @@ def sendArtifacts(hby, reger, postman, creder, recp):
     regk = creder.regid
 
     ikever = hby.db.kevers[issr]
-    for msg in hby.db.cloneDelegation(ikever):
+    for msg in hby.db.cloneDelegation(ikever, gvrsn=gvrsn):
         serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
-        postman.send(serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc, gvrsn=gvrsn)
 
-    for msg in hby.db.clonePreIter(pre=issr):
+    for msg in hby.db.clonePreIter(pre=issr, gvrsn=gvrsn):
         serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
-        postman.send(serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc, gvrsn=gvrsn)
 
     if isse is not None and isse != recp:
         ikever = hby.db.kevers[isse]
-        for msg in hby.db.cloneDelegation(ikever):
+        for msg in hby.db.cloneDelegation(ikever, gvrsn=gvrsn):
             serder = SerderKERI(raw=msg)
             atc = msg[serder.size:]
-            postman.send(serder=serder, attachment=atc)
+            postman.send(serder=serder, attachment=atc, gvrsn=gvrsn)
 
-        for msg in hby.db.clonePreIter(pre=isse):
+        for msg in hby.db.clonePreIter(pre=isse, gvrsn=gvrsn):
             serder = SerderKERI(raw=msg)
             atc = msg[serder.size:]
-            postman.send(serder=serder, attachment=atc)
+            postman.send(serder=serder, attachment=atc, gvrsn=gvrsn)
 
     if regk is not None:
-        for msg in reger.clonePreIter(pre=regk):
+        for msg in reger.clonePreIter(pre=regk, gvrsn=gvrsn):
             serder = SerderKERI(raw=msg)
             atc = msg[serder.size:]
-            postman.send(serder=serder, attachment=atc)
+            postman.send(serder=serder, attachment=atc, gvrsn=gvrsn)
 
-    for msg in reger.clonePreIter(pre=creder.said):
+    for msg in reger.clonePreIter(pre=creder.said, gvrsn=gvrsn):
         serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
-        postman.send(serder=serder, attachment=atc)
+        postman.send(serder=serder, attachment=atc, gvrsn=gvrsn)
 
 
 def sendRegistry(hby, reger, postman, creder, sender, recp):

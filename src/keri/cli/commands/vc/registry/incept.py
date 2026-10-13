@@ -3,7 +3,7 @@ import argparse
 from hio.base import doing
 from hio.help import ogler
 
-from ....common import Parsery, setupHby
+from ....common import Parsery, setupHby, parseVersion
 
 from .....app import (GroupHab, Notifier, MailboxDirector,
                       HaberyDoer, Multiplexor, Counselor,
@@ -20,6 +20,8 @@ logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a new credential registry',
                                  parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: registryIncept(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
@@ -55,7 +57,7 @@ def registryIncept(args):
         return -1
 
     icpDoer = RegistryInceptor(name=name, base=base, alias=alias, bran=bran, registryName=registryName,
-                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers, usage=usage)
+                               nonce=nonce, estOnly=estOnly, noBackers=noBackers, baks=backers, usage=usage, version=args.version)
 
     doers = [icpDoer]
     return doers
@@ -66,7 +68,7 @@ class RegistryInceptor(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, alias, bran, registryName, nonce, estOnly, noBackers, baks, usage, toad=None, vcp=None, **kwa):
+    def __init__(self, name, base, alias, bran, registryName, nonce, estOnly, noBackers, baks, usage, toad=None, vcp=None, version=None, **kwa):
         """  Create RegistryIncepter to pass message and process cues
 
         Parameters:
@@ -83,6 +85,7 @@ class RegistryInceptor(doing.DoDoer):
             baks (list): new set of backers different from witnesses
             usage (str): message about how this registry is to be used
             toad (str): hex of witness threshold for the registry
+            version (Versionage | None): explicit anchor protocol and attachment genus.
             vcp (Serder): optional vcp event serder if configured outside the Registry
 
         """
@@ -96,18 +99,20 @@ class RegistryInceptor(doing.DoDoer):
         self.usage = usage
         self.toad = toad
         self.vcp = vcp
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         counselor = Counselor(hby=self.hby)
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc, version=version)
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
         doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx]
         self.toRemove = list(doers)
@@ -148,9 +153,9 @@ class RegistryInceptor(doing.DoDoer):
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         if self.estOnly:
-            anc = hab.rotate(data=[rseal], framed=True)
+            anc = hab.rotate(data=[rseal], framed=True, **self.eventKwargs)
         else:
-            anc = hab.interact(data=[rseal], framed=True)
+            anc = hab.interact(data=[rseal], framed=True, **self.eventKwargs)
 
         aserder = SerderKERI(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
@@ -165,7 +170,7 @@ class RegistryInceptor(doing.DoDoer):
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage,
-                                                     version=Vrsn_1_0)
+                                                     version=self.version if self.version is not None else Vrsn_1_0)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
