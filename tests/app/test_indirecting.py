@@ -27,6 +27,39 @@ from keri.app.httping import CESR_ATTACHMENT_HEADER
 
 
 
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+@pytest.mark.parametrize("kind", [None, Kinds.json, Kinds.cbor])
+def test_poller_encodes_slash_topics(monkeypatch, version, kind):
+    """Mailbox queries preserve topic keys and selected versions in real signed wire."""
+    from keri.app import indirecting
+
+    class CapturedRequest(Exception):
+        """Stop at the outbound HTTP boundary after capturing the signed request."""
+
+    messages = []
+    def capture(message, client, dest):
+        """Inspect the real query without starting an unrelated HTTP server."""
+        messages.append(bytes(message))
+        raise CapturedRequest()
+
+    monkeypatch.setattr(indirecting, "createCESRRequest", capture)
+    monkeypatch.setattr(indirecting, "httpClient", lambda *args: (None, doing.DoDoer()))
+    with openHab(name="poller", temp=True, version=version) as (_, hab):
+        poller = indirecting.Poller(hab=hab, witness=hab.pre,
+                                    topics=["/receipt", "/credential"], version=version, kind=kind)
+        operation = poller.eventDo(tymth=lambda: 0.0)
+        next(operation)
+        with pytest.raises(CapturedRequest):
+            next(operation)
+        frame, = Parser(version=version).parse(ims=bytearray(messages[0]), processive=False)
+        assert frame.serder.pvrsn == version
+        assert frame.serder.kind == (kind or Kinds.json)
+        assert frame.serder.ked["q"]["topics"] == {"/receipt": 0, "/credential": 0}
+        prefixer, sigers = frame.lsgs[0]
+        assert prefixer.qb64 == hab.pre
+        assert hab.kever.verfers[sigers[0].index].verify(sigers[0].raw, frame.serder.raw)
+
+
 def test_mailbox_iter():
     pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
     mbx = Mailboxer(temp=True)
