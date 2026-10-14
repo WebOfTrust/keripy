@@ -13,16 +13,18 @@ from copy import deepcopy
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
-                      FailedSchemaValidationError, MisbindingError,
+from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationError,
+                      Ilks, KeriError, MisanchorError, MisbindingError,
                       MissingAnchorError, MissingChainError, MissingSchemaError,
                       MissingSenderKeyStateError, MisdigestError, MisregistryError,
                       MissequenceError, RootSealError, UnverifiedBlindError,
                       ValidationError, Vrsn_2_0, sniff)
-from ..core import (BlindState, Blinder, BoundState, Compactor, Counter, Codens, Diger,
-                    GenDex, Noncer, Number, Pather, Prefixer, Saider, SealEvent,
-                    SealSource, Serdery, Texter, exchange, messagize)
-from ..peer.exchanging import cloneMessage, verifyAttachments
+from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
+                    Codens, Diger, GenDex, Noncer, Number, Pather, Prefixer,
+                    Saider, SealEvent, SealSource, Serdery, Texter, exchange,
+                    messagize)
+from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
+                               verifyAttachments)
 from . import scheming
 
 logger = ogler.getLogger()
@@ -645,22 +647,38 @@ class IpexHandler:
                 walked = self._walkGraph(origin=origins[0], nests=nests, closed=True)
                 if walked is None:
                     return False
+                grantNodes, grantOrder = walked
+
+                # A Grant must disclose credential variants, not metadata that
+                # merely promises a later disclosure. Public ACDCs may omit `u`.
+                for grantNode in grantNodes.values():
+                    grantSerder = (grantNode["serder"] if isinstance(grantNode, dict)
+                                   else grantNode.serder)
+                    if "u" in grantSerder.sad and grantSerder.sad["u"] == "":
+                        return False
+
+                # First enforce what was requested, then enforce what the
+                # accepted Offer promised before authenticating the Grant.
                 if not self._verifyDisclosurePlan(plan=plan,
                                                   origin=origins[0],
-                                                  nodes=walked[0],
-                                                  order=walked[1]):
+                                                  nodes=grantNodes,
+                                                  order=grantOrder):
+                    return False
+                if not self._verifyOfferFulfillment(agree=pserder,
+                                                    grantOrigin=origins[0],
+                                                    grantNodes=grantNodes):
                     return False
 
                 # Stage 6: authenticate each disclosed node's issuer.
-                if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
+                if not self._verifyIssuerAuthGraph(nodes=grantNodes, order=grantOrder):
                     return False
 
                 # Validate each authenticated node against its own schema.
-                if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
+                if not self._verifyNodeSchemas(nodes=grantNodes, order=grantOrder):
                     return False
 
                 # Apply edge operators and edge schemas after authentication.
-                if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
+                if not self._verifyGraphSemantics(nodes=grantNodes, order=grantOrder):
                     return False
 
                 # Require Exchanger's fixed three-part evidence result.
@@ -672,15 +690,15 @@ class IpexHandler:
                 # Verify every presentation registry declared across the DAG.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
-                    nodes=walked[0],
-                    order=walked[1],
+                    nodes=grantNodes,
+                    order=grantOrder,
                 )
                 if tethered is None:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
                 if requiresAnchor:
-                    origin = walked[0][origins[0]]
+                    origin = grantNodes[origins[0]]
                     origin = origin["serder"] if isinstance(origin, dict) else origin.serder
                     anchorers = set(tethered)
 
@@ -773,6 +791,40 @@ class IpexHandler:
             # any ACDC-protocol message such as a registry TEL event.
             if nserder.proto != Protocols.acdc or nserder.ilk not in DisclosedNodeIlks:
                 return None
+
+            # Verify every expanded section SAID, including nested blocks.
+            for label in ("a", "e", "r"):
+                section = nserder.sad.get(label)
+                if not isinstance(section, Mapping):
+                    continue
+                try:
+                    compactor = Compactor(mad=deepcopy(section), makify=True,
+                                          kind=nserder.kind)
+                    compactor.compact()
+                    for path, leaf in compactor.leaves.items():
+                        carried = compactor.getTail(path, mad=section)
+                        if (not isinstance(carried, Mapping) or
+                                (carried.get("d") and
+                                 carried["d"] != leaf.said)):
+                            return None
+                except Exception:
+                    return None
+
+            # Verify an expanded aggregate's AGID and each element SAID.
+            aggregate = nserder.sad.get("A")
+            if isinstance(aggregate, list) and aggregate:
+                try:
+                    aggor = Aggor(ael=deepcopy(aggregate), makify=True,
+                                  kind=nserder.kind)
+                except Exception:
+                    return None
+                if aggregate[0] and aggregate[0] != aggor.agid:
+                    return None
+                for carried, computed in zip(aggregate[1:], aggor.ael[1:]):
+                    if (isinstance(carried, Mapping) and carried.get("d") and
+                            carried["d"] != computed.get("d")):
+                        return None
+
             if idx == 0 and not nserder.compare(origin):
                 return None
             # Each disclosed DAG node must occupy exactly one nest so the node
@@ -960,6 +1012,149 @@ class IpexHandler:
 
         # The plan must account for every disclosed node in canonical BFS order.
         return selected == order
+
+    @staticmethod
+    def _canonicalSectionCommitment(label, section, *, kind):
+        """Compute the canonical commitment represented by an ACDC section."""
+        # Aggregate sections use an AGID instead of a normal section SAID.
+        if label == "A":
+            if isinstance(section, str):
+                try:
+                    Diger(qb64=section)
+                except Exception:
+                    return None
+                return section
+            if isinstance(section, list):
+                try:
+                    return Aggor(ael=deepcopy(section), makify=True,
+                                 kind=kind).agid
+                except Exception:
+                    return None
+            return None
+
+        # A string is already the compact SAID form of a section.
+        if isinstance(section, str):
+            try:
+                Diger(qb64=section)
+            except Exception:
+                return None
+            return section
+        if not isinstance(section, Mapping):
+            return None
+
+        # Recompute the commitment from an expanded SAD instead of trusting
+        # the SAID carried inside it. Schemas use `$id`; other sections use `d`.
+        try:
+            if label == "s":
+                compactor = Compactor(mad=deepcopy(section), makify=True,
+                                      strict=False, saids={"$id": "E"},
+                                      kind=kind)
+            else:
+                compactor = Compactor(mad=deepcopy(section), makify=True,
+                                      kind=kind)
+                compactor.compact()
+        except Exception:
+            return None
+        return compactor.said
+
+    def _verifyOfferFulfillment(self, agree, grantOrigin, grantNodes):
+        """Verify that a Grant fulfills the metadata accepted in its Offer.
+
+        An Agree points to the accepted Offer. When that Offer and the Grant
+        name different ACDC variants, require every non-empty section commitment
+        in the metadata ACDC to match the Grant's canonical section commitment.
+
+        Returns:
+            bool: True when the promise is fulfilled or no ACDC-specific Offer
+                exists, and False for a permanent contradiction or malformed
+                evidence.
+
+        Raises:
+            MissingChainError: The accepted Offer names metadata needed for the
+                comparison but its body is not locally available yet.
+        """
+        # Direct Grants have no accepted Offer commitment to compare.
+        if agree is None or agree.ked.get("r") != "/ipex/agree":
+            return True
+
+        # Follow the Agree to the exact Offer accepted by the disclosee
+        offerSaid = agree.ked.get("p", "")
+        offer, _ = cloneMessage(self.hby, said=offerSaid)
+        if offer is None:
+            raise MissingChainError(
+                f"missing accepted Offer message {offerSaid}")
+
+        # An Offer without an origin does not promise a particular ACDC
+        offerOrigins = offer.ked.get("a", {}).get("o")
+        if offerOrigins is None:
+            return True
+        if not _validSingleDagList(offerOrigins, str):
+            return False
+
+        offerOrigin = offerOrigins[0]
+
+        # Equal root SAIDs already bind every compacted section commitment
+        if offerOrigin == grantOrigin:
+            return True
+
+        # Different metadata and Grant roots require the offered metadata SAD.
+        try:
+            offerNests = loadParsedNestedSubstreams(self.hby, offer.said)
+        except (KeriError, TypeError, ValueError):
+            return False
+        if not offerNests:
+            raise MissingChainError(
+                f"missing metadata ACDC for accepted Offer {offer.said}")
+
+        # Reuse normal graph validation before reading the offered root node.
+        walked = self._walkGraph(origin=offerOrigin, nests=offerNests, closed=False)
+        if walked is None:
+            return False
+        offeredNodes, offeredOrder = walked
+        offeredNest = offeredNodes[offerOrigin]
+        grantNest = grantNodes.get(grantOrigin)
+        if grantNest is None:
+            return False
+        offeredSerder = (offeredNest["serder"] if isinstance(offeredNest, dict)
+                         else offeredNest.serder)
+        grantSerder = (grantNest["serder"] if isinstance(grantNest, dict)
+                       else grantNest.serder)
+
+        # Only metadata ACDCs may fulfill a different root section by section.
+        if "u" not in offeredSerder.sad or offeredSerder.sad["u"] != "":
+            return False
+
+        # Metadata loaded after the Offer must pass the same schema checks as
+        # metadata carried with the original Offer.
+        if not self._verifyNodeSchemas(nodes=offeredNodes, order=offeredOrder):
+            return False
+
+        # The metadata promises the issuer independently of its sections.
+        if offeredSerder.israid != grantSerder.israid:
+            return False
+
+        # A non-empty metadata registry SAID is also part of the promise.
+        offeredRegistry = offeredSerder.sad.get("rd")
+        if offeredRegistry and offeredRegistry != grantSerder.sad.get("rd"):
+            return False
+
+        # Every non-empty offered section must have the same canonical
+        # commitment in the Grant; empty sections make no disclosure promise.
+        for label in ("s", "a", "A", "e", "r"):
+            offeredSection = offeredSerder.sad.get(label)
+
+            if offeredSection in (None, "", [], {}):
+                continue
+
+            offeredCommitment = self._canonicalSectionCommitment(
+                label, offeredSection, kind=offeredSerder.kind)
+            grantCommitment = self._canonicalSectionCommitment(
+                label, grantSerder.sad.get(label), kind=grantSerder.kind)
+
+            if offeredCommitment is None or offeredCommitment != grantCommitment:
+                return False
+
+        return True
 
     def _walkGraph(self, origin, nests, *, closed):
         """Walk the disclosed origin DAG and return the visited node order.
