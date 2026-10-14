@@ -3,11 +3,12 @@ from dataclasses import asdict
 from keri import Vrsn_1_0, Kinds
 from keri.core import (Salter, Kevery, SealEvent,
                        Router, Revery, Parser,
-                       Seqner, Diger, SerderKERI)
+                       Seqner, Diger, SerderKERI, Prefixer)
 
 from keri.app import openHby
 from keri.vc import credential
 from keri.vdr import Reger, Regery, Tever, Tevery
+from keri.vdr.eventing import query
 
 
 
@@ -561,3 +562,91 @@ def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIs
         tever = Tever(rsr=rsr, reger=regery.reger)
         assert tever.regk == issuer.regk
         assert tever.pre == bobHab.pre
+
+
+def _issued_registry(bobHby):
+    """Registry with one issued credential, anchored — the setup both tsn query
+    tests share."""
+    bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, version=Vrsn_1_0, kind=Kinds.json)
+    regery = Regery(hby=bobHby, name="test", temp=True)
+    issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name,
+                                 version=Vrsn_1_0, kind=Kinds.json)
+    rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+    bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+    issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd,
+                     seqner=Seqner(sn=bobHab.kever.sn),
+                     saider=Diger(qb64=bobHab.kever.serder.said))
+    regery.processEscrows()
+
+    creder = credential(issuer=bobHab.pre,
+                        recipient="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8",
+                        schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
+                        data=dict(LEI="254900OPPU84GM83MG36"),
+                        status=issuer.regk, version=Vrsn_1_0, kind=Kinds.json)
+    iss = issuer.issue(said=creder.said)
+    rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+    bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
+    issuer.anchorMsg(pre=iss.pre, regd=iss.said,
+                     seqner=Seqner(sn=bobHab.kever.sn),
+                     saider=Diger(qb64=bobHab.kever.serder.said))
+    regery.processEscrows()
+    return bobHab, regery, issuer, creder
+
+
+def _verifier_tevery(bobHby, regery, pres):
+    """A Tevery holding the given TELs, standing in for the querying party."""
+    tvy = Tevery(reger=Reger(name="verifier", temp=True), db=bobHby.db, lax=True)
+    tel = bytearray()
+    for pre in pres:
+        for msg in regery.reger.clonePreIter(pre=pre):
+            tel.extend(msg)
+    Parser().parse(ims=tel, tvy=tvy, local=True)
+    return tvy
+
+
+def test_credential_tsn_query(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIso8601):
+    """A tsn query naming a credential must produce a /tsn/credential reply.
+
+    Regression: processQuery called `tever.vcState(vcpre=vcpre)` while the
+    signature is `vcState(self, vci)`, so this route raised TypeError. The
+    registry reply is cued first, so a caller saw a successful /tsn/registry
+    reply and then the exception.
+    """
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby:
+        bobHab, regery, issuer, creder = _issued_registry(bobHby)
+        tvy = _verifier_tevery(bobHby, regery, (issuer.regk, creder.said))
+        assert issuer.regk in tvy.tevers
+
+        qry = query(regk=issuer.regk, vcid=creder.said, route="tsn",
+                    pre=bobHab.pre, version=Vrsn_1_0, kind=Kinds.json)
+        tvy.processQuery(serder=qry, source=Prefixer(qb64=bobHab.pre), cigars=[])
+
+        cues = list(tvy.cues)
+        assert [cue["route"] for cue in cues] == ["/tsn/registry", "/tsn/credential"]
+
+        ctsn = next(cue["data"] for cue in cues if cue["route"] == "/tsn/credential")
+        assert ctsn["i"] == creder.said
+        assert ctsn["ri"] == issuer.regk
+        assert ctsn["et"] == "iss"
+
+def test_credential_tsn_query_unknown_credential(mockHelpingNowUTC, mockCoringRandomNonce,
+                                                 mockHelpingNowIso8601):
+    """A tsn query for a credential the registry never issued must not raise.
+
+    `vcState` returns None for an unissued credential, and `asdict(None)`
+    raises. This mirrors the branch just above, which emits nothing when the
+    REGISTRY is unknown: an unknown credential likewise produces no credential
+    reply, and the registry reply is unaffected.
+    """
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby:
+        bobHab, regery, issuer, _ = _issued_registry(bobHby)
+        tvy = _verifier_tevery(bobHby, regery, (issuer.regk,))
+
+        never_issued = "EBcIURLpxmVwahksgrsGW6_dUw0zBhyEHYFk17eWrZfk"
+        qry = query(regk=issuer.regk, vcid=never_issued, route="tsn",
+                    pre=bobHab.pre, version=Vrsn_1_0, kind=Kinds.json)
+        tvy.processQuery(serder=qry, source=Prefixer(qb64=bobHab.pre), cigars=[])
+
+        assert [cue["route"] for cue in list(tvy.cues)] == ["/tsn/registry"]
