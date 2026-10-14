@@ -5375,28 +5375,69 @@ def test_parse_one_bare_leaves_parse_unchanged():
         parser.parse(ims=bytearray(msg)[:-20], kvy=kvy)  # does not raise
 
 
-def test_parse_one_bare_non_extraction_error_propagates():
-    """Test that an error outside the ExtractionError hierarchy raised while
-    extracting propagates unchanged rather than being shifted to an
-    ExtractionError, so that a real bug surfaces as ref/ErrorHandling.md asks.
 
-    Under CESR v1 a stream led by a generic group currently reaches a lookup
-    of the v2 only FixBodyGroup code and raises AttributeError"""
+def test_parse_one_bare_tampered_body():
+    """Test that a body whose SAID does not verify, which fails as a
+    ValidationError while still being extracted, is reported as an extraction
+    failure and not mistaken for a processing refusal or for a bug.
+
+    The body is consumed but its attachments are not, so framing is lost"""
     logger.setLevel("ERROR")
     signers, serder, msg = bareFixture()
 
-    inner = bytearray(Counter(Codens.ControllerIdxSigs, count=1,
-                              version=Vrsn_1_0).qb64b)
-    inner.extend(signers[0].sign(serder.raw, index=0).qb64b)
-    ims = bytearray(Counter(Codens.GenericGroup, count=len(inner) // 4,
-                            version=Vrsn_1_0).qb64b)
-    ims.extend(inner)
+    raw = bytearray(serder.raw)
+    key = signers[0].verfer.qb64b
+    at = raw.index(key) + 10
+    raw[at:at + 1] = b"A" if raw[at:at + 1] != b"A" else b"B"  # break the SAID
+    tampered = bytearray(raw)
+    tampered.extend(Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0).qb64b)
+    tampered.extend(signers[0].sign(bytes(raw), index=0).qb64b)
 
     with openDB(name="validator") as valDB:
         kvy = Kevery(db=valDB, lax=False, local=False)
         parser = Parser(version=Vrsn_1_0)
 
-        with pytest.raises(AttributeError):
-            parser.parseOneBare(ims=bytearray(ims), kvy=kvy, processive=False)
+        for processive in (False, True):
+            with pytest.raises(ExtractionError) as info:
+                parser.parseOneBare(ims=bytearray(tampered), kvy=kvy,
+                                    processive=processive)
+            assert type(info.value) is ExtractionError
+            assert ValidationError in chain(info.value)
+        assert serder.pre not in kvy.kevers
 
-        parser.parse(ims=bytearray(ims), kvy=kvy)  # still swallowed here
+
+class _FailingExtractParser(Parser):
+    """A Parser whose extraction raises a given error, so a test can pin how
+    .parseOneBare shifts or passes through each kind without depending on
+    which real stream happens to provoke it"""
+
+    def __init__(self, *pa, raises=None, **kwa):
+        super().__init__(*pa, **kwa)
+        self.raises = raises
+
+    def msgParsator(self, **kwa):
+        raise self.raises
+        yield  # never reached; makes this a generator, as the caller requires
+
+
+def test_parse_one_bare_shift_policy():
+    """Test that .parseOneBare shifts the intake error types raised while
+    extracting to ExtractionError and lets every other error propagate
+    unchanged, so that a real bug surfaces as ref/ErrorHandling.md asks"""
+    for raised in (ShortageError("short"), ColdStartError("cold"),
+                   ValidationError("said")):
+        parser = _FailingExtractParser(raises=raised)
+        with pytest.raises(ExtractionError) as info:
+            parser.parseOneBare(ims=bytearray(b"any"), processive=False)
+        assert type(info.value) is ExtractionError
+        assert info.value.__cause__ is raised
+
+    for raised in (RuntimeError("bug"), AttributeError("bug")):
+        parser = _FailingExtractParser(raises=raised)
+        with pytest.raises(type(raised)) as info:
+            parser.parseOneBare(ims=bytearray(b"any"), processive=False)
+        assert info.value is raised  # unchanged
+
+        # while the swallowing path still shifts and drops it
+        parser.parse(ims=bytearray(b"any"))
+

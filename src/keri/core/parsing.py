@@ -482,22 +482,37 @@ class Parser:
         processive=False, which only extracts, and then passes asdict() of the
         returned msg to .msgProcess itself.
 
-        Extraction errors, those in the ExtractionError hierarchy, are raised
-        as ExtractionError with the originating error on the exception chain
-        via __cause__. Any other error raised while extracting propagates
-        unchanged, since ref/ErrorHandling.md presumes it a bug:
+        Errors of the intake types, ExtractionError and ValidationError, raised
+        while extracting are raised as ExtractionError with the originating
+        error on the exception chain, via __cause__ or, where the original was
+        raised implicitly inside a handler, __context__. A ValidationError
+        here means the msg body itself did not verify, for example its SAID.
+        What the chain means for the rest of ims:
             SizedGroupError on the chain: an enclosed attachment group failed.
                 The group was stripped first so the rest of ims is intact. Any
                 ShortageError beneath it is about the group's contents and does
                 not mean the stream ran short.
-            TopLevelStreamError on the chain: ims begins with a generic group,
-                which like .parseOne this does not descend into. Nothing was
-                consumed. Under CESR v1 such a stream currently fails earlier
-                instead, with an AttributeError.
+            TopLevelStreamError on the chain: ims is at a generic group, which
+                like .parseOne this does not descend into. The group was not
+                consumed, so calling again raises the same error.
             otherwise: stream framing is lost. ShortageError on the chain
                 means more bytes may complete it. Anything else, such as
-                ColdStartError, means more bytes will not. What is left of ims
-                should be discarded as .parse would.
+                ColdStartError or a ValidationError for a body that did not
+                verify, means more bytes will not. What is left of ims should
+                be discarded as .parse would.
+
+        Any other error raised while extracting propagates unchanged, since
+        ref/ErrorHandling.md presumes it a bug. Some such errors are currently
+        reachable from malformed input rather than from local bugs. A caller
+        vetting an untrusted stream should be ready for them and treat
+        framing as lost. Known cases are an AttributeError when a CESR v1
+        stream is at a count code that does not begin a msg, InvalidVersionError
+        for a genus-version counter naming an unsupported version, and
+        ValueError for primitives with nonzero prepad bits.
+
+        A leading genus-version counter is consumed even when what follows it
+        fails, and the version it names stays set on the Parser for later
+        calls. Pass version to reset it, or use one Parser per stream.
 
         Processing errors are raised as themselves, with the msg already
         consumed from ims, so calling again resumes at the next msg. An error
@@ -509,6 +524,10 @@ class Parser:
 
         ims is consumed in place only when it is a bytearray. Any other type
         is copied first, so resuming requires passing a bytearray.
+
+        With framed False a short msg waits for more bytes by looping, which
+        for a stream already in hand never ends. Keep the default framed=True
+        for such a stream.
 
         Parameters:
             ims (bytearray): serialized incoming message stream.
@@ -1042,9 +1061,10 @@ class Parser:
             local (bool): True means event source is local (protected)
             version (Versionage): default version of CESR to use
                 None means do not change default
-            narrow (bool): True means shift only ExtractionError subclasses and
-                let any other error propagate unchanged, so that a bug is not
-                mistaken for bad input. See ref/ErrorHandling.md
+            narrow (bool): True means shift only the intake types,
+                ExtractionError and ValidationError, and let any other error
+                propagate unchanged, so that a bug is not mistaken for bad
+                input. See ref/ErrorHandling.md
                 False means shift every Exception, as .groupParsator has
         """
         try:
@@ -1055,7 +1075,7 @@ class Parser:
                                                version=version)
         except TopLevelStreamError:
             raise
-        except ExtractionError as ex:
+        except (ExtractionError, ValidationError) as ex:  # intake types
             raise ExtractionError from ex
         except Exception as ex:
             if narrow:

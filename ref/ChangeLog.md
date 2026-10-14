@@ -32,6 +32,15 @@ now raises a keri.kering error (a KeriError) instead of a raw Python exception.
 Code that catches ValueError or KeyError around these calls should catch the kering error
 named above, or KeriError.
 
+*** New Parser.parseOneBare: like parseOne, but raises errors to the caller instead of
+logging them, for callers that are not internet-facing services and need to know why a
+msg failed. Intake errors raised while extracting (ExtractionError, ValidationError) are
+raised as ExtractionError with the original on the chain; any other extraction error
+propagates unchanged; processing errors are raised as themselves. Which types reach a
+caller is therefore part of its contract, so converting a raw raise on the extraction path
+to an intake type changes what parseOneBare raises. Parser.parse and parseOne are
+unchanged.
+
 
 ## 2.0.0-dev6
 
