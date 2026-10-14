@@ -2062,9 +2062,10 @@ def test_broken_prior_digest_is_its_own_error():
     """
     Test that a mismatched prior event digest raises MisdigestError
 
-    A broken backward hash chain is decided against events already in hand, so
-    unlike OutOfOrderError no later arrival resolves it. Its own class is what
-    lets an embedder tell the two apart without reading message prose.
+    The prior digest is compared against the event already accepted at sn - 1,
+    so unlike OutOfOrderError the event is not escrowed to await a predecessor.
+    Its own class is what lets an embedder tell a broken backward hash chain
+    from the other ValidationError conditions without reading message prose.
     """
     salt = Salter(raw=b'0123456789abcdef').qb64
     psr = parsing.Parser(version=Vrsn_1_0)
@@ -2109,9 +2110,23 @@ def test_broken_prior_digest_is_its_own_error():
         psr.parse(ims=signed(proper), kvy=kvy)
         assert kvy.kevers[pre].sn == 1
 
-        # a rotation at the right sn, validly signed by the next keys, chaining
-        # from nothing, takes the establishment path and raises the same class
         rverfers, rdigers = mgr.rotate(pre=pre, ncount=1, temp=True)
+
+        # a recovery rotation superseding the ixn at sn 1, validly signed by the
+        # next keys, chaining from nothing, fails the recovery prior-digest check
+        recover = rotate(pre=pre, keys=[verfer.qb64 for verfer in rverfers],
+                         dig="E" + "A" * 43,
+                         ndigs=[diger.qb64 for diger in rdigers],
+                         sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
+        with pytest.raises(MisdigestError):
+            kvy.processEvent(serder=recover,
+                             sigers=mgr.sign(ser=recover.raw, verfers=rverfers))
+
+        assert kvy.kevers[pre].sn == 1  # the ixn is not superseded
+        assert kvy.kevers[pre].serder.said == proper.said
+
+        # a rotation at the next sn, validly signed by the next keys, chaining
+        # from nothing, takes the establishment path and raises the same class
         rot = rotate(pre=pre, keys=[verfer.qb64 for verfer in rverfers],
                      dig="E" + "A" * 43, ndigs=[diger.qb64 for diger in rdigers],
                      sn=2, data=[], version=Vrsn_1_0, kind=Kinds.json)

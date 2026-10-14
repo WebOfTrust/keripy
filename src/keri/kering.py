@@ -818,7 +818,13 @@ class MisdigestError(ValidationError):
 
     Distinct from OutOfOrderError, where the prior event is merely absent and
     may still arrive: a mismatched prior digest is decided against events
-    already in hand, so no later arrival resolves it.
+    already in hand, so the event is not escrowed to await a predecessor.
+    On a KEL this is not permanent, because a superseding recovery rotation
+    can replace the accepted prior event, after which a redelivered event
+    chained to that rotation may be accepted.
+
+    Raised before signatures are verified, so it says nothing about who
+    produced the event.
 
     Usage:
         raise MisdigestError("error message")
