@@ -823,7 +823,7 @@ class Verifier:
         # Checked before the far-node lookup on purpose: an operator this validator
         # cannot evaluate stays that way however much evidence arrives, so reporting a
         # missing far node first would promise a retry the operator forbids.
-        # ~3qah  reverses #1552's skip; needs S. Smith's buy-in via ACDC #201
+        # Reverses #1552's skip; needs S. Smith's buy-in via ACDC #201
         ops = op if isinstance(op, (list, tuple)) else ([] if op is None else [op])
         unknown = [cand for cand in ops if cand not in self.UnaryOps]
         if unknown:

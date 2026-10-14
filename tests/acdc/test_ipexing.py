@@ -2078,7 +2078,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         # field's effective list value" (ACDC spec, Edge Section > Edge > Operator;
         # the v1.1 line suppresses the default when the list already includes I2I,
         # NI2I, DI2I or E1E). So a bare edge is not an unconstrained edge.
-        # ~7kev  which default is right is still open on keripy #1556; this is the
+        # Which default is right is still open on keripy #1556; this is the
         # one that is normative today
         #
         # Here the far node is targeted at issuer, and the near node's issuer is
