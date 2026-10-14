@@ -7568,10 +7568,10 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
     reduction instead of a sweep beside it, which is the only way an m-ary Operator
     aggregates what the ACDC specification says it aggregates.
 
-    The origin is deliberately not registry-backed here, so every case below turns on
-    a far node's status rather than on the origin's own -- except the last, which
-    pins that the origin's status is *not* in the lattice, since no edge points at it
-    and nothing can outvote it.
+    A far node's status here is whether its issuer-auth proof authenticates. What its
+    registry says about it -- issued, revoked, or a state keripy has no word for --
+    is recorded in ``Baser.exrs`` and never judged, because which states make an
+    ACDC acceptable is the EGF's rule rather than the protocol's.
     """
     with (openHby(name="ipex-v2-status-axis-issuer",
                   base="test",
@@ -7725,6 +7725,7 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                           originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
                 assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+                return exn
 
             def escrowed(edge, artifacts, message):
                 originSerder = origin(edge)
@@ -7739,6 +7740,7 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                           originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is None
                 assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+                return exn
 
             def leaf(node, op="I2I"):
                 return dict(d="", n=node.said, o=op)
@@ -7780,33 +7782,33 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                     [goodNest, forgedNest],
                     "AND over a far node whose proof is refused")
 
-            # The registry state is a member verdict. vet() recovers the disclosed
-            # transaction state from the blinded head and this handler read it and
-            # threw it away, so a revoked far node vetted as valid -- the axis the
-            # whole change is named after, unwired on this path while v1 raised
-            # RevokedChainError for the same edge.
+            # The registry state is authenticated and recorded, never judged here.
+            # Whether a revoked far node makes the chain unacceptable is the EGF's
+            # rule, so IPEX accepts the grant and keeps what the registry said, for
+            # an application or EGF evaluator to apply its own state policy to.
             revokedNest = _proofed(revoked, revokedBlinder)
-            refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(revoked))),
-                    [goodNest, revokedNest],
-                    "AND over a revoked far node")
+            exn = accepted(dict(d="", both=group("AND", a=leaf(good),
+                                                 b=leaf(revoked))),
+                           [goodNest, revokedNest],
+                           "AND over a revoked far node")
+            record = recipientHby.db.exrs.get(keys=(exn.said, revoked.said))
+            assert record.state == "revoked"
+            assert record.regid == delta.regk
+            assert record.sn == 2
+            assert recipientHby.db.exrs.get(keys=(exn.said, good.said)).state == "issued"
+            assert len(list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, "")))) == 2
 
-            # ...and under OR a valid sibling carries the group over it, which is the
-            # Issuer's stated intent and is only expressible once the state is a
-            # verdict rather than a raise.
-            accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(revoked))),
-                     [goodNest, revokedNest],
-                     "OR over a revoked far node")
-
-            # The boundary: the grant's *origin* is the ACDC being disclosed, and
-            # disclosing a revocation is a thing an Issuer does on purpose. Its
-            # registry state is recorded rather than enforced, which is what the v1
-            # Verifier does with a revoked presented credential too. Only a node
-            # reached through an edge -- where the near side is resting a claim on
-            # it -- is refused for being revoked.
-            exn = run(revokedNest, [],
-                      "the origin's own registry state is recorded, not enforced")
+            # The grant's origin is recorded the same way as a far node, since the
+            # handler no longer distinguishes them by whether it judges the state.
+            exn = run(revokedNest, [], "the origin's own registry state is recorded")
             assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
             assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+            assert recipientHby.db.exrs.get(keys=(exn.said, revoked.said)).state == "revoked"
+
+            # A refused grant leaves no record behind.
+            exn = refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(forged))),
+                          [goodNest, forgedNest], "refused, so nothing is recorded")
+            assert list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, ""))) == []
 
             # An Operator this verifier cannot evaluate is an unknown in the lattice,
             # so a satisfied sibling decides the group without it. DI2I is recognized
@@ -7898,10 +7900,8 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
 
             # A registry's transaction state is "a string from a small finite set"
             # defined *per registry*, with issued/revoked only the spec's example.
-            # So a denylist of the one word keripy happens to know falls open on
-            # every other: a far node a registry has `withdrawn` is not a far node
-            # in good standing. What this verifier does not recognize it cannot
-            # decide, and no arrival teaches it another registry's vocabulary.
+            # A state keripy has no word for is recorded verbatim, like any other,
+            # for a policy that knows that registry's vocabulary to judge.
             epsilon, epsilonRip = makeRegistry("epsilon")
             withdrawn, _, withdrawnIssued = issue(epsilon, "withdrawn later")
             withdrawnBlinder, withdrawnUpdate = registrar.issue(
@@ -7916,9 +7916,12 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             recipientRgy.store.accept(epsilon.regk, 2, withdrawnUpdate)
             withdrawnNest = _proofed(withdrawn, withdrawnBlinder)
 
-            refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(withdrawn))),
-                    [goodNest, withdrawnNest],
-                    "AND over a far node in a state this verifier cannot read")
+            exn = accepted(dict(d="", both=group("AND", a=leaf(good),
+                                                 b=leaf(withdrawn))),
+                           [goodNest, withdrawnNest],
+                           "AND over a far node in a registry-specific state")
+            assert recipientHby.db.exrs.get(
+                keys=(exn.said, withdrawn.said)).state == "withdrawn"
 
             # An edge's `s` pin must be enforced by validation, not by the far node
             # asserting its own type. Nothing on this path ever validates a
