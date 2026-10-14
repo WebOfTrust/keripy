@@ -128,7 +128,7 @@ checks. This is the class long-running processors catch to log-and-continue.
 | `MissingDelegationError` | Missing event with delegation source attachments |
 | `MissingDelegableApprovalError` | Missing delegable approval evidence |
 | `MisfitEventSourceError` | Event source does not fit expectations |
-| `MisdigestError` | Prior digest breaks the hash chain (permanent; not escrow) |
+| `MisdigestError` | Prior digest does not match the accepted prior event (not escrowed; on a KEL, a superseding recovery can change the prior) |
 
 **TEL / registry / credential binding**
 

@@ -16,7 +16,8 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
-                      LikelyDuplicitousError, UnverifiedWitnessReceiptError,
+                      LikelyDuplicitousError, MisdigestError,
+                      UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
@@ -2511,7 +2512,7 @@ class Kever:
                                       "= {}.".format(sner.num, self.sner.num + 1, ked))
 
             if not self.serder.compare(said=ked["p"]):  # prior event dig not match
-                raise ValidationError("Mismatch event dig = {} with state dig"
+                raise MisdigestError("Mismatch event dig = {} with state dig"
                                       " = {} for evt = {}.".format(ked["p"],
                                                                    self.serder.said,
                                                                    ked))
@@ -2605,7 +2606,7 @@ class Kever:
                     raise ValidationError("Invalid recovery attempt: "
                                           " Bad dig = {}.".format(pdig))
                 if not pserder.compare(said=prior):  # bad recovery event
-                    raise ValidationError("Invalid recovery attempt:"
+                    raise MisdigestError("Invalid recovery attempt:"
                                           "Mismatch recovery event prior dig"
                                           "= {} with dig = {} of event sn = {}"
                                           " evt = {}.".format(prior,
@@ -2615,7 +2616,7 @@ class Kever:
 
         else:  # sn == self.sn + 1   new non-recovery event
             if not self.serder.compare(said=prior):  # prior event dig not match
-                raise ValidationError("Mismatch event dig = {} with"
+                raise MisdigestError("Mismatch event dig = {} with"
                                       " state dig = {} for evt = {}."
                                       "".format(prior, self.serder.said, ked))
 
