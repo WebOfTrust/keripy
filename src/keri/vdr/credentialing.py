@@ -782,15 +782,14 @@ class Registrar(doing.DoDoer):
 
             # Load all the witness receipts we have so far
             wigers = self.hby.db.wigs.get(keys=(prefixer.qb64b, diger.qb64))
+            cue = None
             if kever.wits:
                 if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
-                    witnessed = False
-                    for cue in self.receiptor.cues:
+                    for cue in list(self.receiptor.cues):
                         if cue["pre"] == hab.pre and cue["sn"] == number.sn:
-                            witnessed = True
-
-                    if not witnessed:
+                            break
+                    else:
                         continue
                 else:
                     continue
@@ -799,6 +798,8 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
             self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
+            if cue is not None:
+                self.receiptor.cues.remove(cue)
 
     def processMultisigEscrow(self):
         """

@@ -242,17 +242,19 @@ class Counselor(doing.DoDoer):
             ghab = self.hby.habs[pre]
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
+            cue = None
             if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                 if witer and len(kever.wits) > 0:
-                    witnessed = False
-                    for cue in self.witDoer.cues:
+                    for cue in list(self.witDoer.cues):
                         if cue["pre"] == ghab.pre and cue["sn"] == number.sn:
-                            witnessed = True
-                    if not witnessed:
+                            break
+                    else:
                         continue
                 logger.info("AID %s...%s: Witness receipts complete, %s confirmed.", pre[:4], pre[-4:], pre)
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, number.qb64), val=diger)
+                if cue is not None:
+                    self.witDoer.cues.remove(cue)
             elif not witer:
                 self.witDoer.gets.append(dict(pre=pre, sn=number.sn))
 
