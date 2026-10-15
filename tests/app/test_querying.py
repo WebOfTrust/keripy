@@ -4,6 +4,7 @@ keri.app.querying module
 
 """
 from hio.base import doing
+from hio.help import decking
 
 from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.app import (QueryDoer, KeyStateNoticer, LogQuerier,
@@ -353,3 +354,24 @@ def test_query_not_found_escrow():
 
         subHab.kvy.processQueryNotFound()
         assert subHab.db.qnfs.get(dgkey) == []
+
+
+def test_key_state_noticers_leave_foreign_cues_in_order():
+    with openHby() as hby:
+        hab1 = hby.makeHab(name="one")
+        hab2 = hby.makeHab(name="two")
+        first = dict(kin="query", pre=hab1.pre)
+        second = dict(kin="keyStateSaved", ksn=hab2.kever.state()._asdict())
+        third = dict(kin="notice", pre=hab2.pre)
+        saved1 = dict(kin="keyStateSaved", ksn=hab1.kever.state()._asdict())
+        fourth = dict(kin="invalid", pre=hab1.pre)
+        cues = decking.Deck([first, second, third, saved1, fourth])
+
+        noticer1 = KeyStateNoticer(hby=hby, hab=hab1, pre=hab1.pre, cues=cues)
+        noticer2 = KeyStateNoticer(hby=hby, hab=hab2, pre=hab2.pre, cues=cues)
+
+        assert noticer1.recur(tyme=0.0) is True
+        assert list(cues) == [first, second, third, fourth]
+
+        assert noticer2.recur(tyme=0.0) is True
+        assert list(cues) == [first, third, fourth]

@@ -4,10 +4,13 @@ tests.app.storing
 
 """
 import os
+from types import SimpleNamespace
 
 import lmdb
+from hio.base import doing
+from hio.help import decking
 
-from keri.app import Mailboxer, openKS
+from keri.app import Mailboxer, Respondant, openKS
 from keri.kering import Kinds
 from keri.core import Prefixer, SerderKERI, exchange
 from keri.db import OnSuber, openLMDB, openDB
@@ -113,6 +116,69 @@ def test_mailboxing():
 
         #assert(len(msgs)) == 6
         #assert msgs[0][0] == 4
+
+
+def test_respondant_discards_unhandled_cues():
+    class CountingDeck(decking.Deck):
+        def __init__(self, *args):
+            super(CountingDeck, self).__init__(*args)
+            self.pulls = 0
+
+        def pull(self, emptive=True):
+            cue = super(CountingDeck, self).pull(emptive=emptive)
+            self.pulls += cue is not None
+            return cue
+
+    cue = dict(kin="query")
+    cues = CountingDeck([cue])
+    rep = Respondant(hby=SimpleNamespace(name="test"), cues=cues, mbx=object())
+    doist = doing.Doist(real=False, tock=0.1)
+    doer = rep.cueDo(tymth=doist.tymen(), tock=0.1)
+
+    next(doer)
+    next(doer)
+
+    assert not cues
+
+    next(doer)
+    assert cues.pulls == 1
+
+    doer.close()
+
+
+def test_respondant_processes_supported_cues():
+    source = "EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I"
+    dest = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
+    serder = exchange(route="/test", attributes={}, sender=source, kind=Kinds.json)
+    hab = SimpleNamespace(
+        receipt=lambda *args, **kwa: bytearray(serder.raw),
+        endorse=lambda *args, **kwa: bytearray(serder.raw),
+    )
+    hby = SimpleNamespace(
+        name="test",
+        kevers={serder.pre: SimpleNamespace(wits=[source]), dest: object()},
+        prefixes=[source],
+        habByPre=lambda pre: hab,
+    )
+    cues = decking.Deck([
+        dict(kin="receipt", serder=serder),
+        dict(kin="replay", src=source, dest=dest, msgs=[serder.raw]),
+        dict(kin="reply", src=source, dest=dest, serder=serder),
+    ])
+    rep = Respondant(hby=hby, cues=cues, mbx=object())
+    sent = []
+    rep.postman.send = lambda *args, **kwa: sent.append(kwa["topic"])
+    doist = doing.Doist(real=False, tock=0.1)
+    doer = rep.cueDo(tymth=doist.tymen(), tock=0.1)
+
+    next(doer)
+    for _ in range(3):
+        next(doer)
+
+    assert sent == ["receipt", "replay", "reply"]
+    assert not cues
+
+    doer.close()
 
 
 
