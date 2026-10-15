@@ -15,15 +15,17 @@ from hio.help import ogler
 from .. import Kinds, Protocols
 from . import chaining
 from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
-                      MisbindingError, MissingAnchorError, MissingChainError,
-                      MissingSenderKeyStateError, MisdigestError,
-                      MisregistryError, MissequenceError, RootSealError,
-                      UnverifiedBlindError, ValidationError, Vrsn_2_0, sniff)
+                      FailedSchemaValidationError, MisbindingError,
+                      MissingAnchorError, MissingChainError, MissingSchemaError,
+                      MissingSenderKeyStateError, MisdigestError, MisregistryError,
+                      MissequenceError, RootSealError, UnverifiedBlindError,
+                      ValidationError, Vrsn_2_0, sniff)
 from ..core import (BlindState, Blinder, BoundState, Compactor, Counter, Codens, Diger,
-                    GenDex, Noncer, Number, Pather, Prefixer, Saider, Schemer, SealEvent,
+                    GenDex, Noncer, Number, Pather, Prefixer, Saider, SealEvent,
                     SealSource, Serdery, Texter, exchange, messagize)
 from ..peer.exchanging import cloneMessage, verifyAttachments
 from ..recording import ExchangeRegistryStateRecord
+from . import scheming
 
 logger = ogler.getLogger()
 
@@ -508,9 +510,11 @@ class IpexHandler:
                 False otherwise.
 
         Raises:
-            MissingChainError: When a grant's issuer-auth proof needs TEL
+            MissingChainError: When a disclosed ACDC's issuer-auth proof needs
                 evidence that is not yet available locally and the exchange
                 should be retried from escrow later.
+            MissingSchemaError: When a disclosed ACDC names a schema that is not
+                yet available locally and the exchange should be retried later.
             MissingSenderKeyStateError: When a required sender anchor refers
                 to KEL evidence that is not yet available locally.
         """
@@ -627,7 +631,13 @@ class IpexHandler:
 
         # Stage 5: offer may disclose only a reachable metadata subgraph.
         if verb == Ipex.offer and nests:
-            if self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False) is None:
+            walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False)
+            if walked is None:
+                return False
+
+            # Metadata offers carry only the Discloser's outer commitment. The
+            # Issuer's authentication evidence is withheld until the Grant.
+            if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
                 return False
 
         # If the message is a Grant, resolve dp if it is empty or not
@@ -697,9 +707,19 @@ class IpexHandler:
                     # unknown nothing settles, and anything decided against, refuses
                     # here: escrowing either would promise a retry that cannot
                     # succeed.
+                    # A pinned schema goes to the Exchanger's schema escrow, which
+                    # asks for it by SAID; any other retryable unknown waits on TEL
+                    # or KEL proof. One schema at a time, as that escrow expects.
                     if (verdict.verdict == chaining.Verdicts.unknown
                             and verdict.retryable):
+                        for cause in verdict.causes:
+                            if isinstance(cause, MissingSchemaError):
+                                raise cause
                         raise MissingChainError(verdict.reason)
+                    return False
+
+                # Validate each authenticated node against its own schema.
+                if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
                     return False
 
                 # Require Exchanger's fixed three-part evidence result.
@@ -1268,7 +1288,7 @@ class IpexHandler:
         # from the far node's own, both validations must pass, and a pin one level
         # out is no weaker a commitment than a pin on the edge.
         #
-        # Resolved to (SAID, Schemer-or-None) pairs here, before any verdict is
+        # Resolved to (SAID, pin) pairs here, before any verdict is
         # decided, because a pin whose *shape* this verifier cannot read is
         # malformed input rather than a truth value -- and a malformed shape must
         # be caught whatever the Operator on this edge turns out to be.
@@ -1289,7 +1309,12 @@ class IpexHandler:
         resolved = []
         for edgeSchema in pins:
             if isinstance(edgeSchema, str):
-                resolved.append((edgeSchema, None))
+                try:
+                    if Saider(qb64=edgeSchema).qb64 != edgeSchema:
+                        return None
+                except Exception:
+                    return None
+                resolved.append((edgeSchema, edgeSchema))
             elif isinstance(edgeSchema, Mapping):
                 declared = edgeSchema.get("$id")
                 if not isinstance(declared, str):
@@ -1300,7 +1325,7 @@ class IpexHandler:
                     return None
                 if edgeSchemer.said != declared:
                     return None
-                resolved.append((edgeSchemer.said, edgeSchemer))
+                resolved.append((edgeSchemer.said, edgeSchema))
             else:
                 return None
 
@@ -1379,46 +1404,38 @@ class IpexHandler:
                           f"{fserder.iseaid}")
 
         own = None  # set when a pin is neither satisfied nor refused, only unread
-        for edgeSchemaId, edgeSchemer in resolved:
+        for edgeSchemaId, edgeSchema in resolved:
             if not matched:
                 break
 
             # The far node is validated against every pin, including one whose SAID
-            # equals the schema the far node declares for itself. There is no
-            # short-circuit on that equality here, because nothing on this path ever
-            # validates a disclosed node against its own schema -- the v1 Verifier
-            # can skip the equal case only because its far node had to be saved, and
-            # saving runs the check. Skipping it here would let a pin be satisfied by
-            # the far node asserting its own type, which is the constraint's whole
-            # content.
-            if edgeSchemer is None:
-                if edgeSchemaId == farSchemaId and isinstance(farSchema, Mapping):
-                    # The far node carries its schema inline and the pin names it.
-                    # Building a Schemer over that document re-derives its SAID, so
-                    # a node whose `$id` does not match its own schema body is
-                    # refused here rather than believed.
-                    try:
-                        edgeSchemer = Schemer(sed=deepcopy(farSchema))
-                    except (ValidationError, ValueError):
-                        return None
-                    if edgeSchemer.said != farSchemaId:
-                        return None
-                else:
-                    edgeSchemer = self.hby.db.schema.get(edgeSchemaId)
-
-                if edgeSchemer is None:
-                    # Pinned by SAID and not cached yet. Undecided, and unlike a pin
-                    # whose shape this verifier cannot read at all, still resolvable
-                    # -- so it is a retryable unknown rather than malformed input,
-                    # and the recipient may fetch the schema and try again.
-                    own = chaining.unknown(
-                        f"edge schema {edgeSchemaId} pinned on the edge to node "
-                        f"{edgeSaid} is not in cache", retryable=True)
-                    break
+            # equals the schema the far node declares for itself. Skipping the equal
+            # case would let a pin be satisfied by the far node asserting its own
+            # type, which is the constraint's whole content. ._verifyNodeSchemas does
+            # validate every disclosed node against its own schema, but only after
+            # this reduction has decided, so it cannot stand in for the pin here.
+            if (isinstance(edgeSchema, str) and edgeSchema == farSchemaId
+                    and isinstance(farSchema, Mapping)):
+                # The far node carries its schema inline and the pin names it, so
+                # validate against that document. validateSchema re-derives its
+                # SAID, so a node whose `$id` does not match its own schema body is
+                # refused rather than believed.
+                edgeSchema = farSchema
 
             try:
-                edgeSchemer.verify(fserder.raw)
-            except ValidationError as ex:
+                scheming.validateSchema(acdc=fserder, db=self.hby.db,
+                                        schema=edgeSchema)
+            except MissingSchemaError as ex:
+                # Pinned by SAID and not cached yet. Undecided, and unlike a pin
+                # whose shape this verifier cannot read at all, still resolvable
+                # -- so it is a retryable unknown rather than malformed input. The
+                # error rides along as the cause, so that if the grant comes to
+                # depend on it, the Exchanger escrows on the schema and asks for it.
+                own = chaining.unknown(
+                    f"edge schema {edgeSchemaId} pinned on the edge to node "
+                    f"{edgeSaid} is not in cache", retryable=True, cause=ex)
+                break
+            except (FailedSchemaValidationError, ValidationError, ValueError) as ex:
                 matched = False
                 reason = (f"far node {edgeSaid} does not satisfy edge schema "
                           f"{edgeSchemaId}: {ex}")
@@ -1546,6 +1563,20 @@ class IpexHandler:
         # rather than two, so an unknown member cannot change a verdict its siblings
         # already decide.
         return chaining.reduce(groupOp, results, reducers=self.MAryReducers)
+
+    def _verifyNodeSchemas(self, nodes, order):
+        """Validate each disclosed ACDC against its embedded or cached schema."""
+        for said in order:
+            nest = nodes[said]
+            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+            try:
+                scheming.validateSchema(acdc=nserder, db=self.hby.db)
+            except MissingSchemaError:
+                raise
+            except (FailedSchemaValidationError, ValidationError, ValueError):
+                return False
+
+        return True
 
     def _verifyIssuerAuthNode(self, serder, nest, *, records=None):
         """Verify one disclosed ACDC node's issuer authentication, as a verdict.
