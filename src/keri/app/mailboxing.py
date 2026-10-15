@@ -58,9 +58,13 @@ def _readMultipart(req):
     form = req.get_media()
     parts = {}
     for part in form:
-        if part.name is None:
+        if part.name not in ("kel", "delkel", "rpy"):
             continue
-        parts[part.name] = part.text
+        # CESR fields are UTF-8 streams, not Falcon's size-limited text/plain buffer.
+        try:
+            parts[part.name] = part.stream.read().decode("utf-8")
+        except UnicodeDecodeError as ex:
+            raise falcon.HTTPBadRequest(description="Mailbox authorization fields must be UTF-8") from ex
 
     kel = parts.get("kel")
     delkel = parts.get("delkel")
@@ -125,16 +129,20 @@ def _validateReply(serder, mailboxAid):
     return cid, role, route == "/end/role/add"
 
 
-def _confirmRoleAuth(hby, cid, mailboxAid, expected):
+def _confirmRoleAuth(hby, cid, mailboxAid, expected, said):
     """Confirm post-ingest mailbox authorization state in ``ends.``.
 
     This is the authoritative acceptance check for mailbox add/remove.  The
     signed reply alone is not enough; the reply must survive normal KERI
-    processing and leave the hosted mailbox authorization record in the
-    expected state.
+    processing, be the current accepted reply in ``eans.``, and leave the hosted
+    mailbox authorization record in the expected state. Replaying that accepted
+    reply remains idempotent; an unaccepted reply cannot borrow older state.
     """
-    end = hby.db.ends.get(keys=(cid, Roles.mailbox, mailboxAid))
-    accepted = bool(end and (end.allowed if expected else not end.allowed))
+    keys = (cid, Roles.mailbox, mailboxAid)
+    end = hby.db.ends.get(keys=keys)
+    current = hby.db.eans.get(keys=keys)
+    accepted = bool(current and current.qb64 == said
+                    and end and (end.allowed if expected else not end.allowed))
     if not accepted:
         raise falcon.HTTPForbidden(description="Mailbox authorization reply was not accepted")
 
@@ -247,7 +255,7 @@ def setupMailbox(hby, alias="mailbox", mbx=None, aids=None, httpPort=5632,
         raise ValueError("mailbox host requires a non-transferable identifier")
     _requireMailboxIdentity(hby, hab)
 
-    mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
+    mbx = mbx if mbx is not None else Mailboxer(name=alias, base=hby.base, temp=hby.temp)
     forwarder = AuthorizedForwardHandler(hby=hby, mbx=mbx, mailboxAid=hab.pre)
     exchanger = Exchanger(hby=hby, handlers=[forwarder])
     rep = Respondant(hby=hby, mbx=mbx, aids=aids)
@@ -456,7 +464,7 @@ class MailboxAddRemoveEnd:
                     rvy=self.rvy,
                     exc=self.exc,
                     version=self.hby.version)
-        _confirmRoleAuth(self.hby, cid, self.hab.pre, expected)
+        _confirmRoleAuth(self.hby, cid, self.hab.pre, expected, serder.said)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

@@ -15,7 +15,8 @@ from hio.help import decking
 from keri.app import AuthorizedForwardHandler, Mailboxer, openHby
 from keri.app.mailboxing import MailboxAddRemoveEnd, MailboxStart, _mailboxAdminPath, setupMailbox
 from keri.app.configing import Configer
-from keri.core import Diger, Kevery, Parser, Salter, exchange, routing
+from keri.app.storing import Respondant
+from keri.core import Diger, Kevery, Parser, Salter, SerderKERI, exchange, routing
 from keri.kering import Kinds, Roles, Version, Vrsn_1_0, Vrsn_2_0
 from keri.peer import Exchanger, specialExchange
 
@@ -46,7 +47,7 @@ def _mailbox_admin_client(hby, hab, route="/mailboxes"):
     return testing.TestClient(app)
 
 
-def _multipart_body(**fields):
+def _multipart_body(partContentType=None, **fields):
     """Create one minimal multipart body for mailbox admin endpoint tests."""
     boundary = "----keri-mailbox-admin-boundary"
     body = bytearray()
@@ -55,7 +56,10 @@ def _multipart_body(**fields):
         if value is None:
             continue
         body.extend(f"--{boundary}\r\n".encode("utf-8"))
-        body.extend(f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("utf-8"))
+        body.extend(f'Content-Disposition: form-data; name="{name}"\r\n'.encode("utf-8"))
+        if partContentType:
+            body.extend(f"Content-Type: {partContentType}\r\n".encode("utf-8"))
+        body.extend(b"\r\n")
         body.extend(value.encode("utf-8"))
         body.extend(b"\r\n")
 
@@ -199,7 +203,7 @@ def test_mailbox_admin_path_requires_loaded_self_location():
 
 def test_setup_mailbox_requires_self_identity_state_before_boot():
     """Mailbox host boot fails until self location and self role state are accepted."""
-    with openHby(name="mailbox-provider-boot",
+    with openHby(name="mailbox-provider-boot", base="tenant-a",
                  salt=Salter(raw=b"mailbox-provider-boot").qb64) as providerHby:
         mailboxHab = providerHby.makeHab(name="mbx", transferable=False)
 
@@ -228,9 +232,11 @@ def test_setup_mailbox_requires_self_identity_state_before_boot():
             allow=True,
         )))
         doers = setupMailbox(providerHby, alias="mbx", httpPort=9000)
+        mailbox = next(doer for doer in doers if isinstance(doer, Respondant)).mbx
         try:
-            assert len(doers) > 0
+            assert f"/{providerHby.base}/" in mailbox.path
         finally:
+            mailbox.close(clear=True)
             for doer in doers:
                 if hasattr(doer, "server"):
                     doer.server.close()
@@ -435,11 +441,11 @@ def test_authorized_forwarder_preserves_versioned_payloads(version):
             parser = Parser(kvy=hby.kvy, exc=Exchanger(hby=hby, handlers=[forwarder]),
                             version=version)
             topic = f"{sender.pre}/echo"
-            for allowed in (False, True):
-                if allowed:
-                    # Accept the signed role reply through the real local reply verifier.
-                    sender.psr.parse(ims=sender.makeEndRole(mailbox.pre, Roles.mailbox))
-                    assert hby.db.ends.get(keys=(sender.pre, Roles.mailbox, mailbox.pre)).allowed
+            for allowed, count in ((None, 0), (True, 1), (False, 1)):
+                if allowed is not None:
+                    # Both the grant and cut must pass the real local reply verifier.
+                    sender.psr.parse(ims=sender.makeEndRole(mailbox.pre, Roles.mailbox, allow=allowed))
+                    assert hby.db.ends.get(keys=(sender.pre, Roles.mailbox, mailbox.pre)).allowed is allowed
                 child = exchange(sender=sender.pre, route="/echo", attributes=dict(allowed=allowed),
                                  version=version, kind=Kinds.json)
                 if version.major == 1:
@@ -458,7 +464,7 @@ def test_authorized_forwarder_preserves_versioned_payloads(version):
                     wire = sender.endorse(parent, nests=[sender.endorse(child, nested=True)])
                 parser.parse(ims=wire, local=False)
                 rows = list(mbx.cloneTopicIter(topic=topic))
-                assert len(rows) == int(allowed)
+                assert len(rows) == count
                 if allowed:
                     parsed = Parser(version=version).parse(ims=bytearray(rows[0][2]), processive=False)
                     assert len(parsed) == 1
@@ -482,3 +488,75 @@ def test_mailbox_start_selects_protocol_without_changing_version_output(version,
         mailbox_start.parser.parse_args(["--version"])
     assert printed.value.code == 0
     assert mailbox_start.__version__ in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("partContentType,large", [("application/cesr", False), (None, True)])
+def test_mailbox_admin_reads_cesr_parts_without_the_text_part_buffer(partContentType, large):
+    """Read real CESR fields regardless of media label or Falcon's text-buffer limit."""
+    with openHby(name="mailbox-parts-provider") as providerHby, \
+            openHby(name="mailbox-parts-controller") as controllerHby:
+        mailbox = providerHby.makeHab(name="mbx", transferable=False)
+        controller = controllerHby.makeHab(name="alice", transferable=True)
+        kel = _collect_replay(controller)
+        if large:
+            # Repeated accepted events are a valid replay, and cross Falcon's 1 MiB text cap.
+            kel *= 1024 * 1024 // len(kel) + 1
+            assert len(kel) > 1024 * 1024
+        body, contentType = _multipart_body(partContentType=partContentType,
+            kel=kel.decode("utf-8"),
+            rpy=controller.makeEndRole(mailbox.pre, Roles.mailbox).decode("utf-8"))
+        rep = _post_mailbox_admin(_mailbox_admin_client(providerHby, mailbox),
+                                 content_type=contentType, body=body)
+        assert rep.status_code == 200
+        assert providerHby.db.ends.get(keys=(controller.pre, Roles.mailbox, mailbox.pre)).allowed
+
+
+def test_mailbox_admin_confirms_the_submitted_reply_not_an_older_authorization():
+    """An accepted duplicate is idempotent; a new unsigned reply cannot borrow its state."""
+    with openHby(name="mailbox-reply-provider") as providerHby, \
+            openHby(name="mailbox-reply-controller") as controllerHby:
+        mailbox = providerHby.makeHab(name="mbx", transferable=False)
+        controller = controllerHby.makeHab(name="alice", transferable=True)
+        client = _mailbox_admin_client(providerHby, mailbox)
+        kel = _collect_replay(controller).decode("utf-8")
+        signed = controller.makeEndRole(mailbox.pre, Roles.mailbox,
+                                       stamp="2021-01-01T00:00:00.000000+00:00")
+        accepted = SerderKERI(raw=signed)
+        assert _post_mailbox_admin(client, fields=dict(kel=kel, rpy=signed.decode("utf-8"))).status_code == 200
+        assert _post_mailbox_admin(client, fields=dict(kel=kel, rpy=accepted.raw.decode("utf-8"))).status_code == 200
+        different = SerderKERI(raw=controller.makeEndRole(mailbox.pre, Roles.mailbox,
+                                       stamp="2021-01-01T00:00:01.000000+00:00"))
+        assert different.said != accepted.said
+        rep = _post_mailbox_admin(client, fields=dict(kel=kel, rpy=different.raw.decode("utf-8")))
+        assert rep.status_code == 403
+        assert providerHby.db.eans.get(keys=(controller.pre, Roles.mailbox, mailbox.pre)).qb64 == accepted.said
+
+
+def test_authorized_forwarder_ignores_malformed_recipient_and_topic():
+    """Malformed mailbox selectors do not escape into the host's parsing loop."""
+    with openHby(name="mailbox-malformed-forward") as hby:
+        mailbox = hby.makeHab(name="mbx", transferable=False)
+        sender = hby.makeHab(name="sender", transferable=True)
+        sender.psr.parse(ims=sender.makeEndRole(mailbox.pre, Roles.mailbox))
+        mbx = Mailboxer(name="malformed-forward", temp=True)
+        try:
+            handler = AuthorizedForwardHandler(hby=hby, mbx=mbx, mailboxAid=mailbox.pre)
+            for modifiers in ({}, dict(topic="echo"), dict(pre=sender.pre),
+                              dict(pre=[], topic="echo"), dict(pre=sender.pre, topic=[])):
+                parent, _ = specialExchange(sender=sender.pre, route="/fwd", modifiers=modifiers,
+                                             attributes={}, version=Vrsn_1_0, kind=Kinds.json)
+                handler.handle(serder=parent, attachments=[])
+            assert list(mbx.cloneTopicIter(topic=f"{sender.pre}/echo")) == []
+        finally:
+            mbx.close(clear=True)
+
+
+def test_mailbox_admin_rejects_non_utf8_fields():
+    """Invalid field encoding remains a request error instead of a server failure."""
+    with openHby(name="mailbox-invalid-encoding") as hby:
+        mailbox = hby.makeHab(name="mbx", transferable=False)
+        body, contentType = _multipart_body(kel="not-utf8", rpy="unused")
+        rep = _post_mailbox_admin(_mailbox_admin_client(hby, mailbox),
+                                 content_type=contentType, body=body.replace(b"not-utf8", b"\xff"))
+        assert rep.status_code == 400
+        assert "UTF-8" in rep.text

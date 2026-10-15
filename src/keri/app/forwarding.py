@@ -590,7 +590,12 @@ class AuthorizedForwardHandler(ForwardHandler):
     def handle(self, serder, attachments=None, nests=None):
         """Authorize the recipient before storing v1 embeds or v2 nested messages."""
         modifiers = serder.ked.get("q", {})
-        recipient = modifiers["pre"]
+        if not isinstance(modifiers, dict):
+            return
+        recipient = modifiers.get("pre")
+        topic = modifiers.get("topic")
+        if not isinstance(recipient, str) or not recipient or not isinstance(topic, str) or not topic:
+            return
         end = self.hby.db.ends.get(keys=(recipient, Roles.mailbox, self.mailboxAid))
         if not end or not (end.allowed or end.enabled):
             return
