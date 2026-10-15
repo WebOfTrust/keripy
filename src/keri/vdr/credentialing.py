@@ -563,6 +563,7 @@ class Registrar(doing.DoDoer):
 
         from ..app.agenting import Receiptor, WitnessPublisher
         self.receiptor = Receiptor(hby=self.hby)
+        self.receiptRequests = set()
         self.witPub = WitnessPublisher(hby=self.hby)
 
         doers = [self.receiptor, self.witPub, doing.doify(self.escrowDo)]
@@ -592,7 +593,7 @@ class Registrar(doing.DoDoer):
                                saider=diger)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=anc.pre, sn=number.sn))
+            self._requestReceipts(anc.pre, number.sn)
 
             self.rgy.reger.tpwe.add(keys=(registry.regk, rnum.qb64), val=(hab.kever.prefixer, number, diger))
 
@@ -634,7 +635,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=hab.pre, sn=number.sn))
+            self._requestReceipts(hab.pre, number.sn)
 
             self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, diger))
 
@@ -678,7 +679,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=hab.pre, sn=number.sn))
+            self._requestReceipts(hab.pre, number.sn)
 
             self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, diger))
             return vcid, rnum.sn
@@ -737,6 +738,15 @@ class Registrar(doing.DoDoer):
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None and self.witPub.sent(said=pre)
 
+    def _requestReceipts(self, pre, sn):
+        """Queue one outstanding witness receipt request per KEL event."""
+        identity = (pre, sn)
+        queued = any((msg["pre"], msg.get("sn")) == identity for msg in self.receiptor.msgs)
+        active = getattr(self.receiptor, "active", None) == identity
+        if not (queued or active):
+            self.receiptor.msgs.append(dict(pre=pre, sn=sn))
+        self.receiptRequests.add(identity)
+
     def escrowDo(self, tymth, tock=1.0, **kwa):
         """Process escrows of TEL events and their underlying KEL events waiting to be fully signed
          and witnessed.
@@ -777,28 +787,64 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
+        completed = set()
+        pending = set()
+        escrowed = set()
+        advanced = set()
         for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getTopItemIter():  # partial witness escrow
+            escrowed.add((prefixer.qb64, number.sn))
             kever = self.hby.kevers[prefixer.qb64]
 
             # Load all the witness receipts we have so far
             wigers = self.hby.db.wigs.get(keys=(prefixer.qb64b, diger.qb64))
+            cue = None
             if kever.wits:
                 if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
-                    witnessed = False
-                    for cue in self.receiptor.cues:
+                    for cue in list(self.receiptor.cues):
                         if cue["pre"] == hab.pre and cue["sn"] == number.sn:
-                            witnessed = True
-
-                    if not witnessed:
+                            break
+                    else:
                         continue
                 else:
+                    pending.add((prefixer.qb64, number.sn))
                     continue
 
             rnum = Number(qb64=snq, code=NumDex.Huge)
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
             self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
+            advanced.add((prefixer.qb64, number.sn))
+            if cue is not None:
+                completed.add((cue["pre"], cue["sn"]))
+
+        self._cleanupReceiptRequests(escrowed, advanced, completed, pending)
+
+    def _cleanupReceiptRequests(self, escrowed, advanced, completed, pending):
+        """Release receipt request state without consuming cues needed by pending escrows."""
+        queued = {(msg["pre"], msg.get("sn")) for msg in self.receiptor.msgs}
+        active = getattr(self.receiptor, "active", None)
+        awaiting = self.receiptRequests.intersection(escrowed) - queued
+        if active is not None:
+            awaiting.discard(active)
+        if awaiting:
+            cued = {(cue["pre"], cue["sn"]) for cue in self.receiptor.cues}
+            failed = awaiting - cued - advanced
+            self.receiptRequests.difference_update(failed)
+
+        stale = self.receiptRequests - escrowed
+        outstanding = queued
+        if active is not None:
+            outstanding.add(active)
+        releasable = stale - outstanding
+        settled = completed - pending
+        cleanup = settled | releasable
+        if cleanup:
+            for cue in list(self.receiptor.cues):
+                identity = (cue["pre"], cue["sn"])
+                if identity in cleanup:
+                    self.receiptor.cues.remove(cue)
+        self.receiptRequests.difference_update(cleanup - outstanding)
 
     def processMultisigEscrow(self):
         """

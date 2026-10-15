@@ -42,6 +42,7 @@ class Receiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.active = None
         self.clienter = Clienter()
 
         doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
@@ -243,7 +244,11 @@ class Receiptor(doing.DoDoer):
                 sn = msg["sn"] if "sn" in msg else None
                 auths = msg["auths"] if "auths" in msg else None
 
-                yield from self.receipt(pre, sn, auths)
+                self.active = (pre, sn)
+                try:
+                    yield from self.receipt(pre, sn, auths)
+                finally:
+                    self.active = None
                 self.cues.push(msg)
 
             yield self.tock
