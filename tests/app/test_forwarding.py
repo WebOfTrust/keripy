@@ -20,6 +20,17 @@ from keri.peer import exchanging
 
 @pytest.mark.parametrize("transferable", [False, True])
 def test_introduce_receipt_from_target(transferable):
+    """Only Bob's verified receipt of Alice's latest event skips introduction.
+
+    Alice is the sender being introduced to destination Bob; Carol is an
+    unrelated receiptor. Real receipts are signed, parsed, and checked in
+    Alice's receipt store before testing the introduction decision. With no
+    receipt, Alice sends the full introduction. Carol's receipt does not
+    suppress it; Bob's receipt does. After Alice adds an interaction event,
+    Bob's older receipt no longer suppresses introduction.
+
+    Both transferable and nontransferable destination AIDs are exercised.
+    """
     with habbing.openHab(name="alice", temp=True) as (_, alice), \
             habbing.openHab(name="bob", temp=True,
                             transferable=transferable) as (_, bob), \
