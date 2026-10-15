@@ -292,6 +292,6 @@ class Respondant(doing.DoDoer):
                 self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)
 
             else:
-                self.cues.push(cue)
+                logger.info("Respondant: discarding unhandled cue kin=%s", cueKin)
 
             yield self.tock
