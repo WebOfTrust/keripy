@@ -73,9 +73,10 @@ def test_registrar_retains_cue_while_receipts_are_pending():
     cues = decking.Deck([cue])
     number = Number(num=1)
     snq = Number(num=1, code=NumDex.Huge).qb64
-    tpwe = Store([(("ERegistry", snq),
-                   (SimpleNamespace(qb64=pre, qb64b=pre.encode()), number,
-                    SimpleNamespace(qb64="EDigest", qb64b=b"EDigest")))])
+    prefixer = SimpleNamespace(qb64=pre, qb64b=pre.encode())
+    diger = SimpleNamespace(qb64="EDigest", qb64b=b"EDigest")
+    tpwe = Store([((regk, snq), (prefixer, number, diger))
+                  for regk in ("ERegistryA", "ERegistryB")])
     tede = Store()
     registrar = Registrar.__new__(Registrar)
     registrar.hby = SimpleNamespace(
@@ -90,8 +91,37 @@ def test_registrar_retains_cue_while_receipts_are_pending():
     registrar.processWitnessEscrow()
 
     assert list(cues) == [cue]
+    assert len(tpwe.items) == 2
     assert not tpwe.removed
     assert not tede.added
+
+
+def test_registrar_advances_all_escrows_for_one_completed_event():
+    pre, sn, digest = "ERegistrar", 5, "EDigest"
+    number = Number(num=sn)
+    prefixer = SimpleNamespace(qb64=pre, qb64b=pre.encode())
+    diger = SimpleNamespace(qb64=digest, qb64b=digest.encode())
+    snq0 = Number(num=0, code=NumDex.Huge).qb64
+    snq1 = Number(num=1, code=NumDex.Huge).qb64
+    entries = [(("ECredentialA", snq0), (prefixer, number, diger)),
+               (("ECredentialB", snq1), (prefixer, number, diger))]
+    unrelated = _cue("EUnrelated", 99)
+    cues = decking.Deck([unrelated, _cue(pre, sn)])
+    tpwe, tede = Store(entries), Store()
+    registrar = Registrar.__new__(Registrar)
+    registrar.hby = SimpleNamespace(
+        kevers={pre: SimpleNamespace(wits=["EWitness"])},
+        habs={pre: SimpleNamespace(pre=pre)},
+        db=SimpleNamespace(wigs=SimpleNamespace(get=lambda keys: ["wig"])),
+    )
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=tpwe, tede=tede))
+    registrar.receiptor = SimpleNamespace(cues=cues)
+
+    registrar.processWitnessEscrow()
+
+    assert len(tede.added) == 2
+    assert len(tpwe.removed) == 2
+    assert list(cues) == [unrelated]
 
 
 def _counselor(pre, entries, cues, wigers):

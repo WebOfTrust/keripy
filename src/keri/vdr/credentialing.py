@@ -777,6 +777,8 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
+        completed = set()
+        pending = set()
         for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getTopItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
 
@@ -792,6 +794,7 @@ class Registrar(doing.DoDoer):
                     else:
                         continue
                 else:
+                    pending.add((prefixer.qb64, number.sn))
                     continue
 
             rnum = Number(qb64=snq, code=NumDex.Huge)
@@ -799,6 +802,11 @@ class Registrar(doing.DoDoer):
 
             self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
             if cue is not None:
+                completed.add((cue["pre"], cue["sn"]))
+
+        for cue in list(self.receiptor.cues):
+            identity = (cue["pre"], cue["sn"])
+            if identity in completed and identity not in pending:
                 self.receiptor.cues.remove(cue)
 
     def processMultisigEscrow(self):
