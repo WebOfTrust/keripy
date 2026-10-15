@@ -52,6 +52,7 @@ def test_registrar_consumes_only_advanced_cues_and_preserves_order():
 
     tpwe, tede = Store(entries), Store()
     registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = set()
     registrar.hby = SimpleNamespace(
         kevers={pre: SimpleNamespace(wits=["EWitness"])},
         habs={pre: SimpleNamespace(pre=pre)},
@@ -79,6 +80,7 @@ def test_registrar_retains_cue_while_receipts_are_pending():
                   for regk in ("ERegistryA", "ERegistryB")])
     tede = Store()
     registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = set()
     registrar.hby = SimpleNamespace(
         kevers={pre: SimpleNamespace(wits=["EWitness"]),
                 "EMissing": SimpleNamespace(wits=["EWitness"])},
@@ -109,6 +111,7 @@ def test_registrar_advances_all_escrows_for_one_completed_event():
     cues = decking.Deck([unrelated, _cue(pre, sn)])
     tpwe, tede = Store(entries), Store()
     registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = set()
     registrar.hby = SimpleNamespace(
         kevers={pre: SimpleNamespace(wits=["EWitness"])},
         habs={pre: SimpleNamespace(pre=pre)},
@@ -122,6 +125,96 @@ def test_registrar_advances_all_escrows_for_one_completed_event():
     assert len(tede.added) == 2
     assert len(tpwe.removed) == 2
     assert list(cues) == [unrelated]
+
+
+def test_registrar_deduplicates_receipt_request_while_first_is_active():
+    pre, sn = "ERegistrar", 5
+    number = Number(num=sn)
+    prefixer = SimpleNamespace(qb64=pre, qb64b=pre.encode())
+    diger = SimpleNamespace(qb64="EDigest", qb64b=b"EDigest")
+    entries = [(('ECredentialA', Number(num=0, code=NumDex.Huge).qb64),
+                (prefixer, number, diger)),
+               (('ECredentialB', Number(num=1, code=NumDex.Huge).qb64),
+                (prefixer, number, diger))]
+    tpwe, tede = Store(entries), Store()
+    msgs, cues = decking.Deck(), decking.Deck()
+    registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = set()
+    registrar.hby = SimpleNamespace(
+        kevers={pre: SimpleNamespace(wits=["EWitness"])},
+        habs={pre: SimpleNamespace(pre=pre)},
+        db=SimpleNamespace(wigs=SimpleNamespace(get=lambda keys: ["wig"])),
+    )
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=tpwe, tede=tede))
+    registrar.receiptor = SimpleNamespace(msgs=msgs, cues=cues)
+
+    registrar._requestReceipts(pre, sn)
+    assert msgs.popleft() == _cue(pre, sn)  # first request is now in flight
+    registrar._requestReceipts(pre, sn)
+    assert not msgs
+
+    cues.push(_cue(pre, sn))
+    registrar.processWitnessEscrow()
+
+    assert len(tede.added) == 2
+    assert not cues
+    assert not registrar.receiptRequests
+
+    # With no second request, a later scheduler pass has no duplicate cue to retain.
+    registrar.processWitnessEscrow()
+    assert not cues
+
+
+def test_registrar_skips_idle_cue_scan():
+    class CountingDeck(list):
+        def __init__(self, items=()):
+            super().__init__(items)
+            self.scans = 0
+
+        def __iter__(self):
+            self.scans += 1
+            return super().__iter__()
+
+    cues = CountingDeck([_cue("EUnrelated", 99)])
+    registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = set()
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=Store(), tede=Store()))
+    registrar.receiptor = SimpleNamespace(cues=cues)
+
+    registrar.processWitnessEscrow()
+
+    assert cues.scans == 0
+    assert list(cues) == [_cue("EUnrelated", 99)]
+
+
+def test_registrar_discards_late_completion_after_escrow_advanced():
+    pre, sn = "ERegistrar", 5
+    number = Number(num=sn)
+    prefixer = SimpleNamespace(qb64=pre, qb64b=pre.encode())
+    diger = SimpleNamespace(qb64="EDigest", qb64b=b"EDigest")
+    snq = Number(num=0, code=NumDex.Huge).qb64
+    tpwe, tede = Store([(("ECredential", snq), (prefixer, number, diger))]), Store()
+    cues = decking.Deck()
+    registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = {(pre, sn)}
+    registrar.hby = SimpleNamespace(
+        kevers={pre: SimpleNamespace(wits=[])},
+        db=SimpleNamespace(wigs=SimpleNamespace(get=lambda keys: [])),
+    )
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=tpwe, tede=tede))
+    registrar.receiptor = SimpleNamespace(cues=cues)
+
+    registrar.processWitnessEscrow()
+    assert len(tede.added) == 1
+    assert registrar.receiptRequests == {(pre, sn)}
+
+    tpwe.items.clear()
+    unrelated = _cue("EUnrelated", 99)
+    cues.extend([_cue(pre, sn), unrelated])
+    registrar.processWitnessEscrow()
+
+    assert list(cues) == [unrelated]
+    assert not registrar.receiptRequests
 
 
 def _counselor(pre, entries, cues, wigers):

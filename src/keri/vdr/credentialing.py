@@ -563,6 +563,7 @@ class Registrar(doing.DoDoer):
 
         from ..app.agenting import Receiptor, WitnessPublisher
         self.receiptor = Receiptor(hby=self.hby)
+        self.receiptRequests = set()
         self.witPub = WitnessPublisher(hby=self.hby)
 
         doers = [self.receiptor, self.witPub, doing.doify(self.escrowDo)]
@@ -592,7 +593,7 @@ class Registrar(doing.DoDoer):
                                saider=diger)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=anc.pre, sn=number.sn))
+            self._requestReceipts(anc.pre, number.sn)
 
             self.rgy.reger.tpwe.add(keys=(registry.regk, rnum.qb64), val=(hab.kever.prefixer, number, diger))
 
@@ -634,7 +635,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=hab.pre, sn=number.sn))
+            self._requestReceipts(hab.pre, number.sn)
 
             self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, diger))
 
@@ -678,7 +679,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=hab.pre, sn=number.sn))
+            self._requestReceipts(hab.pre, number.sn)
 
             self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, diger))
             return vcid, rnum.sn
@@ -737,6 +738,13 @@ class Registrar(doing.DoDoer):
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None and self.witPub.sent(said=pre)
 
+    def _requestReceipts(self, pre, sn):
+        """Queue one outstanding witness receipt request per KEL event."""
+        identity = (pre, sn)
+        if identity not in self.receiptRequests:
+            self.receiptor.msgs.append(dict(pre=pre, sn=sn))
+            self.receiptRequests.add(identity)
+
     def escrowDo(self, tymth, tock=1.0, **kwa):
         """Process escrows of TEL events and their underlying KEL events waiting to be fully signed
          and witnessed.
@@ -779,7 +787,9 @@ class Registrar(doing.DoDoer):
         """
         completed = set()
         pending = set()
+        escrowed = set()
         for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getTopItemIter():  # partial witness escrow
+            escrowed.add((prefixer.qb64, number.sn))
             kever = self.hby.kevers[prefixer.qb64]
 
             # Load all the witness receipts we have so far
@@ -804,10 +814,13 @@ class Registrar(doing.DoDoer):
             if cue is not None:
                 completed.add((cue["pre"], cue["sn"]))
 
-        for cue in list(self.receiptor.cues):
-            identity = (cue["pre"], cue["sn"])
-            if identity in completed and identity not in pending:
-                self.receiptor.cues.remove(cue)
+        stale = self.receiptRequests - escrowed
+        if completed or stale:
+            for cue in list(self.receiptor.cues):
+                identity = (cue["pre"], cue["sn"])
+                if (identity in completed and identity not in pending) or identity in stale:
+                    self.receiptor.cues.remove(cue)
+                    self.receiptRequests.discard(identity)
 
     def processMultisigEscrow(self):
         """
