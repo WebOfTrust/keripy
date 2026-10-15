@@ -226,7 +226,9 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
                 if cue is not None:
-                    self.witDoer.cues.remove(cue)
+                    for cue in list(self.witDoer.cues):
+                        if cue["pre"] == serder.pre and cue["sn"] == seqner.sn:
+                            self.witDoer.cues.remove(cue)
 
     def processWitnessPublication(self):
         """

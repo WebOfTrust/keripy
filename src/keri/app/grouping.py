@@ -254,7 +254,9 @@ class Counselor(doing.DoDoer):
                 self.hby.db.gpwe.rem(keys=(pre,))
                 self.hby.db.cgms.put(keys=(pre, number.qb64), val=diger)
                 if cue is not None:
-                    self.witDoer.cues.remove(cue)
+                    for cue in list(self.witDoer.cues):
+                        if cue["pre"] == ghab.pre and cue["sn"] == number.sn:
+                            self.witDoer.cues.remove(cue)
             elif not witer:
                 self.witDoer.gets.append(dict(pre=pre, sn=number.sn))
 

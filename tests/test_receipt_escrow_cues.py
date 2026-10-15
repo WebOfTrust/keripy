@@ -149,7 +149,8 @@ def test_counselor_consumes_completed_cues_but_keeps_unrelated_and_pending():
     pre = "EGroup"
     unrelated = _cue("EUnrelated", 99)
     pending = _cue(pre, 10)
-    cues = decking.Deck([unrelated, *(_cue(pre, sn) for sn in range(3)), pending])
+    pending_duplicate = _cue(pre, 10)
+    cues = decking.Deck([unrelated, *(_cue(pre, sn) for sn in range(3)), pending, pending_duplicate])
     entries = [((pre,), (Number(num=sn), SimpleNamespace(qb64=f"EDigest{sn}")))
                for sn in (*range(3), 10)]
     counselor, gpwe, cgms = _counselor(pre, entries, cues, ["wig"])
@@ -161,13 +162,31 @@ def test_counselor_consumes_completed_cues_but_keeps_unrelated_and_pending():
 
     assert len(cgms.added) == 3
     assert len(gpwe.removed) == 3
-    assert list(cues) == [unrelated, pending]
+    assert list(cues) == [unrelated, pending, pending_duplicate]
 
 
-def test_anchorer_consumes_cue_after_dispatch_and_retains_it_if_hab_missing(monkeypatch):
+def test_counselor_consumes_all_duplicate_cues_after_advancement():
+    pre = "EGroup"
+    unrelated = _cue("EUnrelated", 99)
+    trailing = _cue("ETrailing", 100)
+    cues = decking.Deck([unrelated, _cue(pre, 1), _cue(pre, 1), trailing])
+    entry = ((pre,), (Number(num=1), SimpleNamespace(qb64="EDigest")))
+    counselor, gpwe, cgms = _counselor(pre, [entry], cues, ["wig"])
+
+    counselor.processPartialWitnessEscrow()
+
+    assert gpwe.removed == [(pre,)]
+    assert len(cgms.added) == 1
+    assert list(cues) == [unrelated, trailing]
+
+
+def test_anchorer_consumes_duplicate_cues_after_dispatch_and_retains_missing_hab_cues(monkeypatch):
     pre, delpre = "EDelegate", "EDelegator"
-    cues = decking.Deck([_cue(pre, 1), _cue("EUnrelated", 99), _cue(pre, 2),
-                         _cue(pre, 3), _cue("EMissing", 4)])
+    unrelated = _cue("EUnrelated", 99)
+    missing = _cue("EMissing", 4)
+    missing_duplicate = _cue("EMissing", 4)
+    cues = decking.Deck([_cue(pre, 1), unrelated, _cue(pre, 2), _cue(pre, 2),
+                         _cue(pre, 3), missing, missing_duplicate])
     records = [SimpleNamespace(pre=pre, sn=sn, said=f"EDigest{sn}", pvrsn="version")
                for sn in range(1, 4)]
     records.append(SimpleNamespace(pre="EMissing", sn=4, said="EOther", pvrsn="version"))
@@ -216,7 +235,7 @@ def test_anchorer_consumes_cue_after_dispatch_and_retains_it_if_hab_missing(monk
     assert calls == ["send", "send", "query"] * 3
     assert len(dune.pinned) == 3
     assert dpwe.removed == [(pre, f"EDigest{sn}") for sn in range(1, 4)]
-    assert list(cues) == [_cue("EUnrelated", 99), _cue("EMissing", 4)]
+    assert list(cues) == [unrelated, missing, missing_duplicate]
 
 
 def test_counselor_empty_witness_set_advances_without_cues():
