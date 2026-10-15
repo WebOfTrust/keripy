@@ -482,15 +482,15 @@ def introduce(hab, wit):
 
     iserder = hab.kever.serder
     witPrefixer = coring.Prefixer(qb64=wit)
-    dgkey = dbing.dgKey(wit, iserder.said)
+    dgkey = dbing.dgKey(hab.pre, iserder.said)
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp
         for quadruple in hab.db.getVrcsIter(dgkey):
-            if bytes(quadruple).decode("utf-8").startswith(hab.pre):
+            if bytes(quadruple).decode("utf-8").startswith(wit):
                 found = True  # yes so don't send own inception
     else:  # find if already rcts of own icp
         for couple in hab.db.getRctsIter(dgkey):
-            if bytes(couple).decode("utf-8").startswith(hab.pre):
+            if bytes(couple).decode("utf-8").startswith(wit):
                 found = True  # yes so don't send own inception
 
     if not found:  # no receipt from remote so send own inception

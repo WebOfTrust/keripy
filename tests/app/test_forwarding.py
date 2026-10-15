@@ -5,6 +5,7 @@ tests.app.forwarding module
 
 """
 import time
+import pytest
 
 from hio.base import doing, tyming
 
@@ -13,7 +14,47 @@ from keri.core import coring, eventing, parsing, serdering
 
 from keri.app import forwarding, habbing, indirecting, storing
 
+from keri.db import dbing
 from keri.peer import exchanging
+
+
+@pytest.mark.parametrize("transferable", [False, True])
+def test_introduce_receipt_from_target(transferable):
+    with habbing.openHab(name="alice", temp=True) as (_, alice), \
+            habbing.openHab(name="bob", temp=True,
+                            transferable=transferable) as (_, bob), \
+            habbing.openHab(name="carol", temp=True,
+                            transferable=transferable) as (_, carol):
+        expected = alice.replay()
+        expected.extend(alice.replyEndRole(cid=alice.pre))
+        assert expected
+        assert forwarding.introduce(alice, bob.pre) == expected
+
+        parser = parsing.Parser()
+        kvy = eventing.Kevery(db=alice.db, lax=False, local=False)
+        for peer in (carol, bob):
+            # Verify a real receipt after learning the receiptor's keys.
+            parser.parse(ims=bytearray(peer.makeOwnInception()), kvy=kvy)
+            peer.psr.parse(ims=bytearray(alice.makeOwnInception()))
+            parser.parse(ims=bytearray(peer.receipt(alice.kever.serder)), kvy=kvy)
+            dgkey = dbing.dgKey(alice.pre, alice.kever.serder.said)
+            if transferable:
+                receiptors = [eventing.deTransReceiptQuadruple(raw)[0].qb64
+                              for raw in alice.db.getVrcsIter(dgkey)]
+            else:
+                receiptors = [eventing.deReceiptCouple(raw)[0].qb64
+                              for raw in alice.db.getRctsIter(dgkey)]
+            assert peer.pre in receiptors
+
+            if peer is carol:
+                # Another receiptor must not suppress introduction to Bob.
+                assert forwarding.introduce(alice, bob.pre)
+
+        assert forwarding.introduce(alice, bob.pre) == bytearray()
+
+        # A receipt for the inception does not acknowledge a newer event.
+        alice.interact()
+        assert forwarding.introduce(alice, bob.pre)
 
 
 def test_postman(seeder):
