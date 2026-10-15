@@ -833,12 +833,18 @@ class Registrar(doing.DoDoer):
             self.receiptRequests.difference_update(failed)
 
         stale = self.receiptRequests - escrowed
-        if completed or stale:
+        outstanding = queued
+        if active is not None:
+            outstanding.add(active)
+        releasable = stale - outstanding
+        settled = completed - pending
+        cleanup = settled | releasable
+        if cleanup:
             for cue in list(self.receiptor.cues):
                 identity = (cue["pre"], cue["sn"])
-                if (identity in completed and identity not in pending) or identity in stale:
+                if identity in cleanup:
                     self.receiptor.cues.remove(cue)
-                    self.receiptRequests.discard(identity)
+        self.receiptRequests.difference_update(cleanup - outstanding)
 
     def processMultisigEscrow(self):
         """

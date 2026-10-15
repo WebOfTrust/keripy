@@ -260,6 +260,87 @@ def test_registrar_skips_idle_cue_scan():
     assert list(cues) == [_cue("EUnrelated", 99)]
 
 
+def test_registrar_releases_stale_request_without_cue_scan_loop():
+    class CountingDeck(list):
+        def __init__(self, items=()):
+            super().__init__(items)
+            self.scans = 0
+
+        def __iter__(self):
+            self.scans += 1
+            return super().__iter__()
+
+    stale = ("EStale", 1)
+    unrelated = _cue("EUnrelated", 99)
+    cues = CountingDeck([unrelated])
+    registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = {stale}
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=Store()))
+    registrar.receiptor = SimpleNamespace(msgs=decking.Deck(), cues=cues, active=None)
+
+    registrar.processWitnessEscrow()
+    assert not registrar.receiptRequests
+    assert cues == [unrelated]
+
+    scans = cues.scans
+    registrar.processWitnessEscrow()
+    assert cues.scans == scans
+
+
+def test_registrar_keeps_stale_request_tracking_while_work_is_outstanding():
+    queued = ("EQueued", 1)
+    active = ("EActive", 2)
+    queued_cue = _cue(*queued)
+    registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = {queued, active}
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=Store()))
+    registrar.receiptor = SimpleNamespace(
+        msgs=decking.Deck([queued_cue]), cues=decking.Deck([queued_cue]), active=active
+    )
+
+    registrar.processWitnessEscrow()
+
+    assert registrar.receiptRequests == {queued, active}
+    assert list(registrar.receiptor.cues) == [queued_cue]
+
+
+def test_registrar_keeps_tracking_active_retry_until_late_cue_is_consumed():
+    pre, sn = "ERegistrar", 5
+    identity = (pre, sn)
+    earlier_cue = _cue(pre, sn)
+    unrelated = _cue("EUnrelated", 99)
+    number = Number(num=sn)
+    prefixer = SimpleNamespace(qb64=pre, qb64b=pre.encode())
+    diger = SimpleNamespace(qb64="EDigest", qb64b=b"EDigest")
+    snq = Number(num=sn, code=NumDex.Huge).qb64
+    tpwe, tede = Store([(("ERegistry", snq), (prefixer, number, diger))]), Store()
+    cues = decking.Deck([unrelated, earlier_cue])
+    registrar = Registrar.__new__(Registrar)
+    registrar.receiptRequests = {identity}
+    registrar.hby = SimpleNamespace(
+        kevers={pre: SimpleNamespace(wits=["EWitness"])},
+        habs={pre: SimpleNamespace(pre=pre)},
+        db=SimpleNamespace(wigs=SimpleNamespace(get=lambda keys: ["wig"])),
+    )
+    registrar.rgy = SimpleNamespace(reger=SimpleNamespace(tpwe=tpwe, tede=tede))
+    registrar.receiptor = SimpleNamespace(
+        msgs=decking.Deck(), cues=cues, active=identity
+    )
+
+    registrar.processWitnessEscrow()
+
+    assert len(tede.added) == 1
+    assert list(cues) == [unrelated]
+    assert registrar.receiptRequests == {identity}
+
+    cues.push(_cue(pre, sn))
+    registrar.receiptor.active = None
+    registrar.processWitnessEscrow()
+
+    assert list(cues) == [unrelated]
+    assert not registrar.receiptRequests
+
+
 def test_registrar_discards_late_completion_after_escrow_advanced():
     pre, sn = "ERegistrar", 5
     number = Number(num=sn)
