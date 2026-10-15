@@ -741,9 +741,12 @@ class Registrar(doing.DoDoer):
     def _requestReceipts(self, pre, sn):
         """Queue one outstanding witness receipt request per KEL event."""
         identity = (pre, sn)
-        if identity not in self.receiptRequests:
+        queued = any((msg["pre"], msg.get("sn")) == identity for msg in self.receiptor.msgs)
+        active = getattr(self.receiptor, "active", None) == identity
+        cued = any((cue["pre"], cue["sn"]) == identity for cue in self.receiptor.cues)
+        if not (queued or active or cued):
             self.receiptor.msgs.append(dict(pre=pre, sn=sn))
-            self.receiptRequests.add(identity)
+        self.receiptRequests.add(identity)
 
     def escrowDo(self, tymth, tock=1.0, **kwa):
         """Process escrows of TEL events and their underlying KEL events waiting to be fully signed
@@ -788,6 +791,7 @@ class Registrar(doing.DoDoer):
         completed = set()
         pending = set()
         escrowed = set()
+        advanced = set()
         for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getTopItemIter():  # partial witness escrow
             escrowed.add((prefixer.qb64, number.sn))
             kever = self.hby.kevers[prefixer.qb64]
@@ -811,8 +815,23 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
             self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
+            advanced.add((prefixer.qb64, number.sn))
             if cue is not None:
                 completed.add((cue["pre"], cue["sn"]))
+
+        self._cleanupReceiptRequests(escrowed, advanced, completed, pending)
+
+    def _cleanupReceiptRequests(self, escrowed, advanced, completed, pending):
+        """Release receipt request state without consuming cues needed by pending escrows."""
+        queued = {(msg["pre"], msg.get("sn")) for msg in self.receiptor.msgs}
+        active = getattr(self.receiptor, "active", None)
+        awaiting = self.receiptRequests.intersection(escrowed) - queued
+        if active is not None:
+            awaiting.discard(active)
+        if awaiting:
+            cued = {(cue["pre"], cue["sn"]) for cue in self.receiptor.cues}
+            failed = awaiting - cued - advanced
+            self.receiptRequests.difference_update(failed)
 
         stale = self.receiptRequests - escrowed
         if completed or stale:
