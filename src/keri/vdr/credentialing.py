@@ -743,8 +743,7 @@ class Registrar(doing.DoDoer):
         identity = (pre, sn)
         queued = any((msg["pre"], msg.get("sn")) == identity for msg in self.receiptor.msgs)
         active = getattr(self.receiptor, "active", None) == identity
-        cued = any((cue["pre"], cue["sn"]) == identity for cue in self.receiptor.cues)
-        if not (queued or active or cued):
+        if not (queued or active):
             self.receiptor.msgs.append(dict(pre=pre, sn=sn))
         self.receiptRequests.add(identity)
 

@@ -101,6 +101,9 @@ def test_registrar_retains_cue_while_receipts_are_pending():
     assert not tpwe.removed
     assert not tede.added
 
+    registrar._requestReceipts(pre, 1)
+    assert list(registrar.receiptor.msgs) == [_cue(pre, 1)]
+
 
 def test_registrar_advances_all_escrows_for_one_completed_event():
     pre, sn, digest = "ERegistrar", 5, "EDigest"
