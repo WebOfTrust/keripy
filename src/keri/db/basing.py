@@ -25,7 +25,8 @@ from ..recording import (KeyStateRecord, EventSourceRecord,
                          OobiRecord, EndpointRecord,
                          LocationRecord, ObservedRecord,
                          CacheTypeRecord, TxnMsgCacheRecord,
-                         MsgCacheRecord, WellKnownAuthN)
+                         MsgCacheRecord, WellKnownAuthN,
+                         ExchangeRegistryStateRecord)
 
 
 logger = ogler.getLogger()
@@ -589,6 +590,12 @@ class Baser(LMDBer):
             exchange message event source records.
             subkey 'essrs.'
             Multiple values per key.
+
+        .exrs is named subDB instance of Komer (klas=ExchangeRegistryStateRecord)
+            for the registry state an accepted IPEX grant authenticated for each
+            disclosed node. Recorded, never judged on the protocol path.
+            subkey 'exrs.'
+            Key: exchange message SAID and disclosed node SAID.
 
         .ests is named subDB instance of CatCesrIoSetSuber
             (klas=(Number, Diger)) for resolved exchange source seals.
@@ -1163,6 +1170,11 @@ class Baser(LMDBer):
         self.enst = subing.IoSetSuber(db=self, subkey="enst.")
 
         self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
+
+        # registry state authenticated for each node an accepted grant disclosed,
+        # keyed by (exchange SAID, node SAID); recorded for the application to judge
+        self.exrs = koming.Komer(db=self, subkey="exrs.",
+                                 klas=ExchangeRegistryStateRecord)
 
         # resolved exchange source seals indexed by message and sealing AID
         self.ests = subing.CatCesrIoSetSuber(db=self, subkey="ests.",

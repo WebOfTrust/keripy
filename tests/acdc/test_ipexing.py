@@ -3,7 +3,9 @@
 tests.acdc.test_ipexing module
 
 """
+from copy import deepcopy
 from datetime import timedelta
+from collections import deque
 from types import SimpleNamespace
 
 import pytest
@@ -19,6 +21,8 @@ from keri.core import (Blinder, Codens, Compactor, Counter, Diger, GenDex, Kever
                        Kramer, Noncer, Number, Parser, Schemer, SealEvent, SealSource,
                        messagize, SerderKERI, Serdery, Texter, exchange)
 from keri.db import reopenDB
+from keri.acdc import chaining
+from keri.acdc.chaining import Verdicts
 from keri.kering import Colds, MissingSignatureError, sniff
 from keri.help import helping
 from keri.peer import Exchanger, cloneMessage, serializeMessage
@@ -2110,6 +2114,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        handler = exc.routes["/ipex/grant"]
 
         def assert_accepted(message, origin, artifacts, prefixes):
             plan = [[origin.sad["s"]["$id"], "/", []]]
@@ -2204,16 +2209,25 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         [orMember, orStaff],
                         ["/e/either/member/_/", "/e/either/staff/_/"])
 
-        # Case 4: a leaf edge may omit `o`. The V2 edge shape allows that, and
-        # IPEX does not infer an I2I/NI2I default when the operator is absent.
+        # Case 4: a leaf edge may omit `o`, and the spec's default rule then applies.
+        # "If the node pointed to by the Edge is a targeted ACDC, i.e., has an
+        # Issuee, then the `I2I` Operator MUST be appended to the Operator, `o`,
+        # field's effective list value" (ACDC spec, Edge Section > Edge > Operator;
+        # the v1.1 line suppresses the default when the list already includes I2I,
+        # NI2I, DI2I or E1E). So a bare edge is not an unconstrained edge.
+        # Which default is right is still open on keripy #1556; this is the
+        # one that is normative today
+        #
+        # Here the far node is targeted at issuer, and the near node's issuer is
+        # issuer, so the appended I2I holds and the bare edge verifies.
         noOpChild = acdcmap(israid=issuer.pre,
                             attribute=dict(d="", role="member"),
-                            iseaid=subject.pre)
+                            iseaid=issuer.pre)
         noOpOrigin = acdcmap(israid=issuer.pre,
                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                              edge=_edge("holder", noOpChild),
                              iseaid=subject.pre)
-        assert_accepted("Here is the no-operator DAG",
+        assert_accepted("Here is the no-operator DAG satisfying the default I2I",
                         noOpOrigin,
                         [noOpChild],
                         ["/e/holder/_/"])
@@ -2232,6 +2246,84 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         listOpOrigin,
                         [listOpChild],
                         ["/e/holder/_/"])
+
+        # An untargeted far node takes NI2I as its default, which constrains
+        # nothing, so a bare edge to one verifies regardless of the issuer pair.
+        untargetedChild = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", role="member"))
+        untargetedOrigin = acdcmap(israid=issuer.pre,
+                                   attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                   edge=_edge("holder", untargetedChild),
+                                   iseaid=subject.pre)
+        assert untargetedChild.iseaid is None
+        assert_accepted("Here is the no-operator DAG to an untargeted far node",
+                        untargetedOrigin,
+                        [untargetedChild],
+                        ["/e/holder/_/"])
+
+        # Explicit NI2I still suppresses the default, which is how an Issuer says
+        # the relation does not apply -- the same pair the rejection sweep proves
+        # is refused when the operator is omitted.
+        relaxedChild = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", role="member"),
+                               iseaid=subject.pre)
+        relaxedOrigin = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                edge=_edge("holder", relaxedChild, op="NI2I"),
+                                iseaid=subject.pre)
+        assert_accepted("Here is the explicitly relaxed no-relation DAG",
+                        relaxedOrigin,
+                        [relaxedChild],
+                        ["/e/holder/_/"])
+
+        # Case 6: `o` may be a list. "When more than one unary Operator is applied
+        # to a given Edge, then the value of the Operator, `o`, field is a list of
+        # those unary Operators" (ACDC spec, Edge Section > Edge > Operator, `o`
+        # field), so the list is the spec's own spelling and not an error. This one
+        # resolves to NI2I, which the near issuer/far issuee pair below does not
+        # satisfy under I2I.
+        listOpChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        listOpOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=_edge("holder", listOpChild, op=["NI2I"]),
+                               iseaid=subject.pre)
+        assert_accepted("Here is the list-valued leaf-operator DAG",
+                        listOpOrigin,
+                        [listOpChild],
+                        ["/e/holder/_/"])
+
+        # Latest-wins among the conflicting (delegative) operators, and composition
+        # with E1E, asserted directly on the evaluator rather than through six more
+        # grants. The far node here is issued by issuer to issuer, and the near node
+        # by issuer to subject, so I2I holds on the far pair and E1E does not.
+        # The far node's own verdict is seeded as valid: it carries no issuer-auth
+        # proof here, and what is under test is the Operator relation alone.
+        nodes = {listOpChild.said: {"serder": listOpChild}}
+
+        def evaluate(op):
+            edge = dict(d="", n=listOpChild.said, o=op)
+            memo = {listOpChild.said: chaining.valid("far node vetted elsewhere")}
+            return handler._evaluateLeafEdge(edge, nodes=nodes, nserder=listOpOrigin,
+                                             memo=memo, inheritedPins=())
+
+        assert evaluate(["NI2I"]).verdict == Verdicts.valid
+        # latest of the conflicting pair
+        assert evaluate(["I2I", "NI2I"]).verdict == Verdicts.valid
+        # I2I wins, and holds here
+        assert evaluate(["NI2I", "I2I"]).verdict == Verdicts.valid
+        # E1E composes and fails
+        assert evaluate(["I2I", "E1E"]).verdict == Verdicts.invalid
+        # empty: no constraint, as absent
+        assert evaluate([]).verdict == Verdicts.valid
+        # A token this verifier cannot evaluate leaves the edge undecided rather
+        # than decided against. It is an unknown no arrival settles, so a section
+        # that needs it refuses without escrow -- but a satisfied sibling under OR
+        # decides the group without it, which is what the spec's OR row says.
+        unevaluable = evaluate(["NI2I", "BOGUS"])
+        assert unevaluable.verdict == Verdicts.unknown
+        assert unevaluable.retryable is False
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
@@ -2345,8 +2437,10 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                         wrongE1EOrigin,
                         [wrongE1EChild])
 
-        # Recognized but unevaluated operators are well-formed leaves whose
-        # relation is unsatisfied, instead of malformed graph input.
+        # Recognized but unevaluated operators are well-formed leaves this verifier
+        # cannot decide, instead of malformed graph input. A section that needs one
+        # refuses without escrow, since no arrival makes an unimplemented Operator
+        # implemented; a satisfied sibling under OR decides the group without it.
         notChild = acdcmap(israid=issuer.pre,
                            attribute=dict(d="", role="member"),
                            iseaid=issuer.pre)
@@ -2357,10 +2451,14 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the NOT-operator DAG",
                         notOrigin,
                         [notChild])
-        assert handler._evaluateLeafEdge(notOrigin.sad["e"]["holder"],
-                                         nodes={notChild.said: {"serder": notChild}},
-                                         nserder=notOrigin,
-                                         inheritedSchema=None) is False
+        notVerdict = handler._evaluateLeafEdge(
+            notOrigin.sad["e"]["holder"],
+            nodes={notChild.said: {"serder": notChild}},
+            nserder=notOrigin,
+            memo={notChild.said: chaining.valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert notVerdict.verdict == Verdicts.unknown
+        assert notVerdict.retryable is False
 
         diChild = acdcmap(israid=issuer.pre,
                           attribute=dict(d="", role="member"),
@@ -2372,10 +2470,14 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the DI2I-operator DAG",
                         diOrigin,
                         [diChild])
-        assert handler._evaluateLeafEdge(diOrigin.sad["e"]["holder"],
-                                         nodes={diChild.said: {"serder": diChild}},
-                                         nserder=diOrigin,
-                                         inheritedSchema=None) is False
+        diVerdict = handler._evaluateLeafEdge(
+            diOrigin.sad["e"]["holder"],
+            nodes={diChild.said: {"serder": diChild}},
+            nserder=diOrigin,
+            memo={diChild.said: chaining.valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert diVerdict.verdict == Verdicts.unknown
+        assert diVerdict.retryable is False
 
         # A list containing any unknown operator is malformed.
         listOpChild = acdcmap(israid=issuer.pre,
@@ -2401,6 +2503,23 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the unknown-operator DAG",
                         bogusOrigin,
                         [bogusChild])
+
+        # A bare edge is not an unconstrained edge: the spec appends I2I when the far
+        # node is targeted (ACDC spec, Edge Section > Edge > Operator, `o` field), and
+        # here the far node's issuee is subject while the near node's issuer is issuer,
+        # so the appended operator is violated. Before the default was applied on this
+        # path, this was the cheapest edge to satisfy -- one pointed at any targeted
+        # ACDC the Discloser could obtain, with no relation checked at all.
+        defaultedChild = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", role="member"),
+                                 iseaid=subject.pre)
+        defaultedOrigin = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                  edge=_edge("holder", defaultedChild),
+                                  iseaid=subject.pre)
+        assert_rejected("Here is the default-I2I-violating DAG",
+                        defaultedOrigin,
+                        [defaultedChild])
 
         # An OR group fails when none of its children satisfy the
         # disclosed relation constraints.
@@ -2439,6 +2558,34 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the incompatible-schema DAG",
                         badSchemaOrigin,
                         [badSchemaChild])
+
+        # An inherited group pin is a floor, not a default: a member carrying its own
+        # compatible `s` must still satisfy the pin its group placed. Composing by
+        # override would let any member release itself from a constraint the Issuer
+        # put on the whole group. This is the #1534 rule ("two schema validations
+        # must be performed and both must be valid") applied one level out.
+        floorCompatSchema = dict(baseChild.sad["s"])
+        floorCompatSchema["title"] = "ACM Default Schema (compatible, group floor)"
+        floorCompatSchemer = Schemer(sed=floorCompatSchema)
+        hby.db.schema.pin(floorCompatSchemer.said, floorCompatSchemer)
+
+        floorChild = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="member"),
+                             iseaid=issuer.pre)
+        floorOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=dict(d="",
+                                        u=Noncer().qb64,
+                                        reports=dict(d="",
+                                                     s=incompatSchemer.said,
+                                                     member=dict(d="",
+                                                                 n=floorChild.said,
+                                                                 o="I2I",
+                                                                 s=floorCompatSchemer.said))),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the group-floor-escaping DAG",
+                        floorOrigin,
+                        [floorChild])
 
 
 def test_ipex_v2_allows_grant_origin_to_differ_from_offer_origin():
@@ -2702,9 +2849,10 @@ def test_ipex_v2_grant_validates_disclosed_node_schema(monkeypatch):
                  version=Vrsn_2_0) as hby:
         hab = hby.makeHab(name="test")
 
-        # Record issuer and schema validation order
+        # Record issuer and schema validation order. Issuer-auth runs per node
+        # inside the DAG reduction, so hook the per-node check.
         stages = []
-        verifyIssuerAuth = IpexHandler._verifyIssuerAuthGraph
+        verifyIssuerAuth = IpexHandler._verifyIssuerAuthNode
         verifyNodeSchemas = IpexHandler._verifyNodeSchemas
 
         def recordIssuerAuth(self, *args, **kwa):
@@ -2715,7 +2863,7 @@ def test_ipex_v2_grant_validates_disclosed_node_schema(monkeypatch):
             stages.append("node-schema")
             return verifyNodeSchemas(self, *args, **kwa)
 
-        monkeypatch.setattr(IpexHandler, "_verifyIssuerAuthGraph", recordIssuerAuth)
+        monkeypatch.setattr(IpexHandler, "_verifyIssuerAuthNode", recordIssuerAuth)
         monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
 
         # Set up the IPEX receiver
@@ -4329,7 +4477,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=unsigned) is False
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=unsigned).verdict == Verdicts.invalid
 
         # A valid signature from an AID other than the issuer is insufficient.
         wrongSigner, = Parser(version=Vrsn_2_0).parse(
@@ -4337,7 +4485,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=wrongSigner) is False
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=wrongSigner).verdict == Verdicts.invalid
 
         # The issuer's current transferable signature authenticates the node.
         signed, = Parser(version=Vrsn_2_0).parse(
@@ -4345,7 +4493,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed).verdict == Verdicts.valid
 
         # An inner rd without top-level rd declares the unsupported hidden
         # issuer-registry form, so even a valid issuer signature cannot replace it.
@@ -4360,7 +4508,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             processive=False,
         )
         assert handler._verifyIssuerAuthNode(
-            serder=hidden, nest=hiddenSigned) is False
+            serder=hidden, nest=hiddenSigned).verdict == Verdicts.invalid
 
         # A source couple points to the issuer event that permanently seals it.
         anchor = issuer.interact(data=[dict(d=acdc.said)],
@@ -4377,15 +4525,15 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored).verdict == Verdicts.valid
 
         # Bare signatures expire when the issuer rotates, but the historical KEL
         # event continues to authenticate the ACDC it permanently anchored.
         issuer.rotate(version=Vrsn_2_0,
                       kind=issuer.kever.serder.kind,
                       gvrsn=Vrsn_2_0)
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed) is False
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed).verdict == Verdicts.invalid
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored).verdict == Verdicts.valid
 
 
 def test_ipex_v2_rejects_hidden_issuer_registry_signature_fallback():
@@ -7219,7 +7367,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             _anchor(childIssuee, childPresentationRegistry,
                     rgy.store.event(childPresentationRegistry.regk))
 
-            # Link the origin and child into one two-node disclosure DAG.
+            # Link the origin and child into one two-node disclosure DAG. The edge
+            # is explicitly NI2I: the child's issuee is not the origin's issuer, so
+            # the default I2I the spec appends to a bare edge would refuse it, and
+            # what is under test here is the presentation registries.
             child = acdcmap(
                 israid=issuer.pre,
                 regid=childIssuerRegistry.regk,
@@ -7234,7 +7385,7 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                 attribute=dict(d="",
                                rd=originPresentationRegistry.regk,
                                entitlement="origin"),
-                edge=_edge("child", child),
+                edge=_edge("child", child, op="NI2I"),
                 iseaid=originIssuee.pre,
             )
 
@@ -7885,3 +8036,430 @@ def test_ipex_v2_full_authentication_flow_across_three_haberies():
             issuerRgy.close()
             presenterRgy.close()
             verifierRgy.close()
+
+
+def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
+    """A far node's own verdict is a member of the reduction, not a separate sweep.
+
+    ``verify()`` ran two flat passes over the same breadth-first walk order.
+    ``_verifyGraphSemantics`` reduced the edge Operators correctly, and then
+    ``_verifyIssuerAuthGraph`` visited every walked node **with no knowledge of which
+    Operator reached it**, refusing or escrowing the whole grant on account of any
+    node whose issuer-auth proof did not vet. So a grant carrying ``OR(a -> X, b ->
+    Y)`` was escrowed and queried on Y's account even though the reduction had
+    already concluded the group was satisfied without Y -- and was refused outright
+    if Y's proof was permanently bad, although the Issuer wrote Y as optional.
+
+    The two passes are one recursive evaluation now. A node's verdict is its own
+    issuer-auth conjoined with its reduced Edge Section, a leaf's verdict is its
+    Operator relation and pins conjoined with the far node's verdict, and the origin
+    is where the answer is read. That makes the far-node axis a member of the
+    reduction instead of a sweep beside it, which is the only way an m-ary Operator
+    aggregates what the ACDC specification says it aggregates.
+
+    A far node's status here is whether its issuer-auth proof authenticates. What its
+    registry says about it -- issued, revoked, or a state keripy has no word for --
+    is recorded in ``Baser.exrs`` and never judged, because which states make an
+    ACDC acceptable is the EGF's rule rather than the protocol's.
+    """
+    with (openHby(name="ipex-v2-status-axis-issuer",
+                  base="test",
+                  version=Vrsn_2_0) as issuerHby,
+          openHby(name="ipex-v2-status-axis-recipient",
+                  base="test",
+                  version=Vrsn_2_0) as recipientHby):
+        issuerHab = issuerHby.makeHab(name="issuer")
+        recipientHab = recipientHby.makeHab(name="recipient")
+        issuerRgy = Regery(hby=issuerHby, name="ipex-v2-status-axis-issuer", temp=True)
+        recipientRgy = Regery(hby=recipientHby, name="ipex-v2-status-axis-recipient",
+                              temp=True)
+        try:
+            registrar = Registrar(rgy=issuerRgy)
+            kvy = Kevery(db=recipientHby.db, lax=False, local=False)
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(issuerHab.msgOwnEvent(sn=0, framed=True,
+                                                    gvrsn=Vrsn_2_0)),
+                kvy=kvy)
+
+            def makeRegistry(name):
+                """Create an anchored registry and replicate its KEL anchor."""
+                registry = registrar.makeRegistry(name=name, prefix=issuerHab.pre)
+                rip = issuerRgy.store.event(registry.regk)
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(_anchor(issuerHab, registry, rip, framed=True)),
+                    kvy=kvy)
+                return registry, rip
+
+            issuedNodes = {}  # SAID to ACDC, for deriving disclosure plans
+
+            def issue(registry, role):
+                """Issue one registry-backed ACDC targeted at the issuer itself."""
+                acdc = acdcmap(israid=issuerHab.pre,
+                               regid=registry.regk,
+                               attribute=dict(d="", role=role),
+                               iseaid=issuerHab.pre)
+                issuedNodes[acdc.said] = acdc
+                blinder, serder = registrar.issue(registry, acdc=acdc, state="issued")
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(_anchor(issuerHab, registry, serder, framed=False)),
+                    framed=False,
+                    kvy=kvy)
+                return acdc, blinder, serder
+
+            # One registry per credential, because a blinded state proof is
+            # disclosed against its registry's head and a later issuance into the
+            # same registry supersedes it. `alpha` and `gamma` are registries whose
+            # TELs the recipient has fetched from observers; `beta` is one it has
+            # not, which is the ordinary state of affairs for a far node that has
+            # just been disclosed.
+            alpha, alphaRip = makeRegistry("alpha")
+            gamma, gammaRip = makeRegistry("gamma")
+            beta, betaRip = makeRegistry("beta")
+
+            good, goodBlinder, goodIssued = issue(alpha, "trusted")
+            spare, spareBlinder, spareIssued = issue(gamma, "spare")
+            pending, pendingBlinder, pendingIssued = issue(beta, "pending")
+
+            recipientRgy.store.accept(alpha.regk, 0, alphaRip)
+            recipientRgy.store.accept(alpha.regk, 1, goodIssued)
+            recipientRgy.store.accept(gamma.regk, 0, gammaRip)
+            recipientRgy.store.accept(gamma.regk, 1, spareIssued)
+
+            # A far node the issuer has revoked, in a registry the recipient has
+            # fully loaded. Its blinded head discloses "revoked" rather than
+            # "issued", and that state is the other half of what the ACDC
+            # specification decides an edge on -- so it must reach the reduction as
+            # a member verdict, not be computed and thrown away.
+            delta, deltaRip = makeRegistry("delta")
+            revoked, _, revokedIssued = issue(delta, "revoked later")
+            revokedBlinder, revokedUpdate = registrar.issue(delta, acdc=revoked,
+                                                            state="revoked")
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(_anchor(issuerHab, delta, revokedUpdate, framed=False)),
+                framed=False,
+                kvy=kvy)
+            recipientRgy.store.accept(delta.regk, 0, deltaRip)
+            recipientRgy.store.accept(delta.regk, 1, revokedIssued)
+            recipientRgy.store.accept(delta.regk, 2, revokedUpdate)
+
+            # A node whose proof belongs to a different credential in a registry the
+            # recipient *has* loaded: vet refuses it by name, permanently.
+            forged = acdcmap(israid=issuerHab.pre,
+                             regid=alpha.regk,
+                             attribute=dict(d="", role="never issued"),
+                             iseaid=issuerHab.pre)
+
+            def origin(edge):
+                return acdcmap(israid=issuerHab.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=edge,
+                               iseaid=recipientHab.pre)
+
+            def planFor(originSerder, artifacts):
+                """Disclosure plan selecting every node, in the walk's BFS order."""
+                known = dict(issuedNodes)
+                known[forged.said] = forged
+                known.update((node.said, node) for node in artifacts
+                             if hasattr(node, "sad"))
+
+                def schemaId(node):
+                    schema = node.sad["s"]
+                    return schema if isinstance(schema, str) else schema["$id"]
+
+                plan = [[schemaId(originSerder), "/", []]]
+                seen = {originSerder.said}
+                groups = deque([(originSerder.sad["e"], "/e/")])
+                while groups:
+                    grp, path = groups.popleft()
+                    if "n" in grp:
+                        if grp["n"] not in seen:
+                            seen.add(grp["n"])
+                            plan.append([schemaId(known[grp["n"]]),
+                                         f"{path}_/", []])
+                        continue
+                    for label, node in grp.items():
+                        # A compact Edge (a block SAID) names no node to disclose.
+                        if (label not in ("d", "u", "s", "o", "w")
+                                and isinstance(node, dict)):
+                            groups.append((node, f"{path}{label}/"))
+                return plan
+
+            def run(originStream, artifacts, message, originSerder=None):
+                """Parse one grant and return its exn.
+
+                A multi-node grant carries an explicit disclosure plan, derived from
+                ``originSerder``; a one-node grant takes the derived root plan.
+                """
+                recorder = Recorder()
+                exc = Exchanger(hby=recipientHby, handlers=[])
+                loadHandlers(hby=recipientHby, exc=exc, notifier=recorder,
+                             rgy=recipientRgy)
+                modifiers = (dict(dp=[planFor(originSerder, artifacts)])
+                             if artifacts else None)
+                exn, atc = ipexGrant(hab=issuerHab,
+                                     recp=recipientHab.pre,
+                                     message=message,
+                                     origin=originStream,
+                                     artifacts=artifacts,
+                                     modifiers=modifiers)
+                ims = bytearray(exn.raw)
+                ims.extend(atc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+                assert ims == bytearray()
+                return exn
+
+            def accepted(edge, artifacts, message):
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
+                assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
+                assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+                return exn
+
+            def escrowed(edge, artifacts, message):
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
+                assert recipientHby.db.exns.get(keys=(exn.said,)) is None
+                assert recipientHby.db.epse.get(keys=(exn.said,)) is not None
+
+            def refused(edge, artifacts, message):
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
+                assert recipientHby.db.exns.get(keys=(exn.said,)) is None
+                assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+                return exn
+
+            def leaf(node, op="I2I"):
+                return dict(d="", n=node.said, o=op)
+
+            def group(op, **members):
+                return dict(d="", o=op, **members)
+
+            goodNest = _proofed(good, goodBlinder)
+            pendingNest = _proofed(pending, pendingBlinder)
+            forgedNest = _proofed(forged, goodBlinder)
+
+            # The driving case. The reduction is satisfied by `good` on evidence
+            # already in hand, so the grant is accepted without escrow -- `pending`'s
+            # registry never having replicated is a member verdict the OR absorbs,
+            # not a reason to park the whole disclosure and query for a node the
+            # Issuer said was optional.
+            accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(pending))),
+                     [goodNest, pendingNest],
+                     "OR satisfied while a far node's TEL has not replicated")
+
+            # The contrast under AND: `pending` is exactly what the group waits on,
+            # so the grant stays retryable, which is the behaviour that must survive
+            # the merge of the two passes.
+            escrowed(dict(d="", both=group("AND", a=leaf(good), b=leaf(pending))),
+                     [goodNest, pendingNest],
+                     "AND waiting on a far node's TEL")
+
+            # A far node whose proof is permanently refused is an invalid member, and
+            # a valid sibling under OR carries the group over it. Before this, a node
+            # reachable only through the discarded branch still had to vet, so the
+            # Issuer could not write an optional branch at all.
+            accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(forged))),
+                     [goodNest, forgedNest],
+                     "OR over a far node whose proof is refused")
+
+            # ...and under AND it still refuses, without escrow: no arrival makes a
+            # proof for a different credential vet against this one.
+            refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(forged))),
+                    [goodNest, forgedNest],
+                    "AND over a far node whose proof is refused")
+
+            # The registry state is authenticated and recorded, never judged here.
+            # Whether a revoked far node makes the chain unacceptable is the EGF's
+            # rule, so IPEX accepts the grant and keeps what the registry said, for
+            # an application or EGF evaluator to apply its own state policy to.
+            revokedNest = _proofed(revoked, revokedBlinder)
+            exn = accepted(dict(d="", both=group("AND", a=leaf(good),
+                                                 b=leaf(revoked))),
+                           [goodNest, revokedNest],
+                           "AND over a revoked far node")
+            record = recipientHby.db.exrs.get(keys=(exn.said, revoked.said))
+            assert record.state == "revoked"
+            assert record.regid == delta.regk
+            assert record.sn == 2
+            assert recipientHby.db.exrs.get(keys=(exn.said, good.said)).state == "issued"
+            assert len(list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, "")))) == 2
+
+            # The grant's origin is recorded the same way as a far node, since the
+            # handler no longer distinguishes them by whether it judges the state.
+            exn = run(revokedNest, [], "the origin's own registry state is recorded")
+            assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
+            assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+            assert recipientHby.db.exrs.get(keys=(exn.said, revoked.said)).state == "revoked"
+
+            # A refused grant leaves no record behind.
+            exn = refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(forged))),
+                          [goodNest, forgedNest], "refused, so nothing is recorded")
+            assert list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, ""))) == []
+
+            # An Operator this verifier cannot evaluate is an unknown in the lattice,
+            # so a satisfied sibling decides the group without it. DI2I is recognized
+            # and unimplemented; BOGUS is not recognized at all; neither can change a
+            # verdict its siblings already decide.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             b=leaf(spare, op="DI2I"))),
+                     [goodNest, _proofed(spare, spareBlinder)],
+                     "OR over an unimplemented unary Operator")
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             b=leaf(spare, op="BOGUS"))),
+                     [goodNest, _proofed(spare, spareBlinder)],
+                     "OR over an unrecognized unary Operator")
+
+            # ...and an m-ary Operator this verifier does not reduce is the same kind
+            # of unknown.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             nor=group("NOR", b=leaf(spare)))),
+                     [goodNest, _proofed(spare, spareBlinder)],
+                     "OR over a group whose Operator is not reduced")
+
+            # Malformed input is where the lattice stops. An Edge-group's `o` is a
+            # single Operator token, so a list there says the ACDC is not well-formed
+            # rather than that a member's validity is unknown. If it entered the
+            # lattice, OR(valid, malformed) would accept -- a well-formedness failure
+            # outvoted by a sibling -- so it aborts before any reduction runs.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            broken=dict(d="", o=["AND"],
+                                                        b=leaf(spare)))),
+                    [goodNest, _proofed(spare, spareBlinder)],
+                    "OR cannot outvote a malformed group shape")
+
+            # ...and a leaf whose Operator this verifier cannot evaluate must still
+            # have its far node evaluated. The leaf's own verdict is already
+            # unknown and nothing below can change that, but the far node's
+            # *shape* is not a truth value, and returning before reaching it lets
+            # a malformed subtree ride in behind an unevaluable token.
+            malformedChild = acdcmap(israid=issuerHab.pre,
+                                     attribute=dict(d="", role="member"),
+                                     iseaid=issuerHab.pre)
+            malformedFar = acdcmap(israid=issuerHab.pre,
+                                   attribute=dict(d="", role="hides a bad shape"),
+                                   edge=dict(d="", broken=dict(d="", o=["AND"],
+                                                               b=leaf(malformedChild))),
+                                   iseaid=issuerHab.pre)
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            b=leaf(malformedFar, op="BOGUS"))),
+                    [goodNest, malformedFar, malformedChild],
+                    "an unevaluable Operator must not hide a malformed far subtree")
+
+            # A compact Edge -- the spec-legal form whose value is the Edge block's
+            # SAID rather than the block -- cannot be dereferenced by either path,
+            # since keripy does not store Edge blocks apart from the ACDC carrying
+            # them. That is an unknown no arrival settles, not a malformed shape, so
+            # a satisfied sibling under OR decides the group. The v1 path deleted
+            # such a member from the reduction entirely and saved the ACDC having
+            # checked nothing about it; both now give the same answer.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             compact=good.said)),
+                     [goodNest],
+                     "OR over a compact Edge")
+
+            # ...and a section that depends on one still refuses.
+            refused(dict(d="", both=group("AND", a=leaf(good), compact=good.said)),
+                    [goodNest],
+                    "AND over a compact Edge")
+
+            # A schema pinned on the Edge Section binds every edge below it, exactly
+            # as one pinned on a nested Edge-group does -- the Section is itself an
+            # Edge-group. This path read `s` only on a nested group and treated it
+            # as a child block at the top, so the same bytes were refused as
+            # malformed here and silently unenforced on v1.
+            goodSchema = dict(good.sad["s"])
+            goodSchema["title"] = "ACM Default Schema (compatible, section floor)"
+            sectionSchemer = Schemer(sed=goodSchema)
+            recipientHby.db.schema.pin(sectionSchemer.said, sectionSchemer)
+            accepted(dict(d="", s=sectionSchemer.said, holder=leaf(good)),
+                     [goodNest],
+                     "a satisfiable pin on the Edge Section itself")
+
+            unsatisfiable = deepcopy(good.sad["s"])
+            unsatisfiable["$id"] = ""
+            unsatisfiable["properties"]["a"]["oneOf"][1]["required"] = ["d", "i", "nope"]
+            unsatisfiableSchemer = Schemer(sed=unsatisfiable)
+            recipientHby.db.schema.pin(unsatisfiableSchemer.said, unsatisfiableSchemer)
+            refused(dict(d="", s=unsatisfiableSchemer.said, holder=leaf(good)),
+                    [goodNest],
+                    "an unsatisfiable pin on the Edge Section itself")
+
+            # A registry's transaction state is "a string from a small finite set"
+            # defined *per registry*, with issued/revoked only the spec's example.
+            # A state keripy has no word for is recorded verbatim, like any other,
+            # for a policy that knows that registry's vocabulary to judge.
+            epsilon, epsilonRip = makeRegistry("epsilon")
+            withdrawn, _, withdrawnIssued = issue(epsilon, "withdrawn later")
+            withdrawnBlinder, withdrawnUpdate = registrar.issue(
+                epsilon, acdc=withdrawn, state="withdrawn")
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(_anchor(issuerHab, epsilon, withdrawnUpdate,
+                                      framed=False)),
+                framed=False,
+                kvy=kvy)
+            recipientRgy.store.accept(epsilon.regk, 0, epsilonRip)
+            recipientRgy.store.accept(epsilon.regk, 1, withdrawnIssued)
+            recipientRgy.store.accept(epsilon.regk, 2, withdrawnUpdate)
+            withdrawnNest = _proofed(withdrawn, withdrawnBlinder)
+
+            exn = accepted(dict(d="", both=group("AND", a=leaf(good),
+                                                 b=leaf(withdrawn))),
+                           [goodNest, withdrawnNest],
+                           "AND over a far node in a registry-specific state")
+            assert recipientHby.db.exrs.get(
+                keys=(exn.said, withdrawn.said)).state == "withdrawn"
+
+            # An edge's `s` pin must be enforced by validation, not by the far node
+            # asserting its own type. Nothing on this path ever validates a
+            # disclosed node against its schema -- v1's identical short-circuit is
+            # safe only because a far node had to be saved, and saving runs the
+            # schema check -- so a pin satisfied by declared-SAID equality is
+            # satisfied by saying so.
+            strict = deepcopy(good.sad["s"])
+            strict["$id"] = ""
+            strict["properties"]["a"]["oneOf"][1]["required"] = ["d", "i", "role"]
+            strictSchemer = Schemer(sed=strict)
+            recipientHby.db.schema.pin(strictSchemer.said, strictSchemer)
+
+            liar = acdcmap(israid=issuerHab.pre,
+                           schema=strictSchemer.sed,
+                           attribute=dict(d="", notRole="absent"),
+                           iseaid=issuerHab.pre)
+            assert liar.sad["s"]["$id"] == strictSchemer.said
+
+            refused(dict(d="", holder=dict(d="", n=liar.said, o="I2I",
+                                           s=strictSchemer.said)),
+                    [liar],
+                    "a pin the far node satisfies only by declaring it")
+
+            # The lesson from the leaf path applies to a group: an Operator this
+            # verifier does not reduce says nothing about whether the members below
+            # it are well-formed, and a malformed shape is not a truth value. The
+            # group returned its unknown before looking at a single child, so a
+            # list-valued `o` -- the exact shape asserted above to be refused even
+            # under OR -- rode in behind a NOR.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            nor=dict(d="", o="NOR",
+                                                     c=dict(d="", o=["AND"],
+                                                            b=leaf(good))))),
+                    [goodNest],
+                    "an unreduced group Operator must not hide a malformed child")
+
+            # The origin's own issuer-auth is not a member of anything: no edge
+            # points at it, so nothing can outvote it however satisfied its Edge
+            # Section is.
+            forgedOrigin = acdcmap(israid=issuerHab.pre,
+                                   regid=alpha.regk,
+                                   attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                   edge=dict(d="", holder=leaf(good)),
+                                   iseaid=recipientHab.pre)
+            exn = run(_proofed(forgedOrigin, goodBlinder), [goodNest],
+                      "the origin's own proof is refused", originSerder=forgedOrigin)
+            assert recipientHby.db.exns.get(keys=(exn.said,)) is None
+            assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+        finally:
+            recipientRgy.close()
+            issuerRgy.close()

@@ -14,12 +14,15 @@ from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
                        MtrDex, Saids, Aggor, Noncer, Schemer)
-from keri.kering import Ilks, Kinds, Vrsn_2_0, MissingSchemaError
+from keri.kering import (Ilks, Kinds, Vrsn_2_0, KeriError, MissingSchemaError,
+                        EdgeRefusalError, UnsupportedOperatorError)
 from keri.help import helping
 from keri.vc import credential
 from keri.acdc import acdcagg
 from keri.acdc.messaging import acgSchemaDefault
 from keri.vdr import Verifier, Regery, Tevery
+from keri.acdc import chaining
+from keri.acdc.ipexing import IpexHandler
 
 
 
@@ -455,7 +458,11 @@ def test_verifier_chained_credential(seeder,
             missing = True
 
         assert missing is True
-        assert len(ianverfer.cues) == 4
+        # Three, not four. untargetedCreder's default-operator edge resolves to I2I
+        # against a targeted far node whose issuee is not its issuer, which is a
+        # decided refusal -- so the escrow pass above no longer parks it and no
+        # longer cues a proof query for a far node that is present and correct.
+        assert len(ianverfer.cues) == 3
         cue = ianverfer.cues.popleft()
         assert cue["kin"] == "saved"
         cue["creder"] = chainedCreder.raw
@@ -794,8 +801,10 @@ def test_verifier_aggregate_far_node_chain(seeder):
         assert state is not None
 
         # I2I mismatch: the near issuer (ian) does not equal the far issuee (han),
-        # so the binding is rejected (returns None, no TypeError).
-        assert verfer.verifyChain(agg.said, 'I2I', ian.pre) is None
+        # so the binding is refused. Both AIDs are fixed in SADs in hand, so this is
+        # decided rather than pending -- a named refusal, not the None that escrows.
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'I2I', ian.pre)
 
         # NI2I is untargeted: accepted regardless of issuer/issuee.
         state = verfer.verifyChain(agg.said, 'NI2I', ian.pre)
@@ -856,14 +865,18 @@ def test_verifier_e1e_aggregate_far_node(seeder):
 
         # E1E does work I2I cannot on this same aggregate far node: the identical
         # binding (near issuer=ian, far aggregate issuee=han, issuer != issuee) that
-        # E1E accepted above is rejected by I2I.
-        assert verfer.verifyChain(agg.said, 'I2I', ian.pre, issuee=han.pre) is None
+        # E1E accepted above is rejected by I2I. Refused, not escrowed: the two AIDs
+        # are fixed in SADs the verifier holds.
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'I2I', ian.pre, issuee=han.pre)
 
         # E1E rejects a near issuee that differs from the far (aggregate) issuee.
-        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=ian.pre) is None
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=ian.pre)
 
         # E1E rejects a missing near issuee (untargeted near ACDC carrying the edge).
-        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=None) is None
+        with pytest.raises(EdgeRefusalError):
+            verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=None)
 
     """End Test"""
 
@@ -978,13 +991,21 @@ def test_verifier_edge_schema_constraint(seeder):
             issueCred(creder)
             return creder
 
-        # (1) Edge declares an INCOMPATIBLE schema the far node fails -> rejected.
-        # Assert the schema resolves, so the rejection is provably a validation
-        # failure (far node fails the edge schema) and not a missing-schema miss.
+        # (1) Edge declares an INCOMPATIBLE schema the far node fails -> rejected,
+        # permanently. Assert the schema resolves, so the rejection is provably a
+        # validation failure (far node fails the edge schema) and not a
+        # missing-schema miss. Both sides are fixed in SADs already in hand -- the
+        # far node's SAD under its SAID, and the pin under the near ACDC's -- so no
+        # arrival makes the far node satisfy the pin. It is therefore an edge
+        # refusal, and it must not escrow: parking it would promise a retry that
+        # cannot succeed, which is the same reasoning tick 22pi applied to the
+        # operator mismatches.
         assert verifier.resolver.resolve(incompatSchema)
         badCreder = nearCred("A near claim, incompatible edge schema.", incompatSchema)
-        with pytest.raises(MissingChainError):
+        with pytest.raises(EdgeRefusalError):
             verifier.processCredential(badCreder, **anchor)
+        assert verifier.reger.mce.get(keys=badCreder.said) is None
+        assert verifier.reger.saved.get(keys=badCreder.said) is None
 
         # (2) Edge declares the far node's OWN schema -> verifies.
         sameCreder = nearCred("A near claim, same edge schema.", optionalIssueeSchema)
@@ -1120,13 +1141,21 @@ def test_verifier_list_valued_operator(seeder):
         near = nearWithOp(["NI2I", "I2I"], "latest wins to I2I")
         assert verfer.reger.saved.get(keys=near.saidb) is None
 
-        # Unrecognized tokens are skipped, not treated as conflicting: the latest
-        # *recognized* operator wins.
-        near = nearWithOp(["NI2I", "BOGUS"], "unrecognized token skipped")
-        assert verfer.reger.saved.get(keys=near.saidb) is not None
+        # An unrecognized token is refused rather than skipped, which REVERSES what
+        # #1552 decided and this test previously pinned ("unrecognized tokens are
+        # skipped: the latest recognized operator wins"). The reversal is argued in
+        # test_verifier_unknown_edge_operator_fails_closed: every unary operator narrows
+        # what satisfies an edge, so skipping one applies a more permissive rule than
+        # the Issuer wrote. Note this is orthogonal to the default-append in the ACDC
+        # spec, Edge Section > Edge > Operator, `o` field -- that clause keys on the
+        # three delegative operators and still appends I2I here; the refusal is about
+        # the token that remains in the effective list and cannot be evaluated.
+        near = nearWithOp(["NI2I", "BOGUS"], "unrecognized token refused")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
 
-        # A list with no recognized operator falls to the default rule, which for a
-        # targeted far node is I2I -- and so rejects.
+        # Likewise a list whose only token is unrecognized. Rejected before and
+        # after, but for a different reason: it used to fall to the I2I default and
+        # fail that, so it escrowed; now the token itself is refused.
         near = nearWithOp(["BOGUS"], "no recognized operator")
         assert verfer.reger.saved.get(keys=near.saidb) is None
 
@@ -1363,6 +1392,258 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
     """End Test"""
 
 
+def test_verifier_edge_group_traversal(seeder):
+    """A nested Edge-group must traverse, and its m-ary Operator must be honored.
+
+    The ACDC spec gives an Edge Section two block types: Edges, which MUST have a
+    node, `n`, field, and Edge-groups, which MUST NOT (spec-body.md, "#### Block
+    Types"). The Edge Section is itself an Edge-group and MAY nest further
+    Edge-groups to arbitrary depth.
+
+    Before this change the edge loop skipped only the labels `d` and `o` and then
+    indexed ``node["n"]`` on everything else, so any nested Edge-group raised
+    ``KeyError: 'n'`` -- a crash, not a rejection, and one that escapes as an
+    unhandled exception rather than an escrow or a ValidationError. That made every
+    grouped edge section unusable, which in turn blocks the m-ary group operators
+    under discussion in #1555 (`ME`) and #1556 (group-scoped unary defaults).
+
+    This test carries none of `ME`'s semantics. It pins three things: nested groups
+    traverse, their members are really validated (not merely walked past), and a
+    group whose Operator this verifier does not implement fails closed.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        def farNode(claim):
+            """Issue and save a targeted far node, ian -> han."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                             status=ianiss.regk, source={}, rules={},
+                             version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(far)
+            assert verfer.reger.saved.get(keys=far.saidb) is not None
+            return far
+
+        def saidify(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256, label=Saids.d)
+            return block
+
+        def nearWithSection(section, claim):
+            """Issue a near credential carrying `section` as its edge section."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=section, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(near)
+            return near
+
+        # Both far nodes are issued by ian to han. Every near credential below is
+        # also issued by ian, so `near issuer (ian) != far issuee (han)`: NI2I edges
+        # accept and I2I edges reject. That asymmetry is what makes it observable
+        # whether a nested edge was actually evaluated or merely walked past.
+        work = farNode("work credential")
+        citizenship = farNode("citizenship credential")
+
+        # A group nested one level down. No `o` on the group, so the spec default
+        # AND applies -- and both members are valid, so the near credential saves.
+        # Before this change this section raised KeyError: 'n'.
+        endorsed = saidify(dict(d='', work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        grouped = nearWithSection(section, "grouped, default AND, all members valid")
+        assert verfer.reger.saved.get(keys=grouped.saidb) is not None
+
+        # The other half of the defect: Reger.sources gathers the far-node artifacts
+        # to ship alongside an IPEX grant, and walked the edge section with the same
+        # flat assumption. Both grouped edges must be discovered, or the disclosee
+        # receives an ACDC whose chain it cannot resolve.
+        srcs = verfer.reger.sources(ianHby.db, grouped)
+        assert {src.said for src, _ in srcs} == {work.said, citizenship.said}
+
+        # The same shape with the group's Operator written out explicitly. `AND` is
+        # the default, so this MUST behave identically to the block above.
+        endorsed = saidify(dict(d='', o="AND", work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "grouped, explicit AND")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # AND means every member must be valid, so one bad member sinks the group.
+        # `citizenship` here is I2I, which rejects because the near issuer (ian) is
+        # not the far issuee (han). This is the load-bearing assertion of the test:
+        # a traversal that reached the nested edges but did not validate them, or
+        # that validated only the first, would wrongly save this credential.
+        endorsed = saidify(dict(d='', work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="I2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "grouped, one member fails")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # Groups nest arbitrarily deep, and a failure at depth still propagates.
+        inner = saidify(dict(d='', citizenship=dict(n=citizenship.said, o="NI2I")))
+        outer = saidify(dict(d='', work=dict(n=work.said, o="NI2I"), inner=inner))
+        section = saidify(dict(d='', outer=outer))
+        near = nearWithSection(section, "two levels of nesting, all valid")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        inner = saidify(dict(d='', citizenship=dict(n=citizenship.said, o="I2I")))
+        outer = saidify(dict(d='', work=dict(n=work.said, o="NI2I"), inner=inner))
+        section = saidify(dict(d='', outer=outer))
+        near = nearWithSection(section, "two levels of nesting, deep member fails")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # The reserved Edge-group labels are [d, u, o, w]; only non-reserved labels
+        # name nested blocks. A group carrying `u` and `w` alongside its members must
+        # still traverse -- neither is an edge. (`u` is a salty nonce and `w` a
+        # weight for WAVG; both are strings, so a walker that only skipped `d`/`o`
+        # would have tripped over them once they stopped being silently non-dict.)
+        endorsed = saidify(dict(d='', u='0ABhY2Rjc3BlY3dvcmtyYXcw', o="AND", w='2',
+                                work=dict(n=work.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "group with u and w reserved labels")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # The Edge Section is itself an Edge-group, so it may carry its own m-ary
+        # Operator directly.
+        section = saidify(dict(d='', o="AND", work=dict(n=work.said, o="NI2I")))
+        near = nearWithSection(section, "AND on the edge section itself")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        def expectRejected(section, claim):
+            """Run a near credential to the point of failure and return the error."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=section, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            iss = ianiss.issue(said=near.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                         gvrsn=Vrsn_1_0)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            with pytest.raises(ValidationError) as excinfo:
+                verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                         seqner=Seqner(sn=ian.kever.sn),
+                                         saider=Diger(qb64=ian.kever.serder.said))
+            assert verfer.reger.saved.get(keys=near.saidb) is None
+            return excinfo.value
+
+        # `ME` (Multiply Endorsed, discussion #1555) is a *proposed* m-ary Operator,
+        # not one in the spec's normative table. An issuer asking for it is asking
+        # for a rule this verifier cannot apply, so it must fail closed rather than
+        # fall back to AND -- falling back would validate the ACDC under a weaker
+        # rule than the issuer specified, with nothing on the wire to show for it.
+        endorsed = saidify(dict(d='', o="ME", work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        ex = expectRejected(section, "unrecognized m-ary operator ME")
+        assert "ME" in str(ex)
+        assert "endorsed" in str(ex)  # names the offending group, not just the ACDC
+        # Not a MissingChainError: both far nodes are present and saved. Retrying
+        # cannot make an unrecognized operator recognized, so escrowing it would
+        # promise a retry that can never succeed -- the same reasoning NOT and DI2I
+        # already follow in .verifyChain.
+        assert not isinstance(ex, MissingChainError)
+
+        # `OR` is normative and implemented, so a group asking for it is reduced
+        # under it rather than under the AND this loop used to perform on every
+        # group. Its semantics get their own test
+        # (test_verifier_reduces_the_edge_section_before_disposing); all this pins is
+        # that the traversal hands the group to the right reducer.
+        endorsed = saidify(dict(d='', o="OR", work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="I2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "grouped OR, one member valid")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # An m-ary Operator on the top-level Edge Section fails closed just the same.
+        section = saidify(dict(d='', o="NOR", work=dict(n=work.said, o="NI2I")))
+        ex = expectRejected(section, "unimplemented operator on the edge section")
+        assert "NOR" in str(ex)
+        assert "edge section" in str(ex)
+
+        # An Edge-group's `o` is a single aggregating Operator over its members; the
+        # spec defines the list form only for an Edge's unary `o`. A list here is not
+        # a spec-legal m-ary Operator, so it is rejected rather than coerced.
+        endorsed = saidify(dict(d='', o=["AND"], work=dict(n=work.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        ex = expectRejected(section, "list-valued m-ary operator")
+        assert "Unrecognized m-ary" in str(ex)
+
+        # Diagnosability: an edge nested in a group is reported by its dotted path
+        # from the Edge Section, so an operator triaging a stream can find it. A bare
+        # label would be ambiguous -- labels are only locally unique, so two groups
+        # may each hold a `work` edge.
+        unknown = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"  # not a saved ACDC
+        endorsed = saidify(dict(d='', work=dict(n=unknown, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="dotted path")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                          status=ianiss.regk, source=section, rules={},
+                          version=Vrsn_1_0, kind=Kinds.json)
+        iss = ianiss.issue(said=near.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        with pytest.raises(MissingChainError) as excinfo:
+            verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        assert "endorsed.work" in str(excinfo.value)
+
+        # A flat edge section keeps its bare label -- the dotted path of a top-level
+        # edge is just its own label, so nothing about existing diagnostics changes.
+        section = saidify(dict(d='', work=dict(n=unknown, o="NI2I")))
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="flat path")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                          status=ianiss.regk, source=section, rules={},
+                          version=Vrsn_1_0, kind=Kinds.json)
+        iss = ianiss.issue(said=near.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        with pytest.raises(MissingChainError) as excinfo:
+            verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        assert "chain work(" in str(excinfo.value)
+
+    """End Test"""
+
+
 def test_verifier_escrow_pass_survives_argless_exception(seeder):
     """One poisoned escrow entry must not abort the whole escrow pass.
 
@@ -1422,5 +1703,803 @@ def test_verifier_escrow_pass_survives_argless_exception(seeder):
         # the first poisoned entry rather than aborting on it.
         for said in saids:
             assert verfer.reger.mce.get(keys=said) is None
+
+    """End Test"""
+
+
+def test_verifier_permanent_edge_refusal_does_not_escrow(seeder):
+    """An edge decided against evidence in hand is refused, not escrowed (tick 22pi).
+
+    ``verifyChain`` answers two different questions with the same ``None``. Some of
+    its refusals are transient -- the far node is not saved yet, its registry has not
+    replicated, its TEL carries no state for the SAID -- and retrying is exactly
+    right. Others are settled by evidence already in hand: an I2I edge whose far node
+    is untargeted, or whose issuee is not the near ACDC's issuer, or an E1E edge whose
+    issuees differ. Those cannot become true later, because both sides of the
+    comparison are fixed in SADs the verifier is holding.
+
+    ``processCredential`` treats every ``None`` as the transient kind, so it escrows
+    the near ACDC, cues a proof query, and re-runs the whole credential on every
+    escrow pass until the entry ages out. It promises a retry that cannot succeed,
+    and it does so on an operator mismatch that the Issuer's own bytes decided.
+
+    The two dispositions already exist and are already right for their own cases: a
+    permanent refusal raises out of ``verifyChain`` (which is what an unimplemented
+    operator does today, deliberately "not a MissingChainError"), and a transient one
+    escrows. What is missing is that the operator mismatches are on the wrong side of
+    that line. This pins both sides, and names the two permanent kinds distinctly --
+    refused versus unsupported -- so a later reduction over member verdicts can tell
+    "this edge does not hold" from "this verifier cannot say", which is not a
+    distinction the reduction may collapse.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    unsavedSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') \
+            as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian",
+                                     version=Vrsn_1_0, kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+        def anchored(creder):
+            """Anchor the credential's TEL issuance so processCredential reaches edges."""
+            iss = ianiss.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            return creder
+
+        def process(creder):
+            verfer.processCredential(creder, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+
+        def issued(data, source, issuee=han.pre):
+            sad = dict(d="", dt=helping.nowIso8601(), **data)
+            if issuee is not None:
+                sad["i"] = issuee
+            _, saidified = Saider.saidify(sad=sad, code=MtrDex.Blake3_256, label=Saids.d)
+            return anchored(credential(issuer=ian.pre, schema=optionalIssueeSchema,
+                                       data=saidified, status=ianiss.regk, source=source,
+                                       rules={}, version=Vrsn_1_0, kind=Kinds.json))
+
+        # Far node: issued by ian to han, so its issuee is han, not ian.
+        core = issued(dict(claim="core identity"), source={})
+        process(core)
+        assert verfer.reger.saved.get(keys=core.saidb) is not None
+        assert core.iseaid == han.pre
+
+        def edge(node, op):
+            sad = dict(d='', evidence=dict(n=node, o=op))
+            _, chain = Saider.saidify(sad=sad, code=MtrDex.Blake3_256, label=Saids.d)
+            return chain
+
+        def refusalIsClean(creder, etype):
+            """The near ACDC is refused, left unsaved, and NOT parked in escrow."""
+            cues = len(verfer.cues)
+            with pytest.raises(etype):
+                process(creder)
+            assert verfer.reger.saved.get(keys=creder.saidb) is None
+            assert verfer.reger.mce.get(keys=creder.said) is None
+            assert list(verfer.cues)[cues:] == []
+
+        # I2I mismatch: the near ACDC's issuer is ian, the far node's issuee is han.
+        # Nothing that arrives later changes either, so this is decided, not pending.
+        mismatch = issued(dict(claim="over 21"), source=edge(core.said, "I2I"))
+        refusalIsClean(mismatch, EdgeRefusalError)
+
+        # I2I against an untargeted far node: no issuee exists to be the near issuer,
+        # and the far node's SAD cannot grow one.
+        orphan = issued(dict(claim="untargeted"), source={}, issuee=None)
+        process(orphan)
+        assert orphan.iseaid is None
+        toOrphan = issued(dict(claim="to orphan"), source=edge(orphan.said, "I2I"))
+        refusalIsClean(toOrphan, EdgeRefusalError)
+
+        # E1E mismatch: near issuee (ian) is not far issuee (han).
+        e1eBad = issued(dict(claim="wrong subject"), source=edge(core.said, "E1E"),
+                        issuee=ian.pre)
+        refusalIsClean(e1eBad, EdgeRefusalError)
+
+        # An operator this verifier cannot evaluate is refused too, but as its own
+        # kind: the edge may well hold, and only the verifier's reach is at fault.
+        unsupported = issued(dict(claim="delegated"), source=edge(core.said, "DI2I"))
+        refusalIsClean(unsupported, UnsupportedOperatorError)
+        assert issubclass(UnsupportedOperatorError, ValidationError)
+        assert not issubclass(UnsupportedOperatorError, EdgeRefusalError)
+
+        # The contrast, unchanged: a far node that is merely absent is transient. It
+        # escrows and cues, because the next stream may carry it.
+        pending = issued(dict(claim="pending"), source=edge(unsavedSaid, "NI2I"))
+        with pytest.raises(MissingChainError):
+            process(pending)
+        assert verfer.reger.mce.get(keys=pending.said) is not None
+        assert dict(kin="proof", said=unsavedSaid) in list(verfer.cues)
+
+    """End Test"""
+
+
+def test_verifier_reduces_the_edge_section_before_disposing(seeder):
+    """The Edge Section reduces to one verdict, and the disposition happens once.
+
+    ``processCredential`` disposed of each edge where it evaluated it: a far node
+    not yet in hand escrowed the near ACDC and cued a proof query, a revoked one
+    raised, and the loop moved on. That is ``AND`` semantics written into the caller,
+    and it is invisible only while ``AND`` is the sole m-ary Operator the verifier
+    honours. The moment ``OR`` is real, disposing inside the loop is wrong twice
+    over: an ``OR`` already satisfied by evidence in hand still escrows and queries
+    on account of a member it does not need, and a member the Issuer wrote as
+    optional still refuses the whole ACDC.
+
+    So each member evaluates to a verdict -- valid, invalid, or unknown, with
+    unknown carrying whether waiting can help -- each Edge-group reduces its members
+    under its own Operator, and the Edge Section's reduced verdict is disposed of
+    once. What makes this more than a refactor is that the verdict spans both axes
+    the spec decides an edge on: the Operator's relation to the far node, and the far
+    node itself -- present or absent, satisfying the pinned schemas or not, issued or
+    revoked. Only the first of those was ever inside the thing being reduced.
+
+    Three member states stay outside the lattice, because they are not truth values.
+    A malformed group shape says the ACDC is not well-formed, not that a member's
+    validity is unknown, so it aborts the section before any reduction runs -- the
+    alternative is a well-formedness failure outvoted by a satisfied sibling. An
+    Operator this verifier cannot evaluate is different and does belong in the
+    lattice, as an unknown that no arrival can settle: under Kleene reduction an
+    absorbed unknown cannot change a verdict its siblings already decide, so
+    ``OR(valid, unevaluable)`` is valid, which is what the spec's ``OR`` row says.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    absentSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"  # never saved
+    otherAbsentSaid = "ECv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        def saidify(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256, label=Saids.d)
+            return block
+
+        def farNode(claim):
+            """Issue and save a targeted far node, ian -> han."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                             status=ianiss.regk, source={}, rules={},
+                             version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(far)
+            assert verfer.reger.saved.get(keys=far.saidb) is not None
+            return far
+
+        def nearWith(section, claim):
+            """Issue a near credential carrying `section`, anchored but unprocessed."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=section, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            iss = ianiss.issue(said=near.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                         gvrsn=Vrsn_1_0)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            return near
+
+        def run(section, claim):
+            """Returns (near, error or None, the cues this one credential emitted)."""
+            near = nearWith(saidify(section), claim)
+            before = len(verfer.cues)
+            error = None
+            try:
+                verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                         seqner=Seqner(sn=ian.kever.sn),
+                                         saider=Diger(qb64=ian.kever.serder.said))
+            except KeriError as ex:
+                # Caught broadly on purpose: MissingChainError, RevokedChainError
+                # and MissingSchemaError are KeriError but not ValidationError, and
+                # which class comes out is exactly what these cases are pinning.
+                error = ex
+            return near, error, list(verfer.cues)[before:]
+
+        def saves(section, claim):
+            """The ACDC is accepted, saved, unescrowed, and cued exactly once."""
+            near, error, cues = run(section, claim)
+            assert error is None
+            assert verfer.reger.saved.get(keys=near.saidb) is not None
+            assert verfer.reger.mce.get(keys=near.said) is None
+            assert [cue["kin"] for cue in cues] == ["saved"]
+            return near
+
+        def refuses(section, claim, etype):
+            """The ACDC is refused permanently: not saved, not escrowed, not cued."""
+            near, error, cues = run(section, claim)
+            assert isinstance(error, etype), (claim, error)
+            assert verfer.reger.saved.get(keys=near.saidb) is None
+            assert verfer.reger.mce.get(keys=near.said) is None
+            assert verfer.reger.mse.get(keys=near.said) is None
+            assert cues == []
+            return error
+
+        def escrows(section, claim, queried):
+            """The ACDC waits: escrowed, and cued for every far node it waits on."""
+            near, error, cues = run(section, claim)
+            assert isinstance(error, MissingChainError), (claim, error)
+            assert verfer.reger.saved.get(keys=near.saidb) is None
+            assert verfer.reger.mce.get(keys=near.said) is not None
+            assert [cue for cue in cues if cue["kin"] == "proof"] == \
+                [dict(kin="proof", said=said) for said in queried]
+            return error
+
+        # Every near credential below is issued by ian, and every far node is issued
+        # by ian to han. So `near issuer (ian) != far issuee (han)`: an NI2I edge is
+        # satisfied and an I2I edge is refused on evidence already in hand.
+        work = farNode("work credential")
+        citizenship = farNode("citizenship credential")
+
+        def ok(said):
+            return dict(n=said, o="NI2I")
+
+        def bad(said):
+            return dict(n=said, o="I2I")
+
+        # OR is real. The spec's row -- "Edge-group is valid if one of the members is
+        # valid" -- is strictly weaker than the AND this verifier used to perform on
+        # every group, so a section the Issuer wrote as OR was refused despite being
+        # satisfied. One valid member now carries the group.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             citizenship=bad(citizenship.said)))),
+              "OR satisfied by one valid member")
+
+        # ...and an OR with no valid member is still refused, so OR is honoured
+        # rather than merely tolerated.
+        refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                               work=bad(work.said),
+                                               citizenship=bad(citizenship.said)))),
+                "OR with no valid member", EdgeRefusalError)
+
+        # The headline. A far node that has not arrived is an unknown member, not a
+        # jump out of the loop, so an OR already satisfied by evidence in hand does
+        # not escrow the near ACDC and does not query for a node it does not need.
+        # Before the reduction saw the far-node axis, this escrowed and cued on
+        # account of the absent member even though the group was decided without it.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             pending=ok(absentSaid)))),
+              "OR satisfied while a member is absent")
+
+        # The contrast, under AND: the absent member is exactly what the group is
+        # waiting on, so the ACDC escrows and cues a proof query for it.
+        escrows(dict(d='', both=saidify(dict(d='', o="AND",
+                                             work=ok(work.said),
+                                             pending=ok(absentSaid)))),
+                "AND waiting on an absent member", [absentSaid])
+
+        # Two absent members mean two queries. A disposition that named only the
+        # first would age the escrow out having asked for half of what it waits on,
+        # which is the reason a reduced unknown carries every contributing member
+        # rather than just the one that happened to be reached first.
+        escrows(dict(d='', both=saidify(dict(d='', o="AND",
+                                             here=ok(absentSaid),
+                                             there=ok(otherAbsentSaid)))),
+                "AND waiting on two absent members", [absentSaid, otherAbsentSaid])
+
+        # A revoked far node is a member verdict too, not an unconditional raise in
+        # the loop body. Under AND it still refuses the near ACDC, without escrow.
+        revoked = farNode("about to be revoked")
+        rev = ianiss.revoke(said=revoked.said)
+        rseal = SealEvent(rev.pre, Seqner(sn=rev.sn).snh, rev.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=rev.pre, regd=rev.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        refuses(dict(d='', both=saidify(dict(d='', o="AND",
+                                             work=ok(work.said),
+                                             stale=ok(revoked.said)))),
+                "AND with a revoked member", RevokedChainError)
+
+        # ...and under OR a valid sibling carries the group over it, which is the
+        # Issuer's stated intent and was not expressible before.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             stale=ok(revoked.said)))),
+              "OR over a revoked member")
+
+        # Retryability propagates with the verdict, so the disposition reads one bit
+        # instead of re-examining the members. DI2I is recognized and unimplemented:
+        # an unknown no arrival can settle. Under OR one retryable unknown can still
+        # carry the group on its own, so the ACDC escrows and queries for it.
+        escrows(dict(d='', either=saidify(dict(d='', o="OR",
+                                               pending=ok(absentSaid),
+                                               delegated=dict(n=work.said, o="DI2I")))),
+                "OR whose only hope is the retryable member", [absentSaid])
+
+        # Under AND one non-retryable unknown makes valid unreachable however much
+        # arrives, so escrowing would promise a retry that cannot succeed.
+        refuses(dict(d='', both=saidify(dict(d='', o="AND",
+                                             pending=ok(absentSaid),
+                                             delegated=dict(n=work.said, o="DI2I")))),
+                "AND held by a member no arrival can settle", UnsupportedOperatorError)
+
+        # An Operator this verifier cannot evaluate is an unknown in the lattice, so
+        # a satisfied sibling under OR decides the group without it. Under Kleene
+        # reduction that is not a relaxation: an absorbed unknown can never change a
+        # verdict relative to its true value, and every case where it is
+        # outcome-relevant reduces to unknown, which refuses.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             delegated=dict(n=citizenship.said,
+                                                            o="DI2I")))),
+              "OR over an unevaluable unary operator")
+
+        # The same for an m-ary Operator this verifier does not reduce. NOR is in the
+        # spec's normative table and unimplemented here; the group it governs is
+        # unknown, and the valid sibling decides the section.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             nor=saidify(dict(d='', o="NOR",
+                                                              a=ok(work.said)))))),
+              "OR over a group whose operator is not reduced")
+
+        # Malformed input is not a truth value, and this is where the lattice stops.
+        # An Edge-group's `o` is a single aggregating Operator; a list there is not a
+        # spec-legal spelling of anything, so the section is not well-formed. If that
+        # entered the lattice as an unknown, OR(valid, malformed) would accept -- a
+        # well-formedness failure outvoted by a sibling. It aborts instead, before
+        # any reduction runs.
+        error = refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                                       work=ok(work.said),
+                                                       broken=saidify(
+                                                           dict(d='', o=["AND"],
+                                                                a=ok(work.said)))))),
+                        "OR cannot outvote a malformed group shape", ValidationError)
+        assert "Unrecognized m-ary" in str(error)
+
+        # An Edge-group with no members is malformed for the same reason: read as
+        # valid it would satisfy an enclosing AND, and read as invalid it would
+        # refuse a section its Issuer wrote deliberately.
+        refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                               work=ok(work.said),
+                                               empty=saidify(dict(d=''))))),
+                "OR cannot outvote an empty group", ValidationError)
+
+        # An ACDC with no Edge Section at all is vacuously satisfied -- that is the
+        # ordinary shape of an unchained credential, and `farNode` above relies on
+        # it. An Edge Section the Issuer wrote and left empty is a different thing:
+        # it reduces to nothing, and reading it as valid would let an empty group
+        # satisfy an enclosing AND. The v2 IPEX path already refuses it.
+        assert verfer.reger.saved.get(keys=work.saidb) is not None  # source={}
+        refuses(dict(d='', u=Noncer().qb64), "an authored but memberless section",
+                ValidationError)
+
+        # A compact Edge is a spec-legal form whose value is the Edge block's SAID
+        # rather than the block. keripy does not store Edge blocks apart from the
+        # ACDC that carries them, so it cannot be dereferenced -- and the walk
+        # skipped it, which deleted the member from the reduction and saved an ACDC
+        # having checked nothing about that edge: no Operator, no far node, no
+        # registry state. Deleting a member is the same fault as letting a sibling
+        # outvote it, reached a different way.
+        compactSaid = "EEv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+        refuses(dict(d='', work=ok(work.said), compact=compactSaid),
+                "AND over a compact Edge this verifier cannot dereference",
+                ValidationError)
+
+        # It is an unknown no arrival settles, not a malformed shape, so a satisfied
+        # sibling under OR still decides the group -- the same place an unevaluable
+        # Operator takes.
+        saves(dict(d='', either=saidify(dict(d='', o="OR",
+                                             work=ok(work.said),
+                                             compact=compactSaid))),
+              "OR over a compact Edge")
+
+        # Only a string is a compact Edge. Any other non-block member is malformed
+        # and aborts the section, so an OR sibling cannot carry it -- the v2 path
+        # draws the line in the same place.
+        refuses(dict(d='', either=saidify(dict(d='', o="OR",
+                                               work=ok(work.said),
+                                               bogus=42))),
+                "OR cannot outvote a member that is neither block nor SAID",
+                ValidationError)
+
+        # A schema pinned on the Edge Section binds every edge below it, exactly as
+        # one pinned on a nested Edge-group does. The Section is itself an
+        # Edge-group, so reading the pin one level down and not at the top let an
+        # Issuer's constraint be silently dropped -- and dropping a pin accepts the
+        # far nodes it exists to exclude.
+        incompatible = copy.deepcopy(ianHby.db.schema.get(optionalIssueeSchema).sed)
+        incompatible['$id'] = ''
+        incompatible['properties']['a']['required'] = ['dt', 'claim', 'nope']
+        _, incompatible = Saider.saidify(incompatible, label=Saids.dollar)
+        incompatibleSchemer = Schemer(sed=incompatible)
+        ianHby.db.schema.pin(incompatibleSchemer.said, incompatibleSchemer)
+
+        refuses(dict(d='', s=incompatibleSchemer.said, work=ok(work.said)),
+                "a pin on the Edge Section itself", EdgeRefusalError)
+        saves(dict(d='', s=optionalIssueeSchema, work=ok(work.said)),
+              "a satisfiable pin on the Edge Section itself")
+
+        # A section outstanding on two different kinds of evidence escrows in two
+        # tables, and .processEscrows polls them in one pass: whichever table does
+        # not match the raised class unescrows the entry, and the *other* table's
+        # write then looks new again, so every outstanding query is re-sent on
+        # every tick for the whole timeout. Emit the queries once, which means
+        # writing one escrow row -- the one whose table matches the class raised.
+        pinned = farNode("pinned by an uncached schema")
+        uncachedSchema = "EDv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"  # never cached
+        assert not verfer.resolver.resolve(uncachedSchema)
+
+        near, error, cues = run(dict(d='', both=saidify(dict(
+            d='', o="AND",
+            pinned=dict(n=pinned.said, o="NI2I", s=uncachedSchema),
+            absent=ok(absentSaid)))), "two kinds of outstanding evidence")
+        assert isinstance(error, (MissingChainError, MissingSchemaError)), error
+        assert [cue["kin"] for cue in cues] == ["query", "proof"]
+
+        for _ in range(3):
+            before = len(verfer.cues)
+            verfer.processEscrows()
+            assert list(verfer.cues)[before:] == [], "re-cued on an escrow pass"
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+    """End Test"""
+
+
+def test_verifier_mary_reducers_are_a_named_policy_hook(seeder):
+    """Which Operators reduce, and how, is a policy a deployment can change.
+
+    ACDC assigns "the actual logic for interpreting the validity of a set of chained or
+    treed ACDCs" to the Ecosystem Governance Framework (ACDC spec, Edge Section >
+    Edge-group > Operator, `o` field), and the normative m-ary table is written over two
+    values: it says an ``AND`` group is "valid only if all members are valid" and an
+    ``OR`` group "is valid if one of the members is valid", and says nothing about a
+    member whose validity is not determined. The Kleene lattice in ``acdc.chaining`` is
+    keripy's answer to that deferral, not something the protocol imposes -- so it has to
+    be reachable as one named thing rather than compiled into the verifier.
+
+    That matters concretely for the dossier profile, whose operators are weighted
+    sums against unity rather than ``AND`` or ``OR``. A profile that has to fork the
+    verifier to register one is a profile that will end up with its own evaluator,
+    which is the divergence the shared module exists to end.
+
+    The same attribute exists on the v2 IPEX handler, so a deployment changes the
+    policy once rather than in two places.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        def saidify(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256, label=Saids.d)
+            return block
+
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="far")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                         status=ianiss.regk, source={}, rules={},
+                         version=Vrsn_1_0, kind=Kinds.json)
+        issueAndSave(far)
+
+        def near(claim):
+            sub = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, d = Saider.saidify(sad=sub, code=MtrDex.Blake3_256, label=Saids.d)
+            section = saidify(dict(d='', nor=saidify(dict(
+                d='', o="NOR", a=dict(n=far.said, o="I2I")))))
+            creder = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=d,
+                                status=ianiss.regk, source=section, rules={},
+                                version=Vrsn_1_0, kind=Kinds.json)
+            iss = ianiss.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                         gvrsn=Vrsn_1_0)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            return creder
+
+        anchor = dict(prefixer=ian.kever.prefixer, seqner=Seqner(sn=ian.kever.sn),
+                      saider=Diger(qb64=ian.kever.serder.said))
+
+        # The default policy does not reduce NOR, so the group is an unknown no
+        # arrival settles and the section refuses without escrow. The single member
+        # is an I2I edge the near issuer does not satisfy, so NOR over it is true.
+        default = near("NOR under the default policy")
+        with pytest.raises(ValidationError):
+            verfer.processCredential(default, **anchor)
+        assert verfer.reger.saved.get(keys=default.saidb) is None
+
+        # A deployment that has settled how negation reads over an undetermined
+        # member registers its own reducer and the same bytes verify.
+        def reduceNor(verdicts):
+            """Kleene NOR: negate the disjunction, mapping unknown to itself."""
+            reduced = chaining.reduceOr(verdicts)
+            if reduced.verdict == chaining.Verdicts.valid:
+                return chaining.invalid(f"NOR: {reduced.reason}")
+            if reduced.verdict == chaining.Verdicts.invalid:
+                return chaining.valid(f"NOR: {reduced.reason}")
+            return reduced
+
+        class NorVerifier(Verifier):
+            MAryReducers = dict(chaining.MAryReducers, NOR=reduceNor)
+
+        policied = NorVerifier(hby=ianHby, reger=ianreg.reger)
+        assert 'NOR' in policied.MAryReducers
+        assert 'NOR' not in verfer.MAryReducers  # the default is not mutated
+
+        permissive = near("NOR under a policy that reduces it")
+        policied.processCredential(permissive, **anchor)
+        assert policied.reger.saved.get(keys=permissive.saidb) is not None
+
+        # The v2 IPEX handler exposes the same hook, so one override covers both.
+        assert IpexHandler.MAryReducers is chaining.MAryReducers
+
+    """End Test"""
+
+
+def test_verifier_unknown_edge_operator_fails_closed():
+    """An operator token this validator does not recognize is refused, not dropped.
+
+    ``verifyChain`` filtered unrecognized tokens out of the operator list and then,
+    finding the list empty, applied the default rule. So an edge carrying a token
+    from a later ACDC version was validated under a *substituted* operator rather
+    than rejected: for a targeted far node the substitute is ``I2I``, and for an
+    untargeted one ``NI2I``, which constrains nothing at all.
+
+    Every reason to add a unary operator is to narrow what satisfies an edge -- ``DI2I``
+    widens the issuer class, ``E1E`` swaps the delegative constraint for an identity
+    one, and anything future (a time bound, an issuer-set restriction) is the same
+    shape. Silently dropping the token therefore relaxes the Issuer's stated rule, in
+    the direction of accepting more, with nothing on the wire or in the log to say a
+    divergence happened. The ACDC unary table (ACDC spec, Edge Section > Edge >
+    Operator, `o` field) defines four operators and says nothing about a fifth, so this
+    is keripy choosing to fail closed where the spec is silent.
+
+    The check runs before the far-node lookup. An edge whose operator cannot be
+    evaluated cannot be evaluated no matter what arrives later, so escrowing it on
+    account of a missing far node would promise a retry that the operator forbids.
+    That ordering is what the two ``is None`` cases below pin: absent and empty
+    operators still reach the far-node lookup and report it transiently missing.
+    """
+    unsavedSaid = "EBv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian):
+        verfer = Verifier(hby=ianHby)
+
+        # A token outside the recognized set, alone and alongside a recognized one.
+        # The list case matters most: dropping one member of ['NI2I', 'I1I'] leaves a
+        # list that looks fully understood.
+        with pytest.raises(UnsupportedOperatorError):
+            verfer.verifyChain(unsavedSaid, 'I1I', ian.pre)
+        with pytest.raises(UnsupportedOperatorError):
+            verfer.verifyChain(unsavedSaid, ['NI2I', 'I1I'], ian.pre)
+        with pytest.raises(UnsupportedOperatorError):
+            verfer.verifyChain(unsavedSaid, ['I1I'], ian.pre)
+
+        # Absent and empty are not unknown: the spec applies the default rule to both
+        # (ACDC spec, Edge Section > Edge > Operator, `o` field). Each therefore
+        # proceeds to the far-node lookup and reports it missing -- transiently, with
+        # None.
+        assert verfer.verifyChain(unsavedSaid, None, ian.pre) is None
+        assert verfer.verifyChain(unsavedSaid, [], ian.pre) is None
+
+    """End Test"""
+
+
+def test_verifier_edge_group_schema_pin(seeder):
+    """A schema pinned on an Edge-group constrains every edge below it, and composes.
+
+    keripy's v2 IPEX path lets an Edge-group carry `s`, inherited by every nested
+    block (``acdc/ipexing.py:875``), so one pin serves a whole group instead of being
+    repeated on each member. v1 read only a leaf's own `s`, so the same bytes had the
+    constraint enforced on one path and silently dropped on the other -- and dropping
+    it accepts far nodes the Issuer wrote the pin to exclude, which is the fail-open
+    direction.
+
+    `s` on an Edge-group is a keripy extension: ACDC reserves ``[d, u, o, w]`` there
+    (ACDC spec, Edge Section > Edge-group) and excludes `s` from the labels a nested
+    block may use (Edge Section > Edge-group > Labeled nested edge and edge-group
+    fields), so it is a reserved label the group table does not define. It is honoured
+    rather than rejected because it is exactly a compaction of writing the same `s` on
+    every child, which is unambiguously legal per-edge, and because rejecting it would
+    revert behaviour merged upstream in #1643.
+
+    Composition is conjunction, not override. An inherited pin is a floor: a child
+    that carries its own `s` must satisfy both. This follows the settled reading of
+    edge `s` from issue #1534 -- S. Smith: when the edge schema differs from the far
+    node's own, "two schema validations must be performed and both must be valid" --
+    and the same logic applies to a pin a parent set. Letting a child's own `s`
+    replace an inherited one, as ipexing does today, lets a member escape a
+    constraint the Issuer placed on the group.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        seeder.seedSchema(db=hby.db)
+
+        regery = Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal], framed=True)
+        seqner = Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner,
+                         saider=Diger(qb64=hab.kever.serder.said))
+        regery.processEscrows()
+
+        verifier = Verifier(hby=hby, reger=regery.reger)
+        baseSchemer = hby.db.schema.get(optionalIssueeSchema)
+
+        def pinnedVariant(mutate):
+            """Build a schema variant and put it in the resolver cache."""
+            sed = copy.deepcopy(baseSchemer.sed)
+            sed['$id'] = ''
+            mutate(sed)
+            _, sed = Saider.saidify(sed, label=Saids.dollar)
+            schemer = Schemer(sed=sed)
+            hby.db.schema.pin(schemer.said, schemer)
+            return schemer.said
+
+        # Compatible: only the title differs, so the far node still validates.
+        compatSchema = pinnedVariant(
+            lambda sed: sed.__setitem__('title', 'Optional Issuee (group pin)'))
+        # Incompatible: requires an issuee the untargeted far node does not carry.
+        incompatSchema = pinnedVariant(
+            lambda sed: sed['properties']['a'].__setitem__('required',
+                                                           ['dt', 'claim', 'i']))
+        assert verifier.resolver.resolve(compatSchema)
+        assert verifier.resolver.resolve(incompatSchema)
+
+        anchor = dict(prefixer=hab.kever.prefixer, seqner=seqner,
+                      saider=Diger(qb64=hab.kever.serder.said))
+
+        def issueCred(creder):
+            iss = issuer.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            hab.interact(data=[rseal], framed=True)
+            issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=Seqner(sn=hab.kever.sn),
+                             saider=Diger(qb64=hab.kever.serder.said))
+            regery.processEscrows()
+
+        def buildCred(claim, source):
+            subject = dict(d="", dt=helping.nowIso8601(), claim=claim)
+            _, d = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            creder = credential(issuer=hab.pre, schema=optionalIssueeSchema, data=d,
+                                status=issuer.regk, source=source, rules={},
+                                version=Vrsn_1_0, kind=Kinds.json)
+            issueCred(creder)
+            return creder
+
+        # Untargeted far node whose own schema is optionalIssueeSchema: it satisfies
+        # compatSchema and fails incompatSchema.
+        far = buildCred("A far node claim.", {})
+        verifier.processCredential(far, **anchor)
+        assert regery.reger.saved.get(keys=far.said) is not None
+
+        def nearWithGroup(claim, groupPin, leafPin=None):
+            """Near credential whose single edge sits in a group carrying groupPin."""
+            leaf = dict(n=far.said)
+            if leafPin is not None:
+                leaf['s'] = leafPin
+            group = dict(d='', o="AND", **{'inner': leaf})
+            if groupPin is not None:
+                group['s'] = groupPin
+            _, group = Saider.saidify(sad=group, code=MtrDex.Blake3_256, label=Saids.d)
+            section = dict(d='', grouped=group)
+            _, section = Saider.saidify(sad=section, code=MtrDex.Blake3_256,
+                                        label=Saids.d)
+            return buildCred(claim, section)
+
+        # (1) The group's pin is enforced on a member that carries no `s` of its own.
+        # The far node fails it, so the near ACDC must be rejected -- permanently,
+        # since the far node's SAD is fixed under its SAID and the pin under the near
+        # ACDC's, so no arrival makes one satisfy the other.
+        bad = nearWithGroup("Group pins a schema the far node fails.", incompatSchema)
+        with pytest.raises(EdgeRefusalError):
+            verifier.processCredential(bad, **anchor)
+        assert verifier.reger.saved.get(keys=bad.said) is None
+
+        # (2) Conjunction, not override: the member's own compatible pin does not
+        # release it from the group's incompatible one. Permanent for the same
+        # reason as (1).
+        both = nearWithGroup("Leaf pin must not escape the group pin.",
+                             incompatSchema, leafPin=compatSchema)
+        with pytest.raises(EdgeRefusalError):
+            verifier.processCredential(both, **anchor)
+        assert verifier.reger.saved.get(keys=both.said) is None
+
+        # (3) A group pin the far node satisfies verifies, so the rejections above
+        # are the pin being applied rather than grouped edges failing wholesale.
+        good = nearWithGroup("Group pins a schema the far node satisfies.",
+                             compatSchema)
+        verifier.processCredential(good, **anchor)
+        assert verifier.reger.saved.get(keys=good.said) is not None
+
+        # (4) A pin this verifier cannot read is never dropped -- dropping it would
+        # accept the far nodes the pin exists to exclude -- but it is a limit of
+        # this verifier's reach rather than a statement that the ACDC is malformed.
+        # v1 resolves pins by SAID, so the inline-document form the v2 path accepts
+        # is unreadable here; that is an unknown no arrival settles, the same place
+        # a compact Edge and an unevaluable Operator take, and not the abort that
+        # well-formedness failures get. The distinction is visible under OR: an
+        # abort cannot be outvoted and an unknown can.
+        inline = nearWithGroup("Group pin is an inline schema document.",
+                               dict(baseSchemer.sed))
+        with pytest.raises(ValidationError):
+            verifier.processCredential(inline, **anchor)
+        assert verifier.reger.saved.get(keys=inline.said) is None
+        assert verifier.reger.mce.get(keys=inline.said) is None  # no escrow
+
+        # The same unreadable pin under an OR whose other member is satisfied. The
+        # Issuer said either member suffices, and the satisfied one is decided on
+        # evidence in hand, so the group is carried -- where an abort would refuse
+        # an ACDC on account of a constraint this verifier merely cannot read.
+        def said(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256,
+                                      label=Saids.d)
+            return block
+
+        either = said(dict(
+            d='',
+            choose=said(dict(
+                d='', o="OR",
+                readable=said(dict(d='', s=compatSchema,
+                                   far=dict(n=far.said, o="NI2I"))),
+                unreadable=said(dict(d='', s=dict(baseSchemer.sed),
+                                     far=dict(n=far.said, o="NI2I")))))))
+        carried = buildCred("OR carries a member whose pin is unreadable", either)
+        verifier.processCredential(carried, **anchor)
+        assert verifier.reger.saved.get(keys=carried.said) is not None
 
     """End Test"""
