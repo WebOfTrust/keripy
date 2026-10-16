@@ -12,7 +12,7 @@ import pytest
 
 from hio.help import decking
 
-from keri.app import AuthorizedForwardHandler, Mailboxer, openHby
+from keri.app import AuthorizedForwardHandler, Mailboxer, openCF, openHby
 from keri.app.mailboxing import MailboxAddRemoveEnd, MailboxStart, _mailboxAdminPath, setupMailbox
 from keri.app.configing import Configer
 from keri.app.storing import Respondant
@@ -295,6 +295,52 @@ def test_mailbox_start_creates_missing_alias_from_config_startup_material(versio
         if hby is not None:
             hby.close(clear=hby.temp)
         cf.close(clear=cf.temp)
+
+
+@pytest.mark.parametrize("enabled", [None, False, True], ids=["default", "disabled", "enabled"])
+def test_setup_mailbox_honors_kram_configuration(enabled):
+    """The real host accepts signed queries and enforces configured replay protection."""
+    with openCF(name="mailbox-kram", temp=True) as cf:
+        config = {"relay": {
+            "dt": "2026-04-07T12:00:00.000000+00:00",
+            "curls": ["http://127.0.0.1:5632/relay"],
+        }}
+        if enabled is not None:
+            config["kram"] = {
+                "enabled": enabled,
+                "denials": [],
+                "caches": {"~": [1000, 60000, 120000, 300000, 60000, 120000, 300000]},
+            }
+        cf.put(config)
+        with openHby(name="mailbox-kram", temp=True, cf=cf, version=Vrsn_2_0) as hby, \
+                openHby(name="mailbox-kram-controller", temp=True, version=Vrsn_2_0) as controllerHby:
+            mailbox_start._prepareMailboxHabitat(hby=hby, alias="relay")
+            controller = controllerHby.makeHab(name="controller", version=Vrsn_2_0)
+            doers = setupMailbox(hby, alias="relay", httpPort=0)
+            mailbox = next(doer for doer in doers if isinstance(doer, Respondant)).mbx
+            try:
+                host = next(doer for doer in doers if isinstance(doer, MailboxStart))
+                host.parser.parse(ims=bytearray(controller.msgOwnEvent(
+                    sn=0, framed=True, gvrsn=Vrsn_2_0)))
+                host.cues.clear()
+                wire = controller.query(pre=controller.pre, src=controller.pre, route="mbx",
+                                        query={"topics": {"/reply": 0}}, kind=Kinds.json)
+                query = SerderKERI(raw=wire)
+                host.parser.parse(ims=bytearray(wire))
+                assert len([cue for cue in host.cues if cue["kin"] == "stream"]) == 1
+                cache = hby.db.kramMSGC.get(keys=(controller.pre, query.said))
+                if enabled:
+                    assert cache is not None
+                    assert cache.mdt == query.stamp
+                else:
+                    assert cache is None
+                host.parser.parse(ims=bytearray(wire))
+                assert len([cue for cue in host.cues if cue["kin"] == "stream"]) == (1 if enabled else 2)
+            finally:
+                mailbox.close(clear=True)
+                for doer in doers:
+                    if hasattr(doer, "server"):
+                        doer.server.close()
 
 
 def test_mailbox_start_requires_config_when_alias_is_missing():

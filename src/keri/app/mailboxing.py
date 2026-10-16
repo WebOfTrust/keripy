@@ -262,6 +262,8 @@ def setupMailbox(hby, alias="mailbox", mbx=None, aids=None, httpPort=5632,
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = Kevery(db=hby.db,
+                 cf=hby.cf,
+                 enableKram=True,
                  lax=True,
                  local=False,
                  rvy=rvy,
