@@ -3,6 +3,7 @@
 tests.acdc.test_ipexing module
 
 """
+from copy import deepcopy
 from datetime import timedelta
 from types import SimpleNamespace
 
@@ -1232,7 +1233,6 @@ def test_ipex_v2_required_anchors_fail_closed_through_kram(fakeHelpingClock):
         acdc = acdcmap(israid=grantor.pre,
                        attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                        iseaid=applicant.pre)
-
         # Route authenticated messages into the real V2 IPEX handlers.
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
@@ -2007,6 +2007,99 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
         ]
 
 
+def test_ipex_v2_offer_accepts_baseline_content_forms():
+    """Offer accepts metadata/schema SADs or SAIDs and partial aggregate disclosure."""
+    with openHby(name="ipex-v2-offer-baseline-content",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        discloser = hby.makeHab(name="discloser")
+        disclosee = hby.makeHab(name="disclosee")
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Expand one aggregate element and leave the other represented by its
+        # SAID. This is the partial disclosure carried by the metadata ACDC.
+        aggor = Aggor(ael=[
+            "",
+            dict(d="", u=Noncer().qb64, role="member", level="gold"),
+            dict(d="", u=Noncer().qb64, role="auditor", level="silver"),
+        ], makify=True, kind=Kinds.json)
+        partial = [aggor.agid, aggor.ael[1], aggor.ael[2]["d"]]
+
+        schemaBodyMetadata = acdcagg(israid=discloser.pre,
+                                     uuid="",
+                                     aggregate=partial)
+        schemaBody = deepcopy(schemaBodyMetadata.sad["s"])
+        schemer = Schemer(sed=schemaBody)
+        assert schemer.said == schemaBody["$id"]
+        hby.db.schema.pin(schemer.said, schemer)
+
+        schemaSaidMetadata = acdcagg(israid=discloser.pre,
+                                     uuid="",
+                                     schema=schemer.said,
+                                     aggregate=partial)
+        assert schemaBodyMetadata.said == schemaSaidMetadata.said
+        assert isinstance(schemaBodyMetadata.sad["s"], dict)
+        assert schemaSaidMetadata.sad["s"] == schemer.said
+
+        aggregateLabels = ["A/1/role", "A/1/level"]
+        modifiers = dict(dp=[[[schemer.said, "/", aggregateLabels]]])
+        cases = (
+            ("metadata and schema SADs", schemaBodyMetadata, [], True, True),
+            ("metadata SAD and schema SAID", schemaSaidMetadata, [], True, False),
+            ("metadata SAID", schemaSaidMetadata, None, False, False),
+        )
+
+        for message, metadata, artifacts, carriesMetadata, carriesSchema in cases:
+            offerExn, offerAtc = ipexOffer(hab=discloser,
+                                           recp=disclosee.pre,
+                                           message=message,
+                                           origin=metadata,
+                                           artifacts=artifacts,
+                                           modifiers=modifiers)
+            assert offerExn.ked["a"]["o"] == [metadata.said]
+            assert offerExn.ked["q"]["dp"][0][0][2] == aggregateLabels
+
+            parsed = Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(offerExn.raw + offerAtc),
+                framed=False,
+                processive=False)[0]
+
+            # The Discloser signs the outer Offer. Nested metadata carries no
+            # node-local issuer signature or other authentication material.
+            assert len(parsed.tsgs) == 1
+            prefixer, number, diger, sigers = parsed.tsgs[0]
+            assert prefixer.qb64 == discloser.pre
+            assert number.sn == discloser.kever.lastEst.s
+            assert diger.qb64 == discloser.kever.lastEst.d
+            assert all(discloser.kever.verfers[siger.index].verify(
+                sig=siger.raw, ser=offerExn.raw) for siger in sigers)
+
+            if carriesMetadata:
+                assert len(parsed.nests) == 1
+                nest = parsed.nests[0]
+                assert nest.serder.sad["u"] == ""
+                assert isinstance(nest.serder.sad["s"], dict) is carriesSchema
+                assert nest.serder.sad["A"][1]["role"] == "member"
+                assert nest.serder.sad["A"][2] == aggor.ael[2]["d"]
+                assert nest.tsgs == []
+                assert nest.cigars == []
+            else:
+                assert parsed.nests == []
+
+            ims = bytearray(offerExn.raw + offerAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(offerExn.said,)) is not None
+
+        assert [item["m"] for item in recorder.items] == [
+            "metadata and schema SADs",
+            "metadata SAD and schema SAID",
+            "metadata SAID",
+        ]
+
+
 def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
     """Offer may disclose a reachable metadata subgraph without full closure."""
     with openHby(name="ipex-v2-offer-partial-subgraph",
@@ -2099,11 +2192,12 @@ def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "version": "1.0.0",
             "type": "object",
-            "required": ["v", "d", "i", "s", "a"],
+            "required": ["v", "d", "u", "i", "s", "a"],
             "properties": {
                 "v": {"type": "string"},
                 "t": {"type": "string"},
                 "d": {"type": "string"},
+                "u": {"type": "string"},
                 "i": {"type": "string"},
                 "s": {"type": "string"},
                 "a": {
@@ -2120,6 +2214,7 @@ def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
         })
         # Create valid metadata for the Offer
         valid = acdcmap(israid=hab.pre,
+                        uuid="",
                         schema=schemer.said,
                         attribute=dict(d="", status="member"))
         modifiers = dict(dp=[[[schemer.said, "/", []]]])
@@ -2156,6 +2251,7 @@ def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
         # Create metadata without the required status
         stages.clear()
         invalid = acdcmap(israid=hab.pre,
+                          uuid="",
                           schema=schemer.said,
                           attribute=dict(d=""))
         rejected, rejectedAtc = ipexOffer(
@@ -2183,6 +2279,7 @@ def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
         malformedSchemer = Schemer(sed=malformedSchema)
         hby.db.schema.pin(malformedSchemer.said, malformedSchemer)
         malformed = acdcmap(israid=hab.pre,
+                            uuid="",
                             schema=malformedSchemer.said,
                             attribute=dict(d="", status="member"))
         malformedModifiers = dict(
@@ -2215,12 +2312,15 @@ def test_ipex_v2_rejects_offer_with_unreachable_nested_node():
         holder = hby.makeHab(name="holder")
         verifier = hby.makeHab(name="verifier")
         child = acdcmap(israid=holder.pre,
+                        uuid="",
                         attribute=dict(d="", role="member"),
                         iseaid=holder.pre)
         extra = acdcmap(israid=holder.pre,
+                        uuid="",
                         attribute=dict(d="", department="kitchen"),
                         iseaid=holder.pre)
         origin = acdcmap(israid=holder.pre,
+                         uuid="",
                          attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                          edge=_edge("holder", child),
                          iseaid=holder.pre)
@@ -2891,9 +2991,13 @@ def test_ipex_v2_rejects_metadata_acdc_as_grant():
         ]
 
 
-def test_ipex_v2_rejects_different_private_offer_and_grant_roots():
-    """Only a metadata Offer may be fulfilled by a different ACDC root."""
-    with openHby(name="ipex-v2-private-offer-root",
+@pytest.mark.parametrize("private", [False, True])
+@pytest.mark.parametrize("carryBody", [False, True])
+def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody):
+    """A full public or private ACDC may be offered as a supported extension."""
+    variant = "private" if private else "public"
+    form = "body" if carryBody else "said"
+    with openHby(name=f"ipex-v2-{variant}-offer-{form}",
                  base="test",
                  version=Vrsn_2_0) as hby:
         hab = hby.makeHab(name="test")
@@ -2901,20 +3005,13 @@ def test_ipex_v2_rejects_different_private_offer_and_grant_roots():
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        # These credentials have matching sections but different private UUIDs.
+        # A UUID makes the full ACDC private; omitting it makes it public.
         offered = acdcmap(israid=hab.pre,
-                          uuid=Noncer().qb64,
-                          attribute=dict(d="", status="member"),
-                          iseaid=hab.pre)
-        granted = acdcmap(israid=hab.pre,
-                          uuid=Noncer().qb64,
-                          schema=offered.sad["s"],
+                          uuid=Noncer().qb64 if private else None,
                           attribute=dict(d="", status="member"),
                           iseaid=hab.pre)
         schema = offered.sad["s"]["$id"]
-        assert offered.said != granted.said
 
-        # The verifier requests the credential and accepts the private Offer.
         applyExn, applyAtc = ipexApply(
             hab=hab,
             recp=hab.pre,
@@ -2923,25 +3020,24 @@ def test_ipex_v2_rejects_different_private_offer_and_grant_roots():
         )
         offerExn, offerAtc = ipexOffer(
             hab=hab,
-            message="Here is a private credential Offer",
+            message="Here is the full ACDC",
             origin=offered,
-            artifacts=[],
+            artifacts=[] if carryBody else None,
             apply=applyExn,
         )
         agreeExn, agreeAtc = ipexAgree(
             hab=hab,
-            message="I agree to this credential",
+            message="I agree to the full ACDC",
             offer=offerExn,
         )
         grantExn, grantAtc = ipexGrant(
             hab=hab,
             recp=hab.pre,
-            message="Here is a different credential",
-            origin=_signed(granted, hab),
+            message="Here is the authenticated ACDC",
+            origin=_signed(offered, hab),
             agree=agreeExn,
         )
 
-        # The Grant cannot replace the private ACDC named by the Offer.
         for exn, atc in ((applyExn, applyAtc),
                          (offerExn, offerAtc),
                          (agreeExn, agreeAtc),
@@ -2950,12 +3046,81 @@ def test_ipex_v2_rejects_different_private_offer_and_grant_roots():
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
 
-        assert hby.db.exns.get(keys=(grantExn.said,)) is None
-        assert hby.db.epse.get(keys=(grantExn.said,)) is None
+        assert offerExn.ked["a"]["o"] == [offered.said]
+        assert grantExn.ked["a"]["o"] == [offered.said]
         assert [item["r"] for item in recorder.items] == [
             "/exn/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
+            "/exn/ipex/grant",
+        ]
+
+
+def test_ipex_v2_rejects_proof_bearing_offer_node():
+    """The Offer signature does not permit issuer proofs on nested ACDC nodes."""
+    with openHby(name="ipex-v2-proof-bearing-offer",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        offered = acdcmap(israid=hab.pre,
+                          uuid=Noncer().qb64,
+                          attribute=dict(d="", status="member"),
+                          iseaid=hab.pre)
+        signed = _signed(offered, hab)
+        applyExn, applyAtc = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Please disclose the credential",
+            modifiers=dict(dp=[[[offered.sad["s"]["$id"], "/", []]]]),
+        )
+
+        with pytest.raises(ValueError, match="must not carry attachments"):
+            ipexOffer(hab=hab,
+                      message="Here is proof-bearing Offer content",
+                      origin=signed,
+                      artifacts=[],
+                      apply=applyExn)
+
+        ims = bytearray(applyExn.raw + applyAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+
+        # Bypass the builder to verify receiver-side enforcement too.
+        offerExn = exchange(sender=hab.pre,
+                            receiver=hab.pre,
+                            xid=applyExn.ked["x"],
+                            prior=applyExn.said,
+                            route="/ipex/offer",
+                            modifiers=applyExn.ked["q"],
+                            attributes=dict(m="Here is proof-bearing Offer content",
+                                            o=[offered.said]),
+                            pvrsn=Vrsn_2_0,
+                            gvrsn=Vrsn_2_0,
+                            kind=hab.kever.serder.kind)
+        sigers = hab.sign(ser=offerExn.raw, indexed=True)
+        message = messagize(
+            serder=offerExn,
+            tsgs=[(hab.kever.prefixer,
+                   Number(sn=hab.kever.lastEst.s),
+                   Diger(qb64=hab.kever.lastEst.d),
+                   sigers)],
+            nests=[_nest(signed)],
+            framed=False,
+            gvrsn=Vrsn_2_0,
+        )
+        offerAtc = bytearray(message[offerExn.size:])
+        ims = bytearray(offerExn.raw + offerAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(offerExn.said,)) is None
+        assert hby.db.epse.get(keys=(offerExn.said,)) is None
+
+        assert [item["r"] for item in recorder.items] == [
+            "/exn/ipex/apply",
         ]
 
 
@@ -6733,8 +6898,8 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                 assert applyStored is not None
                 assert applyStored.ked["x"] == applyExn.ked["x"]
 
-                # The issuer answers with metadata only. Offer names the origin
-                # SAID but does not yet disclose any ACDC node bodies.
+                # The issuer answers with the origin SAID but does not yet
+                # disclose any ACDC node bodies.
                 clock.advance(milliseconds=1)
                 offerStamp = helping.nowIso8601()
                 offerExn, offerAtc = ipexOffer(hab=issuerHab,
@@ -6763,9 +6928,8 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                               framed=False,
                                                               processive=False)
                 
-                # Offer remains metadata-only through the full roundtrip.
+                # Offer remains SAID-only through the full roundtrip.
                 assert len(offerResults) == 1
-
                 assert offerResults[0].nests == []
 
                 # The recipient agrees to the proposed disclosure, and the
