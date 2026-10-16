@@ -565,6 +565,44 @@ class ForwardHandler:
         self.mbx.storeMsg(topic=resource, msg=pevt)
 
 
+class AuthorizedForwardHandler(ForwardHandler):
+    """Mailbox `/fwd` handler that enforces recipient mailbox authorization.
+
+    Decoupling mailbox hosting from witness hosting removes the old implicit
+    trust boundary. A standalone mailbox host must not become an open storage
+    surface for unsolicited or malicious `/fwd` traffic.
+
+    This handler stores the embedded payload only when accepted ``ends.`` state
+    currently authorizes ``(recipient, Roles.mailbox, mailboxAid)``.
+    """
+
+    def __init__(self, hby, mbx, mailboxAid):
+        """Create a mailbox-specific forward handler.
+
+        Parameters:
+            hby (Habery): database environment
+            mbx (Mailboxer): provider-side mailbox storage
+            mailboxAid (str): hosted mailbox AID that this handler represents
+        """
+        super().__init__(hby=hby, mbx=mbx)
+        self.mailboxAid = mailboxAid
+
+    def handle(self, serder, attachments=None, nests=None):
+        """Authorize the recipient before storing v1 embeds or v2 nested messages."""
+        modifiers = serder.ked.get("q", {})
+        if not isinstance(modifiers, dict):
+            return
+        recipient = modifiers.get("pre")
+        topic = modifiers.get("topic")
+        if not isinstance(recipient, str) or not recipient or not isinstance(topic, str) or not topic:
+            return
+        end = self.hby.db.ends.get(keys=(recipient, Roles.mailbox, self.mailboxAid))
+        if not end or not (end.allowed or end.enabled):
+            return
+
+        super().handle(serder, attachments=attachments, nests=nests)
+
+
 def introduce(hab, wit, gvrsn=None):
     """ Clone and return hab KEL if lastest event has not been receipted by wit
 
@@ -605,7 +643,7 @@ def introduce(hab, wit, gvrsn=None):
 
         # alt find in vrcsNew as preliminary to replace
         topkeys = (wit, iserder.said)
-        for keys, siger in hab.db.vrc.getTopItemIter(keys=topkeys):
+        for keys, siger in hab.db.vrcs.getTopItemIter(keys=topkeys):
             epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
             if rpre == hab.pre:
                 found = True  # yes so don't pre-send own inception

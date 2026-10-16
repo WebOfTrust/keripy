@@ -2566,12 +2566,13 @@ class Reger(LMDBer):
         return coreMessagize(serder, wigers=tibs or None, bonds=seal,
                              framed=False, gvrsn=gvrsn)
 
-    def sources(self, db, creder):
+    def sources(self, db, creder, gvrsn=None):
         """ Returns raw bytes of any source ('e') credential that is in our database
 
         Parameters:
             db (LMDBer): table to search
             creder (Creder): root credential
+            gvrsn (Versionage | None): optional proof genus; default follows each credential.
 
         Returns:
             list: credential sources as resolved from `e` in creder.crd"""
@@ -2592,11 +2593,11 @@ class Reger(LMDBer):
 
             msg = coreMessagize(screder,
                                 bonds=[SealEvent(i=prefixer, s=number, d=saider)],
-                                framed=True, gvrsn=screder.pvrsn)
+                                framed=True, gvrsn=gvrsn if gvrsn is not None else screder.pvrsn)
             atc = bytearray(msg[screder.size:])
 
             sources.append((screder, atc))
-            sources.extend(self.sources(db, screder))
+            sources.extend(self.sources(db, screder, gvrsn=gvrsn))
 
         return sources
 

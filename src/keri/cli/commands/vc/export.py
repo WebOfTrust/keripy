@@ -10,7 +10,7 @@ import sys
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import Parsery, setupHby
+from ...common import Parsery, setupHby, parseVersion
 
 from ....app import serialize
 from ....core import SerderKERI
@@ -22,6 +22,8 @@ logger = ogler.getLogger()
 parser = argparse.ArgumentParser(description='Export credential from store and any related material',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: export_credentials(args))
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="CESR genus for exported KEL, TEL and credential proofs, such as 1.0 or 2.0")
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     required=True)
 parser.add_argument("--said", "-s", help="SAID of the credential to export.", required=False, default=None)
@@ -53,20 +55,24 @@ def export_credentials(args):
                     tels=tels,
                     kels=kels,
                     chains=chains,
-                    files=args.files)
+                    files=args.files,
+                    version=args.version)
     return [ed]
 
 
 class ExportDoer(doing.DoDoer):
+    """Export stored credential evidence consistently in the selected CESR genus."""
 
-    def __init__(self, name, alias, base, bran, said, tels, kels, chains, files):
+    def __init__(self, name, alias, base, bran, said, tels, kels, chains, files, version=None):
+        """Open the selected store without changing stored protocol body bytes."""
         self.said = said
         self.tels = tels
         self.kels = kels
         self.chains = chains
         self.files = files
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
+        self.version = self.hby.version
         self.hab = self.hby.habByName(alias)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
 
@@ -99,6 +105,7 @@ class ExportDoer(doing.DoDoer):
             self.outputCred(said=self.said)
 
     def outputCred(self, said):
+        """Emit the credential and requested supporting history in dependency order."""
         creder, *_ = self.rgy.reger.cloneCred(said=said)
 
         if self.kels:
@@ -128,18 +135,19 @@ class ExportDoer(doing.DoDoer):
         (prefixer, number, diger) = self.rgy.reger.cancs.get(keys=(creder.said,))
         if self.files:
             f = open(f"{creder.diger}-acdc.cesr", 'w')
-            f.write(serialize(creder, prefixer, number, diger))
+            f.write(serialize(creder, prefixer, number, diger, gvrsn=self.version))
             f.close()
         else:
-            sys.stdout.write(serialize(creder, prefixer, number, diger).decode("utf-8"))
+            sys.stdout.write(serialize(creder, prefixer, number, diger, gvrsn=self.version).decode("utf-8"))
             sys.stdout.flush()
 
     def outputTEL(self, regk):
+        """Emit the stored TEL with attachment counters in the selected genus."""
         f = None
         if self.files:
             f = open(f"{regk}-tel.cesr", "w")
 
-        for msg in self.rgy.reger.clonePreIter(pre=regk):
+        for msg in self.rgy.reger.clonePreIter(pre=regk, gvrsn=self.version):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
@@ -152,11 +160,12 @@ class ExportDoer(doing.DoDoer):
             f.close()
 
     def outputKEL(self, pre):
+        """Emit the stored KEL with attachment counters in the selected genus."""
         f = None
         if self.files:
             f = open(f"{pre}-kel.cesr", "w")
 
-        for msg in self.hby.db.clonePreIter(pre=pre):
+        for msg in self.hby.db.clonePreIter(pre=pre, gvrsn=self.version):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:

@@ -749,7 +749,9 @@ class Poller(doing.DoDoer):
         self.retry = retry
         self.version = version
         self.gvrsn = version if gvrsn is None else gvrsn
-        self.kind = kind
+        # Mailbox topic keys contain slashes, which native CESR map labels reject.
+        # JSON preserves these keys for either protocol version; explicit kinds win.
+        self.kind = Kinds.json if kind is None else kind
         self.msgs = None if msgs is not None else decking.Deck()
         self.times = dict()
 

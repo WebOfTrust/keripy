@@ -13,7 +13,7 @@ from hio.base import doing
 from hio.help import ogler
 
 from ...common import (Parsery, Colors, Symbols,
-                       setupHby, aliasInput)
+                       setupHby, aliasInput, parseVersion)
 
 from ....kering import ConfigurationError
 from ....app import MailboxDirector
@@ -26,6 +26,8 @@ logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials',
                                  parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: list_credentials(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
                     default=None)
@@ -51,13 +53,17 @@ def list_credentials(args):
                   poll=args.poll,
                   said=args.said,
                   issued=args.issued,
-                  schema=args.schema)
+                  schema=args.schema,
+                  version=args.version)
     return [ld]
 
 
 class ListDoer(doing.DoDoer):
+    """List credentials and optionally poll using an explicit protocol version."""
 
-    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False, schema=None):
+    def __init__(self, name, alias, base, bran, verbose=False, poll=False, said=False, issued=False, schema=None,
+                 version=None):
+        """Select mailbox query protocol and parser genus without changing defaults."""
         self.verbose = verbose
         self.poll = poll
         self.said = said
@@ -68,14 +74,14 @@ class ListDoer(doing.DoDoer):
 
         self.schema = schema
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         if alias is None:
             alias = aliasInput(self.hby)
 
         self.hab = self.hby.habByName(alias)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.mbx = MailboxDirector(hby=self.hby, topics=['/credential'], verifier=self.vry)
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/credential'], verifier=self.vry, version=version)
 
         doers = [self.mbx, doing.doify(self.listDo)]
 

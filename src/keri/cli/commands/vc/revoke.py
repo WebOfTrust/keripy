@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from ...common import Parsery, setupHby
+from ...common import Parsery, setupHby, parseVersion
 
 from ....kering import ValidationError, Ilks, Vrsn_1_0
 from ....app import (MailboxDirector, HaberyDoer, Counselor,
@@ -22,6 +22,8 @@ from ....vdr import Regery, Registrar, Verifier
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential',
                                  parents=[Parsery.keystore()])
+parser.add_argument("--version", default=None, type=parseVersion,
+                    help="KERI protocol and CESR genus version, such as 1.0 or 2.0")
 parser.set_defaults(handler=lambda args: revokeCredential(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
                     default=None)
@@ -36,20 +38,25 @@ def revokeCredential(args):
     name = args.name
 
     revokeDoer = RevokeDoer(name=name, alias=args.alias, said=args.said, base=args.base, bran=args.bran,
-                            registryName=args.registry_name, timestamp=args.time, send=args.send)
+                            registryName=args.registry_name, timestamp=args.time, send=args.send,
+                            version=args.version)
 
     doers = [revokeDoer]
     return doers
 
 
 class RevokeDoer(doing.DoDoer):
+    """Revoke and forward evidence using an optional explicit protocol version."""
 
-    def __init__(self, name, alias, said, base, bran, registryName, send, timestamp, **kwa):
+    def __init__(self, name, alias, said, base, bran, registryName, send, timestamp, version=None, **kwa):
+        """Select anchor protocol and transport genus while preserving CLI defaults."""
         self.said = said
         self.send = send
         self.timestamp = timestamp
         self.registryName = registryName
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.hab = self.hby.habByName(alias)
         self.org = Organizer(hby=self.hby)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
@@ -57,14 +64,14 @@ class RevokeDoer(doing.DoDoer):
         self.counselor = Counselor(hby=self.hby)
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version)
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                              verifier=self.verifier, exc=exc)
+                              verifier=self.verifier, exc=exc, version=version)
 
         doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.postman]
         self.toRemove = list(doers)
@@ -115,9 +122,9 @@ class RevokeDoer(doing.DoDoer):
             rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
             if registry.estOnly:
-                anc = hab.rotate(data=[rseal], framed=True)
+                anc = hab.rotate(data=[rseal], framed=True, **self.eventKwargs)
             else:
-                anc = hab.interact(data=[rseal], framed=True)
+                anc = hab.interact(data=[rseal], framed=True, **self.eventKwargs)
 
             aserder = SerderKERI(raw=bytes(anc))
             self.registrar.revoke(creder, rserder, aserder)
@@ -128,7 +135,7 @@ class RevokeDoer(doing.DoDoer):
 
                 for recp in smids:  # this goes to other participants only as a signaling mechanism
                     exn, atc = multisigRevokeExn(ghab=self.hab, said=creder.said, rev=rserder.raw, anc=anc,
-                                                 version=Vrsn_1_0)
+                                                 version=self.version if self.version is not None else Vrsn_1_0)
                     self.postman.send(src=self.hab.mhab.pre,
                                       dest=recp,
                                       topic="multisig",
@@ -149,11 +156,11 @@ class RevokeDoer(doing.DoDoer):
 
             if len(recps) > 0:
                 msgs = []
-                for msg in self.hby.db.clonePreIter(pre=creder.israid):
+                for msg in self.hby.db.clonePreIter(pre=creder.israid, gvrsn=self.hby.version):
                     serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
-                for msg in self.rgy.reger.clonePreIter(pre=creder.said):
+                for msg in self.rgy.reger.clonePreIter(pre=creder.said, gvrsn=self.hby.version):
                     serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))

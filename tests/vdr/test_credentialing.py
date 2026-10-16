@@ -460,7 +460,7 @@ def test_escrow_suber_klas():
 class CapturingPoster:
     """Minimal stand-in for forwarding.StreamPoster that records what was queued.
 
-    ``sendArtifacts`` only ever calls ``postman.send(serder=, attachment=)``, so
+    ``sendArtifacts`` calls ``postman.send`` with an explicit evidence genus, so
     recording those calls is enough to assert which KELs and TELs were streamed,
     without standing up witnesses or end role authorizations for a recipient.
     """
@@ -468,7 +468,8 @@ class CapturingPoster:
     def __init__(self):
         self.msgs = []
 
-    def send(self, serder, attachment=None):
+    def send(self, serder, attachment=None, *, gvrsn=None):
+        """Capture queued evidence without replacing its versioned serialization."""
         self.msgs.append((serder, attachment))
 
     @property
