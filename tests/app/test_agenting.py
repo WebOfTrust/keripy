@@ -362,6 +362,122 @@ def test_witness_sender(seeder, witnessPorter):
         assert pdoer.done is True
 
 
+class FakeMessenger(doing.Doer):
+
+    def __init__(self):
+        super().__init__()
+        self.msgs = []
+        self.closed = False
+
+    @property
+    def idle(self):
+        return not self.msgs
+
+    def exit(self):
+        self.closed = True
+
+
+def test_witness_publisher_removes_completed_messengers(monkeypatch):
+    with openHby(name="publisher-lifecycle", temp=True) as hby:
+        first_wit = hby.makeHab(name="first-witness", transferable=False)
+        second_wit = hby.makeHab(name="second-witness", transferable=False)
+        hab = hby.makeHab(name="controller", wits=[first_wit.pre, second_wit.pre])
+        messengers = {}
+
+        def make_messenger(_hab, wit):
+            messenger = FakeMessenger()
+            messengers[wit] = messenger
+            return messenger
+
+        monkeypatch.setattr(agenting, "messenger", make_messenger)
+        publisher = WitnessPublisher(hby=hby)
+        evt = dict(pre=hab.pre, said=hab.pre, msg=hab.msgOwnInception())
+        assert publisher.idle
+        publisher.msgs.append(evt)
+        assert not publisher.idle
+
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[publisher])
+        doist.enter()
+        try:
+            for _ in range(4):
+                doist.recur()
+                if len(messengers) == 2:
+                    break
+
+            first = messengers[first_wit.pre]
+            second = messengers[second_wit.pre]
+            assert first in publisher.doers and second in publisher.doers
+            assert any(deed[2] is first for deed in publisher.deeds)
+            assert any(deed[2] is second for deed in publisher.deeds)
+            assert not publisher.idle
+
+            first.msgs.clear()
+            doist.recur()
+            assert first not in publisher.doers
+            assert not any(deed[2] is first for deed in publisher.deeds)
+            assert first.closed
+            assert second in publisher.doers
+            assert any(deed[2] is second for deed in publisher.deeds)
+            assert not second.closed
+            assert not publisher.idle
+
+            second.msgs.clear()
+            for _ in range(3):
+                doist.recur()
+                if publisher.cues:
+                    break
+
+            assert second not in publisher.doers
+            assert not any(deed[2] is second for deed in publisher.deeds)
+            assert second.closed
+            assert list(publisher.cues) == [evt]
+            assert publisher.sent(said=evt["said"])
+            assert publisher.idle
+            publisher.cues.popleft()
+            assert publisher.idle
+        finally:
+            doist.exit()
+
+
+def test_witness_publisher_skipped_request_does_not_remain_active():
+    with openHby(name="publisher-skipped", temp=True) as hby:
+        publisher = WitnessPublisher(hby=hby)
+        publisher.msgs.append(dict(pre="missing", msg=b"event"))
+        assert not publisher.idle
+
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[publisher])
+        doist.enter()
+        try:
+            for _ in range(3):
+                doist.recur()
+                if not publisher.msgs:
+                    break
+
+            assert not publisher.msgs
+            assert not publisher.cues
+            assert publisher.idle
+        finally:
+            doist.exit()
+
+
+def test_witness_publisher_completes_without_witnesses():
+    with openHby(name="publisher-no-witnesses", temp=True) as hby:
+        hab = hby.makeHab(name="controller", wits=[])
+        publisher = WitnessPublisher(hby=hby)
+        evt = dict(pre=hab.pre, said=hab.pre, msg=hab.msgOwnInception())
+        publisher.msgs.append(evt)
+
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[publisher])
+        doist.enter()
+        try:
+            doist.recur()
+            assert list(publisher.cues) == [evt]
+            assert publisher.sent(said=evt["said"])
+            assert publisher.idle
+        finally:
+            doist.exit()
+
+
 class PublishDoer(doing.DoDoer):
 
     def __init__(self, wanHby, wilHby, wesHby, palHby, seeder, witnessPorts, witnessUrls):
