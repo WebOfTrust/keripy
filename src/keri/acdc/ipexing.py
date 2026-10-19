@@ -13,16 +13,18 @@ from copy import deepcopy
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from ..kering import (Colds, DuplicitousRegistryError, Ilks, MisanchorError,
-                      FailedSchemaValidationError, MisbindingError,
+from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationError,
+                      Ilks, KeriError, MisanchorError, MisbindingError,
                       MissingAnchorError, MissingChainError, MissingSchemaError,
                       MissingSenderKeyStateError, MisdigestError, MisregistryError,
                       MissequenceError, RootSealError, UnverifiedBlindError,
                       ValidationError, Vrsn_2_0, sniff)
-from ..core import (BlindState, Blinder, BoundState, Compactor, Counter, Codens, Diger,
-                    GenDex, Noncer, Number, Pather, Prefixer, Saider, SealEvent,
-                    SealSource, Serdery, Texter, exchange, messagize)
-from ..peer.exchanging import cloneMessage, verifyAttachments
+from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
+                    Codens, Diger, GenDex, Noncer, Number, Pather, Prefixer,
+                    Parser, Saider, SealEvent, SealSource, Serdery, Texter, exchange,
+                    messagize)
+from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
+                               verifyAttachments)
 from . import scheming
 
 logger = ogler.getLogger()
@@ -39,12 +41,19 @@ PreviousRoutes = {
     Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
 }
 
-DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
+FieldMapIlks = (None, Ilks.acm, Ilks.ace)
+DisclosedNodeIlks = FieldMapIlks + (Ilks.act, Ilks.acg)
 EdgeSectionLabels = ("d", "u", "o", "w")
 EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
 EdgeGroupOps = ("AND", "OR")
+
+# Parsed attachment fields forbidden on Offer ACDC nodes.
+NodeAttachmentFields = ("sigers", "wigers", "cigars", "tsgs", "lsgs", "frcs",
+                        "sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs",
+                        "essrs", "ptds", "nests")
+
 
 def _streamSerder(stream):
     """Extract the message serder from a bare or nested artifact stream.
@@ -171,7 +180,7 @@ def _normalizeNestedStream(stream):
                            version=Vrsn_2_0)
 
 
-def _normalizeNodeStream(stream, attachment=None):
+def _normalizeNodeStream(stream, attachment=None, *, allowAttachments=True):
     """Normalize one disclosed ACDC node into a nested V2 substream.
 
     Parameters:
@@ -180,6 +189,8 @@ def _normalizeNodeStream(stream, attachment=None):
         attachment (bytes | bytearray | None): Optional attachment section to
             pair with the ACDC body when ``stream`` is not already a stream
             carrying attachments.
+        allowAttachments (bool): False rejects any attachment material carried
+            by the normalized node.
 
     Returns:
         bytearray: Nested V2 body-with-attachments group for one ACDC node.
@@ -192,17 +203,34 @@ def _normalizeNodeStream(stream, attachment=None):
             raise ValueError("IPEX node nests must carry disclosed ACDC nodes")
         if attachment:
             raise ValueError("cannot append attachment bytes to a pre-nested ACDC node")
-        return bytearray(stream.raw) if hasattr(stream, "raw") else bytearray(stream)
+        nested = bytearray(stream.raw) if hasattr(stream, "raw") else bytearray(stream)
+    else:
+        raw = bytes(stream.raw) if hasattr(stream, "raw") else bytes(stream)
+        serder = _streamSerder(raw)
+        if serder.proto != Protocols.acdc or serder.ilk not in DisclosedNodeIlks:
+            raise ValueError("IPEX node nests must carry disclosed ACDC nodes")
 
-    raw = bytes(stream.raw) if hasattr(stream, "raw") else bytes(stream)
-    serder = _streamSerder(raw)
-    if serder.proto != Protocols.acdc or serder.ilk not in DisclosedNodeIlks:
-        raise ValueError("IPEX node nests must carry disclosed ACDC nodes")
+        # Rebuild plain ACDC input into the same per-node framing so later proof
+        # groups can live on the owning node without changing the outer layout.
+        atc = raw[serder.size:] if attachment is None else bytes(attachment)
+        nested = _normalizeNestedStream(raw[:serder.size] + atc)
 
-    # Rebuild plain ACDC input into the same per-node framing so later proof
-    # groups can live on the owning node without changing the outer layout.
-    atc = raw[serder.size:] if attachment is None else bytes(attachment)
-    return _normalizeNestedStream(raw[:serder.size] + atc)
+    if not allowAttachments:
+        # Parse only to inspect the CESR groups; do not process or store them.
+        ims = bytearray(nested)
+        parsed = Parser(version=Vrsn_2_0).parse(ims=ims,
+                                                framed=True,
+                                                processive=False)
+        hasAttachments = False
+        if len(parsed) == 1:
+            node = parsed[0]
+            parsedNode = node if isinstance(node, Mapping) else node.__dict__
+            hasAttachments = any(parsedNode.get(field)
+                                 for field in NodeAttachmentFields)
+        if ims or len(parsed) != 1 or hasAttachments:
+            raise ValueError("offer ACDC nodes must not carry attachments")
+
+    return nested
 
 
 def _validSingleDagList(value, itemtype):
@@ -464,8 +492,8 @@ class IpexHandler:
             attachments (list | None): Parsed attachment payloads, unused in the
                 current linear workflow validation.
             nests (list | None): Parsed V2 nested artifacts. In the current
-                single-DAG workflow ``offer`` may carry a metadata DAG subset
-                and ``grant`` may carry the final disclosed DAG.
+                single-DAG workflow ``offer`` may carry an ACDC DAG subset and
+                ``grant`` may carry the final disclosed DAG.
             sscs (list | None): Sender source-seal couples retained after KRAM.
             evidence (tuple | None): Post-KRAM non-sender signature groups,
                 cigars, and source-seal triples accepted by ``verifyEvidence``.
@@ -594,15 +622,25 @@ class IpexHandler:
                                             diger=sscs[-1][1]):
                 return False
 
-        # Stage 5: offer may disclose only a reachable metadata subgraph.
+        # Stage 5: validate the ACDC subgraph carried by the Offer.
         if verb == Ipex.offer and nests:
             walked = self._walkGraph(origin=attrs["o"][0], nests=nests, closed=False)
             if walked is None:
                 return False
 
-            # Metadata offers carry only the Discloser's outer commitment. The
-            # Issuer's authentication evidence is withheld until the Grant.
-            if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
+            offerNodes, offerOrder = walked
+            # Keep issuer proofs on the later Grant.
+            hasAttachments = False
+            for said in offerOrder:
+                node = offerNodes[said]
+                parsed = node if isinstance(node, Mapping) else node.__dict__
+                hasAttachments = any(parsed.get(field) for field in NodeAttachmentFields)
+                if hasAttachments:
+                    break
+            if hasAttachments:
+                return False
+
+            if not self._verifyNodeSchemas(nodes=offerNodes, order=offerOrder):
                 return False
 
         # If the message is a Grant, resolve dp if it is empty or not
@@ -645,22 +683,38 @@ class IpexHandler:
                 walked = self._walkGraph(origin=origins[0], nests=nests, closed=True)
                 if walked is None:
                     return False
+                grantNodes, grantOrder = walked
+
+                # A Grant may not replay field-map metadata as the credential.
+                for grantNode in grantNodes.values():
+                    grantSerder = (grantNode["serder"] if isinstance(grantNode, dict)
+                                   else grantNode.serder)
+                    if (grantSerder.ilk in FieldMapIlks
+                            and grantSerder.sad.get("u") == ""):
+                        return False
+
+                # First enforce what was requested, then enforce what the
+                # accepted Offer promised before authenticating the Grant.
                 if not self._verifyDisclosurePlan(plan=plan,
                                                   origin=origins[0],
-                                                  nodes=walked[0],
-                                                  order=walked[1]):
+                                                  nodes=grantNodes,
+                                                  order=grantOrder):
+                    return False
+                if not self._verifyOfferFulfillment(agree=pserder,
+                                                    grantOrigin=origins[0],
+                                                    grantNodes=grantNodes):
                     return False
 
                 # Stage 6: authenticate each disclosed node's issuer.
-                if not self._verifyIssuerAuthGraph(nodes=walked[0], order=walked[1]):
+                if not self._verifyIssuerAuthGraph(nodes=grantNodes, order=grantOrder):
                     return False
 
                 # Validate each authenticated node against its own schema.
-                if not self._verifyNodeSchemas(nodes=walked[0], order=walked[1]):
+                if not self._verifyNodeSchemas(nodes=grantNodes, order=grantOrder):
                     return False
 
                 # Apply edge operators and edge schemas after authentication.
-                if not self._verifyGraphSemantics(nodes=walked[0], order=walked[1]):
+                if not self._verifyGraphSemantics(nodes=grantNodes, order=grantOrder):
                     return False
 
                 # Require Exchanger's fixed three-part evidence result.
@@ -672,15 +726,15 @@ class IpexHandler:
                 # Verify every presentation registry declared across the DAG.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
-                    nodes=walked[0],
-                    order=walked[1],
+                    nodes=grantNodes,
+                    order=grantOrder,
                 )
                 if tethered is None:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
                 if requiresAnchor:
-                    origin = walked[0][origins[0]]
+                    origin = grantNodes[origins[0]]
                     origin = origin["serder"] if isinstance(origin, dict) else origin.serder
                     anchorers = set(tethered)
 
@@ -773,6 +827,40 @@ class IpexHandler:
             # any ACDC-protocol message such as a registry TEL event.
             if nserder.proto != Protocols.acdc or nserder.ilk not in DisclosedNodeIlks:
                 return None
+
+            # Verify every expanded section SAID, including nested blocks.
+            for label in ("a", "e", "r"):
+                section = nserder.sad.get(label)
+                if not isinstance(section, Mapping):
+                    continue
+                try:
+                    compactor = Compactor(mad=deepcopy(section), makify=True,
+                                          kind=nserder.kind)
+                    compactor.compact()
+                    for path, leaf in compactor.leaves.items():
+                        carried = compactor.getTail(path, mad=section)
+                        if (not isinstance(carried, Mapping) or
+                                (carried.get("d") and
+                                 carried["d"] != leaf.said)):
+                            return None
+                except Exception:
+                    return None
+
+            # Verify an expanded aggregate's AGID and each element SAID.
+            aggregate = nserder.sad.get("A")
+            if isinstance(aggregate, list) and aggregate:
+                try:
+                    aggor = Aggor(ael=deepcopy(aggregate), makify=True,
+                                  kind=nserder.kind)
+                except Exception:
+                    return None
+                if aggregate[0] and aggregate[0] != aggor.agid:
+                    return None
+                for carried, computed in zip(aggregate[1:], aggor.ael[1:]):
+                    if (isinstance(carried, Mapping) and carried.get("d") and
+                            carried["d"] != computed.get("d")):
+                        return None
+
             if idx == 0 and not nserder.compare(origin):
                 return None
             # Each disclosed DAG node must occupy exactly one nest so the node
@@ -960,6 +1048,149 @@ class IpexHandler:
 
         # The plan must account for every disclosed node in canonical BFS order.
         return selected == order
+
+    @staticmethod
+    def _canonicalSectionCommitment(label, section, *, kind):
+        """Compute the canonical commitment represented by an ACDC section."""
+        # Aggregate sections use an AGID instead of a normal section SAID.
+        if label == "A":
+            if isinstance(section, str):
+                try:
+                    Diger(qb64=section)
+                except Exception:
+                    return None
+                return section
+            if isinstance(section, list):
+                try:
+                    return Aggor(ael=deepcopy(section), makify=True,
+                                 kind=kind).agid
+                except Exception:
+                    return None
+            return None
+
+        # A string is already the compact SAID form of a section.
+        if isinstance(section, str):
+            try:
+                Diger(qb64=section)
+            except Exception:
+                return None
+            return section
+        if not isinstance(section, Mapping):
+            return None
+
+        # Recompute the commitment from an expanded SAD instead of trusting
+        # the SAID carried inside it. Schemas use `$id`; other sections use `d`.
+        try:
+            if label == "s":
+                compactor = Compactor(mad=deepcopy(section), makify=True,
+                                      strict=False, saids={"$id": "E"},
+                                      kind=kind)
+            else:
+                compactor = Compactor(mad=deepcopy(section), makify=True,
+                                      kind=kind)
+                compactor.compact()
+        except Exception:
+            return None
+        return compactor.said
+
+    def _verifyOfferFulfillment(self, agree, grantOrigin, grantNodes):
+        """Verify that a Grant fulfills the ACDC accepted in its Offer.
+
+        An exact root SAID fulfills the Offer directly. When a metadata Offer
+        names a different root, its section commitments must match the Grant.
+
+        Returns:
+            bool: True when the promise is fulfilled or no ACDC-specific Offer
+                exists, and False for a permanent contradiction or malformed
+                evidence.
+
+        Raises:
+            MissingChainError: The accepted Offer names metadata needed for the
+                comparison but its body is not locally available yet.
+        """
+        # Direct Grants have no accepted Offer commitment to compare.
+        if agree is None or agree.ked.get("r") != "/ipex/agree":
+            return True
+
+        # Follow the Agree to the exact Offer accepted by the disclosee
+        offerSaid = agree.ked.get("p", "")
+        offer, _ = cloneMessage(self.hby, said=offerSaid)
+        if offer is None:
+            raise MissingChainError(
+                f"missing accepted Offer message {offerSaid}")
+
+        # An Offer without an origin does not promise a particular ACDC
+        offerOrigins = offer.ked.get("a", {}).get("o")
+        if offerOrigins is None:
+            return True
+        if not _validSingleDagList(offerOrigins, str):
+            return False
+
+        offerOrigin = offerOrigins[0]
+
+        # The same root SAID directly fulfills the Offer.
+        if offerOrigin == grantOrigin:
+            return True
+
+        # A different root needs the offered metadata body for comparison.
+        try:
+            offerNests = loadParsedNestedSubstreams(self.hby, offer.said)
+        except (KeriError, TypeError, ValueError):
+            return False
+        if not offerNests:
+            raise MissingChainError(
+                f"missing metadata ACDC for accepted Offer {offer.said}")
+
+        # Reuse normal graph validation before reading the offered root node.
+        walked = self._walkGraph(origin=offerOrigin, nests=offerNests, closed=False)
+        if walked is None:
+            return False
+        offeredNodes, offeredOrder = walked
+        offeredNest = offeredNodes[offerOrigin]
+        grantNest = grantNodes.get(grantOrigin)
+        if grantNest is None:
+            return False
+        offeredSerder = (offeredNest["serder"] if isinstance(offeredNest, dict)
+                         else offeredNest.serder)
+        grantSerder = (grantNest["serder"] if isinstance(grantNest, dict)
+                       else grantNest.serder)
+
+        # Only field-map metadata can promise a different credential root.
+        if (offeredSerder.ilk not in FieldMapIlks
+                or offeredSerder.sad.get("u") != ""):
+            return False
+
+        # Metadata loaded after the Offer must pass the same schema checks as
+        # metadata carried with the original Offer.
+        if not self._verifyNodeSchemas(nodes=offeredNodes, order=offeredOrder):
+            return False
+
+        # The metadata promises the issuer independently of its sections.
+        if offeredSerder.israid != grantSerder.israid:
+            return False
+
+        # A non-empty metadata registry SAID is also part of the promise.
+        offeredRegistry = offeredSerder.sad.get("rd")
+        if offeredRegistry and offeredRegistry != grantSerder.sad.get("rd"):
+            return False
+
+        # Every non-empty offered section must have the same canonical
+        # commitment in the Grant; empty sections make no disclosure promise.
+        for label in ("s", "a", "A", "e", "r"):
+            offeredSection = offeredSerder.sad.get(label)
+
+            if offeredSection in (None, "", [], {}):
+                continue
+
+            offeredCommitment = self._canonicalSectionCommitment(
+                label, offeredSection, kind=offeredSerder.kind)
+            grantCommitment = self._canonicalSectionCommitment(
+                label, grantSerder.sad.get(label), kind=grantSerder.kind)
+
+            if offeredCommitment is None or offeredCommitment != grantCommitment:
+                return False
+
+        return True
 
     def _walkGraph(self, origin, nests, *, closed):
         """Walk the disclosed origin DAG and return the visited node order.
@@ -1903,13 +2134,13 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable offer message.
-        origin (Serder | bytes | bytearray | None): Optional origin ACDC node
-            for the offer DAG. When provided, its SAID is copied into
-            ``a.o[0]``. When omitted, the offer may negotiate only through its
-            disclose-path plan.
+        origin (Serder | bytes | bytearray | None): Optional ACDC root for the
+            offer DAG. When provided, its SAID is copied into ``a.o[0]``. When
+            omitted, the offer may negotiate only through its disclose-path
+            plan.
         artifacts (list[Serder | bytes | bytearray] | None): Optional
-            additional metadata-DAG nodes carried after ``origin``. Passing a
-            list, including ``[]``, means the offer carries a nested DAG.
+            additional ACDC DAG nodes carried after ``origin``. Passing a list,
+            including ``[]``, means the offer carries a nested DAG.
         apply (Serder | None): Optional prior ``apply`` exchange.
         recp (str | None): Recipient AID. Defaults to the prior ``apply``
             sender; must be supplied directly for an offer-first exchange
@@ -1989,8 +2220,7 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         if applyRequiresAnchor and not offerRequiresAnchor:
             raise ValueError("offer must echo the prior apply's anchoring requirement")
 
-    # Offer may either negotiate only via dp, name a metadata root SAID, or
-    # carry a full metadata DAG whose shape mirrors the later grant DAG.
+    # The usual Offer is metadata or partial, but other ACDC variants work too.
     nests = None
     if origin is not None:
         originSerder = _streamSerder(origin)
@@ -2007,9 +2237,14 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
             if artifacts:
                 raise ValueError("offer artifacts require an origin")
         else:
-            nests = [_normalizeNodeStream(origin)]
+            nests = [_normalizeNodeStream(origin, allowAttachments=False)]
             for artifact in artifacts:
-                nests.append(_normalizeNodeStream(artifact))
+                artifactSerder = _streamSerder(artifact)
+                if (artifactSerder.proto != Protocols.acdc or
+                        artifactSerder.ilk not in DisclosedNodeIlks):
+                    raise ValueError("offer artifacts must identify disclosed ACDC nodes")
+                nests.append(_normalizeNodeStream(artifact,
+                                                  allowAttachments=False))
 
     # Build the body
     serder = exchange(
