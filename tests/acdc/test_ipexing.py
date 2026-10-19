@@ -2993,11 +2993,12 @@ def test_ipex_v2_rejects_metadata_acdc_as_grant():
 
 @pytest.mark.parametrize("private", [False, True])
 @pytest.mark.parametrize("carryBody", [False, True])
-def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody):
-    """A full public or private ACDC may be offered as a supported extension."""
+@pytest.mark.parametrize("ilk", [Ilks.acm, Ilks.act, Ilks.acg])
+def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody, ilk):
+    """Full field-map and fixed-field ACDCs may be offered and granted."""
     variant = "private" if private else "public"
     form = "body" if carryBody else "said"
-    with openHby(name=f"ipex-v2-{variant}-offer-{form}",
+    with openHby(name=f"ipex-v2-{ilk}-{variant}-offer-{form}",
                  base="test",
                  version=Vrsn_2_0) as hby:
         hab = hby.makeHab(name="test")
@@ -3005,11 +3006,21 @@ def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody):
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
-        # A UUID makes the full ACDC private; omitting it makes it public.
-        offered = acdcmap(israid=hab.pre,
-                          uuid=Noncer().qb64 if private else None,
-                          attribute=dict(d="", status="member"),
-                          iseaid=hab.pre)
+        uuid = Noncer().qb64 if private else None
+        if ilk == Ilks.acm:
+            offered = acdcmap(israid=hab.pre,
+                              uuid=uuid,
+                              attribute=dict(d="", status="member"),
+                              iseaid=hab.pre)
+        elif ilk == Ilks.act:
+            offered = acdcatt(israid=hab.pre,
+                              uuid=uuid,
+                              attribute=dict(d="", status="member"),
+                              iseaid=hab.pre)
+        else:
+            aggor = Aggor(ael=["", dict(d="", i=hab.pre, status="member")],
+                          makify=True, kind=Kinds.json)
+            offered = acdcagg(israid=hab.pre, uuid=uuid, aggregate=aggor.ael)
         schema = offered.sad["s"]["$id"]
 
         applyExn, applyAtc = ipexApply(
@@ -3053,6 +3064,94 @@ def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody):
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
+        ]
+
+
+def test_ipex_v2_public_fixed_field_offer_binds_root_said():
+    """An empty fixed UUID slot does not make a full Offer metadata."""
+    with openHby(name="ipex-v2-public-fixed-offer-root",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        schemer = Schemer(sed={
+            "$id": "",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "version": "1.0.0",
+            "type": "object",
+            "required": ["v", "t", "d", "i", "s", "a"],
+            "properties": {
+                "v": {"type": "string"},
+                "t": {"enum": ["acm", "act"]},
+                "d": {"type": "string"},
+                "u": {"type": "string"},
+                "i": {"type": "string"},
+                "rd": {"type": "string"},
+                "s": {"type": "string"},
+                "a": {"type": "object"},
+                "e": {"type": "object"},
+                "r": {"type": "object"},
+            },
+            "additionalProperties": False,
+        })
+        hby.db.schema.pin(schemer.said, schemer)
+
+        offered = acdcatt(israid=hab.pre,
+                          uuid=None,
+                          schema=schemer.said,
+                          attribute=dict(d="", status="member"),
+                          iseaid=hab.pre)
+        replacement = acdcmap(israid=hab.pre,
+                              uuid=None,
+                              schema=schemer.said,
+                              attribute=dict(d="", status="member"),
+                              iseaid=hab.pre)
+        assert offered.sad["u"] == ""
+        assert offered.said != replacement.said
+
+        applyExn, applyAtc = ipexApply(
+            hab=hab,
+            recp=hab.pre,
+            message="Please disclose the credential",
+            modifiers=dict(dp=[[[schemer.said, "/", []]]]),
+        )
+        offerExn, offerAtc = ipexOffer(
+            hab=hab,
+            message="Here is the public fixed-field ACDC",
+            origin=offered,
+            artifacts=[],
+            apply=applyExn,
+        )
+        agreeExn, agreeAtc = ipexAgree(
+            hab=hab,
+            message="I agree to the Offer",
+            offer=offerExn,
+        )
+        grantExn, grantAtc = ipexGrant(
+            hab=hab,
+            recp=hab.pre,
+            message="Here is a different ACDC",
+            origin=_signed(replacement, hab),
+            agree=agreeExn,
+        )
+
+        for exn, atc in ((applyExn, applyAtc),
+                         (offerExn, offerAtc),
+                         (agreeExn, agreeAtc),
+                         (grantExn, grantAtc)):
+            ims = bytearray(exn.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
+        assert hby.db.exns.get(keys=(grantExn.said,)) is None
+        assert hby.db.epse.get(keys=(grantExn.said,)) is None
+        assert [item["r"] for item in recorder.items] == [
+            "/exn/ipex/apply",
+            "/exn/ipex/offer",
+            "/exn/ipex/agree",
         ]
 
 

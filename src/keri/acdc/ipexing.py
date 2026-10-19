@@ -41,7 +41,8 @@ PreviousRoutes = {
     Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
 }
 
-DisclosedNodeIlks = (None, Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg)
+FieldMapIlks = (None, Ilks.acm, Ilks.ace)
+DisclosedNodeIlks = FieldMapIlks + (Ilks.act, Ilks.acg)
 EdgeSectionLabels = ("d", "u", "o", "w")
 EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
@@ -684,12 +685,12 @@ class IpexHandler:
                     return False
                 grantNodes, grantOrder = walked
 
-                # A Grant must disclose credential variants, not metadata that
-                # merely promises a later disclosure. Public ACDCs may omit `u`.
+                # A Grant may not replay field-map metadata as the credential.
                 for grantNode in grantNodes.values():
                     grantSerder = (grantNode["serder"] if isinstance(grantNode, dict)
                                    else grantNode.serder)
-                    if "u" in grantSerder.sad and grantSerder.sad["u"] == "":
+                    if (grantSerder.ilk in FieldMapIlks
+                            and grantSerder.sad.get("u") == ""):
                         return False
 
                 # First enforce what was requested, then enforce what the
@@ -1154,8 +1155,9 @@ class IpexHandler:
         grantSerder = (grantNest["serder"] if isinstance(grantNest, dict)
                        else grantNest.serder)
 
-        # Only metadata can promise a different credential root.
-        if "u" not in offeredSerder.sad or offeredSerder.sad["u"] != "":
+        # Only field-map metadata can promise a different credential root.
+        if (offeredSerder.ilk not in FieldMapIlks
+                or offeredSerder.sad.get("u") != ""):
             return False
 
         # Metadata loaded after the Offer must pass the same schema checks as
