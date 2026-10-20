@@ -464,6 +464,137 @@ class Parser:
         return result
 
 
+    def parseOneBare(self, ims=None, framed=True, piped=False, kvy=None,
+                     tvy=None, exc=None, rvy=None, vry=None, local=None,
+                     version=None, processive=True):
+        """Processes one message from incoming message stream, ims, like
+        .parseOne but raises any error to the caller instead of logging it.
+
+        .parse and .parseOne log and drop every error because a long running
+        service facing the open internet should not tell a remote sender why
+        its message failed. A caller that is not such a service, for example
+        one vetting a stream it was handed, may need the reason. This gives it
+        the reason and leaves the choice of what to do next to it.
+
+        Which step raised is what tells extraction from processing apart, not
+        the class of the error, since some processing errors are subclasses of
+        ExtractionError. So a caller that needs to know the phase uses
+        processive=False, which only extracts, and then passes asdict() of the
+        returned msg to .msgProcess itself.
+
+        Errors of the intake types, ExtractionError and ValidationError, raised
+        while extracting are raised as ExtractionError with the originating
+        error on the exception chain, via __cause__ or, where the original was
+        raised implicitly inside a handler, __context__. A ValidationError
+        here means the msg body itself did not verify, for example its SAID.
+        What the chain means for the rest of ims:
+            SizedGroupError on the chain: an enclosed attachment group failed.
+                The group was stripped first so the rest of ims is intact. Any
+                ShortageError beneath it is about the group's contents and does
+                not mean the stream ran short.
+            TopLevelStreamError on the chain: ims is at a generic group, which
+                like .parseOne this does not descend into. The group was not
+                consumed, so calling again raises the same error.
+            otherwise: stream framing is lost. ShortageError on the chain
+                means more bytes may complete it. Anything else, such as
+                ColdStartError or a ValidationError for a body that did not
+                verify, means more bytes will not. What is left of ims should
+                be discarded as .parse would.
+
+        Any other error raised while extracting propagates unchanged, since
+        ref/ErrorHandling.md presumes it a bug. Some such errors are currently
+        reachable from malformed input rather than from local bugs. A caller
+        vetting an untrusted stream should be ready for them and treat
+        framing as lost. Known cases are an AttributeError when a CESR v1
+        stream is at a count code that does not begin a msg, InvalidVersionError
+        for a genus-version counter naming an unsupported version, and
+        ValueError for primitives with nonzero prepad bits.
+
+        A leading genus-version counter is consumed even when what follows it
+        fails, and the version it names stays set on the Parser for later
+        calls. Pass version to reset it, or use one Parser per stream.
+
+        Processing errors are raised as themselves, with the msg already
+        consumed from ims, so calling again resumes at the next msg. An error
+        does not say whether Kevery escrowed the event before raising, as it
+        does for OutOfOrderError and others, so look in the escrows for that.
+        Malformed peer input can raise errors outside the KeriError hierarchy,
+        such as ValueError, so such an error does not by itself mean a local
+        defect.
+
+        ims is consumed in place only when it is a bytearray. Any other type
+        is copied first, so resuming requires passing a bytearray.
+
+        With framed False a short msg waits for more bytes by looping, which
+        for a stream already in hand never ends. Keep the default framed=True
+        for such a stream.
+
+        Parameters:
+            ims (bytearray): serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+            framed (bool) True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor to process
+                ims msgs when stream includes pipelineable count codes.
+            kvy (Kevery): route KERI KEL message types to this instance
+            tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
+            local (bool): True means event source is local (protected) for validation
+                False means event source is remote (unprotected) for validation
+                None means use default .local
+            version (Versionage): default genera version of CESR to use
+                None means do not change default
+            processive (bool): True means process the msg and return True
+                False means do not process and return the extracted msg as
+                    a MsgParseDom
+        """
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
+        else:
+            ims = self.ims  # use instance attribute by default
+
+        framed = framed if framed is not None else self.framed
+        piped = piped if piped is not None else self.piped
+        kvy = kvy if kvy is not None else self.kvy
+        tvy = tvy if tvy is not None else self.tvy
+        exc = exc if exc is not None else self.exc
+        rvy = rvy if rvy is not None else self.rvy
+        vry = vry if vry is not None else self.vry
+        local = local if local is not None else self.local
+        local = True if local else False
+
+        parsator = self._extractMsg(ims=ims,
+                                    framed=framed,
+                                    piped=piped,
+                                    local=local,
+                                    version=version,
+                                    narrow=True)
+        try:
+            while True:
+                try:
+                    next(parsator)
+                except StopIteration as ex:
+                    exts = ex.value
+                    break
+        except TopLevelStreamError as ex:  # not descending, so report it
+            raise ExtractionError from ex
+
+        if not processive:
+            return exts
+
+        self.msgProcess(exts=asdict(exts),
+                        kvy=kvy,
+                        tvy=tvy,
+                        exc=exc,
+                        rvy=rvy,
+                        vry=vry)
+        return True
+
+
     def allParsator(self, ims=None, framed=None, piped=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
                     version=None, processive=True):
@@ -853,20 +984,17 @@ class Parser:
 
                 # extract substream at current nesting level
                 try:
-                    exts = yield from self.msgParsator(ims=ims,
-                                                          framed=framed,
-                                                          piped=piped,
-                                                          local=local,
-                                                          version=self.version)
+                    exts = yield from self._extractMsg(ims=ims,
+                                                       framed=framed,
+                                                       piped=piped,
+                                                       local=local,
+                                                       version=self.version)
 
                 except TopLevelStreamError as ex:  # encountered GenericGroup
                     # before getting a message so need to nest down into new
                     # generic group which has been not extracted yet
                     # this is the normal way to handle it, so do not log
                     continue  # control thrown here to parse new generic group
-
-                except (ExtractionError, Exception) as ex:  # error while extracting
-                    raise ExtractionError from ex
 
                 # process successful extraction at current nexting level)
                 if processive:
@@ -913,6 +1041,47 @@ class Parser:
                 if svrsn:
                     self.version = svrsn
         return result if processive else results
+
+
+    def _extractMsg(self, ims, framed, piped, local, version, narrow=False):
+        """Returns generator that extracts one msg plus attachments from ims via
+        .msgParsator and returns it, shifting a failure to ExtractionError with
+        the original on __cause__. The one extraction step shared by
+        .groupParsator and .parseOneBare, each of which applies its own policy
+        to what this raises. Use `yield from` to call.
+
+        TopLevelStreamError is raised as itself so .groupParsator can nest down
+        into the generic group that caused it.
+
+        Parameters:
+            ims (bytearray): incoming message stream
+            framed (bool): True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor
+            local (bool): True means event source is local (protected)
+            version (Versionage): default version of CESR to use
+                None means do not change default
+            narrow (bool): True means shift only the intake types,
+                ExtractionError and ValidationError, and let any other error
+                propagate unchanged, so that a bug is not mistaken for bad
+                input. See ref/ErrorHandling.md
+                False means shift every Exception, as .groupParsator has
+        """
+        try:
+            exts = yield from self.msgParsator(ims=ims,
+                                               framed=framed,
+                                               piped=piped,
+                                               local=local,
+                                               version=version)
+        except TopLevelStreamError:
+            raise
+        except (ExtractionError, ValidationError) as ex:  # intake types
+            raise ExtractionError from ex
+        except Exception as ex:
+            if narrow:
+                raise
+            raise ExtractionError from ex
+        return exts
 
 
     def msgParsator(self, ims=None, framed=True, piped=False, local=None,
