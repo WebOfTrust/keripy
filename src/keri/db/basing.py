@@ -121,10 +121,10 @@ class statedict(dict):
             kever: converted from underlying dict or database
 
         """
-        if not super(statedict, self).__contains__(k):
-            return default
-        else:
+        try:
             return self.__getitem__(k)
+        except KeyError:
+            return default
 
 
 def openDB(*, cls=None, name="test", **kwa):
