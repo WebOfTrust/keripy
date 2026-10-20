@@ -758,53 +758,18 @@ class IpexHandler:
         return True
 
     def _verifySourceAnchor(self, serder, aid, number, diger):
-        """Verify one source reference against the anchorer's current Kever."""
-
-        # Resolve the anchorer's verified current key state.
-        kever = self.hby.db.kevers.get(aid)
-        # Missing key state is retryable after KEL retrieval.
-        if kever is None:
-            raise MissingSenderKeyStateError(f"missing current key state for {aid}")
-
-        # Compare the source reference with the current establishment state.
-        lastEst = kever.lastEst
-        # Reject references older than the current key state.
-        if number.sn < lastEst.s:
-            return False
-        # Require an exact SAID at the current establishment sequence number.
-        if number.sn == lastEst.s and diger.qb64 != lastEst.d:
-            return False
-
-        # Resolve the referenced event from the anchorer's accepted KEL.
-        prefix = aid.encode("utf-8")
-        eventSaid = self.hby.db.kels.getLast(keys=prefix, on=number.sn)
-
-        # A missing event can become verifiable after KEL retrieval.
-        if eventSaid is None:
+        """Verify one source reference against the anchorer's accepted KEL."""
+        prefixer = Prefixer(qb64=aid)
+        _, _, seals, invalid, missing = verifyAttachments(
+            hby=self.hby,
+            serder=serder,
+            sourceSeals=[(prefixer, number, diger)],
+        )
+        if missing:
             raise MissingSenderKeyStateError(
                 f"missing KEL event at sn={number.sn} for {aid}")
-        # Reject a digest that does not match the accepted event at this SN.
-        if eventSaid != diger.qb64:
-            return False
 
-        # Load the event body needed to inspect its seals.
-        event = self.hby.db.evts.get(keys=(prefix, diger.qb64b))
-        # Treat a missing accepted event body as retryable KEL evidence.
-        if event is None:
-            raise MissingSenderKeyStateError(
-                f"missing KEL event body at sn={number.sn} for {aid}")
-        # References after lastEst must name interaction events.
-        if number.sn > lastEst.s and event.ilk != Ilks.ixn:
-            return False
-
-        # Inspect every event seal for the outer IPEX SAID.
-        for seal in event.seals or []:
-            # Accept only a mapping that anchors this exact message.
-            if isinstance(seal, Mapping) and seal.get("d") == serder.said:
-                return True
-
-        # Reject a valid KEL event that does not anchor this message.
-        return False
+        return not invalid and bool(seals)
 
     def _validNodeNest(self, origin, nests):
         """Validate disclosed node nests and index them by ACDC SAID.
@@ -1953,8 +1918,9 @@ class IpexHandler:
         """Select verified non-sender evidence accepted by this IPEX route.
 
         Exchanger first removes cryptographically invalid attachments.  Grants
-        then apply the stricter IPEX freshness rule against each endorser's
-        current Kever and prefer a valid seal over signatures from the same AID.
+        then require signatures from each endorser's current Kever while keeping
+        perpetually verifiable historical seals, and prefer a valid seal over
+        signatures from the same AID.
         Grants drop unresolved optional evidence after Exchanger requests the
         missing KEL. Other verbs reject foreign, invalid, or unresolved evidence.
         """
@@ -1983,35 +1949,20 @@ class IpexHandler:
                     # Preserve this current transferable endorsement.
                     freshTsgs.append((prefixer, number, diger, sigers))
 
-            # Collect source seals valid against current anchorer state.
-            freshSeals = []
-            for prefixer, number, diger in sourceSeals:
-                # Resolve the anchorer's current verified state.
-                kever = self.hby.db.kevers.get(prefixer.qb64)
-                # Drop unknown anchorers and stale references.
-                if kever is None or number.sn < kever.lastEst.s:
-                    continue
-                # Current establishment references must match lastEst.
-                if number.sn == kever.lastEst.s:
-                    if diger.qb64 != kever.lastEst.d:
-                        continue
-                else:
-                    # Later references may only name interaction events.
-                    event = self.hby.db.evts.get(keys=(prefixer.qb64b, diger.qb64b))
-                    if event is None or event.ilk != Ilks.ixn:
-                        continue
-                # Preserve this fresh source reference.
-                freshSeals.append((prefixer, number, diger))
+            # Exchanger already verified each source seal against the referenced
+            # historical KEL event and this exact grant. A later key rotation does
+            # not invalidate that permanent commitment.
+            validSeals = list(sourceSeals)
 
-            # A valid current seal is the stronger factor for an AID, so do not
+            # A valid seal is the stronger factor for an AID, so do not
             # retain a redundant signature endorsement from that same AID.
-            sealers = {prefixer.qb64 for prefixer, _, _ in freshSeals}
+            sealers = {prefixer.qb64 for prefixer, _, _ in validSeals}
             freshTsgs = [tsg for tsg in freshTsgs if tsg[0].qb64 not in sealers]
             freshCigars = [cigar for cigar in cigars
                            if cigar.verfer.qb64 not in sealers]
 
             # Return only verified factors; unresolved extras are dropped.
-            return freshTsgs, freshCigars, freshSeals
+            return freshTsgs, freshCigars, validSeals
 
         # Reject supplemental evidence on every non-Grant IPEX verb.
         if tsgs or cigars or sourceSeals or invalid or missing:

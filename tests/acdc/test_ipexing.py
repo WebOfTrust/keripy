@@ -647,8 +647,8 @@ def test_ipex_v2_establishment_only_anchor_construction():
         assert hby.db.exns.get(keys=(grantExn.said,)) is not None
 
 
-def test_ipex_v2_rejects_anchor_before_current_establishment():
-    """A source event before the sender's current lastEst is stale."""
+def test_ipex_v2_accepts_historical_anchor_after_rotation():
+    """A valid historical source anchor survives a later key rotation."""
     kramConfig = {
         "kram": {
             "enabled": True,
@@ -669,12 +669,23 @@ def test_ipex_v2_rejects_anchor_before_current_establishment():
                        attribute=dict(d="", role="member"),
                        iseaid=recipient.pre)
 
+        # Give the disclosed ACDC its own durable issuer authentication so the
+        # test isolates rotation of the outer grant anchor.
+        issuerAnchor = _serder(grantor.interact(data=[dict(d=acdc.said)],
+                                                gvrsn=Vrsn_2_0))
+        authenticatedAcdc = messagize(
+            serder=acdc,
+            bonds=SealSource(s=issuerAnchor.snh, d=issuerAnchor.said),
+            framed=False,
+            gvrsn=Vrsn_2_0,
+        )
+
         # The builder creates an interaction after the current establishment
         # event and points the grant's source couple at that interaction.
         grantExn, grantAtc = ipexGrant(hab=grantor,
                                        recp=recipient.pre,
                                        message="Anchor predates rotation",
-                                       origin=acdc,
+                                       origin=authenticatedAcdc,
                                        ax=[True])
         parsed = Parser(version=Vrsn_2_0).parse(
             ims=bytearray(grantExn.raw) + grantAtc,
@@ -683,7 +694,7 @@ def test_ipex_v2_rejects_anchor_before_current_establishment():
         anchorSn = parsed.sscs[0][0].sn
 
         # Rotating before first delivery advances lastEst beyond the event that
-        # anchored the grant, making that source reference stale.
+        # anchored the grant without invalidating the historical commitment.
         grantor.rotate(gvrsn=Vrsn_2_0)
         assert anchorSn < grantor.kever.lastEst.s
 
@@ -697,14 +708,16 @@ def test_ipex_v2_rejects_anchor_before_current_establishment():
                      kramer=Kramer(db=hby.db, cf=cf),
                      exc=exc)
 
-        # KRAM can authenticate the historical seal, but IPEX must reject it
-        # because it is no longer based on the current sender key state.
+        # KRAM establishes receipt-time freshness and authenticates the historical
+        # seal. IPEX must preserve its perpetual verifiability after rotation.
         ims = bytearray(grantExn.raw) + grantAtc
         Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
 
         assert ims == bytearray()
-        assert hby.db.exns.get(keys=(grantExn.said,)) is None
-        assert recorder.items == []
+        assert hby.db.exns.get(keys=(grantExn.said,)) is not None
+        assert recorder.items == [{"r": "/exn/ipex/grant",
+                                   "d": grantExn.said,
+                                   "m": "Anchor predates rotation"}]
 
 
 def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
@@ -8354,6 +8367,16 @@ def test_ipex_v2_sign_endorsers_anchorers_through_kram_three_haberies():
         Parser(version=Vrsn_2_0).parse(ims=anchor, kvy=remoteKvy)
         assert anchor == bytearray()
 
+        # Rotate after anchoring but before delivery. The presenter's attached
+        # signature is now stale, while its historical source seal remains a
+        # perpetually verifiable grant authentication factor.
+        rotation = bytearray(presenter.rotate(framed=True,
+                                              version=Vrsn_2_0,
+                                              gvrsn=Vrsn_2_0))
+        Parser(version=Vrsn_2_0).parse(ims=rotation, kvy=remoteKvy)
+        assert rotation == bytearray()
+        assert anchorSn < verifierHby.db.kevers[presenter.pre].lastEst.s
+
         recorder = Recorder()
         exc = Exchanger(hby=verifierHby, handlers=[])
         loadHandlers(hby=verifierHby, exc=exc, notifier=recorder)
@@ -8389,8 +8412,8 @@ def test_ipex_v2_sign_endorsers_anchorers_through_kram_three_haberies():
             keys=(presenter.pre, anchorSaid.encode("utf-8")))
         assert any(seal.get("d") == grantExn.said for seal in anchorEvent.seals)
 
-        # _sign emitted both presenter factors, but IPEX keeps the stronger
-        # valid seal and removes the same-AID signature before durable storage.
+        # _sign emitted both presenter factors. IPEX drops the now-stale
+        # signature but keeps the stronger historical seal for durable storage.
         assert list(verifierHby.db.esigs.getTopItemIter(
             keys=(grantExn.said, presenter.pre, ""))) == []
         assert len(list(verifierHby.db.esigs.getTopItemIter(
