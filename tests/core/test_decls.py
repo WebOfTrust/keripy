@@ -1,0 +1,308 @@
+"""Signed declarations a witness makes about itself: /decl/tags and /decl/attribs.
+
+A witness AID is non-transferable, so its prefix is its public key and does not commit to the
+contents of its inception event — and nothing in the ecosystem fetches that KEL anyway, because
+verifying a witness receipt needs the prefix alone. A configuration trait therefore cannot carry a
+fact about a witness to anybody. Reply messages can: they are signed by the witness's own key,
+ordered under BADA, and already replayed through its OOBI, which is why /loc/scheme and
+/end/role/{action} live there. These two routes follow that pattern exactly.
+
+Tags and attribs are separate routes rather than one, because BADA orders each route independently.
+A witness's tags change almost never and its contact address changes often; sharing a route would
+mean re-signing and re-timestamping a `testnet` assertion in order to correct a typo in an email.
+"""
+
+import pytest
+
+from keri.kering import Vrsn_1_0, Kinds, ValidationError
+from keri.core import Salter, Diger
+from keri.core.serdering import SerderKERI
+from keri.app import openHby
+
+
+def _witness_and_validator(withby, valhby):
+    """A non-transferable witness, and a separate validator that has seen its inception.
+
+    The validator is a hab so that its own parser is used, already wired to a Kevery and a Revery
+    the way any real node's is. Hand-assembling that wiring in a test proves less than reusing it.
+    """
+    withab = withby.makeHab(
+        name="wit", isith="1", icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json
+    )
+    assert not withab.kever.prefixer.transferable
+
+    valhab = valhby.makeHab(
+        name="val", isith="1", icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json
+    )
+    valhab.psr.parse(bytearray(withab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+    assert withab.pre in valhab.kevers
+
+    return withab, valhab
+
+
+def _decl(hab, **kwa):
+    """A declaration reply at this repo's v1 test settings."""
+    return bytearray(hab.makeDeclTags(version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0, **kwa)) \
+        if "tags" in kwa else \
+        bytearray(hab.makeDeclAttribs(version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0, **kwa))
+
+
+def test_a_witness_declares_a_tag_and_a_validator_records_it():
+    """The whole point, end to end: the witness says testnet and a stranger can read it back."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, tags=["testnet"]))
+
+        record = valhby.db.decls.get(keys=(withab.pre, "tags"))
+        assert record is not None
+        assert record.tags == ["testnet"]
+
+
+def test_a_witness_declares_attribs_under_a_separate_route():
+    """Separate route, separate BADA ordering: correcting a contact must not touch the tag."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, tags=["testnet"]))
+        tagged = valhby.db.dans.get(keys=(withab.pre, "tags"))
+
+        valhab.psr.parse(_decl(withab, attribs={"operator": "Bakobo"}))
+        assert valhby.db.decls.get(keys=(withab.pre, "attribs")).attribs == {"operator": "Bakobo"}
+
+        # The tag declaration's own authorization is untouched by the attrib declaration.
+        assert valhby.db.dans.get(keys=(withab.pre, "tags")).qb64 == tagged.qb64
+
+
+def test_a_later_declaration_supersedes_an_earlier_one():
+    """BADA: a newer timestamp from the same AID replaces the older reply."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, attribs={"contact": "old@example.test"},
+                               stamp="2026-01-01T00:00:00.000000+00:00"))
+        valhab.psr.parse(_decl(withab, attribs={"contact": "new@example.test"},
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+        record = valhby.db.decls.get(keys=(withab.pre, "attribs"))
+        assert record.attribs == {"contact": "new@example.test"}
+
+
+def test_an_earlier_declaration_does_not_supersede_a_later_one():
+    """The other half of BADA, and the one that makes a rollback attack fail."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, tags=["testnet"],
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+        valhab.psr.parse(_decl(withab, tags=[],
+                               stamp="2026-01-01T00:00:00.000000+00:00"))
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
+#: ``EID`` is replaced with the declaring witness's real prefix at run time. Using a placeholder
+#: prefix instead would make the last case pass for the wrong reason: an unparseable eid raises
+#: out of Prefixer before the tags check is ever reached, so the test would be asserting the eid
+#: check twice and never exercising the one it names.
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"tags": ["testnet"]},                  # no eid
+        {"eid": "EID"},                         # no tags
+        {"eid": "EID", "tags": "testnet"},      # tags present but not a list
+    ],
+)
+def test_a_malformed_tag_declaration_is_refused(data):
+    """The route's own shape check, before BADA and before anything is written."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        data = {k: (withab.pre if v == "EID" else v) for k, v in data.items()}
+        msg = withab.reply(route="/decl/tags", data=data, version=Vrsn_1_0,
+                           kind=Kinds.json, gvrsn=Vrsn_1_0)
+
+        # Driven at the handler rather than through the parser, which logs a bad message and moves
+        # on rather than propagating: the contract under test is that the route refuses the shape.
+        serder = SerderKERI(raw=bytes(msg))
+        with pytest.raises(ValidationError):
+            valhab.kvy.processReplyDeclTags(
+                serder=serder, diger=Diger(qb64=serder.said), route=serder.ked["r"]
+            )
+
+        # And the refusal leaves nothing behind, so a retry is honest rather than hopeful.
+        valhab.psr.parse(bytearray(msg))
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")) is None
+
+
+def test_a_declaration_is_keyed_on_the_normalized_eid():
+    """Prefixer ignores trailing characters, so the raw eid field is not always the prefix it parses
+    to. The handler keys on the parsed prefix, as /loc/scheme does, so junk after a valid eid can
+    neither mint a second key for the same declarer nor fail BADA's signer-is-aid check."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        junked = withab.pre + "JUNK"
+        valhab.psr.parse(_decl(withab, eid=junked, tags=["testnet"]))
+
+        assert valhby.db.decls.get(keys=(junked, "tags")) is None
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
+def test_a_witness_declares_from_its_config_file():
+    """How a live witness gets its declarations: from its own section of the config file, the same
+    way it gets its curls, so an operator never has to write code to say testnet."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby:
+        withby.cf.put(dict(wit=dict(dt="2021-01-01T00:00:00.000000+00:00",
+                                    curls=["tcp://localhost:5632/"],
+                                    tags=["testnet"],
+                                    attribs={"operator": "Example Org"})))
+        withab = withby.makeHab(
+            name="wit", isith="1", icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json
+        )
+
+        assert withby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+        assert withby.db.decls.get(keys=(withab.pre, "attribs")).attribs == \
+            {"operator": "Example Org"}
+
+
+def test_a_declaration_travels_over_oobi_to_a_third_party():
+    """The step that makes this a broadcast rather than a private answer.
+
+    A consumer who never contacts the witness resolves an OOBI for a controller the witness
+    witnesses, and the witness's own declaration rides along with the loc scheme and key state it
+    was already sending. Without this the routes would exist and reach nobody.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="ctl", base="test", salt=salt, version=Vrsn_1_0) as ctlhby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab = withby.makeHab(
+            name="wit", isith="1", icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json
+        )
+        # The witness declares itself test infrastructure, into its own database.
+        withab.psr.parse(_decl(withab, tags=["testnet"]))
+        assert withby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+        # A controller this witness witnesses.
+        ctlhab = ctlhby.makeHab(
+            name="ctl", isith="1", icount=1, transferable=True, wits=[withab.pre], toad=1,
+            version=Vrsn_1_0, kind=Kinds.json
+        )
+        withab.psr.parse(bytearray(ctlhab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+
+        # What the witness would serve for an OOBI on that controller, in the witness role.
+        stream = withab.replyToOobi(aid=ctlhab.pre, role="witness", version=Vrsn_1_0,
+                                    kind=Kinds.json, gvrsn=Vrsn_1_0)
+        assert b"/decl/tags" in bytes(stream)
+
+        # A third party that has never spoken to the witness ingests the stream and ends up
+        # holding the declaration.
+        valhab = valhby.makeHab(
+            name="val", isith="1", icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json
+        )
+        valhab.psr.parse(bytearray(withab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+        valhab.psr.parse(bytearray(stream))
+
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
+def test_an_old_v2_declaration_survives_kram_as_a_location_does():
+    """A relay furnishes another party's OOBI replies as originally signed, so their stamps are old.
+
+    KRAM would drop such a reply as stale, which is why Kramer.OobiDenials exempts v2 /loc/scheme
+    and /end/role from it. Declarations travel in the same replay and need the same exemption.
+    """
+    from keri.core import Kramer
+    from keri.kering import Vrsn_2_0
+
+    stamp = "2021-01-01T00:00:00.000000+00:00"
+    opts = dict(version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0, stamp=stamp)
+    salt = Salter(raw=b"abcdef0123456789").qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_2_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_2_0) as valhby:
+        withab = withby.makeHab(name="wit", isith="1", icount=1, transferable=False,
+                                version=Vrsn_2_0, kind=Kinds.json)
+        valhab = valhby.makeHab(name="val", isith="1", icount=1, transferable=True,
+                                version=Vrsn_2_0, kind=Kinds.json)
+        valhab.psr.parse(bytearray(withab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)))
+
+        valhby.cf.put({"kram": {"enabled": True, "denials": [],
+                                "caches": {"~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]}}})
+        valhab.kvy.kramer = Kramer(db=valhby.db, cf=valhby.cf, cues=valhab.kvy.cues)
+
+        for msg in (withab.makeDeclTags(tags=["testnet"], **opts),
+                    withab.makeLocScheme(url="http://localhost:5632/", **opts)):
+            withab.psr.parse(bytearray(msg))
+
+        valhab.psr.parse(withab.loadDecls(eid=withab.pre, gvrsn=Vrsn_2_0))
+        valhab.psr.parse(withab.loadLocScheme(eid=withab.pre, gvrsn=Vrsn_2_0))
+
+        assert valhby.db.locs.get(keys=(withab.pre, "http")) is not None
+        decl = valhby.db.decls.get(keys=(withab.pre, "tags"))
+        assert decl is not None and decl.tags == ["testnet"]
+
+        # Denials match by string prefix, so the trailing slash keeps /declare and the like out.
+        assert any(d.endswith(".rpy./decl/") for d in valhab.kvy.kramer.denials)
+        assert not any("/declare".startswith(d.split(".rpy.")[-1])
+                       for d in valhab.kvy.kramer.denials if ".rpy." in d)
+
+
+def test_a_declaration_travels_over_the_declarer_s_own_oobi():
+    """The door a consumer actually knocks on when it wants to know about the witness itself.
+
+    A controller designating a witness learns it by resolving the witness's own OOBI --
+    /oobi/<eid>/controller -- because that is the only address it has for it. Without this the
+    declaration reaches only a third party resolving somebody the witness witnesses, so the
+    party choosing whether to designate a laboratory witness is the one party who cannot see
+    that it is one.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+        withab.psr.parse(_decl(withab, tags=["testnet"]))
+
+        stream = withab.replyToOobi(aid=withab.pre, role="controller", version=Vrsn_1_0,
+                                    kind=Kinds.json, gvrsn=Vrsn_1_0)
+        assert b"/decl/tags" in bytes(stream)
+
+        valhab.psr.parse(bytearray(stream))
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
+def test_a_relay_replays_a_declaration_on_the_declarer_s_own_oobi():
+    """A party that holds somebody else's declaration passes it on with its own signature intact.
+
+    The same split replyEndRole already makes for loc scheme: the declarer re-signs, and anybody
+    else replays what they were given, so a declaration crossing a third party is still the
+    declarer's own signed statement rather than a repetition of it.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="rly", base="test", salt=salt, version=Vrsn_1_0) as rlyhby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, rlyhab = _witness_and_validator(withby, rlyhby)
+        rlyhab.psr.parse(_decl(withab, tags=["testnet"]))
+
+        stream = rlyhab.replyToOobi(aid=withab.pre, role="controller", version=Vrsn_1_0,
+                                    kind=Kinds.json, gvrsn=Vrsn_1_0)
+        assert b"/decl/tags" in bytes(stream)
+
+        valhab = valhby.makeHab(
+            name="val", isith="1", icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json
+        )
+        valhab.psr.parse(bytearray(withab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+        valhab.psr.parse(bytearray(stream))
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]

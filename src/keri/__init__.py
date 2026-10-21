@@ -43,6 +43,6 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
 from .recording import (RawRecord, StateEERecord, KeyStateRecord,
                         EventSourceRecord, HabitatRecord, TopicsRecord,
                         OobiQueryRecord, OobiRecord, EndpointRecord,
-                        EndAuthRecord, LocationRecord, ObservedRecord,
+                        EndAuthRecord, DeclRecord, LocationRecord, ObservedRecord,
                         CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord,
                         WellKnownAuthN)
