@@ -495,8 +495,8 @@ class IpexHandler:
                 single-DAG workflow ``offer`` may carry an ACDC DAG subset and
                 ``grant`` may carry the final disclosed DAG.
             sscs (list | None): Sender source-seal couples retained after KRAM.
-            evidence (tuple | None): Post-KRAM non-sender signature groups,
-                cigars, and source-seal triples accepted by ``verifyEvidence``.
+            evidence (tuple | None): Post-KRAM signature groups, cigars, and
+                source-seal triples accepted for route validation.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -717,11 +717,13 @@ class IpexHandler:
                 if not self._verifyGraphSemantics(nodes=grantNodes, order=grantOrder):
                     return False
 
-                # Require Exchanger's fixed three-part evidence result.
                 try:
-                    _, _, extraSeals = evidence
+                    evidenceTsgs, evidenceCigars, extraSeals = evidence
                 except (TypeError, ValueError):
                     return False
+                signers = {prefixer.qb64
+                           for prefixer, _, _, _ in evidenceTsgs}
+                signers.update(cigar.verfer.qb64 for cigar in evidenceCigars)
 
                 # Verify every presentation registry declared across the DAG.
                 tethered = self._verifyPresentationAuthGraph(
@@ -730,6 +732,9 @@ class IpexHandler:
                     order=grantOrder,
                 )
                 if tethered is None:
+                    return False
+
+                if tethered and serder.pre not in signers:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.

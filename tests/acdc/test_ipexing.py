@@ -7810,7 +7810,7 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
 
 
 def test_ipex_v2_presentation_registry_binds_proxy_grant():
-    """An issuee TEL can satisfy grant ax while sharing a nest with issuer proof."""
+    """A proxy signature and timely Issuee TEL authenticate the Grant."""
     with openHby(name="ipex-v2-presentation-registry",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -7865,20 +7865,17 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             exc = Exchanger(hby=hby, handlers=[])
             loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
 
+            # The proxy signs the Grant as its sender.
             senderTsg = (proxy.kever.prefixer,
                          Number(sn=proxy.kever.lastEst.s),
                          Diger(qb64=proxy.kever.lastEst.d),
                          proxy.sign(ser=grantExn.raw, indexed=True))
-            issueeTsg = (issuee.kever.prefixer,
-                         Number(sn=issuee.kever.lastEst.s),
-                         Diger(qb64=issuee.kever.lastEst.d),
-                         issuee.sign(ser=grantExn.raw, indexed=True))
 
             # Omitting the trailing vacuous disclosure cannot establish that
             # the earlier presentation remains the registry's effective state.
             incompleteNode = _proofed(acdc, issuerProof, presentationProof)
             incomplete = messagize(grantExn,
-                                   tsgs=[senderTsg, issueeTsg],
+                                   tsgs=[senderTsg],
                                    nests=[_nest(incompleteNode)],
                                    framed=False,
                                    gvrsn=Vrsn_2_0)
@@ -7896,16 +7893,32 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 vacuousProof,
                 anchors=[(issuee, presentedAnchor)],
             )
-            registryOnly = messagize(grantExn,
-                                     tsgs=[senderTsg],
-                                     nests=[_nest(node)],
-                                     framed=False,
-                                     gvrsn=Vrsn_2_0)
+
             complete = messagize(grantExn,
-                                 tsgs=[senderTsg, issueeTsg],
+                                 tsgs=[senderTsg],
                                  nests=[_nest(node)],
                                  framed=False,
                                  gvrsn=Vrsn_2_0)
+
+            directAnchor = proxy.interact(
+                data=[dict(d=grantExn.said)],
+                kind=proxy.kever.serder.kind,
+                version=proxy.kever.serder.pvrsn,
+                gvrsn=Vrsn_2_0,
+            )
+            directAnchor = _serder(directAnchor)
+
+            # A sender anchor cannot replace the signature required when IPEX
+            # later authenticates a presentation registry.
+            anchorOnly = messagize(
+                grantExn,
+                bonds=[SealEvent(i=proxy.pre,
+                                 s=directAnchor.snh,
+                                 d=directAnchor.said)],
+                nests=[_nest(node)],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
 
             # Complete TEL evidence still fails closed without KRAM acceptance.
             ims = bytearray(complete)
@@ -7934,7 +7947,7 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             # A TEL timestamp and a currently visible KEL anchor do not prove
             # that the anchor existed when KRAM accepted this Grant.
             unreferenced = messagize(grantExn,
-                                     tsgs=[senderTsg, issueeTsg],
+                                     tsgs=[senderTsg],
                                      nests=[_nest(unreferencedNode)],
                                      framed=False,
                                      gvrsn=Vrsn_2_0)
@@ -7943,9 +7956,16 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # Sender authentication plus the Issuee's presentation TEL is
-            # sufficient; the Issuee does not need a redundant EXN endorsement.
-            ims = bytearray(registryOnly)
+            # A direct sender anchor still cannot replace the outer signature
+            # required before presentation-registry validation.
+            ims = bytearray(anchorOnly)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(grantExn.said,)) is None
+
+            # The proxy signature authenticates the sender while the timely
+            # Issuee TEL supplies Bob's fresh proof without multiple endorsement.
+            ims = bytearray(complete)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
@@ -8207,21 +8227,11 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                          Number(sn=proxy.kever.lastEst.s),
                          Diger(qb64=proxy.kever.lastEst.d),
                          proxy.sign(ser=grantExn.raw, indexed=True))
-            originIssueeTsg = (originIssuee.kever.prefixer,
-                               Number(sn=originIssuee.kever.lastEst.s),
-                               Diger(qb64=originIssuee.kever.lastEst.d),
-                               originIssuee.sign(ser=grantExn.raw, indexed=True))
-            childIssueeTsg = (childIssuee.kever.prefixer,
-                              Number(sn=childIssuee.kever.lastEst.s),
-                              Diger(qb64=childIssuee.kever.lastEst.d),
-                              childIssuee.sign(ser=grantExn.raw, indexed=True))
-            grantorTsgs = [senderTsg, originIssueeTsg, childIssueeTsg]
-
-            # Endorsements cannot replace the child presentation proof.
+            # One valid presentation registry cannot replace the child's proof.
             incompleteChild = _proofed(child, childIssuerProof)
             ims = messagize(
                 grantExn,
-                tsgs=grantorTsgs,
+                tsgs=[senderTsg],
                 nests=[_nest(proofedOrigin), _nest(incompleteChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -8230,7 +8240,8 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # The sender factor and both Issuee TEL factors accept the Grant.
+            # The sender signature and both Issuee TEL factors accept the Grant
+            # without redundant signatures from either non-sender Issuee.
             ims = messagize(
                 grantExn,
                 tsgs=[senderTsg],
