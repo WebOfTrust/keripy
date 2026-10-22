@@ -724,17 +724,22 @@ class IpexHandler:
                 signers = {prefixer.qb64
                            for prefixer, _, _, _ in evidenceTsgs}
                 signers.update(cigar.verfer.qb64 for cigar in evidenceCigars)
+                grantors = {serder.pre}
+                grantors.update(signers)
+                grantors.update(prefixer.qb64
+                                for prefixer, _, _ in extraSeals)
 
-                # Verify every presentation registry declared across the DAG.
+                # Verify presentation registries for participating Grantors.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
                     nodes=grantNodes,
                     order=grantOrder,
+                    grantors=grantors,
                 )
                 if tethered is None:
                     return False
 
-                if tethered and serder.pre not in signers:
+                if tethered and serder.pre not in signers and not sscs:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
@@ -1858,10 +1863,11 @@ class IpexHandler:
         # Return every explicit presentation requirement.
         return declarations
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order):
-        """Verify every presentation registry in the DAG."""
+    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
+        """Verify presentation registries belonging to Grantors in the DAG."""
 
-        required = []
+        declared = []
+        grantors = set(grantors)
 
         # Walk the already validated DAG in deterministic order.
         for said in order:
@@ -1879,11 +1885,21 @@ class IpexHandler:
             if declarations is None:
                 return None
 
-            # Bind each declaration to this node's local proofs.
+            # Keep each declaration with its node-local proof stream.
+            sourceSeals = nest.get("ssts", []) if isinstance(nest, dict) else nest.ssts
             for issuee, regk in declarations:
-                # The declaration is the issuer's signal that this Issuee must
-                # authenticate the grant through this node-local registry.
-                required.append((said, issuee, regk, nest))
+                declared.append((issuee, regk, nest))
+
+                # A supplied Issuee source identifies a registry-backed
+                # non-sender Grantor without requiring another endorsement.
+                if any(prefixer.qb64 == issuee
+                       for prefixer, _, _ in sourceSeals):
+                    grantors.add(issuee)
+
+        # An Issuee's declaration applies only when that Issuee participates as
+        # a Grantor. Merely appearing in an ACDC does not assign that role.
+        required = [declaration for declaration in declared
+                    if declaration[0] in grantors]
 
         # Load the receiver timestamp that freezes registry history.
         cache = self.hby.db.kramTMSC.get(
@@ -1897,7 +1913,7 @@ class IpexHandler:
         tethered = set()
 
         # Vet every declared registry independently.
-        for said, issuee, regk, nest in required:
+        for issuee, regk, nest in required:
             # Resolve the latest disclosed binding as of KRAM acceptance.
             sourceSeals = nest.get("ssts", []) if isinstance(nest, dict) else nest.ssts
             record = self._vetRegistry(regk=regk,
