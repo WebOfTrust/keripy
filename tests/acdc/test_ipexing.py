@@ -8050,20 +8050,28 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert sourceNumber.sn == presentedAnchorSerder.sn
             assert sourceDiger.qb64 == presentedAnchorSerder.said
 
-            # The Issuee is not automatically a Grantor merely because the ACDC
-            # declares its presentation registry. A proxy-only Grant remains a
-            # valid generic IPEX exchange for business policy to evaluate.
+            # The disclosed Issuee registry makes its proof mandatory for this
+            # proxy presentation; omitting it must not disable the check.
             missingExn, missingAtc = ipexGrant(
                 hab=proxy,
                 recp=recipient.pre,
                 message="Proxy-only presentation",
                 origin=_proofed(acdc, issuerProof),
             )
+            stamp = missingExn.ked["dt"]
+            hby.db.kramTMSC.pin(
+                keys=(missingExn.pre, missingExn.ked["x"], missingExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
+            )
             ims = bytearray(missingExn.raw)
             ims.extend(missingAtc)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
-            assert hby.db.exns.get(keys=(missingExn.said,)) is not None
+            assert hby.db.exns.get(keys=(missingExn.said,)) is None
 
             # The same declaration is also inactive while the Issuer grants the
             # credential to its Issuee, because the Issuee is the Disclosee and

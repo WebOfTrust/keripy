@@ -1890,10 +1890,11 @@ class IpexHandler:
                        for prefixer, _, _ in sourceSeals):
                     grantors.add(issuee)
 
-        # An Issuee's declaration applies only when that Issuee participates as
-        # a Grantor. Merely appearing in an ACDC does not assign that role.
+        origin = nodes[order[0]]
+        origin = origin["serder"] if isinstance(origin, dict) else origin.serder
+        issuance = serder.pre == origin.israid
         required = [declaration for declaration in declared
-                    if declaration[0] in grantors]
+                    if not issuance or declaration[0] in grantors]
 
         # Load the receiver timestamp that freezes registry history.
         cache = self.hby.db.kramTMSC.get(
