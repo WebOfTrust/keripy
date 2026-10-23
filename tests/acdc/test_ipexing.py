@@ -7785,6 +7785,11 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
         aggregate = SimpleNamespace(
             sad=dict(rd=issuerReg,
                      A=["", dict(i=issuee.pre, rd=presentationReg)]))
+        selectiveAggregate = SimpleNamespace(
+            sad=dict(rd=issuerReg,
+                     A=[Diger(ser=b"aggregate").qb64,
+                        dict(i=issuee.pre, rd=presentationReg),
+                        Diger(ser=b"hidden aggregate element").qb64]))
 
         # Model missing issuer context and compact or partial disclosures.
         hiddenIssuer = SimpleNamespace(
@@ -7803,10 +7808,11 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
         expected = [(issuee.pre, presentationReg)]
         assert IpexHandler._presentationRegistries(attribute) == expected
         assert IpexHandler._presentationRegistries(aggregate) == expected
+        assert IpexHandler._presentationRegistries(selectiveAggregate) == expected
         assert IpexHandler._presentationRegistries(hiddenIssuer) is None
         assert IpexHandler._presentationRegistries(compactAttribute) is None
-        assert IpexHandler._presentationRegistries(compactAggregate) is None
-        assert IpexHandler._presentationRegistries(partialAggregate) is None
+        assert IpexHandler._presentationRegistries(compactAggregate) == []
+        assert IpexHandler._presentationRegistries(partialAggregate) == []
 
 
 def test_ipex_v2_presentation_registry_binds_proxy_grant():

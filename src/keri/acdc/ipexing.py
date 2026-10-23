@@ -1783,9 +1783,8 @@ class IpexHandler:
         """Extract disclosed issuee/presentation-registry declarations.
 
         Return ``None`` for an unsupported hidden issuer registry or when a
-        registry-backed ACDC hides an attribute or aggregate element that could
-        contain a presentation requirement. A verifier cannot distinguish an
-        omitted requirement from an undisclosed one using only its digest.
+        registry-backed ACDC hides its attribute section, which may contain a
+        presentation requirement.
         """
         if not serder.sad.get("rd"):
             # A disclosed inner rd without top-level rd is an unsupported
@@ -1821,17 +1820,10 @@ class IpexHandler:
         # Inspect aggregate sections for additional Issuees.
         aggregate = serder.sad.get("A")
 
-        # A blinded aggregate may hide a required declaration.
-        if isinstance(aggregate, str):
-            return None
-
         # Skip the aggregate root and inspect its disclosed entries.
         if isinstance(aggregate, list):
-
-            # Every inspected aggregate entry must be a mapping.
-            if any(not isinstance(section, Mapping) for section in aggregate[1:]):
-                return None
-            sections.extend(aggregate[1:])
+            sections.extend(section for section in aggregate[1:]
+                            if isinstance(section, Mapping))
 
         # Support the single disclosed aggregate mapping form.
         elif isinstance(aggregate, Mapping):
