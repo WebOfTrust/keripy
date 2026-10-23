@@ -512,7 +512,8 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
         assert grantExn.ked["a"]["ax"] == [True]
         assert admitExn.ked["a"]["ax"] == [True]
 
-        # Negotiation messages carry signatures only; binding replies add seals.
+        # Negotiation messages carry signatures; anchored binding replies use
+        # only their stronger KEL source seals for sender authentication.
         signaling = ((applyExn, applyAtc), (offerExn, offerAtc))
         binding = ((agreeExn, agreeAtc), (grantExn, grantAtc), (admitExn, admitAtc))
         for exn, atc in signaling:
@@ -529,7 +530,7 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
                 framed=False,
                 processive=False)[0]
             assert len(result.sscs) == 1
-            assert len(result.tsgs) == 1
+            assert result.tsgs == []
             number, diger = result.sscs[0]
             event = hby.db.evts.get(keys=(exn.pre, diger.qb64))
             assert hby.db.kels.getLast(keys=exn.pre, on=number.sn) == diger.qb64
@@ -630,12 +631,8 @@ def test_ipex_v2_establishment_only_anchor_construction():
         assert number.sn == anchor.sn
         assert diger.qb64 == anchor.said
 
-        # Signing happens after rotation, so the EXN signature uses the new lastEst.
-        assert len(result.tsgs) == 1
-        prefixer, number, diger, _ = result.tsgs[0]
-        assert prefixer.qb64 == grantor.pre
-        assert number.sn == anchor.sn
-        assert diger.qb64 == anchor.said
+        # The source seal replaces a redundant sender signature on the EXN.
+        assert result.tsgs == []
 
         # Finally dispatch the stream to prove the V2 handler accepts this proof.
         recorder = Recorder()
@@ -2111,6 +2108,57 @@ def test_ipex_v2_offer_accepts_baseline_content_forms():
             "metadata SAD and schema SAID",
             "metadata SAID",
         ]
+
+
+def test_ipex_v2_offer_accepts_full_disclosure_for_issuance():
+    """An Issuee can inspect the complete ACDC before agreeing to issuance."""
+    with openHby(name="ipex-v2-full-issuance-offer",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        issuee = hby.makeHab(name="issuee")
+        acdc = acdcmap(israid=issuer.pre,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36",
+                                      role="member"),
+                       rule=dict(d="", l="Use only for onboarding."),
+                       iseaid=issuee.pre)
+        schema = acdc.sad["s"]["$id"]
+        whole = dict(dp=[[[schema, "/", [""]]]])
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(
+            hab=issuee, recp=issuer.pre,
+            message="Show the complete credential before issuance",
+            modifiers=whole)
+        offerExn, offerAtc = ipexOffer(
+            hab=issuer, message="Review the credential",
+            origin=acdc, artifacts=[], apply=applyExn)
+        agreeExn, agreeAtc = ipexAgree(
+            hab=issuee, message="I agree to this credential", offer=offerExn)
+        grantExn, grantAtc = ipexGrant(
+            hab=issuer, recp=issuee.pre, message="Issue the credential",
+            origin=_signed(acdc, issuer), agree=agreeExn)
+
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(offerExn.raw + offerAtc),
+            framed=False,
+            processive=False)[0]
+        assert len(parsed.nests) == 1
+        assert parsed.nests[0].serder.said == acdc.said
+        assert parsed.nests[0].serder.sad["a"]["role"] == "member"
+        assert parsed.nests[0].serder.sad["r"]["l"] == "Use only for onboarding."
+
+        for exn, atc in ((applyExn, applyAtc),
+                         (offerExn, offerAtc),
+                         (agreeExn, agreeAtc),
+                         (grantExn, grantAtc)):
+            ims = bytearray(exn.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(exn.said,)) is not None
 
 
 def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
@@ -7785,6 +7833,11 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
         aggregate = SimpleNamespace(
             sad=dict(rd=issuerReg,
                      A=["", dict(i=issuee.pre, rd=presentationReg)]))
+        selectiveAggregate = SimpleNamespace(
+            sad=dict(rd=issuerReg,
+                     A=[Diger(ser=b"aggregate").qb64,
+                        dict(i=issuee.pre, rd=presentationReg),
+                        Diger(ser=b"hidden aggregate element").qb64]))
 
         # Model missing issuer context and compact or partial disclosures.
         hiddenIssuer = SimpleNamespace(
@@ -7803,14 +7856,15 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
         expected = [(issuee.pre, presentationReg)]
         assert IpexHandler._presentationRegistries(attribute) == expected
         assert IpexHandler._presentationRegistries(aggregate) == expected
+        assert IpexHandler._presentationRegistries(selectiveAggregate) == expected
         assert IpexHandler._presentationRegistries(hiddenIssuer) is None
         assert IpexHandler._presentationRegistries(compactAttribute) is None
-        assert IpexHandler._presentationRegistries(compactAggregate) is None
-        assert IpexHandler._presentationRegistries(partialAggregate) is None
+        assert IpexHandler._presentationRegistries(compactAggregate) == []
+        assert IpexHandler._presentationRegistries(partialAggregate) == []
 
 
 def test_ipex_v2_presentation_registry_binds_proxy_grant():
-    """An issuee TEL can satisfy grant ax while sharing a nest with issuer proof."""
+    """A proxy signature or KEL anchor and Issuee TEL authenticate the Grant."""
     with openHby(name="ipex-v2-presentation-registry",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -7864,7 +7918,9 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             recorder = Recorder()
             exc = Exchanger(hby=hby, handlers=[])
             loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
+            kvy = Kevery(db=hby.db, lax=False, local=False, exc=exc)
 
+            # The proxy signs the Grant as its sender.
             senderTsg = (proxy.kever.prefixer,
                          Number(sn=proxy.kever.lastEst.s),
                          Diger(qb64=proxy.kever.lastEst.d),
@@ -7896,16 +7952,32 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 vacuousProof,
                 anchors=[(issuee, presentedAnchor)],
             )
-            registryOnly = messagize(grantExn,
-                                     tsgs=[senderTsg],
-                                     nests=[_nest(node)],
-                                     framed=False,
-                                     gvrsn=Vrsn_2_0)
+
             complete = messagize(grantExn,
-                                 tsgs=[senderTsg, issueeTsg],
+                                 tsgs=[senderTsg],
                                  nests=[_nest(node)],
                                  framed=False,
                                  gvrsn=Vrsn_2_0)
+
+            directAnchor = proxy.interact(
+                data=[dict(d=grantExn.said)],
+                kind=proxy.kever.serder.kind,
+                version=proxy.kever.serder.pvrsn,
+                gvrsn=Vrsn_2_0,
+            )
+            directAnchor = _serder(directAnchor)
+
+            # A direct sender anchor can authenticate the outer Grant while the
+            # Issuee's presentation registry supplies its separate fresh proof.
+            anchorOnly = messagize(
+                grantExn,
+                bonds=[SealEvent(i=proxy.pre,
+                                 s=directAnchor.snh,
+                                 d=directAnchor.said)],
+                nests=[_nest(node)],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
 
             # Complete TEL evidence still fails closed without KRAM acceptance.
             ims = bytearray(complete)
@@ -7943,13 +8015,21 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # Sender authentication plus the Issuee's presentation TEL is
-            # sufficient; the Issuee does not need a redundant EXN endorsement.
-            ims = bytearray(registryOnly)
+            # KRAM accepts either sender authentication factor before IPEX
+            # validates the Issuee's presentation registry.
+            ims = bytearray(anchorOnly)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, kvy=kvy)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(grantExn.said,)) is not None
+            assert len(hby.db.ests.get(keys=(grantExn.said, proxy.pre))) == 1
+
+            # The proxy signature authenticates the sender while the timely
+            # Issuee TEL supplies Bob's fresh proof without multiple endorsement.
+            ims = bytearray(complete)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
-            assert hby.db.ests.get(keys=(grantExn.said, proxy.pre)) == []
+            assert len(hby.db.ests.get(keys=(grantExn.said, proxy.pre))) == 1
             assert hby.db.ests.get(keys=(grantExn.said, issuee.pre)) == []
             assert len(list(hby.db.esigs.getTopItemIter(
                 keys=(grantExn.said, proxy.pre, "")))) == 1
@@ -7970,19 +8050,57 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert sourceNumber.sn == presentedAnchorSerder.sn
             assert sourceDiger.qb64 == presentedAnchorSerder.said
 
-            # Presentation anchoring is mandatory from issuance metadata even
-            # when a later grant omits ax.
+            # The disclosed Issuee registry makes its proof mandatory for this
+            # proxy presentation; omitting it must not disable the check.
             missingExn, missingAtc = ipexGrant(
                 hab=proxy,
                 recp=recipient.pre,
-                message="Missing mandatory presentation proof",
+                message="Proxy-only presentation",
                 origin=_proofed(acdc, issuerProof),
+            )
+            stamp = missingExn.ked["dt"]
+            hby.db.kramTMSC.pin(
+                keys=(missingExn.pre, missingExn.ked["x"], missingExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
             )
             ims = bytearray(missingExn.raw)
             ims.extend(missingAtc)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(missingExn.said,)) is None
+
+            # The same declaration is also inactive while the Issuer grants the
+            # credential to its Issuee, because the Issuee is the Disclosee and
+            # not a Grantor in this issuance exchange.
+            issuanceExn, issuanceAtc = ipexGrant(
+                hab=issuer,
+                recp=issuee.pre,
+                message="Issue credential to its Issuee",
+                origin=_proofed(acdc, issuerProof),
+            )
+            ims = bytearray(issuanceExn.raw)
+            ims.extend(issuanceAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(issuanceExn.said,)) is not None
+
+            # In contrast, the registry is mandatory when the Issuee itself is
+            # the Grant sender and therefore acts as the Presentor.
+            holderExn, holderAtc = ipexGrant(
+                hab=issuee,
+                recp=recipient.pre,
+                message="Issuee presents its credential",
+                origin=_proofed(acdc, issuerProof),
+            )
+            ims = bytearray(holderExn.raw)
+            ims.extend(holderAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(holderExn.said,)) is None
 
             # A compact attribute commits to the same ACDC but hides whether
             # the issuer mandated this presentation registry. It cannot be
@@ -8093,7 +8211,7 @@ def test_ipex_v2_rejects_substituted_presentation_registry():
 
 
 def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
-    """Every declared node-local presentation registry must bind the grant."""
+    """Every participating Issuee's presentation registry binds the grant."""
     with openHby(name="ipex-v2-multiple-presentation-registries",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -8207,21 +8325,15 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                          Number(sn=proxy.kever.lastEst.s),
                          Diger(qb64=proxy.kever.lastEst.d),
                          proxy.sign(ser=grantExn.raw, indexed=True))
-            originIssueeTsg = (originIssuee.kever.prefixer,
-                               Number(sn=originIssuee.kever.lastEst.s),
-                               Diger(qb64=originIssuee.kever.lastEst.d),
-                               originIssuee.sign(ser=grantExn.raw, indexed=True))
-            childIssueeTsg = (childIssuee.kever.prefixer,
-                              Number(sn=childIssuee.kever.lastEst.s),
-                              Diger(qb64=childIssuee.kever.lastEst.d),
-                              childIssuee.sign(ser=grantExn.raw, indexed=True))
-            grantorTsgs = [senderTsg, originIssueeTsg, childIssueeTsg]
-
-            # Endorsements cannot replace the child presentation proof.
+            childTsg = (childIssuee.kever.prefixer,
+                        Number(sn=childIssuee.kever.lastEst.s),
+                        Diger(qb64=childIssuee.kever.lastEst.d),
+                        childIssuee.sign(ser=grantExn.raw, indexed=True))
+            # One valid presentation registry cannot replace the child's proof.
             incompleteChild = _proofed(child, childIssuerProof)
             ims = messagize(
                 grantExn,
-                tsgs=grantorTsgs,
+                tsgs=[senderTsg, childTsg],
                 nests=[_nest(proofedOrigin), _nest(incompleteChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -8230,7 +8342,8 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # The sender factor and both Issuee TEL factors accept the Grant.
+            # The sender signature and both Issuee TEL factors accept the Grant
+            # without redundant signatures from either non-sender Issuee.
             ims = messagize(
                 grantExn,
                 tsgs=[senderTsg],

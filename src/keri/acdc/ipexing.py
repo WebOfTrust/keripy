@@ -325,7 +325,7 @@ def _validDisclosurePath(value):
 
 def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
           anchorers=None, gvrsn=None):
-    """Sign and messagize an outer IPEX exchange with optional nested streams.
+    """Authenticate and messagize an outer IPEX exchange with optional nests.
 
     Parameters:
         hab (Hab): Habitat used to sign the outer exchange.
@@ -333,7 +333,8 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
         nests (list[bytes | bytearray] | None): Optional nested substreams to
             append in the outer attachment section.
         anchor (bool): True creates a permitted KEL event sealing
-            ``serder.said`` and attaches its source-seal couple to the exchange.
+            ``serder.said`` and attaches its source-seal couple instead of a
+            redundant sender signature.
         endorsers (list[Hab] | None): Additional local habitats that sign the
             same outer exchange as non-sender grantors (e.g proxy AIDs).
         anchorers (list[Hab] | None): Additional local transferable habitats
@@ -342,8 +343,8 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
             attachment and nesting groups.
 
     Returns:
-        bytearray: Full signed exchange stream including the outer message body,
-            attachments, and any nested substreams.
+        bytearray: Full authenticated exchange stream including the outer message
+            body, attachments, and any nested substreams.
     """
     gvrsn = gvrsn if gvrsn is not None else Vrsn_2_0
     nests = nests if nests else None
@@ -411,24 +412,25 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
         # Explicitly name the non-sender anchorer in a source triple.
         bonds.append(SealEvent(i=anchorer.pre, s=aserder.snh, d=aserder.said))
 
-    # Sign after anchoring so an Establishment Only rotation's new keys and lastEst are used.
     # Collect transferable signature groups separately from cigars.
     tsgs = []
     cigars = []
 
-    # Sign the outer EXN with the sender's current key state.
-    if hab.kever.prefixer.transferable:
-        # Transferable senders produce indexed signatures.
-        sigers = hab.sign(ser=serder.raw, indexed=True)
+    # A direct sender KEL anchor already authenticates the outer EXN. Sign only
+    # when no sender anchor was created so the wire carries one sender factor.
+    if not anchor:
+        if hab.kever.prefixer.transferable:
+            # Transferable senders produce indexed signatures.
+            sigers = hab.sign(ser=serder.raw, indexed=True)
 
-        # Bind those signatures to the sender's latest establishment event.
-        tsgs.append((hab.kever.prefixer,
-                     Number(sn=hab.kever.lastEst.s),
-                     Diger(qb64=hab.kever.lastEst.d),
-                     sigers))
-    else:
-        # Non-transferable senders authenticate with cigars.
-        cigars.extend(hab.sign(ser=serder.raw, indexed=False))
+            # Bind those signatures to the sender's latest establishment event.
+            tsgs.append((hab.kever.prefixer,
+                         Number(sn=hab.kever.lastEst.s),
+                         Diger(qb64=hab.kever.lastEst.d),
+                         sigers))
+        else:
+            # Non-transferable senders authenticate with cigars.
+            cigars.extend(hab.sign(ser=serder.raw, indexed=False))
 
     # Add each requested non-sender signature endorsement.
     for endorser in endorsers:
@@ -495,8 +497,8 @@ class IpexHandler:
                 single-DAG workflow ``offer`` may carry an ACDC DAG subset and
                 ``grant`` may carry the final disclosed DAG.
             sscs (list | None): Sender source-seal couples retained after KRAM.
-            evidence (tuple | None): Post-KRAM non-sender signature groups,
-                cigars, and source-seal triples accepted by ``verifyEvidence``.
+            evidence (tuple | None): Post-KRAM signature groups, cigars, and
+                source-seal triples accepted for route validation.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
@@ -717,19 +719,29 @@ class IpexHandler:
                 if not self._verifyGraphSemantics(nodes=grantNodes, order=grantOrder):
                     return False
 
-                # Require Exchanger's fixed three-part evidence result.
                 try:
-                    _, _, extraSeals = evidence
+                    evidenceTsgs, evidenceCigars, extraSeals = evidence
                 except (TypeError, ValueError):
                     return False
+                signers = {prefixer.qb64
+                           for prefixer, _, _, _ in evidenceTsgs}
+                signers.update(cigar.verfer.qb64 for cigar in evidenceCigars)
+                grantors = {serder.pre}
+                grantors.update(signers)
+                grantors.update(prefixer.qb64
+                                for prefixer, _, _ in extraSeals)
 
-                # Verify every presentation registry declared across the DAG.
+                # Verify presentation registries for participating Grantors.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
                     nodes=grantNodes,
                     order=grantOrder,
+                    grantors=grantors,
                 )
                 if tethered is None:
+                    return False
+
+                if tethered and serder.pre not in signers and not sscs:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
@@ -1773,9 +1785,8 @@ class IpexHandler:
         """Extract disclosed issuee/presentation-registry declarations.
 
         Return ``None`` for an unsupported hidden issuer registry or when a
-        registry-backed ACDC hides an attribute or aggregate element that could
-        contain a presentation requirement. A verifier cannot distinguish an
-        omitted requirement from an undisclosed one using only its digest.
+        registry-backed ACDC hides its attribute section, which may contain a
+        presentation requirement.
         """
         if not serder.sad.get("rd"):
             # A disclosed inner rd without top-level rd is an unsupported
@@ -1811,17 +1822,10 @@ class IpexHandler:
         # Inspect aggregate sections for additional Issuees.
         aggregate = serder.sad.get("A")
 
-        # A blinded aggregate may hide a required declaration.
-        if isinstance(aggregate, str):
-            return None
-
         # Skip the aggregate root and inspect its disclosed entries.
         if isinstance(aggregate, list):
-
-            # Every inspected aggregate entry must be a mapping.
-            if any(not isinstance(section, Mapping) for section in aggregate[1:]):
-                return None
-            sections.extend(aggregate[1:])
+            sections.extend(section for section in aggregate[1:]
+                            if isinstance(section, Mapping))
 
         # Support the single disclosed aggregate mapping form.
         elif isinstance(aggregate, Mapping):
@@ -1853,10 +1857,11 @@ class IpexHandler:
         # Return every explicit presentation requirement.
         return declarations
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order):
-        """Verify every presentation registry in the DAG."""
+    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
+        """Verify presentation registries belonging to Grantors in the DAG."""
 
-        required = []
+        declared = []
+        grantors = set(grantors)
 
         # Walk the already validated DAG in deterministic order.
         for said in order:
@@ -1874,11 +1879,22 @@ class IpexHandler:
             if declarations is None:
                 return None
 
-            # Bind each declaration to this node's local proofs.
+            # Keep each declaration with its node-local proof stream.
+            sourceSeals = nest.get("ssts", []) if isinstance(nest, dict) else nest.ssts
             for issuee, regk in declarations:
-                # The declaration is the issuer's signal that this Issuee must
-                # authenticate the grant through this node-local registry.
-                required.append((said, issuee, regk, nest))
+                declared.append((issuee, regk, nest))
+
+                # A supplied Issuee source identifies a registry-backed
+                # non-sender Grantor without requiring another endorsement.
+                if any(prefixer.qb64 == issuee
+                       for prefixer, _, _ in sourceSeals):
+                    grantors.add(issuee)
+
+        origin = nodes[order[0]]
+        origin = origin["serder"] if isinstance(origin, dict) else origin.serder
+        issuance = serder.pre == origin.israid
+        required = [declaration for declaration in declared
+                    if not issuance or declaration[0] in grantors]
 
         # Load the receiver timestamp that freezes registry history.
         cache = self.hby.db.kramTMSC.get(
@@ -1892,7 +1908,7 @@ class IpexHandler:
         tethered = set()
 
         # Vet every declared registry independently.
-        for said, issuee, regk, nest in required:
+        for issuee, regk, nest in required:
             # Resolve the latest disclosed binding as of KRAM acceptance.
             sourceSeals = nest.get("ssts", []) if isinstance(nest, dict) else nest.ssts
             record = self._vetRegistry(regk=regk,
@@ -2091,7 +2107,8 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
             plan.
         artifacts (list[Serder | bytes | bytearray] | None): Optional
             additional ACDC DAG nodes carried after ``origin``. Passing a list,
-            including ``[]``, means the offer carries a nested DAG.
+            including ``[]``, means the offer carries ``origin`` as a nested
+            ACDC, so an expanded origin provides full disclosure in the Offer.
         apply (Serder | None): Optional prior ``apply`` exchange.
         recp (str | None): Recipient AID. Defaults to the prior ``apply``
             sender; must be supplied directly for an offer-first exchange
