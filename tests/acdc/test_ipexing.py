@@ -512,7 +512,8 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
         assert grantExn.ked["a"]["ax"] == [True]
         assert admitExn.ked["a"]["ax"] == [True]
 
-        # Negotiation messages carry signatures only; binding replies add seals.
+        # Negotiation messages carry signatures; anchored binding replies use
+        # only their stronger KEL source seals for sender authentication.
         signaling = ((applyExn, applyAtc), (offerExn, offerAtc))
         binding = ((agreeExn, agreeAtc), (grantExn, grantAtc), (admitExn, admitAtc))
         for exn, atc in signaling:
@@ -529,7 +530,7 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
                 framed=False,
                 processive=False)[0]
             assert len(result.sscs) == 1
-            assert len(result.tsgs) == 1
+            assert result.tsgs == []
             number, diger = result.sscs[0]
             event = hby.db.evts.get(keys=(exn.pre, diger.qb64))
             assert hby.db.kels.getLast(keys=exn.pre, on=number.sn) == diger.qb64
@@ -630,12 +631,8 @@ def test_ipex_v2_establishment_only_anchor_construction():
         assert number.sn == anchor.sn
         assert diger.qb64 == anchor.said
 
-        # Signing happens after rotation, so the EXN signature uses the new lastEst.
-        assert len(result.tsgs) == 1
-        prefixer, number, diger, _ = result.tsgs[0]
-        assert prefixer.qb64 == grantor.pre
-        assert number.sn == anchor.sn
-        assert diger.qb64 == anchor.said
+        # The source seal replaces a redundant sender signature on the EXN.
+        assert result.tsgs == []
 
         # Finally dispatch the stream to prove the V2 handler accepts this proof.
         recorder = Recorder()
@@ -2111,6 +2108,57 @@ def test_ipex_v2_offer_accepts_baseline_content_forms():
             "metadata SAD and schema SAID",
             "metadata SAID",
         ]
+
+
+def test_ipex_v2_offer_accepts_full_disclosure_for_issuance():
+    """An Issuee can inspect the complete ACDC before agreeing to issuance."""
+    with openHby(name="ipex-v2-full-issuance-offer",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        issuee = hby.makeHab(name="issuee")
+        acdc = acdcmap(israid=issuer.pre,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36",
+                                      role="member"),
+                       rule=dict(d="", l="Use only for onboarding."),
+                       iseaid=issuee.pre)
+        schema = acdc.sad["s"]["$id"]
+        whole = dict(dp=[[[schema, "/", [""]]]])
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(
+            hab=issuee, recp=issuer.pre,
+            message="Show the complete credential before issuance",
+            modifiers=whole)
+        offerExn, offerAtc = ipexOffer(
+            hab=issuer, message="Review the credential",
+            origin=acdc, artifacts=[], apply=applyExn)
+        agreeExn, agreeAtc = ipexAgree(
+            hab=issuee, message="I agree to this credential", offer=offerExn)
+        grantExn, grantAtc = ipexGrant(
+            hab=issuer, recp=issuee.pre, message="Issue the credential",
+            origin=_signed(acdc, issuer), agree=agreeExn)
+
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(offerExn.raw + offerAtc),
+            framed=False,
+            processive=False)[0]
+        assert len(parsed.nests) == 1
+        assert parsed.nests[0].serder.said == acdc.said
+        assert parsed.nests[0].serder.sad["a"]["role"] == "member"
+        assert parsed.nests[0].serder.sad["r"]["l"] == "Use only for onboarding."
+
+        for exn, atc in ((applyExn, applyAtc),
+                         (offerExn, offerAtc),
+                         (agreeExn, agreeAtc),
+                         (grantExn, grantAtc)):
+            ims = bytearray(exn.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(exn.said,)) is not None
 
 
 def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
