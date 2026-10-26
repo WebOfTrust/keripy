@@ -1486,9 +1486,10 @@ class Parser:
                                                  f"so dropped msg={serder.pretty()}.")
 
             elif ilk in (Ilks.exn,):
-                if not (exts['cigars'] or exts['tsgs']):
+                if not (exts['cigars'] or exts['tsgs'] or
+                        exts['sscs'] or exts['ssts']):
                     raise ValidationError(f"Missing attached exchanger "
-                                        f"signatures for msg={serder.pretty()}")
+                                        f"authentication for msg={serder.pretty()}")
 
                 try:
                     exc.processEvent(**exts)
