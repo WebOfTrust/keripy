@@ -7817,8 +7817,8 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
             rgy.close()
 
 
-def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
-    """Presentation requirements may be declared in either ACDC section form."""
+def test_ipex_v2_finds_attribute_presentation_registry():
+    """Only the top-level attribute pair declares a presentation registry."""
     with openHby(name="ipex-v2-presentation-declarations",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -7826,10 +7826,14 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
         issuerReg = Diger(ser=b"issuer registry").qb64
         presentationReg = Diger(ser=b"presentation registry").qb64
 
-        # Model expanded attribute and aggregate declarations for one Issuee.
+        # Model the canonical expanded attribute declaration for one Issuee.
         attribute = SimpleNamespace(
             sad=dict(rd=issuerReg,
-                     a=dict(i=issuee.pre, rd=presentationReg)))
+                     a=dict(i=issuee.pre, rd=presentationReg),
+                     A=Diger(ser=b"hidden aggregate").qb64))
+
+        # Aggregate registries have application-specific semantics and do not
+        # become presentation requirements merely from an i/rd pair.
         aggregate = SimpleNamespace(
             sad=dict(rd=issuerReg,
                      A=["", dict(i=issuee.pre, rd=presentationReg)]))
@@ -7851,12 +7855,12 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
                      A=[Diger(ser=b"aggregate").qb64,
                         Diger(ser=b"aggregate element").qb64]))
 
-        # Expanded presentation forms resolve the same requirement, while the
-        # explicit hidden issuer-registry form is rejected as unsupported.
+        # The attribute pair selects the registry. Aggregate disclosure state
+        # cannot add, remove, or hide that presentation requirement.
         expected = [(issuee.pre, presentationReg)]
         assert IpexHandler._presentationRegistries(attribute) == expected
-        assert IpexHandler._presentationRegistries(aggregate) == expected
-        assert IpexHandler._presentationRegistries(selectiveAggregate) == expected
+        assert IpexHandler._presentationRegistries(aggregate) == []
+        assert IpexHandler._presentationRegistries(selectiveAggregate) == []
         assert IpexHandler._presentationRegistries(hiddenIssuer) is None
         assert IpexHandler._presentationRegistries(compactAttribute) is None
         assert IpexHandler._presentationRegistries(compactAggregate) == []

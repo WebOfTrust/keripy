@@ -1773,80 +1773,45 @@ class IpexHandler:
 
     @staticmethod
     def _presentationRegistries(serder):
-        """Extract disclosed issuee/presentation-registry declarations.
+        """Extract the disclosed Issuee presentation-registry declaration.
 
         Return ``None`` for an unsupported hidden issuer registry or when a
-        registry-backed ACDC hides its attribute section, which may contain a
-        presentation requirement.
+        registry-backed ACDC hides the top-level attribute block that carries
+        the presentation requirement.
         """
+        attribute = serder.sad.get("a")
+
         if not serder.sad.get("rd"):
             # A disclosed inner rd without top-level rd is an unsupported
             # hidden issuer registry, not a presentation registry.
-            attribute = serder.sad.get("a")
             if isinstance(attribute, Mapping) and attribute.get("rd"):
-                return None
-
-            # Apply the same rule to disclosed aggregate entries.
-            aggregate = serder.sad.get("A")
-            sections = aggregate[1:] if isinstance(aggregate, list) else [aggregate]
-            if any(isinstance(section, Mapping) and section.get("rd")
-                   for section in sections):
                 return None
 
             # A genuinely registry-less ACDC has no presentation declaration.
             return []
 
-        # Collect disclosed sections that may declare Issuee registry pairs.
-        sections = []
-
-        # Inspect the attribute section first.
-        attribute = serder.sad.get("a")
-
-        # A blinded attribute section may hide a required declaration.
+        # The presentation signal lives at the top level of the attribute
+        # block, so that block must be disclosed for IPEX to enforce it.
         if isinstance(attribute, str):
             return None
 
-        # Keep a disclosed attribute mapping for declaration scanning.
-        if isinstance(attribute, Mapping):
-            sections.append(attribute)
+        if not isinstance(attribute, Mapping):
+            return []
 
-        # Inspect aggregate sections for additional Issuees.
-        aggregate = serder.sad.get("A")
+        # Both fields are required to select a presentation registry.
+        regk = attribute.get("rd")
+        issuee = attribute.get("i")
+        if not regk or not issuee:
+            return []
 
-        # Skip the aggregate root and inspect its disclosed entries.
-        if isinstance(aggregate, list):
-            sections.extend(section for section in aggregate[1:]
-                            if isinstance(section, Mapping))
+        # Validate both identifiers before trusting the declaration.
+        try:
+            Saider(qb64=regk)
+            Prefixer(qb64=issuee)
+        except Exception:
+            return None
 
-        # Support the single disclosed aggregate mapping form.
-        elif isinstance(aggregate, Mapping):
-            sections.append(aggregate)
-
-        # Preserve unique Issuee and registry declarations in wire order.
-        declarations = []
-        for section in sections:
-
-            # Read the presentation registry and its controlling Issuee.
-            regk = section.get("rd")
-            issuee = section.get("i")
-
-            # Ignore sections that do not declare the complete pair.
-            if not regk or not issuee:
-                continue
-
-            # Validate both identifiers before trusting the declaration.
-            try:
-                Saider(qb64=regk)
-                Prefixer(qb64=issuee)
-            except Exception:
-                return None
-
-            # Deduplicate declarations repeated across disclosed sections.
-            if (issuee, regk) not in declarations:
-                declarations.append((issuee, regk))
-
-        # Return every explicit presentation requirement.
-        return declarations
+        return [(issuee, regk)]
 
     def _verifyPresentationAuthGraph(self, serder, nodes, order):
         """Verify presentation registries declared by the disclosed DAG."""
