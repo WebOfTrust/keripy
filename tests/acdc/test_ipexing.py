@@ -8073,20 +8073,46 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(missingExn.said,)) is None
 
-            # The same declaration is also inactive while the Issuer grants the
-            # credential to its Issuee, because the Issuee is the Disclosee and
-            # not a Grantor in this issuance exchange.
+            # The same declaration is inactive while the Issuer grants the
+            # credential to its Issuee. Additional Issuee authentication does
+            # not turn the original issuance into a presentation.
             issuanceExn, issuanceAtc = ipexGrant(
                 hab=issuer,
                 recp=issuee.pre,
                 message="Issue credential to its Issuee",
                 origin=_proofed(acdc, issuerProof),
+                endorsers=[issuee],
             )
             ims = bytearray(issuanceExn.raw)
             ims.extend(issuanceAtc)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(issuanceExn.said,)) is not None
+
+            # When the Issuer discloses the credential to someone other than
+            # its Issuee, it is a presentation and the declaration applies.
+            issuerPresentationExn, issuerPresentationAtc = ipexGrant(
+                hab=issuer,
+                recp=recipient.pre,
+                message="Issuer presents credential to a third party",
+                origin=_proofed(acdc, issuerProof),
+            )
+            stamp = issuerPresentationExn.ked["dt"]
+            hby.db.kramTMSC.pin(
+                keys=(issuerPresentationExn.pre,
+                      issuerPresentationExn.ked["x"],
+                      issuerPresentationExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
+            )
+            ims = bytearray(issuerPresentationExn.raw)
+            ims.extend(issuerPresentationAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(issuerPresentationExn.said,)) is None
 
             # In contrast, the registry is mandatory when the Issuee itself is
             # the Grant sender and therefore acts as the Presentor.

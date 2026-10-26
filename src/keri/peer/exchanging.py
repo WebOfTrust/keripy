@@ -751,7 +751,7 @@ class Exchanger:
 
         # Only behavior-approved non-sender endorsements enter this durable
         # reverse index; sender authentication and escrow evidence do not.
-        # Add one Grant SAID entry under each accepted grantor AID.
+        # Add one Grant SAID entry under each accepted endorser AID.
         for endorser in endorsers:
             self.hby.db.eidx.add(keys=(endorser,), val=exnDiger)
         if pdig:

@@ -336,7 +336,7 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
             ``serder.said`` and attaches its source-seal couple instead of a
             redundant sender signature.
         endorsers (list[Hab] | None): Additional local habitats that sign the
-            same outer exchange as non-sender grantors (e.g proxy AIDs).
+            same outer exchange as non-sender endorsers (e.g. principal AIDs).
         anchorers (list[Hab] | None): Additional local transferable habitats
             whose KELs seal the same outer exchange.
         gvrsn (Versionage | None): Optional CESR genus version override for the
@@ -361,11 +361,13 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
 
         # Local signing requires access to the same hab
         if endorser.db is not hab.db:
-            raise ValueError("additional grantors must belong to the sender's Habery")
+            raise ValueError(
+                "additional authentication habitats must belong to the sender's Habery")
 
         # The sender is already authenticated separately
         if endorser.pre == hab.pre:
-            raise ValueError("sender must not be repeated as an additional grantor")
+            raise ValueError(
+                "sender must not be repeated as an additional endorser or anchorer")
 
     if anchor:
         # Only transferable identifiers can append the KEL event that carries the seal.
@@ -720,28 +722,17 @@ class IpexHandler:
                     return False
 
                 try:
-                    evidenceTsgs, evidenceCigars, extraSeals = evidence
+                    _, _, extraSeals = evidence
                 except (TypeError, ValueError):
                     return False
-                signers = {prefixer.qb64
-                           for prefixer, _, _, _ in evidenceTsgs}
-                signers.update(cigar.verfer.qb64 for cigar in evidenceCigars)
-                grantors = {serder.pre}
-                grantors.update(signers)
-                grantors.update(prefixer.qb64
-                                for prefixer, _, _ in extraSeals)
 
-                # Verify presentation registries for participating Grantors.
+                # Verify every presentation registry declared for this disclosure.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
                     nodes=grantNodes,
                     order=grantOrder,
-                    grantors=grantors,
                 )
                 if tethered is None:
-                    return False
-
-                if tethered and serder.pre not in signers and not sscs:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
@@ -1857,11 +1848,10 @@ class IpexHandler:
         # Return every explicit presentation requirement.
         return declarations
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
-        """Verify presentation registries belonging to Grantors in the DAG."""
+    def _verifyPresentationAuthGraph(self, serder, nodes, order):
+        """Verify presentation registries declared by the disclosed DAG."""
 
         declared = []
-        grantors = set(grantors)
 
         # Walk the already validated DAG in deterministic order.
         for said in order:
@@ -1880,21 +1870,19 @@ class IpexHandler:
                 return None
 
             # Keep each declaration with its node-local proof stream.
-            sourceSeals = nest.get("ssts", []) if isinstance(nest, dict) else nest.ssts
             for issuee, regk in declarations:
                 declared.append((issuee, regk, nest))
 
-                # A supplied Issuee source identifies a registry-backed
-                # non-sender Grantor without requiring another endorsement.
-                if any(prefixer.qb64 == issuee
-                       for prefixer, _, _ in sourceSeals):
-                    grantors.add(issuee)
-
         origin = nodes[order[0]]
         origin = origin["serder"] if isinstance(origin, dict) else origin.serder
-        issuance = serder.pre == origin.israid
-        required = [declaration for declaration in declared
-                    if not issuance or declaration[0] in grantors]
+
+        # Presentation registries govern disclosure after original issuance.
+        # Issuance is the origin Issuer disclosing directly to its Issuee.
+        issuance = (serder.pre == origin.israid
+                    and serder.ked.get("ri", "") == origin.iseaid)
+
+        # For a presentation, each declaration creates its own proof requirement.
+        required = [] if issuance else declared
 
         # Load the receiver timestamp that freezes registry history.
         cache = self.hby.db.kramTMSC.get(
@@ -2316,8 +2304,8 @@ def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
         modifiers (dict | None): Query-section fields. A prior-linked Grant
             defaults to an empty ``dp`` ditto. A bare one-node Grant derives a
             root-presence plan; a multi-node Grant requires an explicit plan.
-        endorsers (list[Hab] | None): Additional local grantors that sign the
-            grant. The sender remains the KRAM-authenticated outer sender.
+        endorsers (list[Hab] | None): Additional local AIDs that sign the Grant.
+            The sender remains the Discloser and KRAM-authenticated outer sender.
         anchorers (list[Hab] | None): Explicit local AIDs that KEL-anchor the
             grant. None preserves the truthy-``ax`` sender-anchor default; an
             empty list leaves anchoring to a presentation registry.
