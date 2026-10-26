@@ -25,11 +25,110 @@ from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
                       openHab, openHby, setupWitness)
 
-from keri.db import openLMDB
+from keri.app.forwarding import introduce
+from keri.db import openLMDB, dgKey
 from keri.peer import specialExchange, Exchanger, serializeMessage, verify
 from keri.peer.exchanging import loadParsedNestedSubstreams
 from keri.spac import payloading
 
+
+
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+@pytest.mark.parametrize("transferable", [False, True])
+def test_introduce_without_destination_receipt(version, transferable):
+    """Alice must introduce herself to Bob until Bob receipts her latest event.
+
+    Bob is the destination and never signs a receipt in this test. First,
+    Alice has no receipts and must send her full introduction. Then Carol,
+    an unrelated receiptor, signs Alice's inception. Parsing and confirming
+    Carol's receipt in Alice's store must still leave introduction to Bob
+    necessary. Exercise both receipt types under KERI v1 and v2 framing.
+    """
+    with openHab(name="alice", temp=True, version=version) as (_, alice), \
+            openHab(name="bob", temp=True, version=version,
+                    transferable=transferable) as (_, bob), \
+            openHab(name="carol", temp=True, version=version,
+                    transferable=transferable) as (_, carol):
+        # Build the full history and endpoint-reply payload Bob needs initially.
+        expected = alice.replay(gvrsn=version)
+        expected.extend(alice.replyEndRole(cid=alice.pre, gvrsn=version))
+        assert expected  # Ensure the expected introduction contains bytes.
+        # Without Bob's receipt, Alice must send the full introduction.
+        assert introduce(alice, bob.pre, gvrsn=version) == expected
+
+        # Alice learns Carol's keys so she can verify Carol's receipt.
+        parser = Parser(version=version)
+        kvy = Kevery(db=alice.db, lax=False, local=False)
+        parser.parse(ims=bytearray(carol.msgOwnInception(gvrsn=version)), kvy=kvy)
+        # Carol accepts Alice's inception, then signs a receipt of that event.
+        carol.psr.parse(ims=bytearray(alice.msgOwnInception(gvrsn=version)))
+        msg = carol.receipt(alice.kever.serder, gvrsn=version, version=version)
+        # Alice verifies the receipt and stores its signature under her event.
+        parser.parse(ims=bytearray(msg), kvy=kvy)
+
+        if transferable:
+            receipts = list(alice.db.vrcs.getTopItemIter(
+                keys=(alice.pre, alice.kever.serder.said)))
+            receiptors = [
+                receiptor_pre
+                for (_event_pre, _event_said, receiptor_pre,
+                     _est_sn, _est_said), _signature in receipts
+            ]
+        else:
+            receipts = list(alice.db.rcts.getIter(
+                dgKey(alice.pre, alice.kever.serder.said)))
+            receiptors = [prefixer.qb64 for prefixer, _signature in receipts]
+        assert carol.pre in receiptors  # Carol's verified receipt was stored.
+        assert bob.pre not in receiptors  # Bob has not acknowledged Alice's event.
+
+        # Return introduction bytes: Carol's receipt cannot stand in for Bob's.
+        assert introduce(alice, bob.pre, gvrsn=version)
+
+
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+@pytest.mark.parametrize("transferable", [False, True])
+def test_introduce_with_destination_receipt(version, transferable):
+    """Bob's receipt suppresses introduction only for Alice's acknowledged event.
+
+    Alice is the sender and Bob is the destination. Bob signs a real receipt
+    of Alice's inception; Alice parses it and confirms Bob is in her receipt
+    store. That receipt suppresses introduction. Alice then adds an interaction
+    event, so Bob's older receipt no longer suffices and introduction resumes.
+    Exercise both receipt types under KERI v1 and v2 framing.
+    """
+    with openHab(name="alice", temp=True, version=version) as (_, alice), \
+            openHab(name="bob", temp=True, version=version,
+                    transferable=transferable) as (_, bob):
+        # Alice learns Bob's keys so she can verify Bob's receipt.
+        parser = Parser(version=version)
+        kvy = Kevery(db=alice.db, lax=False, local=False)
+        parser.parse(ims=bytearray(bob.msgOwnInception(gvrsn=version)), kvy=kvy)
+        # Bob accepts Alice's inception, then signs a receipt of that event.
+        bob.psr.parse(ims=bytearray(alice.msgOwnInception(gvrsn=version)))
+        msg = bob.receipt(alice.kever.serder, gvrsn=version, version=version)
+        # Alice verifies the receipt and stores its signature under her event.
+        parser.parse(ims=bytearray(msg), kvy=kvy)
+
+        if transferable:
+            receipts = list(alice.db.vrcs.getTopItemIter(
+                keys=(alice.pre, alice.kever.serder.said)))
+            receiptors = [
+                receiptor_pre
+                for (_event_pre, _event_said, receiptor_pre,
+                     _est_sn, _est_said), _signature in receipts
+            ]
+        else:
+            receipts = list(alice.db.rcts.getIter(
+                dgKey(alice.pre, alice.kever.serder.said)))
+            receiptors = [prefixer.qb64 for prefixer, _signature in receipts]
+        assert bob.pre in receiptors  # Bob's verified receipt was stored.
+        # Return no introduction bytes: Bob already acknowledged this event.
+        assert introduce(alice, bob.pre, gvrsn=version) == bytearray()
+
+        # Advance Alice's KEL beyond the inception Bob acknowledged.
+        alice.interact()
+        # Return introduction bytes again: Bob has not receipted the new event.
+        assert introduce(alice, bob.pre, gvrsn=version)
 
 
 @pytest.mark.parametrize("role", [Roles.witness, Roles.mailbox])
