@@ -1851,7 +1851,14 @@ class IpexHandler:
     def _verifyPresentationAuthGraph(self, serder, nodes, order):
         """Verify presentation registries declared by the disclosed DAG."""
 
-        declared = []
+        originSaid = order[0]
+        origin = nodes[originSaid]
+        origin = origin["serder"] if isinstance(origin, dict) else origin.serder
+
+        issuance = (serder.pre == origin.israid
+                    and serder.ked.get("ri", "") == origin.iseaid)
+
+        required = []
 
         # Walk the already validated DAG in deterministic order.
         for said in order:
@@ -1869,20 +1876,14 @@ class IpexHandler:
             if declarations is None:
                 return None
 
+            # Only the origin being issued is exempt. Linked credentials are
+            # existing disclosures whose presentation requirements still apply.
+            if issuance and said == originSaid:
+                continue
+
             # Keep each declaration with its node-local proof stream.
             for issuee, regk in declarations:
-                declared.append((issuee, regk, nest))
-
-        origin = nodes[order[0]]
-        origin = origin["serder"] if isinstance(origin, dict) else origin.serder
-
-        # Presentation registries govern disclosure after original issuance.
-        # Issuance is the origin Issuer disclosing directly to its Issuee.
-        issuance = (serder.pre == origin.israid
-                    and serder.ked.get("ri", "") == origin.iseaid)
-
-        # For a presentation, each declaration creates its own proof requirement.
-        required = [] if issuance else declared
+                required.append((issuee, regk, nest))
 
         # Load the receiver timestamp that freezes registry history.
         cache = self.hby.db.kramTMSC.get(

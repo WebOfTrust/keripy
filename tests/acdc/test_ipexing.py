@@ -8388,6 +8388,74 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert recorder.items[0]["r"] == "/exn/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Present both credentials"
+
+            # Issuing the origin directly to its Issuee exempts only that
+            # origin.  The linked child remains an existing presentation.
+            issuanceExn, _ = ipexGrant(
+                hab=issuer,
+                recp=originIssuee.pre,
+                message="Issue origin with supporting credential",
+                origin=origin,
+                artifacts=[child],
+                modifiers=dict(dp=[[
+                    [origin.sad["s"]["$id"], "/", []],
+                    [child.sad["s"]["$id"], "/e/child/_/", []],
+                ]]),
+            )
+            childProof, childPresented = registrar.present(
+                childPresentationRegistry, grant=issuanceExn)
+            childAnchor = _anchor(
+                childIssuee, childPresentationRegistry, childPresented)
+            stamp = issuanceExn.ked["dt"]
+            hby.db.kramTMSC.pin(
+                keys=(issuanceExn.pre,
+                      issuanceExn.ked["x"],
+                      issuanceExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
+            )
+            issuanceTsg = (issuer.kever.prefixer,
+                           Number(sn=issuer.kever.lastEst.s),
+                           Diger(qb64=issuer.kever.lastEst.d),
+                           issuer.sign(ser=issuanceExn.raw, indexed=True))
+
+            # Omitting the child's declared registry must not be excused by
+            # the fact that the origin is undergoing original issuance.
+            missing = messagize(
+                issuanceExn,
+                tsgs=[issuanceTsg],
+                nests=[_nest(_proofed(origin, originIssuerProof)),
+                       _nest(_proofed(child, childIssuerProof))],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
+            Parser(version=Vrsn_2_0).parse(ims=missing,
+                                           framed=False,
+                                           exc=exc)
+            assert missing == bytearray()
+            assert hby.db.exns.get(keys=(issuanceExn.said,)) is None
+
+            # The child registry binds this issuance Grant while the origin's
+            # own presentation registry remains correctly exempt.
+            complete = messagize(
+                issuanceExn,
+                tsgs=[issuanceTsg],
+                nests=[_nest(_proofed(origin, originIssuerProof)),
+                       _nest(_proofed(child,
+                                      childIssuerProof,
+                                      childProof,
+                                      anchors=[(childIssuee, childAnchor)]))],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
+            Parser(version=Vrsn_2_0).parse(ims=complete,
+                                           framed=False,
+                                           exc=exc)
+            assert complete == bytearray()
+            assert hby.db.exns.get(keys=(issuanceExn.said,)) is not None
         finally:
             rgy.close()
 
