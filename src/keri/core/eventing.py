@@ -22,7 +22,7 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
                       TraitDex, Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
-                      Roles, Schemes, Ilks, versify, Kinds)
+                      Roles, Schemes, Decls, Ilks, versify, Kinds)
 
 from ..help import helping, Reb64
 
@@ -39,7 +39,7 @@ from .serdering import SerderKERI
 
 from ..db import Baser, dgKey, snKey
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
-                         LocationRecord, OobiRecord, ObservedRecord,
+                         DeclRecord, LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)
 
 
@@ -5004,6 +5004,8 @@ class Kevery:
             router (Router): reply message router"""
         router.addRoute("/end/role/{action}", self, suffix="EndRole")
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
+        router.addRoute("/decl/tags", self, suffix="DeclTags")
+        router.addRoute("/decl/attribs", self, suffix="DeclAttribs")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
         router.addRoute("/watcher/{aid}/{action}", self, suffix="AddWatched")
 
@@ -5199,6 +5201,105 @@ class Kevery:
             raise UnverifiedReplyError(msg)
 
         self.updateLoc(keys=keys, saider=diger, url=url)  # update .lans and .locs
+
+
+    def processReplyDeclTags(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
+        """Process one reply message for route = /decl/tags.
+
+        A declaration is self-authorized: the declaring identifier in the `eid` field is also the
+        authorizing aid, exactly as it is for /loc/scheme. That is what makes it sound to accept
+        from a non-transferable witness, whose prefix IS its verification key, and it is also what
+        bounds what a declaration can be trusted to mean -- nobody but the declarer has vouched for
+        it, so only a declaration against the declarer's own interest carries weight.
+
+        Parameters:
+            serder (SerderKERI): instance of reply msg (SAD)
+            diger (Diger): instance from said in serder (SAD)
+            route (str): reply route
+            cigars (list): of Cigar instances that contain nontrans signing couple
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers])"""
+        eid, tags = self._declAttribute(serder=serder, route=route, kind=Decls.tags, klas=list)
+        self._acceptDecl(serder=serder, diger=diger, eid=eid, kind=Decls.tags, cigars=cigars,
+                         tsgs=tsgs, value=dict(tags=list(tags)))
+
+
+    def processReplyDeclAttribs(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
+        """Process one reply message for route = /decl/attribs.
+
+        Parameters:
+            serder (SerderKERI): instance of reply msg (SAD)
+            diger (Diger): instance from said in serder (SAD)
+            route (str): reply route
+            cigars (list): of Cigar instances that contain nontrans signing couple
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers])"""
+        eid, attribs = self._declAttribute(serder=serder, route=route, kind=Decls.attribs,
+                                           klas=dict)
+        self._acceptDecl(serder=serder, diger=diger, eid=eid, kind=Decls.attribs, cigars=cigars,
+                         tsgs=tsgs, value=dict(attribs=dict(attribs)))
+
+
+    def _declAttribute(self, *, serder, route, kind, klas):
+        """Validate the shape of a decl reply and return (eid, payload) for the given kind.
+
+        Shape is checked before BADA and before anything is written, so a malformed declaration
+        leaves no trace at all rather than a half-applied one. The eid returned is the Prefixer's
+        normalized qb64, as /loc/scheme uses, because Prefixer ignores trailing characters and the
+        raw field is therefore not always the prefix it parses to."""
+        expected = f"/decl/{kind}"
+        if not route.startswith(expected):
+            raise ValidationError("Unsupported route={} in {} msg={}."
+                                  "".format(route, Ilks.rpy, serder.ked))
+
+        data = serder.ked["a"]
+        for k in ("eid", kind):
+            if k not in data:
+                raise ValidationError("Missing element={} from attributes in {} "
+                                      "msg={}.".format(k, Ilks.rpy, serder.ked))
+        eid = Prefixer(qb64=data["eid"]).qb64  # raises error if unsupported code
+        value = data[kind]
+        if not isinstance(value, klas):
+            raise ValidationError("Invalid {}={} in {} msg={}."
+                                  "".format(kind, value, Ilks.rpy, serder.ked))
+        return eid, value
+
+
+    def _acceptDecl(self, *, serder, diger, eid, kind, cigars, tsgs, value):
+        """Apply BADA to a decl reply and store it if it is the latest from its declarer.
+
+        A declaration is about, and authorized by, the same identifier, so ``eid`` is also the
+        authorizing aid passed to BADA."""
+        route = f"/decl/{kind}"
+        keys = (eid, kind)
+        osaider = self.db.dans.get(keys=keys)  # get old said if any
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
+                                        aid=eid, osaider=osaider, cigars=cigars, tsgs=tsgs)
+        if not accepted:
+            msg = f"Unverified decl reply kind={kind} SAID={serder.said}"
+            logger.debug(msg)
+            logger.debug("Event Body=\n%s\n", serder.pretty())
+            raise UnverifiedReplyError(msg)
+
+        self.updateDecl(keys=keys, saider=diger, **value)
+
+
+    def updateDecl(self, keys, saider, tags=None, attribs=None):
+        """
+        Update decl auth database .dans and decl database .decls.
+
+        Parameters:
+            keys (tuple): of key strs for databases (eid, kind)
+            saider (Diger): instance from said in reply serder (SAD)
+            tags (list | None): declared tag names
+            attribs (dict | None): declared key/value attributes"""
+        self.db.dans.pin(keys=keys, val=saider)  # overwrite
+        record = DeclRecord()
+        if tags is not None:
+            record.tags = tags
+        if attribs is not None:
+            record.attribs = attribs
+        self.db.decls.pin(keys=keys, val=record)  # overwrite
 
 
     def processReplyKeyStateNotice(self, *, serder, diger, route,

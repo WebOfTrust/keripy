@@ -23,7 +23,7 @@ from ..kering import (MissingEntryError, DatabaseError, SerializeError,
 from ..recording import (KeyStateRecord, EventSourceRecord,
                          HabitatRecord, TopicsRecord,
                          OobiRecord, EndpointRecord,
-                         LocationRecord, ObservedRecord,
+                         DeclRecord, LocationRecord, ObservedRecord,
                          CacheTypeRecord, TxnMsgCacheRecord,
                          MsgCacheRecord, WellKnownAuthN)
 
@@ -501,6 +501,21 @@ class Baser(LMDBer):
             location details. Data extracted from reply /loc/scheme.
             subkey 'locs.'
             Key: eid.scheme.
+
+        .dans is named subDB instance of CesrSuber (klas=Diger) for
+            self-declaration authorizations. Maps eid.kind to SAID of the reply
+            SAD that authN by declarer eid declares its own tags or attribs.
+            kind is one of kering.Decls. Routes /decl/tags and /decl/attribs;
+            an empty tags list or attribs map nullifies.
+            subkey 'dans.'
+            Key: eid.kind.
+            Only one value per DB key is allowed.
+
+        .decls is named subDB instance of Komer (schema=DeclRecord) mapping
+            declarer prefix eid and declaration kind to what eid declares about
+            itself. Data extracted from reply /decl/tags or /decl/attribs.
+            subkey 'decls.'
+            Key: eid.kind.
 
         .obvs is named subDB instance of Komer (schema=ObservedRecord) for
             observed OIDs by watcher. Maps (cid, aid, oid) to ObservedRecord.
@@ -1095,6 +1110,16 @@ class Baser(LMDBer):
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  klas=LocationRecord, )
+
+        # auth AuthN by declarer at eid of its own declaration of a given kind
+        # maps key=eid.kind to val=diger of decl reply
+        self.dans = subing.CesrSuber(db=self, subkey='dans.', klas=coring.Diger)
+
+        # self-declarations keyed by eid.kind where kind is one of kering.Decls
+        # data extracted from reply /decl/tags or /decl/attribs
+        self.decls = koming.Komer(db=self,
+                                  subkey='decls.',
+                                  klas=DeclRecord, )
         # observed oids by watcher by cid.aid.oid  (endpoint identifier)
         # data extracted from reply loc
         self.obvs = koming.Komer(db=self,
