@@ -998,7 +998,7 @@ def test_verifier_edge_schema_constraint(seeder):
         # far node's SAD under its SAID, and the pin under the near ACDC's -- so no
         # arrival makes the far node satisfy the pin. It is therefore an edge
         # refusal, and it must not escrow: parking it would promise a retry that
-        # cannot succeed, which is the same reasoning tick 22pi applied to the
+        # cannot succeed, which is the same reasoning the test below applies to the
         # operator mismatches.
         assert verifier.resolver.resolve(incompatSchema)
         badCreder = nearCred("A near claim, incompatible edge schema.", incompatSchema)
@@ -1708,7 +1708,7 @@ def test_verifier_escrow_pass_survives_argless_exception(seeder):
 
 
 def test_verifier_permanent_edge_refusal_does_not_escrow(seeder):
-    """An edge decided against evidence in hand is refused, not escrowed (tick 22pi).
+    """An edge decided against evidence in hand is refused, not escrowed.
 
     ``verifyChain`` answers two different questions with the same ``None``. Some of
     its refusals are transient -- the far node is not saved yet, its registry has not
