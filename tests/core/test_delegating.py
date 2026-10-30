@@ -268,12 +268,31 @@ def test_delegation():
         couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.said))
         assert couple == seqner.qb64b + bobSrdr.saidb
 
+        # Replaying the accepted delegated rotation is a duplicate, including
+        # at the current establishment event. It must not enter recovery/PSE.
+        rotation = bytes(msg)
+        for kvy in (delKvy, bobKvy):
+            parsing.Parser().parse(ims=bytearray(rotation), kvy=kvy)
+            assert kvy.kevers[delPre].serder.said == delSrdr.said
+            assert list(kvy.db.getPseItemIter()) == []
+
         # test replay
         msgs = bytearray()
         for msg in delKvy.db.clonePreIter(pre=delPre, fn=0):
             msgs.extend(msg)
         assert len(msgs) == 1167
         assert couple in msgs
+
+        # The same duplicate must preserve subsequent interaction state.
+        interaction = eventing.interact(pre=delPre, dig=delSrdr.said, sn=2)
+        sigers = delMgr.sign(ser=interaction.raw, verfers=verfers)
+        interaction_msg = eventing.messagize(interaction, sigers=sigers)
+        for kvy in (delKvy, bobKvy):
+            parsing.Parser().parse(ims=bytearray(interaction_msg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(rotation), kvy=kvy)
+            assert kvy.kevers[delPre].sn == 2
+            assert kvy.kevers[delPre].serder.said == interaction.said
+            assert list(kvy.db.getPseItemIter()) == []
 
     assert not os.path.exists(delKS.path)
     assert not os.path.exists(delDB.path)
