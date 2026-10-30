@@ -11,7 +11,7 @@ from keri.kering import Vrsn_1_0, Kinds
 from keri.core import (Number, Seqner, Diger, Kevery,
                        SealEvent, Salter, Counter, parsing,
                        NumDex, MtrDex, Codens,
-                       incept, delcept, interact, deltate)
+                       incept, delcept, interact, deltate, messagize)
 
 from keri.app import Manager, openKS, openHby, openHab
 from keri.db import snKey, openDB
@@ -289,6 +289,14 @@ def test_delegation():
         assert rnumber.qb64b == seqner.qb64b
         assert rdiger.qb64b == bobSrdr.saidb
 
+        # Replaying the accepted delegated rotation is a duplicate, including
+        # at the current establishment event. It must not enter recovery/PSE.
+        rotation = bytes(msg)
+        for kvy in (delKvy, bobKvy):
+            parsing.Parser(version=version).parse(ims=bytearray(rotation), kvy=kvy)
+            assert kvy.kevers[delPre].serder.said == delSrdr.said
+            assert list(kvy.db.pses.getAllItemIter()) == []
+
         # test replay
         msgs = bytearray()
         for msg in delKvy.db.clonePreIter(pre=delPre, fn=0, version=version):
@@ -297,6 +305,18 @@ def test_delegation():
         # Reconstruct the couple from the last seqner and bobSrdr.saidb used
         couple = seqner.qb64b + bobSrdr.saidb
         assert couple in msgs
+
+        # The same duplicate must preserve subsequent interaction state.
+        interaction = interact(pre=delPre, dig=delSrdr.said, sn=2,
+                               version=version, kind=Kinds.json)
+        sigers = delMgr.sign(ser=interaction.raw, verfers=verfers)
+        interaction_msg = messagize(interaction, sigers=sigers, gvrsn=version)
+        for kvy in (delKvy, bobKvy):
+            parsing.Parser(version=version).parse(ims=bytearray(interaction_msg), kvy=kvy)
+            parsing.Parser(version=version).parse(ims=bytearray(rotation), kvy=kvy)
+            assert kvy.kevers[delPre].sn == 2
+            assert kvy.kevers[delPre].serder.said == interaction.said
+            assert list(kvy.db.pses.getAllItemIter()) == []
 
     assert not os.path.exists(delKS.path)
     assert not os.path.exists(delDB.path)
