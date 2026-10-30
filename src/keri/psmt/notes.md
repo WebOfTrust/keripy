@@ -1,9 +1,79 @@
-# -*- encoding: utf-8 -*-
-"""
 keri.smt.branching module
 
 OC-SMT  core functional support
 
+Notes:
+
+The entry index for a key is calculated by taking the Hash of the key and
+treating that as a 256 bit big endian integer. The value for that key is stored
+in the leaf node indexed by this entry index number. This index is also the
+path down the tree from the root. Where each fork starting at msb 0 is left
+1 is right. so a tree with 4 leaves has a 2 bit index or path with the path values.
+
+00, 01, 10, 11
+there are three forks, upper fork at msb and two lower forks each at lsb
+
+        top  (upper fork)
+    0            1   (lower forks)
+0        1    0      1
+
+So the tree stores a leaf hash at location = index = path.
+then each of the  lower fork stores the hash of the hash of its concatenated children
+where concat order  is left | right
+thenb upper fork stores hash of its children which are the two lower forks
+also in concat left|righ order
+
+The leaf hash enables a Merkle proof of inclusion where one only needs to
+disclose the leaf hash to prove the hashed value is included if one has the
+hashed value. Technically for a proof of inclusion the path itself is not needed
+for the proof just the sibling hashes along the path.
+
+Addressing of the value uses the index=path so in order to do content addressing
+using the merkle tree where the index is bound to the merkle proof then we
+consider calculating the index (calculated) as the hash of the indexed value.
+
+We can store the leaf values in a key value store and then use the hash of
+the key (index) as the leaf hash. This proves the key in included but not
+the value. Its only when the leaf hash includes the stored value that we have
+a crypto binding of inclusion of the value itself in the tree.
+
+The leaf hash can be different from index as content address hash. The leaf hash
+has to include the value or a committment to the value for crypto proof of inclusion
+but a content address computed from the value for the index (path) can be different
+from the hash for the leaf. Both have to include the value in the hash but both
+can include other stuff so they don't have to be equal.
+
+One trick, is when the leaf hash and index are different computations that
+the leaf hash include the index. This forces each leaf hash to be unique and bound
+to the location of the leaf hash. This prevents a collision where the same
+value could stored in different places in the tree and therefore allow a different
+tree to give a valid inclusion proof for the same value.
+
+If the index is the leaf hash then I believe that you also have a collision proof
+since there is no way to construct a different tree that hashes the same since
+the leave hash is the index so it can only appear in one place in the tree.
+So merging up with null leaves is unique.
+
+When the leaf hash and index are not the same hash that one has to worry about
+constructing fake tree because the same value could be stored at different keys.
+
+For a tree with a path of 256 bits the total number of leaves is 2^256. The total
+humber of nodes is almost double that. The nodes in a full tree of height 256
+is 2^(257) -1    In other words the number internal nodes is equal to the number
+of leaf nodes - 1.
+
+So using the exact same hash format for leaf values as internal node hashes
+means that a full tree must have collisions, but this would never happen in
+a practical application so is not a viable risk.
+
+A real risk on a sparse tree are attacks where internal nodes with same hash format
+as leaf hashes are used to create an alternate tree with same root hash.
+So the protection is called domain separation.
+
+-------------------
+
+A leaf value is hashed to provide the leaf hash at the location in the tree
+given by its index.
 
 (Zero is a special unique value that should not correspond to a real leaf's value.
 (Can we use None in python) In Ethereum world they use the string `0x00000...`
@@ -277,6 +347,4 @@ fn construct_smt()
 
     println!("SMT root is {:?} ", tree.root());
 }
-
-"""
 
