@@ -2088,6 +2088,10 @@ class BaseHab:
     def endsFor(self, pre):
         """Load authorized endpoints for the provided AID.
 
+        Include endpoints that are enabled or allowed, matching
+        ``fetchEndAuthzed``. Witnesses from the identifier's current KEL state
+        are included independently of endpoint authorization.
+
         Parameters:
             pre (str): qb64 aid for which to load ends.
 
