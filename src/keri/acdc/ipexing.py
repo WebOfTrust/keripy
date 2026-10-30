@@ -13,6 +13,7 @@ from copy import deepcopy
 from hio.help import ogler
 
 from .. import Kinds, Protocols
+from . import chaining
 from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationError,
                       Ilks, KeriError, MisanchorError, MisbindingError,
                       MissingAnchorError, MissingChainError, MissingSchemaError,
@@ -25,6 +26,7 @@ from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
                     messagize)
 from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
                                verifyAttachments)
+from ..recording import ExchangeRegistryStateRecord
 from . import scheming
 
 logger = ogler.getLogger()
@@ -43,10 +45,24 @@ PreviousRoutes = {
 
 FieldMapIlks = (None, Ilks.acm, Ilks.ace)
 DisclosedNodeIlks = FieldMapIlks + (Ilks.act, Ilks.acg)
-EdgeSectionLabels = ("d", "u", "o", "w")
+# An Edge Section is itself an Edge-group, so it carries the same reserved labels --
+# including keripy's `s` pin, which binds every edge below it exactly as one on a
+# nested group does. Reading the pin only one level down let an Issuer's constraint
+# be dropped on one path and made the same bytes malformed on the other.
+EdgeSectionLabels = ("d", "u", "s", "o", "w")
 EdgeGroupLabels = ("d", "u", "s", "o", "w")
 EdgeNodeLabels = ("d", "u", "n", "s", "o", "w")
 UnaryEdgeOps = ("I2I", "NI2I", "DI2I", "E1E", "NOT")
+DelegativeEdgeOps = ("I2I", "NI2I", "DI2I")
+
+# Unary operators whose presence suppresses the default rule. "When the Operator, `o`,
+# field is missing or empty or is present but does not include any of the `I2I`, `NI2I`,
+# `DI2I`, or `E1E` Operators" then the default is appended (ACDC spec, Edge Section >
+# Edge > Operator, `o` field, on the ACDC v1.1 line, which added E1E to the list; the
+# 2.0 line still names only the delegative three because E1E has not been forward-ported
+# there). Keyed on this set rather than on the list being empty, so an `o` carrying only
+# a non-delegative operator still takes the default the spec appends.
+DefaultSuppressingEdgeOps = ("I2I", "NI2I", "DI2I", "E1E")
 EdgeGroupOps = ("AND", "OR")
 
 # Parsed attachment fields forbidden on Offer ACDC nodes.
@@ -465,6 +481,25 @@ class IpexHandler:
     # Receive route-filtered non-sender evidence from Exchanger.
     acceptsEvidence = True
 
+    # No registry-state policy lives here. A registry's transaction state is "a
+    # string from a small finite set of strings" defined *per registry* (ACDC spec,
+    # the TEL Transaction state, `ts` field), and whether a given state makes an ACDC
+    # acceptable is the EGF's rule, not the protocol's: "Typically, in a given EGF
+    # ... all links ... MUST be valid" (Edge Section, provenance chains). So this
+    # handler authenticates each registry proof, records the state it carries in
+    # `Baser.exrs`, and leaves judging it to an application or EGF evaluator -- the
+    # same split the v1 path keeps, where `IpexHandler.verify` checks sequencing
+    # and the `Verifier` decides chain validity.
+
+    # The m-ary Operator reducers this handler applies to an Edge-group. Named here
+    # rather than reached for inline because ACDC assigns "the actual logic for
+    # interpreting the validity of a set of chained or treed ACDCs" to the EGF (ACDC
+    # spec, Edge Section > Edge-group > Operator, `o` field); the Kleene lattice in
+    # acdc.chaining is keripy's default answer to that deferral, not something the
+    # protocol imposes, so a profile overrides this attribute rather than forking the
+    # handler.
+    MAryReducers = chaining.MAryReducers
+
     def __init__(self, resource, hby, notifier, rgy=None):
         """Create a handler for one IPEX route.
 
@@ -709,16 +744,40 @@ class IpexHandler:
                                                     grantNodes=grantNodes):
                     return False
 
-                # Stage 6: authenticate each disclosed node's issuer.
-                if not self._verifyIssuerAuthGraph(nodes=grantNodes, order=grantOrder):
+                # Stage 6: evaluate the disclosed DAG to one verdict, rooted at the
+                # origin. A node's verdict is its own issuer-auth proof conjoined
+                # with its reduced Edge Section, and a leaf's verdict is its Operator
+                # relation and schema pins conjoined with the far node's verdict --
+                # so the far node's status reaches the m-ary reduction as a member
+                # rather than as a separate operator-blind sweep beside it. The
+                # origin is where the answer is read, and its own issuer-auth sits
+                # outside every reduction because no edge points at it.
+                records = {}
+                verdict = self._evaluateNode(origins[0], nodes=grantNodes, memo={},
+                                             records=records)
+                if verdict is None:  # malformed shape somewhere in the disclosed DAG
+                    return False
+
+                if verdict.verdict != chaining.Verdicts.valid:
+                    # An unknown the recipient can still resolve -- a registry whose
+                    # TEL has not replicated, a pinned schema not yet cached -- keeps
+                    # the exchange retryable through the Exchanger's escrow. An
+                    # unknown nothing settles, and anything decided against, refuses
+                    # here: escrowing either would promise a retry that cannot
+                    # succeed.
+                    # A pinned schema goes to the Exchanger's schema escrow, which
+                    # asks for it by SAID; any other retryable unknown waits on TEL
+                    # or KEL proof. One schema at a time, as that escrow expects.
+                    if (verdict.verdict == chaining.Verdicts.unknown
+                            and verdict.retryable):
+                        for cause in verdict.causes:
+                            if isinstance(cause, MissingSchemaError):
+                                raise cause
+                        raise MissingChainError(verdict.reason)
                     return False
 
                 # Validate each authenticated node against its own schema.
                 if not self._verifyNodeSchemas(nodes=grantNodes, order=grantOrder):
-                    return False
-
-                # Apply edge operators and edge schemas after authentication.
-                if not self._verifyGraphSemantics(nodes=grantNodes, order=grantOrder):
                     return False
 
                 try:
@@ -757,6 +816,19 @@ class IpexHandler:
                     candidates = (serder.pre, origin.iseaid, origin.israid)
                     if not any(aid and aid in anchorers for aid in candidates):
                         return False
+
+                # The grant is accepted, so keep what each disclosed node's registry
+                # said about it for whoever judges acceptability. Written only
+                # here, after every refusal above, so a refused or escrowed grant
+                # leaves no rows behind.
+                for nodeSaid, record in records.items():
+                    self.hby.db.exrs.pin(
+                        keys=(serder.said, nodeSaid),
+                        val=ExchangeRegistryStateRecord(regid=record.regid,
+                                                        said=record.said,
+                                                        sn=record.sn,
+                                                        state=record.state,
+                                                        stamp=record.stamp))
 
         return True
 
@@ -1243,6 +1315,13 @@ class IpexHandler:
                         for label, node in group.items():
                             if label in labels:
                                 continue
+                            if isinstance(node, str):
+                                # A compact Edge names an Edge block, not a
+                                # disclosed node, so there is nothing to enqueue
+                                # and nothing to require in the nests. Whether it
+                                # can be evaluated at all is the reduction's
+                                # question, not the walk's.
+                                continue
                             if not isinstance(node, Mapping):
                                 return None
                             groups.append((node, True))
@@ -1254,7 +1333,94 @@ class IpexHandler:
 
         return nodes, order
 
-    def _evaluateLeafEdge(self, group, *, nodes, nserder, inheritedSchema):
+    def _evaluateNode(self, said, *, nodes, memo, records=None):
+        """Evaluate one disclosed node to a verdict, recursing through its edges.
+
+        A node is valid when its own issuer-auth proof vets and its Edge Section
+        reduces to valid. Both are conjoined, so neither can be outvoted within the
+        node -- but the whole conjunction is one member of whatever Edge-group
+        reached it, which is what lets an Issuer write an optional branch.
+
+        Memoised by node SAID, so a node named by several edges is evaluated once
+        however many paths reach it. That also bounds the cost of evaluating every
+        member rather than short-circuiting: the reduction needs every member's value
+        under Kleene logic anyway, and running a node's proof twice would buy nothing.
+
+        Parameters:
+            said (str): SAID of the disclosed node to evaluate.
+            nodes (dict): Mapping of disclosed node SAIDs to parsed nests built
+                during the origin-graph walk.
+            memo (dict): Node SAID to verdict, carried across the whole evaluation.
+            records (dict | None): Node SAID to the ``RegStateRecord`` its
+                registry proof authenticated, filled in as nodes are evaluated so
+                the caller can persist what each registry said.
+
+        Returns:
+            EdgeVerdict | None: the node's verdict, or ``None`` when some shape
+                within it is malformed and verification must fail closed.
+        """
+        if said in memo:
+            return memo[said]
+
+        # Placeholder against re-entry. The disclosed graph is digest-linked and so
+        # cannot contain a cycle, but a placeholder costs nothing and turns any
+        # surprise into an undecided verdict rather than unbounded recursion.
+        memo[said] = chaining.unknown(f"node {said} is already being evaluated",
+                                      retryable=False)
+
+        nest = nodes[said]
+        nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+
+        # Both what authenticates the node and what its registry says about it,
+        # as one verdict. A verdict rather than a raise, so an Operator that does
+        # not need this node is not made to wait on it.
+        auth = self._verifyIssuerAuthNode(serder=nserder, nest=nest,
+                                          records=records)
+
+        edges = nserder.sad.get("e")
+        if not edges:
+            section = chaining.valid(f"node {said} carries no edges")
+        else:
+            # Normalize a single edge block or a list of edge blocks
+            if isinstance(edges, Mapping):
+                blocks = [edges]
+            elif isinstance(edges, list) and all(isinstance(edge, Mapping)
+                                                 for edge in edges):
+                blocks = edges
+            else:
+                return None
+
+            verdicts = []
+            for edge in blocks:
+                # Evaluate the whole edge tree from the root down. Each leaf returns
+                # one verdict and each group reduces its children under its own m-ary
+                # Operator, using any inherited schema pin.
+                if "n" in edge:
+                    verdict = self._evaluateLeafEdge(edge,
+                                                     nodes=nodes,
+                                                     nserder=nserder,
+                                                     memo=memo,
+                                                     records=records,
+                                                     inheritedPins=())
+                else:
+                    verdict = self._evaluateGroupEdge(edge,
+                                                      nodes=nodes,
+                                                      nserder=nserder,
+                                                      nested=False,
+                                                      memo=memo,
+                                                      records=records,
+                                                      inheritedPins=())
+                if verdict is None:
+                    return None
+                verdicts.append(verdict)
+
+            section = chaining.reduceAnd(verdicts)
+
+        memo[said] = chaining.reduceAnd([auth, section])
+        return memo[said]
+
+    def _evaluateLeafEdge(self, group, *, nodes, nserder, memo, records=None,
+                          inheritedPins=()):
         """Evaluate one disclosed leaf edge against its referenced far node.
 
         Parameters:
@@ -1265,16 +1431,17 @@ class IpexHandler:
                 during the origin-graph walk.
             nserder (Serder): Serder for the current near node whose edge block
                 is being evaluated.
-            inheritedSchema (str | Mapping | None): Optional schema pin passed
-                down from a parent edge group.
+            memo (dict): Node SAID to verdict, for the far-node recursion.
+            records (dict | None): Node SAID to authenticated registry record,
+                passed through to the far-node recursion.
+            inheritedPins (tuple): Schema pins in force from enclosing edge
+                groups, every one of which the far node must satisfy.
 
         Returns:
-            bool | None: ``True`` when the leaf edge semantics are satisfied,
-                ``False`` when the leaf is well-formed but its relation or
-                schema constraints do not match, including recognized operators
-                that this verifier cannot yet evaluate, or ``None`` when the
-                leaf shape itself is malformed and verification must fail
-                closed.
+            EdgeVerdict | None: the leaf's verdict over both axes that decide it
+                -- the unary Operator's relation and the far node's own verdict,
+                pinned schemas included -- or ``None`` when the leaf shape itself
+                is malformed and verification must fail closed.
         """
         # Reject unknown leaf labels before we inspect the reference.
         for label in group:
@@ -1288,59 +1455,202 @@ class IpexHandler:
         far = nodes[edgeSaid]
         fserder = far["serder"] if isinstance(far, dict) else far.serder
 
-        # Normalize one operator or a list of operators.
+        # A leaf edge operator is a single unary operator or a list of them: "When
+        # more than one unary Operator is applied to a given Edge, then the value of
+        # the Operator, `o`, field is a list of those unary Operators" (ACDC spec,
+        # Edge Section > Edge > Operator, `o` field). Anything that is neither is
+        # malformed.
         op = group.get("o")
         if op is None:
-            recognizedOps = ()
+            ops = []
         elif isinstance(op, str):
-            recognizedOps = (op,)
-        elif (isinstance(op, list) and op
-              and all(isinstance(operator, str) for operator in op)):
-            recognizedOps = tuple(op)
+            ops = [op]
+        elif isinstance(op, (list, tuple)):
+            ops = list(op)
         else:
             return None
 
-        # Every declared unary operator must be recognized.
-        if any(operator not in UnaryEdgeOps for operator in recognizedOps):
+        # Missing or empty `o` is valid and means there is no explicit unary operator
+        # constraint on this leaf. A provided but unrecognized operator is not read
+        # past -- every unary operator narrows what satisfies an edge, so a
+        # substituted one is always the more permissive rule. It leaves the edge
+        # undecided rather than decided either way, and nothing that arrives settles
+        # it, so a section that needs this leaf refuses without escrow while a
+        # satisfied sibling under OR decides the group without it.
+        unrecognized = [cand for cand in ops if cand not in UnaryEdgeOps]
+
+        # Every schema pin in force on this leaf: those inherited from enclosing
+        # groups first, then the leaf's own. Conjunction, not override -- an
+        # inherited pin is a floor, so a leaf carrying its own `s` must satisfy both
+        # and cannot release itself from a constraint its group placed. This is the
+        # rule settled for edge `s` on issue #1534: when the pinned schema differs
+        # from the far node's own, both validations must pass, and a pin one level
+        # out is no weaker a commitment than a pin on the edge.
+        #
+        # Resolved to (SAID, pin) pairs here, before any verdict is
+        # decided, because a pin whose *shape* this verifier cannot read is
+        # malformed input rather than a truth value -- and a malformed shape must
+        # be caught whatever the Operator on this edge turns out to be.
+        pins = tuple(inheritedPins)
+        if "s" in group:
+            pins = pins + (group["s"],)
+
+        farSchema = fserder.schema if pins else None
+        if isinstance(farSchema, Mapping):
+            farSchemaId = farSchema.get("$id")
+        elif isinstance(farSchema, str):
+            farSchemaId = farSchema
+        else:
+            farSchemaId = None
+        if pins and not isinstance(farSchemaId, str):
             return None
 
-        # Recognized but unevaluated leaf operators fail as unsatisfied
-        # relations instead of malformed input.
-        if "NOT" in recognizedOps or "DI2I" in recognizedOps:
-            return False
+        resolved = []
+        for edgeSchema in pins:
+            if isinstance(edgeSchema, str):
+                try:
+                    if Saider(qb64=edgeSchema).qb64 != edgeSchema:
+                        return None
+                except Exception:
+                    return None
+                resolved.append((edgeSchema, edgeSchema))
+            elif isinstance(edgeSchema, Mapping):
+                declared = edgeSchema.get("$id")
+                if not isinstance(declared, str):
+                    return None
+                try:
+                    edgeSchemer = Schemer(sed=deepcopy(edgeSchema))
+                except (ValidationError, ValueError):
+                    return None
+                if edgeSchemer.said != declared:
+                    return None
+                resolved.append((edgeSchemer.said, edgeSchema))
+            else:
+                return None
+
+        def withFarNode(own):
+            """Conjoin this leaf's own verdict with the far node's.
+
+            The far node is evaluated whatever this leaf came to. Its verdict
+            cannot change an own-verdict that is already invalid, but its *shape*
+            is not a truth value, so a malformed subtree must be caught even
+            behind an Operator this verifier could not evaluate.
+            """
+            farVerdict = self._evaluateNode(edgeSaid, nodes=nodes, memo=memo,
+                                            records=records)
+            if farVerdict is None:
+                return None
+            return chaining.reduceAnd([own, farVerdict])
+
+        if unrecognized:
+            return withFarNode(chaining.unknown(
+                f"unrecognized unary Operator(s) {unrecognized} on edge to node "
+                f"{edgeSaid}; recognized are {list(UnaryEdgeOps)}", retryable=False))
+
+        # The default rule: a bare edge is not an unconstrained edge. `I2I` is appended
+        # for a targeted far node and `NI2I` for an untargeted one, which is what makes
+        # the Operator field optional in the common case (ACDC spec, Edge Section >
+        # Edge > Operator). Resolved through .iseaid so an aggregate ('acg') far node,
+        # whose issuee lives at .sad["A"][1]["i"], is read the same as an attributive
+        # one.
+        if not any(cand in DefaultSuppressingEdgeOps for cand in ops):
+            ops = ops + ["I2I" if fserder.iseaid is not None else "NI2I"]
+
+        # Latest-wins applies only "among the conflicting Operators" (ACDC spec, Edge
+        # Section > Edge > Operator, `o` field). The delegative operators constrain the
+        # same thing -- the near ACDC's issuer relative to the far node's issuee -- so
+        # they conflict and the latest of them wins. E1E constrains the near issuee
+        # instead, so it composes with the winner rather than overriding it or being
+        # overridden.
+        dop = next((cand for cand in reversed(ops) if cand in DelegativeEdgeOps), None)
+
+        # Recognized but unevaluated leaf operators leave the edge undecided, for the
+        # same reason an unrecognized token does: the relation may well hold, and
+        # only this verifier's reach is at fault. Decided-against would be a stronger
+        # claim than the evidence supports, and under OR it is the difference between
+        # a sibling carrying the group and the whole section failing.
+        unevaluable = [cand for cand in ops if cand == "NOT"]
+        if dop == "DI2I":
+            unevaluable = unevaluable + [dop]
+        if unevaluable:
+            return withFarNode(chaining.unknown(
+                f"unimplemented unary Operator(s) {unevaluable} on edge to node "
+                f"{edgeSaid}", retryable=False))
 
         # Start from a passing state, then knock the edge down to False if
         # any required relation check fails.
         matched = True
-        if "E1E" in recognizedOps:
+        reason = f"edge to node {edgeSaid} satisfies its Operator and schema pins"
+        if "E1E" in ops:
             if (not nserder.iseaid
                     or not fserder.iseaid
                     or nserder.iseaid != fserder.iseaid):
                 matched = False
+                reason = (f"E1E edge to node {edgeSaid} requires equal issuees; near "
+                          f"issuee {nserder.iseaid} != far issuee {fserder.iseaid}")
 
         # I2I compares the near issuer to the far Issuee. NI2I is explicitly
         # non-delegative and therefore adds no issuer-to-Issuee equality.
-        if matched and "I2I" in recognizedOps:
+        if matched and dop == "I2I":
             if not fserder.iseaid:
                 matched = False
+                reason = (f"{dop} edge to node {edgeSaid} requires a targeted far "
+                          f"node, which has no issuee")
             elif nserder.israid != fserder.iseaid:
                 matched = False
+                reason = (f"I2I edge to node {edgeSaid} requires the near issuer to "
+                          f"be the far issuee; issuer {nserder.israid} != far issuee "
+                          f"{fserder.iseaid}")
 
-        # A leaf may pin the far node's schema directly, otherwise it
-        # inherits the schema pin from its parent group.
-        edgeSchema = group["s"] if "s" in group else inheritedSchema
-        if matched and edgeSchema is not None:
+        own = None  # set when a pin is neither satisfied nor refused, only unread
+        for edgeSchemaId, edgeSchema in resolved:
+            if not matched:
+                break
+
+            # The far node is validated against every pin, including one whose SAID
+            # equals the schema the far node declares for itself. Skipping the equal
+            # case would let a pin be satisfied by the far node asserting its own
+            # type, which is the constraint's whole content. ._verifyNodeSchemas does
+            # validate every disclosed node against its own schema, but only after
+            # this reduction has decided, so it cannot stand in for the pin here.
+            if (isinstance(edgeSchema, str) and edgeSchema == farSchemaId
+                    and isinstance(farSchema, Mapping)):
+                # The far node carries its schema inline and the pin names it, so
+                # validate against that document. validateSchema re-derives its
+                # SAID, so a node whose `$id` does not match its own schema body is
+                # refused rather than believed.
+                edgeSchema = farSchema
+
             try:
                 scheming.validateSchema(acdc=fserder, db=self.hby.db,
                                         schema=edgeSchema)
-            except MissingSchemaError:
-                raise
-            except (FailedSchemaValidationError, ValidationError, ValueError):
+            except MissingSchemaError as ex:
+                # Pinned by SAID and not cached yet. Undecided, and unlike a pin
+                # whose shape this verifier cannot read at all, still resolvable
+                # -- so it is a retryable unknown rather than malformed input. The
+                # error rides along as the cause, so that if the grant comes to
+                # depend on it, the Exchanger escrows on the schema and asks for it.
+                own = chaining.unknown(
+                    f"edge schema {edgeSchemaId} pinned on the edge to node "
+                    f"{edgeSaid} is not in cache", retryable=True, cause=ex)
+                break
+            except (FailedSchemaValidationError, ValidationError, ValueError) as ex:
                 matched = False
+                reason = (f"far node {edgeSaid} does not satisfy edge schema "
+                          f"{edgeSchemaId}: {ex}")
 
-        return matched
+        if own is None:
+            own = chaining.valid(reason) if matched else chaining.invalid(reason)
 
-    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, inheritedSchema):
+        # The far node's own verdict is the other half of what decides this edge: an
+        # Operator relation that holds against a far node whose issuer-auth is
+        # refused, or whose own Edge Section does not reduce, has not established
+        # anything. Conjoining them here is what carries the far node's status into
+        # the enclosing m-ary reduction.
+        return withFarNode(own)
+
+    def _evaluateGroupEdge(self, group, *, nodes, nserder, nested, memo,
+                           records=None, inheritedPins=()):
         """Evaluate one disclosed edge group and reduce its child results.
 
         Parameters:
@@ -1353,15 +1663,16 @@ class IpexHandler:
             nested (bool): ``True`` when ``group`` is a nested edge group and
                 therefore allows group-only labels like ``s``; ``False`` for a
                 top-level edge section.
-            inheritedSchema (str | Mapping | None): Optional schema pin passed
-                down from the parent edge group.
+            memo (dict): Node SAID to verdict, for the far-node recursion.
+            records (dict | None): Node SAID to authenticated registry record,
+                passed through to the far-node recursion.
+            inheritedPins (tuple): Schema pins in force from enclosing edge
+                groups, every one of which the far node must satisfy.
 
         Returns:
-            bool | None: ``True`` when the group is well-formed and its child
-                results satisfy the group's ``AND`` or ``OR`` semantics,
-                ``False`` when the group is well-formed but the reduced child
-                result fails, or ``None`` when the group shape is malformed and
-                verification must fail closed.
+            EdgeVerdict | None: the group's verdict, reduced over its members
+                under its own m-ary Operator, or ``None`` when the group shape is
+                malformed and verification must fail closed.
         """
         # Top-level edge sections and nested edge groups allow slightly
         # different reserved labels, so choose the right set up front.
@@ -1370,39 +1681,87 @@ class IpexHandler:
         # Nested groups may contribute an m-ary operator and a shared schema
         # pin for every child below them.
         groupOp = group.get("o", "AND")
-        if not isinstance(groupOp, str) or groupOp not in EdgeGroupOps:
+
+        # An Edge-group's `o` is a single aggregating Operator over the group's
+        # members; the spec defines the list form only for an Edge's unary `o`.
+        # Anything else is not an Operator at all, which says the ACDC is not
+        # well-formed rather than that the group's validity is unknown -- so it
+        # aborts the section here instead of entering the lattice, where a satisfied
+        # sibling under OR could outvote it.
+        if not isinstance(groupOp, str):
             return None
 
-        # Nested groups can pin one schema for every child below them.
-        nextSchema = group.get("s", inheritedSchema) if nested else inheritedSchema
+        # Nested groups can pin one schema for every child below them. A group's own
+        # pin is added to those already in force rather than replacing them, so a
+        # nested group cannot relax what its parent required.
+        nextPins = tuple(inheritedPins)
+        if "s" in group:
+            nextPins = nextPins + (group["s"],)
         results = []
         for label, node in group.items():
             if label in labels:
+                continue
+            if isinstance(node, str):
+                # A compact Edge: the member's value is the Edge block's SAID rather
+                # than the block. Spec-legal, and not dereferenceable here -- keripy
+                # does not store Edge blocks apart from the ACDC that carries them --
+                # so it is an unknown no arrival settles rather than malformed input.
+                # A section that depends on one refuses; a satisfied sibling under OR
+                # decides the group without it, which is where the v1 path lands too.
+                results.append(chaining.unknown(
+                    f"compact edge {label} names Edge block {node}, which this "
+                    f"verifier cannot dereference", retryable=False))
                 continue
             if not isinstance(node, Mapping):
                 return None
 
             # Recurse into each child and fail closed if any child is malformed.
             if "n" in node:
-                matched = self._evaluateLeafEdge(node,
+                verdict = self._evaluateLeafEdge(node,
                                                  nodes=nodes,
                                                  nserder=nserder,
-                                                 inheritedSchema=nextSchema)
+                                                 memo=memo,
+                                                 records=records,
+                                                 inheritedPins=nextPins)
             else:
-                matched = self._evaluateGroupEdge(node,
+                verdict = self._evaluateGroupEdge(node,
                                                   nodes=nodes,
                                                   nserder=nserder,
                                                   nested=True,
-                                                  inheritedSchema=nextSchema)
-            if matched is None:
+                                                  memo=memo,
+                                                  records=records,
+                                                  inheritedPins=nextPins)
+            if verdict is None:
                 return None
-            results.append(matched)
+            results.append(verdict)
 
         if not results:
+            # An Edge-group with no members reduces to nothing: read as valid it
+            # would satisfy an enclosing AND, and read as invalid it would refuse a
+            # section its Issuer wrote deliberately. Malformed, therefore, rather
+            # than either.
             return None
 
-        # Reduce the child booleans according to the group's operator.
-        return any(results) if groupOp == "OR" else all(results)
+        if groupOp not in self.MAryReducers:
+            # Recognized by the spec and not reduced here (NAND, NOR, AVG, WAVG), or
+            # not an Operator this verifier knows at all. Either way the group's
+            # validity is unknown and no arrival settles it. Reducing it as AND would
+            # apply a rule the Issuer did not write, and refusing the section outright
+            # would let it outvote siblings that decide the group without it.
+            #
+            # Answered *after* the members are evaluated, not before. Whether this
+            # verifier can reduce the Operator says nothing about whether the blocks
+            # below it are well-formed, and a malformed shape is not a truth value --
+            # returning early let one ride in behind an Operator nobody reduces, the
+            # same fault the leaf path had for an unevaluable unary Operator.
+            return chaining.unknown(
+                f"Edge-group Operator {groupOp!r} is not reduced by this verifier; "
+                f"reducible are {sorted(self.MAryReducers)}", retryable=False)
+
+        # Reduce the child verdicts under the group's Operator, over three values
+        # rather than two, so an unknown member cannot change a verdict its siblings
+        # already decide.
+        return chaining.reduce(groupOp, results, reducers=self.MAryReducers)
 
     def _verifyNodeSchemas(self, nodes, order):
         """Validate each disclosed ACDC against its embedded or cached schema."""
@@ -1418,92 +1777,59 @@ class IpexHandler:
 
         return True
 
-    def _verifyGraphSemantics(self, nodes, order):
-        """Verify grant edge operators and edge-schema pins across walked nodes.
+    def _verifyIssuerAuthNode(self, serder, nest, *, records=None):
+        """Verify one disclosed ACDC node's issuer authentication, as a verdict.
+
+        The node authenticates through its declared factor (see
+        ._authenticateIssuer). When that factor is a registry, the transaction
+        state the Issuer blinded into the registry's head is recorded, not judged:
+        whether a state makes the ACDC acceptable for a use is the EGF's rule, and
+        an application or EGF evaluator applies it to what ``records`` keeps.
 
         Parameters:
-            nodes (dict): Mapping of disclosed node SAID to parsed nest.
-            order (list): Breadth-first walk order returned by ``_walkGraph``.
+            serder (Serder): The disclosed ACDC node being verified.
+            nest (dict | object): The parsed nested substream that carried the
+                node, with its issuer-auth attachments.
+            records (dict | None): Where to record the ``RegStateRecord`` a
+                registry factor authenticated, keyed by node SAID.
 
         Returns:
-            bool: True when every walked edge block is well-formed and its
-                leaf-level and group-level operator/schema constraints are
-                satisfied; False on any malformed or violated edge semantics.
+            EdgeVerdict: valid when the node authenticates; invalid when its
+            factor is permanently refused; unknown (retryable) when the verifier
+            does not yet hold enough KEL or TEL evidence to conclude.
+
+            A verdict rather than a bool because this is a member of the m-ary
+            reduction, so an Operator that does not need this node is not made to
+            wait on it or fail because of it.
         """
-        for said in order:
-            # Current near node from the walked grant DAG
-            near = nodes[said]
+        try:
+            authenticated, record = self._authenticateIssuer(serder=serder, nest=nest)
+        except MissingChainError as ex:
+            return chaining.unknown(str(ex), retryable=True)
 
-            # Retrieve node serder
-            nserder = near["serder"] if isinstance(near, dict) else near.serder
+        if not authenticated:
+            return chaining.invalid(f"node {serder.said} issuer-auth proof refused")
 
-            # No edges means nothing more to validate for this node
-            edges = nserder.sad.get("e")
-            if not edges:
-                continue
+        if record is None:  # authenticated by a factor that carries no state
+            return chaining.valid(f"node {serder.said} issuer-auth proof vets")
 
-            # Normalize a single edge block or a list of edge blocks
-            if isinstance(edges, Mapping):
-                blocks = [edges]
-            elif isinstance(edges, list) and all(isinstance(edge, Mapping) for edge in edges):
-                blocks = edges
-            else:
-                return False
+        if records is not None:
+            records[serder.said] = record
+        return chaining.valid(f"node {serder.said} proof vets against registry "
+                              f"{record.regid}, which says {record.state!r}")
 
-            for edge in blocks:
-                # Evaluate the whole edge tree from the root down. Each leaf
-                # returns one boolean and each group reduces its child booleans
-                # with AND/OR using any inherited schema pin.
-                if "n" in edge:
-                    matched = self._evaluateLeafEdge(edge,
-                                                     nodes=nodes,
-                                                     nserder=nserder,
-                                                     inheritedSchema=None)
-                else:
-                    matched = self._evaluateGroupEdge(edge,
-                                                      nodes=nodes,
-                                                      nserder=nserder,
-                                                      nested=False,
-                                                      inheritedSchema=None)
-                if matched is not True:
-                    return False
-
-        return True
-
-    def _verifyIssuerAuthGraph(self, nodes, order):
-        """Verify issuer-auth proof groups for each walked disclosed DAG node.
-
-        Parameters:
-            nodes (dict): Mapping of disclosed node SAID to parsed nest.
-            order (list): Breadth-first walk order returned by ``_walkGraph``.
+    def _authenticateIssuer(self, serder, nest):
+        """Verify one ACDC using its declared issuer authentication factor.
 
         Returns:
-            bool: True when every walked node has a valid issuer registry,
-                direct KEL anchor, or current issuer signature factor.
+            tuple: ``(authenticated, record)``, where ``record`` is the vetted
+                ``RegStateRecord`` when the registry factor authenticated the node
+                and ``None`` for any other factor or a refusal.
 
         Raises:
             MissingChainError: When an issuer factor names KEL or TEL evidence
                 that the verifier has not loaded locally yet.
         """
-        # Run proof verification in graph order so each registry-backed node is
-        # checked against the exact nested substream that carried its body.
-        for said in order:
-
-            # Resolve the node-local body and attachments.
-            nest = nodes[said]
-
-            # Read the ACDC body from either parsed representation.
-            nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
-
-            # Require one valid issuer authentication factor per node.
-            if not self._verifyIssuerAuthNode(serder=nserder, nest=nest):
-                return False
-
-        # Every disclosed node passed issuer authentication.
-        return True
-
-    def _verifyIssuerAuthNode(self, serder, nest):
-        """Verify one ACDC using its declared issuer authentication factor."""
 
         # Authentication Factor 1: Registry
         # First check if a registry was declared, if so verify it
@@ -1513,14 +1839,12 @@ class IpexHandler:
                                        proofs=self._blindProofs(nest),
                                        target=serder.said,
                                        acdc=serder)
-            if record is None:
-                return False
-            return True
+            return record is not None, record
 
         # An inner rd without a top-level rd selects the unsupported hidden
         # issuer-registry form; it must not fall through to another factor.
         if self._presentationRegistries(serder) is None:
-            return False
+            return False, None
 
         # Authentication Factor 2: Seal Anchor
         # Registry-less ACDCs must identify a direct issuer AID.
@@ -1528,13 +1852,13 @@ class IpexHandler:
 
         # Reject a credential with no issuer authentication identity.
         if not issuer:
-            return False
+            return False, None
 
         # Parse the issuer identifier before processing attachments.
         try:
             prefixer = Prefixer(qb64=issuer)
         except Exception:
-            return False
+            return False, None
 
         # Normalize object and dictionary nest representations.
         parsed = nest if isinstance(nest, dict) else nest.__dict__
@@ -1564,7 +1888,7 @@ class IpexHandler:
 
             # A supplied issuer anchor is the selected factor. An invalid anchor
             # must not silently downgrade the ACDC to signature authentication.
-            return bool(validSeals)
+            return bool(validSeals), None
 
         # Authentication Factor 3: Signatures
         # Fall back to signature verification when no registry or anchor is supplied
@@ -1626,7 +1950,7 @@ class IpexHandler:
                 f"missing current issuer KEL evidence for ACDC {serder.said}")
 
         # Require at least one valid current issuer signature.
-        return bool(validTsgs or validCigars)
+        return bool(validTsgs or validCigars), None
 
     @staticmethod
     def _blindProofs(nest):

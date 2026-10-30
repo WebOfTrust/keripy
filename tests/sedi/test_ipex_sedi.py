@@ -21,6 +21,7 @@ from keri.acdc import (
     loadHandlers,
     offer as ipexOffer,
 )
+from keri.acdc.chaining import Verdicts
 from keri.app import openCF, openHby
 from keri.core import (
     Blinder,
@@ -783,7 +784,7 @@ def test_ipex_v2_rejects_schema_invalid_sedi_with_valid_issuer_registry():
             assert handler._verifyIssuerAuthNode(
                 serder=node.serder,
                 nest=node,
-            ) is True
+            ).verdict == Verdicts.valid
 
             # Set up the recipient's IPEX processor
             recorder = Recorder()
