@@ -3890,7 +3890,8 @@ class Kevery:
                       (ilk == Ilks.rot and  # superseding recovery rot or
                         kever.lastEst.s < sn <= sno) or
                       (ilk == Ilks.drt and # delegated superseding recovery drt
-                        kever.lastEst.s <= sn <= sno)):
+                        kever.lastEst.s <= sn <= sno and
+                        said != kever.lastEst.d)):
 
                     # verify signatures etc and update state if valid
                     # raise exception if problem.
