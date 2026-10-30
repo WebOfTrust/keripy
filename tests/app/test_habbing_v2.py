@@ -24,6 +24,7 @@ from keri.app import (Configer, ConfigerDoer, Habery,
                       openHab, openHby, Algos)
 
 from keri.db import Baser, BaserDoer
+from keri.recording import EndpointRecord, LocationRecord
 
 TEST_VERSION = Vrsn_2_0
 KRAM_V2_SUITE_CONFIG = {
@@ -979,6 +980,61 @@ def test_postman_endsfor_v2():
 
 def test_postman_endsfor_v2_with_kram(mockHelpingNowUTC):
     _exercise_postman_endsfor_v2(enable_kram=True)
+
+
+def test_endsfor_replaces_cut_mailbox():
+    """A sender must stop selecting a mailbox after accepting its signed cut."""
+    with openHab(name="sender", temp=True) as (_, sender), \
+            openHby(name="recipient", temp=True) as hby:
+        recipient = hby.makeHab(name="recipient")
+        old = hby.makeHab(name="old", transferable=False)
+        new = hby.makeHab(name="new", transferable=False)
+        for hab in (recipient, old, new):
+            sender.psr.parse(ims=bytearray(hab.replay()))
+        for hab, url in ((old, "http://127.0.0.1:8888"),
+                         (new, "http://127.0.0.1:9999")):
+            location = hab.makeLocScheme(url=url)
+            hby.psr.parse(ims=bytearray(location))
+            sender.psr.parse(ims=bytearray(location))
+        authorization = recipient.makeEndRole(eid=old.pre, role=Roles.mailbox)
+        hby.psr.parse(ims=bytearray(authorization))
+        sender.psr.parse(ims=bytearray(authorization))
+        assert sender.endsFor(recipient.pre) == {
+            Roles.mailbox: {old.pre: {Schemes.http: "http://127.0.0.1:8888"}}}
+
+        for eid, allow in ((new.pre, True), (old.pre, False)):
+            authorization = recipient.makeEndRole(eid=eid, role=Roles.mailbox,
+                                                   allow=allow)
+            hby.psr.parse(ims=bytearray(authorization))
+            sender.psr.parse(ims=bytearray(authorization))
+        assert sender.fetchEndAllowed(recipient.pre, Roles.mailbox, old.pre) is False
+        assert sender.fetchEndAllowed(recipient.pre, Roles.mailbox, new.pre) is True
+        assert sender.endsFor(recipient.pre) == {
+            Roles.mailbox: {new.pre: {Schemes.http: "http://127.0.0.1:9999"}}}
+
+
+@pytest.mark.parametrize("allowed, enabled", [
+    (None, None), (False, None), (None, False), (False, False),
+    (True, None), (None, True), (True, False), (False, True), (True, True),
+])
+def test_endsfor_endpoint_states_preserve_witnesses(allowed, enabled):
+    """Only enabled or allowed roles join the current witness endpoints."""
+    with openHby(name="endpoints", temp=True) as hby:
+        witness = hby.makeHab(name="witness", transferable=False)
+        recipient = hby.makeHab(name="recipient", wits=[witness.pre], toad=1)
+        endpoint = hby.makeHab(name="endpoint", transferable=False)
+        hby.db.locs.pin((witness.pre, Schemes.http),
+                        LocationRecord(url="http://127.0.0.1:8888"))
+        hby.db.locs.pin((endpoint.pre, Schemes.http),
+                        LocationRecord(url="http://127.0.0.1:9999"))
+        expected = {Roles.witness: {
+            witness.pre: {Schemes.http: "http://127.0.0.1:8888"}}}
+        for role in (Roles.controller, Roles.agent, Roles.mailbox):
+            hby.db.ends.pin((recipient.pre, role, endpoint.pre),
+                            EndpointRecord(allowed=allowed, enabled=enabled))
+            if allowed or enabled:
+                expected[role] = {endpoint.pre: {Schemes.http: "http://127.0.0.1:9999"}}
+        assert recipient.endsFor(recipient.pre) == expected
 
 
 def test_rotate_preserves_toad():

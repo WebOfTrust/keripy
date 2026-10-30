@@ -2088,6 +2088,10 @@ class BaseHab:
     def endsFor(self, pre):
         """Load authorized endpoints for the provided AID.
 
+        Include endpoints that are enabled or allowed, matching
+        ``fetchEndAuthzed``. Witnesses from the identifier's current KEL state
+        are included independently of endpoint authorization.
+
         Parameters:
             pre (str): qb64 aid for which to load ends.
 
@@ -2096,6 +2100,8 @@ class BaseHab:
         ends = dict()
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(pre,)):
+            if not (end.enabled or end.allowed):
+                continue
             locs = dict()
             urls = self.fetchUrls(eid=eid, scheme="")
             for rscheme, url in urls.firsts():
