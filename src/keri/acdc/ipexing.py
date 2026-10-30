@@ -2379,10 +2379,11 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable offer message.
-        origin (Serder | bytes | bytearray | None): Optional ACDC root for the
-            offer DAG. When provided, its SAID is copied into ``a.o[0]``. When
-            omitted, the offer may negotiate only through its disclose-path
-            plan.
+        origin (Serder | bytes | bytearray | str | None): Optional ACDC root or
+            root SAID for the offer DAG. When provided, its SAID is copied into
+            ``a.o[0]``. A bare SAID creates a commitment-only Offer and cannot
+            be combined with ``artifacts``. When omitted, the offer may
+            negotiate only through its disclose-path plan.
         artifacts (list[Serder | bytes | bytearray] | None): Optional
             additional ACDC DAG nodes carried after ``origin``. Passing a list,
             including ``[]``, means the offer carries ``origin`` as a nested
@@ -2469,10 +2470,19 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     # The usual Offer is metadata or partial, but other ACDC variants work too.
     nests = None
     if origin is not None:
-        originSerder = _streamSerder(origin)
-        if originSerder.proto != Protocols.acdc or originSerder.ilk not in DisclosedNodeIlks:
-            raise ValueError("offer origin must identify a disclosed ACDC node")
-        data["o"] = [originSerder.said]
+        if isinstance(origin, str):
+            try:
+                Saider(qb64=origin)
+            except Exception as ex:
+                raise ValueError("offer origin must be a valid ACDC SAID") from ex
+            if artifacts is not None:
+                raise ValueError("a SAID-only offer origin cannot carry artifacts")
+            data["o"] = [origin]
+        else:
+            originSerder = _streamSerder(origin)
+            if originSerder.proto != Protocols.acdc or originSerder.ilk not in DisclosedNodeIlks:
+                raise ValueError("offer origin must identify a disclosed ACDC node")
+            data["o"] = [originSerder.said]
     elif artifacts:
         raise ValueError("offer artifacts require an origin")
 

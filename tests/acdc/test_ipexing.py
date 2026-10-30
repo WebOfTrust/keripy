@@ -1991,8 +1991,17 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
                                        modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        message="Here are the terms",
-                                       origin=origin,
+                                       origin=origin.said,
                                        apply=applyExn)
+
+        # A bare SAID can commit to the origin but cannot supply its nested body.
+        with pytest.raises(ValueError,
+                           match="SAID-only offer origin cannot carry artifacts"):
+            ipexOffer(hab=holder,
+                      message="Missing origin body",
+                      origin=origin.said,
+                      artifacts=[],
+                      apply=applyExn)
 
         for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
             ims = bytearray(exn.raw)
