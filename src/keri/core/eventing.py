@@ -5632,7 +5632,10 @@ class Kevery:
             pre: qb64 of identifier prefix for KEL
             sn: int sequence number of event in KEL of pre"""
         if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:  # no need to walk back
-            if not self.db.kels.getLast(keys=pre, on=sn):  # no event at sn
+            # same first step as the walk: no event at sn means None
+            if not (dig := self.db.kels.getLast(keys=pre, on=sn)):
+                return None
+            if not self.db.evts.get(keys=(pre, dig)):
                 return None
             return self.db.evts.get(keys=(pre, lastEst.d))
 

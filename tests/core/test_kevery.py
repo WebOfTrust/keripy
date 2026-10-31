@@ -498,6 +498,12 @@ def test_witness_state_matches_walk():
         assert hab.kvy.fetchEstEvent(hab.pre, 6) is None
         hby.db.kels.add(keys=hab.pre, on=6, val=dig)
         assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
+        # nor when the entry at sn names an event that is not stored
+        evt = hby.db.evts.get(keys=(hab.pre, dig))
+        hby.db.evts.rem(keys=(hab.pre, dig))
+        assert hab.kvy.fetchEstEvent(hab.pre, 6) is None
+        hby.db.evts.put(keys=(hab.pre, dig), val=evt)
+        assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
 
         # key state reloaded from the db, as after a restart, gives the same answers
         hby.db.kevers.clear()
