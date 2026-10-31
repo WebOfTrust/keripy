@@ -7,7 +7,7 @@ from hio.help import ogler
 from keri.kering import Vrsn_1_0, ValidationError, Kinds
 from keri.core import (Salter, Parser, Diger, SerderKERI,
                        Counter, Kever, Kevery, Codens,
-                       incept, rotate, interact)
+                       incept, rotate, interact, receipt)
 from keri.app import openHby
 from keri.db import openDB
 
@@ -425,6 +425,112 @@ def test_stale_event_receipts():
         assert len(wigers) == 3
 
         """ Done Test """
+
+
+def _walkWitnessState(kvy, pre, sn):
+    """The backward walk fetchWitnessState made before it read key state,
+    kept here as the reference its answers must match."""
+    preb = pre.encode("utf-8")
+    for digb in kvy.db.kels.getBackIter(keys=preb, on=sn):
+        serder = kvy.db.evts.get(keys=(preb, digb))
+        if serder.estive:
+            return kvy.db.wits.get(keys=(preb, digb))
+    return []
+
+
+def _witnessedHab(hby, signers):
+    return hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
+                       wits=[signers[0].verfer.qb64, signers[1].verfer.qb64])
+
+
+class _Reads:
+    """Counts key events read out of db.evts while armed."""
+
+    def __init__(self, db, monkeypatch):
+        self.count = 0
+        original = db.evts.get
+
+        def counting(*pa, **kwa):
+            self.count += 1
+            return original(*pa, **kwa)
+
+        monkeypatch.setattr(db.evts, "get", counting)
+
+    def during(self, act):
+        self.count = 0
+        result = act()
+        return self.count, result
+
+
+def test_witness_state_matches_walk():
+    """fetchWitnessState and fetchEstEvent answer at every sn as the walks do,
+    across rotations that change the witness list."""
+    signers = Salter(raw=b'0123456789abcdef').signers(count=5, path='wit',
+                                                     transferable=False, temp=True)
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = _witnessedHab(hby, signers)
+        hab.interact()
+        hab.interact()
+        hab.rotate(cuts=[signers[0].verfer.qb64], adds=[signers[2].verfer.qb64])
+        hab.interact()
+        hab.rotate()
+        hab.interact()
+        hab.interact()
+        assert hab.kever.sn == 7
+
+        for sn in range(hab.kever.sn + 3):
+            got = [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, sn)]
+            want = [w.qb64 for w in _walkWitnessState(hab.kvy, hab.pre, sn)]
+            assert got == want, sn
+        assert [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, 7)] == [
+            signers[1].verfer.qb64, signers[2].verfer.qb64]
+
+        ests = [0, 0, 0, 3, 3, 5, 5, 5]
+        for sn, esn in enumerate(ests):
+            assert hab.kvy.fetchEstEvent(hab.pre, sn).said == hby.db.kels.getLast(
+                keys=hab.pre, on=esn)
+        assert hab.kvy.fetchEstEvent(hab.pre, 8) is None
+        assert hab.kvy.fetchWitnessState(signers[4].verfer.qb64, 0) == []
+
+        # key state reloaded from the db, as after a restart, gives the same answers
+        hby.db.kevers.clear()
+        assert [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, 6)] == [
+            signers[1].verfer.qb64, signers[2].verfer.qb64]
+        assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
+
+
+def test_witness_receipt_reads_bounded(monkeypatch):
+    """THE BOUND. A witness receipt on the newest event, and the witness state
+    and establishment event behind it, read as many key events at sn 50 as at
+    sn 10, though the KEL has grown by forty interaction events between them.
+    processReceipt used to walk back to the last establishment event."""
+    signers = Salter(raw=b'0123456789abcdef').signers(count=2, path='wit',
+                                                     transferable=False, temp=True)
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = _witnessedHab(hby, signers)
+        reads = _Reads(hby.db, monkeypatch)
+
+        def receiptNewest():
+            hab.interact()
+            serder = hab.kever.serder
+            rct = receipt(pre=hab.pre, sn=serder.sn, said=serder.said)
+            cigar = signers[0].sign(ser=serder.raw)
+            count, _ = reads.during(
+                lambda: hab.kvy.processReceipt(serder=rct, cigars=[cigar], wigers=[], tsgs=[]))
+            assert len(hby.db.wigs.get(keys=(hab.pre, serder.said))) == 1
+            return count, reads.during(
+                lambda: (hab.kvy.fetchWitnessState(hab.pre, serder.sn),
+                         hab.kvy.fetchEstEvent(hab.pre, serder.sn)))[0]
+
+        for _ in range(9):
+            receiptNewest()
+        early = receiptNewest()
+        assert hab.kever.sn == 10
+        for _ in range(39):
+            receiptNewest()
+        late = receiptNewest()
+        assert hab.kever.sn == 50
+        assert late == early, f"read {early} key events at sn 10 and {late} at sn 50"
 
 
 if __name__ == "__main__":
