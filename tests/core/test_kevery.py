@@ -492,6 +492,13 @@ def test_witness_state_matches_walk():
         assert hab.kvy.fetchEstEvent(hab.pre, 8) is None
         assert hab.kvy.fetchWitnessState(signers[4].verfer.qb64, 0) == []
 
+        # no event at sn means no establishment event for it, whatever key state says
+        dig = hby.db.kels.getLast(keys=hab.pre, on=6)
+        hby.db.kels.rem(keys=hab.pre, on=6, val=dig)
+        assert hab.kvy.fetchEstEvent(hab.pre, 6) is None
+        hby.db.kels.add(keys=hab.pre, on=6, val=dig)
+        assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
+
         # key state reloaded from the db, as after a restart, gives the same answers
         hby.db.kevers.clear()
         assert [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, 6)] == [
