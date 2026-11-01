@@ -83,7 +83,7 @@ then the new total storage
 T1 = N1 * S1 = 1.5* S * 0.5 * N = (1.5)*(0.5)*N * S = 0.75* N * S = 3/4(N*S)
 or a $25% improvement.
 
-But as a budget we can double the per node storage if we decrease the averge
+But as a budget we can double the per node storage if we decrease the average
 depth by one and not incur a storage penalty.
 
 Reducing the average tree depth also minimizes the performance requirements of
