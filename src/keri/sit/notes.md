@@ -1,4 +1,4 @@
-keri.smt.branching module
+Background notes on SIT
 
 OC-SMT  core functional support
 

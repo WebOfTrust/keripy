@@ -1,17 +1,17 @@
 # -*- encoding: utf-8 -*-
 """
-tests.psmt.test_branching module
+tests.sit.test_noding module
 
 """
 
 import pytest
 
-def test_psmt_basic():
+def test_noding_basic():
     """Basic Tests"""
 
 
     """Done Test"""
 
 if __name__ == "__main__":
-    test_psmt_basic()
+    test_noding_basic()
 
