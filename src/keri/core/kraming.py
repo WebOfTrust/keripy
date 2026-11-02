@@ -716,7 +716,7 @@ class Kramer:
             raw=msg.raw, sigers=poolSigers, verfers=kever.verfers)
         verified = {s.qb64 for s in vsigers}
         self._scrubFailedVerification(senderId, kever, kwa, verified)
-        if msg.ilk == Ilks.exn and vsigers:
+        if msg.ilk in (Ilks.xip, Ilks.exn) and vsigers:
             self._setVerifiedSenderTsg(senderId, kever, vsigers, kwa)
 
         return SigVerifyResult(
@@ -1457,7 +1457,7 @@ class Kramer:
 
                     if kever.tholder.satisfy(indices=sigIndices):
                         self._rehydrateKwaFromEscrow(partialKey, senderId, kwa)
-                        if msg.ilk == Ilks.exn:
+                        if msg.ilk in (Ilks.xip, Ilks.exn):
                             self._setVerifiedSenderTsg(
                                 senderId, kever, allSigs, kwa)
                         cache.rdt = helping.nowIso8601()

@@ -5252,6 +5252,105 @@ def test_ipex_v2_rejects_exn_flow_opener():
         assert recorder.items == []
 
 
+def test_ipex_v2_multikey_xip_signatures_through_kram():
+    """KRAM forwards complete and accumulated XIP thresholds to IPEX."""
+    kramConfig = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 60000, 300000,
+                      5000, 60000, 300000],
+            },
+        },
+    }
+
+    with openHby(name="ipex-v2-multikey-xip",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        applicant = hby.makeHab(name="applicant", isith="2", icount=3)
+        discloser = hby.makeHab(name="discloser")
+        schema = acdcmap(israid=discloser.pre,
+                         attribute=dict(d="", role="member"),
+                         iseaid=applicant.pre).sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        with openCF(name="ipex-v2-multikey-xip-kram",
+                    base="test", temp=True) as cf:
+            cf.put(kramConfig)
+            kvy = Kevery(db=hby.db,
+                         lax=False,
+                         local=False,
+                         kramer=Kramer(db=hby.db, cf=cf),
+                         exc=exc)
+
+            applyExn, _ = ipexApply(
+                hab=applicant,
+                recp=discloser.pre,
+                message="Please disclose to the group applicant",
+                modifiers=dict(dp=[[[schema, "/", []]]]),
+            )
+            sigers = applicant.sign(ser=applyExn.raw, indexed=True)
+            cacheKey = (applicant.pre, applyExn.said, applyExn.said)
+            partialKey = (applicant.pre, applyExn.said)
+
+            first = messagize(serder=applyExn,
+                               sigers=[sigers[0]],
+                               framed=False,
+                               gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=first, kvy=kvy)
+
+            cache = hby.db.kramTMSC.get(keys=cacheKey)
+            assert cache is not None
+            assert cache.rdt == ""
+            assert len(hby.db.kramPMKS.get(keys=partialKey)) == 1
+            assert hby.db.exns.get(keys=(applyExn.said,)) is None
+
+            second = messagize(serder=applyExn,
+                                sigers=[sigers[1]],
+                                framed=False,
+                                gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=second, kvy=kvy)
+
+            cache = hby.db.kramTMSC.get(keys=cacheKey)
+            assert cache is not None
+            assert cache.rdt
+            assert hby.db.kramPMKM.get(keys=partialKey) is None
+            assert hby.db.kramPMKS.get(keys=partialKey) == []
+            assert hby.db.exns.get(keys=(applyExn.said,)) is not None
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(applyExn.said, applicant.pre, "")))) == 2
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/exn/ipex/apply", "Please disclose to the group applicant"),
+            ]
+
+            immediateExn, _ = ipexApply(
+                hab=applicant,
+                recp=discloser.pre,
+                message="Please accept the complete group threshold",
+                modifiers=dict(dp=[[[schema, "/", []]]]),
+            )
+            immediateSigers = applicant.sign(
+                ser=immediateExn.raw, indexed=True)
+            immediate = messagize(serder=immediateExn,
+                                   sigers=immediateSigers[:2],
+                                   framed=False,
+                                   gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=immediate, kvy=kvy)
+
+            assert hby.db.exns.get(keys=(immediateExn.said,)) is not None
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(immediateExn.said, applicant.pre, "")))) == 2
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/exn/ipex/apply", "Please disclose to the group applicant"),
+                ("/exn/ipex/apply",
+                 "Please accept the complete group threshold"),
+            ]
+
+
 def test_ipex_v2_rejects_third_party_prior_response_without_throwing():
     """A third party cannot consume the response slot for someone else's IPEX thread."""
     with openHby(name="ipex-v2-third-party-response",
