@@ -1485,7 +1485,7 @@ class Parser:
                     raise ValidationError(f"Invalid resource type {route}"
                                                  f"so dropped msg={serder.pretty()}.")
 
-            elif ilk in (Ilks.exn,):
+            elif ilk in (Ilks.exn, Ilks.xip):
                 if not (exts['cigars'] or exts['tsgs'] or
                         exts['sscs'] or exts['ssts']):
                     raise ValidationError(f"Missing attached exchanger "

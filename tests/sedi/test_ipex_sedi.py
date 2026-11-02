@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from jsonschema import Draft202012Validator as SchemaValidator
 
-from keri import Kinds, Vrsn_2_0
+from keri import Ilks, Kinds, Vrsn_2_0
 from keri.acdc import (
     IpexHandler,
     Regery,
@@ -941,8 +941,8 @@ def test_signed_iar_through_ipex():
             assert storedGrant.pre == holder.pre
             assert storedGrant.ked["ri"] == verifier.pre
             assert storedGrant.ked["r"] == "/ipex/grant"
-            assert storedGrant.ked["p"] == ""
-            assert storedGrant.ked["x"] == grant.ked["x"]
+            assert storedGrant.ilk == Ilks.xip
+            assert storedGrant.said == grant.said
             assert storedGrant.ked["a"]["o"] == [iar.said]
             iarNests = loadParsedNestedSubstreams(verifierHby, grant.said)
             assert len(iarNests) == 1
@@ -1089,8 +1089,8 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 assert storedApply.pre == verifier.pre
                 assert storedApply.ked["ri"] == holder.pre
                 assert storedApply.ked["r"] == "/ipex/apply"
-                assert storedApply.ked["p"] == ""
-                assert storedApply.ked["x"] == coreApply.ked["x"]
+                assert storedApply.ilk == Ilks.xip
+                assert storedApply.said == coreApply.said
                 assert storedApply.ked["q"] == coreApply.ked["q"]
                 assert storedApply.ked["a"]["ax"] == [True]
 
@@ -1242,7 +1242,7 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 assert storedGrant.ked["ri"] == verifier.pre
                 assert storedGrant.ked["r"] == "/ipex/grant"
                 assert storedGrant.ked["p"] == storedAgree.said
-                assert storedGrant.ked["x"] == storedApply.ked["x"]
+                assert storedGrant.ked["x"] == storedApply.said
                 assert storedGrant.ked["a"]["ax"] == [True]
                 assert storedGrant.ked["a"]["o"] == [core.said]
 
@@ -1290,9 +1290,10 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 _exchange(admit, admitAtc, verifierKvy, holderKvy)
 
                 # Assert KRAM cache was created
+                xid = grant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, grant.ked["x"], grant.said)
+                        keys=(holder.pre, xid, grant.said)
                     )
                     is not None
                 )
@@ -1798,8 +1799,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedStateApply.pre == verifier.pre
                 assert storedStateApply.ked["ri"] == holder.pre
                 assert storedStateApply.ked["r"] == "/ipex/apply"
-                assert storedStateApply.ked["p"] == ""
-                assert storedStateApply.ked["x"] == stateApply.ked["x"]
+                assert storedStateApply.ilk == Ilks.xip
+                assert storedStateApply.said == stateApply.said
                 assert storedStateApply.ked["a"]["ax"] == [True]
 
                 # Guy rotates before signing and presenting the first Grant.
@@ -1887,7 +1888,7 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedStateGrant.ked["ri"] == verifier.pre
                 assert storedStateGrant.ked["r"] == "/ipex/grant"
                 assert storedStateGrant.ked["p"] == storedStateApply.said
-                assert storedStateGrant.ked["x"] == storedStateApply.ked["x"]
+                assert storedStateGrant.ked["x"] == storedStateApply.said
                 assert storedStateGrant.ked["a"]["ax"] == [True]
                 assert storedStateGrant.ked["a"]["o"] == [residence.said]
                 stateNests = loadParsedNestedSubstreams(
@@ -1967,8 +1968,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedDistrictApply.pre == verifier.pre
                 assert storedDistrictApply.ked["ri"] == holder.pre
                 assert storedDistrictApply.ked["r"] == "/ipex/apply"
-                assert storedDistrictApply.ked["p"] == ""
-                assert storedDistrictApply.ked["x"] == districtApply.ked["x"]
+                assert storedDistrictApply.ilk == Ilks.xip
+                assert storedDistrictApply.said == districtApply.said
                 assert storedDistrictApply.ked["q"] == districtApply.ked["q"]
                 assert storedDistrictApply.ked["a"]["ax"] == [True]
 
@@ -2041,7 +2042,7 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedDistrictGrant.ked["ri"] == verifier.pre
                 assert storedDistrictGrant.ked["r"] == "/ipex/grant"
                 assert storedDistrictGrant.ked["p"] == storedDistrictApply.said
-                assert storedDistrictGrant.ked["x"] == storedDistrictApply.ked["x"]
+                assert storedDistrictGrant.ked["x"] == storedDistrictApply.said
                 assert storedDistrictGrant.ked["a"]["ax"] == [True]
                 assert storedDistrictGrant.ked["a"]["o"] == [residence.said]
                 districtNests = loadParsedNestedSubstreams(
@@ -2078,15 +2079,17 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 _exchange(districtAdmit, districtAdmitAtc, verifierKvy, holderKvy)
 
                 # Each disclosure has its own timely presentation binding.
+                stateXid = stateGrant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, stateGrant.ked["x"], stateGrant.said)
+                        keys=(holder.pre, stateXid, stateGrant.said)
                     )
                     is not None
                 )
+                districtXid = districtGrant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, districtGrant.ked["x"], districtGrant.said)
+                        keys=(holder.pre, districtXid, districtGrant.said)
                     )
                     is not None
                 )
@@ -2263,8 +2266,8 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 assert storedApply.pre == verifier.pre
                 assert storedApply.ked["ri"] == holder.pre
                 assert storedApply.ked["r"] == "/ipex/apply"
-                assert storedApply.ked["p"] == ""
-                assert storedApply.ked["x"] == apply.ked["x"]
+                assert storedApply.ilk == Ilks.xip
+                assert storedApply.said == apply.said
                 assert storedApply.ked["q"] == apply.ked["q"]
                 assert storedApply.ked["a"]["ax"] == [True]
 
@@ -2331,7 +2334,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 assert storedGrant.ked["ri"] == verifier.pre
                 assert storedGrant.ked["r"] == "/ipex/grant"
                 assert storedGrant.ked["p"] == storedApply.said
-                assert storedGrant.ked["x"] == storedApply.ked["x"]
+                assert storedGrant.ked["x"] == storedApply.said
                 assert storedGrant.ked["a"]["ax"] == [True]
                 assert storedGrant.ked["a"]["o"] == [core.said]
                 selectiveNests = loadParsedNestedSubstreams(
@@ -3377,8 +3380,8 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 assert storedResidenceApply.pre == verifier.pre
                 assert storedResidenceApply.ked["ri"] == holder.pre
                 assert storedResidenceApply.ked["r"] == "/ipex/apply"
-                assert storedResidenceApply.ked["p"] == ""
-                assert storedResidenceApply.ked["x"] == residenceApply.ked["x"]
+                assert storedResidenceApply.ilk == Ilks.xip
+                assert storedResidenceApply.said == residenceApply.said
                 assert storedResidenceApply.ked["q"] == residenceApply.ked["q"]
                 assert storedResidenceApply.ked["a"]["ax"] == [True]
 
@@ -3473,7 +3476,7 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 assert storedResidenceGrant.ked["ri"] == verifier.pre
                 assert storedResidenceGrant.ked["r"] == "/ipex/grant"
                 assert storedResidenceGrant.ked["p"] == storedResidenceApply.said
-                assert storedResidenceGrant.ked["x"] == storedResidenceApply.ked["x"]
+                assert storedResidenceGrant.ked["x"] == storedResidenceApply.said
                 assert storedResidenceGrant.ked["a"]["ax"] == [True]
                 assert storedResidenceGrant.ked["a"]["o"] == [residence.said]
 
@@ -3508,9 +3511,10 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 _exchange(residenceAdmit, residenceAdmitAtc, verifierKvy, holderKvy)
 
                 # KRAM records when Vic accepted the authenticated Grant.
+                xid = residenceGrant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, residenceGrant.ked["x"], residenceGrant.said)
+                        keys=(holder.pre, xid, residenceGrant.said)
                     )
                     is not None
                 )

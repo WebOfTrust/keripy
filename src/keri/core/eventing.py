@@ -4749,7 +4749,7 @@ class Kevery:
                         f"= {serder.pretty()}.")
                 rvy.processReply(serder=serder, **kwa)
 
-            case Ilks.exn:
+            case Ilks.exn | Ilks.xip:
                 cigars = kwa.get('cigars', [])
                 tsgs = kwa.get('tsgs', [])
                 sscs = kwa.get('sscs', [])
@@ -4764,9 +4764,6 @@ class Kevery:
                         f"dropped msg={serder.pretty()}.")
                 exc.processEvent(serder=serder, **kwa)
 
-            case Ilks.xip:
-                self.processXip(serder, kwa)
-
             case Ilks.pro:
                 self.processPro(serder, kwa)
 
@@ -4777,10 +4774,6 @@ class Kevery:
                 raise ValidationError(
                     f"Unexpected non-event message type {ilk} "
                     f"for msg={serder.pretty()}")
-
-    def processXip(self, serder, kwa):
-        """Stub: KERI v2 exchange transaction; no processing yet."""
-        pass
 
     def processPro(self, serder, kwa):
         """Stub: exchange proposal message; no processing yet."""

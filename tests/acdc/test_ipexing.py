@@ -208,6 +208,15 @@ def test_ipex_v2_builders_parse_happypath():
             assert "ri" in serder.ked
             assert "rp" not in serder.ked
 
+        # Apply opens the transaction. Every linked response is an EXN whose
+        # exchange ID is the opening XIP's SAID.
+        assert applyExn.ilk == Ilks.xip
+        assert "x" not in applyExn.ked
+        assert "p" not in applyExn.ked
+        for serder in (offerExn, agreeExn, grantExn, admitExn, spurnExn):
+            assert serder.ilk == Ilks.exn
+            assert serder.ked["x"] == applyExn.said
+
         # Assert fields
         assert applyExn.ked["a"]["m"] == "Please issue a credential"    # message
         assert applyExn.ked["a"]["ax"] == [False]
@@ -1045,7 +1054,7 @@ def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
                 modifiers=dp,
                 dt=helping.nowIso8601(),
                 ax=[True])
-            assert firstOffer.ked["p"] == ""
+            assert firstOffer.ilk == Ilks.xip
             # A bare offer negotiates anchoring but is not itself anchored.
             assert receive(firstOffer, firstOfferAtc, grantor).sscs == []
 
@@ -1101,7 +1110,7 @@ def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
                 origin=_signed(acdc, grantor),
                 dt=helping.nowIso8601(),
                 ax=[True])
-            assert bareGrant.ked["p"] == ""
+            assert bareGrant.ilk == Ilks.xip
             assert len(receive(bareGrant, bareGrantAtc, grantor).sscs) == 1
 
             # Advance before the applicant admits the bare grant.
@@ -1305,9 +1314,10 @@ def test_ipex_v2_required_anchors_fail_closed_through_kram(fakeHelpingClock):
                     attrs["ax"] = [True]
 
                 # Preserve the prior's participants and transaction identifier.
+                xid = prior.said if prior.ilk == Ilks.xip else prior.ked["x"]
                 return exchange(sender=applicant.pre,
                                 receiver=grantor.pre,
-                                xid=prior.ked["x"],
+                                xid=xid,
                                 prior=prior.said,
                                 route=f"/ipex/{verb}",
                                 stamp=helping.nowIso8601(),
@@ -1489,9 +1499,10 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
             assert hby.db.exns.get(keys=(offerExn.said,)) is not None
 
             # A valid anchor cannot authorize Agree to upgrade the prior's ax.
+            xid = offerExn.said
             inventedAgree = exchange(sender=applicant.pre,
                                       receiver=grantor.pre,
-                                      xid=offerExn.ked["x"],
+                                      xid=xid,
                                       prior=offerExn.said,
                                       route="/ipex/agree",
                                       stamp=helping.nowIso8601(),
@@ -1515,9 +1526,10 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
 
             # A direct Grant linked to that Apply cannot invent truthy ax either.
             fakeHelpingClock.advance(milliseconds=1)
+            xid = applyExn.said
             inventedGrant = exchange(sender=grantor.pre,
                                      receiver=applicant.pre,
-                                     xid=applyExn.ked["x"],
+                                     xid=xid,
                                      prior=applyExn.said,
                                      route="/ipex/grant",
                                      stamp=helping.nowIso8601(),
@@ -1543,9 +1555,10 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
 
             # Admit inherits the Grant's optional state and cannot upgrade it.
+            xid = grantExn.said
             inventedAdmit = exchange(sender=applicant.pre,
                                       receiver=grantor.pre,
-                                      xid=grantExn.ked["x"],
+                                      xid=xid,
                                       prior=grantExn.said,
                                       route="/ipex/admit",
                                       stamp=helping.nowIso8601(),
@@ -3259,9 +3272,10 @@ def test_ipex_v2_rejects_proof_bearing_offer_node():
         assert ims == bytearray()
 
         # Bypass the builder to verify receiver-side enforcement too.
+        xid = applyExn.said
         offerExn = exchange(sender=hab.pre,
                             receiver=hab.pre,
-                            xid=applyExn.ked["x"],
+                            xid=xid,
                             prior=applyExn.said,
                             route="/ipex/offer",
                             modifiers=applyExn.ked["q"],
@@ -3533,11 +3547,12 @@ def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
             ims = bytearray(grant.raw + atc)
             Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
             escrowKey = (grant.said, edgeSchemer.said)
-            kramKey = (issuer.pre, grant.ked["x"], grant.said)
+            xid = grant.said
+            kramKey = (issuer.pre, xid, grant.said)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grant.said,)) is None
             assert hby.db.kramTMSC.get(keys=kramKey) is not None
-            assert hby.db.kramXDT.get(keys=(grant.ked["x"],)) is not None
+            assert hby.db.kramXDT.get(keys=(xid,)) is not None
 
             # Missing Schema escrow entry is created and a query cue is generated
             assert hby.db.emse.get(keys=escrowKey) is not None
@@ -3625,7 +3640,8 @@ def test_ipex_v2_edge_schema_escrow_expires_after_kram_timeout(
             ims = bytearray(grant.raw + atc)
             Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
             escrowKey = (grant.said, edgeSchemer.said)
-            kramKey = (issuer.pre, grant.ked["x"], grant.said)
+            xid = grant.said
+            kramKey = (issuer.pre, xid, grant.said)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grant.said,)) is None
             assert hby.db.kramTMSC.get(keys=kramKey) is not None
@@ -3643,7 +3659,7 @@ def test_ipex_v2_edge_schema_escrow_expires_after_kram_timeout(
             now = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
             assert kramer._pruneExchanges(rdt_ms=now)
             assert hby.db.kramTMSC.get(keys=kramKey) is None
-            assert hby.db.kramXDT.get(keys=(grant.ked["x"],)) is None
+            assert hby.db.kramXDT.get(keys=(xid,)) is None
 
             # Reject the Grant when the schema arrives too late
             hby.db.schema.pin(edgeSchemer.said, edgeSchemer)
@@ -3931,7 +3947,7 @@ def test_ipex_v2_empty_bare_grant_is_vacuous():
             message="Disclose nothing",
             modifiers=dict(dp=[[]]),    # Empty dp
         )
-        assert grant.ked["p"] == ""
+        assert grant.ilk == Ilks.xip
         assert grant.ked["q"]["dp"] == [[]]
         assert grant.ked["a"]["o"] == []
 
@@ -4417,7 +4433,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                                       origin=acdc,
                                       recp=hab.pre,
                                       modifiers=dict(dp=[[[acdc.sad["s"]["$id"], "/", []]]]))
-        assert offer1.ked["x"] != ""
+        assert offer1.said != ""
         spurn2, spurn2Atc = ipexSpurn(hab=hab,
                                       message="I reject this offer",
                                       spurned=offer1)
@@ -4950,9 +4966,9 @@ def test_ipex_v2_responders_set_receiver():
                                origin=acdc,
                                recp=verifier.pre,
                                modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
-        assert bootExn.ked["p"] == ""
+        assert bootExn.ilk == Ilks.xip
         assert bootExn.ked["ri"] == verifier.pre
-        assert bootExn.ked["x"] != ""
+        assert bootExn.said != ""
 
         # An explicit recp that matches the prior-derived receiver is still valid.
         overrideExn, _ = ipexAgree(hab=verifier,
@@ -5090,9 +5106,9 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                  origin=acdc,
                                  recp=verifier.pre,
                                  modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
-        assert bareOffer.ked["p"] == ""
+        assert bareOffer.ilk == Ilks.xip
         assert bareOffer.ked["ri"] == verifier.pre
-        assert bareOffer.ked["x"] != ""
+        assert bareOffer.said != ""
         assert bareOffer.ked["a"]["o"] == [acdc.said]
         assert bareOffer.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
         # Supplying xid directly is no longer supported at all.
@@ -5108,9 +5124,9 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                  recp=verifier.pre,
                                  message="Bare grant",
                                  origin=acdc)
-        assert bareGrant.ked["p"] == ""
+        assert bareGrant.ilk == Ilks.xip
         assert bareGrant.ked["ri"] == verifier.pre
-        assert bareGrant.ked["x"] != ""
+        assert bareGrant.said != ""
         # Apply starts a new thread too, so an empty receiver must still be rejected immediately.
         with pytest.raises(ValueError):
             ipexApply(hab=verifier,
@@ -5124,9 +5140,9 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                  message="Generated xid",
                                  attrs=dict(role="member"),
                                  modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
-        assert bareApply.ked["p"] == ""
+        assert bareApply.ilk == Ilks.xip
         assert bareApply.ked["ri"] == holder.pre
-        assert bareApply.ked["x"] != ""
+        assert bareApply.said != ""
         assert bareApply.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
 
         # Set 5: apply still enforces its own disclosure-plan contract after starter fields pass.
@@ -5197,6 +5213,42 @@ def test_ipex_v2_rejects_inbound_apply_with_malformed_disclosure_path():
 
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(badApply.said,)) is None
+        assert recorder.items == []
+
+
+def test_ipex_v2_rejects_exn_flow_opener():
+    """An IPEX transaction opener must be an XIP, not an EXN with no prior."""
+    with openHby(name="ipex-v2-exn-opener",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        applicant = hby.makeHab(name="applicant")
+        discloser = hby.makeHab(name="discloser")
+        schema = acdcmap(israid=discloser.pre,
+                         attribute=dict(d="", role="member"),
+                         iseaid=applicant.pre).sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        legacyApply = exchange(
+            sender=applicant.pre,
+            receiver=discloser.pre,
+            xid=Noncer().qb64,
+            route="/ipex/apply",
+            modifiers=dict(dp=[[[schema, "/", []]]]),
+            attributes=dict(m="Legacy EXN opener"),
+            pvrsn=Vrsn_2_0,
+            gvrsn=Vrsn_2_0,
+            kind=applicant.kever.serder.kind,
+        )
+        msg = applicant.endorse(serder=legacyApply,
+                                framed=False,
+                                gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=msg, framed=False, exc=exc)
+
+        assert msg == bytearray()
+        assert hby.db.exns.get(keys=(legacyApply.said,)) is None
         assert recorder.items == []
 
 
@@ -5980,6 +6032,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                                                attrs={},
                                                modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=applyStamp)
+                xid = applyExn.said
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
                 # Deliver apply first so the later offer retry can legally answer
@@ -5991,14 +6044,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 applyStored = hby.db.exns.get(keys=(applyExn.said,))
                 assert applyStored is not None
-                assert applyStored.ked["x"] == applyExn.ked["x"]
+                assert applyStored.said == xid
 
                 applyCache = hby.db.kramTMSC.get(
-                    keys=(recipient.pre, applyExn.ked["x"], applyExn.said))
+                    keys=(recipient.pre, xid, applyExn.said))
                 assert applyCache is not None
                 assert applyCache.mdt == applyStamp
                 assert applyCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 applyMdtMs = helping.fromIso8601(applyCache.mdt).timestamp() * 1000
                 applyXdtMs = helping.fromIso8601(applyCache.xdt).timestamp() * 1000
@@ -6019,7 +6072,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 # The stale offer still points at the same transaction, but its
                 # message timestamp is just outside the lower timeliness bound.
-                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
+                assert staleOfferExn.ked["x"] == xid
                 staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
                 assert staleOfferMs < (staleOfferReceiveMs - d - sl)
 
@@ -6033,7 +6086,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 assert staleOfferIms == bytearray()
                 assert hby.db.kramTMSC.get(
-                    keys=(hab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
+                    keys=(hab.pre, xid, staleOfferExn.said)) is None
                 assert hby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
                     ("/exn/ipex/apply", "Please issue the blind credential"),
@@ -6056,14 +6109,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 offerStored = hby.db.exns.get(keys=(offerExn.said,))
                 assert offerStored is not None
-                assert offerStored.ked["x"] == applyExn.ked["x"]
+                assert offerStored.ked["x"] == xid
 
                 offerCache = hby.db.kramTMSC.get(
-                    keys=(hab.pre, applyExn.ked["x"], offerExn.said))
+                    keys=(hab.pre, xid, offerExn.said))
                 assert offerCache is not None
                 assert offerCache.mdt == offerRetryStamp
                 assert offerCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 offerMdtMs = helping.fromIso8601(offerCache.mdt).timestamp() * 1000
                 offerXdtMs = helping.fromIso8601(offerCache.xdt).timestamp() * 1000
@@ -6085,14 +6138,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 agreeStored = hby.db.exns.get(keys=(agreeExn.said,))
                 assert agreeStored is not None
-                assert agreeStored.ked["x"] == applyExn.ked["x"]
+                assert agreeStored.ked["x"] == xid
 
                 agreeCache = hby.db.kramTMSC.get(
-                    keys=(recipient.pre, applyExn.ked["x"], agreeExn.said))
+                    keys=(recipient.pre, xid, agreeExn.said))
                 assert agreeCache is not None
                 assert agreeCache.mdt == agreeStamp
                 assert agreeCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 agreeMdtMs = helping.fromIso8601(agreeCache.mdt).timestamp() * 1000
                 agreeXdtMs = helping.fromIso8601(agreeCache.xdt).timestamp() * 1000
@@ -6116,14 +6169,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 grantStored = hby.db.exns.get(keys=(grantExn.said,))
                 assert grantStored is not None
-                assert grantStored.ked["x"] == applyExn.ked["x"]
+                assert grantStored.ked["x"] == xid
 
                 grantCache = hby.db.kramTMSC.get(
-                    keys=(hab.pre, applyExn.ked["x"], grantExn.said))
+                    keys=(hab.pre, xid, grantExn.said))
                 assert grantCache is not None
                 assert grantCache.mdt == grantStamp
                 assert grantCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 grantMdtMs = helping.fromIso8601(grantCache.mdt).timestamp() * 1000
                 grantXdtMs = helping.fromIso8601(grantCache.xdt).timestamp() * 1000
@@ -6145,14 +6198,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 admitStored = hby.db.exns.get(keys=(admitExn.said,))
                 assert admitStored is not None
-                assert admitStored.ked["x"] == applyExn.ked["x"]
+                assert admitStored.ked["x"] == xid
 
                 admitCache = hby.db.kramTMSC.get(
-                    keys=(recipient.pre, applyExn.ked["x"], admitExn.said))
+                    keys=(recipient.pre, xid, admitExn.said))
                 assert admitCache is not None
                 assert admitCache.mdt == admitStamp
                 assert admitCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 admitMdtMs = helping.fromIso8601(admitCache.mdt).timestamp() * 1000
                 admitXdtMs = helping.fromIso8601(admitCache.xdt).timestamp() * 1000
@@ -6369,6 +6422,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                                                attrs={},
                                                modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=applyStamp)
+                xid = applyExn.said
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
                 # Parse the apply locally on the sender side first so the
@@ -6392,20 +6446,20 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # xid intact because later replies will inherit this xdt.
                 applyStored, _ = cloneMessage(issuerHby, applyExn.said)
                 assert applyStored is not None
-                assert applyStored.ked["x"] == applyExn.ked["x"]
+                assert applyStored.said == xid
 
                 # On the receiver side of the apply, KRAM should store both the
                 # per-message cache row and the thread-wide opener time.
                 applyCache = issuerHby.db.kramTMSC.get(
-                    keys=(recipientHab.pre, applyExn.ked["x"], applyExn.said))
+                    keys=(recipientHab.pre, xid, applyExn.said))
                 assert applyCache is not None
                 assert applyCache.mdt == applyStamp
                 assert applyCache.xdt == applyStamp
-                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 # The sender-side self-parse should also have seeded the same xid
                 # opener time locally for future inbound replies.
-                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 # Confirm the accepted apply sits inside both the receiver's
                 # timeliness window and the thread's exchange-lifetime window.
@@ -6428,7 +6482,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 # The stale offer must still target the same transaction, but its
                 # mdt should sit just below the lower timeliness bound.
-                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
+                assert staleOfferExn.ked["x"] == xid
                 staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
                 assert staleOfferMs < (staleOfferReceiveMs - d - sl)
 
@@ -6441,7 +6495,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 assert ims == bytearray()
                 assert recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
+                    keys=(issuerHab.pre, xid, staleOfferExn.said)) is None
                 assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
                     ("/exn/ipex/apply", "Please issue the blind credential"),
@@ -6474,16 +6528,16 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # agree builder replies to this local prior message.
                 storedOffer, _ = cloneMessage(recipientHby, offerExn.said)
                 assert storedOffer is not None
-                assert storedOffer.ked["x"] == applyExn.ked["x"]
+                assert storedOffer.ked["x"] == xid
 
                 # Even though this is not the opener, KRAM must keep the offer's
                 # own mdt while still inheriting the original apply xdt.
                 offerCache = recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], offerExn.said))
+                    keys=(issuerHab.pre, xid, offerExn.said))
                 assert offerCache is not None
                 assert offerCache.mdt == offerRetryStamp
                 assert offerCache.xdt == applyStamp
-                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 # The recovered offer should now satisfy the same two KRAM
                 # windows the stale one missed.
@@ -6515,16 +6569,16 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 storedAgree, _ = cloneMessage(issuerHby, agreeExn.said)
                 assert storedAgree is not None
-                assert storedAgree.ked["x"] == applyExn.ked["x"]
+                assert storedAgree.ked["x"] == xid
 
                 # The reply keeps the same opener xdt even though its own mdt is
                 # later in the exchange.
                 agreeCache = issuerHby.db.kramTMSC.get(
-                    keys=(recipientHab.pre, applyExn.ked["x"], agreeExn.said))
+                    keys=(recipientHab.pre, xid, agreeExn.said))
                 assert agreeCache is not None
                 assert agreeCache.mdt == agreeStamp
                 assert agreeCache.xdt == applyStamp
-                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 agreeMdtMs = helping.fromIso8601(agreeCache.mdt).timestamp() * 1000
                 agreeXdtMs = helping.fromIso8601(agreeCache.xdt).timestamp() * 1000
@@ -6663,7 +6717,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # be built as a real reply to the accepted inbound message.
                 storedGrant, _ = cloneMessage(recipientHby, grantExn.said)
                 assert storedGrant is not None
-                assert storedGrant.ked["x"] == applyExn.ked["x"]
+                assert storedGrant.ked["x"] == xid
 
                 senderRows = list(recipientHby.db.esigs.getTopItemIter(
                     keys=(grantExn.said, issuerHab.pre, "")))
@@ -6705,11 +6759,11 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 assert response.qb64 == grantExn.said
 
                 grantCache = recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said))
+                    keys=(issuerHab.pre, xid, grantExn.said))
                 assert grantCache is not None
                 assert grantCache.mdt == grantStamp
                 assert grantCache.xdt == applyStamp
-                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 grantMdtMs = helping.fromIso8601(grantCache.mdt).timestamp() * 1000
                 grantXdtMs = helping.fromIso8601(grantCache.xdt).timestamp() * 1000
@@ -6734,14 +6788,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # consistent with the opener that started the transaction.
                 storedAdmit, _ = cloneMessage(issuerHby, admitExn.said)
                 assert storedAdmit is not None
-                assert storedAdmit.ked["x"] == applyExn.ked["x"]
+                assert storedAdmit.ked["x"] == xid
 
                 admitCache = issuerHby.db.kramTMSC.get(
-                    keys=(recipientHab.pre, applyExn.ked["x"], admitExn.said))
+                    keys=(recipientHab.pre, xid, admitExn.said))
                 assert admitCache is not None
                 assert admitCache.mdt == admitStamp
                 assert admitCache.xdt == applyStamp
-                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 admitMdtMs = helping.fromIso8601(admitCache.mdt).timestamp() * 1000
                 admitXdtMs = helping.fromIso8601(admitCache.xdt).timestamp() * 1000
@@ -6767,7 +6821,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                     grantCache.xdt).timestamp() * 1000) + grantCache.pxl + 1)
                 assert recipientKvy.kramer._pruneExchanges(rdt_ms=pruneMs)
                 assert recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said)) is None
+                    keys=(issuerHab.pre, xid, grantExn.said)) is None
                 assert recipientHby.db.kramPMKM.get(keys=partialKey) is None
                 assert recipientHby.db.kramPMKS.get(keys=partialKey) == []
                 assert recipientHby.db.kramTSGS.get(keys=partialKey) == []
@@ -7046,6 +7100,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                    [schema, "/e/holder/_/", [""]],
                                                ]]),
                                                dt=applyStamp)
+                xid = applyExn.said
 
                 assert applyExn.ked["q"]["dp"] == [[
                     [schema, "/", [""]],
@@ -7065,7 +7120,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 applyStored, _ = cloneMessage(issuerHby, applyExn.said)
                 assert applyStored is not None
-                assert applyStored.ked["x"] == applyExn.ked["x"]
+                assert applyStored.said == xid
 
                 # The issuer answers with the origin SAID but does not yet
                 # disclose any ACDC node bodies.
@@ -7090,7 +7145,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedOffer, _ = cloneMessage(recipientHby, offerExn.said)
                 assert storedOffer is not None
-                assert storedOffer.ked["x"] == applyExn.ked["x"]
+                assert storedOffer.ked["x"] == xid
 
                 offerWire = bytearray(serializeMessage(recipientHby, offerExn.said, framed=True))
                 offerResults = Parser(version=Vrsn_2_0).parse(ims=offerWire,
@@ -7122,7 +7177,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedAgree, _ = cloneMessage(issuerHby, agreeExn.said)
                 assert storedAgree is not None
-                assert storedAgree.ked["x"] == applyExn.ked["x"]
+                assert storedAgree.ked["x"] == xid
 
                 # The issuer grants the same two-node DAG, but now the origin
                 # node carries the node-local blind proof group that step 4 vets.
@@ -7149,7 +7204,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedGrant, _ = cloneMessage(recipientHby, grantExn.said)
                 assert storedGrant is not None
-                assert storedGrant.ked["x"] == applyExn.ked["x"]
+                assert storedGrant.ked["x"] == xid
 
                 grantWire = bytearray(serializeMessage(recipientHby, grantExn.said, framed=True))
                 grantResults = Parser(version=Vrsn_2_0).parse(ims=grantWire,
@@ -7191,7 +7246,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedAdmit, _ = cloneMessage(issuerHby, admitExn.said)
                 assert storedAdmit is not None
-                assert storedAdmit.ked["x"] == applyExn.ked["x"]
+                assert storedAdmit.ked["x"] == xid
 
                 # A second grant that omits the child nest should now fail the
                 # graph walk even though the origin still carries a valid proof.
@@ -7221,16 +7276,22 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
             issuerRgy.close()
 
 
-def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
-    """An offer-first IPEX flow can start transactionally with a generated xid."""
+def test_ipex_v2_offer_starts_flow_with_xip_through_kram(fakeHelpingClock):
+    """An offer-first IPEX flow starts with an XIP whose SAID is the xid."""
     # Keep the KRAM cache timings local to this test so the window assertions
-    # below read directly against the exact policy in force.
+    # below read directly against the exact policy in force. XIP openers have
+    # their own entries because EXN route policies do not apply to XIP messages.
+    xipPolicy = [500, 3000, 60000, 240000, 3000, 60000, 240000]
+    fallbackPolicy = [1000, 5000, 60000, 300000, 5000, 60000, 300000]
     kramConfig = {
         "kram": {
             "enabled": True,
             "denials": [],
             "caches": {
-                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+                "xip.R./ipex/apply": xipPolicy,
+                "xip.R./ipex/offer": xipPolicy,
+                "xip.R./ipex/grant": xipPolicy,
+                "~": fallbackPolicy,
             },
         },
     }
@@ -7242,9 +7303,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
     # d  = allowed clock drift
     # sl = short-lag timeliness window for single-key / current-est auth
     # xl = total exchange lifetime measured from xdt
-    d = kramConfig["kram"]["caches"]["~"][0]
-    sl = kramConfig["kram"]["caches"]["~"][1]
-    xl = kramConfig["kram"]["caches"]["~"][3]
+    d = xipPolicy[0]
 
     with openHby(name="ipex-v2-offer-start-kram",
                  base="test",
@@ -7324,10 +7383,14 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                                                grant=grantExn,
                                                dt=admitStamp)
 
-                # Offer-first means there is no prior message, so the builder
-                # generates the xid that anchors the rest of the thread.
-                assert offerExn.ked["p"] == ""
-                assert offerExn.ked["x"] != ""
+                # Offer-first means the offer is the XIP whose SAID identifies
+                # the transaction carried by every subsequent EXN.
+                assert offerExn.ilk == Ilks.xip
+                xid = offerExn.said
+                assert "x" not in offerExn.ked
+                assert "p" not in offerExn.ked
+                assert all(exn.ilk == Ilks.exn
+                           for exn in (agreeExn, grantExn, admitExn))
 
                 # Every accepted exn in the chain should keep the same xid and
                 # land inside both the timeliness and exchange-lifetime windows.
@@ -7348,16 +7411,23 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                     # persist the exn body and preserve the exchange id.
                     stored = hby.db.exns.get(keys=(exn.said,))
                     assert stored is not None
-                    assert stored.ked["x"] == offerExn.ked["x"]
+                    storedXid = (stored.said if stored.ilk == Ilks.xip
+                                 else stored.ked["x"])
+                    assert storedXid == xid
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original offer xdt.
                     cache = hby.db.kramTMSC.get(
-                        keys=(exn.ked["i"], offerExn.ked["x"], exn.said))
+                        keys=(exn.ked["i"], xid, exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == offerStamp
-                    assert hby.db.kramXDT.get(keys=(offerExn.ked["x"],)).dts == offerStamp
+                    assert hby.db.kramXDT.get(keys=(xid,)).dts == offerStamp
+
+                    policy = xipPolicy if exn.ilk == Ilks.xip else fallbackPolicy
+                    d, sl, _, xl, _, _, _ = policy
+                    assert cache.d == d
+                    assert cache.xl == xl
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
@@ -7477,12 +7547,12 @@ def test_ipex_v2_nested_signature_does_not_authenticate_outer_grant(
             keys=(grantExn.said, ""))) == []
         assert hby.db.enst.get(keys=(grantExn.said,)) == []
         assert hby.db.kramTMSC.get(
-            keys=(sender.pre, grantExn.ked["x"], grantExn.said)) is None
+            keys=(sender.pre, grantExn.said, grantExn.said)) is None
         assert recorder.items == []
 
 
-def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
-    """A grant-first IPEX flow can start transactionally with a generated xid."""
+def test_ipex_v2_grant_starts_flow_with_xip_through_kram(fakeHelpingClock):
+    """A grant-first IPEX flow starts with an XIP whose SAID is the xid."""
 
     kramConfig = {
         "kram": {
@@ -7564,10 +7634,13 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                                                grant=grantExn,
                                                dt=admitStamp)
 
-                # Grant-first means there is no prior message, so the builder
-                # generates the xid that anchors the rest of the thread.
-                assert grantExn.ked["p"] == ""
-                assert grantExn.ked["x"] != ""
+                # Grant-first means the grant is the XIP whose SAID identifies
+                # the transaction carried by the subsequent Admit EXN.
+                assert grantExn.ilk == Ilks.xip
+                xid = grantExn.said
+                assert "x" not in grantExn.ked
+                assert "p" not in grantExn.ked
+                assert admitExn.ilk == Ilks.exn
 
                 # Every accepted exn in the chain should keep the same xid and
                 # land inside both the timeliness and exchange-lifetime windows.
@@ -7586,16 +7659,18 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                     # persist the exn body and preserve the exchange id.
                     stored = hby.db.exns.get(keys=(exn.said,))
                     assert stored is not None
-                    assert stored.ked["x"] == grantExn.ked["x"]
+                    storedXid = (stored.said if stored.ilk == Ilks.xip
+                                 else stored.ked["x"])
+                    assert storedXid == xid
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original grant xdt.
                     cache = hby.db.kramTMSC.get(
-                        keys=(exn.ked["i"], grantExn.ked["x"], exn.said))
+                        keys=(exn.ked["i"], xid, exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == grantStamp
-                    assert hby.db.kramXDT.get(keys=(grantExn.ked["x"],)).dts == grantStamp
+                    assert hby.db.kramXDT.get(keys=(xid,)).dts == grantStamp
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
@@ -8001,8 +8076,9 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             # Direct Exchanger dispatch has no KRAM decision unless the test
             # supplies it; presentation timing must not fail open in that case.
             stamp = grantExn.ked["dt"]
+            xid = grantExn.said
             hby.db.kramTMSC.pin(
-                keys=(grantExn.pre, grantExn.ked["x"], grantExn.said),
+                keys=(grantExn.pre, xid, grantExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
                                       rdt=helping.nowIso8601(),
@@ -8072,8 +8148,9 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 origin=_proofed(acdc, issuerProof),
             )
             stamp = missingExn.ked["dt"]
+            missingXid = missingExn.said
             hby.db.kramTMSC.pin(
-                keys=(missingExn.pre, missingExn.ked["x"], missingExn.said),
+                keys=(missingExn.pre, missingXid, missingExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
                                       rdt=helping.nowIso8601(),
@@ -8111,9 +8188,10 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 origin=_proofed(acdc, issuerProof),
             )
             stamp = issuerPresentationExn.ked["dt"]
+            presentationXid = issuerPresentationExn.said
             hby.db.kramTMSC.pin(
                 keys=(issuerPresentationExn.pre,
-                      issuerPresentationExn.ked["x"],
+                      presentationXid,
                       issuerPresentationExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
@@ -8180,7 +8258,7 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 target=grantExn.said,
                 controller=issuee.pre,
                 cutoff=hby.db.kramTMSC.get(
-                    keys=(grantExn.pre, grantExn.ked["x"], grantExn.said)).rdt,
+                    keys=(grantExn.pre, xid, grantExn.said)).rdt,
             )
             assert earlierRecord.acdc == grantExn.said
 
@@ -8348,8 +8426,9 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                                               childPresentedAnchor)])
             grantExn = draftGrant
             stamp = grantExn.ked["dt"]
+            xid = grantExn.said
             hby.db.kramTMSC.pin(
-                keys=(grantExn.pre, grantExn.ked["x"], grantExn.said),
+                keys=(grantExn.pre, xid, grantExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
                                       rdt=helping.nowIso8601(),
@@ -8420,9 +8499,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             childAnchor = _anchor(
                 childIssuee, childPresentationRegistry, childPresented)
             stamp = issuanceExn.ked["dt"]
+            issuanceXid = issuanceExn.said
             hby.db.kramTMSC.pin(
                 keys=(issuanceExn.pre,
-                      issuanceExn.ked["x"],
+                      issuanceXid,
                       issuanceExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
@@ -8642,8 +8722,9 @@ def test_ipex_v2_sign_endorsers_anchorers_through_kram_three_haberies():
         assert [diger.qb64 for diger in verifierHby.db.eidx.get(
             keys=(presenter.pre,))] == [grantExn.said]
 
+        xid = grantExn.said if grantExn.ilk == Ilks.xip else grantExn.ked["x"]
         cache = verifierHby.db.kramTMSC.get(
-            keys=(proxy.pre, grantExn.ked["x"], grantExn.said))
+            keys=(proxy.pre, xid, grantExn.said))
         assert cache is not None
 
 
@@ -9017,8 +9098,10 @@ def test_ipex_v2_full_authentication_flow_across_three_haberies():
                 presentationProof.said,
                 vacuousProof.said,
             }
+            xid = (grantExn.said if grantExn.ilk == Ilks.xip
+                   else grantExn.ked["x"])
             assert verifierHby.db.kramTMSC.get(
-                keys=(proxy.pre, grantExn.ked["x"], grantExn.said)) is not None
+                keys=(proxy.pre, xid, grantExn.said)) is not None
         finally:
             issuerRgy.close()
             presenterRgy.close()

@@ -106,8 +106,8 @@ def _anchor(hab, registry, serder, *, framed=False):
     return anc
 
 
-def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
-            origin, artifacts=None):
+def ipexExchange(*, hby, exc, sender, receiver, message, admitMessage,
+                 origin, artifacts=None):
     """Round-trip one IPEX grant and its admit, returning the parsed grant."""
     originSerder = _serder(origin)
     grant, grantAtc = ipexGrant(hab=sender, recp=receiver.pre, message=message,
@@ -120,8 +120,10 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert len(grantResults) == 1
     grantResult = grantResults[0]
     assert grantResult.serder.said == grant.said
+    assert grantResult.serder.ilk == Ilks.xip
     assert grantResult.serder.ked['r'] == "/ipex/grant"
-    assert grantResult.serder.ked['p'] == ""
+    assert 'x' not in grantResult.serder.ked
+    assert 'p' not in grantResult.serder.ked
     assert grantResult.serder.ked['i'] == sender.pre
     assert grantResult.serder.ked['ri'] == receiver.pre
     assert grantResult.serder.ked['a']['o'] == [originSerder.said]
@@ -148,6 +150,8 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert admitIms == bytearray()
     storedAdmit = hby.db.exns.get(keys=(admit.said,))
     assert storedAdmit is not None
+    assert storedAdmit.ilk == Ilks.exn
+    assert storedAdmit.ked['x'] == grant.said
     assert storedAdmit.ked['p'] == grant.said
 
     return grantResult, wire
@@ -370,7 +374,7 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             # proof group on the ACDC's own nest. Because this example uses one
             # shared Regery, the disclosee-side TEL chain is already present
             # locally instead of being fetched separately from observers.
-            issuedGrantResult, issuedGrantWire = ipexExn(
+            issuedGrantResult, issuedGrantWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=amy,
@@ -394,7 +398,7 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
 
             assert revokedBlinder.uuid.encode() not in issuedGrantWire
 
-            revokedGrantResult, revokedGrantWire = ipexExn(
+            revokedGrantResult, revokedGrantWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=amy,
@@ -577,7 +581,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
 
         # The holder (Bob) presents Amy's credential to the verifier (Vic). The
         # outer IPEX sender is Bob, while Amy signs the registry-less ACDC.
-        grantResult, grantWire = ipexExn(
+        grantResult, grantWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
@@ -824,7 +828,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert isinstance(ruleOnly.sad['a'], str)
         assert isinstance(ruleOnly.sad['r'], dict)
 
-        ruleGrantResult, ruleWire = ipexExn(
+        ruleGrantResult, ruleWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
@@ -877,7 +881,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert_acdc_schema_valid(gradesWithheld, schema=gradesSchema)
         assert_acdc_schema_valid(gradesRevealed, schema=gradesSchema)
 
-        withheldGrantResult, withheldWire = ipexExn(
+        withheldGrantResult, withheldWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
@@ -902,7 +906,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert b"math" not in withheldWire
         assert NONCES[8].encode() not in withheldWire
 
-        revealedGrantResult, revealedWire = ipexExn(
+        revealedGrantResult, revealedWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
@@ -948,7 +952,7 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert mixedAcdc.said == mixedBase.said
         assert_acdc_schema_valid(mixedAcdc, schema=mixedSchema)
 
-        mixedGrantResult, mixedWire = ipexExn(
+        mixedGrantResult, mixedWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
@@ -1154,7 +1158,7 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             # carries the ACDC and only sn=1's disclosed blind proof. TEL
             # lookup still succeeds here because this example's shared Regery
             # already contains the issuer's registry history.
-            issuedGrantResult, issuedWire = ipexExn(
+            issuedGrantResult, issuedWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=bob,
@@ -1190,7 +1194,7 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
 
             # Later Bob can disclose the later revoked snapshot, but that new
             # presentation still reveals only one event-specific blind.
-            revokedGrantResult, revokedWire = ipexExn(
+            revokedGrantResult, revokedWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=bob,
