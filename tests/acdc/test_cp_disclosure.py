@@ -50,22 +50,12 @@ SAID of an inception event that commits to the actor's initial key and a pre-rot
 next key.
 
 A note on why later phases model the IPEX exchange and the club key rotation at
-the data-structure level: it is a deliberate scope choice, NOT a gap in keripy,
-and it is the right altitude for a first worked example. keripy is midway through
-a deliberate v1->v2 reorganization. ACDC v1 -- and its v1 IPEX handlers in
-keri.vc.protocoling -- stays in keri.vc; the new keri.acdc subpackage is the v2
-home, with keri.acdc.messaging filled in (the v2 message builders these examples
-use) and the other modules -- keri.acdc.ipexing, regeventing, registraring,
-scheming, ... -- still placeholder stubs awaiting migration. The v1
-keri.vc.protocoling handlers do not speak v2 messaging, so this example does NOT
-route through them; doing so would only mislead a reader about how v2 IPEX works.
-Instead the exchange is built directly from the real v2 exn primitive
-keri.core.exchange, Habery-free and v2-native. This "bare bones at the data-
-structure level" altitude is also the most useful one for implementers in other
-languages, who need to see the primitives before the automation. When
-keri.acdc.ipexing is fleshed out, a companion example will re-run this same
-scenario through that tooling -- layered examples, one scenario, escalating
-automation. See the phase docstrings.
+the data-structure level: it is a deliberate scope choice and the right altitude
+for this worked example. The messages are built directly from the v2 primitives:
+keri.core.exchept creates the XIP transaction opener and keri.core.exchange
+creates each subsequent EXN. This Habery-free view is useful to implementers in
+other languages who need to see the transaction envelope before its automation.
+See the phase docstrings.
 """
 
 import json
@@ -76,7 +66,7 @@ from jsonschema.exceptions import ValidationError
 
 from keri import Kinds, Ilks
 from keri.core import (Salter, Noncer, Aggor, Compactor, Mapper, Diger, Verfer,
-                       exchange, messagize, incept, rotate)
+                       exchange, exchept, messagize, incept, rotate)
 from keri.core.coring import MtrDex, Pather
 from keri.core.serdering import SerderACDC
 from keri.help.helping import Repath
@@ -423,9 +413,9 @@ REG_ENDORSER_STAMP = "2026-01-06T12:00:00.000000+00:00"
 # print the .said of the object in question. This is the same "derive, don't paste"
 # convention as tests/acdc/test_examples.py.
 
-# Fixed timestamps for the IPEX exn messages. exchange() defaults the 'dt' field
-# to the current time, which would make the messages (and their SAIDs) vary run to
-# run; pinning stamps keeps the worked example reproducible and xdist-safe.
+# Fixed timestamps for the IPEX XIP/EXN messages. The builders default the 'dt'
+# field to the current time, which would make the messages (and their SAIDs) vary
+# run to run; pinning stamps keeps the worked example reproducible and xdist-safe.
 APPLY_STAMP = "2026-07-14T21:15:00.000000+00:00"
 OFFER_STAMP = "2026-07-14T21:16:00.000000+00:00"
 AGREE_STAMP = "2026-07-14T21:17:00.000000+00:00"
@@ -910,20 +900,13 @@ def test_gated_ipex_exchange_JSON():
     admit, and the whole point is the ORDER: the club commits to Alice's terms
     (via a signed agree) *before* Alice discloses her state-endorsed photo.
 
-    keripy has v1 IPEX handlers in keri.vc.protocoling (apply/offer/agree/grant/
-    admit/spurn), but they speak v1 ACDC messaging and run through a live Habery/
-    keystore, and their v2-native successor, keri.acdc.ipexing, is still a
-    placeholder in keripy's in-progress v1->v2 reorganization. Routing a v2 example
-    through the v1 handlers would misrepresent how v2 IPEX works, so this example
-    deliberately does NOT use them; instead it models the exchange at the data-
-    structure level -- but with real machinery, not hand-waving: each message is a
-    genuine v2 'exn' peer message built by keri.core.exchange (sender, receiver,
-    route, prior, payload), and the club's acceptance carries a real Ed25519
-    signature made with keri.core.Signer and checked with Verfer.verify. The
-    reductions are (a) no Habery/keystore stands behind the AIDs, and (b) the
+    This example deliberately models the exchange at the data-structure level:
+    the first message is a genuine v2 XIP built by keri.core.exchept and each reply
+    is a v2 EXN built by keri.core.exchange. The club's acceptance carries a real
+    Ed25519 signature made with keri.core.Signer and checked with Verfer.verify.
+    The reductions are (a) no Habery/keystore stands behind the AIDs, and (b) the
     club's "key state" is modeled as its establishing Verfer rather than resolved
-    from a live KEL (Phase 4 shows why capturing it matters). When keri.acdc.ipexing
-    lands, a companion example will re-run this exchange through that v2 tooling.
+    from a live KEL (Phase 4 shows why capturing it matters).
 
     Four properties are asserted, each a design point from the plan:
 
@@ -947,11 +930,9 @@ def test_gated_ipex_exchange_JSON():
          agree that fails to bind the offer unlocks nothing; the state-endorsed
          photo appears on the wire only inside the grant that a valid agree gates.
 
-    Mapping onto IPEX message types. Each step here is a standard IPEX message.
-    The forthcoming v2 tooling in keri.acdc.ipexing will provide a builder/handler
-    per message that a production (Habery-backed) agent would call instead of
-    assembling the exn by hand (the v1 analogues, for reference only, live in
-    keri.vc.protocoling):
+    Mapping onto IPEX message types. Each step here is a standard IPEX message;
+    production agents normally use the Habery-backed keri.acdc.ipexing builders
+    instead of assembling the XIP and EXNs directly:
 
         apply  offer  agree  grant  admit  (decline)
 
@@ -972,7 +953,7 @@ def test_gated_ipex_exchange_JSON():
     bespokeCompact = _bespoke_presentation(sedi, age, kind, compactify=True)
     clubSigner = _SIGNERS[3]              # the club's establishing signing key
 
-    # The exn peer messages are serialized as JSON here so the privacy invariants
+    # The exchange messages are serialized as JSON here so the privacy invariants
     # below (no PII on the wire) can be checked as plaintext structural facts, the
     # same way the ACDC examples assert them; the CESR wire form base64-encodes the
     # payload, which would make a substring check meaningless.
@@ -988,7 +969,7 @@ def test_gated_ipex_exchange_JSON():
     # negotiation. No creds yet -- schemas, required paths, governance.
     #
     # The request rides the disclosure-paths `dp` field of the QUERY section, `q`
-    # (exchange(modifiers=...)), not the attribute section. An exn's query block is the
+    # (modifiers=...), not the attribute section. An exchange's query block is the
     # http-query-string analogue and its attribute block is the body; a disclosure
     # request is a query, so `dp` belongs in `q` (WebOfTrust/keripy discussion #1549).
     #
@@ -1043,14 +1024,16 @@ def test_gated_ipex_exchange_JSON():
     bespokeSchemaSaid, _ = _saidify_schema(dict(BESPOKE_SCHEMA_MAD), kind=kind)
     sediSchemaSaid = sedi.sad['s']['$id']
     ageSchemaSaid = age.sad['s']['$id']
-    apply = exchange(sender=CLUB, receiver=ALICE, route="/ipex/apply",
-                     modifiers=dict(dp=[[bespokeSchemaSaid, "", ["i", "a/i", "r/"]],
-                                        [sediSchemaSaid, "", ["a/i", "a/photo"]],
-                                        [ageSchemaSaid,  "", ["A/i", "A/over21"]]]),
-                     attributes=dict(m="Prove over-21 and show the state-endorsed photo.",
-                                     g=GOV_PROVISION_SAID),
-                     stamp=APPLY_STAMP, kind=kind)
-    assert apply.sad['t'] == Ilks.exn
+    apply = exchept(sender=CLUB, receiver=ALICE, route="/ipex/apply",
+                    modifiers=dict(dp=[[bespokeSchemaSaid, "", ["i", "a/i", "r/"]],
+                                       [sediSchemaSaid, "", ["a/i", "a/photo"]],
+                                       [ageSchemaSaid,  "", ["A/i", "A/over21"]]]),
+                    attributes=dict(m="Prove over-21 and show the state-endorsed photo.",
+                                    g=GOV_PROVISION_SAID),
+                    nonce=Noncer(raw=b'cpd-apply-xip-01').qb64,
+                    stamp=APPLY_STAMP, kind=kind)
+    assert apply.sad['t'] == Ilks.xip
+    assert 'x' not in apply.sad and 'p' not in apply.sad
     assert apply.sad['r'] == "/ipex/apply"
     assert apply.sad['i'] == CLUB and apply.sad['ri'] == ALICE
     # The field-level request: issuee + photo from the attributive cred, issuee + over-21
@@ -1084,7 +1067,7 @@ def test_gated_ipex_exchange_JSON():
     # block carries only the human message and the governance reference.
     assert 'dp' not in apply.sad['a'] and 'disclose' not in apply.sad['a']
     assert set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EKxV278jQmXGzz3gEy7S-czxn-Rpsads_gegfqXsYhcg"
+    assert apply.said == "EGvVavkJj9WTVozAAaT5Y53W_TPgbr0F3zlCzuKIwFsx"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Commits ONLY to Alice's own bespoke-presentation SAID, the CLC
@@ -1099,7 +1082,8 @@ def test_gated_ipex_exchange_JSON():
     # asked for", so Alice restates nothing and the two messages cannot drift (#1549).
     # An unsolicited offer, or one that counter-offers different paths, MUST spell the
     # list out instead; empty is only meaningful because `p` binds the apply it answers.
-    offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
+    offer = exchange(sender=ALICE, receiver=CLUB, xid=apply.said,
+                     route="/ipex/offer",
                      prior=apply.said,
                      modifiers=dict(dp=[]),
                      attributes=dict(acdc=bespoke.said,
@@ -1107,9 +1091,10 @@ def test_gated_ipex_exchange_JSON():
                                      terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
+    assert offer.sad['x'] == apply.said                 # remains in the XIP transaction
     assert offer.sad['q']['dp'] == []                   # solicited: "as per the apply"
     assert bespoke.said.encode() in offer.raw           # commits to Alice's own presentation
-    assert offer.said == "ECGik4N-PMofYwkU-y0Rwc1UA-ey3gZdR8c2UMCovftP"
+    assert offer.said == "EN0iNdxWrH3MBsBBCbU74wVwX-6LREx-XeEauZNeaj25"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -1121,10 +1106,12 @@ def test_gated_ipex_exchange_JSON():
 
     # 3. agree (club -> Alice): acceptance. It binds the OFFER's SAID (property 2),
     # and the club signs it (property 3). It is signed but NOT KEL-anchored.
-    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+    agree = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                     route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "ELLb6trSGPXRJURUXsLdhIh4xKIsr1yDWOUfve3PJgOu"
+    assert agree.sad['x'] == apply.said
+    assert agree.said == "EPsY6OU9wO2HGUVWt1GiN2gCpkFMLqOcB67_0CFCYje-"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -1153,7 +1140,8 @@ def test_gated_ipex_exchange_JSON():
             return None                                 # terms not accepted -> nothing
         # The grant carries the bespoke ACDC (compact) plus the two disclosures -- the
         # sedi-id photo (partial) and the age over-21 flag (selective). PII appears only here.
-        return exchange(sender=ALICE, receiver=CLUB, route="/ipex/grant",
+        return exchange(sender=ALICE, receiver=CLUB, xid=apply.said,
+                        route="/ipex/grant",
                         prior=agreeMsg.said,
                         attributes=dict(acdc=bespokeCompact.sad,
                                         identity=_photo_disclosure(sedi, kind),
@@ -1164,13 +1152,15 @@ def test_gated_ipex_exchange_JSON():
     forged = _SIGNERS[0].sign(ser=agree.raw, index=0)
     assert disclose(agree, forged, capturedKeyState) is None
     # An agree that does not bind this offer unlocks nothing, even correctly signed.
-    strayAgree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+    strayAgree = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                          route="/ipex/agree",
                           prior="", stamp=AGREE_STAMP, kind=kind)
     assert disclose(strayAgree, clubSigner.sign(ser=strayAgree.raw, index=0),
                     capturedKeyState) is None
     # A spurn (decline) -- even validly signed and binding the offer -- is not an
     # agree, so the gate stays shut: a decline must never unlock disclosure.
-    spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
+    spurn = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                     route="/ipex/spurn",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert disclose(spurn, clubSigner.sign(ser=spurn.raw, index=0),
                     capturedKeyState) is None
@@ -1179,7 +1169,8 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "ELZZ2ZWspcAomsT6lHyezSUQ_BMMrVh3P50oADXtvvjx"
+    assert grant.sad['x'] == apply.said
+    assert grant.said == "EKhtM_gf6RkhYRXPfC_Zl44vLAEJrazOoOqAnIOn3ka1"
     # (property 4) PII crosses the wire only now, in the grant: the photo and the
     # over-21 flag.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
@@ -1208,10 +1199,12 @@ def test_gated_ipex_exchange_JSON():
     assert bespoke.sad['e']['age']['n'] == age.said and age.sad['rd']
 
     # 5. admit (club -> Alice): acknowledges receipt, closing the exchange.
-    admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
+    admit = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                     route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EO8FlFo9eB4nN9tyjY4ZmDlwBkFAvWlQQn_LWfEZ1340"
+    assert admit.sad['x'] == apply.said
+    assert admit.said == "EHW4cNSjQY_MTR8DumpyIy4P1J8-NZ2AxfqKvkh1rAkz"
 
 
 def _pathable_labels(value):
@@ -1317,11 +1310,14 @@ def test_accountability_and_terms_follow_data_JSON():
     bespoke = _bespoke_presentation(sedi, age, kind)
 
     # Offer and the club's signed agree, as in Phase 3.
-    offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
-                     attributes=dict(acdc=bespoke.said, terms=_rules_in_bespoke()),
-                     stamp=OFFER_STAMP, kind=kind)
-    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+    offer = exchept(sender=ALICE, receiver=CLUB, route="/ipex/offer",
+                    attributes=dict(acdc=bespoke.said, terms=_rules_in_bespoke()),
+                    nonce=Noncer(raw=b'cpd-offer-xip-01').qb64,
+                    stamp=OFFER_STAMP, kind=kind)
+    agree = exchange(sender=CLUB, receiver=ALICE, xid=offer.said,
+                     route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert offer.ilk == Ilks.xip and agree.sad['x'] == offer.said
 
     # --- The club's key state at acceptance: its inception event. ---
     # This reconstructs the same self-addressing ('E') inception that defines CLUB
@@ -1406,11 +1402,14 @@ def test_cpd_serialization_kinds(kind):
 
     # Gated exchange: the offer binds nothing PII, the agree binds the offer SAID,
     # and the club's signed agree (assembled via messagize) verifies.
-    offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
-                     attributes=dict(acdc=bespoke.said, terms=_rules_in_bespoke()),
-                     stamp=OFFER_STAMP, kind=kind)
-    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+    offer = exchept(sender=ALICE, receiver=CLUB, route="/ipex/offer",
+                    attributes=dict(acdc=bespoke.said, terms=_rules_in_bespoke()),
+                    nonce=Noncer(raw=b'cpd-offer-xip-02').qb64,
+                    stamp=OFFER_STAMP, kind=kind)
+    agree = exchange(sender=CLUB, receiver=ALICE, xid=offer.said,
+                     route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert offer.ilk == Ilks.xip and agree.sad['x'] == offer.said
     assert agree.sad['p'] == offer.said
     clubSig = _SIGNERS[3].sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[clubSig])
@@ -1790,10 +1789,10 @@ def test_job_application_entitlement_presentation_JSON():
 
     # Build apply: the employer asks for the origin presentation plus the linked
     # SEDI subset and entitlement using the normalized dp field. `dp` rides the
-    # QUERY section, `q`, not the attribute section: an exn models a ReST request,
+    # QUERY section, `q`, not the attribute section: an exchange models a ReST request,
     # and naming which parts of which ACDCs are wanted is a query, not a body
     # (@SmithSamuelM, #1549).
-    apply = exchange(
+    apply = exchept(
         sender=CLUB,
         receiver=ALICE,
         route="/ipex/apply",
@@ -1801,12 +1800,14 @@ def test_job_application_entitlement_presentation_JSON():
         attributes=dict(
             m="Show the SEDI identity subset and the linked food-handler permit.",
         ),
+        nonce=Noncer(raw=b'job-apply-xip-01').qb64,
         stamp="2026-08-04T15:00:00.000000+00:00",
         kind=kind,
     )
     # Assert the apply carries the expected dp triples in BFS order:
     # root presentation first, then SEDI, then the permit.
     assert apply.sad['r'] == "/ipex/apply"
+    assert apply.ilk == Ilks.xip and 'x' not in apply.sad and 'p' not in apply.sad
     assert apply.sad['q']['dp'] == requestedDp
     assert apply.sad['q']['dp'][0][0] == presentation.sad['s']['$id']
     assert apply.sad['q']['dp'][0][1] == "/"
@@ -1820,6 +1821,7 @@ def test_job_application_entitlement_presentation_JSON():
     offer = exchange(
         sender=ALICE,
         receiver=CLUB,
+        xid=apply.said,
         route="/ipex/offer",
         prior=apply.said,
         modifiers=dict(dp=[]),
@@ -1829,6 +1831,7 @@ def test_job_application_entitlement_presentation_JSON():
     )
     # Assert the offer binds the apply and still carries no disclosed identity data.
     assert offer.sad['p'] == apply.said
+    assert offer.sad['x'] == apply.said
     assert offer.sad['q']['dp'] == []
     assert 'dp' not in offer.sad['a']
     assert b"Alice Anders" not in offer.raw
@@ -1840,7 +1843,8 @@ def test_job_application_entitlement_presentation_JSON():
 
     # Build agree and sign it with the employer's key. The holder will only
     # disclose once this signed acceptance verifies against captured key state.
-    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+    agree = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                     route="/ipex/agree",
                      prior=offer.said, stamp="2026-08-04T15:02:00.000000+00:00",
                      kind=kind)
     employerSig = _SIGNERS[3].sign(ser=agree.raw, index=0)
@@ -1848,6 +1852,7 @@ def test_job_application_entitlement_presentation_JSON():
     capturedEmployerKeyState = Verfer(qb64=_SIGNERS[3].verfer.qb64)
     # Assert the agree binds the offer and that the captured key state verifies it.
     assert agree.sad['p'] == offer.said
+    assert agree.sad['x'] == apply.said
     assert bytes(agree.raw) in signedAgree
     assert capturedEmployerKeyState.verify(sig=employerSig.raw, ser=agree.raw)
 
@@ -1858,7 +1863,8 @@ def test_job_application_entitlement_presentation_JSON():
     assert not capturedEmployerKeyState.verify(sig=wrongSignerSig.raw, ser=agree.raw)
     # Build and verify a signed spurn to prove that a valid decline still does
     # not count as agreement for unlocking the disclosure.
-    spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
+    spurn = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                     route="/ipex/spurn",
                      prior=offer.said, stamp="2026-08-04T15:02:00.000000+00:00",
                      kind=kind)
     spurnSig = _SIGNERS[3].sign(ser=spurn.raw, index=0)
@@ -1882,6 +1888,7 @@ def test_job_application_entitlement_presentation_JSON():
     grant = exchange(
         sender=ALICE,
         receiver=CLUB,
+        xid=apply.said,
         route="/ipex/grant",
         prior=agree.said,
         attributes=dict(
@@ -1897,6 +1904,7 @@ def test_job_application_entitlement_presentation_JSON():
     assert grant is not None
     assert grant.sad['r'] == "/ipex/grant"
     assert grant.sad['p'] == agree.said
+    assert grant.sad['x'] == apply.said
     assert b"Alice Anders" in grant.raw
     assert b"220 E 300 S" in grant.raw
     assert b"+1-801-555-0100" in grant.raw
@@ -1935,11 +1943,13 @@ def test_job_application_entitlement_presentation_JSON():
                                presentationSchemaExpanded)
 
     # Build admit to close the exchange after the employer has received the grant.
-    admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
+    admit = exchange(sender=CLUB, receiver=ALICE, xid=apply.said,
+                     route="/ipex/admit",
                      prior=grant.said, stamp="2026-08-04T15:04:00.000000+00:00",
                      kind=kind)
     assert admit.sad['r'] == "/ipex/admit"
     assert admit.sad['p'] == grant.said
+    assert admit.sad['x'] == apply.said
 
 
 if __name__ == "__main__":
