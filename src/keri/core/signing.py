@@ -11,7 +11,7 @@ import pysodium
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.hazmat.primitives.asymmetric import ec, utils
+from cryptography.hazmat.primitives.asymmetric import ec, utils, mldsa
 
 from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
                       InvalidValueError, InvalidTypeError)
@@ -23,11 +23,38 @@ from .indexing import IdrDex, Siger
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
 ECDSA_256k1_SEEDBYTES = 32
+ML_DSA_SEEDBYTES = 32  # FIPS 204 KeyGen seed xi
 
 # secret derivation security tier
 Tierage = namedtuple("Tierage", 'low med high')
 
 Tiers = Tierage(low='low', med='med', high='high')
+
+# One entry per ML-DSA parameter set, keyed by seed code. FIPS 204 KeyGen expands the 32 byte
+# seed into the key pair, so the seed is all the key store keeps. There is no small indexed
+# code for any parameter set, because a 64 key ceiling buys nothing on a signature of several
+# kilobytes, so both indexed codes are big ones.
+MLDSASuite = namedtuple("MLDSASuite", "prikey verfer sig both crt")
+
+MLDSASuites = {
+    MtrDex.ML_DSA_44_Seed: MLDSASuite(prikey=mldsa.MLDSA44PrivateKey,
+                                      verfer=MtrDex.ML_DSA_44,
+                                      sig=MtrDex.ML_DSA_44_Sig,
+                                      both=IdrDex.ML_DSA_44_Big_Sig,
+                                      crt=IdrDex.ML_DSA_44_Big_Crt_Sig),
+    MtrDex.ML_DSA_65_Seed: MLDSASuite(prikey=mldsa.MLDSA65PrivateKey,
+                                      verfer=MtrDex.ML_DSA_65,
+                                      sig=MtrDex.ML_DSA_65_Sig,
+                                      both=IdrDex.ML_DSA_65_Big_Sig,
+                                      crt=IdrDex.ML_DSA_65_Big_Crt_Sig),
+    MtrDex.ML_DSA_87_Seed: MLDSASuite(prikey=mldsa.MLDSA87PrivateKey,
+                                      verfer=MtrDex.ML_DSA_87,
+                                      sig=MtrDex.ML_DSA_87_Sig,
+                                      both=IdrDex.ML_DSA_87_Big_Sig,
+                                      crt=IdrDex.ML_DSA_87_Big_Crt_Sig),
+}
+
+MLDSASuitesByVerfer = {suite.verfer: suite for suite in MLDSASuites.values()}
 
 # Inverse of the seed-code -> verfer-code derivation Signer.__init__ performs below.
 #
@@ -47,10 +74,14 @@ SeedCodeByVerferCode = {
     MtrDex.ECDSA_256k1: MtrDex.ECDSA_256k1_Seed,
     MtrDex.ECDSA_256k1N: MtrDex.ECDSA_256k1_Seed,
 }
+SeedCodeByVerferCode.update({suite.verfer: seed for seed, suite in MLDSASuites.items()})
 
 # Every private key seed Signer can be built from. Derived from the mapping above rather than
 # written out again, so the two cannot disagree about which algorithms exist.
 SeedCodes = frozenset(SeedCodeByVerferCode.values())
+
+# Length of the qb64 seed that the fixed size cipher code X25519_Cipher_Seed holds.
+FixedSeedQB64Size = 44
 
 
 class Signer(Matter):
@@ -119,6 +150,9 @@ class Signer(Matter):
             elif code == MtrDex.ECDSA_256k1_Seed:
                 raw = pysodium.randombytes(ECDSA_256k1_SEEDBYTES)
                 super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
+            elif code in MLDSASuites:
+                raw = pysodium.randombytes(ML_DSA_SEEDBYTES)
+                super(Signer, self).__init__(raw=bytes(raw), code=code, **kwa)
 
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
@@ -147,6 +181,14 @@ class Signer(Matter):
             verfer = Verfer(raw=verkey,
                             code=MtrDex.ECDSA_256k1 if transferable
                             else MtrDex.ECDSA_256k1N)
+        elif self.code in MLDSASuites:
+            suite = MLDSASuites[self.code]
+            if not transferable:
+                raise ValueError(f"No non-transferable verification key code exists "
+                                 f"for signer code = {self.code}.")
+            self._sign = self._mldsa
+            sigkey = suite.prikey.from_seed_bytes(self.raw)
+            verfer = Verfer(raw=sigkey.public_key().public_bytes_raw(), code=suite.verfer)
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
@@ -339,6 +381,47 @@ class Signer(Matter):
                     code = IdrDex.ECDSA_256k1_Big_Sig  # use use big both
 
             return Siger(raw=sig, code=code, index=index, ondex=ondex, verfer=verfer,)
+
+    @staticmethod
+    def _mldsa(ser, seed, verfer, index, only=False, ondex=None, **kwa):
+        """Returns signature as either Cigar or Siger instance as appropriate for
+        ML-DSA digital signatures given index and ondex values
+
+        The parameter set comes from the code of verfer. The signature is pure
+        ML-DSA.Sign of FIPS 204 with an empty context string, which is what a verifier
+        holding only the CESR code can check. The pre-hash variant HashML-DSA is not used.
+
+        Every ML-DSA indexed code is big, so the code depends only on whether the
+        signature is for the current list only or for both lists. An index or ondex too
+        large for that code raises InvalidVarIndexError from Siger.
+
+        Parameters:
+            ser (bytes): serialization to be signed
+            seed (bytes):  raw binary seed (private key)
+            verfer (Verfer): instance. verfer.raw is public key
+            index (int |None): main index offset into list such as current signing
+                None means return non-indexed Cigar
+                Not None means return indexed Siger with Indexer code derived
+                    from index, conly, and ondex values
+            only (bool): True means main index only list, ondex ignored
+                False means both index lists (default), ondex used
+            ondex (int | None): other index offset into list such as prior next"""
+        suite = MLDSASuitesByVerfer[verfer.code]
+        sigkey = suite.prikey.from_seed_bytes(seed)
+        sig = sigkey.sign(bytes(ser))
+
+        if index is None:  # Must be Cigar i.e. non-indexed signature
+            return Cigar(raw=sig, code=suite.sig, verfer=verfer)
+
+        if only:  # only main index ondex not used
+            ondex = None
+            code = suite.crt
+        else:  # both
+            if ondex is None:
+                ondex = index  # enable default to be same
+            code = suite.both
+
+        return Siger(raw=sig, code=code, index=index, ondex=ondex, verfer=verfer)
 
 
 class Salter(Matter):
@@ -837,7 +920,14 @@ class Encrypter(Matter):
                     # travels inside the cipher and decryption reconstructs the right kind of
                     # Signer. The cipher code therefore says how the wrapping was done, not
                     # which algorithm was wrapped, and one value covers all of them.
-                    code = MtrDex.X25519_Cipher_Seed
+                    #
+                    # The fixed size code holds a 44 char qb64 seed and nothing longer. Seeds
+                    # of another length, such as the 48 char ML-DSA seeds, take the variable
+                    # size code for QB64 plain text, which Cipher resizes to fit.
+                    if len(prim.qb64b) == FixedSeedQB64Size:
+                        code = MtrDex.X25519_Cipher_Seed
+                    else:
+                        code = CiXVarQB64Dex.X25519_Cipher_QB64_L0
                 else:
                     raise InvalidValueError(f"Unsupported primitive with code ="
                                             f" {prim.code} when cipher code is "
@@ -877,7 +967,11 @@ class Encrypter(Matter):
             pubkey (bytes): raw binary serialization of encryption public key
             code (str): cipher derivation code"""
         raw = pysodium.crypto_box_seal(ser, pubkey)
-        return Cipher(raw=raw, code=code)
+        cipher = Cipher(raw=raw, code=code)
+        if cipher.raw != raw:  # a fixed size code silently truncates longer cipher text
+            raise InvalidSizeError(f"Cipher code = {code} cannot hold {len(raw)} bytes "
+                                   f"of cipher text.")
+        return cipher
 
 
 class Decrypter(Matter):
@@ -1027,6 +1121,18 @@ class Decrypter(Matter):
                     klas = Signer
                 elif cipher.code in CiXVarStrmDex:
                     klas = Streamer
+                elif cipher.code in CiXVarQB64Dex:
+                    # The plain text is fully qualified, so its own code says what it is.
+                    # Only seeds and salts are inferred. Anything else needs klas.
+                    pcode = Matter(qb64b=plain).code
+                    if pcode in SeedCodes:
+                        klas = Signer
+                    elif pcode == MtrDex.Salt_128:
+                        klas = Salter
+                    else:
+                        raise InvalidCodeError(f"Unsupported plain text code = {pcode}"
+                                               f" for cipher code = {cipher.code} when"
+                                               f" klas missing.")
                 else:
                     raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}"
                                            f" when klas missing.")

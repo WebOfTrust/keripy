@@ -1396,7 +1396,11 @@ def test_encrypter_wraps_every_seed_algorithm_signer_supports():
     for seed_code in sorted(SeedCodes):
         signer = Signer(code=seed_code, transferable=True)
         cipher = encrypter.encrypt(prim=signer)
-        assert cipher.code == MtrDex.X25519_Cipher_Seed
+        # the fixed size cipher code holds a 44 char seed; longer seeds take the variable one
+        if len(signer.qb64) == 44:
+            assert cipher.code == MtrDex.X25519_Cipher_Seed
+        else:
+            assert cipher.code == CiXDex.X25519_Cipher_QB64_L0
 
         recovered = decrypter.decrypt(cipher=cipher, transferable=True)
         assert recovered.code == seed_code, "the algorithm must survive the round trip"
