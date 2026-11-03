@@ -13,7 +13,7 @@ from copy import deepcopy
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from . import chaining
+from . import chaining, relating
 from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationError,
                       Ilks, KeriError, MisanchorError, MisbindingError,
                       MissingAnchorError, MissingChainError, MissingSchemaError,
@@ -1570,8 +1570,6 @@ class IpexHandler:
         # claim than the evidence supports, and under OR it is the difference between
         # a sibling carrying the group and the whole section failing.
         unevaluable = [cand for cand in ops if cand == "NOT"]
-        if dop == "DI2I":
-            unevaluable = unevaluable + [dop]
         if unevaluable:
             return withFarNode(chaining.unknown(
                 f"unimplemented unary Operator(s) {unevaluable} on edge to node "
@@ -1601,6 +1599,33 @@ class IpexHandler:
                 reason = (f"I2I edge to node {edgeSaid} requires the near issuer to "
                           f"be the far issuee; issuer {nserder.israid} != far issuee "
                           f"{fserder.iseaid}")
+
+        # DI2I widens I2I: the near issuer may be the far Issuee or "a delegated AID"
+        # of it, at any depth (ACDC spec, Edge Section > Edge > Operator, `o` field).
+        # The climb is shared with the v1 Verifier through acdc.relating, so the two
+        # paths cannot answer it differently. A decided refusal -- a chain that ends
+        # without meeting the far Issuee, or a delegator carrying DND -- knocks the
+        # edge down. A KEL or anchoring seal the climb needs and does not yet have is
+        # a retryable unknown, which the Exchanger escrows as missing KEL evidence.
+        pending = None
+        if matched and dop == "DI2I":
+            if not fserder.iseaid:
+                matched = False
+                reason = (f"{dop} edge to node {edgeSaid} requires a targeted far "
+                          f"node, which has no issuee")
+            elif nserder.israid != fserder.iseaid:
+                refusal = relating.delegationRefusal(self.hby.kevers, self.hby.db,
+                                                     nserder.israid, fserder.iseaid)
+                if refusal is None:
+                    pending = chaining.unknown(
+                        f"DI2I edge to node {edgeSaid} waits on KEL evidence that "
+                        f"near issuer {nserder.israid} is a delegated AID of far "
+                        f"issuee {fserder.iseaid}", retryable=True)
+                elif refusal:
+                    matched = False
+                    reason = (f"DI2I edge to node {edgeSaid} requires the near issuer "
+                              f"{nserder.israid} to be the far issuee "
+                              f"{fserder.iseaid} or a delegated AID of it; {refusal}")
 
         own = None  # set when a pin is neither satisfied nor refused, only unread
         for edgeSchemaId, edgeSchema in resolved:
@@ -1641,6 +1666,11 @@ class IpexHandler:
 
         if own is None:
             own = chaining.valid(reason) if matched else chaining.invalid(reason)
+
+        # Conjoined rather than substituted, so a pin decided against still decides
+        # the edge while the delegation evidence is outstanding.
+        if pending is not None:
+            own = chaining.reduceAnd([own, pending])
 
         # The far node's own verdict is the other half of what decides this edge: an
         # Operator relation that holds against a far node whose issuer-auth is

@@ -2777,9 +2777,12 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert notVerdict.verdict == Verdicts.unknown
         assert notVerdict.retryable is False
 
+        # DI2I with a far Issuee the near issuer is neither equal to nor delegated
+        # from. Decided against, not undecided: issuer was incepted undelegated, and
+        # no later event can give it a delegator.
         diChild = acdcmap(israid=issuer.pre,
                           attribute=dict(d="", role="member"),
-                          iseaid=issuer.pre)
+                          iseaid=subject.pre)
         diOrigin = acdcmap(israid=issuer.pre,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            edge=_edge("holder", diChild, op="DI2I"),
@@ -2793,8 +2796,8 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
             nserder=diOrigin,
             memo={diChild.said: chaining.valid("far node vetted elsewhere")},
             inheritedPins=())
-        assert diVerdict.verdict == Verdicts.unknown
-        assert diVerdict.retryable is False
+        assert diVerdict.verdict == Verdicts.invalid
+        assert "is not delegated" in diVerdict.reason
 
         # A list containing any unknown operator is malformed.
         listOpChild = acdcmap(israid=issuer.pre,
@@ -3613,6 +3616,84 @@ def test_ipex_v2_offer_fulfillment_allows_compatible_acdc_message_types():
 
         assert hby.db.exns.get(keys=(grantExn.said,)) is not None
         assert hby.db.epse.get(keys=(grantExn.said,)) is None
+
+
+def test_ipex_v2_di2i_climbs_delegation_and_escrows_a_missing_anchor():
+    """A v2 grant evaluates DI2I through the same climb the v1 Verifier uses.
+
+    The near ACDC's issuer must be the far node's Issuee or a delegated AID of it, at
+    any depth (ACDC spec, Edge Section > Edge > Operator, `o` field). Every dip here is
+    accepted through the locallyOwned exemption, so `delpre` is set whether or not the
+    delegator anchored anything; only the anchoring seal on the delegator's trunk
+    distinguishes an authorized delegate. Registry-less ACDCs authenticated by
+    signature, so unlike v1 the path is reachable end to end at v2.
+    """
+    with openHby(name="ipex-v2-di2i", base="test", version=Vrsn_2_0) as hby:
+        gar = hby.makeHab(name="gar")
+        qvi = hby.makeHab(name="qvi")
+        recipient = hby.makeHab(name="recipient")
+
+        def approve(delegator, delegate):
+            kever = delegate.kever
+            seal = SealEvent(i=kever.prefixer.qb64, s=kever.serder.snh,
+                             d=kever.serder.said)._asdict()
+            delegator.interact(data=[seal])
+
+        sub = hby.makeHab(name="sub", delpre=qvi.pre)
+        approve(qvi, sub)
+        grand = hby.makeHab(name="grand", delpre=sub.pre)
+        approve(sub, grand)
+        late = hby.makeHab(name="late", delpre=qvi.pre)  # approved only later
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Far node: gar -> qvi. Its Issuee is the AID whose delegates DI2I admits.
+        far = acdcmap(israid=gar.pre, attribute=dict(d="", role="qvi"),
+                      iseaid=qvi.pre)
+
+        def grantFrom(hab, claim):
+            origin = acdcmap(israid=hab.pre, attribute=dict(d="", claim=claim),
+                             edge=_edge("qvi", far, op="DI2I"),
+                             iseaid=recipient.pre)
+            exn, atc = ipexGrant(hab=hab, recp=recipient.pre, message=claim,
+                                 origin=_signed(origin, hab),
+                                 artifacts=[_signed(far, gar)],
+                                 modifiers=dict(dp=[[
+                                     [origin.sad["s"]["$id"], "/", []],
+                                     [far.sad["s"]["$id"], "/e/qvi/_/", []],
+                                 ]]))
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            return exn
+
+        # Accepted: a direct delegate, a delegate's delegate, and the Issuee itself
+        # (DI2I is a superset of I2I).
+        for hab in (sub, grand, qvi):
+            exn = grantFrom(hab, f"issued by {hab.name}")
+            assert hby.db.exns.get(keys=(exn.said,)) is not None
+
+        # Refused, not escrowed: gar was incepted undelegated, so no arrival can
+        # make it a delegate of qvi.
+        exn = grantFrom(gar, "issued by an undelegated AID")
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert hby.db.epse.get(keys=(exn.said,)) is None
+
+        # Pending: late claims qvi as delegator and qvi has anchored nothing yet, so
+        # the grant waits in escrow rather than being refused...
+        exn = grantFrom(late, "issued before approval")
+        assert hby.kevers[late.pre].delpre == qvi.pre
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert hby.db.epse.get(keys=(exn.said,)) is not None
+
+        # ...and the delegator's anchoring event alone releases it.
+        approve(qvi, late)
+        exc.processEscrow()
+        assert hby.db.exns.get(keys=(exn.said,)) is not None
+        assert hby.db.epse.get(keys=(exn.said,)) is None
 
 
 def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
@@ -9437,11 +9518,11 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             assert list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, ""))) == []
 
             # An Operator this verifier cannot evaluate is an unknown in the lattice,
-            # so a satisfied sibling decides the group without it. DI2I is recognized
+            # so a satisfied sibling decides the group without it. NOT is recognized
             # and unimplemented; BOGUS is not recognized at all; neither can change a
             # verdict its siblings already decide.
             accepted(dict(d="", either=group("OR", a=leaf(good),
-                                             b=leaf(spare, op="DI2I"))),
+                                             b=leaf(spare, op="NOT"))),
                      [goodNest, _proofed(spare, spareBlinder)],
                      "OR over an unimplemented unary Operator")
             accepted(dict(d="", either=group("OR", a=leaf(good),
