@@ -427,6 +427,26 @@ class DeclRecord:  # baser.decls
     is only as good as the declarer's interest in making it, so a self-reported location or
     operator name carries no weight, whereas a declaration AGAINST interest -- that this witness is
     test infrastructure -- is worth reading precisely because nobody gains by making it falsely.
+    One exception is a capability claim that a consumer can check cheaply by behavior. A consumer
+    may act on one of those, because a false claim fails the first time anyone tries it.
+
+    Conventions. keripy enforces no vocabulary, but these names mean the same thing wherever they
+    appear, so any witness can declare them and any consumer can read them.
+
+    The ``testnet`` tag says the witness belongs to an experimental, test or demonstration
+    environment and carries no real-world consequence.
+
+    The ``fips-posture`` attrib states the witness's FIPS posture. It is a capability claim of the
+    kind described above, because a witness that claims a posture refuses codes the posture does
+    not admit, so the claim can be falsified by trying one. Its values are:
+
+    - ``strict``: every algorithm the witness uses is FIPS-approved and comes from a validated
+      module.
+    - ``hybrid``: the witness admits only AIDs that use FIPS-approved codes, but it verifies
+      evidence that uses some codes that are not FIPS-approved.
+
+    An absent ``fips-posture`` means the witness makes no FIPS claim. It does not mean the witness
+    is not FIPS-capable.
 
     A decl reply message is required from which the values of this record are extracted. Routes are
     /decl/tags and /decl/attribs. Uses enact-anul model: an empty tags list or attribs map
@@ -454,7 +474,8 @@ class DeclRecord:  # baser.decls
       "a" :
       {
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-         "attribs": {"operator": "Example Org", "contact": "mailto:ops@example.com"},
+         "attribs": {"operator": "Example Org", "contact": "mailto:ops@example.com",
+                     "fips-posture": "strict"},
       }
     }
 
