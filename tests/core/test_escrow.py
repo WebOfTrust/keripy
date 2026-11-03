@@ -15,7 +15,7 @@ import pytest
 from hio.help import ogler
 
 from keri import Vrsn_1_0
-from keri.kering import MisfitEventSourceError, Kinds
+from keri.kering import MisfitEventSourceError, Kinds, MisdigestError
 
 from keri.core import (Seqner, Counter, Salter, Saider, Prefixer,
                        Number, Diger, Kevery, eventing, parsing,
@@ -2058,6 +2058,88 @@ def test_unverified_trans_receipt_escrow():
     """End Test"""
 
 
+def test_broken_prior_digest_is_its_own_error():
+    """
+    Test that a mismatched prior event digest raises MisdigestError
+
+    The prior digest is compared against the event already accepted at sn - 1,
+    so unlike OutOfOrderError the event is not escrowed to await a predecessor.
+    Its own class is what lets an embedder tell a broken backward hash chain
+    from the other ValidationError conditions without reading message prose.
+    """
+    salt = Salter(raw=b'0123456789abcdef').qb64
+    psr = parsing.Parser(version=Vrsn_1_0)
+
+    with openDB(name="edy", temp=True) as db, keeping.openKS(name="edy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = Kevery(db=db)
+
+        verfers, digers = mgr.incept(icount=1, ncount=1, stem='wes', temp=True)
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                      ndigs=[diger.qb64 for diger in digers],
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
+        pre = srdr.ked["i"]
+        icpdig = srdr.said
+        mgr.move(old=verfers[0].qb64, new=pre)
+
+        def signed(srdr):
+            sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+            msg = bytearray(srdr.raw)
+            msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0).qb64b)
+            for siger in sigers:
+                msg.extend(siger.qb64b)
+            return msg
+
+        psr.parse(ims=signed(srdr), kvy=kvy)
+        assert kvy.kevers[pre].sn == 0
+
+        # an interaction at the right sn, validly signed, chaining from nothing
+        astray = interact(pre=pre, dig="E" + "A" * 43, sn=1, data=[],
+                          version=Vrsn_1_0, kind=Kinds.json)
+        with pytest.raises(MisdigestError):
+            kvy.processEvent(serder=astray,
+                             sigers=mgr.sign(ser=astray.raw, verfers=verfers))
+
+        assert kvy.kevers[pre].sn == 0  # nothing accepted
+        assert not db.ooes.get(keys=pre, on=1)  # and nothing escrowed to await
+
+        # the same event chaining correctly is accepted, so the fixture is honest
+        proper = interact(pre=pre, dig=icpdig, sn=1, data=[],
+                          version=Vrsn_1_0, kind=Kinds.json)
+        psr.parse(ims=signed(proper), kvy=kvy)
+        assert kvy.kevers[pre].sn == 1
+
+        rverfers, rdigers = mgr.rotate(pre=pre, ncount=1, temp=True)
+
+        # a recovery rotation superseding the ixn at sn 1, validly signed by the
+        # next keys, chaining from nothing, fails the recovery prior-digest check
+        recover = rotate(pre=pre, keys=[verfer.qb64 for verfer in rverfers],
+                         dig="E" + "A" * 43,
+                         ndigs=[diger.qb64 for diger in rdigers],
+                         sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
+        with pytest.raises(MisdigestError):
+            kvy.processEvent(serder=recover,
+                             sigers=mgr.sign(ser=recover.raw, verfers=rverfers))
+
+        assert kvy.kevers[pre].sn == 1  # the ixn is not superseded
+        assert kvy.kevers[pre].serder.said == proper.said
+
+        # a rotation at the next sn, validly signed by the next keys, chaining
+        # from nothing, takes the establishment path and raises the same class
+        rot = rotate(pre=pre, keys=[verfer.qb64 for verfer in rverfers],
+                     dig="E" + "A" * 43, ndigs=[diger.qb64 for diger in rdigers],
+                     sn=2, data=[], version=Vrsn_1_0, kind=Kinds.json)
+        with pytest.raises(MisdigestError):
+            kvy.processEvent(serder=rot,
+                             sigers=mgr.sign(ser=rot.raw, verfers=rverfers))
+
+        assert kvy.kevers[pre].sn == 1  # nothing accepted
+        assert not db.ooes.get(keys=pre, on=2)  # and nothing escrowed to await
+
+    """End Test"""
+
+
 if __name__ == "__main__":
     test_partial_signed_escrow()
     test_missing_delegator_escrow()
@@ -2070,3 +2152,4 @@ if __name__ == "__main__":
     test_ooes_missing_db_entries_escrow_cleanup()
     test_unverified_receipt_escrow()
     test_unverified_trans_receipt_escrow()
+    test_broken_prior_digest_is_its_own_error()
