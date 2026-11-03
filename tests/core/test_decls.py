@@ -78,6 +78,23 @@ def test_a_witness_declares_attribs_under_a_separate_route():
         assert valhby.db.dans.get(keys=(withab.pre, "tags")).qb64 == tagged.qb64
 
 
+@pytest.mark.parametrize("posture", ["strict", "hybrid"])
+def test_a_witness_declares_its_fips_posture(posture):
+    """The fips-posture convention round-trips as an attrib, beside the testnet tag."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, tags=["testnet"]))
+        valhab.psr.parse(_decl(withab, attribs={"operator": "Example Org",
+                                                "fips-posture": posture}))
+
+        attribs = valhby.db.decls.get(keys=(withab.pre, "attribs")).attribs
+        assert attribs == {"operator": "Example Org", "fips-posture": posture}
+        assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
+
+
 def test_a_later_declaration_supersedes_an_earlier_one():
     """BADA: a newer timestamp from the same AID replaces the older reply."""
     salt = Salter(raw=b'abcdef0123456789').qb64
