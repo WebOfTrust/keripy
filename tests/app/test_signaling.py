@@ -7,6 +7,7 @@ import datetime
 import time
 
 import falcon
+import pytest
 from falcon import testing
 from hio.base import doing, tyming
 
@@ -99,6 +100,39 @@ def test_signaler():
     assert doist.limit == limit
 
     assert len(signaler.signals) == 2
+
+
+@pytest.mark.parametrize("queue_change", ["append", "consume"])
+def test_signaler_expire_tolerates_queue_changes_between_passes(queue_change):
+    signaler = Signaler()
+    expired = signal(
+        attrs=dict(a=1),
+        topic="/expired",
+        dt=helping.nowUTC() - datetime.timedelta(minutes=11),
+    )
+    fresh = signal(attrs=dict(a=2), topic="/fresh")
+    signaler.signals.extend((expired, fresh))
+
+    tock = 0.03125
+    clock = doing.Doist(tock=tock)
+    expiry = signaler.expireDo(tymth=clock.tymen(), tock=tock)
+    try:
+        assert next(expiry) == tock
+        assert next(expiry) == tock
+
+        if queue_change == "append":
+            signaler.push(attrs=dict(a=3), topic="/new")
+        else:
+            signaler.signals.popleft()
+
+        assert next(expiry) == tock
+
+        if queue_change == "append":
+            assert [sig.topic for sig in signaler.signals] == ["/fresh", "/new"]
+        else:
+            assert not signaler.signals
+    finally:
+        expiry.close()
 
 
 def test_signal_ends():

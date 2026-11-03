@@ -149,7 +149,6 @@ class Signaler(doing.DoDoer):
             for sig in self.signals:
                 if now - fromIso8601(sig.dt) > self.SignalTimeout:  # Expire messages that are too old
                     toRemove.append(sig)
-                yield self.tock
 
             for sig in toRemove:
                 self.signals.remove(sig)
