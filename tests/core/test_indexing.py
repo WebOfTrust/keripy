@@ -800,3 +800,19 @@ if __name__ == "__main__":
     test_indexer_class()
     test_indexer()
     test_siger()
+
+
+def test_indexer_lead_bytes_are_not_raw():
+    """A code with lead bytes carries them between code and raw. They are padding, so the
+    raw size excludes them and a round trip returns exactly the raw that went in."""
+    import os
+    for code, ondex in ((IdrDex.TBD1, 3), (IdrDex.TBD4, 9)):
+        hs, ss, os_, fs, ls = Indexer.Sizes[code]
+        assert ls == 1
+        rawsize = Indexer._rawSize(code)
+        assert (rawsize + ls) * 4 // 3 == fs - (hs + ss)
+        raw = os.urandom(rawsize)
+        idx = Indexer(raw=raw, code=code, index=5, ondex=ondex)
+        assert len(idx.qb64) == fs
+        assert Indexer(qb64=idx.qb64).raw == raw
+        assert Indexer(qb2=idx.qb2).raw == raw

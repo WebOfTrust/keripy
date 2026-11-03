@@ -228,7 +228,7 @@ class Indexer:
         codes with fs = None
         """
         hs, ss, os, fs, ls = cls.Sizes[code]  # get sizes
-        return ((fs - (hs + ss)) * 3 // 4)
+        return ((fs - (hs + ss)) * 3 // 4) - ls  # lead bytes are not raw
 
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0, ondex=None,
@@ -300,7 +300,7 @@ class Indexer:
                                                f"variable length material. os={os}.")
                 fs = (index * 4) + cs
 
-            rawsize = (fs - cs) * 3 // 4
+            rawsize = ((fs - cs) * 3 // 4) - ls  # lead bytes are not raw
 
             raw = raw[:rawsize]  # copy rawsize from stream, may be less
             if len(raw) != rawsize:  # forbids shorter
@@ -631,7 +631,7 @@ class Indexer:
 
             raw = paw[ls:]
 
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+        if len(raw) != ((len(qb64b) - cs) * 3 // 4) - ls:  # exact lengths less lead
             raise ConversionError(f"Improperly qualified material = {qb64b}")
 
         self._code = hard
