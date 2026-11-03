@@ -20,6 +20,7 @@ from keri.help import helping
 from keri.vc import credential
 from keri.acdc import acdcagg
 from keri.acdc.messaging import acgSchemaDefault
+from keri.acdc.relating import delegationRefusal
 from keri.vdr import Verifier, Regery, Tevery
 from keri.acdc import chaining
 from keri.acdc.ipexing import IpexHandler
@@ -1849,7 +1850,8 @@ def test_verifier_di2i_requires_anchored_delegation(seeder):
         # on hostile input rather than a refusal -- and KeyError is not a type
         # processCredential's callers handle.
         assert qvi.pre not in witHby.kevers
-        assert witverfer._delegationRefusal(sub.pre, qvi.pre) is None  # pending, not refused
+        # Pending, not refused.
+        assert delegationRefusal(witHby.kevers, witHby.db, sub.pre, qvi.pre) is None
 
         # Give the witness everything except qvi's approval: qvi's KEL up to but not
         # including it, qvi's registry TEL, and the far node's TEL.
@@ -1918,7 +1920,7 @@ def test_verifier_di2i_survives_an_unapproved_delegated_rotation(seeder):
     near issuer a delegated AID of the far node's issuee -- is settled once, by the
     delegator anchoring the `dip`, and no later event can change or renew it.
 
-    An earlier version of ._delegationRefusal keyed on ``kever.lastEst.d`` instead,
+    An earlier version of the climb keyed on ``kever.lastEst.d`` instead,
     which asked a different question: is the delegate's *current* establishment event
     approved. That is a real question, but it belongs to the KEL layer, which already
     refuses an unanchored `drt` for every validator that is not exempted by the
@@ -1994,11 +1996,11 @@ def test_verifier_di2i_climbs_v2_and_native_cesr_kels(seeder):
     rather than assuming: the DI2I matrix above is v1 JSON throughout, which is the one
     point in the variant space where a serialization-sensitive bug would be invisible.
 
-    Unit level on purpose. v2 registry management is stubbed (``keri/acdc/registering.py``
-    and siblings), and ``Regery.makeRegistry`` is v1-only -- ``vcp`` is a v1 ilk -- so a v2
-    far node cannot be issued and .verifyChain cannot be reached end to end at v2 yet.
-    Nothing in the climb touches a registry, so exercising ._delegationRefusal directly loses
-    no coverage of what this branch changes.
+    Unit level on purpose. ``Regery.makeRegistry`` is v1-only -- ``vcp`` is a v1 ilk -- so
+    a v2 far node cannot reach .verifyChain end to end. Nothing in the climb touches a
+    registry, so exercising relating.delegationRefusal directly loses no coverage of it.
+    The v2 IPEX path, which needs no registry, is covered end to end in
+    tests/acdc/test_ipexing.py.
     """
     for kind in (Kinds.json, Kinds.cesr):
         with openHby(name="v2di2i", salt=DI2I_SALT, temp=True, version=Vrsn_2_0) as hby:
@@ -2024,13 +2026,15 @@ def test_verifier_di2i_climbs_v2_and_native_cesr_kels(seeder):
             assert dip.pvrsn == Vrsn_2_0
             assert dip.kind == kind
 
-            verfer = Verifier(hby=hby, reger=Regery(hby=hby, name="v2di2i", temp=True).reger)
-            assert verfer._delegationRefusal(sub.pre, qvi.pre) == ""
-            assert verfer._delegationRefusal(grand.pre, qvi.pre) == ""    # depth
-            assert verfer._delegationRefusal(bounded.pre, qvi.pre) == ""  # DND binds below
-            assert "carries DND" in verfer._delegationRefusal(beyond.pre, qvi.pre)  # ... only below
-            assert verfer._delegationRefusal(unapproved.pre, qvi.pre) is None  # unanchored
-            assert "is not delegated" in verfer._delegationRefusal(qvi.pre, qvi.pre)  # no self-loop
+            def refusal(pre):
+                return delegationRefusal(hby.kevers, hby.db, pre, qvi.pre)
+
+            assert refusal(sub.pre) == ""
+            assert refusal(grand.pre) == ""                        # depth
+            assert refusal(bounded.pre) == ""                      # DND binds below
+            assert "carries DND" in refusal(beyond.pre)            # ... and only below
+            assert refusal(unapproved.pre) is None                 # unanchored: pending
+            assert "is not delegated" in refusal(qvi.pre)          # no self-loop
 
     """End Test"""
 
