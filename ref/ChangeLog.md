@@ -14,6 +14,16 @@ The intermediate 2.0.0 branch largely
 provides that backwards compatibility but does not fully implement all the new
 features.
 
+### IPEX flow-opening messages changed from exn to xip
+- A flow-opening Apply, Offer, or Grant is now an xip, while subsequent messages
+  in the flow remain exn messages.
+- An opening xip has no x transaction identifier or p prior-message field. Its
+  own d SAID is the transaction identifier.
+- Each subsequent exn carries the opener's SAID in x and its immediate prior
+  message's SAID in p.
+- Notification consumers must accept /xip/ipex/... for
+  opening messages and /exn/ipex/... for subsequent messages.
+
 *** Breaking for callers that catch builtin exceptions: malformed input to several parsers
 now raises a keri.kering error (a KeriError) instead of a raw Python exception.
 - Tholder: an invalid sith raises kering.ValidationError instead of ValueError,

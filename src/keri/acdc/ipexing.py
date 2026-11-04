@@ -1973,7 +1973,7 @@ class IpexHandler:
         """
         attrs = serder.ked["a"]
         self.notifier.add(attrs=dict(
-            r=f"/exn{serder.ked['r']}",
+            r=f"/{serder.ilk}{serder.ked['r']}",
             d=serder.said,
             m=attrs["m"],
         ))

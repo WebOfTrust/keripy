@@ -721,7 +721,7 @@ def test_ipex_v2_accepts_historical_anchor_after_rotation():
 
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(grantExn.said,)) is not None
-        assert recorder.items == [{"r": "/exn/ipex/grant",
+        assert recorder.items == [{"r": "/xip/ipex/grant",
                                    "d": grantExn.said,
                                    "m": "Anchor predates rotation"}]
 
@@ -1125,15 +1125,15 @@ def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
 
             # Prove the grantor handler saw only messages sent by the applicant.
             assert [item["r"] for item in grantorRecorder.items] == [
-                "/exn/ipex/apply", "/exn/ipex/agree", "/exn/ipex/admit",
-                "/exn/ipex/apply", "/exn/ipex/admit", "/exn/ipex/agree",
+                "/xip/ipex/apply", "/exn/ipex/agree", "/exn/ipex/admit",
+                "/xip/ipex/apply", "/exn/ipex/admit", "/exn/ipex/agree",
                 "/exn/ipex/admit", "/exn/ipex/admit",
             ]
             # Prove the applicant handler saw only messages sent by the grantor.
             assert [item["r"] for item in applicantRecorder.items] == [
                 "/exn/ipex/offer", "/exn/ipex/grant", "/exn/ipex/grant",
-                "/exn/ipex/grant", "/exn/ipex/offer", "/exn/ipex/grant",
-                "/exn/ipex/grant",
+                "/xip/ipex/grant", "/xip/ipex/offer", "/exn/ipex/grant",
+                "/xip/ipex/grant",
             ]
 
 
@@ -1220,7 +1220,7 @@ def test_ipex_v2_anchored_grant_waits_for_sender_kel_event(fakeHelpingClock):
             assert len(recipientHby.db.ests.get(
                 keys=(grantExn.said, issuerHab.pre))) == 1
             assert recorder.items == [
-                {"r": "/exn/ipex/grant", "d": grantExn.said,
+                {"r": "/xip/ipex/grant", "d": grantExn.said,
                  "m": "Anchor will arrive later"},
             ]
             assert list(exc.cues) == [
@@ -1426,8 +1426,8 @@ def test_ipex_v2_required_anchors_fail_closed_through_kram(fakeHelpingClock):
 
             # Only the two valid priors should have reached the notification handler.
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/offer", "Anchored offer"),
-                ("/exn/ipex/grant", "Anchored grant"),
+                ("/xip/ipex/offer", "Anchored offer"),
+                ("/xip/ipex/grant", "Anchored grant"),
             ]
 
 
@@ -1571,9 +1571,9 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
 
             # Only the three valid optional messages reached the IPEX handler.
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/offer", "Optional offer"),
-                ("/exn/ipex/apply", "Optional apply"),
-                ("/exn/ipex/grant", "Optional grant"),
+                ("/xip/ipex/offer", "Optional offer"),
+                ("/xip/ipex/apply", "Optional apply"),
+                ("/xip/ipex/grant", "Optional grant"),
             ]
 
 
@@ -1805,7 +1805,7 @@ def test_ipex_v2_offer_metadata_dag_binds_grant_nodes():
         assert grantResults[0].nests[1].serder.sad["a"]["role"] == "member"
 
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
@@ -1926,7 +1926,7 @@ def test_ipex_v2_offer_metadata_dag_rejects_substituted_child():
         assert verifierHby.db.exns.get(keys=(grantExn.said,)) is None
         assert verifierHby.db.epse.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -2034,7 +2034,7 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
         assert len(storedOfferResults) == 1
         assert storedOfferResults[0].nests == []
         assert recorder.items == [
-            {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"},
+            {"r": "/xip/ipex/apply", "d": applyExn.said, "m": "Prove over-21"},
             {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here are the terms"},
         ]
 
@@ -2242,7 +2242,7 @@ def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
         assert len(offerResults) == 1
         assert [nest.serder.said for nest in offerResults[0].nests] == [origin.said, child.said]
         assert recorder.items == [
-            {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Show me the metadata path"},
+            {"r": "/xip/ipex/apply", "d": applyExn.said, "m": "Show me the metadata path"},
             {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here is the partial metadata DAG"},
         ]
 
@@ -2458,7 +2458,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(exn.said,)) is not None
-            assert recorder.items[-1] == {"r": "/exn/ipex/grant",
+            assert recorder.items[-1] == {"r": "/xip/ipex/grant",
                                           "d": exn.said,
                                           "m": message}
 
@@ -2983,7 +2983,7 @@ def test_ipex_v2_requires_grant_to_fulfill_offer_metadata(carryMetadata):
         assert offerExn.ked["a"]["o"] != grantExn.ked["a"]["o"]
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -3068,7 +3068,7 @@ def test_ipex_v2_rejects_metadata_acdc_as_grant():
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert hby.db.epse.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -3143,7 +3143,7 @@ def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody, ilk):
         assert offerExn.ked["a"]["o"] == [offered.said]
         assert grantExn.ked["a"]["o"] == [offered.said]
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
@@ -3232,7 +3232,7 @@ def test_ipex_v2_public_fixed_field_offer_binds_root_said():
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert hby.db.epse.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -3303,7 +3303,7 @@ def test_ipex_v2_rejects_proof_bearing_offer_node():
         assert hby.db.epse.get(keys=(offerExn.said,)) is None
 
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
         ]
 
 
@@ -3571,7 +3571,7 @@ def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
             assert hby.db.emsd.get(keys=(grant.said,)) is None
             assert hby.db.kramTMSC.get(keys=kramKey) is not None
             assert [item["r"] for item in recorder.items] == [
-                "/exn/ipex/grant",
+                "/xip/ipex/grant",
             ]
 
 
@@ -3925,8 +3925,8 @@ def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
 
         # Assert that only Apply, Offer and Agree were recorded
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
-            "/exn/ipex/offer",
+            "/xip/ipex/apply",
+            "/xip/ipex/offer",
             "/exn/ipex/agree",
         ]
 
@@ -4454,7 +4454,9 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Assert routes and their coressponding message  
         routes = {item["r"] for item in recorder.items}
         assert routes == {
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
+            "/xip/ipex/offer",
+            "/xip/ipex/grant",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
@@ -4462,14 +4464,14 @@ def test_ipex_v2_dispatch_linear_and_spurn():
             "/exn/ipex/spurn",
         }
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/apply", "Please issue a credential"),
+            ("/xip/ipex/apply", "Please issue a credential"),
             ("/exn/ipex/offer", "Here is the offered credential"),
             ("/exn/ipex/agree", "I agree to the offer"),
             ("/exn/ipex/grant", "Here is the granted credential"),
             ("/exn/ipex/admit", "Thanks for the credential"),
-            ("/exn/ipex/grant", "Bare grant without agreement"),
+            ("/xip/ipex/grant", "Bare grant without agreement"),
             ("/exn/ipex/spurn", "I reject this grant"),
-            ("/exn/ipex/offer", "Bare offer for spurn path"),
+            ("/xip/ipex/offer", "Bare offer for spurn path"),
             ("/exn/ipex/spurn", "I reject this offer"),
         ]
 
@@ -4554,7 +4556,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
 
         # Check recorder for correct route/message pairs
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/apply", "Please issue a credential"),
+            ("/xip/ipex/apply", "Please issue a credential"),
             ("/exn/ipex/offer", "Here is the offered credential"),
             ("/exn/ipex/agree", "I agree to the offer"),
             ("/exn/ipex/grant", "Here is the granted credential"),
@@ -4667,7 +4669,7 @@ def test_ipex_v2_accepts_offer_with_missing_origin_attr_without_throwing():
         stored = hby.db.exns.get(keys=(badOffer.said,))
         assert stored is not None
         assert "o" not in stored.ked["a"]
-        assert recorder.items == [{"r": "/exn/ipex/offer", "d": badOffer.said, "m": "Here is the offered credential"}]
+        assert recorder.items == [{"r": "/xip/ipex/offer", "d": badOffer.said, "m": "Here is the offered credential"}]
 
 
 def test_ipex_v2_rejects_offer_with_nonstring_origin_without_throwing():
@@ -5324,7 +5326,7 @@ def test_ipex_v2_multikey_xip_signatures_through_kram():
             assert len(list(hby.db.esigs.getTopItemIter(
                 keys=(applyExn.said, applicant.pre, "")))) == 2
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please disclose to the group applicant"),
+                ("/xip/ipex/apply", "Please disclose to the group applicant"),
             ]
 
             immediateExn, _ = ipexApply(
@@ -5345,8 +5347,8 @@ def test_ipex_v2_multikey_xip_signatures_through_kram():
             assert len(list(hby.db.esigs.getTopItemIter(
                 keys=(immediateExn.said, applicant.pre, "")))) == 2
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please disclose to the group applicant"),
-                ("/exn/ipex/apply",
+                ("/xip/ipex/apply", "Please disclose to the group applicant"),
+                ("/xip/ipex/apply",
                  "Please accept the complete group threshold"),
             ]
 
@@ -5895,7 +5897,7 @@ def test_ipex_v2_escrows_registry_backed_grant_until_tel_evidence_arrives(sender
             assert len(recipientHby.db.ests.get(
                 keys=(grantExn.said, anchorHab.pre))) == 1
             assert len(recorder.items) == 1
-            assert recorder.items[0]["r"] == "/exn/ipex/grant"
+            assert recorder.items[0]["r"] == "/xip/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Waiting on observer TEL"
             assert list(exc.cues) == [
@@ -6028,7 +6030,7 @@ def test_ipex_v2_blind_registry_update_roundtrip():
 
             # The notifier should report the accepted linear IPEX exchange in send order
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please issue the blind credential"),
+                ("/xip/ipex/apply", "Please issue the blind credential"),
                 ("/exn/ipex/offer", "Here is the blind credential"),
                 ("/exn/ipex/agree", "I agree to the blind credential"),
                 ("/exn/ipex/grant", "Here is the blind registry disclosure"),
@@ -6188,7 +6190,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                     keys=(hab.pre, xid, staleOfferExn.said)) is None
                 assert hby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                 ]
 
                 # Resend the same logical offer from the current fake-clock time.
@@ -6337,7 +6339,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/offer", "Here is the blind credential"),
                     ("/exn/ipex/agree", "I agree to the blind credential"),
                     ("/exn/ipex/grant", "Here is the blind registry disclosure"),
@@ -6354,7 +6356,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 assert helping.nowIso8601() == admitStamp
 
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/offer", "Here is the blind credential"),
                     ("/exn/ipex/agree", "I agree to the blind credential"),
                     ("/exn/ipex/grant", "Here is the blind registry disclosure"),
@@ -6597,7 +6599,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                     keys=(issuerHab.pre, xid, staleOfferExn.said)) is None
                 assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                 ]
                 assert recipientRecorder.items == []
 
@@ -7041,7 +7043,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # recipient-originated messages, and the recipient only saw the
                 # issuer-originated ones.
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/agree", "I agree to the blind credential"),
                     ("/exn/ipex/admit", "Thanks for the blind credential"),
                 ]
@@ -7362,7 +7364,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                 assert recipientHby.db.exns.get(keys=(badGrantExn.said,)) is None
 
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the DAG credential"),
+                    ("/xip/ipex/apply", "Please issue the DAG credential"),
                     ("/exn/ipex/agree", "I agree to the DAG credential"),
                     ("/exn/ipex/admit", "Thanks for the DAG credential"),
                 ]
@@ -7562,7 +7564,7 @@ def test_ipex_v2_offer_starts_flow_with_xip_through_kram(fakeHelpingClock):
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/offer", "Offer starts the blind credential flow"),
+                    ("/xip/ipex/offer", "Offer starts the blind credential flow"),
                     ("/exn/ipex/agree", "I agree to the offer-first credential"),
                     ("/exn/ipex/grant", "Here is the offer-first blind registry disclosure"),
                     ("/exn/ipex/admit", "Thanks for the offer-first blind credential"),
@@ -7805,7 +7807,7 @@ def test_ipex_v2_grant_starts_flow_with_xip_through_kram(fakeHelpingClock):
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/grant", "Grant starts the blind credential flow"),
+                    ("/xip/ipex/grant", "Grant starts the blind credential flow"),
                     ("/exn/ipex/admit", "Thanks for the grant-first blind credential"),
                 ]
         finally:
@@ -7985,12 +7987,12 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
 
             # The notifier should reflect both full disclosures in the order they were sent
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please issue the issued blind credential"),
+                ("/xip/ipex/apply", "Please issue the issued blind credential"),
                 ("/exn/ipex/offer", "Here is the issued blind credential"),
                 ("/exn/ipex/agree", "I agree to the issued blind credential"),
                 ("/exn/ipex/grant", "Here is the issued blind registry disclosure"),
                 ("/exn/ipex/admit", "Thanks for the issued blind credential"),
-                ("/exn/ipex/apply", "Please issue the revoked blind credential"),
+                ("/xip/ipex/apply", "Please issue the revoked blind credential"),
                 ("/exn/ipex/offer", "Here is the revoked blind credential"),
                 ("/exn/ipex/agree", "I agree to the revoked blind credential"),
                 ("/exn/ipex/grant", "Here is the revoked blind registry disclosure"),
@@ -8576,7 +8578,7 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert list(hby.db.esigs.getTopItemIter(
                 keys=(grantExn.said, childIssuee.pre, ""))) == []
             assert len(recorder.items) == 1
-            assert recorder.items[0]["r"] == "/exn/ipex/grant"
+            assert recorder.items[0]["r"] == "/xip/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Present both credentials"
 
@@ -8797,7 +8799,7 @@ def test_ipex_v2_sign_endorsers_anchorers_through_kram_three_haberies():
             assert ims == bytearray()
 
         assert verifierHby.db.exns.get(keys=(grantExn.said,)) is not None
-        assert recorder.items == [{"r": "/exn/ipex/grant",
+        assert recorder.items == [{"r": "/xip/ipex/grant",
                                    "d": grantExn.said,
                                    "m": "Proxy presents principal's entitlement"}]
 
