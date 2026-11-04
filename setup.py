@@ -75,7 +75,7 @@ setup(
                         'blake3==1.0.9',
                         'msgpack==1.2.2',
                         'cbor2==6.1.4',
-                        'multidict==6.8.0',
+                        'multidict==6.9.1',
                         'ordered-set==4.1.0',
                         'hio==0.7.20',
                         'multicommand==1.0.0',

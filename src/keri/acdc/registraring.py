@@ -325,6 +325,8 @@ class Registry:
                 ``SerderACDC``, if the ACDC does not belong to this registry or
                 controlling habitat, or if an unsupported explicit ``blinder``
                 argument is supplied.
+            MissingSchemaError: if the ACDC's external schema is unavailable.
+            FailedSchemaValidationError: if the ACDC violates its schema.
         """
         # Blind issuance remains a Registry method for callers, but the staged
         # frontier walk and TEL event creation now live in regeventing.py.
@@ -405,6 +407,10 @@ class Registrar:
         Returns:
             tuple: ``(blinder, serder)`` where ``blinder`` is the created
                 ``Blinder`` and ``serder`` is the created ``bup`` event.
+
+        Raises:
+            MissingSchemaError: if the ACDC's external schema is unavailable.
+            FailedSchemaValidationError: if the ACDC violates its schema.
         """
         reg = self._registry(registry)
         return reg.blind(acdc=acdc, state=state, **kwa)

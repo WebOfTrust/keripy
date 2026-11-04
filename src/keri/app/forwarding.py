@@ -590,7 +590,7 @@ def introduce(hab, wit, gvrsn=None):
 
     iserder = hab.kever.serder
     witPrefixer = Prefixer(qb64=wit)
-    dgkey = dgKey(wit, iserder.said)
+    dgkey = dgKey(hab.pre, iserder.said)
     #decide if need to send our inception before sending receipt
     # to remote pre of receipted event so it can process our key state
     # to verify local signatures on our receipt. Need to send
@@ -604,16 +604,16 @@ def introduce(hab, wit, gvrsn=None):
                 #found = True  # yes so don't pre-send own inception
 
         # alt find in vrcsNew as preliminary to replace
-        topkeys = (wit, iserder.said)
-        for keys, siger in hab.db.vrc.getTopItemIter(keys=topkeys):
+        topkeys = (hab.pre, iserder.said)
+        for keys, siger in hab.db.vrcs.getTopItemIter(keys=topkeys):
             epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
-            if rpre == hab.pre:
+            if rpre == wit:
                 found = True  # yes so don't pre-send own inception
                 break
 
     else:  # find if already rcts of own icp
         for prefixer, cigar in hab.db.rcts.getIter(dgkey):
-            if prefixer.qb64.startswith(hab.pre):
+            if prefixer.qb64 == wit:
                 found = True  # yes so don't pre-send own inception
                 break
 

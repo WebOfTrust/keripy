@@ -32,7 +32,7 @@ def test_verdict_values():
     assert Verdicts.unknown == 'unknown'
 
     # The constructors name the three cases so a caller never spells a verdict by
-    # hand, and each carries a reason for diagnostics (keri-sow tick 22pi).
+    # hand, and each carries a reason for diagnostics.
     assert valid("far node issued") == EdgeVerdict(Verdicts.valid, True,
                                                   "far node issued")
     assert invalid("I2I mismatch") == EdgeVerdict(Verdicts.invalid, False,
