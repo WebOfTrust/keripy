@@ -22,7 +22,7 @@ from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationErr
                       ValidationError, Vrsn_2_0, sniff)
 from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
                     Codens, Diger, GenDex, Noncer, Number, Pather, Prefixer,
-                    Parser, Saider, SealEvent, SealSource, Serdery, Texter, exchange,
+                    Parser, Saider, Schemer, SealEvent, SealSource, Serdery, Texter, exchange,
                     messagize)
 from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
                                verifyAttachments)
