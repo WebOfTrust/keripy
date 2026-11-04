@@ -105,6 +105,58 @@ def test_receiptor_v2_propagates_witness_receipts(monkeypatch, seeder, witnessPo
             assert counter.count == (len(attachments) - len(counter.qb64b)) // 4
 
 
+def test_receiptor_catchup_sends_full_kel(seeder, witnessPorter):
+    """Regression test for issue #1745: Receiptor.catchup() must replay every
+    KEL event to the witness, not only the inception event."""
+    with openHby(name="wan-cup", salt=Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            openHby(name="pal-cup", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
+        palHab = palHby.makeHab(name="pal-cup", transferable=True)
+        # events after inception: without consuming each response, catchup()
+        # stops waiting after the first one and the rest are never sent
+        palHab.interact()
+        palHab.interact()
+        expected = palHab.kever.serder
+        assert expected.sn == 2
+
+        witnessPorts, witnessUrls = witnessPorter("wan-cup")
+        witnessDoers = setupWitness(alias="wan-cup", hby=wanHby,
+                                    tcpPort=witnessPorts["wan-cup"]["tcp"],
+                                    httpPort=witnessPorts["wan-cup"]["http"])
+        wanHab = wanHby.habByName("wan-cup")
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls)
+
+        receiptor = Receiptor(hby=palHby)
+        caughtUp = False
+
+        def catchupDo(tymth, tock=0.0, **kwa):
+            nonlocal caughtUp
+            yield from receiptor.catchup(palHab.pre, wanHab.pre)
+            caughtUp = True
+            return True
+
+        def witnessHasKel():
+            kever = wanHby.kevers.get(palHab.pre)
+            return kever is not None and kever.sn == expected.sn
+
+        doist = doing.Doist(limit=5.0, tock=0.03125,
+                            doers=witnessDoers + [receiptor, doing.doify(catchupDo)])
+        try:
+            doist.enter()
+            tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+            while not ((caughtUp and witnessHasKel()) or tymer.expired):
+                doist.recur()
+                time.sleep(doist.tock)
+        finally:
+            doist.exit()
+
+        assert caughtUp
+        assert palHab.pre in wanHby.kevers
+        actual = wanHby.kevers[palHab.pre].serder
+        assert actual.sn == expected.sn
+        assert actual.said == expected.said
+
+
 @pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
 def test_receiptor_propagates_only_verified_receipts(monkeypatch, version):
     kwa = dict(version=version, kind=Kinds.json)
