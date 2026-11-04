@@ -8699,11 +8699,12 @@ def test_ipex_v2_issuance_exempts_linked_recipient_registry():
             serder=grant,
             nodes=nodes,
             order=[origin.said, child.said],
+            grantors={issuer.pre, issuee.pre},
         ) == set()
 
 
-def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
-    """Every participating Issuee's presentation registry binds the grant."""
+def test_ipex_v2_verifies_presentation_registries_for_different_grantors():
+    """Every participating Grantor's presentation registry binds the grant."""
     with openHby(name="ipex-v2-multiple-presentation-registries",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -8825,6 +8826,24 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                         Number(sn=childIssuee.kever.lastEst.s),
                         Diger(qb64=childIssuee.kever.lastEst.d),
                         childIssuee.sign(ser=grantExn.raw, indexed=True))
+
+            # A declaration belonging to a disclosed but non-participating
+            # Issuee does not require that Issuee's registry proof.
+            handler = exc.routes["/ipex/grant"]
+            originNest = Parser(version=Vrsn_2_0).parse(
+                ims=_nest(proofedOrigin), framed=True, processive=False)[0]
+            childNest = Parser(version=Vrsn_2_0).parse(
+                ims=_nest(_proofed(child, childIssuerProof)),
+                framed=True,
+                processive=False,
+            )[0]
+            assert handler._verifyPresentationAuthGraph(
+                serder=grantExn,
+                nodes={origin.said: originNest, child.said: childNest},
+                order=[origin.said, child.said],
+                grantors={proxy.pre, originIssuee.pre},
+            ) == {originIssuee.pre}
+
             # One valid presentation registry cannot replace the child's proof.
             incompleteChild = _proofed(child, childIssuerProof)
             ims = messagize(
@@ -8838,11 +8857,11 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # The sender signature and both Issuee TEL factors accept the Grant
-            # without redundant signatures from either non-sender Issuee.
+            # The origin Issuee is the principal presenter, while the child's
+            # endorsement makes it another Grantor. Both registries are required.
             ims = messagize(
                 grantExn,
-                tsgs=[senderTsg],
+                tsgs=[senderTsg, childTsg],
                 nests=[_nest(proofedOrigin), _nest(proofedChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -8852,8 +8871,8 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
             assert list(hby.db.esigs.getTopItemIter(
                 keys=(grantExn.said, originIssuee.pre, ""))) == []
-            assert list(hby.db.esigs.getTopItemIter(
-                keys=(grantExn.said, childIssuee.pre, ""))) == []
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(grantExn.said, childIssuee.pre, "")))) == 1
             assert len(recorder.items) == 1
             assert recorder.items[0]["r"] == "/xip/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
@@ -8892,12 +8911,18 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                            Number(sn=issuer.kever.lastEst.s),
                            Diger(qb64=issuer.kever.lastEst.d),
                            issuer.sign(ser=issuanceExn.raw, indexed=True))
+            childIssuanceTsg = (
+                childIssuee.kever.prefixer,
+                Number(sn=childIssuee.kever.lastEst.s),
+                Diger(qb64=childIssuee.kever.lastEst.d),
+                childIssuee.sign(ser=issuanceExn.raw, indexed=True),
+            )
 
-            # The other Issuee's declared registry remains mandatory even
-            # though the origin is undergoing original issuance.
+            # The other Issuee explicitly co-grants this issuance, so its
+            # declared registry remains mandatory.
             missing = messagize(
                 issuanceExn,
-                tsgs=[issuanceTsg],
+                tsgs=[issuanceTsg, childIssuanceTsg],
                 nests=[_nest(_proofed(origin, originIssuerProof)),
                        _nest(_proofed(child, childIssuerProof))],
                 framed=False,
@@ -8913,7 +8938,7 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             # own presentation registry remains correctly exempt.
             complete = messagize(
                 issuanceExn,
-                tsgs=[issuanceTsg],
+                tsgs=[issuanceTsg, childIssuanceTsg],
                 nests=[_nest(_proofed(origin, originIssuerProof)),
                        _nest(_proofed(child,
                                       childIssuerProof,
