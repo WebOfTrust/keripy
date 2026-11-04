@@ -8428,6 +8428,52 @@ def test_ipex_v2_rejects_substituted_presentation_registry():
             rgy.close()
 
 
+def test_ipex_v2_issuance_exempts_linked_recipient_registry():
+    """Linked credentials targeted to the issuance recipient need no presentation proof."""
+    with openHby(name="ipex-v2-recipient-registry-exemption",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        issuee = hby.makeHab(name="issuee")
+        issuerRegistry = Diger(ser=b"issuer registry").qb64
+        presentationRegistry = Diger(ser=b"presentation registry").qb64
+
+        child = acdcmap(
+            israid=issuer.pre,
+            regid=issuerRegistry,
+            attribute=dict(d="", rd=presentationRegistry,
+                           entitlement="child"),
+            iseaid=issuee.pre,
+        )
+        origin = acdcmap(
+            israid=issuer.pre,
+            regid=issuerRegistry,
+            attribute=dict(d="", rd=presentationRegistry,
+                           entitlement="origin"),
+            edge=_edge("child", child),
+            iseaid=issuee.pre,
+        )
+        grant = SimpleNamespace(
+            pre=issuer.pre,
+            ilk=Ilks.xip,
+            said=Diger(ser=b"issuance grant").qb64,
+            ked=dict(ri=issuee.pre),
+        )
+        nodes = {
+            origin.said: dict(serder=origin),
+            child.said: dict(serder=child),
+        }
+        handler = IpexHandler(resource="/ipex/grant",
+                              hby=hby,
+                              notifier=Recorder())
+
+        assert handler._verifyPresentationAuthGraph(
+            serder=grant,
+            nodes=nodes,
+            order=[origin.said, child.said],
+        ) == set()
+
+
 def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
     """Every participating Issuee's presentation registry binds the grant."""
     with openHby(name="ipex-v2-multiple-presentation-registries",
@@ -8582,8 +8628,8 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Present both credentials"
 
-            # Issuing the origin directly to its Issuee exempts only that
-            # origin.  The linked child remains an existing presentation.
+            # The linked child targets a different Issuee, so issuing the
+            # origin directly exempts only the origin declaration.
             issuanceExn, _ = ipexGrant(
                 hab=issuer,
                 recp=originIssuee.pre,
@@ -8616,8 +8662,8 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                            Diger(qb64=issuer.kever.lastEst.d),
                            issuer.sign(ser=issuanceExn.raw, indexed=True))
 
-            # Omitting the child's declared registry must not be excused by
-            # the fact that the origin is undergoing original issuance.
+            # The other Issuee's declared registry remains mandatory even
+            # though the origin is undergoing original issuance.
             missing = messagize(
                 issuanceExn,
                 tsgs=[issuanceTsg],
