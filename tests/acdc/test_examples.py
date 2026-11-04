@@ -413,9 +413,9 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             assert revokedBlinder.uuid.encode() in revokedGrantWire
 
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/grant", "Issued registry snapshot"),
+                ("/xip/ipex/grant", "Issued registry snapshot"),
                 ("/exn/ipex/admit", "Received issued snapshot"),
-                ("/exn/ipex/grant", "Revoked registry snapshot"),
+                ("/xip/ipex/grant", "Revoked registry snapshot"),
                 ("/exn/ipex/admit", "Received revoked snapshot"),
             ]
         finally:
@@ -621,7 +621,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         assert not Aggor.verifyDisclosure(tampered, kind=kind)
 
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/grant", "Selective aggregate disclosure"),
+            ("/xip/ipex/grant", "Selective aggregate disclosure"),
             ("/exn/ipex/admit", "Received selective aggregate disclosure"),
         ]
 
@@ -983,13 +983,13 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert NONCES[9].encode() not in mixedWire
 
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/grant", "Rule section disclosure"),
+            ("/xip/ipex/grant", "Rule section disclosure"),
             ("/exn/ipex/admit", "Received rule section disclosure"),
-            ("/exn/ipex/grant", "Grades withheld partial disclosure"),
+            ("/xip/ipex/grant", "Grades withheld partial disclosure"),
             ("/exn/ipex/admit", "Received grades-withheld partial disclosure"),
-            ("/exn/ipex/grant", "Grades revealed partial disclosure"),
+            ("/xip/ipex/grant", "Grades revealed partial disclosure"),
             ("/exn/ipex/admit", "Received grades-revealed partial disclosure"),
-            ("/exn/ipex/grant", "Mixed nested partial disclosure"),
+            ("/xip/ipex/grant", "Mixed nested partial disclosure"),
             ("/exn/ipex/admit", "Received mixed nested partial disclosure"),
         ]
 
@@ -1236,9 +1236,9 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             assert earlierPeek is None
 
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/grant", "Current registry snapshot"),
+                ("/xip/ipex/grant", "Current registry snapshot"),
                 ("/exn/ipex/admit", "Received current registry snapshot"),
-                ("/exn/ipex/grant", "Later registry snapshot"),
+                ("/xip/ipex/grant", "Later registry snapshot"),
                 ("/exn/ipex/admit", "Received later registry snapshot"),
             ]
         finally:
