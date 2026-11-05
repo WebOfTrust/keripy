@@ -256,6 +256,43 @@ def test_an_older_attrib_declaration_is_ignored():
         assert _accepted_attribs(valhby, withab.pre) == rotated
 
 
+def test_a_consumer_that_never_saw_the_newer_attribs_accepts_an_older_one():
+    """The limit DeclRecord states: BADA orders what a consumer has seen, and no further.
+
+    A first-contact consumer handed only the witness's superseded reply accepts it, because there
+    is nothing newer to compare against. That is why a consumer that pins should fetch from the
+    declarer itself. Pinned here so the documented limit and the code cannot drift apart.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        old = _decl(withab, attribs=ACTIONABLE, stamp="2026-01-01T00:00:00.000000+00:00")
+        withab.psr.parse(_decl(withab, attribs={"feed-key": ROTATED_FEED_KEY},
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+
+        valhab.psr.parse(old)
+
+        assert _accepted_attribs(valhby, withab.pre) == ACTIONABLE
+
+
+def test_a_future_dated_attribs_reply_holds_until_a_later_one():
+    """The other limit DeclRecord states: a reply stamped in the future refuses every correction
+    stamped before it, including a withdrawal."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE,
+                               stamp="2099-01-01T00:00:00.000000+00:00"))
+        valhab.psr.parse(_decl(withab, attribs={},
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+
+        assert _accepted_attribs(valhby, withab.pre) == ACTIONABLE
+
+
 def test_an_attrib_declaration_with_the_same_dt_does_not_replace_the_accepted_one():
     """Equal is not newer, so the first reply accepted at a given dt stands."""
     salt = Salter(raw=b'abcdef0123456789').qb64
