@@ -5771,6 +5771,107 @@ def test_ipex_v2_rejects_hidden_issuer_registry_signature_fallback():
         assert recorder.items == []
 
 
+def _grantAccepted(hby, issuer, recipient, acdc, message):
+    """Process a signed Grant of ``acdc`` and report whether it was accepted."""
+    grantExn, grantAtc = ipexGrant(
+        hab=issuer,
+        recp=recipient.pre,
+        message=message,
+        origin=_signed(acdc, issuer),
+    )
+
+    recorder = Recorder()
+    exc = Exchanger(hby=hby, handlers=[])
+    loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+    ims = bytearray(grantExn.raw)
+    ims.extend(grantAtc)
+    Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+    assert ims == bytearray()
+
+    accepted = hby.db.exns.get(keys=(grantExn.said,)) is not None
+    assert (recorder.items != []) == accepted
+    return accepted
+
+
+def _hiddenRegistryAggregate(issuer, compact=False):
+    """Build an aggregate ACDC whose only rd hides in an ``A`` entry."""
+    nonces = [Noncer(raw=b"hiddenaggregate%01d" % k).qb64 for k in range(3)]
+    ael = ["",
+           dict(d="", u=nonces[0], rd=Diger(ser=b"hidden registry").qb64),
+           dict(d="", u=nonces[1], entitlement="member")]
+    aggor = Aggor(ael=ael, makify=True, kind=Kinds.json)
+    aggregate = list(aggor.ael)
+    if compact:
+        # Disclose the registry entry only by its SAID.
+        aggregate[1] = aggregate[1]["d"]
+    acdc = acdcagg(israid=issuer.pre, uuid=nonces[2], aggregate=aggregate)
+    assert not acdc.sad.get("rd")
+    return acdc
+
+
+def test_ipex_v2_leaf_edge_accepts_inline_schema_pin():
+    """A leaf edge may pin its far node's schema with an inline schema document."""
+    with openHby(name="ipex-v2-inline-schema-pin",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        handler = IpexHandler(resource="/ipex/grant", hby=hby,
+                              notifier=Recorder())
+        child = acdcmap(israid=issuer.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=issuer.pre)
+        origin = acdcmap(israid=issuer.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         iseaid=issuer.pre)
+        schema = dict(child.sad["s"])
+        assert isinstance(schema.get("$id"), str)
+
+        # Building a wire ACDC with this pin fails in the compactor, so the
+        # leaf is evaluated directly.
+        leaf = dict(d="", n=child.said, s=schema)
+        verdict = handler._evaluateLeafEdge(
+            leaf,
+            nodes={child.said: {"serder": child}},
+            nserder=origin,
+            memo={child.said: chaining.valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert verdict is not None
+        assert verdict.verdict == Verdicts.valid
+
+
+def test_ipex_v2_rejects_hidden_aggregate_issuer_registry_signature_fallback():
+    """A Grant cannot replace an rd hidden in an aggregate entry with a signature."""
+    with openHby(name="ipex-v2-hidden-aggregate-registry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+        hidden = _hiddenRegistryAggregate(issuer)
+
+        assert not _grantAccepted(hby, issuer, recipient, hidden,
+                                  "Hidden aggregate registry must not downgrade")
+
+
+def test_ipex_v2_compact_aggregate_entry_is_not_a_hidden_issuer_registry():
+    """An undisclosed aggregate entry gives the verifier no rd to act on.
+
+    A compact entry looks the same whether or not it hides an rd, so treating
+    it as a hidden issuer registry would refuse every registry-less aggregate
+    that is partially disclosed. The signature factor still applies.
+    """
+    with openHby(name="ipex-v2-compact-aggregate-entry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+        compact = _hiddenRegistryAggregate(issuer, compact=True)
+        assert isinstance(compact.sad["A"][1], str)
+
+        assert _grantAccepted(hby, issuer, recipient, compact,
+                              "Compact aggregate entry falls back to signature")
+
+
 def test_ipex_v2_blindable_registry_roundtrip():
     """Grant a blindable V2 registry update through IPEX and recover it."""
     with openHby(name="ipex-v2-blindable",

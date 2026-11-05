@@ -22,7 +22,7 @@ from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationErr
                       ValidationError, Vrsn_2_0, sniff)
 from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
                     Codens, Diger, GenDex, Number, Pather, Prefixer, Parser,
-                    Saider, SealEvent, SealSource, Serdery, Texter, exchange,
+                    Saider, Schemer, SealEvent, SealSource, Serdery, Texter, exchange,
                     exchept, messagize)
 from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
                                verifyAttachments)
@@ -1886,7 +1886,7 @@ class IpexHandler:
 
         # An inner rd without a top-level rd selects the unsupported hidden
         # issuer-registry form; it must not fall through to another factor.
-        if self._presentationRegistries(serder) is None:
+        if self._hidesIssuerRegistry(serder):
             return False, None
 
         # Authentication Factor 2: Seal Anchor
@@ -2137,6 +2137,29 @@ class IpexHandler:
                 RootSealError, MisbindingError, DuplicitousRegistryError,
                 UnverifiedBlindError):
             return None
+
+    @staticmethod
+    def _hidesIssuerRegistry(serder):
+        """Report whether a disclosed section hides the issuer registry.
+
+        The ACDC spec lets an Issuer omit the top-level ``rd`` and nest it in
+        the Attribute or Aggregate section instead. Only disclosed sections can
+        be inspected; a compact section or entry gives the verifier no ``rd``.
+        """
+        if serder.sad.get("rd"):
+            return False
+
+        sections = [serder.sad.get("a")]
+
+        # Skip the aggregate root and inspect its disclosed entries.
+        aggregate = serder.sad.get("A")
+        if isinstance(aggregate, list):
+            sections.extend(aggregate[1:])
+        else:
+            sections.append(aggregate)
+
+        return any(isinstance(section, Mapping) and section.get("rd")
+                   for section in sections)
 
     @staticmethod
     def _presentationRegistries(serder):
