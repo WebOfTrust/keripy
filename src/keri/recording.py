@@ -434,8 +434,9 @@ class DeclRecord:  # baser.decls
       the same ``dt`` as the accepted one is not newer, so the first one accepted stands;
     - a newer reply replaces the whole map rather than amending it, so a key the newest reply
       leaves out is no longer claimed, and an empty map withdraws every earlier claim;
-    - a key the consumer does not understand is treated as absent. It is not acted on, and it is
-      not a reason to refuse the rest of the map.
+    - a key the consumer does not understand is treated as absent, and so is a key it does
+      understand whose value it does not recognize. Neither is acted on, and neither is a reason
+      to refuse the rest of the map.
 
     The same rules order and replace ``tags``, which a consumer may act on in the same way.
 
@@ -448,8 +449,8 @@ class DeclRecord:  # baser.decls
     declarer itself, by resolving the declarer's own OOBI, and re-fetch it as often as the pin
     matters, rather than act on a copy a relay handed it long ago.
 
-    Acceptance proves the declarer said it, and said it most recently. It does not prove the claim
-    true. That is enough for a claim about the declarer's own keys and endpoints, because the
+    Acceptance proves the declarer said it, and that nothing newer from the declarer has reached
+    this consumer. It does not prove the claim true. That is enough for a claim about the declarer's own keys and endpoints, because the
     declarer is the authority on those and a false one only breaks its own consumers. A claim about
     the world, such as a location or an operator name, is still only the declarer's word; a
     declaration against interest -- that this witness is test infrastructure -- is the kind worth
@@ -461,9 +462,9 @@ class DeclRecord:  # baser.decls
     The ``testnet`` tag says the witness belongs to an experimental, test or demonstration
     environment and carries no real-world consequence.
 
-    The ``fips-posture`` attrib states the witness's FIPS posture. A consumer can also falsify the
-    claim by behavior, because a witness that claims a posture refuses codes the posture does not
-    admit. Its values are:
+    The ``fips-posture`` attrib states the witness's FIPS posture. keripy does not enforce it. A
+    consumer can test part of the claim by offering a code the posture does not admit, but whether
+    the witness's modules are validated is still only the witness's word. Its values are:
 
     - ``strict``: every algorithm the witness uses is FIPS-approved and comes from a validated
       module.
@@ -505,7 +506,7 @@ class DeclRecord:  # baser.decls
     }
 
     """
-    tags: list[str] = field(default_factory=list)  # bare names a consumer decides on
+    tags: list[str] = field(default_factory=list)  # bare names from the accepted reply
     attribs: dict[str, str] = field(default_factory=dict)  # key/value from the accepted reply
 
     def __iter__(self):
