@@ -15,7 +15,7 @@ mean re-signing and re-timestamping a `testnet` assertion in order to correct a 
 import pytest
 
 from keri.kering import Vrsn_1_0, Kinds, ValidationError
-from keri.core import Salter, Diger
+from keri.core import Salter, Diger, Signer
 from keri.core.serdering import SerderKERI
 from keri.app import openHby
 
@@ -126,14 +126,16 @@ def test_an_earlier_declaration_does_not_supersede_a_later_one():
 
 #: What a witness that serves TLS and signs a change feed says about itself, in a form a consumer
 #: pins against rather than shows a person: a TLS certificate fingerprint, the key that signs its
-#: feed pages, and a FIPS posture with the SAID of the document that defines it. The values are
-#: placeholders; their shape is not this module's business.
+#: feed pages, and a FIPS posture with the SAID of the document that defines it. keripy defines no
+#: ``fips-posture-def`` convention; it is here as a key some consumers will not understand.
+FEED_KEY = Signer(raw=b"feed-key-seed-0123456789abcdef!!", transferable=False).verfer.qb64
+ROTATED_FEED_KEY = Signer(raw=b"feed-key-seed-rotated-0123456789", transferable=False).verfer.qb64
 ACTIONABLE = {
-    "fips-posture": "fips-strict@1",
-    "fips-posture-def": "EPosture000000000000000000000000000000000000",
+    "fips-posture": "strict",
+    "fips-posture-def": Diger(ser=b"fips posture definition").qb64,
     "tls-url": "https://wit.example.test:5643/",
     "tls-cert-sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-    "feed-key": "DFeedKey00000000000000000000000000000000000",
+    "feed-key": FEED_KEY,
 }
 
 
@@ -232,11 +234,13 @@ def test_an_attrib_declaration_signed_by_another_key_is_ignored():
 
 
 def test_an_older_attrib_declaration_is_ignored():
-    """BADA's second half: replaying a witness's own superseded reply restores none of it.
+    """BADA's second half: once a consumer holds the newer reply, replaying a superseded one
+    restores none of it.
 
     A rollback is the attack that matters once consumers act on attribs, because the old reply
     carries a genuine signature: an attacker holding a retired feed key replays the reply that
-    named it.
+    named it. BADA only protects a consumer that has already accepted the newer reply, which is
+    why DeclRecord tells a consumer to get declarations from the declarer itself.
     """
     salt = Salter(raw=b'abcdef0123456789').qb64
     with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
@@ -244,12 +248,79 @@ def test_an_older_attrib_declaration_is_ignored():
         withab, valhab = _witness_and_validator(withby, valhby)
 
         old = _decl(withab, attribs=ACTIONABLE, stamp="2026-01-01T00:00:00.000000+00:00")
-        rotated = dict(ACTIONABLE, **{"feed-key": "DFeedKeyRotated000000000000000000000000000"})
+        rotated = dict(ACTIONABLE, **{"feed-key": ROTATED_FEED_KEY})
         valhab.psr.parse(_decl(withab, attribs=rotated,
                                stamp="2026-02-01T00:00:00.000000+00:00"))
         valhab.psr.parse(old)
 
         assert _accepted_attribs(valhby, withab.pre) == rotated
+
+
+def test_an_attrib_declaration_with_the_same_dt_does_not_replace_the_accepted_one():
+    """Equal is not newer, so the first reply accepted at a given dt stands."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+        stamp = "2026-01-01T00:00:00.000000+00:00"
+
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE, stamp=stamp))
+        valhab.psr.parse(_decl(withab, attribs={}, stamp=stamp))
+
+        assert _accepted_attribs(valhby, withab.pre) == ACTIONABLE
+
+
+def test_an_attrib_declaration_whose_signature_does_not_verify_is_ignored():
+    """The right key over the wrong bytes: the body of one reply with the signature of another."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE,
+                               stamp="2026-01-01T00:00:00.000000+00:00"))
+
+        signed = _decl(withab, attribs={"tls-url": "https://wit.example.test:5643/"},
+                       stamp="2026-02-01T00:00:00.000000+00:00")
+        tampered = _decl(withab, attribs=dict(ACTIONABLE, **{"tls-cert-sha256": "00" * 32}),
+                         stamp="2026-02-01T00:00:00.000000+00:00")
+        body = SerderKERI(raw=bytes(tampered))
+        spliced = bytearray(tampered[:body.size]) + signed[SerderKERI(raw=bytes(signed)).size:]
+
+        valhab.psr.parse(spliced)
+
+        assert _accepted_attribs(valhby, withab.pre) == ACTIONABLE
+
+
+@pytest.mark.parametrize(
+    "attribs",
+    [
+        {"tls-cert-sha256": ["9f86", "d081"]},  # a list value
+        {"feed-key": {"k": "v"}},               # a map value
+        {"port": 5643},                         # a number value
+    ],
+)
+def test_an_attrib_declaration_with_a_value_that_is_not_a_string_is_refused(attribs):
+    """A consumer acting on an attrib compares or parses a string, so every value is one.
+
+    Refusing the shape at ingest means the stored map is the one that was signed, and a consumer
+    never meets a value of a type it did not expect.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        msg = _decl(withab, attribs=attribs)
+        serder = SerderKERI(raw=bytes(msg))
+        # Matched on the shape error, since a handler call with no signatures also fails BADA and
+        # raises a ValidationError of its own.
+        with pytest.raises(ValidationError, match="Invalid attribs"):
+            valhab.kvy.processReplyDeclAttribs(
+                serder=serder, diger=Diger(qb64=serder.said), route=serder.ked["r"]
+            )
+
+        valhab.psr.parse(msg)
+        assert _accepted_attribs(valhby, withab.pre) is None
 
 
 #: ``EID`` is replaced with the declaring witness's real prefix at run time. Using a placeholder
