@@ -2341,8 +2341,12 @@ class BaseHab:
     def makeDeclAttribs(self, attribs, eid=None, stamp=None, **kwa):
         """Return a reply message declaring own ``attribs``.
 
+        Consumers may act on these once the reply is accepted, so ``attribs`` is the whole of what
+        is claimed: a newer declaration replaces the map rather than adding to it.
+
         Parameters:
-            attribs (dict): key/value attributes being declared. Empty nullifies the declaration.
+            attribs (dict): every key/value attribute being declared. A key left out is withdrawn,
+                and an empty map withdraws them all.
             eid (str or None): qb64 of the declaring identifier.
                 None means use own ``.pre``.
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601

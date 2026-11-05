@@ -417,18 +417,32 @@ class DeclRecord:  # baser.decls
     one of Decls. Kinds are keyed separately, and that is the point: BADA orders each route on its
     own, so replacing a contact address does not re-stamp an unrelated declaration.
 
-    Two kinds, divided by whether a consumer DECIDES on the value or merely DISPLAYS it.
+    Two kinds, divided by shape rather than by trust.
 
-    ``tags`` are bare names a consumer acts on, which is why they are names rather than key/value
-    pairs: a set of names unions across a witness set, and key/value pairs do not — three witnesses
-    declaring three different regions have no natural merge.
+    ``tags`` are bare names, which is why they are names rather than key/value pairs: a set of
+    names unions across a witness set, and key/value pairs do not — three witnesses declaring three
+    different regions have no natural merge.
 
-    ``attribs`` are key/value facts a consumer shows a person and should not act on. A declaration
-    is only as good as the declarer's interest in making it, so a self-reported location or
-    operator name carries no weight, whereas a declaration AGAINST interest -- that this witness is
-    test infrastructure -- is worth reading precisely because nobody gains by making it falsely.
-    One exception is a capability claim that a consumer can check cheaply by behavior. A consumer
-    may act on one of those, because a false claim fails the first time anyone tries it.
+    ``attribs`` are key/value facts. A consumer may act on an attrib, for example by pinning TLS to
+    a declared certificate fingerprint or verifying a feed against a declared key, provided it
+    reads the value from the reply that BADA accepted for ``/decl/attribs``:
+
+    - the reply verifies under the declarer's own key, which is ``eid``;
+    - it is the newest reply by ``dt`` that the consumer has accepted for the route;
+    - a newer reply replaces the whole map rather than amending it, so a key the newest reply
+      leaves out is no longer claimed, and an empty map withdraws every earlier claim;
+    - a key the consumer does not understand is treated as absent. It is not acted on, and it is
+      not a reason to refuse the rest of the map.
+
+    This record holds exactly that map: only an accepted reply writes it, and ``.dans`` names the
+    reply it came from.
+
+    Acceptance proves the declarer said it, and said it most recently. It does not prove the claim
+    true. That is enough for a claim about the declarer's own keys and endpoints, because the
+    declarer is the authority on those and a false one only breaks its own consumers. A claim about
+    the world, such as a location or an operator name, is still only the declarer's word; a
+    declaration against interest -- that this witness is test infrastructure -- is the kind worth
+    taking on that word alone, because nobody gains by making it falsely.
 
     Conventions. keripy enforces no vocabulary, but these names mean the same thing wherever they
     appear, so any witness can declare them and any consumer can read them.
@@ -436,9 +450,9 @@ class DeclRecord:  # baser.decls
     The ``testnet`` tag says the witness belongs to an experimental, test or demonstration
     environment and carries no real-world consequence.
 
-    The ``fips-posture`` attrib states the witness's FIPS posture. It is a capability claim of the
-    kind described above, because a witness that claims a posture refuses codes the posture does
-    not admit, so the claim can be falsified by trying one. Its values are:
+    The ``fips-posture`` attrib states the witness's FIPS posture. A consumer can also falsify the
+    claim by behavior, because a witness that claims a posture refuses codes the posture does not
+    admit. Its values are:
 
     - ``strict``: every algorithm the witness uses is FIPS-approved and comes from a validated
       module.
@@ -481,7 +495,7 @@ class DeclRecord:  # baser.decls
 
     """
     tags: list[str] = field(default_factory=list)  # bare names a consumer decides on
-    attribs: dict[str, str] = field(default_factory=dict)  # key/value a consumer displays
+    attribs: dict[str, str] = field(default_factory=dict)  # key/value from the accepted reply
 
     def __iter__(self):
         return iter(asdict(self))
