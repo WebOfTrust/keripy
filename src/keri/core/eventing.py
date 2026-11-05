@@ -5210,7 +5210,7 @@ class Kevery:
         authorizing aid, exactly as it is for /loc/scheme. That is what makes it sound to accept
         from a non-transferable witness, whose prefix IS its verification key, and it is also what
         bounds what a declaration can be trusted to mean -- nobody but the declarer has vouched for
-        it, so only a declaration against the declarer's own interest carries weight.
+        it. See DeclRecord for what a consumer may act on.
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
@@ -5226,6 +5226,12 @@ class Kevery:
 
     def processReplyDeclAttribs(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """Process one reply message for route = /decl/attribs.
+
+        Consumers act on attribs -- pinning TLS to a fingerprint, verifying a feed with a key -- so
+        what this stores is the contract they rely on: only a reply that passes BADA is stored, and
+        the stored map is replaced whole, never merged, so a key the newest reply omits is no
+        longer claimed and an empty map withdraws them all. A reply that fails BADA raises and
+        leaves the stored map as it was.
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)

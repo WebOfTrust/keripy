@@ -124,6 +124,134 @@ def test_an_earlier_declaration_does_not_supersede_a_later_one():
         assert valhby.db.decls.get(keys=(withab.pre, "tags")).tags == ["testnet"]
 
 
+#: What a witness that serves TLS and signs a change feed says about itself, in a form a consumer
+#: pins against rather than shows a person: a TLS certificate fingerprint, the key that signs its
+#: feed pages, and a FIPS posture with the SAID of the document that defines it. The values are
+#: placeholders; their shape is not this module's business.
+ACTIONABLE = {
+    "fips-posture": "fips-strict@1",
+    "fips-posture-def": "EPosture000000000000000000000000000000000000",
+    "tls-url": "https://wit.example.test:5643/",
+    "tls-cert-sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+    "feed-key": "DFeedKey00000000000000000000000000000000000",
+}
+
+
+def _accepted_attribs(hby, eid):
+    """What a consumer may act on: the attribs of the reply BADA accepted for this declarer, or
+    None when none has been accepted. The map is read from the store that only an accepted reply
+    writes, never from a reply the consumer merely received."""
+    record = hby.db.decls.get(keys=(eid, "attribs"))
+    return None if record is None else record.attribs
+
+
+def test_a_consumer_reads_an_accepted_attrib():
+    """An attrib a consumer acts on comes from an accepted reply, and the store says which one.
+
+    A consumer pinning TLS to a fingerprint needs more than the value: it needs to know the value
+    is the one the witness signed most recently. The accepted map is keyed to the SAID of the
+    reply it came from, and that reply is held with the witness's own signature, so a consumer can
+    show anybody why it trusts the pin.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE))
+
+        assert _accepted_attribs(valhby, withab.pre) == ACTIONABLE
+
+        said = valhby.db.dans.get(keys=(withab.pre, "attribs"))
+        reply = valhby.db.rpys.get(keys=(said.qb64,))
+        assert reply.ked["r"] == "/decl/attribs"
+        assert reply.ked["a"]["attribs"] == ACTIONABLE
+        [(verfer, _)] = valhby.db.scgs.get(keys=(said.qb64,))
+        assert verfer.qb64 == withab.pre  # signed by the witness it is about
+
+
+def test_a_newer_attrib_declaration_replaces_the_whole_map():
+    """A newer reply is the witness's whole statement, not a patch to the last one.
+
+    A key the newer reply leaves out is no longer claimed. Merging instead would keep a retired
+    feed key or certificate fingerprint alive after the witness stopped vouching for it.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE,
+                               stamp="2026-01-01T00:00:00.000000+00:00"))
+        valhab.psr.parse(_decl(withab, attribs={"tls-url": "https://wit.example.test:5643/"},
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+
+        assert _accepted_attribs(valhby, withab.pre) == {"tls-url": "https://wit.example.test:5643/"}
+
+
+def test_an_empty_attrib_declaration_withdraws_earlier_claims():
+    """Enact-anul: an empty map is how a witness stops claiming anything at all."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE,
+                               stamp="2026-01-01T00:00:00.000000+00:00"))
+        valhab.psr.parse(_decl(withab, attribs={},
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+
+        assert _accepted_attribs(valhby, withab.pre) == {}
+
+
+def test_an_attrib_declaration_signed_by_another_key_is_ignored():
+    """BADA's first half: a reply naming a witness but signed by someone else changes nothing.
+
+    Without this, anybody could hand a consumer a fingerprint of their own choosing for a witness
+    they do not control, and the consumer would pin TLS to the attacker.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+        valhab.psr.parse(_decl(withab, attribs=ACTIONABLE,
+                               stamp="2026-01-01T00:00:00.000000+00:00"))
+
+        other = withby.makeHab(
+            name="other", isith="1", icount=1, transferable=False, version=Vrsn_1_0,
+            kind=Kinds.json
+        )
+        assert other.pre != withab.pre
+        valhab.psr.parse(bytearray(other.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+
+        forged = dict(ACTIONABLE, **{"tls-cert-sha256": "00" * 32})
+        valhab.psr.parse(_decl(other, eid=withab.pre, attribs=forged,
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+
+        assert _accepted_attribs(valhby, withab.pre) == ACTIONABLE
+
+
+def test_an_older_attrib_declaration_is_ignored():
+    """BADA's second half: replaying a witness's own superseded reply restores none of it.
+
+    A rollback is the attack that matters once consumers act on attribs, because the old reply
+    carries a genuine signature: an attacker holding a retired feed key replays the reply that
+    named it.
+    """
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as withby, \
+            openHby(name="val", base="test", salt=salt, version=Vrsn_1_0) as valhby:
+        withab, valhab = _witness_and_validator(withby, valhby)
+
+        old = _decl(withab, attribs=ACTIONABLE, stamp="2026-01-01T00:00:00.000000+00:00")
+        rotated = dict(ACTIONABLE, **{"feed-key": "DFeedKeyRotated000000000000000000000000000"})
+        valhab.psr.parse(_decl(withab, attribs=rotated,
+                               stamp="2026-02-01T00:00:00.000000+00:00"))
+        valhab.psr.parse(old)
+
+        assert _accepted_attribs(valhby, withab.pre) == rotated
+
+
 #: ``EID`` is replaced with the declaring witness's real prefix at run time. Using a placeholder
 #: prefix instead would make the last case pass for the wrong reason: an unparseable eid raises
 #: out of Prefixer before the tags check is ever reached, so the test would be asserting the eid
