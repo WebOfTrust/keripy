@@ -5261,6 +5261,12 @@ class Kevery:
         if not isinstance(value, klas):
             raise ValidationError("Invalid {}={} in {} msg={}."
                                   "".format(kind, value, Ilks.rpy, serder.ked))
+        # Consumers act on attribs by comparing or parsing strings, and the store round-trips
+        # through JSON, so only a map of strings to strings is stored exactly as it was signed.
+        if kind == Decls.attribs and not all(isinstance(k, str) and isinstance(v, str)
+                                             for k, v in value.items()):
+            raise ValidationError("Invalid {}={} in {} msg={}: keys and values must be strings."
+                                  "".format(kind, value, Ilks.rpy, serder.ked))
         return eid, value
 
 

@@ -423,19 +423,30 @@ class DeclRecord:  # baser.decls
     names unions across a witness set, and key/value pairs do not — three witnesses declaring three
     different regions have no natural merge.
 
-    ``attribs`` are key/value facts. A consumer may act on an attrib, for example by pinning TLS to
-    a declared certificate fingerprint or verifying a feed against a declared key, provided it
+    ``attribs`` are key/value strings. A consumer may act on an attrib, for example by pinning TLS
+    to a declared certificate fingerprint or verifying a feed against a declared key, provided it
     reads the value from the reply that BADA accepted for ``/decl/attribs``:
 
-    - the reply verifies under the declarer's own key, which is ``eid``;
-    - it is the newest reply by ``dt`` that the consumer has accepted for the route;
+    - the reply verifies under the declarer's current key state. For a non-transferable declarer,
+      such as a witness, that is the key ``eid`` itself; for a transferable one it is the signing
+      keys its KEL establishes, and BADA orders by establishment event before ``dt``;
+    - it is the newest reply by ``dt`` that the consumer has accepted for the route. A reply with
+      the same ``dt`` as the accepted one is not newer, so the first one accepted stands;
     - a newer reply replaces the whole map rather than amending it, so a key the newest reply
       leaves out is no longer claimed, and an empty map withdraws every earlier claim;
     - a key the consumer does not understand is treated as absent. It is not acted on, and it is
       not a reason to refuse the rest of the map.
 
-    This record holds exactly that map: only an accepted reply writes it, and ``.dans`` names the
-    reply it came from.
+    The same rules order and replace ``tags``, which a consumer may act on in the same way.
+
+    This record holds exactly that map: only an accepted reply writes it, ``.dans`` names the reply
+    it came from, and a map that is not strings to strings is refused before BADA.
+
+    BADA orders replies; it does not make them fresh. A consumer that has never seen the newer reply
+    will accept an older one, and a declarer that stamps a reply in the future holds that map until
+    the clock passes it. A consumer that pins against an attrib should therefore get it from the
+    declarer itself, by resolving the declarer's own OOBI, and re-fetch it as often as the pin
+    matters, rather than act on a copy a relay handed it long ago.
 
     Acceptance proves the declarer said it, and said it most recently. It does not prove the claim
     true. That is enough for a claim about the declarer's own keys and endpoints, because the
