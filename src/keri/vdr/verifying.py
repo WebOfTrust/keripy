@@ -19,7 +19,7 @@ from ..kering import (Ilks, MissingChainError,
                       EdgeRefusalError, UnsupportedOperatorError)
 from ..core import Dater, Saider, Parser, CacheResolver, Schemer
 from ..help import helping
-from ..acdc import chaining
+from ..acdc import chaining, relating
 
 from .eventing import (Tevery, Reger, query, walkEdgeSection,
                        ReservedEdgeLabels)
@@ -58,8 +58,8 @@ class Verifier:
 
     # Unary edge operators this verifier recognizes. A token outside this set cannot be
     # evaluated, so an edge carrying one is refused rather than validated under a
-    # substituted operator -- see .verifyChain. DI2I and NOT are recognized but
-    # unimplemented, and refused for the same reason.
+    # substituted operator -- see .verifyChain. NOT is recognized but unimplemented
+    # (#1554), and refused for the same reason.
     # E1E is normative on the spec's v1.1 branch (kswg-acdc-specification#197). It is
     # absent from the 1.0 text currently under ToIP ratification, so a validator built
     # against 1.0 alone will not recognize it.
@@ -790,7 +790,9 @@ class Verifier:
                 case the latest recognized one takes precedence. None, an empty list,
                 or a value containing no recognized operator applies the default:
                 I2I for a targeted far node, NI2I for an untargeted one.
-            issuer (str) qb64 AID of the issuer of the near (edge-bearing) ACDC
+            issuer (str) qb64 AID of the issuer of the near (edge-bearing) ACDC. The
+                delegative operators (I2I, DI2I) constrain this against the far node's
+                issuee.
             issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
                 required by the identity operators (E1E). None when the near ACDC is
                 untargeted.
@@ -799,14 +801,15 @@ class Verifier:
             Serder: transaction event state notification message, or None when the
                 edge cannot be decided yet because evidence is missing -- the far
                 node is not saved, its issuee indexes no saved credential, its
-                registry is not in .tevers, or its TEL carries no state for the far
-                SAID. None is the caller's signal to escrow and retry.
+                registry is not in .tevers, its TEL carries no state for the far
+                SAID, or (DI2I) a key state or delegation anchor the climb needs has
+                not arrived. None is the caller's signal to escrow and retry.
 
         Raises:
             EdgeRefusalError: the operator's constraint is decided against evidence
                 in hand and fails. Both sides of every comparison here are fixed in
-                SADs already held, so retrying cannot change the answer and the
-                caller must not escrow.
+                SADs and inception events already held, so retrying cannot change the
+                answer and the caller must not escrow.
             UnsupportedOperatorError: the operator is recognized but unimplemented,
                 so the edge's validity is unknown rather than false.
 
@@ -868,10 +871,6 @@ class Verifier:
             raise UnsupportedOperatorError(f"Unsupported edge operator NOT on edge to node "
                                   f"{nodeSaid}; NOT validation is not implemented")
 
-        if op == 'DI2I':
-            raise UnsupportedOperatorError(f"Unsupported edge operator DI2I on edge to node "
-                                  f"{nodeSaid}; DI2I validation is not implemented")
-
         if 'E1E' in ops:
             # Identity relation (discussion #1515): the issuee AID of the near ACDC
             # (the one carrying this edge) MUST equal the issuee AID of the far node.
@@ -888,11 +887,54 @@ class Verifier:
                                        f"issuees; near issuee {issuee} != far issuee "
                                        f"{farIssuee}")
 
-        if op is not None and op != 'NI2I':
+        if op == 'DI2I':
+            # Delegated-issuer relation (ACDC spec, Edge Section > Edge > Operator, `o`
+            # field, the DI2I row of the unary table): the near ACDC's issuer MUST be
+            # "either the Issuee AID or a delegated AID" of the far node's issuee.
+            # So DI2I is a superset of I2I -- issuer == farIssuee satisfies it outright --
+            # and the delegation arm admits a delegated AID at any depth.
+            #
+            # Depth is not the operator's business. A delegator bounds how far its own
+            # delegation reaches with the DND config trait, which Kever.validateDelegation
+            # honors by refusing any dip whose delegator carries it: to permit children
+            # but not grandchildren, put DND in the children.
+            # Reading DI2I as direct-only would instead forbid a two-layer hierarchy
+            # outright and force a second operator for every other depth.
+            #
+            # Resolved through .iseaid rather than .attrib['i'] so an aggregate ('A') far
+            # node works: .attrib is None there, so `'i' in creder.attrib` would raise
+            # TypeError. Deliberately not routed through the .reger.subjs lookup the I2I
+            # branch below uses either: subjs is an index of credentials this validator
+            # happens to have saved, so gating on it would make the edge's meaning depend
+            # on the local store rather than on the delegation.
+            #
+            # The climb splits its failures the way the rest of this method does. A
+            # relation fixed in events already held -- an untargeted far node, a chain
+            # that tops out without meeting the far issuee, a delegator carrying DND --
+            # is refused, since no arrival changes it. A key state or anchoring seal
+            # the climb needs and does not yet have is pending, and escrows like any
+            # other missing evidence: the anchor may well arrive.
+            farIssuee = creder.iseaid
+            if farIssuee is None:  # untargeted far node: no issuee to be a delegate of
+                raise EdgeRefusalError(f"DI2I edge to node {nodeSaid} requires a "
+                                       f"targeted far node, which has no issuee")
+
+            if issuer != farIssuee:
+                refusal = relating.delegationRefusal(self.hby.kevers, self.hby.db, issuer,
+                                                     farIssuee)
+                if refusal is None:  # pending: evidence the climb needs is missing
+                    return None
+                if refusal:
+                    raise EdgeRefusalError(f"DI2I edge to node {nodeSaid} requires the "
+                                           f"near issuer {issuer} to be the far issuee "
+                                           f"{farIssuee} or a delegated AID of it; "
+                                           f"{refusal}")
+
+        elif op is not None and op != 'NI2I':
             # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
             # node (issuee at .sad["A"][1]["i"]) resolves identically to an
             # attributive one (.attrib["i"]). None means an untargeted far node,
-            # which cannot satisfy a targeted (I2I/DI2I) edge -- and cannot become
+            # which cannot satisfy a targeted (I2I) edge -- and cannot become
             # targeted later, since the issuee is part of the SAD under its SAID.
             farIssuee = creder.iseaid
             if farIssuee is None:

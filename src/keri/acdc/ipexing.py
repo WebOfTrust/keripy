@@ -13,7 +13,7 @@ from copy import deepcopy
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from . import chaining
+from . import chaining, relating
 from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationError,
                       Ilks, KeriError, MisanchorError, MisbindingError,
                       MissingAnchorError, MissingChainError, MissingSchemaError,
@@ -21,9 +21,9 @@ from ..kering import (Colds, DuplicitousRegistryError, FailedSchemaValidationErr
                       MissequenceError, RootSealError, UnverifiedBlindError,
                       ValidationError, Vrsn_2_0, sniff)
 from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
-                    Codens, Diger, GenDex, Noncer, Number, Pather, Prefixer,
-                    Parser, Saider, Schemer, SealEvent, SealSource, Serdery, Texter, exchange,
-                    messagize)
+                    Codens, Diger, GenDex, Number, Pather, Prefixer, Parser,
+                    Saider, Schemer, SealEvent, SealSource, Serdery, Texter, exchange,
+                    exchept, messagize)
 from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
                                verifyAttachments)
 from ..recording import ExchangeRegistryStateRecord
@@ -415,7 +415,7 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
         if not anchorer.kever.prefixer.transferable:
             raise ValueError("anchored IPEX endorsements require transferable AIDs")
 
-        # Seal the immutable outer EXN SAID in the anchorer's KEL.
+        # Seal the immutable outer exchange SAID in the anchorer's KEL.
         kwa = dict(data=[dict(d=serder.said)],
                    kind=anchorer.kever.serder.kind,
                    version=anchorer.kever.serder.pvrsn,
@@ -434,7 +434,7 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
     tsgs = []
     cigars = []
 
-    # A direct sender KEL anchor already authenticates the outer EXN. Sign only
+    # A direct sender KEL anchor already authenticates the outer exchange. Sign only
     # when no sender anchor was created so the wire carries one sender factor.
     if not anchor:
         if hab.kever.prefixer.transferable:
@@ -463,7 +463,7 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
             # Non-transferable endorsers contribute unindexed signatures.
             cigars.extend(endorser.sign(ser=serder.raw, indexed=False))
 
-    # Serialize the EXN with all selected authentication factors and nests.
+    # Serialize the exchange with all selected authentication factors and nests.
     return messagize(serder=serder,
                      tsgs=tsgs or None,
                      cigars=cigars or None,
@@ -474,7 +474,7 @@ def _sign(hab, serder, *, nests=None, anchor=False, endorsers=None,
 
 
 class IpexHandler:
-    """Verify and handle the linear V2 IPEX `exn` workflow."""
+    """Verify and handle a linear V2 IPEX ``xip``/``exn`` workflow."""
 
     # Receive validated sender source couples from Exchanger.
     acceptsSscs = True
@@ -557,7 +557,7 @@ class IpexHandler:
         evidence = evidence if evidence is not None else ([], [], [])
         q = serder.ked.get("q")
         attrs = serder.ked["a"]
-        dig = serder.ked["p"]
+        dig = serder.ked.get("p", "")
 
         route = serder.ked["r"]
         parts = route.split("/")
@@ -607,20 +607,12 @@ class IpexHandler:
         # while replies must first resolve and validate their prior exchange.
         pserder = None
         if not dig:
-            if verb == Ipex.apply:
-                # Apply is always a thread opener, so it must provide both
-                # receiver and transaction id on the message body.
-                if not (serder.ked.get("ri", "") and serder.ked.get("x", "")):
-                    return False
-            elif verb in (Ipex.offer, Ipex.grant):
-                # Offer and grant may also open a thread, but must then carry
-                # both the receiver and the generated exchange id themselves.
-                if not (serder.ked.get("ri", "") and serder.ked.get("x", "")):
-                    return False
-            else:
-                # Agree, admit, and spurn can only appear as replies.
+            # Apply always opens a thread; Offer and Grant may also open one.
+            if (serder.ilk != Ilks.xip
+                    or verb not in (Ipex.apply, Ipex.offer, Ipex.grant)
+                    or not serder.ked.get("ri", "")):
                 return False
-        elif verb == Ipex.apply:
+        elif serder.ilk != Ilks.exn or verb == Ipex.apply:
             return False
         else:
             # Retrieve prior serder
@@ -781,23 +773,38 @@ class IpexHandler:
                     return False
 
                 try:
-                    _, _, extraSeals = evidence
+                    tsgs, cigars, extraSeals = evidence
                 except (TypeError, ValueError):
                     return False
 
-                # Verify every presentation registry declared for this disclosure.
+                origin = grantNodes[origins[0]]
+                origin = origin["serder"] if isinstance(origin, dict) else origin.serder
+
+                # Sender is always a Grantor
+                grantors = {serder.pre}
+
+                # Use the origin's issuee or issuer as a Grantor when present, add it to the Grantors
+                originGrantor = origin.iseaid or origin.israid
+                if originGrantor:
+                    grantors.add(originGrantor)
+
+                # Add Grantors from the Grant's supplied evidence
+                grantors.update(prefixer.qb64 for prefixer, _, _, _ in tsgs)
+                grantors.update(cigar.verfer.qb64 for cigar in cigars)
+                grantors.update(prefixer.qb64 for prefixer, _, _ in extraSeals)
+
+                # Verify every registry declared for a Grantor in this disclosure.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
                     nodes=grantNodes,
                     order=grantOrder,
+                    grantors=grantors,
                 )
                 if tethered is None:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
                 if requiresAnchor:
-                    origin = grantNodes[origins[0]]
-                    origin = origin["serder"] if isinstance(origin, dict) else origin.serder
                     anchorers = set(tethered)
 
                     if sscs and self._verifySourceAnchor(serder=serder,
@@ -936,6 +943,11 @@ class IpexHandler:
         pverb = pparts[2]
         if pverb not in PreviousRoutes[verb]:
             return None
+        if pserder.ilk == Ilks.xip:
+            if pverb not in (Ipex.apply, Ipex.offer, Ipex.grant):
+                return None
+        elif pserder.ilk != Ilks.exn or not pserder.ked.get("p", ""):
+            return None
         if verb == Ipex.spurn and pverb == Ipex.grant and pserder.ked.get("p", ""):
             return None
 
@@ -947,7 +959,8 @@ class IpexHandler:
             return None
         if serder.ked.get("i", "") != preceiver:
             return None
-        if serder.ked.get("x", "") != pserder.ked.get("x", ""):
+        xid = pserder.said if pserder.ilk == Ilks.xip else pserder.ked.get("x", "")
+        if serder.ked.get("x", "") != xid:
             return None
 
         if self.response(pserder) is not None:
@@ -1570,8 +1583,6 @@ class IpexHandler:
         # claim than the evidence supports, and under OR it is the difference between
         # a sibling carrying the group and the whole section failing.
         unevaluable = [cand for cand in ops if cand == "NOT"]
-        if dop == "DI2I":
-            unevaluable = unevaluable + [dop]
         if unevaluable:
             return withFarNode(chaining.unknown(
                 f"unimplemented unary Operator(s) {unevaluable} on edge to node "
@@ -1601,6 +1612,33 @@ class IpexHandler:
                 reason = (f"I2I edge to node {edgeSaid} requires the near issuer to "
                           f"be the far issuee; issuer {nserder.israid} != far issuee "
                           f"{fserder.iseaid}")
+
+        # DI2I widens I2I: the near issuer may be the far Issuee or "a delegated AID"
+        # of it, at any depth (ACDC spec, Edge Section > Edge > Operator, `o` field).
+        # The climb is shared with the v1 Verifier through acdc.relating, so the two
+        # paths cannot answer it differently. A decided refusal -- a chain that ends
+        # without meeting the far Issuee, or a delegator carrying DND -- knocks the
+        # edge down. A KEL or anchoring seal the climb needs and does not yet have is
+        # a retryable unknown, which the Exchanger escrows as missing KEL evidence.
+        pending = None
+        if matched and dop == "DI2I":
+            if not fserder.iseaid:
+                matched = False
+                reason = (f"{dop} edge to node {edgeSaid} requires a targeted far "
+                          f"node, which has no issuee")
+            elif nserder.israid != fserder.iseaid:
+                refusal = relating.delegationRefusal(self.hby.kevers, self.hby.db,
+                                                     nserder.israid, fserder.iseaid)
+                if refusal is None:
+                    pending = chaining.unknown(
+                        f"DI2I edge to node {edgeSaid} waits on KEL evidence that "
+                        f"near issuer {nserder.israid} is a delegated AID of far "
+                        f"issuee {fserder.iseaid}", retryable=True)
+                elif refusal:
+                    matched = False
+                    reason = (f"DI2I edge to node {edgeSaid} requires the near issuer "
+                              f"{nserder.israid} to be the far issuee "
+                              f"{fserder.iseaid} or a delegated AID of it; {refusal}")
 
         own = None  # set when a pin is neither satisfied nor refused, only unread
         for edgeSchemaId, edgeSchema in resolved:
@@ -1641,6 +1679,11 @@ class IpexHandler:
 
         if own is None:
             own = chaining.valid(reason) if matched else chaining.invalid(reason)
+
+        # Conjoined rather than substituted, so a pin decided against still decides
+        # the edge while the delegation evidence is outstanding.
+        if pending is not None:
+            own = chaining.reduceAnd([own, pending])
 
         # The far node's own verdict is the other half of what decides this edge: an
         # Operator relation that holds against a far node whose issuer-auth is
@@ -2160,15 +2203,16 @@ class IpexHandler:
 
         return [(issuee, regk)]
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order):
-        """Verify presentation registries declared by the disclosed DAG."""
+    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
+        """Verify registries declared for Grantors in the disclosed DAG."""
 
         originSaid = order[0]
         origin = nodes[originSaid]
         origin = origin["serder"] if isinstance(origin, dict) else origin.serder
 
+        recipient = serder.ked.get("ri", "")
         issuance = (serder.pre == origin.israid
-                    and serder.ked.get("ri", "") == origin.iseaid)
+                    and recipient == origin.iseaid)
 
         required = []
 
@@ -2188,18 +2232,24 @@ class IpexHandler:
             if declarations is None:
                 return None
 
-            # Only the origin being issued is exempt. Linked credentials are
-            # existing disclosures whose presentation requirements still apply.
-            if issuance and said == originSaid:
-                continue
-
             # Keep each declaration with its node-local proof stream.
             for issuee, regk in declarations:
+                # A declaration applies only when its Issuee participates as a
+                # Grantor in this IPEX.
+                if issuee not in grantors:
+                    continue
+
+                # A direct issuance does not present recipient-targeted nodes
+                # to an unknown third party.
+                if issuance and issuee == recipient:
+                    continue
+
                 required.append((issuee, regk, nest))
 
         # Load the receiver timestamp that freezes registry history.
+        xid = serder.said if serder.ilk == Ilks.xip else serder.ked.get("x", "")
         cache = self.hby.db.kramTMSC.get(
-            keys=(serder.pre, serder.ked.get("x", ""), serder.said))
+            keys=(serder.pre, xid, serder.said))
 
         # A presentation requirement needs a completed KRAM acceptance.
         if required and (cache is None or not cache.rdt):
@@ -2321,7 +2371,7 @@ class IpexHandler:
         """
         attrs = serder.ked["a"]
         self.notifier.add(attrs=dict(
-            r=f"/exn{serder.ked['r']}",
+            r=f"/{serder.ilk}{serder.ked['r']}",
             d=serder.said,
             m=attrs["m"],
         ))
@@ -2349,7 +2399,6 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
     """
     if not recp:
         raise ValueError("recp is required when apply starts a flow")
-    xid = Diger(ser=Noncer().qb64b).qb64
     if attrs is not None and not isinstance(attrs, dict):
         raise TypeError("attrs must be a dict when provided")
 
@@ -2373,10 +2422,9 @@ def apply(hab, recp, message, modifiers=None, attrs=None, dt=None, kind=None, gv
         data["ax"] = ax
 
     # Build the body
-    serder = exchange(
+    serder = exchept(
         sender=hab.pre,
         receiver=recp,
-        xid=xid,
         route="/ipex/apply",
         modifiers=mods,
         stamp=dt,
@@ -2430,12 +2478,11 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
     # Get the prior event (apply) and the party to address (its sender)
     prior = apply.said if apply is not None else ""
 
-    # If offer is starting the flow, recp must be provided and xid is
-    # generated locally. Otherwise infer both from the prior apply.
+    # If offer is starting the flow, recp must be provided. Otherwise infer
+    # the recipient and transaction ID from the prior apply.
     if apply is None:
         if not recp:
             raise ValueError("recp is required when no prior apply is provided")
-        xid = Diger(ser=Noncer().qb64b).qb64
         receiver = recp
     else:
         if not apply.ked.get("ri", ""):
@@ -2445,11 +2492,7 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
         if recp is not None and recp != apply.ked["i"]:
             raise ValueError("recp does not match prior exchange sender")
         receiver = apply.ked["i"]
-        pxid = apply.ked.get("x", "")
-        if pxid:
-            xid = pxid
-        else:
-            xid = ""
+        xid = apply.said if apply.ilk == Ilks.xip else apply.ked.get("x", "")
     data = dict(attrs) if attrs is not None else {}
     if "ax" in data:
         raise ValueError("use the ax parameter instead of attrs['ax']")
@@ -2526,19 +2569,19 @@ def offer(hab, message, origin, artifacts=None, apply=None, recp=None, dt=None,
                                                   allowAttachments=False))
 
     # Build the body
-    serder = exchange(
-        sender=hab.pre,
-        receiver=receiver,
-        xid=xid,
-        prior=prior,
-        route="/ipex/offer",
-        modifiers=mods,
-        stamp=dt,
-        attributes=data,
-        pvrsn=Vrsn_2_0,
-        gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
-        kind=kind if kind is not None else hab.kever.serder.kind,
-    )
+    kwa = dict(sender=hab.pre,
+               receiver=receiver,
+               route="/ipex/offer",
+               modifiers=mods,
+               stamp=dt,
+               attributes=data,
+               pvrsn=Vrsn_2_0,
+               gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
+               kind=kind if kind is not None else hab.kever.serder.kind)
+    if apply is None:
+        serder = exchept(**kwa)
+    else:
+        serder = exchange(xid=xid, prior=prior, **kwa)
 
     atc = bytearray(_sign(hab=hab, serder=serder, nests=nests, gvrsn=gvrsn))
     del atc[:serder.size]
@@ -2569,11 +2612,7 @@ def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
     if recp is not None and recp != offer.ked["i"]:
         raise ValueError("recp does not match prior exchange sender")
     receiver = offer.ked["i"]
-    pxid = offer.ked.get("x", "")
-    if pxid:
-        xid = pxid
-    else:
-        xid = ""
+    xid = offer.said if offer.ilk == Ilks.xip else offer.ked.get("x", "")
 
     data = dict(m=message)
     
@@ -2647,7 +2686,6 @@ def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
     if previous is None:
         if not recp:
             raise ValueError("recp is required when no prior exchange is provided")
-        xid = Diger(ser=Noncer().qb64b).qb64
     else:
         if not previous.ked.get("ri", ""):
             raise ValueError("prior exchange has no explicit receiver")
@@ -2655,11 +2693,7 @@ def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
             raise ValueError("sender does not match prior exchange receiver")
         if recp != previous.ked["i"]:
             raise ValueError("recp does not match prior exchange sender")
-        pxid = previous.ked.get("x", "")
-        if pxid:
-            xid = pxid
-        else:
-            xid = ""
+        xid = previous.said if previous.ilk == Ilks.xip else previous.ked.get("x", "")
     data = dict(attrs) if attrs is not None else {}
     if "ax" in data:
         raise ValueError("use the ax parameter instead of attrs['ax']")
@@ -2729,19 +2763,19 @@ def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
         for artifact in artifacts:
             nests.append(_normalizeNodeStream(artifact))
 
-    serder = exchange(
-        sender=hab.pre,
-        receiver=recp,
-        xid=xid,
-        prior=prior,
-        route="/ipex/grant",
-        modifiers=mods,
-        stamp=dt,
-        attributes=data,
-        pvrsn=Vrsn_2_0,
-        gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
-        kind=kind if kind is not None else hab.kever.serder.kind,
-    )
+    kwa = dict(sender=hab.pre,
+               receiver=recp,
+               route="/ipex/grant",
+               modifiers=mods,
+               stamp=dt,
+               attributes=data,
+               pvrsn=Vrsn_2_0,
+               gvrsn=gvrsn if gvrsn is not None else Vrsn_2_0,
+               kind=kind if kind is not None else hab.kever.serder.kind)
+    if previous is None:
+        serder = exchept(**kwa)
+    else:
+        serder = exchange(xid=xid, prior=prior, **kwa)
     # Preserve None as the signal for default sender anchoring.
     explicitAnchorers = None if anchorers is None else list(anchorers)
 
@@ -2765,7 +2799,7 @@ def grant(hab, recp, message, origin=None, artifacts=None, agree=None,
                           endorsers=endorsers,
                           anchorers=explicitAnchorers,
                           gvrsn=gvrsn))
-    # Return attachments separately from the immutable EXN body.
+    # Return attachments separately from the immutable exchange body.
     del atc[:serder.size]
     return serder, atc
 
@@ -2794,11 +2828,7 @@ def admit(hab, message, grant, recp=None, dt=None, kind=None, gvrsn=None):
     if recp is not None and recp != grant.ked["i"]:
         raise ValueError("recp does not match prior exchange sender")
     receiver = grant.ked["i"]
-    pxid = grant.ked.get("x", "")
-    if pxid:
-        xid = pxid
-    else:
-        xid = ""
+    xid = grant.said if grant.ilk == Ilks.xip else grant.ked.get("x", "")
     grantAx = grant.ked.get("a", {}).get("ax", [False])
     grantRequiresAnchor = grantAx[0] is True
     data = dict(m=message)
@@ -2849,11 +2879,7 @@ def spurn(hab, message, spurned, recp=None, dt=None, kind=None, gvrsn=None):
     if recp is not None and recp != spurned.ked["i"]:
         raise ValueError("recp does not match prior exchange sender")
     receiver = spurned.ked["i"]
-    pxid = spurned.ked.get("x", "")
-    if pxid:
-        xid = pxid
-    else:
-        xid = ""
+    xid = spurned.said if spurned.ilk == Ilks.xip else spurned.ked.get("x", "")
     serder = exchange(
         sender=hab.pre,
         receiver=receiver,

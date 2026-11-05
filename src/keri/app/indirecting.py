@@ -913,7 +913,7 @@ class HttpEnd:
             rep.status = falcon.HTTP_204
         else:
             ilk = serder.sad["t"]
-            if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
+            if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy, Ilks.xip):
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
             elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):

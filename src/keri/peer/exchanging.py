@@ -212,7 +212,7 @@ class Exchanger:
         validSenderTsgs = []
         validSenderCigars = []
         if validSenderSourceSeals:
-            # A valid sender seal authenticates the EXN. Retain only valid
+            # A valid sender seal authenticates the exchange. Retain only valid
             # optional sender TSGs and do not fail on invalid ones.
             validSenderTsgs, _, _, _, _ = verifyAttachments(
                 hby=self.hby, serder=serder, tsgs=senderTsgs)
@@ -535,7 +535,7 @@ class Exchanger:
         # Keep one deadline for all missing schemas in this exchange
         if stored and self.hby.db.emsd.get(keys=(dig,)) is None:
             expiry = helping.nowUTC() + datetime.timedelta(seconds=self.TimeoutMSE)
-            xid = serder.ked.get("x")
+            xid = serder.said if serder.ilk == Ilks.xip else serder.ked.get("x")
             if xid:
                 cache = self.hby.db.kramTMSC.get(
                     keys=(serder.pre, xid, dig))
@@ -712,7 +712,7 @@ class Exchanger:
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None,
                  sourceSeals=None, nests=None, endorsers=None):
         dig = serder.said
-        pdig = serder.ked['p']
+        pdig = serder.ked.get('p', '')
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
