@@ -4198,8 +4198,9 @@ class Kevery:
 
     def _fetchLastEstLoc(self, pre, sn):
         """Returns LastEstLoc of the last establishment event of the current key state of pre when
-        it is the establishment event authoritative for the event at sn, None otherwise, so that
-        callers know when they may skip walking back through the KEL to find it.
+        sn lies between it and the latest event of that key state, None otherwise. In that range
+        the backward walk would end at that establishment event, so callers may skip it. This
+        checks only the range; it does not check that an event is stored at sn.
 
         Parameters:
             pre (str): identifier prefix qb64

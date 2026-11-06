@@ -514,8 +514,16 @@ def test_witness_state_matches_walk():
 
 def test_witness_state_matches_walk_after_recovery():
     """After a recovery rotation supersedes interaction events, both methods
-    still answer at every sn as the walks do, including the sn whose last
-    stored event is a displaced leftover above the recovered tip."""
+    still answer at every sn as the walks do. The sn holding a displaced
+    leftover above the recovered tip is outside the shortcut's range, so it
+    checks that the shortcut steps aside there.
+
+    The recovery keeps the same witnesses. A recovery rotation's cuts and
+    adds are currently ignored by Kever.deriveBacks, so a witness-changing
+    recovery would test that, not this. A delegated rotation superseding a
+    delegated rotation at the same sn, the one case with two establishment
+    events at one sn, is not covered: keripy has no working delegated
+    supersession fixture yet (see test_delegation_supersede)."""
     signers = Salter(raw=b'0123456789abcdef').signers(count=3, path='rec', temp=True)
     wits = [s.verfer.qb64 for s in Salter(raw=b'0123456789abcdef').signers(
         count=2, path='wit', transferable=False, temp=True)]
