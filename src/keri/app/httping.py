@@ -295,10 +295,11 @@ class BootstrapClientTls(tcp.ClientTls):
     """A hio TLS connector for fetching an OOBI before any pin for its peer is held.
 
     It makes the ordinary CA and hostname check first. Only if that check fails does it reconnect
-    once without verifying the certificate. That is safe for an OOBI fetch and is used for nothing
-    else: what an OOBI returns is signed and is verified after it arrives, and the request carries
-    no secret, so an interloper can read public data or withhold it but cannot change what is
-    believed.
+    once without verifying the certificate. That is safe only for an OOBI whose answer is checked
+    against its own URL -- the signed KEL of the AID the path names, or data whose SAID the path
+    names -- and Oobiery uses it for nothing else. The request carries no secret, so an interloper
+    can read public data or withhold it but cannot change what is believed. A caller must not take
+    anything from such a response that is not checked that way, such as the KERI-AID header.
 
     Attributes:
         verified (bool | None): True when the CA check passed, False when the connection was made

@@ -361,6 +361,64 @@ def test_the_oobiery_fetches_https_oobis_with_the_bootstrap_connector():
         assert not isinstance(oobiery.clients[hurl].connector, tcp.ClientTls)
 
 
+AID = "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE"
+
+
+@pytest.mark.parametrize("path, falls_back", [
+    (f"/oobi/{AID}/controller", True),   # names the AID whose signed KEL it must return
+    (f"/oobi/{AID}/witness/{AID}", True),
+    ("/oobi/EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM", True),  # data: checked by SAID
+    ("/oobi?name=alice", False),          # blind: the server says which AID it is
+    (f"/.well-known/keri/oobi/{AID}", False),  # the domain's word is the point
+])
+def test_only_an_oobi_whose_answer_is_checked_on_arrival_falls_back(path, falls_back):
+    """The fallback is sound only where what comes back is checked against the URL itself. A blind
+    OOBI takes the server's word, via the KERI-AID header, for which AID an alias names, and a
+    well-known OOBI is evidence that a domain stands behind an AID. Both rest on the CA check, so
+    neither gets the fallback."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="oobi", base="test", salt=salt, version=Vrsn_1_0) as hby:
+        oobiery = oobiing.Oobiery(hby=hby)
+        oobiery.clienter.wind(tyming.Tymist().tymen())
+        url = f"https://127.0.0.1:5643{path}"
+        oobiery.request(url, OobiRecord(date="2026-01-01T00:00:00.000000+00:00"))
+        connector = oobiery.clients[url].connector
+        assert isinstance(connector, httping.BootstrapClientTls) is falls_back
+        assert isinstance(connector, tcp.ClientTls)
+
+
+class _Answered:
+    """A client whose response has already arrived, fetched over a connector that skipped the CA
+    check."""
+
+    def __init__(self, response):
+        from collections import deque
+        self.responses = deque([response])
+        self.connector = type("Unverified", (), {"verified": False})()
+
+
+def test_an_unverified_oobi_answer_cannot_say_which_aid_an_alias_names():
+    """Over an unverified connection the KERI-AID header is an interloper's word. The alias stays
+    with the AID the OOBI URL itself names."""
+    salt = Salter(raw=b'abcdef0123456789').qb64
+    with openHby(name="oobi", base="test", salt=salt, version=Vrsn_1_0) as hby:
+        oobiery = oobiing.Oobiery(hby=hby)
+        url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+        obr = OobiRecord(date="2026-01-01T00:00:00.000000+00:00", cid=AID, role="controller",
+                         oobialias="alice")
+        hby.db.coobi.pin(keys=(url,), val=obr)
+        other = "BAz6CgLwdbIR8rp-Pz5UsPtzUxtzQrnJkrr6DwoF7SLe"
+        oobiery.clients[url] = _Answered(dict(
+            status=200, body=b"",
+            headers={"Content-Type": httping.CESR_CONTENT_TYPE, oobiing.OOBI_AID_HEADER: other}))
+
+        oobiery.processClients()
+
+        assert hby.db.roobi.get(keys=(url,)).cid == AID
+        assert oobiery.org.get(AID)["alias"] == "alice"
+        assert oobiery.org.get(other) is None
+
+
 # --- every place keripy connects to a witness over https ------------------------------------------
 
 @pytest.fixture

@@ -517,7 +517,10 @@ class Oobiery:
                     "application/cesr+json",
                 ):  # CESR Stream response to OOBI (canonical + legacy variants)
                     self.parser.parse(ims=bytearray(response["body"]))
-                    if OOBI_AID_HEADER in response["headers"]:
+                    # Over a connection that skipped the CA check the header is anybody's word,
+                    # so it may not rebind an alias away from the AID the URL names.
+                    unverified = getattr(client.connector, "verified", None) is False
+                    if OOBI_AID_HEADER in response["headers"] and not unverified:
                         obr.cid = response["headers"][OOBI_AID_HEADER]
 
                     if obr.oobialias is not None and obr.cid:
@@ -620,9 +623,15 @@ class Oobiery:
 
     def request(self, url, obr):
         # An https OOBI may be served under a self-signed certificate that its peer has not yet
-        # been able to declare to us, so the fetch falls back from the CA check to none. That is
-        # sound because everything an OOBI returns is verified on arrival; see BootstrapClientTls.
-        client = self.clienter.request("GET", url=url, connector=bootstrapConnector(url))
+        # been able to declare to us, so the fetch may fall back from the CA check to none; see
+        # BootstrapClientTls. That is sound only where the answer is checked against the URL
+        # itself: a KEL for the AID the path names, or data whose SAID the path names. A blind
+        # OOBI takes the server's word for which AID it is, and a well-known OOBI is a domain's
+        # word that it stands behind an AID, so both keep the CA check.
+        path = parse.urlparse(url).path
+        connector = (bootstrapConnector(url) if OOBI_RE.match(path) or DOOBI_RE.match(path)
+                     else None)
+        client = self.clienter.request("GET", url=url, connector=connector)
         if client is None:
             self.hby.db.oobis.rem(keys=(url,))
             print(f"error getting client for {url}, aborting OOBI")
