@@ -222,11 +222,6 @@ TlsCertPinAttrib = "tls-cert-sha256"
 _PinHex = re.compile(r"[0-9A-Fa-f]{64}|(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}")
 
 
-class TlsPinError(ssl.SSLCertVerificationError):
-    """The certificate a peer presented is not the one it declared. Raised from the handshake,
-    so nothing has been sent over the connection when this is seen."""
-
-
 def declaredCertPin(db, eid):
     """Return the SHA-256 of the TLS certificate ``eid`` declared, as 32 bytes, or None.
 
@@ -267,6 +262,21 @@ class PinnedClientTls(tcp.ClientTls):
     The pin replaces the CA and hostname checks rather than adding to them, because the peer it is
     for has no CA. The comparison runs as soon as the handshake completes and before the connector
     reports itself connected, so a mismatch closes the connection with nothing sent over it.
+
+    Why a pin and not simply skipping verification for witnesses: KERI messages are signed, so an
+    interloper on an unverified connection cannot forge events or receipts, but it can read the
+    traffic, including the Authorization header HTTPMessenger sends with witness 2FA codes. A pin
+    authenticates the peer by its own key state and closes that.
+
+    A mismatch is refused, not raised. It is routine -- a witness renews its certificate before
+    this consumer has re-resolved its OOBI -- and an exception from the handshake leaves hio's
+    ClientDoer and ends the whole Doist, which on restart reads the same pin and ends again. So the
+    connector logs an error naming the remedy, marks itself ``refused``, and stays closed for its
+    lifetime, failing closed without hammering the peer with reconnects.
+
+    Attributes:
+        pin (bytes): the SHA-256 digest a presented certificate must have
+        refused (bool): True once a presented certificate failed the pin
     """
 
     def __init__(self, pin, **kwa):
@@ -278,6 +288,13 @@ class PinnedClientTls(tcp.ClientTls):
             raise ValueError("A TLS pin is the 32-byte SHA-256 of a certificate.")
         super(PinnedClientTls, self).__init__(context=_unverifiedContext(), **kwa)
         self.pin = pin
+        self.refused = False
+
+    def connect(self):
+        """Attempt a connection, unless a certificate has already failed the pin."""
+        if self.refused:
+            return False
+        return super(PinnedClientTls, self).connect()
 
     def handshake(self):
         """Complete the handshake, then refuse the connection unless the certificate is pinned."""
@@ -285,9 +302,13 @@ class PinnedClientTls(tcp.ClientTls):
             return False
         der = self.cs.getpeercert(binary_form=True)
         if der is None or not hmac.compare_digest(hashlib.sha256(der).digest(), self.pin):
+            presented = hashlib.sha256(der).hexdigest() if der is not None else None
             self.close()
-            raise TlsPinError(f"TLS certificate from {self.ha} does not match the pinned "
-                              f"fingerprint {self.pin.hex()}.")
+            self.refused = True
+            logger.error("Refused TLS connection to %s: its certificate (SHA-256 %s) is not the "
+                         "one it declared (%s). If it renewed its certificate, re-resolve its "
+                         "OOBI to learn the new declaration.", self.ha, presented, self.pin.hex())
+            return False
         return True
 
 
@@ -431,7 +452,9 @@ class Clienter(doing.DoDoer):
             headers (dict, optional): Headers to include in the request, defaults to None
             connector (tcp.ClientTls | None): TLS connector to use, such as one from
                 tlsConnector or bootstrapConnector. None means hio's default for the scheme.
-                A PinnedClientTls also turns off redirects; see clientFor.
+                Either kind also turns off redirects: hio rebuilds the connector for a redirect
+                to another host with the same unverified context, and the new one keeps neither
+                the pin nor the record that the connection was unverified.
 
         Returns:
             http.clienting.Client: The hio HTTP Client used for the request, or None if an error occurs.
@@ -444,8 +467,8 @@ class Clienter(doing.DoDoer):
                                            port=purl.port,
                                            portOptional=True,
                                            connector=connector,
-                                           redirectable=not isinstance(connector,
-                                                                       PinnedClientTls))
+                                           redirectable=not isinstance(
+                                               connector, (PinnedClientTls, BootstrapClientTls)))
         except Exception as e:
             print(f"error establishing client connection={e}")
             return None
