@@ -10,7 +10,8 @@ from types import SimpleNamespace
 
 import pytest
 from keri import Ilks, Kinds, Vrsn_2_0
-from keri.acdc import (IpexHandler, Regery, Registrar, acdcagg, acdcatt, acdcmap,
+from keri.acdc import (IpexHandler, Regery, Registrar, SchemaEvaluator, acdcagg,
+                       acdcatt, acdcmap,
                        blindate, apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
@@ -2250,6 +2251,50 @@ def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
         ]
 
 
+def test_ipex_v2_offer_accepts_compact_edge_section():
+    """Offer may commit to an Edge Section without disclosing its contents."""
+    with openHby(name="ipex-v2-offer-compact-edge-section",
+                 base="test", version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        hiddenTarget = regcept(israid=holder.pre).said
+        hiddenSection = Compactor(
+            mad=dict(d="", source=dict(d="", n=hiddenTarget, o="I1I")),
+            makify=True,
+        )
+        hiddenSection.compact()
+        origin = acdcmap(
+            israid=holder.pre,
+            uuid="",
+            attribute=dict(d="", role="metadata"),
+            edge=hiddenSection.said,
+        )
+        schema = origin.sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        exn, atc = ipexOffer(
+            hab=holder,
+            recp=verifier.pre,
+            message="Here is the blinded Edge Section commitment",
+            origin=origin,
+            artifacts=[],
+            modifiers=dict(dp=[[[schema, "/", []]]]),
+        )
+        ims = bytearray(exn.raw + atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is not None
+        assert recorder.items == [{
+            "r": "/xip/ipex/offer",
+            "d": exn.said,
+            "m": "Here is the blinded Edge Section commitment",
+        }]
+
+
 def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
     """Validate metadata schemas without requiring Issuer commitments."""
     with openHby(name="ipex-v2-offer-node-schema",
@@ -2259,13 +2304,13 @@ def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
 
         # Record when schema validation runs
         stages = []
-        verifyNodeSchemas = IpexHandler._verifyNodeSchemas
+        validateSchemas = SchemaEvaluator.validateSchemas
 
         def recordNodeSchemas(self, *args, **kwa):
             stages.append("node-schema")
-            return verifyNodeSchemas(self, *args, **kwa)
+            return validateSchemas(self, *args, **kwa)
 
-        monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
+        monkeypatch.setattr(SchemaEvaluator, "validateSchemas", recordNodeSchemas)
 
         # Set up the IPEX receiver
         recorder = Recorder()
@@ -2635,8 +2680,9 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         def evaluate(op):
             edge = dict(d="", n=listOpChild.said, o=op)
             memo = {listOpChild.said: chaining.valid("far node vetted elsewhere")}
-            return handler._evaluateLeafEdge(edge, nodes=nodes, nserder=listOpOrigin,
-                                             memo=memo, inheritedPins=())
+            return handler.edgeEvaluator._evaluateLeafEdge(
+                edge, nodes=nodes, nserder=listOpOrigin, memo=memo,
+                inheritedPins=())
 
         assert evaluate(["NI2I"]).verdict == Verdicts.valid
         # latest of the conflicting pair
@@ -2654,6 +2700,71 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         unevaluable = evaluate(["NI2I", "BOGUS"])
         assert unevaluable.verdict == Verdicts.unknown
         assert unevaluable.retryable is False
+
+
+def test_ipex_v2_issuer_identity_operator_dispositions():
+    """IPEX accepts, refuses, or escrows issuer-identity edge results."""
+    with openHby(name="ipex-v2-issuer-identity-operators",
+                 base="test", version=Vrsn_2_0) as hby:
+        root = hby.makeHab(name="root")
+        delegate = hby.makeHab(name="delegate", delpre=root.pre)
+        unrelated = hby.makeHab(name="unrelated")
+        bounded = hby.makeHab(name="bounded", DnD=True)
+        blocked = hby.makeHab(name="blocked", delpre=bounded.pre)
+        recipient = hby.makeHab(name="recipient")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        def send(message, issuer, farIssuer, operator):
+            far = acdcmap(israid=farIssuer.pre,
+                          attribute=dict(d="", role="far"))
+            origin = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="near"),
+                             edge=_edge("source", far, op=operator),
+                             iseaid=recipient.pre)
+            exn, atc = ipexGrant(
+                hab=issuer,
+                recp=recipient.pre,
+                message=message,
+                origin=_signed(origin, issuer),
+                artifacts=[_signed(far, farIssuer)],
+                modifiers=dict(dp=[[
+                    [origin.sad["s"]["$id"], "/", []],
+                    [far.sad["s"]["$id"], "/e/source/_/", []],
+                ]]),
+            )
+            ims = bytearray(exn.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            return exn
+
+        equal = send("I1I equality", root, root, "I1I")
+        assert hby.db.exns.get(keys=(equal.said,)) is not None
+        assert hby.db.epse.get(keys=(equal.said,)) is None
+
+        refused = send("DI1I unrelated roots", unrelated, root, "DI1I")
+        assert hby.db.exns.get(keys=(refused.said,)) is None
+        assert hby.db.epse.get(keys=(refused.said,)) is None
+
+        bounded.interact(data=[SealEvent(i=blocked.pre,
+                                         s=blocked.kever.serder.snh,
+                                         d=blocked.kever.serder.said)._asdict()])
+        refused = send("DI1I honors DND", blocked, bounded, "DI1I")
+        assert hby.db.exns.get(keys=(refused.said,)) is None
+        assert hby.db.epse.get(keys=(refused.said,)) is None
+
+        pending = send("DI1I awaits an anchor", delegate, root, "DI1I")
+        assert hby.db.exns.get(keys=(pending.said,)) is None
+        assert hby.db.epse.get(keys=(pending.said,)) is not None
+
+        root.interact(data=[SealEvent(i=delegate.pre,
+                                      s=delegate.kever.serder.snh,
+                                      d=delegate.kever.serder.said)._asdict()])
+        exc.processEscrow()
+        assert hby.db.exns.get(keys=(pending.said,)) is not None
+        assert hby.db.epse.get(keys=(pending.said,)) is None
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
@@ -2695,6 +2806,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(exn.said,)) is None
+            assert hby.db.epse.get(keys=(exn.said,)) is None
             assert len(recorder.items) == before
 
         # Missing referenced node: the walk is not closed.
@@ -2719,7 +2831,8 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                         duplicateOrigin,
                         [duplicateChild, duplicateChild])
 
-        # Compacted edge section is not walkable.
+        # A compact Edge Section is well formed but cannot prove the hidden
+        # operators required to validate this Grant, so it refuses without escrow.
         compactOrigin = acdcmap(israid=issuer.pre,
                                 attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                                 iseaid=subject.pre)
@@ -2727,6 +2840,30 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         compactSad["e"] = regcept(israid=issuer.pre).said
         assert_rejected("Here is the compacted DAG",
                         type(compactOrigin)(sad=compactSad, makify=True))
+
+        # The Edge Section is the top-level Edge-group, so it cannot itself be
+        # an Edge carrying `n`; Edges must be labeled members of that group.
+        topLevelEdgeOrigin = acdcmap(
+            israid=issuer.pre,
+            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+            edge=dict(d="", n=baseChild.said, o="I1I"),
+            iseaid=subject.pre,
+        )
+        assert_rejected("Here is an Edge where the Edge-group must be",
+                        topLevelEdgeOrigin,
+                        [baseChild])
+
+        # An empty field map is the specified empty Edge Section value. Other
+        # falsy values are neither an expanded Edge-group nor its compact SAID.
+        for value in ("", []):
+            malformedEmptyOrigin = acdcmap(
+                israid=issuer.pre,
+                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                edge=value,
+                iseaid=subject.pre,
+            )
+            assert_rejected("Here is a malformed empty Edge Section",
+                            malformedEmptyOrigin)
 
         # Extra carried node must still be reachable from the origin.
         reachableChild = acdcmap(israid=issuer.pre,
@@ -2781,7 +2918,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the NOT-operator DAG",
                         notOrigin,
                         [notChild])
-        notVerdict = handler._evaluateLeafEdge(
+        notVerdict = handler.edgeEvaluator._evaluateLeafEdge(
             notOrigin.sad["e"]["holder"],
             nodes={notChild.said: {"serder": notChild}},
             nserder=notOrigin,
@@ -2803,7 +2940,7 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the DI2I-operator DAG",
                         diOrigin,
                         [diChild])
-        diVerdict = handler._evaluateLeafEdge(
+        diVerdict = handler.edgeEvaluator._evaluateLeafEdge(
             diOrigin.sad["e"]["holder"],
             nodes={diChild.said: {"serder": diChild}},
             nserder=diOrigin,
@@ -3915,18 +4052,18 @@ def test_ipex_v2_grant_validates_disclosed_node_schema(monkeypatch):
         # inside the DAG reduction, so hook the per-node check.
         stages = []
         verifyIssuerAuth = IpexHandler._verifyIssuerAuthNode
-        verifyNodeSchemas = IpexHandler._verifyNodeSchemas
+        evaluateSchema = SchemaEvaluator.evaluate
 
         def recordIssuerAuth(self, *args, **kwa):
             stages.append("issuer-auth")
             return verifyIssuerAuth(self, *args, **kwa)
 
-        def recordNodeSchemas(self, *args, **kwa):
+        def recordNodeSchema(self, *args, **kwa):
             stages.append("node-schema")
-            return verifyNodeSchemas(self, *args, **kwa)
+            return evaluateSchema(self, *args, **kwa)
 
         monkeypatch.setattr(IpexHandler, "_verifyIssuerAuthNode", recordIssuerAuth)
-        monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
+        monkeypatch.setattr(SchemaEvaluator, "evaluate", recordNodeSchema)
 
         # Set up the IPEX receiver
         recorder = Recorder()
@@ -9597,8 +9734,9 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                              attribute=dict(d="", role="never issued"),
                              iseaid=issuerHab.pre)
 
-            def origin(edge):
+            def origin(edge, schema=None):
                 return acdcmap(israid=issuerHab.pre,
+                               schema=schema,
                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                                edge=edge,
                                iseaid=recipientHab.pre)
@@ -9609,6 +9747,7 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                 known[forged.said] = forged
                 known.update((node.said, node) for node in artifacts
                              if hasattr(node, "sad"))
+                disclosed = {_serder(node).said for node in artifacts}
 
                 def schemaId(node):
                     schema = node.sad["s"]
@@ -9626,10 +9765,15 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                                          f"{path}_/", []])
                         continue
                     for label, node in grp.items():
-                        # A compact Edge (a block SAID) names no node to disclose.
-                        if (label not in ("d", "u", "s", "o", "w")
-                                and isinstance(node, dict)):
+                        if label in ("d", "u", "s", "o", "w"):
+                            continue
+                        if isinstance(node, dict):
                             groups.append((node, f"{path}{label}/"))
+                        elif isinstance(node, str) and node in disclosed:
+                            if node not in seen:
+                                seen.add(node)
+                                plan.append([schemaId(known[node]),
+                                             f"{path}{label}/_/", []])
                 return plan
 
             def run(originStream, artifacts, message, originSerder=None):
@@ -9656,8 +9800,8 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                 assert ims == bytearray()
                 return exn
 
-            def accepted(edge, artifacts, message):
-                originSerder = origin(edge)
+            def accepted(edge, artifacts, message, schema=None):
+                originSerder = origin(edge, schema=schema)
                 exn = run(_signed(originSerder, issuerHab), artifacts, message,
                           originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
@@ -9685,6 +9829,36 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             def group(op, **members):
                 return dict(d="", o=op, **members)
 
+            def edgeSchema(properties):
+                schema = deepcopy(good.schema)
+                schema["$id"] = ""
+                schema["properties"]["e"] = {
+                    "type": "object",
+                    "properties": properties,
+                }
+                return Schemer(sed=schema).sed
+
+            compactBlock = {
+                "oneOf": [
+                    {"type": "string"},
+                    {
+                        "type": "object",
+                        "required": ["d", "n"],
+                        "properties": {
+                            "d": {"type": "string"},
+                            "n": {"type": "string"},
+                        },
+                    },
+                ],
+            }
+            opaqueSchema = edgeSchema({
+                "either": {
+                    "type": "object",
+                    "properties": {"compact": compactBlock},
+                },
+            })
+            simpleSchema = edgeSchema({"compact": {"type": "string"}})
+
             goodNest = _proofed(good, goodBlinder)
             pendingNest = _proofed(pending, pendingBlinder)
             forgedNest = _proofed(forged, goodBlinder)
@@ -9697,6 +9871,41 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(pending))),
                      [goodNest, pendingNest],
                      "OR satisfied while a far node's TEL has not replicated")
+
+            # The schema declares this string to be an opaque compact Edge-block.
+            # A satisfied sibling may carry the OR group without guessing that the
+            # SAID names a far node.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                              compact=spare.said)),
+                     [goodNest],
+                     "OR satisfied beside a valid compact Edge",
+                     schema=opaqueSchema)
+
+            # The schema declares this string to be the far-node SAID form of a
+            # simple Edge, so it is evaluated as an Edge containing only `n`.
+            accepted(dict(d="", compact=good.said),
+                     [goodNest],
+                     "simple Edge to a disclosed far node",
+                     schema=simpleSchema)
+
+            refused(dict(d="", w=1, holder=leaf(good)),
+                    [goodNest],
+                    "top-level Edge-group cannot carry a weight")
+
+            refused(dict(d=spare.said, holder=leaf(good)),
+                    [goodNest],
+                    "false Edge Section commitment")
+            refused(dict(d="", holder=dict(d=spare.said, n=good.said,
+                                            o="I2I")),
+                    [goodNest],
+                    "false Edge block commitment")
+
+            # An arbitrary string is neither compact form. It is malformed structure,
+            # not an unknown verdict that a satisfied OR member may absorb.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                             compact="garbage")),
+                    [goodNest],
+                    "OR cannot absorb a malformed compact Edge")
 
             # The contrast under AND: `pending` is exactly what the group waits on,
             # so the grant stays retryable, which is the behaviour that must survive
@@ -9804,12 +10013,13 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             # such a member from the reduction entirely and saved the ACDC having
             # checked nothing about it; both now give the same answer.
             accepted(dict(d="", either=group("OR", a=leaf(good),
-                                             compact=good.said)),
+                                             compact=spare.said)),
                      [goodNest],
                      "OR over a compact Edge")
 
             # ...and a section that depends on one still refuses.
-            refused(dict(d="", both=group("AND", a=leaf(good), compact=good.said)),
+            refused(dict(d="", both=group("AND", a=leaf(good),
+                                           compact=spare.said)),
                     [goodNest],
                     "AND over a compact Edge")
 
