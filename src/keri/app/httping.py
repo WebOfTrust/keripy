@@ -218,31 +218,37 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
 # The attrib a peer declares, in a /decl/attribs reply, to say which TLS certificate it serves.
 TlsCertPinAttrib = "tls-cert-sha256"
 
-# 64 hex digits, either run together or as colon-separated pairs (the openssl -fingerprint form).
-_PinHex = re.compile(r"[0-9A-Fa-f]{64}|(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}")
+# The convention in DeclRecord: one or more lowercase hex SHA-256 digests, single-space separated.
+_PinList = re.compile(r"[0-9a-f]{64}(?: [0-9a-f]{64})*")
 
 
-def declaredCertPin(db, eid):
-    """Return the SHA-256 of the TLS certificate ``eid`` declared, as 32 bytes, or None.
+def declaredCertPins(db, eid):
+    """Return the SHA-256 digests of the TLS certificates ``eid`` declared, or None.
 
     The value is read from the /decl/attribs map that BADA accepted for ``eid`` itself (see
-    DeclRecord), so the pin is authenticated by the peer's own key state, not by a certificate
-    authority. A value this code does not recognize as a SHA-256 fingerprint is treated as absent,
-    as DeclRecord requires, which leaves the connection to the CA check.
+    DeclRecord), so the pins are authenticated by the peer's own key state, not by a certificate
+    authority. More than one lets a peer renewing its certificate declare the old and the new
+    together. A value outside the convention DeclRecord writes down is treated as absent, as
+    DeclRecord requires, which leaves the connection to the CA check; it is logged, because a
+    silently ignored pin looks exactly like a peer that never declared one.
 
     Parameters:
         db (Baser): database holding accepted declarations
         eid (str): qb64 prefix of the peer being connected to
 
     Returns:
-        bytes | None: the 32-byte digest, or None when nothing usable is declared."""
+        frozenset[bytes] | None: the 32-byte digests, or None when nothing usable is declared."""
     record = db.decls.get(keys=(eid, Decls.attribs))
     if record is None:
         return None
     value = record.attribs.get(TlsCertPinAttrib)
-    if not isinstance(value, str) or not _PinHex.fullmatch(value):
+    if value is None:
         return None
-    return bytes.fromhex(value.replace(":", ""))
+    if not isinstance(value, str) or not _PinList.fullmatch(value):
+        logger.warning("Ignoring %s=%r declared by %s: not lowercase hex SHA-256 digests "
+                       "separated by single spaces.", TlsCertPinAttrib, value, eid)
+        return None
+    return frozenset(bytes.fromhex(digest) for digest in value.split(" "))
 
 
 def _unverifiedContext():
@@ -257,7 +263,7 @@ def _unverifiedContext():
 
 
 class PinnedClientTls(tcp.ClientTls):
-    """A hio TLS connector that accepts exactly one certificate: the one whose SHA-256 is ``pin``.
+    """A hio TLS connector that accepts only a certificate whose SHA-256 is one of ``pins``.
 
     The pin replaces the CA and hostname checks rather than adding to them, because the peer it is
     for has no CA. The comparison runs as soon as the handshake completes and before the connector
@@ -275,19 +281,21 @@ class PinnedClientTls(tcp.ClientTls):
     lifetime, failing closed without hammering the peer with reconnects.
 
     Attributes:
-        pin (bytes): the SHA-256 digest a presented certificate must have
+        pins (frozenset[bytes]): SHA-256 digests, one of which a presented certificate must have
         refused (bool): True once a presented certificate failed the pin
     """
 
-    def __init__(self, pin, **kwa):
+    def __init__(self, pins, **kwa):
         """
         Parameters:
-            pin (bytes): SHA-256 digest of the DER certificate the peer must present
+            pins (Iterable[bytes]): SHA-256 digests of the DER certificates the peer may present
             **kwa: passed to tcp.ClientTls, typically host and port"""
-        if not isinstance(pin, bytes) or len(pin) != hashlib.sha256().digest_size:
-            raise ValueError("A TLS pin is the 32-byte SHA-256 of a certificate.")
+        pins = frozenset(pins)
+        size = hashlib.sha256().digest_size
+        if not pins or not all(isinstance(pin, bytes) and len(pin) == size for pin in pins):
+            raise ValueError("TLS pins are one or more 32-byte SHA-256 digests of certificates.")
         super(PinnedClientTls, self).__init__(context=_unverifiedContext(), **kwa)
-        self.pin = pin
+        self.pins = pins
         self.refused = False
 
     def connect(self):
@@ -301,13 +309,18 @@ class PinnedClientTls(tcp.ClientTls):
         if not super(PinnedClientTls, self).handshake():
             return False
         der = self.cs.getpeercert(binary_form=True)
-        if der is None or not hmac.compare_digest(hashlib.sha256(der).digest(), self.pin):
-            presented = hashlib.sha256(der).hexdigest() if der is not None else None
+        digest = hashlib.sha256(der).digest() if der is not None else None
+        # compare against every pin, so the time taken does not say which one was close
+        matched = digest is not None and any([hmac.compare_digest(digest, pin)
+                                              for pin in self.pins])
+        if not matched:
             self.close()
             self.refused = True
-            logger.error("Refused TLS connection to %s: its certificate (SHA-256 %s) is not the "
-                         "one it declared (%s). If it renewed its certificate, re-resolve its "
-                         "OOBI to learn the new declaration.", self.ha, presented, self.pin.hex())
+            logger.error("Refused TLS connection to %s: its certificate (SHA-256 %s) is not one "
+                         "it declared (%s). If it renewed its certificate, re-resolve its OOBI "
+                         "to learn the new declaration.", self.ha,
+                         digest.hex() if digest else None,
+                         " ".join(sorted(pin.hex() for pin in self.pins)))
             return False
         return True
 
@@ -367,10 +380,10 @@ def tlsConnector(db, eid, url, **kwa):
     up, ha = _hostPort(url)
     if up.scheme != Schemes.https:
         return None
-    pin = declaredCertPin(db, eid)
-    if pin is None:
+    pins = declaredCertPins(db, eid)
+    if pins is None:
         return None
-    return PinnedClientTls(pin=pin, **ha, **kwa)
+    return PinnedClientTls(pins=pins, **ha, **kwa)
 
 
 def bootstrapConnector(url, **kwa):

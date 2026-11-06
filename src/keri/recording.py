@@ -474,6 +474,17 @@ class DeclRecord:  # baser.decls
     An absent ``fips-posture`` means the witness makes no FIPS claim. It does not mean the witness
     is not FIPS-capable.
 
+    The ``tls-cert-sha256`` attrib names the TLS certificates the declarer serves https under, so
+    a consumer can authenticate the connection by the declarer's key state instead of a
+    certificate authority. Its value is one or more SHA-256 digests of the DER-encoded leaf
+    certificate -- the whole certificate, not its public key -- each written as 64 lowercase hex
+    digits, separated by single spaces. A declarer renewing its certificate declares the old and
+    the new together until it has switched, and then declares the new alone, so no consumer is
+    refused during the overlap. A consumer that pins against it (keripy's ``PinnedClientTls``)
+    accepts a certificate whose digest is any listed value, in place of the CA and hostname
+    checks, and refuses any other. A value in any other form is not in the convention and is
+    treated as absent, which leaves the consumer to its ordinary CA check.
+
     A decl reply message is required from which the values of this record are extracted. Routes are
     /decl/tags and /decl/attribs. Uses enact-anul model: an empty tags list or attribs map
     nullifies the declaration.
