@@ -4172,8 +4172,9 @@ class Kevery:
         sequence number of each establishment event.  If sn represents an interaction event (ixn) it
         searches backwards for the last establishment event prior to sn and returns that witness state.
 
-        When sn is at or after the last establishment event of the current key state, that event
-        is where the walk back ends, so its witness state is read directly without the walk.
+        When sn is at or after the last establishment event of the current key state, and at or
+        before its latest event, that establishment event is where the walk back ends, so its
+        witness state is read directly without the walk.
 
         Parameters:
             pre (str): identifier prefix qb64
@@ -4194,17 +4195,16 @@ class Kevery:
 
         return []
 
+
     def _fetchLastEstLoc(self, pre, sn):
         """Returns LastEstLoc of the last establishment event of the current key state of pre when
         it is the establishment event authoritative for the event at sn, None otherwise, so that
         callers know when they may skip walking back through the KEL to find it.
 
         Parameters:
-            pre (str|bytes): identifier prefix qb64
+            pre (str): identifier prefix qb64
             sn (int): sequence number of event in KEL of pre
         """
-        if hasattr(pre, "decode"):
-            pre = pre.decode("utf-8")
         if pre not in self.kevers:  # reads through to db
             return None
         kever = self.kevers[pre]
@@ -5635,8 +5635,10 @@ class Kevery:
             # same first step as the walk: no event at sn means None
             if not (dig := self.db.kels.getLast(keys=pre, on=sn)):
                 return None
-            if not self.db.evts.get(keys=(pre, dig)):
+            if not (serder := self.db.evts.get(keys=(pre, dig))):
                 return None
+            if dig == lastEst.d:  # sn is the establishment event itself
+                return serder
             return self.db.evts.get(keys=(pre, lastEst.d))
 
         found = False
