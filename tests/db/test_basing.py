@@ -2533,6 +2533,14 @@ def test_statedict():
         kever = Kever(state=state, db=db)
         assert kever.state() == state
 
+        assert not dict.__contains__(dbd, pre)
+        default = object()
+        assert dbd.get(pre, default).state() == state
+
+        del dbd[pre]
+        assert not dict.__contains__(dbd, pre)
+        assert dbd.get(pre).state() == state
+
         dkever = dbd[pre]  # read through cache works here
         dstate = dkever.state()
         assert  dstate == state
@@ -2547,6 +2555,7 @@ def test_statedict():
         assert pre in dbd  # still in memory
         del dbd[pre]
         assert pre not in dbd  # not in memory or db so read through cache misses
+        assert dbd.get(pre, default) is default
 
 
     assert not os.path.exists(db.path)
