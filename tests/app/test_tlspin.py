@@ -240,11 +240,31 @@ def test_a_mismatched_fingerprint_is_refused_before_any_request_is_sent(pair, se
     _declare(withab, conhab, otherFingerprint)
 
     connector = httping.tlsConnector(conhab.db, withab.pre, server.url)
-    with pytest.raises(httping.TlsPinError):
-        _get(server.url, connector=connector)
+    assert _get(server.url, connector=connector, timeout=1.0) is None
+    assert connector.refused
 
     time.sleep(0.3)
     assert all(b"GET" not in data for data in server.received)
+    # Refused once and left refused: the connector does not hammer the peer by reconnecting.
+    assert len(server.received) == 1
+
+
+def test_a_mismatch_is_contained_rather_than_raised_out_of_the_doist(pair, selfSigned, serve):
+    """A mismatch is routine -- a witness renews its certificate and the consumer has not yet
+    re-resolved its OOBI -- so it must not end the process. Raising out of hio's ClientDoer ends
+    the whole Doist, and on restart the same stored pin ends it again. The connection fails
+    closed, quietly for the rest of the process, and loudly in the log."""
+    withab, conhab = pair
+    certpath, keypath, _ = selfSigned[0]
+    server = serve(certpath, keypath)
+    _declare(withab, conhab, selfSigned[1][2])
+
+    connector = httping.tlsConnector(conhab.db, withab.pre, server.url)
+    connector.wind(tyming.Tymist().tymen())
+    for _ in range(20):  # each of these would have raised
+        connector.serviceConnect()
+        time.sleep(0.01)
+    assert connector.refused and not connector.connected
 
 
 def test_a_self_signed_witness_with_no_declaration_is_refused(pair, selfSigned, serve):
@@ -270,8 +290,9 @@ def test_a_newer_declaration_with_a_new_fingerprint_replaces_the_old_pin(pair, s
     assert rep is not None and rep.status == 200
 
     oldServer = serve(oldCert, oldKey)
-    with pytest.raises(httping.TlsPinError):
-        _get(oldServer.url, connector=httping.tlsConnector(conhab.db, withab.pre, oldServer.url))
+    connector = httping.tlsConnector(conhab.db, withab.pre, oldServer.url)
+    assert _get(oldServer.url, connector=connector, timeout=1.0) is None
+    assert connector.refused
 
 
 # --- what counts as a declared fingerprint --------------------------------------------------------
@@ -388,35 +409,103 @@ def test_only_an_oobi_whose_answer_is_checked_on_arrival_falls_back(path, falls_
 
 
 class _Answered:
-    """A client whose response has already arrived, fetched over a connector that skipped the CA
-    check."""
+    """A client whose response has already arrived, fetched by the bootstrap connector -- after
+    the CA check failed, unless ``verified``."""
 
-    def __init__(self, response):
+    def __init__(self, response, verified=False):
         from collections import deque
         self.responses = deque([response])
-        self.connector = type("Unverified", (), {"verified": False})()
+        self.connector = httping.BootstrapClientTls(host="127.0.0.1", port=5643)
+        self.connector.verified = verified
 
 
-def test_an_unverified_oobi_answer_cannot_say_which_aid_an_alias_names():
-    """Over an unverified connection the KERI-AID header is an interloper's word. The alias stays
-    with the AID the OOBI URL itself names."""
+OTHER = "BAz6CgLwdbIR8rp-Pz5UsPtzUxtzQrnJkrr6DwoF7SLe"
+
+
+def _answer(oobiery, hby, url, response, verified=False):
+    obr = OobiRecord(date="2026-01-01T00:00:00.000000+00:00", cid=AID, role="controller",
+                     oobialias="alice")
+    hby.db.coobi.pin(keys=(url,), val=obr)
+    oobiery.clients[url] = _Answered(response, verified=verified)
+    oobiery.processClients()
+    return hby.db.roobi.get(keys=(url,))
+
+
+@pytest.fixture
+def oobiery():
     salt = Salter(raw=b'abcdef0123456789').qb64
     with openHby(name="oobi", base="test", salt=salt, version=Vrsn_1_0) as hby:
         oobiery = oobiing.Oobiery(hby=hby)
-        url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
-        obr = OobiRecord(date="2026-01-01T00:00:00.000000+00:00", cid=AID, role="controller",
-                         oobialias="alice")
-        hby.db.coobi.pin(keys=(url,), val=obr)
-        other = "BAz6CgLwdbIR8rp-Pz5UsPtzUxtzQrnJkrr6DwoF7SLe"
-        oobiery.clients[url] = _Answered(dict(
-            status=200, body=b"",
-            headers={"Content-Type": httping.CESR_CONTENT_TYPE, oobiing.OOBI_AID_HEADER: other}))
+        oobiery.clienter.wind(tyming.Tymist().tymen())
+        yield oobiery, hby
 
-        oobiery.processClients()
 
-        assert hby.db.roobi.get(keys=(url,)).cid == AID
-        assert oobiery.org.get(AID)["alias"] == "alice"
-        assert oobiery.org.get(other) is None
+def test_an_unverified_oobi_answer_cannot_say_which_aid_an_alias_names(oobiery):
+    """Over an unverified connection the KERI-AID header is an interloper's word. The alias stays
+    with the AID the OOBI URL itself names."""
+    oobiery, hby = oobiery
+    url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+    robr = _answer(oobiery, hby, url, dict(
+        status=200, body=b"",
+        headers={"Content-Type": httping.CESR_CONTENT_TYPE, oobiing.OOBI_AID_HEADER: OTHER}))
+
+    assert robr.cid == AID
+    assert oobiery.org.get(AID)["alias"] == "alice"
+    assert oobiery.org.get(OTHER) is None
+
+
+def test_an_unverified_oobi_answer_cannot_redirect(oobiery):
+    """hio follows a redirect to another host with a fresh connector that keeps the unverified
+    context and loses the record that it is unverified, so the bootstrap fetch does not redirect."""
+    oobiery, hby = oobiery
+    url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+    oobiery.request(url, OobiRecord(date="2026-01-01T00:00:00.000000+00:00"))
+    assert oobiery.clients[url].respondent.redirectable is False
+
+
+def test_an_unverified_oobi_answer_cannot_introduce_further_oobis(oobiery):
+    """An unsigned /oobi/controller or /oobi/witness reply lists more OOBIs, and the alias travels
+    with them, so over an unverified connection it could send the alias to any AID an interloper
+    likes. Only what is checked on arrival is taken from an unverified answer."""
+    from keri.core import eventing
+    oobiery, hby = oobiery
+    evil = f"https://127.0.0.1:6666/oobi/{OTHER}/controller"
+    for route in ("/oobi/controller", "/oobi/witness"):
+        url = f"https://127.0.0.1:5643/oobi/{AID}/controller?r={route}"
+        rpy = eventing.reply(route=route, data=dict(aid=AID, urls=[evil]), version=Vrsn_1_0,
+                             kind=Kinds.json)
+        robr = _answer(oobiery, hby, url, dict(
+            status=200, body=bytes(rpy.raw), headers={"Content-Type": "application/json"}))
+        assert robr is not None and robr.state == oobiing.Result.failed, route
+        assert hby.db.oobis.get(keys=(evil,)) is None, route
+
+
+def test_a_verified_oobi_answer_still_introduces_further_oobis(oobiery):
+    """The multi-OOBI reply keeps working wherever the CA check passed, as it did before."""
+    from keri.core import eventing
+    oobiery, hby = oobiery
+    child = f"https://127.0.0.1:6666/oobi/{AID}/witness/{OTHER}"
+    url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+    rpy = eventing.reply(route="/oobi/controller", data=dict(aid=AID, urls=[child]),
+                         version=Vrsn_1_0, kind=Kinds.json)
+    _answer(oobiery, hby, url, dict(status=200, body=bytes(rpy.raw),
+                                    headers={"Content-Type": "application/json"}), verified=True)
+    assert hby.db.oobis.get(keys=(child,)) is not None
+
+
+@pytest.mark.parametrize("headers, body", [
+    ({}, b"hello"),                                  # no Content-Type at all
+    ({"Content-Type": "application/json"}, b"hello"),  # not JSON
+    ({"Content-Type": "application/json"}, b'{"v": "KERI10JSON000000_"}'),  # not a whole message
+])
+def test_a_malformed_oobi_answer_fails_that_oobi_and_nothing_else(oobiery, headers, body):
+    """The fallback lets anybody on the path answer an https OOBI, so a garbage answer must fail
+    the one OOBI rather than end the service that resolves all of them."""
+    oobiery, hby = oobiery
+    url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+    robr = _answer(oobiery, hby, url, dict(status=200, body=body, headers=headers),
+                   verified=True)
+    assert robr is not None and robr.state == oobiing.Result.failed
 
 
 # --- every place keripy connects to a witness over https ------------------------------------------
