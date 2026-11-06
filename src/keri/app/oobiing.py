@@ -13,7 +13,7 @@ import falcon
 from hio.base import doing
 from hio.help import decking, ogler
 
-from .httping import Clienter,CESR_CONTENT_TYPE
+from .httping import Clienter, CESR_CONTENT_TYPE, bootstrapConnector
 from .organizing import Organizer
 from .. import (Vrsn_2_0, Version, Roles, Schemes, Ilks, Kinds,
                 ValidationError, UnverifiedReplyError,
@@ -619,7 +619,10 @@ class Oobiery:
                 self.hby.db.oobis.pin(keys=(url,), val=obr)
 
     def request(self, url, obr):
-        client = self.clienter.request("GET", url=url)
+        # An https OOBI may be served under a self-signed certificate that its peer has not yet
+        # been able to declare to us, so the fetch falls back from the CA check to none. That is
+        # sound because everything an OOBI returns is verified on arrival; see BootstrapClientTls.
+        client = self.clienter.request("GET", url=url, connector=bootstrapConnector(url))
         if client is None:
             self.hby.db.oobis.rem(keys=(url,))
             print(f"error getting client for {url}, aborting OOBI")

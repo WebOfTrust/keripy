@@ -406,6 +406,9 @@ def test_every_witness_https_site_pins_a_declared_fingerprint(witnessed, selfSig
     for name, client in _sites(withab, conhab, conhby):
         assert isinstance(client.connector, httping.PinnedClientTls), name
         assert client.connector.pin == bytes.fromhex(selfSigned[0][2]), name
+        # hio follows a redirect to another host with a fresh connector that would keep the
+        # pin's unverified context and drop the pin, so a pinned client does not redirect.
+        assert client.respondent.redirectable is False, name
 
 
 def test_every_witness_https_site_is_unchanged_without_a_declaration(witnessed):
@@ -414,3 +417,4 @@ def test_every_witness_https_site_is_unchanged_without_a_declaration(witnessed):
         assert isinstance(client.connector, tcp.ClientTls), name
         assert not isinstance(client.connector, httping.PinnedClientTls), name
         assert not isinstance(client.connector, httping.BootstrapClientTls), name
+        assert client.respondent.redirectable is True, name
