@@ -438,7 +438,7 @@ def _walkWitnessState(kvy, pre, sn):
     return []
 
 
-def _witnessedHab(hby, signers):
+def _makeWitnessedHab(hby, signers):
     return hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
                        wits=[signers[0].verfer.qb64, signers[1].verfer.qb64])
 
@@ -468,7 +468,7 @@ def test_witness_state_matches_walk():
     signers = Salter(raw=b'0123456789abcdef').signers(count=5, path='wit',
                                                      transferable=False, temp=True)
     with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = _witnessedHab(hby, signers)
+        hab = _makeWitnessedHab(hby, signers)
         hab.interact()
         hab.interact()
         hab.rotate(cuts=[signers[0].verfer.qb64], adds=[signers[2].verfer.qb64])
@@ -512,6 +512,43 @@ def test_witness_state_matches_walk():
         assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
 
 
+def test_witness_state_matches_walk_after_recovery():
+    """After a recovery rotation supersedes interaction events, both methods
+    still answer at every sn as the walks do, including the sn whose last
+    stored event is a displaced leftover above the recovered tip."""
+    signers = Salter(raw=b'0123456789abcdef').signers(count=3, path='rec', temp=True)
+    wits = [s.verfer.qb64 for s in Salter(raw=b'0123456789abcdef').signers(
+        count=2, path='wit', transferable=False, temp=True)]
+    with openDB(name="recovery-witness-state") as db:
+        kvy = Kevery(db=db, local=True)
+
+        def accept(serder, signer):
+            db.prefixes.add(serder.pre)  # locally owned, so receipts are not awaited
+            kvy.processEvent(serder=serder, sigers=[signer.sign(serder.raw, index=0)])
+            assert db.kels.getLast(keys=serder.pre, on=serder.sn) == serder.said
+            return serder
+
+        events = [accept(incept(keys=[signers[0].verfer.qb64],
+                                ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64],
+                                wits=wits, toad=1), signers[0])]
+        pre = events[0].pre
+        for sn in (1, 2, 3):
+            events.append(accept(interact(pre=pre, dig=events[-1].said, sn=sn), signers[0]))
+        recovery = accept(rotate(pre=pre, keys=[signers[1].verfer.qb64], dig=events[1].said,
+                                 ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64], sn=2,
+                                 wits=wits, toad=1), signers[1])
+        assert kvy.kevers[pre].sn == 2 and kvy.kevers[pre].lastEst.d == recovery.said
+        assert db.kels.getLast(keys=pre, on=3) == events[3].said  # leftover above the tip
+
+        for sn in range(5):
+            got = [w.qb64 for w in kvy.fetchWitnessState(pre, sn)]
+            want = [w.qb64 for w in _walkWitnessState(kvy, pre, sn)]
+            assert got == want, sn
+        assert kvy.fetchEstEvent(pre, 2).said == recovery.said
+        assert kvy.fetchEstEvent(pre, 1).said == events[0].said
+        assert kvy.fetchEstEvent(pre, 3).said == recovery.said  # the walk's answer too
+
+
 def test_witness_receipt_reads_bounded(monkeypatch):
     """THE BOUND. A witness receipt on the newest event, and the witness state
     and establishment event behind it, read as many key events at sn 50 as at
@@ -520,7 +557,7 @@ def test_witness_receipt_reads_bounded(monkeypatch):
     signers = Salter(raw=b'0123456789abcdef').signers(count=2, path='wit',
                                                      transferable=False, temp=True)
     with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = _witnessedHab(hby, signers)
+        hab = _makeWitnessedHab(hby, signers)
         reads = _Reads(hby.db, monkeypatch)
 
         def receiptNewest():
