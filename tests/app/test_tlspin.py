@@ -175,8 +175,7 @@ def _get(url, connector=None, timeout=3.0):
     up = urlparse(url)
     if connector is not None:
         connector.wind(tymist.tymen())
-    client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port,
-                                   connector=connector, tymth=tymist.tymen())
+    client = httping.makeClient(url, connector=connector, tymth=tymist.tymen())
     client.request(method="GET", path="/")
     deadline = time.monotonic() + timeout
     try:
@@ -240,8 +239,11 @@ def test_a_mismatched_fingerprint_is_refused_before_any_request_is_sent(pair, se
     _declare(withab, conhab, otherFingerprint)
 
     connector = httping.tlsConnector(conhab.db, withab.pre, server.url)
-    assert _get(server.url, connector=connector, timeout=1.0) is None
+    rep = _get(server.url, connector=connector, timeout=1.0)
     assert connector.refused
+    # The refusal answers the request, so a caller waiting on a response -- Receiptor, the
+    # witness inquisitor, a messenger counting replies -- sees a failure instead of waiting forever.
+    assert rep is not None and rep.status == httping.TlsPinRefusedStatus and rep.errored
 
     time.sleep(0.3)
     assert all(b"GET" not in data for data in server.received)
@@ -291,8 +293,9 @@ def test_a_newer_declaration_with_a_new_fingerprint_replaces_the_old_pin(pair, s
 
     oldServer = serve(oldCert, oldKey)
     connector = httping.tlsConnector(conhab.db, withab.pre, oldServer.url)
-    assert _get(oldServer.url, connector=connector, timeout=1.0) is None
+    rep = _get(oldServer.url, connector=connector, timeout=1.0)
     assert connector.refused
+    assert rep is not None and rep.status == httping.TlsPinRefusedStatus
 
 
 # --- what counts as a declared fingerprint --------------------------------------------------------
@@ -497,6 +500,10 @@ def test_a_verified_oobi_answer_still_introduces_further_oobis(oobiery):
     ({}, b"hello"),                                  # no Content-Type at all
     ({"Content-Type": "application/json"}, b"hello"),  # not JSON
     ({"Content-Type": "application/json"}, b'{"v": "KERI10JSON000000_"}'),  # not a whole message
+    ({"Content-Type": "application/json"}, b"null"),  # JSON, but not an object
+    ({"Content-Type": "application/json"}, b"5"),
+    ({"Content-Type": "application/schema+json"}, b"null"),
+    ({"Content-Type": "application/schema+json"}, b'{"$id": 5}'),
 ])
 def test_a_malformed_oobi_answer_fails_that_oobi_and_nothing_else(oobiery, headers, body):
     """The fallback lets anybody on the path answer an https OOBI, so a garbage answer must fail
@@ -552,6 +559,8 @@ def test_every_witness_https_site_pins_a_declared_fingerprint(witnessed, selfSig
     _declare(withab, conhab, selfSigned[0][2])
     for name, client in _sites(withab, conhab, conhby):
         assert isinstance(client.connector, httping.PinnedClientTls), name
+        # a PinnedClient answers a refused request with a failure rather than never answering
+        assert isinstance(client, httping.PinnedClient), name
         assert client.connector.pin == bytes.fromhex(selfSigned[0][2]), name
         # hio follows a redirect to another host with a fresh connector that would keep the
         # pin's unverified context and drop the pin, so a pinned client does not redirect.
