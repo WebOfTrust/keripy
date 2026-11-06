@@ -300,22 +300,51 @@ def test_a_newer_declaration_with_a_new_fingerprint_replaces_the_old_pin(pair, s
 
 # --- what counts as a declared fingerprint --------------------------------------------------------
 
-def test_a_fingerprint_is_read_in_upper_case_or_with_colons(pair, selfSigned):
+def test_a_declaration_may_list_several_fingerprints(pair, selfSigned, serve, tmp_path):
+    """A witness renewing its certificate declares the old and the new together, so a consumer
+    holding either declaration connects to whichever certificate the witness is serving."""
     withab, conhab = pair
-    _, _, fingerprint = selfSigned[0]
-    colons = ":".join(fingerprint[i:i + 2] for i in range(0, 64, 2)).upper()
-    _declare(withab, conhab, colons)
-    assert httping.declaredCertPin(conhab.db, withab.pre) == bytes.fromhex(fingerprint)
+    (oneCert, oneKey, oneFp), (twoCert, twoKey, twoFp) = selfSigned
+    _declare(withab, conhab, f"{oneFp} {twoFp}")
+    assert httping.declaredCertPins(conhab.db, withab.pre) == frozenset(
+        {bytes.fromhex(oneFp), bytes.fromhex(twoFp)})
+
+    for certpath, keypath in ((oneCert, oneKey), (twoCert, twoKey)):
+        server = serve(certpath, keypath)
+        rep = _get(server.url, connector=httping.tlsConnector(conhab.db, withab.pre, server.url))
+        assert rep is not None and rep.status == 200
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    strangerCert, strangerKey = _write(tmp_path, "stranger", _cert("stranger", key), key)
+    stranger = serve(strangerCert, strangerKey)
+    connector = httping.tlsConnector(conhab.db, withab.pre, stranger.url)
+    rep = _get(stranger.url, connector=connector, timeout=1.0)
+    assert connector.refused and rep.status == httping.TlsPinRefusedStatus
 
 
-@pytest.mark.parametrize("value", ["", "not-a-fingerprint", "ab" * 31, "ab" * 33, "zz" * 32])
-def test_an_unrecognized_fingerprint_is_treated_as_absent(pair, value):
+FP = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+
+
+@pytest.mark.parametrize("value", [
+    "", "not-a-fingerprint", "ab" * 31, "ab" * 33, "zz" * 32,
+    FP.upper(),                                            # the convention is lowercase
+    ":".join(FP[i:i + 2] for i in range(0, 64, 2)),        # no colons
+    f"{FP}  {FP}", f" {FP}", f"{FP} ", f"{FP},{FP}",       # exactly one space between entries
+])
+def test_a_value_not_in_the_convention_is_treated_as_absent(pair, value):
     """DeclRecord's rule: a value a consumer does not recognize is not acted on. Here that means
-    the CA check, which still refuses a self-signed certificate."""
+    the CA check, which still refuses a self-signed certificate. The convention is written down
+    in DeclRecord, so a second implementation knows exactly what to emit rather than finding out
+    from which of its values keripy silently ignores."""
     withab, conhab = pair
     _declare(withab, conhab, value)
-    assert httping.declaredCertPin(conhab.db, withab.pre) is None
+    assert httping.declaredCertPins(conhab.db, withab.pre) is None
     assert httping.tlsConnector(conhab.db, withab.pre, "https://127.0.0.1:1/") is None
+
+
+def test_the_convention_is_written_where_declarers_will_read_it():
+    from keri.recording import DeclRecord
+    assert "``tls-cert-sha256``" in DeclRecord.__doc__
 
 
 def test_only_a_declaration_by_the_peer_itself_pins_it(pair, selfSigned):
@@ -326,8 +355,8 @@ def test_only_a_declaration_by_the_peer_itself_pins_it(pair, selfSigned):
     conhab.psr.parse(bytearray(conhab.makeDeclAttribs(
         attribs={"tls-cert-sha256": fingerprint}, version=Vrsn_1_0, kind=Kinds.json,
         gvrsn=Vrsn_1_0)))
-    assert httping.declaredCertPin(conhab.db, conhab.pre) is not None
-    assert httping.declaredCertPin(conhab.db, withab.pre) is None
+    assert httping.declaredCertPins(conhab.db, conhab.pre) is not None
+    assert httping.declaredCertPins(conhab.db, withab.pre) is None
 
 
 def test_plain_http_is_never_pinned(pair, selfSigned):
@@ -561,7 +590,7 @@ def test_every_witness_https_site_pins_a_declared_fingerprint(witnessed, selfSig
         assert isinstance(client.connector, httping.PinnedClientTls), name
         # a PinnedClient answers a refused request with a failure rather than never answering
         assert isinstance(client, httping.PinnedClient), name
-        assert client.connector.pin == bytes.fromhex(selfSigned[0][2]), name
+        assert client.connector.pins == frozenset({bytes.fromhex(selfSigned[0][2])}), name
         # hio follows a redirect to another host with a fresh connector that would keep the
         # pin's unverified context and drop the pin, so a pinned client does not redirect.
         assert client.respondent.redirectable is False, name
