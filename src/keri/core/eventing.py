@@ -4172,17 +4172,17 @@ class Kevery:
         sequence number of each establishment event.  If sn represents an interaction event (ixn) it
         searches backwards for the last establishment event prior to sn and returns that witness state.
 
+        When sn is at or after the last establishment event of the current key state, that event
+        is where the walk back ends, so its witness state is read directly without the walk.
+
         Parameters:
             pre (str): identifier prefix qb64
             sn (int): sequence number of the event for which witness state is desired
 
-        When sn is at or after the last establishment event of the current key state, that event
-        is where the walk back ends, so its witness state is read directly without the walk.
-
         Returns:
             list:  list of Prefixer objects representing the witness state for the identifier prefix at
                 the sequence number"""
-        if (lastEst := self._lastEstAt(pre, sn)) is not None:
+        if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:
             return self.db.wits.get(keys=(pre, lastEst.d))
 
         preb = pre.encode("utf-8")
@@ -4194,9 +4194,8 @@ class Kevery:
 
         return []
 
-    def _lastEstAt(self, pre, sn):
-        """
-        Returns LastEstLoc of the last establishment event of the current key state of pre when
+    def _fetchLastEstLoc(self, pre, sn):
+        """Returns LastEstLoc of the last establishment event of the current key state of pre when
         it is the establishment event authoritative for the event at sn, None otherwise, so that
         callers know when they may skip walking back through the KEL to find it.
 
@@ -5632,7 +5631,7 @@ class Kevery:
         Parameters:
             pre: qb64 of identifier prefix for KEL
             sn: int sequence number of event in KEL of pre"""
-        if (lastEst := self._lastEstAt(pre, sn)) is not None:  # no need to walk back
+        if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:  # no need to walk back
             return self.db.evts.get(keys=(pre, lastEst.d))
 
         found = False
