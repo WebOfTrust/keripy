@@ -392,12 +392,67 @@ def bootstrapConnector(url, **kwa):
     return BootstrapClientTls(**ha, **kwa)
 
 
+# Status of the response a PinnedClient gives a request it refused, after nginx's 495 "SSL
+# Certificate Error". It never came from the peer, which is why it is not a standard code.
+TlsPinRefusedStatus = 495
+
+
+class PinnedClient(http.clienting.Client):
+    """A hio http Client over a PinnedClientTls that answers every request a refusal leaves
+    stranded.
+
+    A refused connector never connects, so without this its requests would never get a response,
+    and every caller that waits for one -- Receiptor, the witness inquisitor, a messenger counting
+    replies -- would wait forever on the witness. Each stranded request instead gets a response
+    with status TlsPinRefusedStatus and ``errored`` set, which a caller treats like any failed
+    request."""
+
+    def service(self):
+        super(PinnedClient, self).service()
+        if not getattr(self.connector, "refused", False):
+            return
+        stranded = []
+        if self.waited and self.latest is not None:
+            stranded.append(self.latest)
+        stranded.extend(self.requests)
+        self.requests.clear()
+        self.latest = None
+        self.waited = False
+        self.connector.txbs.clear()
+        for request in stranded:
+            self.responses.append(dict(version=None, status=TlsPinRefusedStatus,
+                                       reason="TLS certificate does not match the declared pin",
+                                       headers={}, body=bytearray(), data=None,
+                                       request=request, errored=True,
+                                       error="TLS pin refused"))
+
+
+def makeClient(url, connector=None, **kwa):
+    """Return a hio http Client for ``url`` over ``connector``.
+
+    A PinnedClientTls gets a PinnedClient, so a refusal answers its requests. Either a pinned or a
+    bootstrap connector turns off redirects, because hio rebuilds the connector for a redirect to
+    another host with the same unverified context, and the new one keeps neither the pin nor the
+    record that the connection was unverified.
+
+    Parameters:
+        url (str): the endpoint
+        connector (tcp.ClientTls | None): from tlsConnector or bootstrapConnector, or None for
+            hio's default
+        **kwa: passed to http.clienting.Client, such as path
+
+    Returns:
+        http.clienting.Client"""
+    up = parse.urlparse(url)
+    if isinstance(connector, (PinnedClientTls, BootstrapClientTls)):
+        kwa["redirectable"] = False
+    klas = PinnedClient if isinstance(connector, PinnedClientTls) else http.clienting.Client
+    return klas(scheme=up.scheme, hostname=up.hostname, port=up.port, connector=connector, **kwa)
+
+
 def clientFor(db, eid, url, **kwa):
     """Return a hio http Client for ``url``, an endpoint of ``eid``, pinned if ``eid`` declared a
     certificate.
-
-    A pinned client does not follow redirects: hio builds a fresh connector for a redirect to
-    another host, and that connector would carry the pin's unverified context without the pin.
 
     Parameters:
         db (Baser): database holding accepted declarations
@@ -406,13 +461,8 @@ def clientFor(db, eid, url, **kwa):
         **kwa: passed to http.clienting.Client, such as path
 
     Returns:
-        http.clienting.Client"""
-    up = parse.urlparse(url)
-    connector = tlsConnector(db, eid, url)
-    if connector is not None:
-        kwa["redirectable"] = False
-    return http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port,
-                                 connector=connector, **kwa)
+        http.clienting.Client: a PinnedClient when pinned; see makeClient"""
+    return makeClient(url, connector=tlsConnector(db, eid, url), **kwa)
 
 
 class Clienter(doing.DoDoer):
@@ -452,9 +502,7 @@ class Clienter(doing.DoDoer):
             headers (dict, optional): Headers to include in the request, defaults to None
             connector (tcp.ClientTls | None): TLS connector to use, such as one from
                 tlsConnector or bootstrapConnector. None means hio's default for the scheme.
-                Either kind also turns off redirects: hio rebuilds the connector for a redirect
-                to another host with the same unverified context, and the new one keeps neither
-                the pin nor the record that the connection was unverified.
+                Either kind also turns off redirects; see makeClient.
 
         Returns:
             http.clienting.Client: The hio HTTP Client used for the request, or None if an error occurs.
@@ -462,13 +510,7 @@ class Clienter(doing.DoDoer):
         purl = parse.urlparse(url)
 
         try:
-            client = http.clienting.Client(scheme=purl.scheme,
-                                           hostname=purl.hostname,
-                                           port=purl.port,
-                                           portOptional=True,
-                                           connector=connector,
-                                           redirectable=not isinstance(
-                                               connector, (PinnedClientTls, BootstrapClientTls)))
+            client = makeClient(url, connector=connector, portOptional=True)
         except Exception as e:
             print(f"error establishing client connection={e}")
             return None

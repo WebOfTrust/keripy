@@ -545,7 +545,7 @@ class Oobiery:
                         else:
                             result = Result.failed
 
-                    except (KeriError, ValueError):
+                    except (KeriError, ValueError, TypeError):  # TypeError: JSON not an object
                         result = Result.failed
 
                     obr.state = result
@@ -567,7 +567,7 @@ class Oobiery:
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
 
-                    except (KeriError, ValueError):
+                    except (KeriError, ValueError, TypeError):
                         pass
 
                     # A body that is neither a schema nor a whole reply fails this OOBI only. Its
