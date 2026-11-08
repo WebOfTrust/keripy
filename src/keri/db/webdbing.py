@@ -145,6 +145,45 @@ _META_STORE = "__meta__"
 _VERSION_KEY = b"__version__"
 
 
+async def _close_storage_handle(handle):
+    """Best-effort release of the IndexedDB connection behind a PyScript storage handle.
+
+    PyScript's Python ``Storage`` object (a ``dict`` subclass) retains the live JS
+    storage handle at its literal ``__store__`` attribute. The name-mangled form
+    ``_Storage__store__`` never exists because ``__store__`` ends in two trailing
+    underscores, which Python's name-mangling rule exempts. The JS handle's
+    ``close()`` awaits its pending write queue and then closes the underlying
+    ``IDBDatabase`` connection. Keeping a connection open for every KERI subdatabase
+    exhausts browser IndexedDB resources on iOS, so WebDBer closes each handle once
+    its durable state has been read into memory.
+
+    This is best-effort cleanup: it is a no-op for fake/CPython storage handles and
+    never masks the caller's original error.
+
+    Note: reaching ``__store__`` is a private-API dependency on PyScript's storage
+    implementation (PRIVATE_API_DEPENDENCY) and is intended to be replaced by a
+    project-owned IndexedDB adapter.
+    """
+    if handle is None:
+        return
+    closer = None
+    # Literal ``__store__`` is the real PyScript runtime attribute (no name mangling).
+    underlying = getattr(handle, "__store__", None)
+    if underlying is None:
+        # Defensive fallback for any runtime that exposes the name-mangled form.
+        underlying = getattr(handle, "_Storage__store__", None)
+    if underlying is not None:
+        closer = getattr(underlying, "close", None)
+    if closer is None:
+        closer = getattr(handle, "close", None)
+    if closer is None:
+        return
+    try:
+        await closer()
+    except Exception:
+        pass
+
+
 @dataclass
 class SubDb:
     """
@@ -232,6 +271,7 @@ class WebDBer:
         self._stores = stores
         self.stores = list(stores)
         self._version = None
+        self._storage_opener = None
 
     @classmethod
     async def open(
@@ -271,28 +311,33 @@ class WebDBer:
         for store_name in all_store_names:
             namespace = f"{name}:{store_name}"
             handle = await opener(namespace)
-            if clear:
-                handle[_RECORDS_KEY] = "{}"
-                handle[_META_KEY] = "{}"
-                await handle.sync()
-            items = SortedDict(_deserialize_records(handle.get(_RECORDS_KEY)))
-            meta = _deserialize_meta(handle.get(_META_KEY))
-            flags_persisted = "dupsort" in meta
-            if items and not flags_persisted:
-                raise ValueError(
-                    "Persisted store metadata missing for non-empty store: "
-                    f"{namespace}. Clear storage to recreate it."
+            try:
+                if clear:
+                    handle[_RECORDS_KEY] = "{}"
+                    handle[_META_KEY] = "{}"
+                    await handle.sync()
+                items = SortedDict(_deserialize_records(handle.get(_RECORDS_KEY)))
+                meta = _deserialize_meta(handle.get(_META_KEY))
+                flags_persisted = "dupsort" in meta
+                if items and not flags_persisted:
+                    raise ValueError(
+                        "Persisted store metadata missing for non-empty store: "
+                        f"{namespace}. Clear storage to recreate it."
+                    )
+                opened[store_name] = SubDb(
+                    name=store_name,
+                    namespace=namespace,
+                    handle=None,
+                    dupsort=bool(meta.get("dupsort", False)),
+                    flags_persisted=flags_persisted,
+                    items=items,
                 )
-            opened[store_name] = SubDb(
-                name=store_name,
-                namespace=namespace,
-                handle=handle,
-                dupsort=bool(meta.get("dupsort", False)),
-                flags_persisted=flags_persisted,
-                items=items,
-            )
+            finally:
+                await _close_storage_handle(handle)
 
-        return cls(name=name, stores=opened)
+        instance = cls(name=name, stores=opened)
+        instance._storage_opener = opener
+        return instance
 
     @staticmethod
     def _storify(key: bytes | str) -> str:
@@ -317,12 +362,19 @@ class WebDBer:
             were synced.
         """
         count = 0
+        opener = getattr(self, "_storage_opener", None)
+        if opener is None:
+            opener = storage
         for subdb in self._stores.values():
             if not subdb.dirty:
                 continue
-            subdb.handle[_RECORDS_KEY] = _serialize_records(subdb.items)
-            subdb.handle[_META_KEY] = _serialize_meta({"dupsort": subdb.dupsort})
-            await subdb.handle.sync()
+            handle = await opener(subdb.namespace)
+            try:
+                handle[_RECORDS_KEY] = _serialize_records(subdb.items)
+                handle[_META_KEY] = _serialize_meta({"dupsort": subdb.dupsort})
+                await handle.sync()
+            finally:
+                await _close_storage_handle(handle)
             subdb.dirty = False
             count += 1
         return count
