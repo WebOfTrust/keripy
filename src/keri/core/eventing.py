@@ -5671,8 +5671,8 @@ class Kevery:
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnumber (Number): instance of sn of delegating/issuing event if any
-            diger (Diger): instance of said of delegating/issuing event if any
+            delsner (Number): instance of sn of delegating event if any
+            delsger (Diger): instance of said digest of delegating event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
