@@ -18,14 +18,23 @@ Tree metadata stored once per tree but digested with each part includes:
 
 For compactness the structure metadata digests in each node and leaf in the
 SIT uses the same digest type but any SAID can be anchored in a leaf.
-Each leaf's data hash SAID digest type is  individually encoded.
+Each leaf's info hash SAID digest type is  individually encoded.
 This approach balances compactness with versatility as a data map.
 
-Part data stored with each part (node or leaf) includes:
-- height of part
-- path of part
-- children SAIDs if node part
-- data SAID if leaf part
+Data stored with each node part includes:
+- SAID of node
+- height of node
+- path of node as its location in the tree.
+- left child SAID
+- right child SAID
+
+Data stored with each leaf part includes:
+- SAID of leaf
+- height of leaf
+- path of leaf where its matching prefix is its location in the tree. Its path
+      if derived from its bound info. Essentially the digest of the info SAID
+      computed using tree wide digest code
+- SAID of info bound to leaf using info specific digest code
 
 
 The height, `h` of a node indicates the height of the node in the tree.
@@ -39,35 +48,41 @@ node height of the node to which the leaf is attached.
 A path is encoded as a 32 byte, 256 bit number.
 A 0 in a bit position is a left child and a 1 in a bit position is a right child.
 
-For node paths, the number of significant bits aligned to the left (big endian)
-is given by the height of the node. The other bits to the right are zeroed.
-The MSb in a node path corresponds the path of a child attached
-to a node at height 256 and  the LSb in the corresponds to the path of a child
-attached to a node at its height. The minimum height of a node is 1. Only leaves
-have height 0.
-
 A leaf path is always of length 256, all bits matter. Each leaf is attached
-to a node as a child where the node path is a prefix to the leaf path.
-
+to a node as a child where the node path is a valid prefix to the leaf path.
 
 The path of a node is always its location in the tree. The root node has
 a path length of zero. Path length is equal to `pl = 256 - h`.
 Therefore the path length of a node is equal to its depth.
 The path length of a leaf is always 256 because a leaf's height is always 0.
 
-The SAID of a node is derived from the digest of its tree metadata,
-height, path, and the SAIDs  of its two children.
-The path of a leaf is derived from its SAID. Its SAID is derived from its
-tree metadata, its height, and the SAID of its leaf data.
+For node paths, the number of significant bits aligned to the left (big endian)
+is given by the height of the node. The other bits to the right are zeroed.
+Therefore the root node at height 256 has a path of length 0, and its path
+consists of all zeros.
+The MSb at 256 in a node path corresponds the path of a child attached
+to a node at height 256 and the LSb in the path corresponds to the path of a child
+attached to a node at its specified height.
+The minimum height of a node is 1. Only leaves have height = 0.
 
-Each child of the root node may be another node, a leaf, or empty. The root node
-is special because it may have zero, one or two empty children. All other nodes
-(not the root) always have two non-empty children. Therefore we only need two
-special SAIDs, one each for an empty left child and empty right child of the
-root node.
-Each child of non-root node always has two children. Each child may be another
-non-root node or a leaf. A non-root node could have two leaf, two nodes, or one
-node and one leaf as children.
+The SAID of a node is derived from the digest of its per tree and per node metadata.
+The per tree metadata is its tuid+version+code and the per node metadata is its
+height+path+left+right.
+
+The SAID of a leaf is derived from the digest of its per tree and per leaf metadata.
+The per tree metadata is its tuid+version+code and the per leaf metadata is its
+height+path+info.
+The path of a leaf is derived from the SAID of its leaf info using the tree-wide
+digest code.
+
+
+Each child of the root node may be another node's SAID, a leaf's SAID, or empty.
+The root node is special because it may have zero, one or two empty children.
+All other nodes (not the root) always have two non-empty children.
+
+Each child of a non-root node may be either another non-root node or a leaf.
+A non-root node could have as children, two nodes, two leaves, or one node and
+one leaf.
 
 The tree is automatically rebalanced each time a leaf is inserted.
 Consequently, an already existing leaf may be forced to move as the result
@@ -85,24 +100,47 @@ The tree grows from the root down.
 ```
 node SAIDed data  (+ is concatenation operator)
 
-TUID + Version + digestType + height + path + leftChildSAID + rightChildSAID
+tuid + version + digestType + path + height + leftChildSAID + rightChildSAID
 
 node data including its SAID
 
-nodeSAID + TUID + Version + digestType + height + path + leftChildSAID + rightChildSAID
+nodeSAID + TUID + Version + digestType + path + height + leftChildSAID + rightChildSAID
 
 ```
 
 ```
 leaf SAIDed data  (+ is concatenation operator)
 
-TUID + Version + digestType + height + leafDataSAID
+TUID + Version + digestType + height + path + leafDataSAID
 
 leaf data including its SAID
 
-leafSAID + TUID + Version + digestType + height + leafDataSAID
+leafSAID + TUID + Version + digestType + height + path + leafDataSAID
 
 ```
+
+An empty child of a root node does not introduce ambiguity
+(tree collision) because a given node or leaf can only be attached to the root
+child that corresponds to the most significant path bit (left or right) of the
+path of that child. Moreover because the SAID of a node or leaf is computed over
+its path, left children are separated from right children at the digest level.
+To restate, there is no ambiguity (collision) between two different roots,
+one with an empty left child and another with an empty right child.
+
+Suppose we have a root node with an empty left child and a non empty right child.
+The hashed data for that root node is as follows:
+`tuid + version + digestType + path + height + rightChildSAID`
+
+Suppose we have a different root node with an empty right child and a non empty
+left child. The hashed data for that root node is as follows:
+
+`tuid + version + digestType + path + height + leftChildSAID`
+
+Given a crytographic strength collision resistant digest, a left child SAID can
+never  equal a right child SAID because the child SAIDs hash their paths and
+a left child path always has a 0 in its MSb position and a right child path always
+has a 1 in the MSb position of its path. Therefore there is no need to have
+hash value constants to replace empty children.
 
 The data elements for each node and leaf are serialized using CESR. This enables
 a tree or parts of a tree to be streamed in a CESR stream in either compact
@@ -114,16 +152,17 @@ element type. The digest type is included as an extension of the version element
 
 
 
-## Empty Child Merging and Tree Size
+## Balanced Tree
 
 The maximum path length determines the maximum number of leafs and hence nodes
 in the tree. The optimization of using a balanced tree means that nodes are only
-added as needed to accomodate the number of leafs. All nodes but the root node
-have two children. Thus the tree grows down from the root and is maximally shallow
-for its given set of leaves.
+added as needed to accomodate the number of non-empty leafs.
+All nodes but the root node have two children.
+Thus the tree grows down from the root and is maximally shallow for its given
+set of leaves.
 
-To elaborate the tree only adds nodes as needed to fork to non-empy leafs.
-A SIT therefore  never has more nodes than the minimum needed
+To elaborate the SIT only adds nodes as needed to fork to non-empy leafs.
+A SIT therefore never has more nodes than the minimum needed
 to store its leaves. If the leaf paths are uniformly distributed then the
 tree will be well balanced and maximally shallow.
 
@@ -135,12 +174,18 @@ non-empty leaves.
 ## Security
 
 Because node paths are derived from cryptographic strength hashes of the leaves,
-the distribution of path segments is statistically uniform.
-The average path length of a node is a function the statistically approximate
-uniform distribution that results from a cryptographic strength digest.
-Although the worst case for depth is always the maximum path length, using
-the digest to generate the path and only storing forking nodes with non-empty
-children means that on average the leaf depth is close to minimum of
+and the hash space of cryptographic strength hashes is approximately a
+statistically uniform distribution in  order to satisfy the random oracle property,
+then the distribution of leaf paths is therefore  statistically uniform across
+the path space. This does not guarantee a well balanced tree, but does guarantee
+the the average path length is  `O(log2(L))` where `L` is the number of leaves
+
+To elaborate, the average path length of a node is a function of the
+statistically approximate uniform distribution that results from a cryptographic
+strength digest. Although the worst case for depth of any given leaf is always
+the maximum path length, the use of a cryptographic strength digest to generate
+the path combined with only storing forking nodes with non-empty
+children means that on average the leaf depth approaches the minimum of
 `Log2(L)` where `L` is the number of leaves.
 
 To restate, the principal advantage of a SIT comes from the fact that it is
@@ -169,6 +214,7 @@ always results in the same root digest?
 
 Open question, on average how many leaf moves are needed to rebalance on each
 new leaf insertion (hopefully 1 on average)
+
 
 ### Trade Space
 
@@ -214,22 +260,24 @@ or a 25% improvement.
 
 To elaborate, we can double the per node storage if we decrease the average
 depth by one and not incur a storage penalty. This gives us a per-node storage
-budget target for optimizing the tree using structure meta-data.
+budget target for optimizing the tree using structural (path, height) meta-data.
 
 In addition, reducing the average tree depth also minimizes the computation
 requirements for inclusion and exclusion proofs which are always on the order
 of the actual number of nodes on the branch to a given leaf
 (to proof or disproof its membership in the tree)
 
-So a tree that approaches the minimum of `Log2(L)` for the tree depth for non-empty
-leaves `L` also optimizes computational performance for the number of reads to
-generate a proof and the number of operations to verify a proof.
+So a tree that approaches the minimum of `Log2(L)` for the average leaf depth
+for non-empty leaves `L` also optimizes computational performance for the
+number of reads to generate an inclusion/exclusion proofs and the number of
+operations to verify an inclusion/exclusion proof.
 
-The trade-off is that using stucture metadata logic to rebalance the nodes
+The trade-off is that using stuctural metadata logic to rebalance the nodes
 increases to the overhead to insert or delete a leaf from the tree.
-But the insertion or deletion of a leaf is rare compared to the number of
-times that that leaf must be read and verified. Indeed, for many applications
-for a given tree,  the ratio of read/verify operations to insertion/deletion
-operations might be  on the order of thousands to millions.
+But the insertion or deletion operations on a leaf are infrequent compared to
+the number of times that that leaf must be read and/or verified.
+Indeed, for many applications for a given tree, the ratio of read/verify
+operations to insertion/deletion operations might be on the order of thousands
+to millions.
 So overall performance is maximized by minimizing average leaf depth.
 
