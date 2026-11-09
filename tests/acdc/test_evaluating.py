@@ -10,6 +10,46 @@ from keri.app.habbing import openHby
 from keri.core import Compactor, Schemer, SealEvent
 
 
+def test_leaf_edge_accepts_inline_schema_pin():
+    """A leaf edge may pin its far node's schema with an inline schema document."""
+    with openHby(name="inline-schema-pin", base="test",
+                 version=Vrsn_2_0) as hby:
+        # Create near and far nodes
+        issuer = hby.makeHab(name="issuer")
+        child = acdcmap(israid=issuer.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=issuer.pre)
+        origin = acdcmap(israid=issuer.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83BG36"),
+                         iseaid=issuer.pre)
+
+        # Use the far node's embedded schema as the Edge pin
+        schema = dict(child.sad["s"])
+        assert isinstance(schema.get("$id"), str)
+
+        # Keep node authentication outside this schema-pin test
+        def verifyNode(serder, nest, *, records=None):
+            return valid(f"node {serder.said} authenticated for edge test")
+
+        evaluator = EdgeEvaluator(
+            schemaEvaluator=SchemaEvaluator(hby.db),
+            verifyNode=verifyNode,
+            isDelegated=hby.kvy.isDelegated,
+        )
+
+        # Building a wire ACDC with this pin fails in the compactor, so the
+        # leaf is evaluated directly
+        leaf = dict(d="", n=child.said, s=schema)
+        verdict = evaluator._evaluateLeafEdge(
+            leaf,
+            nodes={child.said: {"serder": child}},
+            nserder=origin,
+            memo={child.said: valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert verdict is not None
+        assert verdict.verdict == Verdicts.valid
+
+
 def test_issuer_identity_operators():
     """I1I and DI1I compose, suppress defaults, and preserve retryability."""
     with openHby(name="issuer-identity-edges", base="test",
@@ -18,9 +58,11 @@ def test_issuer_identity_operators():
         unrelated = hby.makeHab(name="unrelated", kind=Kinds.cesr)
         issuee = hby.makeHab(name="issuee", kind=Kinds.cesr)
         otherIssuee = hby.makeHab(name="other-issuee", kind=Kinds.cesr)
+
         delegate = hby.makeHab(name="delegate", delpre=root.pre,
                                kind=Kinds.cesr)
 
+        # Keep node authentication outside these Edge tests
         def verifyNode(serder, nest, *, records=None):
             return valid(f"node {serder.said} authenticated for edge test")
 
@@ -29,12 +71,14 @@ def test_issuer_identity_operators():
                                   verifyNode=verifyNode,
                                   isDelegated=hby.kvy.isDelegated)
 
+        # Build one labeled leaf Edge.
         def makeEdge(label, far, operator, schema=None):
             node = dict(d="", n=far.said, o=operator)
             if schema is not None:
                 node["s"] = schema
             return dict(d="", **{label: node})
 
+        # Build and evaluate a two-node graph.
         def evaluate(nearIssuer, far, operator, *, nearIssuee=None,
                      schema=None):
             near = acdcmap(
@@ -49,6 +93,7 @@ def test_issuer_identity_operators():
             }
             return evaluator.evaluate(near.said, nodes=nodes)
 
+        # Build a schema for a chosen Edge Section shape.
         def edgeSchema(properties, required):
             return Schemer(sed={
                 "$id": "",
@@ -96,6 +141,7 @@ def test_issuer_identity_operators():
         unrelatedFar = acdcmap(israid=unrelated.pre,
                                attribute=dict(d="", role="far"))
 
+        # An empty Edge Section carries no requirements
         emptySection = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="empty-edge-section"),
@@ -107,11 +153,13 @@ def test_issuer_identity_operators():
         )
         assert verdict.verdict == Verdicts.valid
 
+        # A compact section is valid but its hidden logic cannot be evaluated
         hiddenSection = Compactor(
             mad=dict(d="", source=dict(d="", n=rootFar.said, o="I1I")),
             makify=True,
         )
         hiddenSection.compact()
+
         compactSection = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="compact-edge-section"),
@@ -120,15 +168,18 @@ def test_issuer_identity_operators():
         compactSectionNodes = {
             compactSection.said: {"serder": compactSection},
         }
+
         assert evaluator.walk(
             compactSection.said, nodes=compactSectionNodes, closed=True,
         ) == [compactSection.said]
+        
         verdict = evaluator.evaluate(
             compactSection.said, nodes=compactSectionNodes,
         )
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is False
 
+        # Reject malformed top-level Edge Section representations.
         for malformedEdgeSection in ("", "garbage", []):
             malformed = acdcmap(
                 israid=root.pre,
@@ -140,6 +191,31 @@ def test_issuer_identity_operators():
                 nodes={malformed.said: {"serder": malformed}},
             ) is None
 
+        # A schema cannot redefine the Edge Section as an array.
+        arraySchema = deepcopy(edgeSchema({}, []).sed)
+        arraySchema["$id"] = ""
+        arraySchema["properties"]["e"] = {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "object"},
+        }
+        arraySchema = Schemer(sed=arraySchema)
+        arrayEdgeSection = acdcmap(
+            israid=root.pre,
+            schema=arraySchema.sed,
+            attribute=dict(d="", role="array-edge-section"),
+            edge=[makeEdge("source", rootFar, "I1I")],
+        )
+        assert schemaEvaluator.evaluate(arrayEdgeSection).verdict == Verdicts.valid
+        assert evaluator.evaluate(
+            arrayEdgeSection.said,
+            nodes={
+                arrayEdgeSection.said: {"serder": arrayEdgeSection},
+                rootFar.said: {"serder": rootFar},
+            },
+        ) is None
+
+        # The top-level Edge Section must be a group, not a leaf Edge.
         topLevelEdge = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="top-level-edge"),
@@ -153,6 +229,7 @@ def test_issuer_identity_operators():
             },
         ) is None
 
+        # Reject false SAIDs on either the section or a nested Edge.
         falseCommitments = (
             dict(d=unrelatedFar.said,
                  source=dict(d="", n=rootFar.said, o="I1I")),
@@ -173,6 +250,7 @@ def test_issuer_identity_operators():
                 },
             ) is None
 
+        # A top-level group cannot carry a weight because it has no parent.
         weightedSection = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="weighted-edge-section"),
@@ -190,6 +268,7 @@ def test_issuer_identity_operators():
             },
         ) is None
 
+        # A schema-declared simple Edge points directly to a far node.
         simpleCompactEdge = acdcmap(
             israid=root.pre,
             schema=edgeSchema({"source": {"type": "string"}},
@@ -216,6 +295,7 @@ def test_issuer_identity_operators():
             closed=True,
         ) is None
 
+        # Refuse a string Edge when its schema does not define its meaning.
         ambiguousSchema = deepcopy(
             edgeSchema({"source": {"type": "string"}}, ["source"]).sed)
         ambiguousSchema["$id"] = ""
@@ -242,6 +322,7 @@ def test_issuer_identity_operators():
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is False
 
+        # A compact Edge remains unknown when AND requires it.
         opaqueCompactEdge = acdcmap(
             israid=root.pre,
             schema=edgeSchema({
@@ -276,6 +357,7 @@ def test_issuer_identity_operators():
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is False
 
+        # OR succeeds when one disclosed Edge is valid.
         validCompactEdge = acdcmap(
             israid=root.pre,
             schema=edgeSchema({
@@ -311,6 +393,7 @@ def test_issuer_identity_operators():
         assert schemaEvaluator.edgeKind(
             validCompactEdge, ("compact",)) == "compact"
 
+        # A compact Edge value must be a valid SAID.
         invalidCompactEdge = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="invalid-compact-edge"),
@@ -329,17 +412,20 @@ def test_issuer_identity_operators():
             },
         ) is None
 
+        # I1I requires equal near and far issuers.
         verdict = evaluate(root.pre, rootFar, "I1I")
         assert verdict.verdict == Verdicts.valid
         verdict = evaluate(unrelated.pre, rootFar, "I1I")
         assert verdict.verdict == Verdicts.invalid
 
+        # DI1I accepts equality but waits for missing delegation evidence.
         verdict = evaluate(root.pre, rootFar, "DI1I")
         assert verdict.verdict == Verdicts.valid
         verdict = evaluate(delegate.pre, rootFar, "DI1I")
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is True
 
+        # Anchor the delegate, then accept only its actual ancestry.
         root.interact(data=[SealEvent(i=delegate.pre,
                                       s=delegate.kever.serder.snh,
                                       d=delegate.kever.serder.said)._asdict()],
@@ -349,17 +435,20 @@ def test_issuer_identity_operators():
         verdict = evaluate(delegate.pre, unrelatedFar, "DI1I")
         assert verdict.verdict == Verdicts.invalid
 
+        # The latest issuer-identity operator wins.
         verdict = evaluate(delegate.pre, rootFar, ["DI1I", "I1I"])
         assert verdict.verdict == Verdicts.invalid
         verdict = evaluate(delegate.pre, rootFar, ["I1I", "DI1I"])
         assert verdict.verdict == Verdicts.valid
 
+        # Explicit I1I suppresses the targeted far node's I2I default.
         targetedFar = acdcmap(israid=root.pre,
                               attribute=dict(d="", role="targeted-far"),
                               iseaid=issuee.pre)
         verdict = evaluate(root.pre, targetedFar, "I1I")
         assert verdict.verdict == Verdicts.valid
 
+        # Independent operator groups compose with I1I.
         verdict = evaluate(root.pre, targetedFar, ["NI2I", "I1I"])
         assert verdict.verdict == Verdicts.valid
         verdict = evaluate(root.pre, targetedFar, ["E1E", "I1I"],
@@ -369,24 +458,29 @@ def test_issuer_identity_operators():
                            nearIssuee=otherIssuee.pre)
         assert verdict.verdict == Verdicts.invalid
 
+        # Unrecognized operators never weaken a proven failure.
         verdict = evaluate(unrelated.pre, rootFar, ["BOGUS", "I1I"])
         assert verdict.verdict == Verdicts.invalid
         verdict = evaluate(root.pre, targetedFar, "BOGUS")
         assert verdict.verdict == Verdicts.invalid
 
+        # A matching far-node schema pin is valid.
         verdict = evaluate(root.pre, rootFar, "I1I",
                            schema=rootFar.schema["$id"])
         assert verdict.verdict == Verdicts.valid
 
+        # A proven E1E failure overrides retryable DI1I evidence.
         missingAnchor = hby.makeHab(name="missing-anchor", delpre=root.pre,
                                     kind=Kinds.cesr)
         verdict = evaluate(missingAnchor.pre, targetedFar,
                            ["E1E", "DI1I"], nearIssuee=otherIssuee.pre)
         assert verdict.verdict == Verdicts.invalid
 
+        # Every operator in a list must be a string.
         malformed = evaluate(root.pre, rootFar, ["I1I", 1])
         assert malformed is None
 
+        # Reject malformed, missing, and unreachable graph nodes.
         assert evaluator.evaluate(rootFar.said, nodes={}) is None
         assert evaluator.evaluate(
             [], nodes={rootFar.said: {"serder": rootFar}}) is None
@@ -399,6 +493,7 @@ def test_issuer_identity_operators():
                 unrelatedFar.said: {"serder": unrelatedFar},
             }) is None
 
+        # A closed graph must disclose every referenced far node.
         dangling = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="near"),
@@ -407,6 +502,7 @@ def test_issuer_identity_operators():
         assert evaluator.evaluate(
             dangling.said, nodes={dangling.said: {"serder": dangling}}) is None
 
+        # An Edge node reference must be a SAID string.
         malformedReference = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="near"),
@@ -420,6 +516,7 @@ def test_issuer_identity_operators():
                 rootFar.said: {"serder": rootFar},
             }) is None
 
+        # Reject a malformed inline schema pin.
         malformedSchema = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="near"),
@@ -436,6 +533,7 @@ def test_issuer_identity_operators():
                 rootFar.said: {"serder": rootFar},
             }) is None
 
+        # Schema collection validation rejects malformed caller input.
         verdict = schemaEvaluator.validateSchemas(nodes=None, order=[])
         assert verdict.verdict == Verdicts.invalid
 
@@ -446,6 +544,7 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
                  version=Vrsn_2_0) as hby:
         issuer = hby.makeHab(name="issuer", kind=Kinds.cesr)
 
+        # Keep node authentication outside this schema-reduction test.
         def verifyNode(serder, nest, *, records=None):
             return valid(f"node {serder.said} authenticated for schema reduction")
 
@@ -454,11 +553,13 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
                                   verifyNode=verifyNode,
                                   isDelegated=hby.kvy.isDelegated)
 
+        # This far node satisfies its own schema.
         validFar = acdcmap(
             israid=issuer.pre,
             attribute=dict(d="", role="valid"),
         )
 
+        # This far node is missing a field required by its schema.
         invalidSchema = deepcopy(validFar.schema)
         invalidSchema["$id"] = ""
         invalidSchema["title"] = "Schema requiring an absent top-level field"
@@ -470,6 +571,7 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
             attribute=dict(d="", role="schema-invalid"),
         )
 
+        # This far node references a schema that is not cached.
         missingSchema = deepcopy(validFar.schema)
         missingSchema["$id"] = ""
         missingSchema["title"] = "Uncached far-node schema"
@@ -480,6 +582,7 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
             attribute=dict(d="", role="schema-missing"),
         )
 
+        # Place both far-node verdicts inside the same logical group.
         def evaluateGroup(operator, optionalFar):
             origin = acdcmap(
                 israid=issuer.pre,
@@ -501,15 +604,19 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
             }
             return evaluator.evaluate(origin.said, nodes=nodes)
 
+        # One valid branch satisfies OR despite an invalid branch.
         verdict = evaluateGroup("OR", invalidFar)
         assert verdict.verdict == Verdicts.valid
 
+        # AND propagates the invalid branch.
         verdict = evaluateGroup("AND", invalidFar)
         assert verdict.verdict == Verdicts.invalid
 
+        # One valid branch satisfies OR without waiting for missing evidence.
         verdict = evaluateGroup("OR", missingFar)
         assert verdict.verdict == Verdicts.valid
 
+        # AND remains retryable while a required schema is missing.
         verdict = evaluateGroup("AND", missingFar)
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is True

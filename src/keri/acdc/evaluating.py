@@ -220,68 +220,63 @@ class EdgeEvaluator:
                 except Exception:
                     return None
                 continue
-            if isinstance(edges, Mapping):
-                blocks = [edges]
-            elif (isinstance(edges, list)
-                  and edges
-                  and all(isinstance(edge, Mapping) for edge in edges)):
-                blocks = edges
-            else:
+
+            # An expanded Edge Section is one top-level Edge-group block.
+            if not isinstance(edges, Mapping):
                 return None
 
-            for edge in blocks:
-                if not verifyExpandedSection(edge, kind=nserder.kind):
+            if not verifyExpandedSection(edges, kind=nserder.kind):
+                return None
+            groups = deque([(edges, (), False)])
+            while groups:
+                group, path, nested = groups.popleft()
+                labels = EdgeGroupLabels if nested else EdgeSectionLabels
+                if not nested and "w" in group:
                     return None
-                groups = deque([(edge, (), False)])
-                while groups:
-                    group, path, nested = groups.popleft()
-                    labels = EdgeGroupLabels if nested else EdgeSectionLabels
-                    if not nested and "w" in group:
+                if "n" in group:
+                    if not nested:  # the Edge Section itself is an Edge-group
                         return None
-                    if "n" in group:
-                        if not nested:  # the Edge Section itself is an Edge-group
+                    if any(label not in EdgeNodeLabels for label in group):
+                        return None
+                    edgeSaid = group.get("n")
+                    if not isinstance(edgeSaid, str):
+                        return None
+                    try:
+                        if Saider(qb64=edgeSaid).qb64 != edgeSaid:
                             return None
-                        if any(label not in EdgeNodeLabels for label in group):
+                    except Exception:
+                        return None
+                    if edgeSaid not in nodes:
+                        if closed:
                             return None
-                        edgeSaid = group.get("n")
-                        if not isinstance(edgeSaid, str):
-                            return None
+                        continue
+                    if edgeSaid not in seen:
+                        queue.append(edgeSaid)
+                    continue
+
+                for label, node in group.items():
+                    if label in labels:
+                        continue
+                    childPath = path + (label,)
+                    if isinstance(node, str):
                         try:
-                            if Saider(qb64=edgeSaid).qb64 != edgeSaid:
+                            if Saider(qb64=node).qb64 != node:
                                 return None
                         except Exception:
                             return None
-                        if edgeSaid not in nodes:
-                            if closed:
-                                return None
-                            continue
-                        if edgeSaid not in seen:
-                            queue.append(edgeSaid)
-                        continue
-
-                    for label, node in group.items():
-                        if label in labels:
-                            continue
-                        childPath = path + (label,)
-                        if isinstance(node, str):
-                            try:
-                                if Saider(qb64=node).qb64 != node:
+                        edgeKind = self.schemaEvaluator.edgeKind(
+                            nserder, childPath)
+                        if edgeKind == "simple":
+                            if node not in nodes:
+                                if closed:
                                     return None
-                            except Exception:
-                                return None
-                            edgeKind = self.schemaEvaluator.edgeKind(
-                                nserder, childPath)
-                            if edgeKind == "simple":
-                                if node not in nodes:
-                                    if closed:
-                                        return None
-                                    continue
-                                if node not in seen:
-                                    queue.append(node)
-                            continue
-                        if not isinstance(node, Mapping):
-                            return None
-                        groups.append((node, childPath, True))
+                                continue
+                            if node not in seen:
+                                queue.append(node)
+                        continue
+                    if not isinstance(node, Mapping):
+                        return None
+                    groups.append((node, childPath, True))
 
         if len(seen) != len(nodes):
             return None
@@ -355,24 +350,14 @@ class EdgeEvaluator:
                 f"whose hidden section this verifier cannot evaluate",
                 retryable=False)
         else:
-            if isinstance(edges, Mapping):
-                blocks = [edges]
-            elif (isinstance(edges, list) and edges
-                  and all(isinstance(edge, Mapping) for edge in edges)):
-                blocks = edges
-            else:
+            if not isinstance(edges, Mapping):
                 return None
 
-            verdicts = []
-            for edge in blocks:
-                verdict = self._evaluateGroupEdge(
-                    edge, nodes=nodes, nserder=nserder, nested=False,
-                    memo=memo, records=records, inheritedPins=(), path=())
-                if verdict is None:
-                    return None
-                verdicts.append(verdict)
-
-            section = chaining.reduceAnd(verdicts)
+            section = self._evaluateGroupEdge(
+                edges, nodes=nodes, nserder=nserder, nested=False,
+                memo=memo, records=records, inheritedPins=(), path=())
+            if section is None:
+                return None
 
         memo[said] = chaining.reduceAnd([auth, schema, section])
         return memo[said]

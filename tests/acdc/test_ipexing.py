@@ -5947,36 +5947,6 @@ def _hiddenRegistryAggregate(issuer, compact=False):
     return acdc
 
 
-def test_ipex_v2_leaf_edge_accepts_inline_schema_pin():
-    """A leaf edge may pin its far node's schema with an inline schema document."""
-    with openHby(name="ipex-v2-inline-schema-pin",
-                 base="test",
-                 version=Vrsn_2_0) as hby:
-        issuer = hby.makeHab(name="issuer")
-        handler = IpexHandler(resource="/ipex/grant", hby=hby,
-                              notifier=Recorder())
-        child = acdcmap(israid=issuer.pre,
-                        attribute=dict(d="", role="member"),
-                        iseaid=issuer.pre)
-        origin = acdcmap(israid=issuer.pre,
-                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                         iseaid=issuer.pre)
-        schema = dict(child.sad["s"])
-        assert isinstance(schema.get("$id"), str)
-
-        # Building a wire ACDC with this pin fails in the compactor, so the
-        # leaf is evaluated directly.
-        leaf = dict(d="", n=child.said, s=schema)
-        verdict = handler._evaluateLeafEdge(
-            leaf,
-            nodes={child.said: {"serder": child}},
-            nserder=origin,
-            memo={child.said: chaining.valid("far node vetted elsewhere")},
-            inheritedPins=())
-        assert verdict is not None
-        assert verdict.verdict == Verdicts.valid
-
-
 def test_ipex_v2_rejects_hidden_aggregate_issuer_registry_signature_fallback():
     """A Grant cannot replace an rd hidden in an aggregate entry with a signature."""
     with openHby(name="ipex-v2-hidden-aggregate-registry",
