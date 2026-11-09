@@ -16,7 +16,7 @@ from socket import gaierror
 from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 
 from ..kering import (Schemes, Roles,
-                      MissingEntryError, ConfigurationError)
+                      MissingEntryError, ConfigurationError, Colds, sniff)
 from ..core import eventing, parsing, coring, serdering
 
 
@@ -873,7 +873,14 @@ class HTTPMessenger(doing.DoDoer):
             if self.auth is not None:
                 headers["Authorization"] = self.auth
 
-            self.posted += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
+            if sniff(msg) in (Colds.txt, Colds.bny):
+                headers.update({"Content-Type": "application/cesr",
+                                "Content-Length": len(msg),
+                                CESR_DESTINATION_HEADER: self.wit})
+                self.client.request(method="PUT", path="/", headers=headers, body=bytes(msg))
+                self.posted += 1
+            else:
+                self.posted += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
                 yield self.tock
 

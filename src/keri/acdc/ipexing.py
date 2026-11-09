@@ -23,7 +23,7 @@ from ..kering import (Colds, DuplicitousRegistryError, Ilks, KeriError,
                       Vrsn_2_0, sniff)
 from ..core import (Aggor, BlindState, Blinder, BoundState, Compactor, Counter,
                     Codens, Diger, GenDex, Number, Pather, Prefixer, Parser,
-                    Saider, SealEvent, SealSource, Serdery, Texter, exchange,
+                    Saider, Schemer, SealEvent, SealSource, Serdery, Texter, exchange,
                     exchept, messagize)
 from ..peer.exchanging import (cloneMessage, loadParsedNestedSubstreams,
                                verifyAttachments)
@@ -757,23 +757,38 @@ class IpexHandler:
                     return False
 
                 try:
-                    _, _, extraSeals = evidence
+                    tsgs, cigars, extraSeals = evidence
                 except (TypeError, ValueError):
                     return False
 
-                # Verify every presentation registry declared for this disclosure.
+                origin = grantNodes[origins[0]]
+                origin = origin["serder"] if isinstance(origin, dict) else origin.serder
+
+                # Sender is always a Grantor
+                grantors = {serder.pre}
+
+                # Use the origin's issuee or issuer as a Grantor when present, add it to the Grantors
+                originGrantor = origin.iseaid or origin.israid
+                if originGrantor:
+                    grantors.add(originGrantor)
+
+                # Add Grantors from the Grant's supplied evidence
+                grantors.update(prefixer.qb64 for prefixer, _, _, _ in tsgs)
+                grantors.update(cigar.verfer.qb64 for cigar in cigars)
+                grantors.update(prefixer.qb64 for prefixer, _, _ in extraSeals)
+
+                # Verify every registry declared for a Grantor in this disclosure.
                 tethered = self._verifyPresentationAuthGraph(
                     serder=serder,
                     nodes=grantNodes,
                     order=grantOrder,
+                    grantors=grantors,
                 )
                 if tethered is None:
                     return False
 
                 # A truthy ax requires one permitted Grant anchorer.
                 if requiresAnchor:
-                    origin = grantNodes[origins[0]]
-                    origin = origin["serder"] if isinstance(origin, dict) else origin.serder
                     anchorers = set(tethered)
 
                     if sscs and self._verifySourceAnchor(serder=serder,
@@ -1309,7 +1324,7 @@ class IpexHandler:
 
         # An inner rd without a top-level rd selects the unsupported hidden
         # issuer-registry form; it must not fall through to another factor.
-        if self._presentationRegistries(serder) is None:
+        if self._hidesIssuerRegistry(serder):
             return False, None
 
         # Authentication Factor 2: Seal Anchor
@@ -1562,6 +1577,29 @@ class IpexHandler:
             return None
 
     @staticmethod
+    def _hidesIssuerRegistry(serder):
+        """Report whether a disclosed section hides the issuer registry.
+
+        The ACDC spec lets an Issuer omit the top-level ``rd`` and nest it in
+        the Attribute or Aggregate section instead. Only disclosed sections can
+        be inspected; a compact section or entry gives the verifier no ``rd``.
+        """
+        if serder.sad.get("rd"):
+            return False
+
+        sections = [serder.sad.get("a")]
+
+        # Skip the aggregate root and inspect its disclosed entries.
+        aggregate = serder.sad.get("A")
+        if isinstance(aggregate, list):
+            sections.extend(aggregate[1:])
+        else:
+            sections.append(aggregate)
+
+        return any(isinstance(section, Mapping) and section.get("rd")
+                   for section in sections)
+
+    @staticmethod
     def _presentationRegistries(serder):
         """Extract the disclosed Issuee presentation-registry declaration.
 
@@ -1603,8 +1641,8 @@ class IpexHandler:
 
         return [(issuee, regk)]
 
-    def _verifyPresentationAuthGraph(self, serder, nodes, order):
-        """Verify presentation registries declared by the disclosed DAG."""
+    def _verifyPresentationAuthGraph(self, serder, nodes, order, grantors):
+        """Verify registries declared for Grantors in the disclosed DAG."""
 
         originSaid = order[0]
         origin = nodes[originSaid]
@@ -1634,6 +1672,11 @@ class IpexHandler:
 
             # Keep each declaration with its node-local proof stream.
             for issuee, regk in declarations:
+                # A declaration applies only when its Issuee participates as a
+                # Grantor in this IPEX.
+                if issuee not in grantors:
+                    continue
+
                 # A direct issuance does not present recipient-targeted nodes
                 # to an unknown third party.
                 if issuance and issuee == recipient:

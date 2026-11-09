@@ -5908,6 +5908,107 @@ def test_ipex_v2_rejects_hidden_issuer_registry_signature_fallback():
         assert recorder.items == []
 
 
+def _grantAccepted(hby, issuer, recipient, acdc, message):
+    """Process a signed Grant of ``acdc`` and report whether it was accepted."""
+    grantExn, grantAtc = ipexGrant(
+        hab=issuer,
+        recp=recipient.pre,
+        message=message,
+        origin=_signed(acdc, issuer),
+    )
+
+    recorder = Recorder()
+    exc = Exchanger(hby=hby, handlers=[])
+    loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+    ims = bytearray(grantExn.raw)
+    ims.extend(grantAtc)
+    Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+    assert ims == bytearray()
+
+    accepted = hby.db.exns.get(keys=(grantExn.said,)) is not None
+    assert (recorder.items != []) == accepted
+    return accepted
+
+
+def _hiddenRegistryAggregate(issuer, compact=False):
+    """Build an aggregate ACDC whose only rd hides in an ``A`` entry."""
+    nonces = [Noncer(raw=b"hiddenaggregate%01d" % k).qb64 for k in range(3)]
+    ael = ["",
+           dict(d="", u=nonces[0], rd=Diger(ser=b"hidden registry").qb64),
+           dict(d="", u=nonces[1], entitlement="member")]
+    aggor = Aggor(ael=ael, makify=True, kind=Kinds.json)
+    aggregate = list(aggor.ael)
+    if compact:
+        # Disclose the registry entry only by its SAID.
+        aggregate[1] = aggregate[1]["d"]
+    acdc = acdcagg(israid=issuer.pre, uuid=nonces[2], aggregate=aggregate)
+    assert not acdc.sad.get("rd")
+    return acdc
+
+
+def test_ipex_v2_leaf_edge_accepts_inline_schema_pin():
+    """A leaf edge may pin its far node's schema with an inline schema document."""
+    with openHby(name="ipex-v2-inline-schema-pin",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        handler = IpexHandler(resource="/ipex/grant", hby=hby,
+                              notifier=Recorder())
+        child = acdcmap(israid=issuer.pre,
+                        attribute=dict(d="", role="member"),
+                        iseaid=issuer.pre)
+        origin = acdcmap(israid=issuer.pre,
+                         attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                         iseaid=issuer.pre)
+        schema = dict(child.sad["s"])
+        assert isinstance(schema.get("$id"), str)
+
+        # Building a wire ACDC with this pin fails in the compactor, so the
+        # leaf is evaluated directly.
+        leaf = dict(d="", n=child.said, s=schema)
+        verdict = handler._evaluateLeafEdge(
+            leaf,
+            nodes={child.said: {"serder": child}},
+            nserder=origin,
+            memo={child.said: chaining.valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert verdict is not None
+        assert verdict.verdict == Verdicts.valid
+
+
+def test_ipex_v2_rejects_hidden_aggregate_issuer_registry_signature_fallback():
+    """A Grant cannot replace an rd hidden in an aggregate entry with a signature."""
+    with openHby(name="ipex-v2-hidden-aggregate-registry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+        hidden = _hiddenRegistryAggregate(issuer)
+
+        assert not _grantAccepted(hby, issuer, recipient, hidden,
+                                  "Hidden aggregate registry must not downgrade")
+
+
+def test_ipex_v2_compact_aggregate_entry_is_not_a_hidden_issuer_registry():
+    """An undisclosed aggregate entry gives the verifier no rd to act on.
+
+    A compact entry looks the same whether or not it hides an rd, so treating
+    it as a hidden issuer registry would refuse every registry-less aggregate
+    that is partially disclosed. The signature factor still applies.
+    """
+    with openHby(name="ipex-v2-compact-aggregate-entry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+        compact = _hiddenRegistryAggregate(issuer, compact=True)
+        assert isinstance(compact.sad["A"][1], str)
+
+        assert _grantAccepted(hby, issuer, recipient, compact,
+                              "Compact aggregate entry falls back to signature")
+
+
 def test_ipex_v2_blindable_registry_roundtrip():
     """Grant a blindable V2 registry update through IPEX and recover it."""
     with openHby(name="ipex-v2-blindable",
@@ -8836,11 +8937,12 @@ def test_ipex_v2_issuance_exempts_linked_recipient_registry():
             serder=grant,
             nodes=nodes,
             order=[origin.said, child.said],
+            grantors={issuer.pre, issuee.pre},
         ) == set()
 
 
-def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
-    """Every participating Issuee's presentation registry binds the grant."""
+def test_ipex_v2_verifies_presentation_registries_for_different_grantors():
+    """Every participating Grantor's presentation registry binds the grant."""
     with openHby(name="ipex-v2-multiple-presentation-registries",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -8962,6 +9064,24 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                         Number(sn=childIssuee.kever.lastEst.s),
                         Diger(qb64=childIssuee.kever.lastEst.d),
                         childIssuee.sign(ser=grantExn.raw, indexed=True))
+
+            # A declaration belonging to a disclosed but non-participating
+            # Issuee does not require that Issuee's registry proof.
+            handler = exc.routes["/ipex/grant"]
+            originNest = Parser(version=Vrsn_2_0).parse(
+                ims=_nest(proofedOrigin), framed=True, processive=False)[0]
+            childNest = Parser(version=Vrsn_2_0).parse(
+                ims=_nest(_proofed(child, childIssuerProof)),
+                framed=True,
+                processive=False,
+            )[0]
+            assert handler._verifyPresentationAuthGraph(
+                serder=grantExn,
+                nodes={origin.said: originNest, child.said: childNest},
+                order=[origin.said, child.said],
+                grantors={proxy.pre, originIssuee.pre},
+            ) == {originIssuee.pre}
+
             # One valid presentation registry cannot replace the child's proof.
             incompleteChild = _proofed(child, childIssuerProof)
             ims = messagize(
@@ -8975,11 +9095,11 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # The sender signature and both Issuee TEL factors accept the Grant
-            # without redundant signatures from either non-sender Issuee.
+            # The origin Issuee is the principal presenter, while the child's
+            # endorsement makes it another Grantor. Both registries are required.
             ims = messagize(
                 grantExn,
-                tsgs=[senderTsg],
+                tsgs=[senderTsg, childTsg],
                 nests=[_nest(proofedOrigin), _nest(proofedChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -8989,8 +9109,8 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
             assert list(hby.db.esigs.getTopItemIter(
                 keys=(grantExn.said, originIssuee.pre, ""))) == []
-            assert list(hby.db.esigs.getTopItemIter(
-                keys=(grantExn.said, childIssuee.pre, ""))) == []
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(grantExn.said, childIssuee.pre, "")))) == 1
             assert len(recorder.items) == 1
             assert recorder.items[0]["r"] == "/xip/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
@@ -9029,12 +9149,18 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                            Number(sn=issuer.kever.lastEst.s),
                            Diger(qb64=issuer.kever.lastEst.d),
                            issuer.sign(ser=issuanceExn.raw, indexed=True))
+            childIssuanceTsg = (
+                childIssuee.kever.prefixer,
+                Number(sn=childIssuee.kever.lastEst.s),
+                Diger(qb64=childIssuee.kever.lastEst.d),
+                childIssuee.sign(ser=issuanceExn.raw, indexed=True),
+            )
 
-            # The other Issuee's declared registry remains mandatory even
-            # though the origin is undergoing original issuance.
+            # The other Issuee explicitly co-grants this issuance, so its
+            # declared registry remains mandatory.
             missing = messagize(
                 issuanceExn,
-                tsgs=[issuanceTsg],
+                tsgs=[issuanceTsg, childIssuanceTsg],
                 nests=[_nest(_proofed(origin, originIssuerProof)),
                        _nest(_proofed(child, childIssuerProof))],
                 framed=False,
@@ -9050,7 +9176,7 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             # own presentation registry remains correctly exempt.
             complete = messagize(
                 issuanceExn,
-                tsgs=[issuanceTsg],
+                tsgs=[issuanceTsg, childIssuanceTsg],
                 nests=[_nest(_proofed(origin, originIssuerProof)),
                        _nest(_proofed(child,
                                       childIssuerProof,
