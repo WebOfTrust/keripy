@@ -6487,7 +6487,7 @@ class Kevery:
                 # valid event escrow.
                 self.db.pwes.rem(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
-                logger.info("Kevery: PWE unescrow succeeded in valid event: key = %s \tdigest = %s",
+                logger.info("Kevery: PWE unescrow succeeded in valid event: key = (%s, %s) \tdigest = %s",
                            pre, sn, edig.decode())
                 logger.debug("Event=\n%s\n", eserder.pretty())
 
