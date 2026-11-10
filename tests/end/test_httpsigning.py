@@ -884,6 +884,24 @@ def test_policy_floor():
     hs.Policy(request=("@query", "Content-Type", "@path", "@method"))
 
 
+def test_policy_authority_only_with_comparison():
+    """Requiring @authority without comparing it with the authorities served
+    would let a request signed for one service replay to another (profile
+    section 3), so @authority in the request set needs requireAuthority."""
+    withAuthority = ("@method", "@path", "@query", "@authority")
+    with pytest.raises(ValueError):
+        hs.Policy(request=withAuthority)
+    with pytest.raises(ValueError):
+        hs.Policy(request=("@method", "@path", "@query", '"@authority"'))
+    policy = hs.Policy(request=withAuthority, requireAuthority=True,
+                       authorities=["keria.example"])
+    verify(signed(), policy=policy)
+    replayed = signed(authority=None,
+                      headers={"Host": "evil.example", "Content-Length": "7"})
+    with pytest.raises(hs.SignatureMismatch):
+        verify(replayed, policy=policy)
+
+
 @pytest.mark.parametrize("created,expires,code", [
     (NOW - 360, None, None),
     (NOW - 361, None, "signature-stale"),

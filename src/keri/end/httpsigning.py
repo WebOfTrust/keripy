@@ -867,6 +867,8 @@ class Policy:
     Attributes:
         request (tuple): minimum covered components of a request, besides
             content-digest when there is a body. Must include RequestMinimum.
+            @authority is not listed here: requireAuthority adds it, together
+            with the comparison against authorities.
         requireAuthority (bool): also require @authority, compared with
             authorities
         authorities (frozenset): authorities this verifier serves, lowercase
@@ -894,6 +896,13 @@ class Policy:
             if _componentKey(_component(component)) not in given:
                 raise ValueError(f"Policy request set must include "
                                  f"{component} (profile section 3).")
+        if (_componentKey(_component("@authority")) in given
+                and not self.requireAuthority):
+            # covering @authority without comparing it with the authorities
+            # served would let a request signed for one service replay to
+            # another (profile section 3)
+            raise ValueError("Require @authority with requireAuthority and "
+                             "authorities, not in the request set.")
         for name in ("maxAge", "skew"):
             value = getattr(self, name)
             if type(value) is not int or value <= 0:
