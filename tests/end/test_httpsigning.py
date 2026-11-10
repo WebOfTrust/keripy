@@ -383,6 +383,35 @@ def test_signature_base_refusals():
         base(["@authority"], headers={})
 
 
+def test_signature_base_bytes_derived_inputs():
+    """method, authority, path and query given as bytes, as ASGI gives
+    raw_path and query_string, are decoded as latin-1 like header values."""
+    covered = ["@method", "@authority", "@path", "@query"]
+    text = hs.signatureBase(covered, {}, method="POST",
+                            authority="keria.example:443", path="/a%20b",
+                            query="x=1")
+    assert hs.signatureBase(covered, {}, method=b"POST",
+                            authority=b"Keria.Example:443", path=b"/a%20b",
+                            query=b"x=1") == text
+    assert hs.normalizeAuthority(b"keria.example:80") == "keria.example"
+    # a non-ASCII byte survives decoding, and the base refuses it
+    with pytest.raises(hs.SignatureMismatch):
+        hs.signatureBase(["@path"], {}, path=b"/\xe9")
+
+    # a request verifies with the inputs as bytes
+    msg = signed()
+    raw = {**msg, **{k: msg[k].encode() for k in
+                     ("method", "authority", "path", "query")}}
+    policy = hs.Policy(requireAuthority=True, authorities=["keria.example"])
+    assert verify(raw, policy=policy).keyid == ntSigner().verfer.qb64
+
+    # and so does a legacy one
+    with keriaController() as (hby, controller):
+        hs.verifyRequest(method=b"POST", path=b"/boot", query=None,
+                         headers=keriaHeaders(), body=b"",
+                         resolver=hs.keverResolver(controller.kevers))
+
+
 def test_signature_base_duplicates_ignore_param_order():
     """Duplicate detection ignores parameter order and runs before the
     unsupported-component check (profile section 9)."""

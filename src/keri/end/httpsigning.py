@@ -331,6 +331,15 @@ def _latin1(value):
     return str(value)
 
 
+def _text(value):
+    """A derived-component input (method, authority, path, query) given as
+    bytes, as ASGI gives raw_path and query_string, is decoded as latin-1
+    like a header value; None stays None."""
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value).decode("latin-1")
+    return value
+
+
 def _fieldValue(fields, name):
     """
     Returns RFC 9421 section 2.1 component value of field name, or None when
@@ -441,7 +450,7 @@ def normalizeAuthority(authority):
     wrong is http on 443 or https on 80, and that fails closed as
     signature-mismatch.
     """
-    authority = authority.lower()
+    authority = _text(authority).lower()
     for port in _DefaultPorts:
         if authority.endswith(port):
             return authority[:-len(port)]
@@ -469,6 +478,8 @@ def _statusCode(status):
 
 
 def _componentValue(item, *, method, authority, path, query, fields, status):
+    method, authority, path, query = (_text(v) for v in
+                                      (method, authority, path, query))
     name = item.value
     if name == "@method":
         value = method
@@ -540,6 +551,8 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
         authority (str): @authority without default port; None means Host
         path (str): @path as sent, percent-encoding included
         query (str): query as sent without the leading '?'; None or '' is none
+            method, authority, path and query may each be bytes, decoded as
+            latin-1.
         headers: target message fields, mapping or iterable of pairs
         status (int | str): response status, an int or a status line such
             as '200 OK'. Set means the target is a response.
@@ -1414,6 +1427,7 @@ def _legacyBase(inputage, *, method, path, fields):
     """
     from .ending import normalize
 
+    method, path = _text(method), _text(path)
     items = []
     for field in inputage.fields:
         if field.startswith("@"):
