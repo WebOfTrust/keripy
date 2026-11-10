@@ -891,7 +891,12 @@ class Policy:
         object.__setattr__(self, "authorities",
                            frozenset(normalizeAuthority(a)
                                      for a in self.authorities))
-        given = {_componentKey(_component(c)) for c in self.request}
+        try:
+            # a component no request can cover would refuse every request
+            items = _components(self.request, response=False)
+        except HttpSigError as ex:
+            raise ValueError(f"Policy request set is invalid: {ex}") from ex
+        given = {_componentKey(item) for item in items}
         for component in RequestMinimum:
             if _componentKey(_component(component)) not in given:
                 raise ValueError(f"Policy request set must include "

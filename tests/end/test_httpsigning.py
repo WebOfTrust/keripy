@@ -882,6 +882,11 @@ def test_policy_floor():
             hs.Policy(**kwa)
     # more than the minimum, in any order and case, is fine
     hs.Policy(request=("@query", "Content-Type", "@path", "@method"))
+    # a component no request can cover would refuse every request
+    for extra in ("@target-uri", "@status", '"@path";req', '"x";bs', 12,
+                  '"Content-Type"', "@method"):
+        with pytest.raises(ValueError):
+            hs.Policy(request=("@method", "@path", "@query", extra))
 
 
 def test_policy_authority_only_with_comparison():
