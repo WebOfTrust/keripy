@@ -1231,6 +1231,13 @@ def test_verified_request():
                                   headers=keriaHeaders(), body=b"",
                                   resolver=hs.keverResolver(controller.kevers))
         assert legacy.request.path == "/boot"
+        # a legacy request's authority, too, is the argument or Host
+        assert legacy.request.authority is None
+        headers = [("Host", "keria.example"), *keriaHeaders().items()]
+        legacy = hs.verifyRequest(method="POST", path="/boot", query=None,
+                                  headers=headers, body=b"",
+                                  resolver=hs.keverResolver(controller.kevers))
+        assert legacy.request.authority == "keria.example"
     assert verifyResp(dict(status=200, headers=rep, body=b"{}"),
                       kept).request is None
 

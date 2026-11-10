@@ -1244,6 +1244,9 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     if _fieldValue(fields, "signature-input") is None:
         raise MissingSignatureInput("Request has no Signature-Input.")
 
+    if authority is None:
+        authority = _fieldValue(fields, "host")
+
     if detectMode(signature) == Legacy:
         if not acceptLegacy:
             raise MalformedSignature("Legacy signatures are not accepted.")
@@ -1259,8 +1262,6 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     if _hasBody(fields):
         required.append("content-digest")
 
-    if authority is None:
-        authority = _fieldValue(fields, "host")
     verified = _verifyCanonical(
         fields=fields, required=required, resolver=resolver, policy=policy,
         now=now, response=False,
