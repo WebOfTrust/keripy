@@ -13,6 +13,7 @@ Oracles, in order of authority:
 import base64
 import json
 import pathlib
+from contextlib import contextmanager
 from types import SimpleNamespace
 from urllib.parse import urlsplit
 
@@ -531,6 +532,18 @@ def http_sfvDict(value):
     return d
 
 
+@contextmanager
+def signerError(code):
+    """A signer's own failure is a ValueError whose cause carries the
+    profile code; only uncovered-body and insufficient-coverage are raised as
+    refusals."""
+    with pytest.raises(ValueError) as ex:
+        yield
+    assert not isinstance(ex.value, hs.HttpSigError)
+    assert ex.value.__cause__.code == code
+    assert f"({code})" in str(ex.value)
+
+
 def test_sign_request_refusals():
     signer = ntSigner()
     with pytest.raises(hs.UncoveredBody) as ex:
@@ -544,14 +557,28 @@ def test_sign_request_refusals():
         hs.signRequest(**request())  # neither signer nor hab
     with pytest.raises(ValueError):
         hs.signRequest(signer=signer, alg="rsa-pss-sha512", **request())
-    with pytest.raises(hs.UnsupportedComponent):
+    with signerError("unsupported-component"):
         hs.signRequest(signer=signer, covered=["@method", "@target-uri"],
                        **request(body=None))
-    with pytest.raises(hs.MissingComponent):
+    with signerError("duplicate-component"):
+        hs.signRequest(signer=signer, covered=["@method", "@path", "@query",
+                                               "@path"], **request(body=None))
+    with signerError("malformed-signature-input"):
+        hs.signRequest(signer=signer, covered=["@method", "@path", "@query",
+                                               '"X-Foo"'], **request(body=None))
+    with signerError("missing-component"):
         hs.signRequest(signer=signer, **request(authority=None))
-    with pytest.raises(hs.UnsupportedAlgorithm):
+    with signerError("signature-mismatch"):  # a base that cannot be built
+        hs.signRequest(signer=signer, covered=["@method", "@path", "@query",
+                                               "x-foo"],
+                       **request(body=None, headers={"X-Foo": "caf\xe9"}))
+    with signerError("unsupported-algorithm"):
         hs.signRequest(signer=Signer(code=MtrDex.ECDSA_256k1_Seed,
                                      transferable=False), **request())
+    # the two signer refusals the profile names keep their codes
+    with pytest.raises(hs.InsufficientCoverage):
+        hs.signRequest(signer=signer, covered=["@method", "@path"],
+                       **request(body=None))
 
 
 def test_verify_request_roundtrip():
@@ -711,7 +738,7 @@ def test_verify_request_transferable():
 
         multi = hby.makeHab(name="multi", icount=2, isith="1", ncount=2,
                             nsith="1")
-        with pytest.raises(hs.UnsupportedSigner):
+        with signerError("unsupported-signer"):
             hs.signRequest(hab=multi, **request())
 
 
@@ -1466,10 +1493,12 @@ def test_response_rechecks_request_digest():
         verifyResp({**rep, "body": hs.Deferred}, swapped)
 
     # the signer will not bind a request digest its request body contradicts
-    with pytest.raises(hs.DigestMismatch):
+    with signerError("digest-mismatch"):
         response(swapped)
-    with pytest.raises(hs.MalformedDigest):
+    with signerError("malformed-digest"):
         response(badReq)
+    with signerError("missing-component"):
+        response(kept._replace(headers={}))
     with pytest.raises(ValueError):
         response(kept._replace(body=None), sign=dict(
             covered=hs.responseCovered(kept, b'{"ok":true}')))
@@ -1487,7 +1516,7 @@ def test_sign_below_minimum_refused():
     for covered in (['"@method"', '"@path";key="x"', '"@query"'],
                     ["@method", "@path", "@query", '"x-foo";sf'],
                     ["@method", "@path", "@query", '"x-foo";bs']):
-        with pytest.raises(hs.UnsupportedComponent):
+        with signerError("unsupported-component"):
             hs.signRequest(signer=signer, covered=covered,
                            **{**get, "headers": {"X-Foo": "1"}})
 

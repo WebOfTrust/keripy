@@ -30,6 +30,7 @@ import re
 import secrets
 from collections import namedtuple
 from collections.abc import Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import http_sfv
@@ -634,6 +635,23 @@ def _plainNames(items):
     return {item.value for item in items if not item.params}
 
 
+# Refusals a signer reports by their profile code (sections 3 and 9), shared
+# with the vectors' signer cases. Any other failure while signing is the
+# caller's own mistake, not a peer's message, so it is a ValueError rather
+# than an AuthNError a server would turn into a 401.
+_SignerRefusals = ("uncovered-body", "insufficient-coverage")
+
+
+@contextmanager
+def _signerErrors():
+    try:
+        yield
+    except HttpSigError as ex:
+        if ex.code in _SignerRefusals:
+            raise
+        raise ValueError(f"Cannot sign ({ex.code}): {ex}") from ex
+
+
 def _sign(items, *, signer, hab, keyid, label, created, expires, nonce, tag,
           alg, baseKwa):
     """
@@ -708,24 +726,27 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
 
     Raises:
         InsufficientCoverage: covered falls short of RequestMinimum
-        UnsupportedComponent: a component or parameter the profile lacks
         UncoveredBody: non-empty body without covered content-digest
-        UnsupportedSigner: hab without a single effective signer (R4)
-        UnsupportedAlgorithm: key is not Ed25519
-        ValueError: bad arguments
+        ValueError: anything else that stops signing, such as an unsupported
+            or duplicate component, a covered field that is absent or not
+            ASCII, a hab without a single effective signer (R4), a key that
+            is not Ed25519, or bad arguments. The message names the profile
+            code, and the HttpSigError is chained as its cause.
     """
-    raw = _bytify(body)
-    if covered is None:
-        covered = RequestCovered + (("content-digest",) if raw else ())
-    items = _components(covered, response=False)
-    _checkCoverage(items, RequestMinimum)
-    added, fields = _digestFields(items, headers, raw, "request")
+    with _signerErrors():
+        raw = _bytify(body)
+        if covered is None:
+            covered = RequestCovered + (("content-digest",) if raw else ())
+        items = _components(covered, response=False)
+        _checkCoverage(items, RequestMinimum)
+        added, fields = _digestFields(items, headers, raw, "request")
 
-    added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
-                       created=created, expires=expires, nonce=nonce, tag=tag,
-                       alg=alg,
-                       baseKwa=dict(method=method, authority=authority,
-                                    path=path, query=query, headers=fields)))
+        added.update(_sign(items, signer=signer, hab=hab, keyid=keyid,
+                           label=label, created=created, expires=expires,
+                           nonce=nonce, tag=tag, alg=alg,
+                           baseKwa=dict(method=method, authority=authority,
+                                        path=path, query=query,
+                                        headers=fields)))
     return added
 
 
@@ -798,30 +819,31 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
             responseMinimum(request had a body)
 
     Raises:
-        as signRequest, with the response minimum set; MalformedDigest or
-        DigestMismatch when "content-digest";req is covered and the request's
-        Content-Digest does not match request.body
+        as signRequest, with the response minimum set; a request that has no
+        Content-Digest, or one that does not match request.body, when
+        "content-digest";req is covered, is a ValueError
     """
     _statusCode(status)  # a caller's bad status is a ValueError, up front
     _checkRequestBody(request)
-    raw = _bytify(body)
-    if covered is None:
-        covered = responseCovered(request, raw)
-    items = _components(covered, response=True)
-    _checkCoverage(items, responseMinimum(bool(_bytify(request.body))))
-    if _RequestDigest in {_serialize(item) for item in items}:
-        # never bind a request digest that the request body contradicts
-        value = _fieldValue(_fieldLines(request.headers), "content-digest")
-        if value is None:
-            raise MissingComponent("The request has no Content-Digest.")
-        verifyContentDigest(value, request.body)
-    added, fields = _digestFields(items, headers, raw, "response")
+    with _signerErrors():
+        raw = _bytify(body)
+        if covered is None:
+            covered = responseCovered(request, raw)
+        items = _components(covered, response=True)
+        _checkCoverage(items, responseMinimum(bool(_bytify(request.body))))
+        if _RequestDigest in {_serialize(item) for item in items}:
+            # never bind a request digest that the request body contradicts
+            value = _fieldValue(_fieldLines(request.headers), "content-digest")
+            if value is None:
+                raise MissingComponent("The request has no Content-Digest.")
+            verifyContentDigest(value, request.body)
+        added, fields = _digestFields(items, headers, raw, "response")
 
-    added.update(_sign(items, signer=signer, hab=hab, keyid=keyid, label=label,
-                       created=created, expires=expires, nonce=nonce, tag=tag,
-                       alg=alg,
-                       baseKwa=dict(status=status, headers=fields,
-                                    request=request)))
+        added.update(_sign(items, signer=signer, hab=hab, keyid=keyid,
+                           label=label, created=created, expires=expires,
+                           nonce=nonce, tag=tag, alg=alg,
+                           baseKwa=dict(status=status, headers=fields,
+                                        request=request)))
     return added
 
 
