@@ -1773,6 +1773,25 @@ def legacySigned(hab, method="POST", path="/boot", resource=None,
     return headers
 
 
+def test_unexpected_errors_propagate(monkeypatch):
+    """Input that does not parse is a refusal, but an unexpected exception
+    from a parser is a bug and propagates rather than becoming one."""
+    from keri.end import ending
+
+    def broken(value):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(ending, "designature", broken)
+    with pytest.raises(RuntimeError):
+        hs.detectMode("not canonical")
+    with pytest.raises(RuntimeError):
+        hs.verifyLegacy(method="POST", path="/boot", headers=keriaHeaders(),
+                        verfer=ntSigner().verfer)
+    monkeypatch.undo()
+    with pytest.raises(hs.MalformedSignature):
+        hs.detectMode("not canonical")
+
+
 def test_legacy_lookup_is_kerias():
     """Legacy mode takes the single effective signer of
     kevers[Signify-Resource], without canonical mode's derivation-code rules

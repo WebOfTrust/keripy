@@ -969,6 +969,14 @@ _ParamTypes = dict(created=int, expires=int, nonce=str, alg=str, keyid=str,
                    tag=str)
 
 
+# What keripy's parsers raise for input that does not parse: the legacy
+# header parsers of keri.end.ending raise ValueError (unpacking, a missing
+# field, http_sfv) or TypeError (a Signature-Input member that is not an
+# Inner List), and CESR primitives raise KeriError subclasses (and
+# ValueError for bad base64). Anything else is a bug and propagates.
+_ParseErrors = (kering.KeriError, ValueError, TypeError)
+
+
 def _parseDict(value):
     if isinstance(value, str):
         value = value.encode("utf-8")
@@ -999,7 +1007,7 @@ def detectMode(value):
     try:
         if designature(value):
             return Legacy
-    except Exception:
+    except _ParseErrors:
         pass
     raise MalformedSignature("Signature is neither an RFC 9421 Byte Sequence "
                              "nor the legacy KERI form.")
@@ -1530,7 +1538,7 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
 
     try:
         inputs = desiginput(siginput.encode("utf-8"))
-    except Exception as ex:
+    except _ParseErrors as ex:
         raise MalformedSignatureInput(f"Legacy Signature-Input does not parse: "
                                       f"{ex}.") from ex
     inputs = [i for i in inputs if i.name == label]
@@ -1539,7 +1547,7 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
 
     try:
         signages = designature(signature)
-    except Exception as ex:
+    except _ParseErrors as ex:
         raise MalformedSignature(f"Legacy Signature does not parse: {ex}.") from ex
 
     for inputage in inputs:
@@ -1594,7 +1602,7 @@ def _checkAid(keyid):
     formed AID in qb64."""
     try:
         prefixer = Prefixer(qb64=keyid)
-    except Exception as ex:
+    except _ParseErrors as ex:
         raise MalformedKey(f"keyid {keyid!r} is not an AID.") from ex
     if prefixer.qb64 != keyid or prefixer.code not in PreDex:
         raise MalformedKey(f"keyid {keyid!r} is not an AID.")
@@ -1637,7 +1645,7 @@ class KeverResolver:
         if prefixer.code in NonTransDex:
             try:
                 return Verfer(qb64=keyid)
-            except Exception as ex:
+            except _ParseErrors as ex:
                 raise UnsupportedAlgorithm(f"Key {keyid} has an unsupported "
                                            f"algorithm.") from ex
 
