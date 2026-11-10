@@ -294,6 +294,12 @@ def test_issuer_identity_operators():
             nodes={simpleCompactEdge.said: {"serder": simpleCompactEdge}},
             closed=True,
         ) is None
+        verdict = evaluator.evaluate(
+            simpleCompactEdge.said,
+            nodes={simpleCompactEdge.said: {"serder": simpleCompactEdge}},
+        )
+        assert verdict.verdict == Verdicts.unknown
+        assert verdict.retryable is True
 
         # Refuse a string Edge when its schema does not define its meaning.
         ambiguousSchema = deepcopy(
@@ -392,6 +398,31 @@ def test_issuer_identity_operators():
         assert verdict.verdict == Verdicts.valid
         assert schemaEvaluator.edgeKind(
             validCompactEdge, ("compact",)) == "compact"
+
+        # A valid sibling satisfies OR when a simple far-node Edge is undisclosed.
+        simpleOrEdge = acdcmap(
+            israid=root.pre,
+            schema=edgeSchema({
+                "o": {"type": "string"},
+                "source": deepcopy(compactBlock["oneOf"][1]),
+                "missing": {"type": "string"},
+            }, ["o", "source", "missing"]).sed,
+            attribute=dict(d="", role="simple-or-edge"),
+            edge=dict(
+                d="",
+                o="OR",
+                source=dict(d="", n=rootFar.said),
+                missing=unrelatedFar.said,
+            ),
+        )
+        verdict = evaluator.evaluate(
+            simpleOrEdge.said,
+            nodes={
+                simpleOrEdge.said: {"serder": simpleOrEdge},
+                rootFar.said: {"serder": rootFar},
+            },
+        )
+        assert verdict.verdict == Verdicts.valid
 
         # A compact Edge value must be a valid SAID.
         invalidCompactEdge = acdcmap(
@@ -493,14 +524,16 @@ def test_issuer_identity_operators():
                 unrelatedFar.said: {"serder": unrelatedFar},
             }) is None
 
-        # A closed graph must disclose every referenced far node.
+        # A required missing far node is retryable evidence, not malformed input.
         dangling = acdcmap(
             israid=root.pre,
             attribute=dict(d="", role="near"),
             edge=makeEdge("source", rootFar, "I1I"),
         )
-        assert evaluator.evaluate(
-            dangling.said, nodes={dangling.said: {"serder": dangling}}) is None
+        verdict = evaluator.evaluate(
+            dangling.said, nodes={dangling.said: {"serder": dangling}})
+        assert verdict.verdict == Verdicts.unknown
+        assert verdict.retryable is True
 
         # An Edge node reference must be a SAID string.
         malformedReference = acdcmap(
@@ -581,9 +614,13 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
             schema=missingSchemer.said,
             attribute=dict(d="", role="schema-missing"),
         )
+        undisclosedFar = acdcmap(
+            israid=issuer.pre,
+            attribute=dict(d="", role="undisclosed"),
+        )
 
         # Place both far-node verdicts inside the same logical group.
-        def evaluateGroup(operator, optionalFar):
+        def evaluateGroup(operator, optionalFar, discloseOptional=True):
             origin = acdcmap(
                 israid=issuer.pre,
                 attribute=dict(d="", role="origin"),
@@ -600,8 +637,9 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
             nodes = {
                 origin.said: {"serder": origin},
                 validFar.said: {"serder": validFar},
-                optionalFar.said: {"serder": optionalFar},
             }
+            if discloseOptional:
+                nodes[optionalFar.said] = {"serder": optionalFar}
             return evaluator.evaluate(origin.said, nodes=nodes)
 
         # One valid branch satisfies OR despite an invalid branch.
@@ -618,5 +656,12 @@ def test_node_schema_verdicts_follow_edge_group_reduction():
 
         # AND remains retryable while a required schema is missing.
         verdict = evaluateGroup("AND", missingFar)
+        assert verdict.verdict == Verdicts.unknown
+        assert verdict.retryable is True
+
+        # Missing far nodes participate in the same OR/AND reduction.
+        verdict = evaluateGroup("OR", undisclosedFar, discloseOptional=False)
+        assert verdict.verdict == Verdicts.valid
+        verdict = evaluateGroup("AND", undisclosedFar, discloseOptional=False)
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is True

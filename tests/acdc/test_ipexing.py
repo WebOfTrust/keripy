@@ -2768,7 +2768,7 @@ def test_ipex_v2_issuer_identity_operator_dispositions():
 
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
-    """Grant rejects malformed graph closure and false leaf edge semantics."""
+    """Grant rejects malformed graph shapes and false leaf edge semantics."""
     with openHby(name="ipex-v2-bad-grant-graph-semantics",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -2808,16 +2808,6 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
             assert hby.db.exns.get(keys=(exn.said,)) is None
             assert hby.db.epse.get(keys=(exn.said,)) is None
             assert len(recorder.items) == before
-
-        # Missing referenced node: the walk is not closed.
-        missingChild = acdcmap(israid=issuer.pre,
-                               attribute=dict(d="", role="member"),
-                               iseaid=issuer.pre)
-        missingOrigin = acdcmap(israid=issuer.pre,
-                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                                edge=_edge("holder", missingChild),
-                                iseaid=subject.pre)
-        assert_rejected("Here is the incomplete DAG", missingOrigin)
 
         # Duplicate disclosed node: one DAG node must not appear twice.
         duplicateChild = acdcmap(israid=issuer.pre,
@@ -7785,8 +7775,8 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                 assert storedAdmit is not None
                 assert storedAdmit.ked["x"] == xid
 
-                # A second grant that omits the child nest should now fail the
-                # graph walk even though the origin still carries a valid proof.
+                # The negotiated disclosure plan still requires the child, so a
+                # second grant that omits it is refused before Edge evaluation.
                 clock.advance(milliseconds=1)
                 badGrantExn, badGrantAtc = ipexGrant(hab=issuerHab,
                                                      recp=recipientHab.pre,
@@ -9800,6 +9790,9 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             good, goodBlinder, goodIssued = issue(alpha, "trusted")
             spare, spareBlinder, spareIssued = issue(gamma, "spare")
             pending, pendingBlinder, pendingIssued = issue(beta, "pending")
+            undisclosed = acdcmap(israid=issuerHab.pre,
+                                  attribute=dict(d="", role="undisclosed"),
+                                  iseaid=issuerHab.pre)
 
             recipientRgy.store.accept(alpha.regk, 0, alphaRip)
             recipientRgy.store.accept(alpha.regk, 1, goodIssued)
@@ -9855,7 +9848,7 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                 while groups:
                     grp, path = groups.popleft()
                     if "n" in grp:
-                        if grp["n"] not in seen:
+                        if grp["n"] in disclosed and grp["n"] not in seen:
                             seen.add(grp["n"])
                             plan.append([schemaId(known[grp["n"]]),
                                          f"{path}_/", []])
@@ -9967,6 +9960,19 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
             accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(pending))),
                      [goodNest, pendingNest],
                      "OR satisfied while a far node's TEL has not replicated")
+
+            # An absent optional far node is retryable unknown evidence, so a
+            # disclosed valid sibling satisfies OR without requiring graph closure.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             b=leaf(undisclosed))),
+                     [goodNest],
+                     "OR satisfied while an optional far node is undisclosed")
+
+            # The same absence remains retryable when AND requires that member.
+            escrowed(dict(d="", both=group("AND", a=leaf(good),
+                                           b=leaf(undisclosed))),
+                     [goodNest],
+                     "AND waiting on an undisclosed far node")
 
             # The schema declares this string to be an opaque compact Edge-block.
             # A satisfied sibling may carry the OR group without guessing that the

@@ -698,7 +698,7 @@ class IpexHandler:
                 except Exception:
                     return False
 
-                walked = self._walkGraph(origin=origins[0], nests=nests, closed=True)
+                walked = self._walkGraph(origin=origins[0], nests=nests, closed=False)
                 if walked is None:
                     return False
                 grantNodes, grantOrder = walked

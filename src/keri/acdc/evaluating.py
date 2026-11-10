@@ -139,7 +139,7 @@ class SchemaEvaluator:
 
 
 class EdgeEvaluator:
-    """Evaluate a closed ACDC graph using caller-provided evidence."""
+    """Evaluate a disclosed ACDC graph using caller-provided evidence."""
 
     def __init__(self, schemaEvaluator, verifyNode, isDelegated, reducers=None):
         """Initialize an evaluator with storage and evidence.
@@ -283,10 +283,11 @@ class EdgeEvaluator:
         return order
 
     def evaluate(self, origin, *, nodes, records=None):
-        """Evaluate a closed graph rooted at ``origin`` to one verdict.
+        """Evaluate a disclosed graph rooted at ``origin`` to one verdict.
 
-        Validate graph closure and shape, then recursively evaluate each node's
-        authentication, own schema, and Edge Section as one verdict.
+        Validate the disclosed graph and recursively evaluate each node's
+        authentication, own schema, and Edge Section as one verdict. Missing far
+        nodes become retryable unknown members for the Edge-group reducer.
 
         Parameters:
             origin (str): SAID of the graph's root ACDC.
@@ -298,7 +299,7 @@ class EdgeEvaluator:
             EdgeVerdict | None: Root verdict, or None when the disclosed graph or
                 any Edge shape is malformed.
         """
-        if self.walk(origin, nodes=nodes, closed=True) is None:
+        if self.walk(origin, nodes=nodes, closed=False) is None:
             return None
 
         return self._evaluateNode(origin, nodes=nodes, memo={}, records=records)
@@ -388,10 +389,13 @@ class EdgeEvaluator:
                 return None
 
         edgeSaid = group.get("n")
-        if not isinstance(edgeSaid, str) or edgeSaid not in nodes:
+        if not isinstance(edgeSaid, str):
             return None
-        far = nodes[edgeSaid]
-        fserder = far["serder"] if isinstance(far, Mapping) else far.serder
+        try:
+            if Saider(qb64=edgeSaid).qb64 != edgeSaid:
+                return None
+        except Exception:
+            return None
 
         operator = group.get("o")
         if operator is None:
@@ -408,16 +412,6 @@ class EdgeEvaluator:
         pins = tuple(inheritedPins)
         if "s" in group:
             pins = pins + (group["s"],)
-
-        farSchema = fserder.schema if pins else None
-        if isinstance(farSchema, Mapping):
-            farSchemaId = farSchema.get("$id")
-        elif isinstance(farSchema, str):
-            farSchemaId = farSchema
-        else:
-            farSchemaId = None
-        if pins and not isinstance(farSchemaId, str):
-            return None
 
         resolvedPins = []
         for edgeSchema in pins:
@@ -449,6 +443,30 @@ class EdgeEvaluator:
                 f"{edgeSaid}; recognized are {list(UnaryEdgeOps)}",
                 retryable=False))
 
+        unevaluable = [item for item in operators if item == "NOT"]
+        if unevaluable:
+            relations.append(chaining.unknown(
+                f"unimplemented unary Operator(s) {unevaluable} on edge to node "
+                f"{edgeSaid}", retryable=False))
+
+        if edgeSaid not in nodes:
+            reason = f"edge is missing far node {edgeSaid}"
+            relations.append(chaining.unknown(
+                reason, retryable=True, cause=MissingChainError(reason)))
+            return chaining.reduceAnd(relations)
+
+        far = nodes[edgeSaid]
+        fserder = far["serder"] if isinstance(far, Mapping) else far.serder
+        farSchema = fserder.schema if pins else None
+        if isinstance(farSchema, Mapping):
+            farSchemaId = farSchema.get("$id")
+        elif isinstance(farSchema, str):
+            farSchemaId = farSchema
+        else:
+            farSchemaId = None
+        if pins and not isinstance(farSchemaId, str):
+            return None
+
         if not any(item in DefaultSuppressingEdgeOps for item in operators):
             default = "I2I" if fserder.iseaid is not None else "NI2I"
             operators.append(default)
@@ -460,12 +478,6 @@ class EdgeEvaluator:
                 delegativeOperator = item
             if item in IssuerIdentityEdgeOps:
                 issuerIdentityOperator = item
-
-        unevaluable = [item for item in operators if item == "NOT"]
-        if unevaluable:
-            relations.append(chaining.unknown(
-                f"unimplemented unary Operator(s) {unevaluable} on edge to node "
-                f"{edgeSaid}", retryable=False))
 
         if "E1E" in operators:
             if (nserder.iseaid and fserder.iseaid
