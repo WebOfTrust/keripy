@@ -519,7 +519,7 @@ def test_sign_request_defaults(mockHelpingNowUTC):
     two = hs.signRequest(signer=signer, **request())
     params = []
     for added in (one, two):
-        inner = http_sfvDict(added["Signature-Input"])["signify"]
+        inner = sfvDict(added["Signature-Input"])["signify"]
         assert inner.params["created"] == 1609459200  # mocked clock
         nonce = inner.params["nonce"]
         assert len(b64url(nonce)) == 16  # 128 bits
@@ -527,7 +527,7 @@ def test_sign_request_defaults(mockHelpingNowUTC):
     assert params[0] != params[1]
 
 
-def http_sfvDict(value):
+def sfvDict(value):
     d = http_sfv.Dictionary()
     d.parse(value.encode())
     return d

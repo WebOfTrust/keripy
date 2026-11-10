@@ -304,7 +304,7 @@ ParamOrder = ("created", "expires", "nonce", "alg", "keyid", "tag")
 # it. headers as for signatureBase. body is the content, bytes.
 Requestage = namedtuple("Requestage", "method authority path query headers body")
 
-_OBSFOLD = re.compile(r"[ \t]*\r?\n[ \t]+")
+_ObsFold = re.compile(r"[ \t]*\r?\n[ \t]+")
 
 
 def _fieldLines(headers):
@@ -364,7 +364,7 @@ def _fieldValue(fields, name):
         return None
     # RFC 9421 section 2.1 strips SP and HTAB only; str.strip() would also
     # remove characters such as \x85 and \xa0 that an intermediary can add.
-    return ", ".join(_OBSFOLD.sub(" ", line).strip(" \t") for line in lines)
+    return ", ".join(_ObsFold.sub(" ", line).strip(" \t") for line in lines)
 
 
 def _component(component):
@@ -470,7 +470,7 @@ def normalizeAuthority(authority):
     return authority
 
 
-_STATUS = re.compile(r"\A([1-9][0-9]{2})(?: .*)?\Z", re.DOTALL)
+_StatusLine = re.compile(r"\A([1-9][0-9]{2})(?: .*)?\Z", re.DOTALL)
 
 
 def _statusCode(status):
@@ -484,7 +484,7 @@ def _statusCode(status):
         if 100 <= status <= 999:
             return status
     elif isinstance(status, str):
-        match = _STATUS.match(status)
+        match = _StatusLine.match(status)
         if match:
             return int(match.group(1))
     raise ValueError(f"Invalid response status {status!r}.")
@@ -1115,7 +1115,7 @@ def _parseSignature(value, label):
     return raw
 
 
-_DECIMAL = re.compile(r"\A[0-9]+\Z")
+_Decimal = re.compile(r"\A[0-9]+\Z")
 
 
 def _hasBody(fields):
@@ -1126,7 +1126,7 @@ def _hasBody(fields):
     length = _fieldValue(fields, "content-length")
     if length is None:
         return False
-    if not _DECIMAL.match(length):
+    if not _Decimal.match(length):
         return True  # not a plain decimal: fail closed, assume a body
     return int(length) > 0
 
