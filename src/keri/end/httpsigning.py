@@ -96,7 +96,8 @@ class MalformedSignatureValue(HttpSigError):
 
 
 class ModeMismatch(HttpSigError):
-    """A legacy response to a canonical request."""
+    """A response in the other mode than the request it answers: legacy to
+    a canonical request, or canonical to a legacy one (profile section 8)."""
     code = "mode-mismatch"
 
 
