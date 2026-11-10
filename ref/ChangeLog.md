@@ -51,6 +51,26 @@ caller is therefore part of its contract, so converting a raw raise on the extra
 to an intake type changes what parseOneBare raises. Parser.parse and parseOne are
 unchanged.
 
+*** New keri.end.httpsigning: canonical RFC 9421 HTTP Message Signatures under the KERI
+profile of RFC 9421, version 1, with RFC 9530 Content-Digest, beside a verifier for the
+legacy KERI signed-header scheme of keri.end.ending so a server can accept both while
+clients upgrade. keri.end.ending is unchanged.
+- signRequest and signResponse sign; verifyRequest and verifyResponse verify either mode
+  and return a Verified; checkBody completes a verification made before the body was
+  read (body=Deferred). Policy sets the verifier's minimum coverage, authorities and
+  freshness, and refuses a configuration below the profile's floor with ValueError.
+- A refusal raises an HttpSigError, a kering.AuthNError, whose .code is the profile's
+  kebab-case refusal code, so a server that maps AuthNError to 401 needs no new except
+  clause. errorForCode maps a code back to its class.
+- A signer's own failure (an unsupported or absent component, a hab without a single
+  effective signer, a key that is not Ed25519) is a ValueError naming the code, with the
+  HttpSigError as its cause. Only the two signer refusals the profile names,
+  uncovered-body and insufficient-coverage, are raised as HttpSigError.
+- KeverResolver resolves a keyid against kevers. Both modes verify with the key state's
+  single effective signer (effectiveVerfer), which for every Signify controller is its
+  first current key; a legacy request from a key state with none, such as a 2-of-2
+  group, is refused as unsupported-signer.
+
 
 ## 2.0.0-dev6
 
