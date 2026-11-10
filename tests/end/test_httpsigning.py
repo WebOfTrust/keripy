@@ -383,6 +383,19 @@ def test_signature_base_refusals():
         base(["@authority"], headers={})
 
 
+def test_signature_base_none_header_is_absent():
+    """A header value of None, as some containers give for an absent field,
+    is absent, never the text 'None'."""
+    for headers in ({"X-None": None}, [("X-None", None)],
+                    {"X-None": [None, None]}):
+        with pytest.raises(hs.MissingComponent):
+            hs.signatureBase(["x-none"], {}, headers=headers)
+    assert hs.signatureBase(["x"], {}, headers=[("X", None), ("X", "1")]) \
+        .split("\n")[0] == '"x": 1'
+    assert hs.peekMode({"Signature": None}) is None
+    assert hs.signatureKeyid({"Signature": None}) is None
+
+
 def test_signature_base_bytes_derived_inputs():
     """method, authority, path and query given as bytes, as ASGI gives
     raw_path and query_string, are decoded as latin-1 like header values."""

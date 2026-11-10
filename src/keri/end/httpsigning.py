@@ -308,18 +308,24 @@ def _fieldLines(headers):
     headers may be a mapping (including multidicts whose .items() yields
     repeated names) or an iterable of (name, value) pairs. A list or tuple
     value is several field lines. bytes names and values are decoded as
-    latin-1.
+    latin-1. A value of None, as some header containers give for an absent
+    field, is no field line, so a field with no other line is absent.
     """
     fields = {}
     if headers is None:
         return fields
     items = headers.items() if isinstance(headers, Mapping) else headers
     for name, value in items:
-        lines = fields.setdefault(_latin1(name).lower(), [])
         if isinstance(value, (list, tuple)):
-            lines.extend(_latin1(v) for v in value)
+            values = [v for v in value if v is not None]
+            if value and not values:
+                continue
+        elif value is None:
+            continue
         else:
-            lines.append(_latin1(value))
+            values = [value]
+        fields.setdefault(_latin1(name).lower(), []).extend(
+            _latin1(v) for v in values)
     return fields
 
 
