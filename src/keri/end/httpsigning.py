@@ -1301,9 +1301,10 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
             calls the resolver itself); see KeverResolver. None
             means no key is known: malformed-key for a keyid that is not an
             AID, otherwise unknown-key.
-        keyid (str): AID the client expects to be talking to. A response
-            keyid that is well formed but different is unknown-key, checked
-            after malformed-key and before any resolver or alg check.
+        keyid (str): AID the client expects to be talking to. Required; None
+            or '' is a ValueError. A response keyid that is well formed but
+            different is unknown-key, checked after malformed-key and before
+            any resolver or alg check.
         requestMode (str): mode the request was signed in, 'canonical' or
             'legacy'. A response in the other mode is mode-mismatch
             (section 8).
@@ -1319,6 +1320,10 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
     """
     _checkBodyArg(body)
     _checkRequestBody(request)
+    if not isinstance(keyid, str) or not keyid:
+        # without it the expected-AID check (profile R1) would be skipped
+        raise ValueError("keyid, the AID the client expects to be talking "
+                         "to, is required.")
     if requestMode not in (Canonical, Legacy):
         raise ValueError(f"Unknown requestMode {requestMode!r}.")
     policy = policy if policy is not None else DefaultPolicy

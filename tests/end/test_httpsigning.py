@@ -1228,6 +1228,19 @@ def test_verify_response_keyid_order():
         verifyResp(response(kept, signer=ntSigner()), kept)
 
 
+def test_verify_response_needs_expected_keyid():
+    """The AID the client expects is required (profile section 7, R1): a
+    keyid of None or '' is a ValueError, never a skipped check that would let
+    a stranger's non-transferable key verify."""
+    msg, kept = served()
+    stranger = response(kept, signer=ntSigner(b"\x03" * 32))
+    for keyid in (None, "", b"x"):
+        with pytest.raises(ValueError):
+            verifyResp(stranger, kept, keyid=keyid)
+    with pytest.raises(hs.UnknownKey):
+        verifyResp(stranger, kept)
+
+
 def test_verify_response_mode_mismatch_either_way():
     """Profile section 8 (draft 6): a response in the other mode than the
     request is mode-mismatch in either direction."""
