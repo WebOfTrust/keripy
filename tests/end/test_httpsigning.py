@@ -1724,8 +1724,10 @@ def test_verify_request_legacy_mode():
                              now=1609459200)
 
 
-def legacySigned(hab, method="POST", path="/boot", resource=None):
-    """Headers of a legacy request signed as Signify does today."""
+def legacySigned(hab, method="POST", path="/boot", resource=None,
+                 signers=None):
+    """Headers of a legacy request signed as Signify does today, by hab's
+    first key, or by the first of signers when given."""
     from keri.end import ending
     headers = {"Content-Type": "application/json",
                "Signify-Resource": resource or hab.pre,
@@ -1733,7 +1735,8 @@ def legacySigned(hab, method="POST", path="/boot", resource=None):
     header, qsig = ending.siginput(
         "signify", method, path, headers,
         fields=["Signify-Resource", "@method", "@path", "Signify-Timestamp"],
-        hab=hab, alg="ed25519", keyid=hab.pre)
+        hab=None if signers else hab, signers=signers, alg="ed25519",
+        keyid=hab.pre)
     headers.update(header)
     headers.update(ending.signature([ending.Signage(
         markers=dict(signify=qsig), indexed=False, signer=None, ordinal=None,
@@ -1742,23 +1745,46 @@ def legacySigned(hab, method="POST", path="/boot", resource=None):
 
 
 def test_legacy_lookup_is_kerias():
-    """Legacy mode takes kevers[Signify-Resource].verfers[0], with none of
-    canonical mode's code or R4 rules (profile section 8)."""
+    """Legacy mode takes the single effective signer of
+    kevers[Signify-Resource], without canonical mode's derivation-code rules
+    (profile section 8). For a Signify controller that is its first current
+    key, as KERIA has always taken it."""
     with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
                          temp=True) as (hby, hab):
+        resolver = hs.keverResolver(hby.kevers)
+
+        # a 2-of-2 group has no single effective signer, in either mode
         group = hby.makeHab(name="group", icount=2, isith="2", ncount=2,
                             nsith="2")
-        resolver = hs.keverResolver(hby.kevers)
         with pytest.raises(hs.UnsupportedSigner):
-            resolver(group.pre)  # canonical refuses it
-        assert resolver.legacy(group.pre).qb64 == group.kever.verfers[0].qb64
+            resolver(group.pre)
+        with pytest.raises(hs.UnsupportedSigner):
+            resolver.legacy(group.pre)
+        with pytest.raises(hs.UnsupportedSigner) as ex:
+            hs.verifyRequest(method="POST", path="/boot", query=None,
+                             headers=legacySigned(group), body=b"",
+                             resolver=resolver)
+        assert ex.value.code == "unsupported-signer"
 
-        headers = legacySigned(group)
+        # threshold ['0', '1']: the effective signer is the second key
+        second = hby.makeHab(name="second", icount=2, isith=["0", "1"],
+                             ncount=2, nsith="1")
+        effective = second.kever.verfers[1]
+        assert resolver.legacy(second.pre).qb64 == effective.qb64
+        signer = hby.mgr.ks.pris.get(effective.qb64,
+                                     decrypter=hby.mgr.decrypter)
+        headers = legacySigned(second, signers=[signer])
         verified = hs.verifyRequest(method="POST", path="/boot", query=None,
                                     headers=headers, body=b"",
                                     resolver=resolver)
         assert verified.mode == "legacy"
-        assert verified.keyid == group.pre
+        assert verified.keyid == second.pre
+        assert verified.verfer.qb64 == effective.qb64
+        # signed by the first key, which does not satisfy the threshold
+        with pytest.raises(hs.SignatureMismatch):
+            hs.verifyRequest(method="POST", path="/boot", query=None,
+                             headers=legacySigned(second), body=b"",
+                             resolver=resolver)
 
         # a Signify-Resource the verifier holds no key state for
         with pytest.raises(hs.UnknownKey) as ex:
@@ -1769,16 +1795,16 @@ def test_legacy_lookup_is_kerias():
                                  "KEL not resolved)")
 
         # a plain callable resolver, without .legacy, is called itself
-        # (profile draft 7 section 8)
+        # (profile section 8)
         plain = lambda aid: resolver.legacy(aid)
         verified = hs.verifyRequest(method="POST", path="/boot", query=None,
                                     headers=headers, body=b"", resolver=plain)
         assert verified.mode == "legacy"
-        rep = dict(status=200, headers=legacySigned(group), body=b"{}")
         kept = hs.Requestage(method="POST", authority=None, path="/boot",
                              query=None, headers={}, body=b"")
+        rep = dict(status=200, headers=headers, body=b"{}")
         assert hs.verifyResponse(**rep, request=kept, resolver=plain,
-                                 keyid=group.pre,
+                                 keyid=second.pre,
                                  requestMode="legacy").mode == "legacy"
         with pytest.raises(hs.UnknownKey):
             hs.verifyRequest(method="POST", path="/boot", query=None,
@@ -1788,13 +1814,11 @@ def test_legacy_lookup_is_kerias():
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=headers, body=b"", resolver=None)
 
-        # legacy responses: the agent's first key, likewise
-        kept = hs.Requestage(method="POST", authority=None, path="/boot",
-                             query=None, headers={}, body=b"")
-        rep = dict(status=200, headers=legacySigned(group), body=b"{}")
+        # legacy responses: the agent's effective signer, likewise
         verified = hs.verifyResponse(**rep, request=kept, resolver=resolver,
-                                     keyid=group.pre, requestMode="legacy")
+                                     keyid=second.pre, requestMode="legacy")
         assert verified.mode == "legacy"
+        assert verified.verfer.qb64 == effective.qb64
 
 
 def test_verify_response_legacy():

@@ -13,6 +13,10 @@ https://github.com/bakobo/fiki/blob/keri-profile-v1/docs/keri-profile.md
 Section numbers in comments below refer to it where they say "profile", and to
 RFC 9421 otherwise.
 
+Both modes verify with a key state's single effective signer
+(effectiveVerfer), which for every Signify controller is its first current
+key; legacy mode skips canonical mode's derivation-code rules.
+
 This module takes plain values (method, authority, path, query, headers, body)
 rather than a framework request object, so any server or client can adapt to
 it. It depends on nothing that is not also present on the keripy 1.2.x line.
@@ -1587,9 +1591,12 @@ class KeverResolver:
     must have key state in kevers, and the key returned is that state's single
     effective signer (effectiveVerfer).
 
-    .legacy(aid) is the legacy lookup (profile section 8), exactly as KERIA
-    does it: kevers[aid].verfers[0], with none of those rules, so legacy
-    traffic from multi-key controllers keeps verifying.
+    .legacy(aid) is the legacy lookup (profile section 8): the single
+    effective signer of kevers[aid] (effectiveVerfer), as in canonical mode,
+    but without canonical mode's derivation-code rules. For every Signify
+    controller that is its first current key, which is the key KERIA has
+    always taken. A key state with no single effective signer, such as a
+    2-of-2 group, is unsupported-signer.
 
     Both use in and [] on kevers, never get: Baser.kevers reads through to
     the database on in and [] only, so get would miss key state that is
@@ -1618,12 +1625,18 @@ class KeverResolver:
         return effectiveVerfer(kever.verfers, kever.tholder)
 
     def legacy(self, aid):
-        """Returns the first current key of aid, as KERIA's legacy
-        authenticator takes it."""
+        """Returns the single effective signer of aid's key state, which for
+        a Signify controller is its first current key.
+
+        Raises:
+            UnknownKey: no key state for aid, with KERIA's legacy message
+            UnsupportedSigner: no single key satisfies the threshold alone
+        """
         if aid not in self.kevers:
             raise UnknownKey("Unknown or invalid controller (controller KEL "
                              "not resolved)")
-        return self.kevers[aid].verfers[0]
+        kever = self.kevers[aid]
+        return effectiveVerfer(kever.verfers, kever.tholder)
 
 
 def keverResolver(kevers):
