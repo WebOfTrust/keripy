@@ -17,13 +17,16 @@ from contextlib import contextmanager
 from types import SimpleNamespace
 from urllib.parse import urlsplit
 
+import http_sfv
 import pytest
 
-from keri.core import MtrDex
+from keri import kering
+from keri.core import MtrDex, eventing, parsing
 from keri.core.coring import Diger, Tholder, Verfer
 from keri.app import habbing
 from keri.kering import Vrsn_1_0, Kinds
 from keri.core.signing import Signer
+from keri.end import ending
 from keri.end import httpsigning as hs
 from keri.end.ending import desiginput
 
@@ -142,7 +145,6 @@ def test_error_codes():
         "uncovered-body": hs.UncoveredBody,
         "unauthenticated": hs.Unauthenticated,
     }
-    from keri import kering
     for code, klas in codes.items():
         assert klas.code == code
         assert issubclass(klas, hs.HttpSigError)
@@ -526,7 +528,6 @@ def test_sign_request_defaults(mockHelpingNowUTC):
 
 
 def http_sfvDict(value):
-    import http_sfv
     d = http_sfv.Dictionary()
     d.parse(value.encode())
     return d
@@ -781,7 +782,6 @@ def test_kever_resolver_after_reopen(tmp_path):
     """Key state in the database but not yet cached in memory, as after a
     restart, still resolves (Baser.kevers reads through on in and [] but not
     on get)."""
-    from keri.core import eventing, parsing
     with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
                          temp=True) as (chby, ctrl):
         icp = ctrl.msgOwnInception()
@@ -1741,7 +1741,6 @@ def test_verify_request_legacy_mode():
         # canonical and legacy never cross-verify: same key, legacy base
         # signature presented in canonical form
         legacy = keriaHeaders()
-        from keri.end import ending
         raw = ending.designature(legacy["Signature"])[0].markers["signify"].raw
         canon = dict(legacy)
         canon["Signature"] = f"signify=:{base64.b64encode(raw).decode()}:"
@@ -1757,7 +1756,6 @@ def legacySigned(hab, method="POST", path="/boot", resource=None,
                  signers=None):
     """Headers of a legacy request signed as Signify does today, by hab's
     first key, or by the first of signers when given."""
-    from keri.end import ending
     headers = {"Content-Type": "application/json",
                "Signify-Resource": resource or hab.pre,
                "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00"}
@@ -1776,7 +1774,6 @@ def legacySigned(hab, method="POST", path="/boot", resource=None,
 def test_unexpected_errors_propagate(monkeypatch):
     """Input that does not parse is a refusal, but an unexpected exception
     from a parser is a bug and propagates rather than becoming one."""
-    from keri.end import ending
 
     def broken(value):
         raise RuntimeError("bug")
@@ -1875,7 +1872,6 @@ def test_verify_response_legacy():
     with keriaController() as (hby, controller):
         with habbing.openHab(name="agent", salt=b"abcdef0123456789",
                              temp=True) as (ahby, agent):
-            from keri.end import ending
             headers = {"Content-Type": "application/json",
                        "Signify-Resource": agent.pre,
                        "Signify-Timestamp": "2022-09-24T00:05:48.196795+00:00"}

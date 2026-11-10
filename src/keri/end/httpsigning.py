@@ -35,6 +35,7 @@ from dataclasses import dataclass
 
 import http_sfv
 
+from . import ending
 from .. import kering
 from ..core.coring import MtrDex, PreDex, NonTransDex, Prefixer, Verfer
 from ..help import helping
@@ -1003,9 +1004,8 @@ def detectMode(value):
                        for m in members.values()):
         return Canonical
 
-    from .ending import designature
     try:
-        if designature(value):
+        if ending.designature(value):
             return Legacy
     except _ParseErrors:
         pass
@@ -1466,8 +1466,6 @@ def _legacyBase(inputage, *, method, path, fields):
     are skipped, and the final line keeps the legacy quote placement and
     unquoted parameter values.
     """
-    from .ending import normalize
-
     method, path = _text(method), _text(path)
     items = []
     for field in inputage.fields:
@@ -1480,7 +1478,7 @@ def _legacyBase(inputage, *, method, path, fields):
             field = field.lower()
             if field not in fields:
                 continue
-            value = normalize(",".join(fields[field]))
+            value = ending.normalize(",".join(fields[field]))
             items.append(f'"{field}": {value}')
 
     values = [f"({' '.join(inputage.fields)})", f"created={inputage.created}"]
@@ -1526,8 +1524,6 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
         MissingSignature, MissingSignatureInput, MalformedSignatureInput,
         MalformedSignature, MissingSignatureLabel, SignatureMismatch
     """
-    from .ending import desiginput, designature
-
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
     siginput = _fieldValue(fields, "signature-input")
@@ -1537,7 +1533,7 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
         raise MissingSignature("Missing SIGNATURE header")
 
     try:
-        inputs = desiginput(siginput.encode("utf-8"))
+        inputs = ending.desiginput(siginput.encode("utf-8"))
     except _ParseErrors as ex:
         raise MalformedSignatureInput(f"Legacy Signature-Input does not parse: "
                                       f"{ex}.") from ex
@@ -1546,7 +1542,7 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
         raise MissingSignatureLabel(f"Missing {label} inputs in signature")
 
     try:
-        signages = designature(signature)
+        signages = ending.designature(signature)
     except _ParseErrors as ex:
         raise MalformedSignature(f"Legacy Signature does not parse: {ex}.") from ex
 
