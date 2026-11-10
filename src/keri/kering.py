@@ -466,6 +466,147 @@ class DecryptError(AuthZError):
     """
 
 
+# errors associated with HTTP message signatures (keri.end.httpsigning). Each
+# refusal carries as .code its section 9 refusal code from the KERI profile of
+# RFC 9421, so that a caller, and the shared test vectors, can name refusals
+# independently of these class names.
+class HttpSigError(AuthNError):
+    """
+    Base class for HTTP message signature refusals.
+
+    Subclasses AuthNError so that a server which already maps AuthNError
+    to 401 refuses these without a new except clause.
+
+    Attributes:
+        code (str): kebab-case refusal code from profile section 9
+    """
+    code = "http-signature-error"
+
+
+class HttpSigMissingSignatureError(HttpSigError):
+    """No Signature header, or an unsigned response."""
+    code = "missing-signature"
+
+
+class HttpSigMissingSignatureInputError(HttpSigError):
+    """No Signature-Input header."""
+    code = "missing-signature-input"
+
+
+class HttpSigMalformedSignatureError(HttpSigError):
+    """Signature header is neither canonical nor legacy form, or legacy mode
+    is refused by configuration."""
+    code = "malformed-signature"
+
+
+class HttpSigMalformedSignatureInputError(HttpSigError):
+    """Signature-Input does not parse, names an uppercase field, or carries an
+    unknown or ill-typed parameter."""
+    code = "malformed-signature-input"
+
+
+class HttpSigMalformedSignatureLabelError(HttpSigError):
+    """Other than exactly one label."""
+    code = "malformed-signature-label"
+
+
+class HttpSigMissingSignatureLabelError(HttpSigError):
+    """Signature and Signature-Input name different labels."""
+    code = "missing-signature-label"
+
+
+class HttpSigMalformedSignatureValueError(HttpSigError):
+    """Signature member is not a 64 byte Byte Sequence."""
+    code = "malformed-signature-value"
+
+
+class HttpSigModeMismatchError(HttpSigError):
+    """A response in the other mode than the request it answers: legacy to
+    a canonical request, or canonical to a legacy one (profile section 8)."""
+    code = "mode-mismatch"
+
+
+class HttpSigDuplicateComponentError(HttpSigError):
+    """The same component appears twice in one covered list."""
+    code = "duplicate-component"
+
+
+class HttpSigUnsupportedComponentError(HttpSigError):
+    """A component or component parameter this profile does not support."""
+    code = "unsupported-component"
+
+
+class HttpSigInsufficientCoverageError(HttpSigError):
+    """The policy minimum set is not covered, including a body without a
+    covered content-digest."""
+    code = "insufficient-coverage"
+
+
+class HttpSigMalformedKeyError(HttpSigError):
+    """The keyid is not a well formed AID."""
+    code = "malformed-key"
+
+
+class HttpSigUnknownKeyError(HttpSigError):
+    """No key state for a transferable keyid."""
+    code = "unknown-key"
+
+
+class HttpSigUnsupportedSignerError(HttpSigError):
+    """Key state without a single effective signer (profile R4)."""
+    code = "unsupported-signer"
+
+
+class HttpSigUnsupportedAlgorithmError(HttpSigError):
+    """An alg other than ed25519, or one that disagrees with the key."""
+    code = "unsupported-algorithm"
+
+
+class HttpSigMissingComponentError(HttpSigError):
+    """A covered component is absent from the message."""
+    code = "missing-component"
+
+
+class HttpSigSignatureMismatchError(HttpSigError):
+    """The signature does not verify over the signature base."""
+    code = "signature-mismatch"
+
+
+class HttpSigSignatureStaleError(HttpSigError):
+    """created is outside the freshness window."""
+    code = "signature-stale"
+
+
+class HttpSigSignatureExpiredError(HttpSigError):
+    """expires is in the past."""
+    code = "signature-expired"
+
+
+class HttpSigMalformedDigestError(HttpSigError):
+    """Content-Digest does not parse or has no recognized algorithm."""
+    code = "malformed-digest"
+
+
+class HttpSigDigestMismatchError(HttpSigError):
+    """Content-Digest does not match the content."""
+    code = "digest-mismatch"
+
+
+class HttpSigUncoveredBodyError(HttpSigError):
+    """Signer side only: a non-empty body without a covered content-digest."""
+    code = "uncovered-body"
+
+
+class HttpSigUnauthenticatedError(HttpSigError):
+    """
+    An unsigned 401 answering a canonical request (profile sections 8 and 9).
+    Response only, and checked before any other response check: the server
+    refused the request's authentication, and the body of its response is not
+    to be trusted.
+    """
+    code = "unauthenticated"
+
+
 # errors associated with databases
 class DatabaseError(KeriError):
     """

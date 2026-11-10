@@ -59,9 +59,24 @@ clients upgrade. keri.end.ending is unchanged.
   and return a Verified; checkBody completes a verification made before the body was
   read (body=Deferred). Policy sets the verifier's minimum coverage, authorities and
   freshness, and refuses a configuration below the profile's floor with ValueError.
-- A refusal raises an HttpSigError, a kering.AuthNError, whose .code is the profile's
+- A refusal raises a kering.HttpSigError, an AuthNError, whose .code is the profile's
   kebab-case refusal code, so a server that maps AuthNError to 401 needs no new except
   clause. errorForCode maps a code back to its class.
+- The refusal classes are defined in keri.kering with keripy's other errors, and named
+  HttpSig<Refusal>Error: HttpSigMissingSignatureError, HttpSigMissingSignatureInputError,
+  HttpSigMalformedSignatureError, HttpSigMalformedSignatureInputError,
+  HttpSigMalformedSignatureLabelError, HttpSigMissingSignatureLabelError,
+  HttpSigMalformedSignatureValueError, HttpSigModeMismatchError,
+  HttpSigDuplicateComponentError, HttpSigUnsupportedComponentError,
+  HttpSigInsufficientCoverageError, HttpSigMalformedKeyError, HttpSigUnknownKeyError,
+  HttpSigUnsupportedSignerError, HttpSigUnsupportedAlgorithmError,
+  HttpSigMissingComponentError, HttpSigSignatureMismatchError, HttpSigSignatureStaleError,
+  HttpSigSignatureExpiredError, HttpSigMalformedDigestError, HttpSigDigestMismatchError,
+  HttpSigUncoveredBodyError and HttpSigUnauthenticatedError. keri.end.httpsigning
+  imports them, so httpsigning.HttpSigUnknownKeyError and kering.HttpSigUnknownKeyError
+  are the same class. Earlier drafts of this module named them without the HttpSig
+  prefix and Error suffix (MissingSignature, UnknownKey, ...) and defined them in
+  keri.end.httpsigning; those names are gone, with no aliases.
 - A signer's own failure (an unsupported or absent component, a hab without a single
   effective signer, a key that is not Ed25519) is a ValueError naming the code, with the
   HttpSigError as its cause. Only the two signer refusals the profile names,

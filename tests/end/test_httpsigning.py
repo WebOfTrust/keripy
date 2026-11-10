@@ -105,17 +105,17 @@ def test_verify_content_digest():
     hs.verifyContentDigest(f"md5=:AAAA:, {sha256}", body)
     hs.verifyContentDigest(f"unixsum=?1, {sha256}", body)
 
-    with pytest.raises(hs.DigestMismatch) as ex:
+    with pytest.raises(hs.HttpSigDigestMismatchError) as ex:
         hs.verifyContentDigest(sha256, body + b" ")
     assert ex.value.code == "digest-mismatch"
     # every recognized member must match, not just one
     bad512 = hs.contentDigest(b"other", alg="sha-512")
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         hs.verifyContentDigest(f"{sha256}, {bad512}", body)
 
     for value in ("", "not a dictionary!", "sha-256=abc", "md5=:AAAA:",
                   'sha-256="text"', "sha-256=:AAAA", "sha-256=(:AAAA:)"):
-        with pytest.raises(hs.MalformedDigest) as ex:
+        with pytest.raises(hs.HttpSigMalformedDigestError) as ex:
             hs.verifyContentDigest(value, body)
         assert ex.value.code == "malformed-digest"
 
@@ -123,29 +123,29 @@ def test_verify_content_digest():
 def test_error_codes():
     """Every section 9 code, plus unauthenticated, has exactly one class."""
     codes = {
-        "missing-signature": hs.MissingSignature,
-        "missing-signature-input": hs.MissingSignatureInput,
-        "malformed-signature": hs.MalformedSignature,
-        "malformed-signature-input": hs.MalformedSignatureInput,
-        "malformed-signature-label": hs.MalformedSignatureLabel,
-        "missing-signature-label": hs.MissingSignatureLabel,
-        "malformed-signature-value": hs.MalformedSignatureValue,
-        "mode-mismatch": hs.ModeMismatch,
-        "duplicate-component": hs.DuplicateComponent,
-        "unsupported-component": hs.UnsupportedComponent,
-        "insufficient-coverage": hs.InsufficientCoverage,
-        "malformed-key": hs.MalformedKey,
-        "unknown-key": hs.UnknownKey,
-        "unsupported-signer": hs.UnsupportedSigner,
-        "unsupported-algorithm": hs.UnsupportedAlgorithm,
-        "missing-component": hs.MissingComponent,
-        "signature-mismatch": hs.SignatureMismatch,
-        "signature-stale": hs.SignatureStale,
-        "signature-expired": hs.SignatureExpired,
-        "malformed-digest": hs.MalformedDigest,
-        "digest-mismatch": hs.DigestMismatch,
-        "uncovered-body": hs.UncoveredBody,
-        "unauthenticated": hs.Unauthenticated,
+        "missing-signature": hs.HttpSigMissingSignatureError,
+        "missing-signature-input": hs.HttpSigMissingSignatureInputError,
+        "malformed-signature": hs.HttpSigMalformedSignatureError,
+        "malformed-signature-input": hs.HttpSigMalformedSignatureInputError,
+        "malformed-signature-label": hs.HttpSigMalformedSignatureLabelError,
+        "missing-signature-label": hs.HttpSigMissingSignatureLabelError,
+        "malformed-signature-value": hs.HttpSigMalformedSignatureValueError,
+        "mode-mismatch": hs.HttpSigModeMismatchError,
+        "duplicate-component": hs.HttpSigDuplicateComponentError,
+        "unsupported-component": hs.HttpSigUnsupportedComponentError,
+        "insufficient-coverage": hs.HttpSigInsufficientCoverageError,
+        "malformed-key": hs.HttpSigMalformedKeyError,
+        "unknown-key": hs.HttpSigUnknownKeyError,
+        "unsupported-signer": hs.HttpSigUnsupportedSignerError,
+        "unsupported-algorithm": hs.HttpSigUnsupportedAlgorithmError,
+        "missing-component": hs.HttpSigMissingComponentError,
+        "signature-mismatch": hs.HttpSigSignatureMismatchError,
+        "signature-stale": hs.HttpSigSignatureStaleError,
+        "signature-expired": hs.HttpSigSignatureExpiredError,
+        "malformed-digest": hs.HttpSigMalformedDigestError,
+        "digest-mismatch": hs.HttpSigDigestMismatchError,
+        "uncovered-body": hs.HttpSigUncoveredBodyError,
+        "unauthenticated": hs.HttpSigUnauthenticatedError,
     }
     for code, klas in codes.items():
         assert klas.code == code
@@ -154,7 +154,12 @@ def test_error_codes():
         assert err.code == code
         assert isinstance(err, kering.AuthNError)
         assert isinstance(err, kering.KeriError)
-    assert hs.errorForCode("signature-stale") is hs.SignatureStale
+        # defined in kering with keripy's other errors, named HttpSig...Error
+        assert getattr(kering, klas.__name__) is klas
+        assert klas.__name__.startswith("HttpSig")
+        assert klas.__name__.endswith("Error")
+    assert hs.HttpSigError is kering.HttpSigError
+    assert hs.errorForCode("signature-stale") is hs.HttpSigSignatureStaleError
     assert hs.errorForCode("no-such-code") is None
 
 
@@ -286,11 +291,11 @@ def test_signature_base_whitespace_and_unbuildable():
     assert line(" \tabc\t ") == '"x": abc'
     assert line("abc\x0b") == '"x": abc\x0b'
     for value in ("abc\x85", "\xa0abc", "a\nb", "a\rb", "caf\xe9"):
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             line(value)
     for kwa in (dict(method="G\nET"), dict(method="G\xc9T"),
                 dict(path="/a\nb")):
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             hs.signatureBase(["@method", "@path"], {}, **{
                 **dict(method="GET", path="/"), **kwa})
 
@@ -300,7 +305,7 @@ def test_signature_base_whitespace_and_unbuildable():
                                     "content-digest"]))
     verify(msg)
     msg["headers"]["X-Foo"] = "abc\x85"
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         verify(msg)
 
 
@@ -352,39 +357,39 @@ def test_signature_base_refusals():
 
     for component in ("@target-uri", "@scheme", "@request-target",
                       "@query-param", "@signature-params", "@nope"):
-        with pytest.raises(hs.UnsupportedComponent) as ex:
+        with pytest.raises(hs.HttpSigUnsupportedComponentError) as ex:
             base([component])
         assert component in str(ex.value)
     for component in ('"x";sf', '"x";key="a"', '"x";bs', '"x";tr',
                       '"@query-param";name="a"'):
-        with pytest.raises(hs.UnsupportedComponent):
+        with pytest.raises(hs.HttpSigUnsupportedComponentError):
             base([component])
     # req only in a response
-    with pytest.raises(hs.UnsupportedComponent):
+    with pytest.raises(hs.HttpSigUnsupportedComponentError):
         base(['"@method";req'])
     # @status only in a response, and never with req
-    with pytest.raises(hs.UnsupportedComponent):
+    with pytest.raises(hs.HttpSigUnsupportedComponentError):
         base(["@status"])
     request = hs.Requestage(method="GET", authority="a", path="/", query=None,
                             headers={}, body=b"")
-    with pytest.raises(hs.UnsupportedComponent):
+    with pytest.raises(hs.HttpSigUnsupportedComponentError):
         base(['"@status";req'], status=200, request=request)
     # request-targeted derived components need req on a response
-    with pytest.raises(hs.UnsupportedComponent):
+    with pytest.raises(hs.HttpSigUnsupportedComponentError):
         base(["@method"], status=200, request=request)
     # an uppercase name in serialized (wire) form is refused
-    with pytest.raises(hs.MalformedSignatureInput):
+    with pytest.raises(hs.HttpSigMalformedSignatureInputError):
         base(['"X"'])
 
-    with pytest.raises(hs.DuplicateComponent):
+    with pytest.raises(hs.HttpSigDuplicateComponentError):
         base(["@method", "@path", "@method"])
-    with pytest.raises(hs.DuplicateComponent):
+    with pytest.raises(hs.HttpSigDuplicateComponentError):
         base(["x", "X"])
 
-    with pytest.raises(hs.MissingComponent) as ex:
+    with pytest.raises(hs.HttpSigMissingComponentError) as ex:
         base(["content-digest"])
     assert "content-digest" in str(ex.value)
-    with pytest.raises(hs.MissingComponent):
+    with pytest.raises(hs.HttpSigMissingComponentError):
         base(["@authority"], headers={})
 
 
@@ -393,7 +398,7 @@ def test_signature_base_none_header_is_absent():
     is absent, never the text 'None'."""
     for headers in ({"X-None": None}, [("X-None", None)],
                     {"X-None": [None, None]}):
-        with pytest.raises(hs.MissingComponent):
+        with pytest.raises(hs.HttpSigMissingComponentError):
             hs.signatureBase(["x-none"], {}, headers=headers)
     assert hs.signatureBase(["x"], {}, headers=[("X", None), ("X", "1")]) \
         .split("\n")[0] == '"x": 1'
@@ -413,7 +418,7 @@ def test_signature_base_bytes_derived_inputs():
                             query=b"x=1") == text
     assert hs.normalizeAuthority(b"keria.example:80") == "keria.example"
     # a non-ASCII byte survives decoding, and the base refuses it
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         hs.signatureBase(["@path"], {}, path=b"/\xe9")
 
     # a request verifies with the inputs as bytes
@@ -435,7 +440,7 @@ def test_signature_base_duplicates_ignore_param_order():
     unsupported-component check (profile section 9)."""
     request = hs.Requestage(method="GET", authority="a", path="/", query=None,
                             headers={"x": "1"}, body=b"")
-    with pytest.raises(hs.DuplicateComponent):
+    with pytest.raises(hs.HttpSigDuplicateComponentError):
         hs.signatureBase(['"x";req;bs', '"x";bs;req'], {}, status=200,
                          headers={}, request=request)
     # the same name with and without req is not a duplicate (section 2.4)
@@ -549,7 +554,7 @@ def signerError(code):
 
 def test_sign_request_refusals():
     signer = ntSigner()
-    with pytest.raises(hs.UncoveredBody) as ex:
+    with pytest.raises(hs.HttpSigUncoveredBodyError) as ex:
         hs.signRequest(signer=signer, covered=["@method", "@path", "@query"],
                        **request())
     assert ex.value.code == "uncovered-body"
@@ -567,8 +572,9 @@ def test_sign_request_refusals():
         hs.signRequest(signer=signer, covered=["@method", "@path", "@query",
                                                "@path"], **request(body=None))
     with signerError("malformed-signature-input"):
-        hs.signRequest(signer=signer, covered=["@method", "@path", "@query",
-                                               '"X-Foo"'], **request(body=None))
+        hs.signRequest(signer=signer,
+                       covered=["@method", "@path", "@query", '"X-Foo"'],
+                       **request(body=None))
     with signerError("missing-component"):
         hs.signRequest(signer=signer, **request(authority=None))
     with signerError("signature-mismatch"):  # a base that cannot be built
@@ -579,7 +585,7 @@ def test_sign_request_refusals():
         hs.signRequest(signer=Signer(code=MtrDex.ECDSA_256k1_Seed,
                                      transferable=False), **request())
     # the two signer refusals the profile names keep their codes
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         hs.signRequest(signer=signer, covered=["@method", "@path"],
                        **request(body=None))
 
@@ -615,29 +621,29 @@ def test_verify_request_roundtrip():
 ])
 def test_verify_request_tampered(change):
     msg = signed()
-    with pytest.raises(hs.SignatureMismatch) as ex:
+    with pytest.raises(hs.HttpSigSignatureMismatchError) as ex:
         verify({**msg, **change})
     assert ex.value.code == "signature-mismatch"
 
 
 def test_verify_request_body():
     msg = signed()
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         verify({**msg, "body": b'{"a":2}'})
 
     # body not read yet: header-time checks only, then checkBody
     verified = verify({**msg, "body": hs.Deferred})
     hs.checkBody(verified, msg["headers"], msg["body"])
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         hs.checkBody(verified, msg["headers"], b'{"a":2}')
 
     # headers claimed no body, but one arrived: refused after the read
     msg = signed(method="GET", body=None, headers={})
     verified = verify(msg)
     hs.checkBody(verified, msg["headers"], b"")
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         hs.checkBody(verified, msg["headers"], b"sneaky")
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         verify({**msg, "body": b"sneaky"})
 
     # a covered content-digest on empty content is checked against the
@@ -647,7 +653,7 @@ def test_verify_request_body():
                                     "content-digest"]))
     assert msg["headers"]["Content-Digest"] == hs.contentDigest(b"")
     verify({**msg, "body": b""})
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         verify({**msg, "body": b"x"})
 
 
@@ -670,7 +676,7 @@ def test_deferred_body():
     assert done._replace(bodyOwed=True,
                          request=owed.request) == owed
     assert done.request.body == msg["body"]
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         hs.checkBody(owed, msg["headers"], b"other")
     with pytest.raises(ValueError):
         hs.checkBody(owed, msg["headers"], hs.Deferred)
@@ -703,7 +709,7 @@ def test_content_length_plain_decimal():
     for length in ("-1", "+5", " 5", "5_0", "0x5", "1e3", "", "5, 5"):
         msg = signed(method="GET", body=None,
                      headers={"Content-Length": length})
-        with pytest.raises(hs.InsufficientCoverage):
+        with pytest.raises(hs.HttpSigInsufficientCoverageError):
             verify({**msg, "body": hs.Deferred})
     for length in ("0", "00"):
         verify(signed(method="GET", body=None,
@@ -719,7 +725,7 @@ def test_response_body_is_its_content():
     owed = verifyResp({**rep, "body": hs.Deferred}, kept)
     assert owed.bodyOwed
     hs.checkBody(owed, rep["headers"], b"")
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         hs.checkBody(owed, rep["headers"], b"surprise")
 
 
@@ -736,7 +742,7 @@ def test_verify_request_transferable():
 
         # key state is the one current at verification time (profile R3)
         hab.rotate()
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             verify(msg, resolver=resolver)
 
         multi = hby.makeHab(name="multi", icount=2, isith="1", ncount=2,
@@ -760,22 +766,22 @@ def test_kever_resolver():
 
         for keyid in ("", "notanaid", hab.pre + "A", hab.pre[:-1],
                       nt.sign(b"x").qb64):
-            with pytest.raises(hs.MalformedKey) as ex:
+            with pytest.raises(hs.HttpSigMalformedKeyError) as ex:
                 resolve(keyid)
             assert ex.value.code == "malformed-key"
 
         # a transferable prefix the verifier holds no KEL for
-        with pytest.raises(hs.UnknownKey):
+        with pytest.raises(hs.HttpSigUnknownKeyError):
             resolve("E" + hab.pre[1:-1] + ("A" if hab.pre[-1] != "A" else "B"))
         # basic transferable D prefix is never treated as a raw key (R1)
         dkey = Signer(raw=SEED, transferable=True).verfer.qb64
         assert dkey.startswith("D")
-        with pytest.raises(hs.UnknownKey) as ex:
+        with pytest.raises(hs.HttpSigUnknownKeyError) as ex:
             resolve(dkey)
         assert ex.value.code == "unknown-key"
 
         for other in (multi, one):
-            with pytest.raises(hs.UnsupportedSigner) as ex:
+            with pytest.raises(hs.HttpSigUnsupportedSignerError) as ex:
                 resolve(other.pre)
             assert ex.value.code == "unsupported-signer"
 
@@ -835,7 +841,7 @@ def test_effective_signer():
                 aid("TwoOfThree"),
                 aid("Halves"),
                 aid("BothWhole")):
-        with pytest.raises(hs.UnsupportedSigner):
+        with pytest.raises(hs.HttpSigUnsupportedSignerError):
             resolve(pre)
 
     # a real habitat in the passcode-rotated shape signs and verifies
@@ -870,7 +876,7 @@ def test_keyid_nonzero_pad_bits():
             bad = padded(keyid)
             # even a key state filed under the bad string is never reached
             kevers = {bad: hab.kever, keyid: hab.kever}
-            with pytest.raises(hs.MalformedKey):
+            with pytest.raises(hs.HttpSigMalformedKeyError):
                 hs.keverResolver(kevers)(bad)
             refused(craft(COVERED, params(keyid=f'"{bad}"')), "malformed-key",
                     resolver=None)
@@ -887,16 +893,16 @@ def test_verify_request_policy():
     # signed and sent to another service: valid signature, wrong service
     msg = signed(authority="other.example")
     verify(msg)
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         verify(msg, policy=policy)
     # @authority not covered
     msg = signed(sign=dict(covered=["@method", "@path", "@query",
                                     "content-digest"]))
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         verify(msg, policy=policy)
 
     policy = hs.Policy(request=("@method", "@path", "@query", "content-type"))
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         verify(signed(), policy=policy)
     verify(signed(sign=dict(covered=["@method", "@path", "@query",
                                      "content-type", "content-digest"])),
@@ -912,7 +918,7 @@ def test_policy_authorities_normalized():
                        authorities=["Keria.Example", "other.example"])
     assert policy.authorities == frozenset(["keria.example", "other.example"])
     verify(signed(), policy=policy)
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         verify(signed(authority="example"), policy=hs.Policy(
             requireAuthority=True, authorities=frozenset(["keria.example"])))
 
@@ -974,7 +980,7 @@ def test_policy_authority_only_with_comparison():
     verify(signed(), policy=policy)
     replayed = signed(authority=None,
                       headers={"Host": "evil.example", "Content-Length": "7"})
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         verify(replayed, policy=policy)
 
 
@@ -1165,7 +1171,7 @@ def test_detect_mode():
         'indexed="?0";signify="0BDBVr5ape8f9nV60ThhWOKvu5HKXQc5798Sz95FIoqXQ9v'
         'vL8HoYsLRp5aN86MIXr0GqH37SowsmTP-k9UhYSkN"') == "legacy"
     for value in ("", "garbage", "sig=:AAAA:, x=1", "indexed=\"?0\";x=\"1\""):
-        with pytest.raises(hs.MalformedSignature):
+        with pytest.raises(hs.HttpSigMalformedSignatureError):
             hs.detectMode(value)
 
 
@@ -1202,11 +1208,11 @@ def test_verify_without_resolver():
     refused(craft(['"@method"', '"@path"', '"content-digest"'],
                   params(keyid='"bad"')), "insufficient-coverage",
             resolver=None)
-    with pytest.raises(hs.UnknownKey):
+    with pytest.raises(hs.HttpSigUnknownKeyError):
         hs.verifyRequest(method="POST", path="/boot", query=None,
                          headers=keriaHeaders(), body=b"", resolver=None)
     msg, kept = served()
-    with pytest.raises(hs.UnknownKey):
+    with pytest.raises(hs.HttpSigUnknownKeyError):
         verifyResp(response(kept), kept, resolver=None)
 
 
@@ -1225,7 +1231,7 @@ def test_custom_resolver_sees_only_aids():
     refused(craft(COVERED, params()), "unknown-key", resolver=resolver)
     assert len(asked) == 1
     msg, kept = served()
-    with pytest.raises(hs.MalformedKey):
+    with pytest.raises(hs.HttpSigMalformedKeyError):
         verifyResp(response(kept, sign=dict(keyid="garbage")), kept,
                    resolver=resolver)
 
@@ -1324,18 +1330,18 @@ def test_sign_verify_response():
 
     msg, kept = served()
     rep = response(kept)
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         verifyResp({**rep, "status": 500}, kept)
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         verifyResp({**rep, "body": b'{"ok":false}'}, kept)
     # answered a different request than the one this client sent
-    with pytest.raises(hs.SignatureMismatch):
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
         verifyResp(rep, kept._replace(query="type=ixn"))
     # signed by someone other than the agent this client talks to
-    with pytest.raises(hs.UnknownKey):
+    with pytest.raises(hs.HttpSigUnknownKeyError):
         verifyResp(rep, kept, keyid=ntSigner().verfer.qb64)
     # freshness applies to responses too
-    with pytest.raises(hs.SignatureStale):
+    with pytest.raises(hs.HttpSigSignatureStaleError):
         verifyResp(rep, kept, now=NOW + 1000)
 
 
@@ -1344,9 +1350,9 @@ def test_verify_response_keyid_order():
     expected-AID check follows that and comes before resolution: a stranger's
     well-formed keyid is unknown-key (profile section 9)."""
     msg, kept = served()
-    with pytest.raises(hs.MalformedKey):
+    with pytest.raises(hs.HttpSigMalformedKeyError):
         verifyResp(response(kept, sign=dict(keyid="garbage")), kept)
-    with pytest.raises(hs.UnknownKey):
+    with pytest.raises(hs.HttpSigUnknownKeyError):
         verifyResp(response(kept, signer=ntSigner()), kept)
 
 
@@ -1359,7 +1365,7 @@ def test_verify_response_needs_expected_keyid():
     for keyid in (None, "", b"x"):
         with pytest.raises(ValueError):
             verifyResp(stranger, kept, keyid=keyid)
-    with pytest.raises(hs.UnknownKey):
+    with pytest.raises(hs.HttpSigUnknownKeyError):
         verifyResp(stranger, kept)
 
 
@@ -1368,7 +1374,7 @@ def test_verify_response_mode_mismatch_either_way():
     request is mode-mismatch in either direction."""
     msg, kept = served()
     rep = response(kept)
-    with pytest.raises(hs.ModeMismatch):
+    with pytest.raises(hs.HttpSigModeMismatchError):
         verifyResp(rep, kept, requestMode="legacy")
     with pytest.raises(ValueError):
         verifyResp(rep, kept, requestMode="Canonical")
@@ -1387,13 +1393,13 @@ def test_response_status_forms():
     for status in ("OK", "20", "2000", "", None, True, 99, 1000, 200.0):
         if status is None:
             continue
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             verifyResp({**rep, "status": status}, kept)
         with pytest.raises(ValueError):
             response(kept, status=status)
-    with pytest.raises(hs.Unauthenticated):
+    with pytest.raises(hs.HttpSigUnauthenticatedError):
         verifyResp(dict(status="401 Unauthorized", headers={}, body=b""), kept)
-    with pytest.raises(hs.MissingSignature):
+    with pytest.raises(hs.HttpSigMissingSignatureError):
         verifyResp(dict(status="garbage", headers={}, body=b""), kept)
 
 
@@ -1442,7 +1448,8 @@ def test_response_unexpected_aid_before_resolution():
     rep = response(kept)
     agent = ntSigner(b"\x02" * 32).verfer.qb64
     k1 = Signer(code=MtrDex.ECDSA_256k1_Seed, transferable=False).verfer.qb64
-    for keyid, klas in ((k1, hs.UnknownKey), ("garbage", hs.MalformedKey)):
+    for keyid, klas in ((k1, hs.HttpSigUnknownKeyError),
+                        ("garbage", hs.HttpSigMalformedKeyError)):
         headers = dict(rep["headers"])
         headers["Signature-Input"] = headers["Signature-Input"].replace(
             agent, keyid)
@@ -1462,7 +1469,7 @@ def test_response_rechecks_request_digest():
 
     # the request body was swapped after the digest was computed
     swapped = kept._replace(body=b'{"a":2}')
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         verifyResp(underSigned(swapped, hs.responseCovered(kept, b"{}"),
                                body=b"{}"), swapped)
     # the client kept no body: a caller error, not a refusal
@@ -1470,7 +1477,7 @@ def test_response_rechecks_request_digest():
         verifyResp(rep, kept._replace(body=None))
     # an empty body is checked like any other
     empty = kept._replace(body=b"")
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         verifyResp(underSigned(empty, hs.responseCovered(kept, b"{}"),
                                body=b"{}"), empty)
     ok = kept._replace(body=b"", headers={**kept.headers,
@@ -1481,18 +1488,18 @@ def test_response_rechecks_request_digest():
     badReq = kept._replace(headers={**kept.headers, "Content-Digest": "garbage"})
     rep = underSigned(badReq, hs.responseCovered(kept, b"{}"), body=b"{}",
                       digest=hs.contentDigest(b"other"))
-    with pytest.raises(hs.MalformedDigest):
+    with pytest.raises(hs.HttpSigMalformedDigestError):
         verifyResp(rep, badReq)
     rep = underSigned(swapped, hs.responseCovered(kept, b"{}"), body=b"{}",
                       digest="garbage")
-    with pytest.raises(hs.MalformedDigest):
+    with pytest.raises(hs.HttpSigMalformedDigestError):
         verifyResp(rep, swapped)
     # the same with the response body deferred: the header-time stage parses
     # both and compares the request's
-    with pytest.raises(hs.MalformedDigest):
+    with pytest.raises(hs.HttpSigMalformedDigestError):
         verifyResp({**rep, "body": hs.Deferred}, swapped)
     rep = underSigned(swapped, hs.responseCovered(kept, b"{}"), body=b"{}")
-    with pytest.raises(hs.DigestMismatch):
+    with pytest.raises(hs.HttpSigDigestMismatchError):
         verifyResp({**rep, "body": hs.Deferred}, swapped)
 
     # the signer will not bind a request digest its request body contradicts
@@ -1514,7 +1521,7 @@ def test_sign_below_minimum_refused():
     get = request(method="GET", body=None, headers={})
     for covered in (["@method", "@path"], ["@path", "@query"],
                     ["@method", "@authority", "@query"]):
-        with pytest.raises(hs.InsufficientCoverage):
+        with pytest.raises(hs.HttpSigInsufficientCoverageError):
             hs.signRequest(signer=signer, covered=covered, **get)
     for covered in (['"@method"', '"@path";key="x"', '"@query"'],
                     ["@method", "@path", "@query", '"x-foo";sf'],
@@ -1531,9 +1538,9 @@ def test_sign_below_minimum_refused():
              '"@query";req'],  # the request had a body
             ["content-digest", '"@method";req', '"@path";req', '"@query";req',
              '"content-digest";req']):  # no @status
-        with pytest.raises(hs.InsufficientCoverage):
+        with pytest.raises(hs.HttpSigInsufficientCoverageError):
             response(kept, sign=dict(covered=covered))
-    with pytest.raises(hs.UncoveredBody):
+    with pytest.raises(hs.HttpSigUncoveredBodyError):
         response(kept, sign=dict(covered=[
             "@status", '"@method";req', '"@path";req', '"@query";req',
             '"content-digest";req']))
@@ -1545,24 +1552,24 @@ def test_verify_response_refusals():
     rep = underSigned(kept, [
         "@status", "content-digest", '"@method";req', '"@path";req',
         '"content-digest";req'])
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         verifyResp(rep, kept)
     rep = underSigned(kept, [
         "@status", "content-digest", '"@method";req', '"@path";req',
         '"@query";req'])
-    with pytest.raises(hs.InsufficientCoverage):
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
         verifyResp(rep, kept)
     # the hand-signed full set verifies, so the refusals above are coverage
     verifyResp(underSigned(kept, hs.responseCovered(kept, b'{"ok":true}')),
                kept)
 
     # unsigned: 401 is an authentication failure, anything else refused
-    with pytest.raises(hs.Unauthenticated) as ex:
+    with pytest.raises(hs.HttpSigUnauthenticatedError) as ex:
         verifyResp(dict(status=401, headers={}, body=b"{}"), kept)
     assert ex.value.code == "unauthenticated"
-    with pytest.raises(hs.MissingSignature):
+    with pytest.raises(hs.HttpSigMissingSignatureError):
         verifyResp(dict(status=200, headers={}, body=b"{}"), kept)
-    with pytest.raises(hs.MissingSignature):
+    with pytest.raises(hs.HttpSigMissingSignatureError):
         verifyResp(dict(status=500, headers={"Signature-Input": "x"},
                         body=b"{}"), kept)
 
@@ -1571,7 +1578,7 @@ def test_verify_response_refusals():
               "Signature": 'indexed="?0";signify="0BDBVr5ape8f9nV60ThhWOKvu5H'
                            'KXQc5798Sz95FIoqXQ9vvL8HoYsLRp5aN86MIXr0GqH37Sow'
                            'smTP-k9UhYSkN"'}
-    with pytest.raises(hs.ModeMismatch) as ex:
+    with pytest.raises(hs.HttpSigModeMismatchError) as ex:
         verifyResp(dict(status=200, headers=legacy, body=b"{}"), kept)
     assert ex.value.code == "mode-mismatch"
 
@@ -1628,7 +1635,7 @@ def test_verify_legacy_keria_vectors():
         hs.verifyLegacy(method="POST", path="/boot", headers=upper,
                         verfer=verfer)
 
-        with pytest.raises(hs.SignatureMismatch) as ex:
+        with pytest.raises(hs.HttpSigSignatureMismatchError) as ex:
             hs.verifyLegacy(method="POST", path="/boot",
                             headers=keriaHeaders(KERIA_SIG_BAD), verfer=verfer)
         # KERIA's message, unchanged
@@ -1638,14 +1645,14 @@ def test_verify_legacy_keria_vectors():
             "keyid='EPwUOBk9QkxPM20JBaf_pFXPytSjTUoyxbx95uZJE1Hq', alg='ed25519',"
             " expires=None, nonce=None, context=None) invalid")
 
-        with pytest.raises(hs.MissingSignatureLabel) as ex:
+        with pytest.raises(hs.HttpSigMissingSignatureLabelError) as ex:
             hs.verifyLegacy(method="POST", path="/boot",
                             headers=keriaHeaders(label="notsignify"),
                             verfer=verfer)
         assert str(ex.value) == "Missing signify inputs in signature"
 
         for change in (dict(method="GET"), dict(path="/boot2")):
-            with pytest.raises(hs.SignatureMismatch):
+            with pytest.raises(hs.HttpSigSignatureMismatchError):
                 hs.verifyLegacy(**{**dict(method="POST", path="/boot"),
                                    **change},
                                 headers=keriaHeaders(), verfer=verfer)
@@ -1655,7 +1662,7 @@ def test_verify_legacy_keria_vectors():
         # verifies, and an unknown derived component is dropped
         headers = keriaHeaders()
         del headers["Signify-Timestamp"]
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             hs.verifyLegacy(method="POST", path="/boot", headers=headers,
                             verfer=verfer)
 
@@ -1669,12 +1676,12 @@ def test_verify_legacy_keria_vectors():
                                      else "missing-signature-input")
         headers = keriaHeaders()
         headers["Signature-Input"] = 'signify=("@method");keyid="x"'
-        with pytest.raises(hs.MalformedSignatureInput):
+        with pytest.raises(hs.HttpSigMalformedSignatureInputError):
             hs.verifyLegacy(method="POST", path="/boot", headers=headers,
                             verfer=verfer)
         headers = keriaHeaders()
         headers["Signature"] = f'indexed="?0";other="{KERIA_SIG_GOOD}"'
-        with pytest.raises(hs.MissingSignatureLabel):
+        with pytest.raises(hs.HttpSigMissingSignatureLabelError):
             hs.verifyLegacy(method="POST", path="/boot", headers=headers,
                             verfer=verfer)
 
@@ -1704,7 +1711,7 @@ def test_verify_legacy_keripy_vector():
                                    verfer=hab.kever.verfers[0])
         assert verified.keyid == "EWJkQCFvKuyxZi582yJPb0wcwuW3VXmFNuvbQuBpgmIs"
         assert verified.label == "sig0"
-        with pytest.raises(hs.MissingSignatureLabel):
+        with pytest.raises(hs.HttpSigMissingSignatureLabelError):
             hs.verifyLegacy(method="POST", path="/signify", headers=headers,
                             verfer=hab.kever.verfers[0])
 
@@ -1725,20 +1732,20 @@ def test_verify_request_legacy_mode():
         hs.checkBody(verified, msg["headers"], b"anything")
         assert hs.signatureKeyid(msg["headers"]) == KERIA_CONTROLLER
 
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             hs.verifyRequest(**{**msg, "headers": keriaHeaders(KERIA_SIG_BAD)},
                              resolver=resolver)
         # decision D9: a deployment can turn legacy off
-        with pytest.raises(hs.MalformedSignature) as ex:
+        with pytest.raises(hs.HttpSigMalformedSignatureError) as ex:
             hs.verifyRequest(**msg, resolver=resolver, acceptLegacy=False)
         assert ex.value.code == "malformed-signature"
 
         headers = keriaHeaders()
         del headers["Signify-Resource"]
-        with pytest.raises(hs.MissingComponent):
+        with pytest.raises(hs.HttpSigMissingComponentError):
             hs.verifyRequest(**{**msg, "headers": headers}, resolver=resolver)
         # the resource must resolve
-        with pytest.raises(hs.UnknownKey):
+        with pytest.raises(hs.HttpSigUnknownKeyError):
             hs.verifyRequest(**msg, resolver=hs.keverResolver({}))
 
         # canonical and legacy never cross-verify: same key, legacy base
@@ -1750,7 +1757,7 @@ def test_verify_request_legacy_mode():
         del canon["Content-Length"]
         canon["Signature-Input"] = canon["Signature-Input"].replace(
             '"signify-timestamp")', '"signify-timestamp" "@query")')
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             hs.verifyRequest(**{**msg, "headers": canon}, resolver=resolver,
                              now=1609459200)
 
@@ -1788,7 +1795,7 @@ def test_unexpected_errors_propagate(monkeypatch):
         hs.verifyLegacy(method="POST", path="/boot", headers=keriaHeaders(),
                         verfer=ntSigner().verfer)
     monkeypatch.undo()
-    with pytest.raises(hs.MalformedSignature):
+    with pytest.raises(hs.HttpSigMalformedSignatureError):
         hs.detectMode("not canonical")
 
 
@@ -1804,11 +1811,11 @@ def test_legacy_lookup_is_kerias():
         # a 2-of-2 group has no single effective signer, in either mode
         group = hby.makeHab(name="group", icount=2, isith="2", ncount=2,
                             nsith="2")
-        with pytest.raises(hs.UnsupportedSigner):
+        with pytest.raises(hs.HttpSigUnsupportedSignerError):
             resolver(group.pre)
-        with pytest.raises(hs.UnsupportedSigner):
+        with pytest.raises(hs.HttpSigUnsupportedSignerError):
             resolver.legacy(group.pre)
-        with pytest.raises(hs.UnsupportedSigner) as ex:
+        with pytest.raises(hs.HttpSigUnsupportedSignerError) as ex:
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=legacySigned(group), body=b"",
                              resolver=resolver)
@@ -1829,13 +1836,13 @@ def test_legacy_lookup_is_kerias():
         assert verified.keyid == second.pre
         assert verified.verfer.qb64 == effective.qb64
         # signed by the first key, which does not satisfy the threshold
-        with pytest.raises(hs.SignatureMismatch):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=legacySigned(second), body=b"",
                              resolver=resolver)
 
         # a Signify-Resource the verifier holds no key state for
-        with pytest.raises(hs.UnknownKey) as ex:
+        with pytest.raises(hs.HttpSigUnknownKeyError) as ex:
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers={**headers, "Signify-Resource": "nope"},
                              body=b"", resolver=resolver)
@@ -1854,11 +1861,11 @@ def test_legacy_lookup_is_kerias():
         assert hs.verifyResponse(**rep, request=kept, resolver=plain,
                                  keyid=second.pre,
                                  requestMode="legacy").mode == "legacy"
-        with pytest.raises(hs.UnknownKey):
+        with pytest.raises(hs.HttpSigUnknownKeyError):
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=headers, body=b"",
                              resolver=lambda aid: None)
-        with pytest.raises(hs.UnknownKey):
+        with pytest.raises(hs.HttpSigUnknownKeyError):
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=headers, body=b"", resolver=None)
 
@@ -1895,14 +1902,14 @@ def test_verify_response_legacy():
             verified = hs.verifyResponse(**rep, request=kept, resolver=resolver,
                                          keyid=agent.pre, requestMode="legacy")
             assert verified.mode == "legacy"
-            with pytest.raises(hs.SignatureMismatch):
+            with pytest.raises(hs.HttpSigSignatureMismatchError):
                 hs.verifyResponse(**rep, request=kept._replace(path="/x"),
                                   resolver=resolver, keyid=agent.pre,
                                   requestMode="legacy")
-            with pytest.raises(hs.UnknownKey):
+            with pytest.raises(hs.HttpSigUnknownKeyError):
                 hs.verifyResponse(**rep, request=kept, resolver=resolver,
                                   keyid=controller.pre, requestMode="legacy")
-            with pytest.raises(hs.ModeMismatch):
+            with pytest.raises(hs.HttpSigModeMismatchError):
                 hs.verifyResponse(**rep, request=kept, resolver=resolver,
                                   keyid=agent.pre)
 
@@ -1963,7 +1970,7 @@ def test_vector_key_states():
         resolve = vectorResolver(data)
         for key in data["keys"]:
             if key["effective_key"] is None:
-                with pytest.raises(hs.UnsupportedSigner):
+                with pytest.raises(hs.HttpSigUnsupportedSignerError):
                     resolve(key["keyid"])
             else:
                 assert resolve(key["keyid"]).raw == b64url(key["effective_key"])

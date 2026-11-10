@@ -37,149 +37,26 @@ import http_sfv
 
 from . import ending
 from .. import kering
+from ..kering import (HttpSigError, HttpSigMissingSignatureError,
+                      HttpSigMissingSignatureInputError,
+                      HttpSigMalformedSignatureError,
+                      HttpSigMalformedSignatureInputError,
+                      HttpSigMalformedSignatureLabelError,
+                      HttpSigMissingSignatureLabelError,
+                      HttpSigMalformedSignatureValueError,
+                      HttpSigModeMismatchError, HttpSigDuplicateComponentError,
+                      HttpSigUnsupportedComponentError,
+                      HttpSigInsufficientCoverageError,
+                      HttpSigMalformedKeyError, HttpSigUnknownKeyError,
+                      HttpSigUnsupportedSignerError,
+                      HttpSigUnsupportedAlgorithmError,
+                      HttpSigMissingComponentError,
+                      HttpSigSignatureMismatchError,
+                      HttpSigSignatureStaleError, HttpSigSignatureExpiredError,
+                      HttpSigMalformedDigestError, HttpSigDigestMismatchError,
+                      HttpSigUncoveredBodyError, HttpSigUnauthenticatedError)
 from ..core.coring import MtrDex, PreDex, NonTransDex, Prefixer, Verfer
 from ..help import helping
-
-
-# Errors. Each refusal carries the profile section 9 code as .code so that a
-# caller, and the shared test vectors, can name refusals independently of this
-# implementation's class names.
-
-class HttpSigError(kering.AuthNError):
-    """
-    Base class for HTTP message signature refusals.
-
-    Subclasses kering.AuthNError so that a server which already maps AuthNError
-    to 401 refuses these without a new except clause.
-
-    Attributes:
-        code (str): kebab-case refusal code from profile section 9
-    """
-    code = "http-signature-error"
-
-
-class MissingSignature(HttpSigError):
-    """No Signature header, or an unsigned response."""
-    code = "missing-signature"
-
-
-class MissingSignatureInput(HttpSigError):
-    """No Signature-Input header."""
-    code = "missing-signature-input"
-
-
-class MalformedSignature(HttpSigError):
-    """Signature header is neither canonical nor legacy form, or legacy mode
-    is refused by configuration."""
-    code = "malformed-signature"
-
-
-class MalformedSignatureInput(HttpSigError):
-    """Signature-Input does not parse, names an uppercase field, or carries an
-    unknown or ill-typed parameter."""
-    code = "malformed-signature-input"
-
-
-class MalformedSignatureLabel(HttpSigError):
-    """Other than exactly one label."""
-    code = "malformed-signature-label"
-
-
-class MissingSignatureLabel(HttpSigError):
-    """Signature and Signature-Input name different labels."""
-    code = "missing-signature-label"
-
-
-class MalformedSignatureValue(HttpSigError):
-    """Signature member is not a 64 byte Byte Sequence."""
-    code = "malformed-signature-value"
-
-
-class ModeMismatch(HttpSigError):
-    """A response in the other mode than the request it answers: legacy to
-    a canonical request, or canonical to a legacy one (profile section 8)."""
-    code = "mode-mismatch"
-
-
-class DuplicateComponent(HttpSigError):
-    """The same component appears twice in one covered list."""
-    code = "duplicate-component"
-
-
-class UnsupportedComponent(HttpSigError):
-    """A component or component parameter this profile does not support."""
-    code = "unsupported-component"
-
-
-class InsufficientCoverage(HttpSigError):
-    """The policy minimum set is not covered, including a body without a
-    covered content-digest."""
-    code = "insufficient-coverage"
-
-
-class MalformedKey(HttpSigError):
-    """The keyid is not a well formed AID."""
-    code = "malformed-key"
-
-
-class UnknownKey(HttpSigError):
-    """No key state for a transferable keyid."""
-    code = "unknown-key"
-
-
-class UnsupportedSigner(HttpSigError):
-    """Key state without a single effective signer (profile R4)."""
-    code = "unsupported-signer"
-
-
-class UnsupportedAlgorithm(HttpSigError):
-    """An alg other than ed25519, or one that disagrees with the key."""
-    code = "unsupported-algorithm"
-
-
-class MissingComponent(HttpSigError):
-    """A covered component is absent from the message."""
-    code = "missing-component"
-
-
-class SignatureMismatch(HttpSigError):
-    """The signature does not verify over the signature base."""
-    code = "signature-mismatch"
-
-
-class SignatureStale(HttpSigError):
-    """created is outside the freshness window."""
-    code = "signature-stale"
-
-
-class SignatureExpired(HttpSigError):
-    """expires is in the past."""
-    code = "signature-expired"
-
-
-class MalformedDigest(HttpSigError):
-    """Content-Digest does not parse or has no recognized algorithm."""
-    code = "malformed-digest"
-
-
-class DigestMismatch(HttpSigError):
-    """Content-Digest does not match the content."""
-    code = "digest-mismatch"
-
-
-class UncoveredBody(HttpSigError):
-    """Signer side only: a non-empty body without a covered content-digest."""
-    code = "uncovered-body"
-
-
-class Unauthenticated(HttpSigError):
-    """
-    An unsigned 401 answering a canonical request (profile sections 8 and 9).
-    Response only, and checked before any other response check: the server
-    refused the request's authentication, and the body of its response is not
-    to be trusted.
-    """
-    code = "unauthenticated"
 
 
 def errorForCode(code):
@@ -245,9 +122,9 @@ def verifyContentDigest(value, body):
         body (bytes | str | None): content as received
 
     Raises:
-        MalformedDigest: value does not parse, a recognized member is not a
-            Byte Sequence, or no member is recognized
-        DigestMismatch: a recognized member does not match body
+        HttpSigMalformedDigestError: value does not parse, a recognized
+            member is not a Byte Sequence, or no member is recognized
+        HttpSigDigestMismatchError: a recognized member does not match body
     """
     _compareDigest(_parseDigest(value), body)
 
@@ -258,7 +135,7 @@ def _parseDigest(value):
     Content-Digest value, so that every covered digest can be parsed before
     any is compared (malformed-digest precedes digest-mismatch).
 
-    Raises MalformedDigest.
+    Raises HttpSigMalformedDigestError.
     """
     if isinstance(value, str):
         value = value.encode("utf-8")
@@ -266,29 +143,32 @@ def _parseDigest(value):
     try:
         members.parse(value)
     except ValueError as ex:
-        raise MalformedDigest(f"Content-Digest does not parse: {ex}.") from ex
+        raise HttpSigMalformedDigestError(
+            f"Content-Digest does not parse: {ex}.") from ex
 
     recognized = []
     for alg, member in members.items():
         if alg not in DigestAlgs:
             continue
         if not isinstance(member, http_sfv.Item) or not isinstance(member.value, bytes):
-            raise MalformedDigest(f"Content-Digest member {alg} is not a Byte "
-                                  f"Sequence.")
+            raise HttpSigMalformedDigestError(
+                f"Content-Digest member {alg} is not a Byte Sequence.")
         recognized.append((alg, member.value))
 
     if not recognized:
-        raise MalformedDigest("Content-Digest has no sha-256 or sha-512 member.")
+        raise HttpSigMalformedDigestError(
+            "Content-Digest has no sha-256 or sha-512 member.")
     return recognized
 
 
 def _compareDigest(recognized, body):
-    """Raises DigestMismatch unless every recognized digest matches body."""
+    """Raises HttpSigDigestMismatchError unless every recognized digest
+    matches body."""
     raw = _bytify(body)
     for alg, digest in recognized:
         if not hmac.compare_digest(DigestAlgs[alg](raw).digest(), digest):
-            raise DigestMismatch(f"Content-Digest {alg} does not match the "
-                                 f"content.")
+            raise HttpSigDigestMismatchError(
+                f"Content-Digest {alg} does not match the content.")
 
 
 # Signature base, RFC 9421 section 2
@@ -383,20 +263,20 @@ def _component(component):
         try:
             item.parse(component.encode("utf-8"))
         except ValueError as ex:
-            raise MalformedSignatureInput(f"Component identifier {component} "
-                                          f"does not parse.") from ex
+            raise HttpSigMalformedSignatureInputError(
+                f"Component identifier {component} does not parse.") from ex
     elif isinstance(component, str) and component:
         return http_sfv.Item(component.lower())
     else:
-        raise MalformedSignatureInput(f"Invalid component identifier "
-                                      f"{component!r}.")
+        raise HttpSigMalformedSignatureInputError(
+            f"Invalid component identifier {component!r}.")
 
     if type(item.value) is not str or not item.value:  # String, not Token
-        raise MalformedSignatureInput(f"Component identifier {item} is not a "
-                                      f"String.")
+        raise HttpSigMalformedSignatureInputError(
+            f"Component identifier {item} is not a String.")
     if item.value != item.value.lower():
-        raise MalformedSignatureInput(f"Component identifier {item} is not "
-                                      f"lowercase.")
+        raise HttpSigMalformedSignatureInputError(
+            f"Component identifier {item} is not lowercase.")
     return item
 
 
@@ -422,30 +302,33 @@ def _components(covered, *, response):
     for item in items:
         key = _componentKey(item)
         if key in seen:
-            raise DuplicateComponent(f"Component {_serialize(item)} is covered "
-                                     f"more than once.")
+            raise HttpSigDuplicateComponentError(
+                f"Component {_serialize(item)} is covered more than once.")
         seen.add(key)
 
     for item in items:
         name = item.value
         for param, value in item.params.items():
             if param != "req" or value is not True:
-                raise UnsupportedComponent(f"Component {_serialize(item)} has "
-                                           f"unsupported parameter {param}.")
+                raise HttpSigUnsupportedComponentError(
+                    f"Component {_serialize(item)} has unsupported parameter "
+                    f"{param}.")
             if not response:
-                raise UnsupportedComponent(f"Component {_serialize(item)}: req "
-                                           f"is only valid in a response.")
+                raise HttpSigUnsupportedComponentError(
+                    f"Component {_serialize(item)}: req is only valid in a "
+                    "response.")
         if name.startswith("@"):
             if name not in Derived:
-                raise UnsupportedComponent(f"Derived component {name} is not "
-                                           f"supported.")
+                raise HttpSigUnsupportedComponentError(
+                    f"Derived component {name} is not supported.")
             if name == "@status" and (not response or "req" in item.params):
-                raise UnsupportedComponent(f"Component {_serialize(item)} is "
-                                           f"only valid on a response.")
+                raise HttpSigUnsupportedComponentError(
+                    f"Component {_serialize(item)} is only valid on a "
+                    "response.")
             if name != "@status" and response and "req" not in item.params:
-                raise UnsupportedComponent(f"Component {_serialize(item)} "
-                                           f"targets a request; on a response "
-                                           f"it needs req.")
+                raise HttpSigUnsupportedComponentError(
+                    f"Component {_serialize(item)} targets a request; on a "
+                    "response it needs req.")
     return items
 
 
@@ -510,14 +393,15 @@ def _componentValue(item, *, method, authority, path, query, fields, status):
             try:
                 value = f"{_statusCode(status):03d}"
             except ValueError as ex:
-                raise SignatureMismatch(f"Signature base cannot be built: "
-                                        f"{ex}") from ex
+                raise HttpSigSignatureMismatchError(
+                    f"Signature base cannot be built: {ex}") from ex
     else:
         value = _fieldValue(fields, name)
 
     if value is None:
-        raise MissingComponent(f"Covered component {_serialize(item)} is absent "
-                               f"from the message.")
+        raise HttpSigMissingComponentError(
+            f"Covered component {_serialize(item)} is absent from the "
+            "message.")
     return value
 
 
@@ -572,9 +456,10 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
         request (Requestage): request answered, for components marked req
 
     Raises:
-        MalformedSignatureInput, DuplicateComponent, UnsupportedComponent,
-        MissingComponent, and SignatureMismatch when a component value has a
-        newline or a non-ASCII character, so the base cannot be built
+        HttpSigMalformedSignatureInputError, HttpSigDuplicateComponentError,
+        HttpSigUnsupportedComponentError, HttpSigMissingComponentError, and
+        HttpSigSignatureMismatchError when a component value has a newline or
+        a non-ASCII character, so the base cannot be built
     """
     response = status is not None
     items = _components(covered, response=response)
@@ -585,8 +470,9 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
     for item in items:
         if "req" in item.params:
             if request is None:
-                raise MissingComponent(f"Component {_serialize(item)} needs "
-                                       f"the request, which was not supplied.")
+                raise HttpSigMissingComponentError(
+                    f"Component {_serialize(item)} needs the request, which "
+                    "was not supplied.")
             value = _componentValue(item, method=request.method,
                                     authority=request.authority,
                                     path=request.path, query=request.query,
@@ -596,9 +482,9 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
                                     path=path, query=query, fields=fields,
                                     status=status)
         if "\n" in value or "\r" in value or not value.isascii():
-            raise SignatureMismatch(f"Signature base cannot be built: the "
-                                    f"value of {_serialize(item)} has a "
-                                    f"newline or a non-ASCII character.")
+            raise HttpSigSignatureMismatchError(
+                "Signature base cannot be built: the value of "
+                f"{_serialize(item)} has a newline or a non-ASCII character.")
         lines.append(f"{_serialize(item)}: {value}")
 
     lines.append(f'"@signature-params": {_signatureParamsValue(items, params)}')
@@ -675,7 +561,8 @@ def _sign(items, *, signer, hab, keyid, label, created, expires, nonce, tag,
     if alg is not None and alg != Alg:
         raise ValueError(f"Unsupported signature algorithm {alg!r}.")
     if verfer.code not in _Ed25519Codes:
-        raise UnsupportedAlgorithm(f"Key code {verfer.code} is not Ed25519.")
+        raise HttpSigUnsupportedAlgorithmError(
+            f"Key code {verfer.code} is not Ed25519.")
 
     params = signatureParams(
         created=created if created is not None else _now(),
@@ -727,8 +614,10 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
         alg (str): 'ed25519', or None to omit the parameter
 
     Raises:
-        InsufficientCoverage: covered falls short of RequestMinimum
-        UncoveredBody: non-empty body without covered content-digest
+        HttpSigInsufficientCoverageError: covered falls short of
+            RequestMinimum
+        HttpSigUncoveredBodyError: non-empty body without covered
+            content-digest
         ValueError: anything else that stops signing, such as an unsupported
             or duplicate component, a covered field that is absent or not
             ASCII, a hab without a single effective signer (R4), a key that
@@ -757,7 +646,7 @@ def _digestFields(items, headers, raw, kind):
     Returns (added, fields): the Content-Digest header to add when items cover
     content-digest, and the header fields to build the base from, carrying
     that value. A non-empty body without covered content-digest is
-    UncoveredBody.
+    HttpSigUncoveredBodyError.
     """
     added = {}
     fields = list(_fieldLines(headers).items())
@@ -766,7 +655,8 @@ def _digestFields(items, headers, raw, kind):
         fields = [(n, v) for n, v in fields if n != "content-digest"]
         fields.append(("content-digest", added["Content-Digest"]))
     elif raw:
-        raise UncoveredBody(f"A {kind} with a body must cover content-digest.")
+        raise HttpSigUncoveredBodyError(
+            f"A {kind} with a body must cover content-digest.")
     return added, fields
 
 
@@ -837,7 +727,8 @@ def signResponse(*, status, request, headers=None, body=None, signer=None,
             # never bind a request digest that the request body contradicts
             value = _fieldValue(_fieldLines(request.headers), "content-digest")
             if value is None:
-                raise MissingComponent("The request has no Content-Digest.")
+                raise HttpSigMissingComponentError(
+                    "The request has no Content-Digest.")
             verifyContentDigest(value, request.body)
         added, fields = _digestFields(items, headers, raw, "response")
 
@@ -995,7 +886,7 @@ def detectMode(value):
     it.
 
     Raises:
-        MalformedSignature: neither
+        HttpSigMalformedSignatureError: neither
     """
     try:
         members = _parseDict(value)
@@ -1010,8 +901,9 @@ def detectMode(value):
             return Legacy
     except _ParseErrors:
         pass
-    raise MalformedSignature("Signature is neither an RFC 9421 Byte Sequence "
-                             "nor the legacy KERI form.")
+    raise HttpSigMalformedSignatureError(
+        "Signature is neither an RFC 9421 Byte Sequence nor the legacy KERI "
+        "form.")
 
 
 def peekMode(headers):
@@ -1026,7 +918,7 @@ def peekMode(headers):
         return None
     try:
         return detectMode(signature)
-    except MalformedSignature:
+    except HttpSigMalformedSignatureError:
         return None
 
 
@@ -1043,7 +935,7 @@ def signatureKeyid(headers):
         return None
     try:
         mode = detectMode(signature)
-    except MalformedSignature:
+    except HttpSigMalformedSignatureError:
         return None
     if mode == Legacy:
         return _fieldValue(fields, "signify-resource")
@@ -1062,37 +954,38 @@ def _parseInput(value):
     """
     Returns (label, items, params) from Signature-Input field value.
 
-    Raises MalformedSignatureInput, then MalformedSignatureLabel.
+    Raises HttpSigMalformedSignatureInputError, then
+    HttpSigMalformedSignatureLabelError.
     """
     try:
         members = _parseDict(value)
     except ValueError as ex:
-        raise MalformedSignatureInput(f"Signature-Input does not parse: "
-                                      f"{ex}.") from ex
+        raise HttpSigMalformedSignatureInputError(
+            f"Signature-Input does not parse: {ex}.") from ex
     if not members:
-        raise MalformedSignatureInput("Signature-Input is empty.")
+        raise HttpSigMalformedSignatureInputError("Signature-Input is empty.")
     parsed = []
     for label, member in members.items():
         if not isinstance(member, http_sfv.InnerList):
-            raise MalformedSignatureInput(f"Signature-Input member {label} is "
-                                          f"not an Inner List.")
+            raise HttpSigMalformedSignatureInputError(
+                f"Signature-Input member {label} is not an Inner List.")
         items = [_component(item) for item in member]
         for name, val in member.params.items():
             kind = _ParamTypes.get(name)
             if kind is None:
-                raise MalformedSignatureInput(f"Unknown signature parameter "
-                                              f"{name}.")
+                raise HttpSigMalformedSignatureInputError(
+                    f"Unknown signature parameter {name}.")
             if type(val) is not kind:  # excludes bool, Token, Decimal
-                raise MalformedSignatureInput(f"Signature parameter {name} has "
-                                              f"the wrong type.")
+                raise HttpSigMalformedSignatureInputError(
+                    f"Signature parameter {name} has the wrong type.")
         for name in ("created", "keyid"):
             if name not in member.params:
-                raise MalformedSignatureInput(f"Signature parameter {name} is "
-                                              f"required.")
+                raise HttpSigMalformedSignatureInputError(
+                    f"Signature parameter {name} is required.")
         parsed.append((label, items, dict(member.params)))
     if len(parsed) != 1:
-        raise MalformedSignatureLabel("Signature-Input must carry exactly one "
-                                      "label.")
+        raise HttpSigMalformedSignatureLabelError(
+            "Signature-Input must carry exactly one label.")
     return parsed[0]
 
 
@@ -1100,18 +993,20 @@ def _parseSignature(value, label):
     """
     Returns raw signature bytes for label from canonical Signature value.
 
-    Raises MalformedSignatureLabel, MissingSignatureLabel,
-    MalformedSignatureValue.
+    Raises HttpSigMalformedSignatureLabelError,
+    HttpSigMissingSignatureLabelError, HttpSigMalformedSignatureValueError.
     """
     members = _parseDict(value)  # detectMode has already parsed it
     if len(members) != 1:
-        raise MalformedSignatureLabel("Signature must carry exactly one label.")
+        raise HttpSigMalformedSignatureLabelError(
+            "Signature must carry exactly one label.")
     if label not in members:
-        raise MissingSignatureLabel(f"Signature has no member for label "
-                                    f"{label}.")
+        raise HttpSigMissingSignatureLabelError(
+            f"Signature has no member for label {label}.")
     raw = members[label].value
     if len(raw) != 64:
-        raise MalformedSignatureValue(f"Signature is {len(raw)} bytes, not 64.")
+        raise HttpSigMalformedSignatureValueError(
+            f"Signature is {len(raw)} bytes, not 64.")
     return raw
 
 
@@ -1136,8 +1031,8 @@ def _checkCoverage(items, required):
     for component in required:
         item = _component(component)
         if _componentKey(item) not in covered:
-            raise InsufficientCoverage(f"Policy requires covering "
-                                       f"{_serialize(item)}.")
+            raise HttpSigInsufficientCoverageError(f"Policy requires covering "
+                                                   f"{_serialize(item)}.")
 
 
 def effectiveVerfer(verfers, tholder):
@@ -1154,14 +1049,16 @@ def effectiveVerfer(verfers, tholder):
         tholder (Tholder): current signing threshold
 
     Raises:
-        UnsupportedSigner: no key, or more than one key, satisfies the
-            threshold alone, e.g. a 2-of-3 group or '1' over two keys
+        HttpSigUnsupportedSignerError: no key, or more than one key,
+            satisfies the threshold alone, e.g. a 2-of-3 group or '1' over
+            two keys
     """
     alone = [verfer for index, verfer in enumerate(verfers)
              if tholder.satisfy(indices=[index])]
     if len(alone) != 1:
-        raise UnsupportedSigner("Key state has no single key that satisfies "
-                                "its signing threshold alone.")
+        raise HttpSigUnsupportedSignerError(
+            "Key state has no single key that satisfies its signing threshold "
+            "alone.")
     return alone[0]
 
 
@@ -1172,15 +1069,16 @@ def _resolve(resolver, keyid, alg):
     resolver is called only with an AID."""
     _checkAid(keyid)
     if resolver is None:
-        raise UnknownKey(f"No key state for {keyid}.")
+        raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
     verfer = resolver(keyid)
     if verfer is None:
-        raise UnknownKey(f"No key state for {keyid}.")
+        raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
     if verfer.code not in _Ed25519Codes:
-        raise UnsupportedAlgorithm(f"Key {keyid} is not an Ed25519 key.")
+        raise HttpSigUnsupportedAlgorithmError(
+            f"Key {keyid} is not an Ed25519 key.")
     if alg is not None and alg != Alg:
-        raise UnsupportedAlgorithm(f"Signature algorithm {alg} is not "
-                                   f"supported.")
+        raise HttpSigUnsupportedAlgorithmError(
+            f"Signature algorithm {alg} is not supported.")
     return verfer
 
 
@@ -1188,11 +1086,11 @@ def _checkFreshness(params, policy, now):
     now = _now() if now is None else int(now)
     created = params["created"]
     if created < now - policy.maxAge - policy.skew or created > now + policy.skew:
-        raise SignatureStale(f"Signature created at {created} is outside the "
-                             f"freshness window.")
+        raise HttpSigSignatureStaleError(
+            f"Signature created at {created} is outside the freshness window.")
     expires = params.get("expires")
     if expires is not None and expires < now - policy.skew:
-        raise SignatureExpired(f"Signature expired at {expires}.")
+        raise HttpSigSignatureExpiredError(f"Signature expired at {expires}.")
 
 
 def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
@@ -1212,15 +1110,17 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
         # resolver or alg check runs
         _checkAid(keyid)
         if keyid != expectKeyid:
-            raise UnknownKey(f"Signed by {keyid}, not by {expectKeyid}.")
+            raise HttpSigUnknownKeyError(
+                f"Signed by {keyid}, not by {expectKeyid}.")
     verfer = _resolve(resolver, keyid, params.get("alg"))
 
     base = signatureBase(items, params, **baseKwa)
     if authority is not None and authority not in policy.authorities:
-        raise SignatureMismatch(f"Signature is for authority {authority}, "
-                                f"which this verifier does not serve.")
+        raise HttpSigSignatureMismatchError(
+            f"Signature is for authority {authority}, which this verifier "
+            "does not serve.")
     if not verfer.verify(sig=raw, ser=base.encode("utf-8")):
-        raise SignatureMismatch("Signature does not verify.")
+        raise HttpSigSignatureMismatchError("Signature does not verify.")
 
     _checkFreshness(params, policy, now)
     return Verified(mode=Canonical, keyid=keyid, label=label, params=params,
@@ -1275,16 +1175,18 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
     if signature is None:
-        raise MissingSignature("Request has no Signature.")
+        raise HttpSigMissingSignatureError("Request has no Signature.")
     if _fieldValue(fields, "signature-input") is None:
-        raise MissingSignatureInput("Request has no Signature-Input.")
+        raise HttpSigMissingSignatureInputError(
+            "Request has no Signature-Input.")
 
     if authority is None:
         authority = _fieldValue(fields, "host")
 
     if detectMode(signature) == Legacy:
         if not acceptLegacy:
-            raise MalformedSignature("Legacy signatures are not accepted.")
+            raise HttpSigMalformedSignatureError(
+                "Legacy signatures are not accepted.")
         verified = _verifyLegacyRequest(method=method, path=path,
                                         fields=fields, resolver=resolver)
         return verified._replace(request=Requestage(
@@ -1332,8 +1234,9 @@ def checkBody(verified, headers, body):
         body (bytes): content as received, b'' for none
 
     Raises:
-        InsufficientCoverage, MalformedDigest, DigestMismatch, and ValueError
-        for a body that is None or Deferred
+        HttpSigInsufficientCoverageError, HttpSigMalformedDigestError,
+        HttpSigDigestMismatchError, and ValueError for a body that is None or
+        Deferred
     """
     _checkBodyArg(body)
     if body is Deferred:
@@ -1346,11 +1249,12 @@ def checkBody(verified, headers, body):
     raw = _bytify(body)
     if '"content-digest"' not in verified.covered:
         if raw:
-            raise InsufficientCoverage("Body is not covered by content-digest.")
+            raise HttpSigInsufficientCoverageError(
+                "Body is not covered by content-digest.")
         return verified._replace(bodyOwed=False)
     value = _fieldValue(_fieldLines(headers), "content-digest")
     if value is None:
-        raise MissingComponent("Covered content-digest is absent.")
+        raise HttpSigMissingComponentError("Covered content-digest is absent.")
     verifyContentDigest(value, raw)
     return verified._replace(bodyOwed=False)
 
@@ -1394,7 +1298,7 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
     Content-Digest is recomputed over request.body.
 
     Raises:
-        Unauthenticated: unsigned 401 to a canonical request
+        HttpSigUnauthenticatedError: unsigned 401 to a canonical request
         HttpSigError subclass for the first check that fails (section 9)
     """
     _checkBodyArg(body)
@@ -1414,20 +1318,22 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         except ValueError:
             unauthorized = False
         if requestMode == Canonical and unauthorized:
-            raise Unauthenticated("Server refused the request's "
-                                  "authentication (unsigned 401).")
-        raise MissingSignature("Response has no Signature.")
+            raise HttpSigUnauthenticatedError("Server refused the request's "
+                                              "authentication (unsigned 401).")
+        raise HttpSigMissingSignatureError("Response has no Signature.")
     if _fieldValue(fields, "signature-input") is None:
-        raise MissingSignatureInput("Response has no Signature-Input.")
+        raise HttpSigMissingSignatureInputError(
+            "Response has no Signature-Input.")
 
     mode = detectMode(signature)
     if mode != requestMode:
-        raise ModeMismatch(f"{mode.capitalize()} response to a {requestMode} "
-                           f"request.")
+        raise HttpSigModeMismatchError(
+            f"{mode.capitalize()} response to a {requestMode} request.")
     if mode == Legacy:
         resource = _fieldValue(fields, "signify-resource")
         if resource != keyid:
-            raise UnknownKey(f"Response names {resource}, not {keyid}.")
+            raise HttpSigUnknownKeyError(
+                f"Response names {resource}, not {keyid}.")
         verfer = _legacyVerfer(resolver, keyid)
         return verifyLegacy(method=request.method, path=request.path,
                             headers=fields, verfer=verfer)
@@ -1522,39 +1428,44 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
         label (str): signature label; legacy Signify uses 'signify'
 
     Raises:
-        MissingSignature, MissingSignatureInput, MalformedSignatureInput,
-        MalformedSignature, MissingSignatureLabel, SignatureMismatch
+        HttpSigMissingSignatureError, HttpSigMissingSignatureInputError,
+        HttpSigMalformedSignatureInputError, HttpSigMalformedSignatureError,
+        HttpSigMissingSignatureLabelError, HttpSigSignatureMismatchError
     """
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
     siginput = _fieldValue(fields, "signature-input")
     if siginput is None:
-        raise MissingSignatureInput("Missing SIGNATURE-INPUT header")
+        raise HttpSigMissingSignatureInputError(
+            "Missing SIGNATURE-INPUT header")
     if signature is None:
-        raise MissingSignature("Missing SIGNATURE header")
+        raise HttpSigMissingSignatureError("Missing SIGNATURE header")
 
     try:
         inputs = ending.desiginput(siginput.encode("utf-8"))
     except _ParseErrors as ex:
-        raise MalformedSignatureInput(f"Legacy Signature-Input does not parse: "
-                                      f"{ex}.") from ex
+        raise HttpSigMalformedSignatureInputError(
+            f"Legacy Signature-Input does not parse: {ex}.") from ex
     inputs = [i for i in inputs if i.name == label]
     if not inputs:
-        raise MissingSignatureLabel(f"Missing {label} inputs in signature")
+        raise HttpSigMissingSignatureLabelError(
+            f"Missing {label} inputs in signature")
 
     try:
         signages = ending.designature(signature)
     except _ParseErrors as ex:
-        raise MalformedSignature(f"Legacy Signature does not parse: {ex}.") from ex
+        raise HttpSigMalformedSignatureError(
+            f"Legacy Signature does not parse: {ex}.") from ex
 
     for inputage in inputs:
         ser = _legacyBase(inputage, method=method, path=path, fields=fields)
         marker = signages[0].markers.get(inputage.name)
         if marker is None:
-            raise MissingSignatureLabel(f"Signature has no member for label "
-                                        f"{inputage.name}.")
+            raise HttpSigMissingSignatureLabelError(
+                f"Signature has no member for label {inputage.name}.")
         if not verfer.verify(sig=marker.raw, ser=ser):
-            raise SignatureMismatch(f"Signature for {inputage} invalid")
+            raise HttpSigSignatureMismatchError(
+                f"Signature for {inputage} invalid")
 
     inputage = inputs[0]
     params = {name: getattr(inputage, name)
@@ -1572,13 +1483,13 @@ def _legacyVerfer(resolver, aid):
     """Legacy key lookup (profile section 8): resolver.legacy(aid) when the
     resolver has it, else resolver(aid) itself; None is unknown-key."""
     if resolver is None:
-        raise UnknownKey("Unknown or invalid controller (controller KEL not "
-                         "resolved)")
+        raise HttpSigUnknownKeyError(
+            "Unknown or invalid controller (controller KEL not resolved)")
     lookup = getattr(resolver, "legacy", resolver)
     verfer = lookup(aid)
     if verfer is None:
-        raise UnknownKey("Unknown or invalid controller (controller KEL not "
-                         "resolved)")
+        raise HttpSigUnknownKeyError(
+            "Unknown or invalid controller (controller KEL not resolved)")
     return verfer
 
 
@@ -1586,7 +1497,7 @@ def _verifyLegacyRequest(*, method, path, fields, resolver):
     """Legacy request: the signer is the AID named by Signify-Resource."""
     resource = _fieldValue(fields, "signify-resource")
     if resource is None:
-        raise MissingComponent("Missing SIGNIFY-RESOURCE header")
+        raise HttpSigMissingComponentError("Missing SIGNIFY-RESOURCE header")
     verfer = _legacyVerfer(resolver, resource)
     return verifyLegacy(method=method, path=path, headers=fields,
                         verfer=verfer)
@@ -1595,14 +1506,15 @@ def _verifyLegacyRequest(*, method, path, fields, resolver):
 # Resolvers
 
 def _checkAid(keyid):
-    """Returns Prefixer of keyid, or raises MalformedKey when it is not a well
-    formed AID in qb64."""
+    """Returns Prefixer of keyid, or raises HttpSigMalformedKeyError when it
+    is not a well formed AID in qb64."""
     try:
         prefixer = Prefixer(qb64=keyid)
     except _ParseErrors as ex:
-        raise MalformedKey(f"keyid {keyid!r} is not an AID.") from ex
+        raise HttpSigMalformedKeyError(
+            f"keyid {keyid!r} is not an AID.") from ex
     if prefixer.qb64 != keyid or prefixer.code not in PreDex:
-        raise MalformedKey(f"keyid {keyid!r} is not an AID.")
+        raise HttpSigMalformedKeyError(f"keyid {keyid!r} is not an AID.")
     return prefixer
 
 
@@ -1643,11 +1555,11 @@ class KeverResolver:
             try:
                 return Verfer(qb64=keyid)
             except _ParseErrors as ex:
-                raise UnsupportedAlgorithm(f"Key {keyid} has an unsupported "
-                                           f"algorithm.") from ex
+                raise HttpSigUnsupportedAlgorithmError(
+                    f"Key {keyid} has an unsupported algorithm.") from ex
 
         if keyid not in self.kevers:
-            raise UnknownKey(f"No key state for {keyid}.")
+            raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
         kever = self.kevers[keyid]
         return effectiveVerfer(kever.verfers, kever.tholder)
 
@@ -1656,12 +1568,14 @@ class KeverResolver:
         a Signify controller is its first current key.
 
         Raises:
-            UnknownKey: no key state for aid, with KERIA's legacy message
-            UnsupportedSigner: no single key satisfies the threshold alone
+            HttpSigUnknownKeyError: no key state for aid, with KERIA's legacy
+                message
+            HttpSigUnsupportedSignerError: no single key satisfies the
+                threshold alone
         """
         if aid not in self.kevers:
-            raise UnknownKey("Unknown or invalid controller (controller KEL "
-                             "not resolved)")
+            raise HttpSigUnknownKeyError(
+                "Unknown or invalid controller (controller KEL not resolved)")
         kever = self.kevers[aid]
         return effectiveVerfer(kever.verfers, kever.tholder)
 
