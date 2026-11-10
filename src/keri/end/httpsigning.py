@@ -1113,9 +1113,11 @@ def effectiveVerfer(verfers, tholder):
 
 def _resolve(resolver, keyid, alg):
     """Returns verfer for keyid, checking alg against the key (section 4).
-    resolver None means no key is known for any keyid."""
+    resolver None means no key is known for any keyid. A keyid that is not a
+    well formed AID is malformed-key before any resolver sees it, so every
+    resolver is called only with an AID."""
+    _checkAid(keyid)
     if resolver is None:
-        _checkAid(keyid)
         raise UnknownKey(f"No key state for {keyid}.")
     verfer = resolver(keyid)
     if verfer is None:
@@ -1202,7 +1204,11 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
             a .legacy(aid) lookup for legacy mode (without one, legacy mode
             calls the resolver itself); see KeverResolver. None
             means no key is known: malformed-key for a keyid that is not an
-            AID, otherwise unknown-key.
+            AID, otherwise unknown-key. A canonical keyid that is not an AID
+            is malformed-key before any resolver is called. A custom resolver
+            returns a Verfer, or None for unknown-key, or raises an
+            HttpSigError subclass; any other exception it raises propagates
+            unchanged.
         policy (Policy): default Policy()
         now (int): seconds since the epoch; None is now
         acceptLegacy (bool): False refuses legacy mode as malformed-signature
@@ -1314,7 +1320,11 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
             a .legacy(aid) lookup for legacy mode (without one, legacy mode
             calls the resolver itself); see KeverResolver. None
             means no key is known: malformed-key for a keyid that is not an
-            AID, otherwise unknown-key.
+            AID, otherwise unknown-key. A canonical keyid that is not an AID
+            is malformed-key before any resolver is called. A custom resolver
+            returns a Verfer, or None for unknown-key, or raises an
+            HttpSigError subclass; any other exception it raises propagates
+            unchanged.
         keyid (str): AID the client expects to be talking to. Required; None
             or '' is a ValueError. A response keyid that is well formed but
             different is unknown-key, checked after malformed-key and before

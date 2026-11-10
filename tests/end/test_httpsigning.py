@@ -1139,6 +1139,26 @@ def test_verify_without_resolver():
         verifyResp(response(kept), kept, resolver=None)
 
 
+def test_custom_resolver_sees_only_aids():
+    """A keyid that is not an AID is malformed-key whatever the resolver, so
+    a custom resolver is never asked about one (profile section 9)."""
+    asked = []
+
+    def resolver(keyid):
+        asked.append(keyid)
+        return None
+
+    refused(craft(COVERED, params(keyid='"garbage"')), "malformed-key",
+            resolver=resolver)
+    assert asked == []
+    refused(craft(COVERED, params()), "unknown-key", resolver=resolver)
+    assert len(asked) == 1
+    msg, kept = served()
+    with pytest.raises(hs.MalformedKey):
+        verifyResp(response(kept, sign=dict(keyid="garbage")), kept,
+                   resolver=resolver)
+
+
 def test_verified_request():
     """Verified.request is the verified request, ready for signResponse."""
     msg = signed()
