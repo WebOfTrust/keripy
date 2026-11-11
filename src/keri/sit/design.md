@@ -11,15 +11,20 @@ identifier that is included with the digested data is exactly the SAID approch.
 
 Thus we generalize the data storage as a SAIDed Information Tree or SIT.
 
+Tree metadata associated with each tree
+- the type of digest algorithm used to create the SAIDs for each node and leaf.
+  the CESR encoding of each digest includes this code
+
 Tree metadata stored once per tree but digested with each part includes:
 - a universally unique tree identifier TUID  as a salty nonce
-- a version of the tree
-- the type of digest algorithm used to create the SAIDs for each node and leaf.
+- a version of the tree algorithm. This separates at the hash level trees that
+  use different versions of the SIT algorithm.
 
-For compactness the structure metadata digests in each node and leaf in the
-SIT uses the same digest type but any SAID can be anchored in a leaf.
-Each leaf's info hash SAID digest type is  individually encoded.
-This approach balances compactness with versatility as a data map.
+
+For security the digests for each node and leaf in the SIT all use the same
+digest type but any SAID using any digest type can be anchored in a leaf.
+Each leaf's info hash SAID digest type is individually encoded.
+This approach balances security with versatility as a data map.
 
 Data stored with each node part includes:
 - SAID of node
@@ -100,22 +105,22 @@ The tree grows from the root down.
 ```
 node SAIDed data  (+ is concatenation operator)
 
-tuid + version + digestType + path + height + leftChildSAID + rightChildSAID
+tuid + version + height + path + leftChildSAID + rightChildSAID
 
 node data including its SAID
 
-nodeSAID + TUID + Version + digestType + path + height + leftChildSAID + rightChildSAID
+nodeSAID + tuid + version + height + path  + leftChildSAID + rightChildSAID
 
 ```
 
 ```
 leaf SAIDed data  (+ is concatenation operator)
 
-TUID + Version + digestType + height + path + leafDataSAID
+tuid + version  + height + path + leafDataSAID
 
 leaf data including its SAID
 
-leafSAID + TUID + Version + digestType + height + path + leafDataSAID
+leafSAID + tuid + version  + height + path + leafDataSAID
 
 ```
 
@@ -127,7 +132,9 @@ its path, left children are separated from right children at the digest level.
 To restate, there is no ambiguity (collision) between two different roots,
 one with an empty left child and another with an empty right child.
 
-Suppose we have a root node with an empty left child and a non empty right child.
+Suppose we have a root node with an empty left child and a non empty right child
+and we were to only hash a concatenation of the raw data for each element.
+
 The hashed data for that root node is as follows:
 `tuid + version + digestType + path + height + rightChildSAID`
 
@@ -142,7 +149,12 @@ a left child path always has a 0 in its MSb position and a right child path alwa
 has a 1 in the MSb position of its path. Therefore there is no need to have
 hash value constants to replace empty children.
 
-The data elements for each node and leaf are serialized using CESR. This enables
+However in the case where the data elements for each node and leaf are serialized
+using CESR, then an empty child's serialization is not truly and empty string
+but includes the CESR code for an empty string. In this case the empty code
+in CESR is included in the digest.
+
+Using CESR enables
 a tree or parts of a tree to be streamed in a CESR stream in either compact
 CESR binary or readable text mode. CESR streams can attached to KERI
 messages, or stored in a database. Each set of data elements uses a special
