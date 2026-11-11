@@ -1923,6 +1923,8 @@ VECTORS = pathlib.Path(__file__).parent / "vectors" / "keri"
 VECTOR_FILES = ("rfc9421.json", "requests.json", "responses.json",
                 "refusals.json", "legacy.json")
 DEFAULT_PORTS = {"http": 80, "https": 443}
+PROFILE = ("https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/"
+           "keri-profile.md")
 
 
 def loadVectors():
@@ -1930,7 +1932,9 @@ def loadVectors():
     cases = []
     for filename in VECTOR_FILES:
         data = json.loads((VECTORS / filename).read_text(encoding="utf-8"))
-        assert data["keri_vectors_format"] == 2
+        assert data["keri_vectors_format"] == 7
+        assert data["profile"]["version"] == "1.1"
+        assert data["profile"]["where"] == PROFILE
         for case in data["cases"]:
             cases.append(pytest.param(filename, data, case,
                                       id=f"{filename[:-5]}:{case['id']}"))
@@ -2115,6 +2119,47 @@ def runLegacy(data, case):
     # and a canonical verifier routes it to legacy mode
     assert hs.detectMode(case["headers"]["Signature"]) == "legacy"
     assert hs.peekMode(case["headers"]) == "legacy"
+
+
+def legacyKeyStateCases():
+    """Returns pytest params for legacy.json's generated cases, which carry
+    the key state the verifier holds for Signify-Resource."""
+    data = json.loads((VECTORS / "legacy.json").read_text(encoding="utf-8"))
+    return [pytest.param(case, id=case["id"]) for case in data["cases"]
+            if "key_state" in case]
+
+
+@pytest.mark.parametrize("case", legacyKeyStateCases())
+def test_legacy_vectors_take_the_effective_signer(case):
+    """Legacy mode verifies with the single effective signer of the key
+    state Signify-Resource names, reduced by keripy's own Tholder, and
+    refuses a controller without one (profile version 1.1, sections 7 R4 and
+    8)."""
+    state = case["key_state"]
+    kever = SimpleNamespace(verfers=[Verfer(qb64=k) for k in state["keys"]],
+                            tholder=Tholder(sith=state["threshold"]))
+    resolver = hs.keverResolver({case["headers"]["Signify-Resource"]: kever})
+    signer = Signer(raw=bytes.fromhex(case["seed_hex"]),
+                    code=MtrDex.Ed25519_Seed, transferable=True)
+    assert signer.verfer.qb64 == case["key"]
+    if case["effective_key"] is None:
+        with pytest.raises(hs.HttpSigUnsupportedSignerError):
+            resolver.legacy(case["keyid"])
+    else:
+        assert resolver.legacy(case["keyid"]).raw == \
+            b64url(case["effective_key"])
+    msg = dict(method=case["method"], path=case["path"], query=None,
+               headers=case["headers"], body=b"", resolver=resolver)
+    if "error" in case:
+        with pytest.raises(hs.HttpSigError) as ex:
+            hs.verifyRequest(**msg)
+        assert ex.value.code == case["error"], str(ex.value)
+        assert type(ex.value) is hs.errorForCode(case["error"])
+    else:
+        verified = hs.verifyRequest(**msg)
+        assert verified.mode == "legacy"
+        assert verified.keyid == case["keyid"]
+        assert verified.verfer.qb64 == case["key"]
 
 
 VECTOR_RUNNERS = {"rfc9421.json": runRfc9421, "requests.json": runRequests,
