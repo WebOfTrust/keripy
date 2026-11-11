@@ -543,7 +543,9 @@ class HttpSigInsufficientCoverageError(HttpSigError):
 
 
 class HttpSigMalformedKeyError(HttpSigError):
-    """The keyid is not a well formed AID."""
+    """The keyid is not a well formed AID, or its key is a point of small
+    order, under which no signature authenticates anyone (profile section
+    9)."""
     code = "malformed-key"
 
 
@@ -599,7 +601,8 @@ class HttpSigUncoveredBodyError(HttpSigError):
 
 class HttpSigUnauthenticatedError(HttpSigError):
     """
-    An unsigned 401 answering a canonical request (profile sections 8 and 9).
+    An unsigned 401 answering a canonical request (profile sections 8 and 9),
+    including one whose Signature header is present but empty.
     Response only, and checked before any other response check: the server
     refused the request's authentication, and the body of its response is not
     to be trusted.

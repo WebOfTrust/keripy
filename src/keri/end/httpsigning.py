@@ -34,6 +34,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 import http_sfv
+import pysodium
 
 from . import ending
 from .. import kering
@@ -1062,6 +1063,16 @@ def effectiveVerfer(verfers, tholder):
     return alone[0]
 
 
+def _honestPoint(raw):
+    """Returns True when raw is a canonical Ed25519 point in the prime order
+    subgroup, as every key derived from a seed is (profile section 9,
+    malformed-key). libsodium's check refuses a point of small order, under
+    which a signature verifies over any message, before any signature is
+    examined."""
+    return (len(raw) == 32
+            and pysodium.sodium.crypto_core_ed25519_is_valid_point(raw) == 1)
+
+
 def _resolve(resolver, keyid, alg):
     """Returns verfer for keyid, checking alg against the key (section 4).
     resolver None means no key is known for any keyid. A keyid that is not a
@@ -1076,6 +1087,11 @@ def _resolve(resolver, keyid, alg):
     if verfer.code not in _Ed25519Codes:
         raise HttpSigUnsupportedAlgorithmError(
             f"Key {keyid} is not an Ed25519 key.")
+    if not _honestPoint(verfer.raw):
+        raise HttpSigMalformedKeyError(
+            f"Key {keyid} is not an Ed25519 key an honest signer holds: a "
+            "signature can be forged for any message under a point of small "
+            "order, so none is checked against it.")
     if alg is not None and alg != Alg:
         raise HttpSigUnsupportedAlgorithmError(
             f"Signature algorithm {alg} is not supported.")
@@ -1312,7 +1328,8 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
     policy = policy if policy is not None else DefaultPolicy
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
-    if signature is None:
+    if not signature:
+        # an empty Signature header is no signature (section 8)
         try:
             unauthorized = _statusCode(status) == 401
         except ValueError:
