@@ -52,7 +52,7 @@ to an intake type changes what parseOneBare raises. Parser.parse and parseOne ar
 unchanged.
 
 *** New keri.end.httpsigning: canonical RFC 9421 HTTP Message Signatures under the KERI
-profile of RFC 9421, version 1, with RFC 9530 Content-Digest, beside a verifier for the
+profile of RFC 9421, version 1.1, with RFC 9530 Content-Digest, beside a verifier for the
 legacy KERI signed-header scheme of keri.end.ending so a server can accept both while
 clients upgrade. keri.end.ending is unchanged.
 - signRequest and signResponse sign; verifyRequest and verifyResponse verify either mode

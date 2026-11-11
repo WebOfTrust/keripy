@@ -4,7 +4,7 @@ tests.end.test_httpsigning module
 
 Canonical RFC 9421 HTTP message signatures under the KERI profile.
 "Profile" sections and rules (R1 to R4) cited below are those of the KERI
-profile of RFC 9421, version 1.
+profile of RFC 9421, version 1.1.
 
 Oracles, in order of authority:
     RFC 9421 Appendix B.2.6 and section 2.4, RFC 9530 Appendix B, reproduced
