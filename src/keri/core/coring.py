@@ -2185,11 +2185,13 @@ class Tagger(Matter):
 
     Hidden:
 
-    Methods:"""
+    Methods:
+    """
 
 
     def __init__(self, tag='', soft='', code=None, **kwa):
-        """
+        """Initialize instance
+
         Inherited Parameters:  (see Matter)
             raw (bytes | bytearray | None): unqualified crypto material usable
             for crypto operations.
@@ -2205,7 +2207,9 @@ class Tagger(Matter):
                 bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            tag (str | bytes):  Base64 automatic sets code given size of tag"""
+            tag (str | bytes):  Base64 automatic sets code given size of tag
+        """
+
         if tag:
             if hasattr(tag, "encode"):  # make tag bytes for regex
                 tag = tag.encode("utf-8")
@@ -2231,14 +2235,15 @@ class Tagger(Matter):
             tag (str | bytes):  Base64 value
 
         Returns:
-            code (str): derivation code for tag"""
+            code (str): derivation code for tag
+        """
+
         # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
         codes = astuple(TagDex)
         l = len(tag)
         if l < 1 or l > len(codes):
             raise InvalidSoftError(f"Invalid {tag=} size {l=}, empty or oversized.")
         return codes[l-1]  # return code at index = len - 1
-
 
 
     @property
@@ -2249,8 +2254,7 @@ class Tagger(Matter):
 
 
 class Ilker(Tagger):
-    """
-    Ilker is subclass of Tagger, cryptographic material, for formatted
+    """Ilker is subclass of Tagger, cryptographic material, for formatted
     message types (ilks) in Base64. Leverages Tagger support compact special
     fixed size primitives with non-empty soft part and empty raw part.
 
@@ -2300,11 +2304,13 @@ class Ilker(Tagger):
 
     Hidden:
 
-    Methods:"""
+    Methods:
+    """
 
 
     def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', ilk='', **kwa):
-        """
+        """Initialize instance
+
         Inherited Parameters:  (see Tagger)
             raw (bytes | bytearray | None): unqualified crypto material usable
             for crypto operations.
@@ -2322,7 +2328,9 @@ class Ilker(Tagger):
             tag (str | bytes):  Base64 plain. Prepad is added as needed.
 
         Parameters:
-            ilk (str):  message type from Ilks of Ilkage"""
+            ilk (str):  message type from Ilks of Ilkage
+        """
+
         if not (qb64b or qb64 or qb2):
             if ilk:
                 tag = ilk
@@ -3715,16 +3723,17 @@ class Noncer(Diger):
         Parameters:
             nonce (str|bytes|None):  round trippable nonce value with nonce property
                 that accounts for empty nonce indicated by empty string.
-                Otherwise nonce is qb64 of nonce value"""
+                Otherwise nonce holds qb64 or qb64b encoded nonce value
+                None means generate crypto strength random nonce value
+        """
         try:
             super(Noncer, self).__init__(raw=raw, qb64b=qb64b, code=code,
                                          strict=False, **kwa)
 
         except EmptyMaterialError as ex:
             if nonce is not None:
-                if hasattr(nonce, "encode"):
-                    nonce = nonce.encode()
-
+                if hasattr(nonce, "encode"):  # str so convert to bytes
+                    nonce = nonce.encode()  # convert to bytes
                 if nonce == b'':
                     raw = nonce
                     code = NonceDex.Empty
