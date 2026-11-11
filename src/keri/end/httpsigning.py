@@ -1524,7 +1524,10 @@ def _verifyLegacyRequest(*, method, path, fields, resolver):
 
 def _checkAid(keyid):
     """Returns Prefixer of keyid, or raises HttpSigMalformedKeyError when it
-    is not a well formed AID in qb64."""
+    is not a well formed AID in qb64, or is a non-transferable Ed25519 AID
+    whose key is a point of small order (profile section 9). That key is in
+    the keyid itself, so it is refused before any resolver is consulted, as
+    for a verifier with no key state for it at all."""
     try:
         prefixer = Prefixer(qb64=keyid)
     except _ParseErrors as ex:
@@ -1532,6 +1535,10 @@ def _checkAid(keyid):
             f"keyid {keyid!r} is not an AID.") from ex
     if prefixer.qb64 != keyid or prefixer.code not in PreDex:
         raise HttpSigMalformedKeyError(f"keyid {keyid!r} is not an AID.")
+    if prefixer.code == PreDex.Ed25519N and not _honestPoint(prefixer.raw):
+        raise HttpSigMalformedKeyError(
+            f"keyid {keyid!r} is a key of small order, under which a "
+            "signature can be forged for any message.")
     return prefixer
 
 

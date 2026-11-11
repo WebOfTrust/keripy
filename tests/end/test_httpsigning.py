@@ -2179,3 +2179,17 @@ def test_shared_vectors_cover_every_code():
     assert set(data["codes"]) == used
     for code in used:
         assert hs.errorForCode(code) is not None
+
+
+def test_small_order_keyid_refused_without_key_state():
+    """A B keyid whose key is a point of small order is malformed-key before
+    any resolver is consulted, so a verifier with no key state for it at all,
+    as KERIA is for a keyid it serves no agent for, refuses it the same way
+    (profile section 9)."""
+    data = json.loads((VECTORS / "refusals.json").read_text(encoding="utf-8"))
+    case = next(c for c in data["cases"] if c["id"] == "small-order-b-keyid")
+    msg = vectorRequest(case["request"])
+    for resolver in (None, vectorResolver(data)):
+        with pytest.raises(hs.HttpSigMalformedKeyError):
+            hs.verifyRequest(**msg, resolver=resolver,
+                             policy=vectorPolicy(data, case), now=case["now"])
