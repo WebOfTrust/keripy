@@ -5,8 +5,10 @@ Use this module to configure pytest
 https://docs.pytest.org/en/latest/pythonpath.html
 
 """
+import errno
 import os
 import shutil
+import socket
 import multicommand
 from contextlib import contextmanager
 
@@ -513,3 +515,41 @@ class CommandDoer(doing.DoDoer):
             yield self.tock
 
         return True
+
+
+@pytest.fixture(scope="session")
+def unused_tcp_port_factory(tmp_path_factory):
+    """Return a callable that allocates currently free TCP listener ports."""
+
+    # Keep test listeners below the macOS automatic port range (49152-65535).
+    candidates = iter(range(20000, 30000))
+    base = tmp_path_factory.getbasetemp()
+    root = base.parent if os.environ.get("PYTEST_XDIST_WORKER") else base
+    reservationDir = root / "keripy-port-reservations"
+    reservationDir.mkdir(parents=True, exist_ok=True)
+
+    def make():
+        for port in candidates:
+            try:
+                fd = os.open(reservationDir / f"{port}.lock",
+                             os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                continue
+
+            os.close(fd)
+
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                try:
+                    sock.bind(("0.0.0.0", port))
+                    sock.listen()
+                except OSError as ex:
+                    if ex.errno == errno.EADDRINUSE:
+                        continue
+                    raise
+
+            return port
+
+        raise RuntimeError("unable to allocate an unused TCP port")
+
+    return make
