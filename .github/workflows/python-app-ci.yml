@@ -24,10 +24,23 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install libsodium
-      - name: Set up Python 3.12.2
+      - name: Set up Python 3.12.15
+        if: runner.os != 'macOS'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: 3.12.2
+          python-version: 3.12.15
+      - name: Set up Python on macOS
+        if: runner.os == 'macOS'
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.13.4'
+          python-version: '3.12.15'
+          activate-environment: true
+          venv-path: ${{ runner.temp }}/keripy-venv
+          enable-cache: false
+      - name: Seed pip on macOS
+        if: runner.os == 'macOS'
+        run: python -m ensurepip
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -57,7 +70,7 @@ jobs:
       - name: Set up Python 3.12.2
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: 3.12.2
+          python-version: 3.12.15
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -78,7 +91,7 @@ jobs:
       - name: Set up Python 3.12.2
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: 3.12.2
+          python-version: 3.12.15
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

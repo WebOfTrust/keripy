@@ -482,7 +482,9 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
 
         limit = 5.0
         tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
+        # Run in real time: receipts cross real local sockets, so a simulated
+        # clock can expire the limit before the witnesses answer.
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
         doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
         doist.do(doers=doers)
 
@@ -498,7 +500,7 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
             wigs = wesHab.db.getWigs(dgkey)
             assert len(wigs) == 3
 
-        doist = doing.Doist(limit=limit, tock=tock)
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
         doers = wanDoers + wilDoers + wesDoers + [qinWitq, palWitq]
         doist.do(doers=doers)
 

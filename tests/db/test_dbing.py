@@ -6,6 +6,7 @@ tests.db.dbing module
 import pytest
 
 import os
+import tempfile
 import json
 import datetime
 
@@ -219,6 +220,25 @@ def test_opendatabaser():
     assert not tanbaser.opened
 
     """ End Test """
+
+def test_lmdber_temp_skips_sync():
+    """
+    Test temp LMDBer skips disk sync while persistent LMDBer keeps it
+    """
+    with openLMDB(name="nosync", temp=True) as tempDb:
+        flags = tempDb.env.flags()
+        assert not flags["sync"]
+        assert not flags["metasync"]
+
+    with tempfile.TemporaryDirectory() as head:
+        durable = LMDBer(name="durable", temp=False, headDirPath=head)
+        try:
+            flags = durable.env.flags()
+            assert flags["sync"]
+            assert flags["metasync"]
+        finally:
+            durable.close(clear=True)
+
 
 def test_lmdber():
     """
