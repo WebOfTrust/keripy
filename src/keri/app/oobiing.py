@@ -13,7 +13,7 @@ import falcon
 from hio.base import doing
 from hio.help import decking, ogler
 
-from .httping import Clienter, CESR_CONTENT_TYPE, BootstrapClientTls, bootstrapConnector
+from .httping import Clienter, CESR_CONTENT_TYPE, BootstrapClientTls, makeBootstrapConnector
 from .organizing import Organizer
 from .. import (Vrsn_2_0, Version, Roles, Schemes, Ilks, Kinds,
                 KeriError, ValidationError, UnverifiedReplyError,
@@ -528,6 +528,10 @@ class Oobiery:
                     self.parser.parse(ims=bytearray(response["body"]))
                     if OOBI_AID_HEADER in response["headers"] and not unverified:
                         obr.cid = response["headers"][OOBI_AID_HEADER]
+                    elif unverified and obr.cid is None and obr.said:
+                        # /oobi/{aid} matches the data-OOBI pattern, so its AID arrives as
+                        # obr.said. Without the header, the alias goes to the AID the path names.
+                        obr.cid = obr.said
 
                     if obr.oobialias is not None and obr.cid:
                         self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
@@ -575,13 +579,15 @@ class Oobiery:
                     try:
                         serder = SerderKERI(raw=bytearray(response["body"]))
                         multi = (not unverified and serder.ked.get('t') == Ilks.rpy
-                                 and serder.ked.get('r') in ('/oobi/witness', '/oobi/controller'))
-                        if multi:
-                            self.processMultiOobiRpy(url, serder, obr)
-                    except (KeriError, ValueError, KeyError, TypeError):
+                                 and serder.ked.get('r') in ('/oobi/witness', '/oobi/controller')
+                                 and isinstance(serder.ked.get('a'), dict)
+                                 and 'aid' in serder.ked['a']
+                                 and isinstance(serder.ked['a'].get('urls'), list))
+                    except (KeriError, ValueError, TypeError):  # not a whole reply
                         multi = False
 
-                    if not multi:
+                    # processMultiOobiRpy answers Result.failed when the reply names another AID.
+                    if not multi or self.processMultiOobiRpy(url, serder, obr) == Result.failed:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
@@ -630,7 +636,7 @@ class Oobiery:
         # OOBI takes the server's word for which AID it is, and a well-known OOBI is a domain's
         # word that it stands behind an AID, so both keep the CA check.
         path = parse.urlparse(url).path
-        connector = (bootstrapConnector(url) if OOBI_RE.match(path) or DOOBI_RE.match(path)
+        connector = (makeBootstrapConnector(url) if OOBI_RE.match(path) or DOOBI_RE.match(path)
                      else None)
         client = self.clienter.request("GET", url=url, connector=connector)
         if client is None:

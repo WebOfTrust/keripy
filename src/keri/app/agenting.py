@@ -13,8 +13,8 @@ from hio.help import decking, Hict, ogler
 
 from socket import gaierror
 
-from .httping import (Clienter, streamCESRRequests, CESR_DESTINATION_HEADER, clientFor,
-                      tlsConnector)
+from .httping import (Clienter, streamCESRRequests, CESR_DESTINATION_HEADER, makeClientFor,
+                      makeTlsConnector)
 
 from ..kering import (Schemes, Roles,
                       MissingEntryError, ConfigurationError, Colds, sniff)
@@ -178,7 +178,7 @@ class Receiptor(doing.DoDoer):
         base = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
-        client = self.clienter.request("GET", url, connector=tlsConnector(hab.db, wit, url))
+        client = self.clienter.request("GET", url, connector=makeTlsConnector(hab.db, wit, url))
         while not client.responses:
             yield self.tock
 
@@ -852,7 +852,7 @@ class HTTPMessenger(doing.DoDoer):
         if up.scheme != Schemes.http and up.scheme != Schemes.https:
             raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
-        self.client = clientFor(hab.db, wit, url)
+        self.client = makeClientFor(hab.db, wit, url)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         doers.extend([clientDoer])
@@ -926,7 +926,7 @@ class HTTPStreamMessenger(doing.DoDoer):
         if up.scheme != Schemes.http and up.scheme != Schemes.https:
             raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
-        self.client = clientFor(hab.db, wit, url)
+        self.client = makeClientFor(hab.db, wit, url)
         clientDoer = http.clienting.ClientDoer(client=self.client)
 
         headers = Hict([
@@ -1058,7 +1058,7 @@ def httpClient(hab, wit):
 
     url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
     up = urlparse(url)
-    client = clientFor(hab.db, wit, url, path=up.path)
+    client = makeClientFor(hab.db, wit, url, path=up.path)
     clientDoer = http.clienting.ClientDoer(client=client)
 
     return client, clientDoer
