@@ -548,6 +548,12 @@ class Oobiery:
                     self.parser.parse(ims=bytearray(response["body"]))
                     if OOBI_AID_HEADER in response["headers"]:
                         obr.cid = response["headers"][OOBI_AID_HEADER]
+                    elif obr.cid is None and obr.said:
+                        # /oobi/{aid} matches the data-OOBI pattern, so its AID arrives as
+                        # obr.said. A CESR answer to it is that AID's KEL, so without the
+                        # header the alias goes to, and resolution is judged by, the AID the
+                        # path names.
+                        obr.cid = obr.said
 
                     self.hby.db.coobi.rem(keys=(url,))
                     if (reason := self.unresolved(obr)) is None:
