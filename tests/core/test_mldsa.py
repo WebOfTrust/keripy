@@ -17,7 +17,8 @@ import pytest
 
 from cryptography.hazmat.primitives.asymmetric import mldsa
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds, InvalidVarIndexError, InvalidSizeError
+from keri.kering import (Vrsn_1_0, Vrsn_2_0, Kinds, InvalidVarIndexError, InvalidSizeError,
+                         ValidationError)
 from keri.core import (Matter, Indexer, Signer, Verfer, Cigar, Siger, Diger,
                        Counter, Codens, Kever, Kevery, Parser, MtrDex, IdrDex,
                        Encrypter, Decrypter, SeedCodes, SeedCodeByVerferCode,
@@ -374,3 +375,15 @@ def test_fixed_seed_cipher_code_refuses_a_longer_seed():
     signer = Signer(code=MtrDex.ML_DSA_87_Seed)
     with pytest.raises(InvalidSizeError):
         encrypter.encrypt(prim=signer, code=MtrDex.X25519_Cipher_Seed)
+
+
+@pytest.mark.parametrize("seed_code", [p[0] for p in PARAMS])
+def test_mldsa_key_is_not_a_basic_prefix(seed_code):
+    """No ML-DSA public key code is in PreDex, so a one-key inception without a digest code,
+    which would otherwise make the key itself the prefix, is rejected rather than accepted
+    with a prefix no validator could use."""
+    signer = Signer(code=seed_code)
+    with pytest.raises(ValidationError):
+        incept(keys=[signer.verfer.qb64])
+    serder = incept(keys=[signer.verfer.qb64], code=MtrDex.Blake3_256)
+    assert serder.pre.startswith(MtrDex.Blake3_256)
