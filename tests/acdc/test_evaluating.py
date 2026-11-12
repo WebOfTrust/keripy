@@ -6,6 +6,7 @@ from copy import deepcopy
 from keri import Kinds, Vrsn_2_0
 from keri.acdc import (EdgeEvaluator, SchemaEvaluator, Verdicts, acdcmap,
                        valid)
+from keri.acdc.evaluating import MissingEdgeNodeError
 from keri.app.habbing import openHby
 from keri.core import Compactor, Schemer, SealEvent
 
@@ -534,6 +535,7 @@ def test_issuer_identity_operators():
             dangling.said, nodes={dangling.said: {"serder": dangling}})
         assert verdict.verdict == Verdicts.unknown
         assert verdict.retryable is True
+        assert any(isinstance(cause, MissingEdgeNodeError) for cause in verdict.causes)
 
         # An Edge node reference must be a SAID string.
         malformedReference = acdcmap(

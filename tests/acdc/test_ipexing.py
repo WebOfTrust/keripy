@@ -9904,8 +9904,8 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is None
                 assert recipientHby.db.epse.get(keys=(exn.said,)) is not None
 
-            def refused(edge, artifacts, message):
-                originSerder = origin(edge)
+            def refused(edge, artifacts, message, schema=None):
+                originSerder = origin(edge, schema=schema)
                 exn = run(_signed(originSerder, issuerHab), artifacts, message,
                           originSerder=originSerder)
                 assert recipientHby.db.exns.get(keys=(exn.said,)) is None
@@ -9961,18 +9961,19 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                      [goodNest, pendingNest],
                      "OR satisfied while a far node's TEL has not replicated")
 
-            # An absent optional far node is retryable unknown evidence, so a
-            # disclosed valid sibling satisfies OR without requiring graph closure.
+            # A valid disclosed branch satisfies OR without forcing disclosure
+            # of an irrelevant far ACDC.
             accepted(dict(d="", either=group("OR", a=leaf(good),
                                              b=leaf(undisclosed))),
                      [goodNest],
                      "OR satisfied while an optional far node is undisclosed")
 
-            # The same absence remains retryable when AND requires that member.
-            escrowed(dict(d="", both=group("AND", a=leaf(good),
-                                           b=leaf(undisclosed))),
-                     [goodNest],
-                     "AND waiting on an undisclosed far node")
+            # AND refuses the same incomplete presentation rather than escrowing
+            # it as though external evidence could supply the omitted ACDC.
+            refused(dict(d="", both=group("AND", a=leaf(good),
+                                          b=leaf(undisclosed))),
+                    [goodNest],
+                    "AND cannot wait on an undisclosed far node")
 
             # The schema declares this string to be an opaque compact Edge-block.
             # A satisfied sibling may carry the OR group without guessing that the
@@ -9989,6 +9990,10 @@ def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
                      [goodNest],
                      "simple Edge to a disclosed far node",
                      schema=simpleSchema)
+            refused(dict(d="", compact=undisclosed.said),
+                    [], # No artifact
+                    "simple Edge cannot wait on an undisclosed far node",
+                    schema=simpleSchema)
 
             refused(dict(d="", w=1, holder=leaf(good)),
                     [goodNest],

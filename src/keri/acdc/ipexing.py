@@ -14,7 +14,8 @@ from hio.help import ogler
 
 from .. import Kinds, Protocols
 from . import chaining
-from .evaluating import EdgeEvaluator, SchemaEvaluator, verifyExpandedSection
+from .evaluating import (EdgeEvaluator, MissingEdgeNodeError, SchemaEvaluator,
+                         verifyExpandedSection)
 from ..kering import (Colds, DuplicitousRegistryError, Ilks, KeriError,
                       MisanchorError, MisbindingError,
                       MissingAnchorError, MissingChainError, MissingSchemaError,
@@ -748,8 +749,13 @@ class IpexHandler:
                     # A pinned schema goes to the Exchanger's schema escrow, which
                     # asks for it by SAID; any other retryable unknown waits on TEL
                     # or KEL proof. One schema at a time, as that escrow expects.
-                    if (verdict.verdict == chaining.Verdicts.unknown
-                            and verdict.retryable):
+                    if (verdict.verdict == chaining.Verdicts.unknown and verdict.retryable):
+                        # An undisclosed node may be irrelevant under OR. When it
+                        # contributes to the final unknown, however, the current
+                        # Grant is incomplete and external evidence cannot repair it.
+                        if any(isinstance(cause, MissingEdgeNodeError)
+                               for cause in verdict.causes):
+                            return False
                         for cause in verdict.causes:
                             if isinstance(cause, MissingSchemaError):
                                 raise cause

@@ -20,6 +20,10 @@ IssuerIdentityEdgeOps = ("I1I", "DI1I")
 DefaultSuppressingEdgeOps = DelegativeEdgeOps + ("E1E",) + IssuerIdentityEdgeOps
 
 
+class MissingEdgeNodeError(MissingChainError):
+    """Identify an undisclosed far ACDC separately from external chain evidence."""
+
+
 def verifyExpandedSection(section, *, kind):
     """Verify every carried SAID in one expanded ACDC section.
 
@@ -452,7 +456,7 @@ class EdgeEvaluator:
         if edgeSaid not in nodes:
             reason = f"edge is missing far node {edgeSaid}"
             relations.append(chaining.unknown(
-                reason, retryable=True, cause=MissingChainError(reason)))
+                reason, retryable=True, cause=MissingEdgeNodeError(reason)))
             return chaining.reduceAnd(relations)
 
         far = nodes[edgeSaid]
@@ -644,7 +648,7 @@ class EdgeEvaluator:
                                   f"{node}")
                         results.append(chaining.unknown(
                             reason, retryable=True,
-                            cause=MissingChainError(reason)))
+                            cause=MissingEdgeNodeError(reason)))
                 elif edgeKind == "compact":
                     results.append(chaining.unknown(
                         f"compact edge {label} carries Edge-block SAID {node}, "
