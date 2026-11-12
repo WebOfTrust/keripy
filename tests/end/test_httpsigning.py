@@ -2429,3 +2429,21 @@ def test_verified_request_carries_scheme():
                          path=msg["path"], query=msg["query"],
                          headers=msg["headers"], body=msg["body"])
     verifyResp(rep, kept)
+
+
+def test_legacy_raw_kind_is_malformed_signature():
+    """The legacy parser accepts kind="RAW" and leaves the member a string,
+    which carries no signature to verify: malformed-signature, never a
+    crash (profile sections 8 and 9)."""
+    with keriaController() as (hby, controller):
+        resolver = hs.keverResolver(controller.kevers)
+        headers = keriaHeaders()
+        headers["Signature"] = 'indexed="?0";kind="RAW";signify="bogus"'
+        with pytest.raises(hs.HttpSigMalformedSignatureError) as ex:
+            hs.verifyRequest(method="POST", path="/boot", query=None,
+                             headers=headers, body=b"", resolver=resolver)
+        assert ex.value.code == "malformed-signature"
+        with pytest.raises(hs.HttpSigMalformedSignatureError):
+            hs.verifyLegacy(method="POST", path="/boot", headers=headers,
+                            verfer=ntSigner().verfer)
+        assert hs.peekMode(headers) is None

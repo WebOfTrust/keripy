@@ -61,6 +61,7 @@ from ..kering import (HttpSigError, HttpSigMissingSignatureError,
                       HttpSigMalformedDigestError, HttpSigDigestMismatchError,
                       HttpSigUncoveredBodyError, HttpSigUnauthenticatedError)
 from ..core.coring import MtrDex, PreDex, NonTransDex, Prefixer, Verfer
+from ..core import Cigar, Siger
 from ..help import helping
 
 
@@ -985,13 +986,33 @@ def detectMode(value):
         return Canonical
 
     try:
-        if ending.designature(value):
+        if _designature(value):
             return Legacy
     except _ParseErrors:
         pass
     raise HttpSigMalformedSignatureError(
         "Signature is neither an RFC 9421 Byte Sequence nor the legacy KERI "
         "form.")
+
+
+def _designature(value):
+    """
+    Returns the signages keri.end.ending.designature parses from a legacy
+    Signature value, refusing one whose members are not CESR signatures. The
+    legacy parser accepts any kind and leaves the members of a kind other than
+    CESR as strings, which carry no signature to verify, so such a header is
+    not the legacy form of profile section 8.
+
+    Raises:
+        ValueError: a member that is not a CESR signature
+    """
+    signages = ending.designature(value)
+    for signage in signages:
+        for name, marker in signage.markers.items():
+            if not isinstance(marker, (Siger, Cigar)):
+                raise ValueError(f"Signature member {name} is not a CESR "
+                                 f"signature (kind {signage.kind}).")
+    return signages
 
 
 def peekMode(headers):
@@ -1656,7 +1677,7 @@ def verifyLegacy(*, method, path, headers, verfer=None, verfers=None,
             f"Missing {label} inputs in signature")
 
     try:
-        signages = ending.designature(signature)
+        signages = _designature(signature)
     except _ParseErrors as ex:
         raise HttpSigMalformedSignatureError(
             f"Legacy Signature does not parse: {ex}.") from ex
