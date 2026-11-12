@@ -486,6 +486,30 @@ class Oobiery:
             except ValueError as ex:
                 print(f"error requesting invalid OOBI URL {ex}", url)
 
+    def unresolved(self, obr):
+        """Return why a parsed CESR OOBI answer left the OOBI unresolved, or None.
+
+        The parser logs and discards what it cannot extract or verify, so success is judged
+        by what the answer left in the database: key state for the AID the OOBI names, and
+        for a witness OOBI naming a witness, a location for that witness. An OOBI that names
+        no AID (a blind introduction answered without a verified KERI-AID header) has
+        nothing to check and is taken as resolved.
+
+        Parameters:
+            obr (OobiRecord): record of the OOBI whose answer was just parsed
+
+        Returns:
+            str|None: reason the OOBI is unresolved, or None when it resolved
+        """
+        if obr.cid and obr.cid not in self.hby.kevers:
+            return f"answer gave no key state for {obr.cid}"
+
+        if obr.role == Roles.witness and obr.eid and not any(
+                loc.url for _, loc in self.hby.db.locs.getTopItemIter(keys=(obr.eid, ""))):
+            return f"answer gave no location for witness {obr.eid}"
+
+        return None
+
     def processClients(self):
         """ Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.coobi.getTopItemIter():
@@ -516,15 +540,23 @@ class Oobiery:
                     "application/json+cesr",
                     "application/cesr+json",
                 ):  # CESR Stream response to OOBI (canonical + legacy variants)
+                    # Each answer is its own CESR stream, so a genus/version code at the
+                    # head of an earlier answer must not govern this one. Reset here rather
+                    # than pass version to parse, which would also reset between the
+                    # messages of this one stream.
+                    self.parser.version = self.version
                     self.parser.parse(ims=bytearray(response["body"]))
                     if OOBI_AID_HEADER in response["headers"]:
                         obr.cid = response["headers"][OOBI_AID_HEADER]
 
-                    if obr.oobialias is not None and obr.cid:
-                        self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
-
                     self.hby.db.coobi.rem(keys=(url,))
-                    obr.state = Result.resolved
+                    if (reason := self.unresolved(obr)) is None:
+                        if obr.oobialias is not None and obr.cid:
+                            self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
+                        obr.state = Result.resolved
+                    else:
+                        logger.error("OOBI %s did not resolve: %s", url, reason)
+                        obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
