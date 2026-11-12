@@ -58,12 +58,12 @@ class IndexerCodex:
     ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
-    ML_DSA_87_Big_Sig: str = '2G'  # ML-DSA-87 sig appears in both lists.
-    ML_DSA_87_Big_Crt_Sig: str = '2H'  # ML-DSA-87 sig appears in current list only.
-    ML_DSA_65_Big_Sig: str = '3G'  # ML-DSA-65 sig appears in both lists.
-    ML_DSA_65_Big_Crt_Sig: str = '3H'  # ML-DSA-65 sig appears in current list only.
-    ML_DSA_44_Big_Sig: str = '8C'  # ML-DSA-44 sig appears in both lists, lead size 1.
-    ML_DSA_44_Big_Crt_Sig: str = '8D'  # ML-DSA-44 sig appears in current list only, lead size 1.
+    ML_DSA_65_Big_Sig: str = '3C'  # ML-DSA-65 sig appears in both lists.
+    ML_DSA_65_Big_Crt_Sig: str = '3D'  # ML-DSA-65 sig appears in current list only.
+    ML_DSA_44_Big_Sig: str = '8A'  # ML-DSA-44 sig appears in both lists, lead size 1.
+    ML_DSA_44_Big_Crt_Sig: str = '8B'  # ML-DSA-44 sig appears in current list only, lead size 1.
+    ML_DSA_87_Big_Sig: str = '9A'  # ML-DSA-87 sig appears in both lists, lead size 2.
+    ML_DSA_87_Big_Crt_Sig: str = '9B'  # ML-DSA-87 sig appears in current list only, lead size 2.
     TBD0: str = '0z'  # Test of Var len label L=N*4 <= 4095 char quadlets includes code
     TBD1: str = '1z'  # Test of index sig lead 1
     TBD4: str = '4z'  # Test of index sig lead 1 big
@@ -97,12 +97,12 @@ class IndexedSigCodex:
     ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
-    ML_DSA_87_Big_Sig: str = '2G'  # ML-DSA-87 sig appears in both lists.
-    ML_DSA_87_Big_Crt_Sig: str = '2H'  # ML-DSA-87 sig appears in current list only.
-    ML_DSA_65_Big_Sig: str = '3G'  # ML-DSA-65 sig appears in both lists.
-    ML_DSA_65_Big_Crt_Sig: str = '3H'  # ML-DSA-65 sig appears in current list only.
-    ML_DSA_44_Big_Sig: str = '8C'  # ML-DSA-44 sig appears in both lists, lead size 1.
-    ML_DSA_44_Big_Crt_Sig: str = '8D'  # ML-DSA-44 sig appears in current list only, lead size 1.
+    ML_DSA_65_Big_Sig: str = '3C'  # ML-DSA-65 sig appears in both lists.
+    ML_DSA_65_Big_Crt_Sig: str = '3D'  # ML-DSA-65 sig appears in current list only.
+    ML_DSA_44_Big_Sig: str = '8A'  # ML-DSA-44 sig appears in both lists, lead size 1.
+    ML_DSA_44_Big_Crt_Sig: str = '8B'  # ML-DSA-44 sig appears in current list only, lead size 1.
+    ML_DSA_87_Big_Sig: str = '9A'  # ML-DSA-87 sig appears in both lists, lead size 2.
+    ML_DSA_87_Big_Crt_Sig: str = '9B'  # ML-DSA-87 sig appears in current list only, lead size 2.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -125,9 +125,9 @@ class IndexedCurrentSigCodex:
     ECDSA_256k1_Big_Crt_Sig: str = '2D'  # ECDSA secp256k1 sig appears in current list only.
     ECDSA_256r1_Big_Crt_Sig: str = "2F"  # ECDSA secp256r1 sig appears in current list only.
     Ed448_Big_Crt_Sig: str = '3B'  # Ed448 signature appears in current list only.
-    ML_DSA_87_Big_Crt_Sig: str = '2H'  # ML-DSA-87 sig appears in current list only.
-    ML_DSA_65_Big_Crt_Sig: str = '3H'  # ML-DSA-65 sig appears in current list only.
-    ML_DSA_44_Big_Crt_Sig: str = '8D'  # ML-DSA-44 sig appears in current list only.
+    ML_DSA_65_Big_Crt_Sig: str = '3D'  # ML-DSA-65 sig appears in current list only.
+    ML_DSA_44_Big_Crt_Sig: str = '8B'  # ML-DSA-44 sig appears in current list only.
+    ML_DSA_87_Big_Crt_Sig: str = '9B'  # ML-DSA-87 sig appears in current list only.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -151,9 +151,9 @@ class IndexedBothSigCodex:
     ECDSA_256k1_Big_Sig: str = '2C'  # ECDSA secp256k1 sig appears in both lists.
     ECDSA_256r1_Big_Sig: str = "2E"  # ECDSA secp256r1 sig appears in both lists.
     Ed448_Big_Sig: str = '3A'  # Ed448 signature appears in both lists.
-    ML_DSA_87_Big_Sig: str = '2G'  # ML-DSA-87 sig appears in both lists.
-    ML_DSA_65_Big_Sig: str = '3G'  # ML-DSA-65 sig appears in both lists.
-    ML_DSA_44_Big_Sig: str = '8C'  # ML-DSA-44 sig appears in both lists.
+    ML_DSA_65_Big_Sig: str = '3C'  # ML-DSA-65 sig appears in both lists.
+    ML_DSA_44_Big_Sig: str = '8A'  # ML-DSA-44 sig appears in both lists.
+    ML_DSA_87_Big_Sig: str = '9A'  # ML-DSA-87 sig appears in both lists.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -205,7 +205,7 @@ class Indexer:
     # (stable) of code. The soft size, ss, (unstable) is always > 0 for Indexer.
     Hards = ({chr(c): 1 for c in range(65, 65 + 26)})
     Hards.update({chr(c): 1 for c in range(97, 97 + 26)})
-    Hards.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 2), ('8', 2)])
+    Hards.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 2), ('8', 2), ('9', 2)])
     # Sizes table maps hs chars of code to Xizage namedtuple of (hs, ss, os, fs, ls)
     # where hs is hard size, ss is soft size, os is other index size,
     # and fs is full size, ls is lead size.
@@ -228,12 +228,12 @@ class Indexer:
         '2F': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
-        '2G': Xizage(hs=2, ss=4, os=2, fs=6176, ls=0),
-        '2H': Xizage(hs=2, ss=4, os=2, fs=6176, ls=0),
-        '3G': Xizage(hs=2, ss=6, os=3, fs=4420, ls=0),
-        '3H': Xizage(hs=2, ss=6, os=3, fs=4420, ls=0),
-        '8C': Xizage(hs=2, ss=6, os=3, fs=3236, ls=1),
-        '8D': Xizage(hs=2, ss=6, os=3, fs=3236, ls=1),
+        '3C': Xizage(hs=2, ss=6, os=3, fs=4420, ls=0),
+        '3D': Xizage(hs=2, ss=6, os=3, fs=4420, ls=0),
+        '8A': Xizage(hs=2, ss=6, os=3, fs=3236, ls=1),
+        '8B': Xizage(hs=2, ss=6, os=3, fs=3236, ls=1),
+        '9A': Xizage(hs=2, ss=6, os=3, fs=6180, ls=2),
+        '9B': Xizage(hs=2, ss=6, os=3, fs=6180, ls=2),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
         '1z': Xizage(hs=2, ss=2, os=1, fs=76, ls=1),
         '4z': Xizage(hs=2, ss=6, os=3, fs=80, ls=1),

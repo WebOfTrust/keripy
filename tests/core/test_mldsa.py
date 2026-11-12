@@ -4,11 +4,12 @@ tests.core.test_mldsa module
 
 ML-DSA (FIPS 204) signing and verification.
 
-The non-indexed codes are the ones the CESR specification v1.1 added in
-trustoverip/kswg-cesr-specification#165. The indexed codes are proposed and not yet in the
-specification. ML-DSA-87 uses the existing two-character big indexed selector "2". ML-DSA-65
-uses the existing selector "3". ML-DSA-44 needs a signature of 2420 bytes, which is 2 mod 3,
-so it uses a new selector "8" with one lead byte.
+The master table codes are the ones proposed in trustoverip/kswg-cesr-specification#185
+and the indexed codes the ones proposed in #186. Neither is merged yet. #186 puts every
+post-quantum indexed signature in an eight-character scheme with a three-character index and
+ondex, and picks the selector from the raw signature size modulo 3. ML-DSA-65 (3309 bytes,
+0 mod 3) uses the existing selector "3". ML-DSA-44 (2420 bytes, 2 mod 3) uses a new selector
+"8" with one lead byte, and ML-DSA-87 (4627 bytes, 1 mod 3) a new selector "9" with two.
 """
 import os
 
@@ -39,19 +40,19 @@ PARAMS = [
 ]
 
 
-def test_mldsa_matter_codes_match_cesr_v1_1():
-    """Codes and full sizes are the rows #165 added to the v1.1 master table."""
+def test_mldsa_matter_codes_match_cesr_185():
+    """Codes and full sizes are the rows #185 adds to the master table."""
     expected = {
-        # code: (name, total qb64 chars from the v1.1 table)
+        # code: (name, total qb64 chars from the #185 table)
         '3AAA': ('ML_DSA_44', 1756),
-        '2AAF': ('ML_DSA_44_Sig', 3232),
-        '2AAG': ('ML_DSA_44_Seed', 48),
-        '2AAE': ('ML_DSA_65', 2608),
-        '1AAT': ('ML_DSA_65_Sig', 4416),
-        '2AAH': ('ML_DSA_65_Seed', 48),
-        '1AAS': ('ML_DSA_87', 3460),
+        '2AAA': ('ML_DSA_44_Sig', 3232),
+        '2AAB': ('ML_DSA_44_Seed', 48),
+        '2AAC': ('ML_DSA_65', 2608),
+        '1AAQ': ('ML_DSA_65_Sig', 4416),
+        '2AAD': ('ML_DSA_65_Seed', 48),
+        '1AAR': ('ML_DSA_87', 3460),
         '3AAB': ('ML_DSA_87_Sig', 6176),
-        '2AAI': ('ML_DSA_87_Seed', 48),
+        '2AAE': ('ML_DSA_87_Seed', 48),
     }
     for code, (name, fs) in expected.items():
         assert getattr(MtrDex, name) == code
@@ -77,56 +78,64 @@ def test_mldsa_matter_codes_match_cesr_v1_1():
 
 
 def test_mldsa_indexer_codes():
-    """Indexed codes as proposed for the indexed signature table."""
+    """Indexed codes and full sizes are the rows #186 adds to the indexed code table."""
     expected = {
-        '8C': ('ML_DSA_44_Big_Sig', 3236),
-        '8D': ('ML_DSA_44_Big_Crt_Sig', 3236),
-        '3G': ('ML_DSA_65_Big_Sig', 4420),
-        '3H': ('ML_DSA_65_Big_Crt_Sig', 4420),
-        '2G': ('ML_DSA_87_Big_Sig', 6176),
-        '2H': ('ML_DSA_87_Big_Crt_Sig', 6176),
+        '8A': ('ML_DSA_44_Big_Sig', 3236),
+        '8B': ('ML_DSA_44_Big_Crt_Sig', 3236),
+        '3C': ('ML_DSA_65_Big_Sig', 4420),
+        '3D': ('ML_DSA_65_Big_Crt_Sig', 4420),
+        '9A': ('ML_DSA_87_Big_Sig', 6180),
+        '9B': ('ML_DSA_87_Big_Crt_Sig', 6180),
     }
     for code, (name, fs) in expected.items():
         assert getattr(IdrDex, name) == code
         assert Indexer.Codes[name] == code
         assert Indexer.Sizes[code].fs == fs
 
-    assert Indexer.Hards['8'] == 2
-    assert Indexer.Sizes['8C'] == Indexer.Sizes['8D']
-    hs, ss, os_, fs, ls = Indexer.Sizes['8C']
-    assert (hs, ss, os_, ls) == (2, 6, 3, 1)
+    # every ML-DSA indexed code is eight characters with a three character index and ondex,
+    # and its lead size is what the raw signature size modulo 3 requires
+    for selector, ls in (('3', 0), ('8', 1), ('9', 2)):
+        assert Indexer.Hards[selector] == 2
+    for code, (_, fs) in expected.items():
+        hs, ss, os_, fs, ls = Indexer.Sizes[code]
+        assert (hs, ss, os_) == (2, 6, 3)
+        assert ls == {'3': 0, '8': 1, '9': 2}[code[0]]
+        assert (Indexer._rawSize(code) + ls) % 3 == 0
 
-    assert Indexer._rawSize('8C') == 2420
-    assert Indexer._rawSize('3G') == 3309
-    assert Indexer._rawSize('2G') == 4627
+    assert Indexer._rawSize('8A') == 2420
+    assert Indexer._rawSize('3C') == 3309
+    assert Indexer._rawSize('9A') == 4627
 
 
-def test_indexer_lead_byte_selector_round_trip():
-    """Selector 8 carries one lead byte, which Indexer must add on the way out and strip on
-    the way back, in both text and binary domains."""
-    raw = os.urandom(2420)
+@pytest.mark.parametrize("both,crt,rawsize,ls", [
+    (IdrDex.ML_DSA_44_Big_Sig, IdrDex.ML_DSA_44_Big_Crt_Sig, 2420, 1),
+    (IdrDex.ML_DSA_87_Big_Sig, IdrDex.ML_DSA_87_Big_Crt_Sig, 4627, 2),
+])
+def test_indexer_lead_byte_selector_round_trip(both, crt, rawsize, ls):
+    """Selector 8 carries one lead byte and selector 9 two, which Indexer must add on the way
+    out and strip on the way back, in both text and binary domains."""
+    fs = Indexer.Sizes[both].fs
+    raw = os.urandom(rawsize)
     for index, ondex in ((0, 0), (5, 9), (262143, 262143)):
-        idx = Indexer(raw=raw, code=IdrDex.ML_DSA_44_Big_Sig, index=index, ondex=ondex)
-        assert len(idx.qb64) == 3236
-        assert len(idx.qb2) == 3236 * 3 // 4
-        assert idx.qb64.startswith('8C')
+        idx = Indexer(raw=raw, code=both, index=index, ondex=ondex)
+        assert len(idx.qb64) == fs
+        assert len(idx.qb2) == fs * 3 // 4
+        assert idx.qb64.startswith(both)
 
         back = Indexer(qb64=idx.qb64)
-        assert (back.code, back.index, back.ondex, back.raw) == (
-            IdrDex.ML_DSA_44_Big_Sig, index, ondex, raw)
+        assert (back.code, back.index, back.ondex, back.raw) == (both, index, ondex, raw)
 
         back = Indexer(qb2=idx.qb2)
-        assert (back.code, back.index, back.ondex, back.raw) == (
-            IdrDex.ML_DSA_44_Big_Sig, index, ondex, raw)
+        assert (back.code, back.index, back.ondex, back.raw) == (both, index, ondex, raw)
 
-    idx = Indexer(raw=raw, code=IdrDex.ML_DSA_44_Big_Crt_Sig, index=7)
+    idx = Indexer(raw=raw, code=crt, index=7)
     assert idx.ondex is None
     back = Indexer(qb64=idx.qb64)
     assert back.index == 7 and back.ondex is None and back.raw == raw
 
     # a raw of the wrong size is rejected rather than silently truncated or padded
     with pytest.raises(Exception):
-        Indexer(raw=raw[:-1], code=IdrDex.ML_DSA_44_Big_Sig, index=0)
+        Indexer(raw=raw[:-1], code=both, index=0)
 
     # stripping from a stream consumes exactly one primitive
     stream = bytearray(idx.qb64b + b'trailing')
@@ -136,11 +145,12 @@ def test_indexer_lead_byte_selector_round_trip():
     Indexer(qb2=stream, strip=True)
     assert stream == bytearray(b'trailing')
 
-    # a non-zero lead byte is malformed
-    qb2 = bytearray(idx.qb2)
-    qb2[6] = 0x01  # first byte after the 8 char (6 byte) code is the lead byte
-    with pytest.raises(ValueError):
-        Indexer(qb2=bytes(qb2))
+    # a non-zero lead byte is malformed, in either position when there are two
+    for at in range(ls):
+        qb2 = bytearray(idx.qb2)
+        qb2[6 + at] = 0x01  # lead bytes follow the 8 char (6 byte) code
+        with pytest.raises(ValueError):
+            Indexer(qb2=bytes(qb2))
 
 
 @pytest.mark.parametrize("seed_code,vcode,scode,both,crt,klas,vsize,ssize", PARAMS)
@@ -222,20 +232,23 @@ def test_mldsa_signer(seed_code, vcode, scode, both, crt, klas, vsize, ssize):
     assert signer.sign(ser, index=0, only=True).code == crt
 
 
-def test_mldsa_87_index_limit():
-    """ML-DSA-87 uses the 2+2 selector, whose largest index is 64**2 - 1."""
-    signer = Signer(code=MtrDex.ML_DSA_87_Seed)
+@pytest.mark.parametrize("seed_code", [p[0] for p in PARAMS])
+def test_mldsa_index_limit(seed_code):
+    """Every ML-DSA indexed code has a three character index and ondex, so the largest of
+    either is 64**3 - 1."""
+    signer = Signer(code=seed_code)
     ser = b'event'
-    assert signer.sign(ser, index=4095).index == 4095
+    assert signer.sign(ser, index=262143).index == 262143
+    assert signer.sign(ser, index=0, ondex=262143).ondex == 262143
     with pytest.raises(InvalidVarIndexError):
-        signer.sign(ser, index=4096)
+        signer.sign(ser, index=262144)
     with pytest.raises(InvalidVarIndexError):
-        signer.sign(ser, index=0, ondex=4096)
+        signer.sign(ser, index=0, ondex=262144)
 
 
 @pytest.mark.parametrize("seed_code", [p[0] for p in PARAMS])
 def test_mldsa_signer_has_no_non_transferable_form(seed_code):
-    """v1.1 defines one verification key code per ML-DSA parameter set and no
+    """#185 defines one verification key code per ML-DSA parameter set and no
     non-transferable variant, so asking for one is an error and not a silent upgrade."""
     with pytest.raises(ValueError):
         Signer(code=seed_code, transferable=False)

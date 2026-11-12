@@ -292,13 +292,13 @@ class MatterCodex:
     Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
     Escape:               str = '1AAO'  # Escape code for escaping special map fields
     Empty:                str = '1AAP'  # Empty value for Nonce, UUID, or related fields
-    ML_DSA_87:            str = '1AAS'  # ML-DSA-87 public verification key, FIPS 204
-    ML_DSA_65_Sig:        str = '1AAT'  # ML-DSA-65 signature, FIPS 204
-    ML_DSA_65:            str = '2AAE'  # ML-DSA-65 public verification key, FIPS 204
-    ML_DSA_44_Sig:        str = '2AAF'  # ML-DSA-44 signature, FIPS 204
-    ML_DSA_44_Seed:       str = '2AAG'  # ML-DSA-44 256 bit seed xi for private key, FIPS 204
-    ML_DSA_65_Seed:       str = '2AAH'  # ML-DSA-65 256 bit seed xi for private key, FIPS 204
-    ML_DSA_87_Seed:       str = '2AAI'  # ML-DSA-87 256 bit seed xi for private key, FIPS 204
+    ML_DSA_65_Sig:        str = '1AAQ'  # ML-DSA-65 signature, FIPS 204
+    ML_DSA_87:            str = '1AAR'  # ML-DSA-87 public verification key, FIPS 204
+    ML_DSA_44_Sig:        str = '2AAA'  # ML-DSA-44 signature, FIPS 204
+    ML_DSA_44_Seed:       str = '2AAB'  # ML-DSA-44 256 bit seed xi for private key, FIPS 204
+    ML_DSA_65:            str = '2AAC'  # ML-DSA-65 public verification key, FIPS 204
+    ML_DSA_65_Seed:       str = '2AAD'  # ML-DSA-65 256 bit seed xi for private key, FIPS 204
+    ML_DSA_87_Seed:       str = '2AAE'  # ML-DSA-87 256 bit seed xi for private key, FIPS 204
     ML_DSA_44:            str = '3AAA'  # ML-DSA-44 public verification key, FIPS 204
     ML_DSA_87_Sig:        str = '3AAB'  # ML-DSA-87 signature, FIPS 204
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
@@ -662,9 +662,10 @@ PreNonDigDex = PreNonDigCodex()  # Make instance
 
 
 # ML-DSA public verification key code to the FIPS 204 parameter set that verifies it.
-# v1.1 defines one public key code per parameter set and no non-transferable variant, so
-# none of these codes is in NonTransDex. None is in PreDex either: an ML-DSA public key is
-# kilobytes long, and an identifier controlled by one takes a digest prefix.
+# kswg-cesr-specification#185 defines one public key code per parameter set and no
+# non-transferable variant, so none of these codes is in NonTransDex. None is in PreDex
+# either: an ML-DSA public key is kilobytes long, and an identifier controlled by one takes a
+# digest prefix.
 MLDSAPublicKeys = {
     MtrDex.ML_DSA_44: mldsa.MLDSA44PublicKey,
     MtrDex.ML_DSA_65: mldsa.MLDSA65PublicKey,
@@ -819,13 +820,13 @@ class Matter:
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAP': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
-        '1AAS': Sizage(hs=4, ss=0, xs=0, fs=3460, ls=0),
-        '1AAT': Sizage(hs=4, ss=0, xs=0, fs=4416, ls=0),
-        '2AAE': Sizage(hs=4, ss=0, xs=0, fs=2608, ls=1),
-        '2AAF': Sizage(hs=4, ss=0, xs=0, fs=3232, ls=1),
-        '2AAG': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
-        '2AAH': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
-        '2AAI': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
+        '1AAQ': Sizage(hs=4, ss=0, xs=0, fs=4416, ls=0),
+        '1AAR': Sizage(hs=4, ss=0, xs=0, fs=3460, ls=0),
+        '2AAA': Sizage(hs=4, ss=0, xs=0, fs=3232, ls=1),
+        '2AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
+        '2AAC': Sizage(hs=4, ss=0, xs=0, fs=2608, ls=1),
+        '2AAD': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
+        '2AAE': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
         '3AAA': Sizage(hs=4, ss=0, xs=0, fs=1756, ls=2),
         '3AAB': Sizage(hs=4, ss=0, xs=0, fs=6176, ls=2),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),

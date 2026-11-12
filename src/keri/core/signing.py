@@ -31,9 +31,9 @@ Tierage = namedtuple("Tierage", 'low med high')
 Tiers = Tierage(low='low', med='med', high='high')
 
 # One entry per ML-DSA parameter set, keyed by seed code. FIPS 204 KeyGen expands the 32 byte
-# seed into the key pair, so the seed is all the key store keeps. There is no small indexed
-# code for any parameter set, because a 64 key ceiling buys nothing on a signature of several
-# kilobytes, so both indexed codes are big ones.
+# seed into the key pair, so the seed is all the key store keeps. kswg-cesr-specification#186
+# gives each parameter set one dual and one current-only indexed code, both eight characters
+# with a three character index, and no small code.
 MLDSASuite = namedtuple("MLDSASuite", "prikey verfer sig both crt")
 
 MLDSASuites = {
