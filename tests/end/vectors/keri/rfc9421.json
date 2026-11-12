@@ -1,13 +1,13 @@
 {
   "about": "RFC 9421's own Ed25519 example, reproduced.",
-  "keri_vectors_format": 7,
+  "keri_vectors_format": 8,
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "version": "1.1",
-    "date": "2026-11-10",
-    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md",
-    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
+    "version": "1.2",
+    "date": "2026-11-12",
+    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails, so every case has exactly one correct code. A refusal case carries one defect unless its note names two, and then it pins which of them section 9's order reports."
   },
   "encoding": {
     "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier, which is how a case tests what the headers alone announce.",

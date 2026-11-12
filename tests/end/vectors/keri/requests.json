@@ -1,13 +1,13 @@
 {
   "about": "Signed requests a canonical verifier must ACCEPT, with the base.",
-  "keri_vectors_format": 7,
+  "keri_vectors_format": 8,
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "version": "1.1",
-    "date": "2026-11-10",
-    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md",
-    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
+    "version": "1.2",
+    "date": "2026-11-12",
+    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails, so every case has exactly one correct code. A refusal case carries one defect unless its note names two, and then it pins which of them section 9's order reports."
   },
   "encoding": {
     "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier, which is how a case tests what the headers alone announce.",
@@ -31,11 +31,11 @@
       "\"@path\";req",
       "\"@query\";req"
     ],
-    "body_rule": "Profile section 3. A REQUEST has a body when it carries Content-Length above zero, any Transfer-Encoding, or a Content-Length that is not a plain decimal, or when a non-empty body arrives whatever the headers said. A RESPONSE has a body when it has content; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A body obliges a covered content-digest. A response to a request whose content was non-empty must also cover \"content-digest\";req; the request's headers do not count there, since both sides hold the whole request by the time a response is signed or verified.",
-    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch.",
-    "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3), whose presence also makes @authority required: a request that does not cover it is insufficient-coverage (fiki @605z9tnw)."
+    "body_rule": "Profile sections 3 and 9. A REQUEST's headers announce a body when it carries any Transfer-Encoding or a Content-Length other than a plain zero (one or more ASCII digits once SP and HTAB are trimmed, of value zero); a body so announced without a covered content-digest is insufficient-coverage at the covered list. A non-empty request body no header announced is insufficient-coverage at the body stage, after the signature and freshness checks. A RESPONSE has a body when it has content, judged at the covered list; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A response to a request whose content was non-empty must also cover \"content-digest\";req; the request's headers do not count there, since both sides hold the whole request by the time a response is signed or verified.",
+    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch; where it has a fractional part, the verifier rounds it down first.",
+    "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3), whose presence also makes @authority required: a request that does not cover it is insufficient-coverage."
   },
-  "keys_rule": "A keyid is a well-formed AID when it is 44 characters, its first character is B, D or E, and the other 43 are base64url that decode, behind one leading pad character, to 32 bytes with a zero pad byte, so that re-encoding gives back the keyid exactly. A keyid that is not is malformed-key. A well-formed B keyid yields its key from the prefix. Every other well-formed keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, and an entry whose effective_key is null is unsupported-signer. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
+  "keys_rule": "Profile R1. A keyid is a well-formed AID when it is the canonical qb64 spelling of one of keripy's PreDex prefix codes: B, D, E, F, G, H and I over 32 bytes; 0D, 0E, 0F and 0G over 64; 1AAA, 1AAB, 1AAI and 1AAJ over 33; 1AAC and 1AAD over 57; 1AAE over 114. The bytes are padded in front with zero bytes to a multiple of three, base64url-encoded, and the code written over the characters the padding became, so re-encoding gives back the keyid exactly. Any other keyid is malformed-key. A B keyid yields its key from the prefix, and the verifier asks no key store about it, so a B keyid this table does not list still verifies; that key must be a valid point of the prime-order subgroup or the keyid is malformed-key. A non-transferable code other than B is unsupported-algorithm. Every other keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, an entry whose effective_key is null is unsupported-signer, and an entry marked weak_key holds a key that is not a valid prime-order point, which is malformed-key as it is resolved. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
   "keys": [
     {
       "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
@@ -130,13 +130,30 @@
         "threshold": "2"
       },
       "note": "A 2-of-3 group: no one key suffices (profile R4). The vectors' messages for this keyid are signed by the first key."
+    },
+    {
+      "keyid": "ECAzpmVbTvNg3tbPLFSf9OMv7hPwcKrTQ_QjsnBxtiit",
+      "kind": "transferable",
+      "effective_key": "T9Sgnms50EVyIuNNf3po0LnS8toHzey1l1ix6U6_0cM",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "key_state": {
+        "keys": [
+          "DE_UoJ5rOdBFciLjTX96aNC50vLaB83stZdYselOv9HD"
+        ],
+        "threshold": "1"
+      },
+      "weak_key": true,
+      "note": "A KEL whose current key is of mixed order: the controller's key plus a point of order 8 (profile R1). No seed yields it, so seed_hex is the key the messages for this keyid were signed with, which the verifier never reaches."
     }
   ],
   "verify_only": [
     "digest-with-an-unknown-algorithm-member",
-    "digest-with-two-recognized-members"
+    "digest-with-two-recognized-members",
+    "signature-without-padding",
+    "content-digest-without-padding"
   ],
-  "verify_only_why": "These cases carry a Content-Digest with a member a sha-256-only signer does not emit, so such a signer cannot reproduce their headers byte for byte. Verify them; do not expect to sign them.",
+  "verify_only_why": "These cases carry a Content-Digest with a member a sha-256-only signer does not emit, or a byte sequence without the padding a signer emits, so a signer cannot reproduce their headers byte for byte. Verify them; do not expect to sign them.",
+  "verified_by_fiki_rule": "A case marked verified_by_fiki false is one fiki carries as data, for the reason its why gives; every other implementation verifies it.",
   "cases": [
     {
       "id": "get-with-query",
@@ -645,7 +662,7 @@
     },
     {
       "id": "content-length-zero-padded-with-sp-and-htab",
-      "note": "SP and HTAB are the only optional whitespace around a field value, so this is a Content-Length of zero and no body (fiki @5zrf8gjk).",
+      "note": "SP and HTAB are the only optional whitespace around a field value, so this is a Content-Length of zero and no body (profile section 3).",
       "request": {
         "method": "GET",
         "url": "https://keria.example.com/identifiers",
@@ -701,6 +718,114 @@
         "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"WRWaDfzFBTUB0TYFCdafCw\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
         "signature": "3spXLr4/phc9DegZ1Bcl+WmzXNhKWRCvgWl88k7y7z62wFJnAb6O02fCpmAJdeME6G6OcZm3b39DvycyVjtlDQ=="
       }
+    },
+    {
+      "id": "non-transferable-keyid-with-no-key-state",
+      "note": "A B keyid the keys table does not list, as a verifier holding no key state at all would see it: the key is the prefix's, and no key store is asked (profile R1).",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"-2yxxafi0UGpkA7t-iPGiQ\";alg=\"ed25519\";keyid=\"BHYzqOdzUBZVhGHUmtPIO8voXKG8OcHQ9mlYvtoHcrAn\"",
+          "Signature": "signify=:EmS27LIVc3fM/TR6+ohpIshsxO3ICyYMafnhadvHfB2RM1oXPIb5OtmUDTPH6H3CGqI82OERtOlsazHSZko4Aw==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "BHYzqOdzUBZVhGHUmtPIO8voXKG8OcHQ9mlYvtoHcrAn",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?type=rot\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"-2yxxafi0UGpkA7t-iPGiQ\";alg=\"ed25519\";keyid=\"BHYzqOdzUBZVhGHUmtPIO8voXKG8OcHQ9mlYvtoHcrAn\"",
+        "signature": "EmS27LIVc3fM/TR6+ohpIshsxO3ICyYMafnhadvHfB2RM1oXPIb5OtmUDTPH6H3CGqI82OERtOlsazHSZko4Aw=="
+      }
+    },
+    {
+      "id": "fractional-clock-is-rounded-down",
+      "note": "The clock reads half a second past the stale boundary; rounded down to whole seconds it is exactly on it, which is inside (profile section 6).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"rtXgoP8UFC6fTXDuoof3yA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:MNQZLuRS3Mx6kQkqVhjTUOCp20sdR+qDn8KtLszTGEgw85pwmt3nKHmbvYVrGRCtGucPaBWNX6LpfDmBVDQSDg==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000360.5,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"rtXgoP8UFC6fTXDuoof3yA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "MNQZLuRS3Mx6kQkqVhjTUOCp20sdR+qDn8KtLszTGEgw85pwmt3nKHmbvYVrGRCtGucPaBWNX6LpfDmBVDQSDg=="
+      }
+    },
+    {
+      "id": "signature-without-padding",
+      "note": "The Signature's byte sequence without its '=' padding, which a verifier accepts (profile section 5, RFC 8941 section 4.2.7).",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"ZFrywMXkOIw2vL8iMdxT3w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:xSHRftW5C5kMmUG1bro0iMDonLVCW98wA4hREKd/Di/rue99KJ1hG1GYr2w0OG0OXuGxvEdu2Gv+l2XlIROvCw:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\""
+        ],
+        "base": "\"@method\": GET\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?type=rot\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"ZFrywMXkOIw2vL8iMdxT3w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "xSHRftW5C5kMmUG1bro0iMDonLVCW98wA4hREKd/Di/rue99KJ1hG1GYr2w0OG0OXuGxvEdu2Gv+l2XlIROvCw"
+      },
+      "verified_by_fiki": false,
+      "why": "fiki's own vectors refuse a byte sequence without its padding, so fiki cannot verify this case without failing its own contract. The generator signed and verified the padded message, then removed the padding; nothing else differs."
+    },
+    {
+      "id": "content-digest-without-padding",
+      "note": "The covered Content-Digest's byte sequence without its '=' padding: accepted, and the digest still matches (profile section 5). The base carries the field value as sent, unpadded.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E:",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"dyC8D9iUIY1cm_NL30BPOA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:mIG08ZQ/q/4ISoSk21d362+6LKB3MkUbcHiznIGlXzgz6e0X7XAqycvyKLfCrvHSMmO64zZ6PzaMo0/TfIAkDQ==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+        "covered": [
+          "\"@method\"",
+          "\"@authority\"",
+          "\"@path\"",
+          "\"@query\"",
+          "\"content-digest\""
+        ],
+        "base": "\"@method\": POST\n\"@authority\": keria.example.com\n\"@path\": /identifiers\n\"@query\": ?\n\"content-digest\": sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E:\n\"@signature-params\": (\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"dyC8D9iUIY1cm_NL30BPOA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+        "signature": "mIG08ZQ/q/4ISoSk21d362+6LKB3MkUbcHiznIGlXzgz6e0X7XAqycvyKLfCrvHSMmO64zZ6PzaMo0/TfIAkDQ=="
+      },
+      "verified_by_fiki": false,
+      "why": "fiki's own vectors refuse a byte sequence without its padding, so fiki cannot verify this case without failing its own contract. The generator signed and verified the padded message, then removed the padding; nothing else differs."
     }
   ]
 }

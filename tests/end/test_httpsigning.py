@@ -4,7 +4,7 @@ tests.end.test_httpsigning module
 
 Canonical RFC 9421 HTTP message signatures under the KERI profile.
 "Profile" sections and rules (R1 to R4) cited below are those of the KERI
-profile of RFC 9421, version 1.1.
+profile of RFC 9421, version 1.2.
 
 Oracles, in order of authority:
     RFC 9421 Appendix B.2.6 and section 2.4, RFC 9530 Appendix B, reproduced
@@ -20,11 +20,12 @@ from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 import http_sfv
+import pysodium
 import pytest
 
 from keri import kering
 from keri.core import MtrDex, eventing, parsing
-from keri.core.coring import Diger, Tholder, Verfer
+from keri.core.coring import Diger, Prefixer, Tholder, Verfer
 from keri.app import habbing
 from keri.kering import Vrsn_1_0, Kinds
 from keri.core.signing import Signer
@@ -412,11 +413,14 @@ def test_signature_base_bytes_derived_inputs():
     covered = ["@method", "@authority", "@path", "@query"]
     text = hs.signatureBase(covered, {}, method="POST",
                             authority="keria.example:443", path="/a%20b",
-                            query="x=1")
+                            query="x=1", scheme="https")
     assert hs.signatureBase(covered, {}, method=b"POST",
                             authority=b"Keria.Example:443", path=b"/a%20b",
-                            query=b"x=1") == text
-    assert hs.normalizeAuthority(b"keria.example:80") == "keria.example"
+                            query=b"x=1", scheme=b"HTTPS") == text
+    assert '"@authority": keria.example\n' in text
+    assert hs.normalizeAuthority(b"keria.example:80", b"http") == \
+        "keria.example"
+    assert hs.normalizeAuthority(b"keria.example:80") == "keria.example:80"
     # a non-ASCII byte survives decoding, and the base refuses it
     with pytest.raises(hs.HttpSigSignatureMismatchError):
         hs.signatureBase(["@path"], {}, path=b"/\xe9")
@@ -924,29 +928,60 @@ def test_policy_authorities_normalized():
 
 
 def test_authority_default_port():
-    """Port 80 and 443 are removed from @authority whether it comes from the
-    caller or from Host; the verifier cannot know the scheme (profile
-    section 2)."""
+    """@authority drops only the default port of the scheme the request was
+    sent with. A verifier with only Host does not know the scheme, so it
+    uses Host as received, lowercased, with only SP and HTAB trimmed, and
+    removes no port (profile section 2)."""
     def line(**kwa):
         return hs.signatureBase(["@authority"], {}, **kwa).split("\n")[0]
 
-    for host in ("Keria.Example:443", "keria.example:80", "keria.example"):
-        assert line(headers={"Host": host}) == '"@authority": keria.example'
-        assert line(authority=host) == '"@authority": keria.example'
-    assert line(authority="keria.example:8443") == \
+    assert line(authority="Keria.Example:443", scheme="https") == \
+        '"@authority": keria.example'
+    assert line(authority="keria.example:80", scheme="http") == \
+        '"@authority": keria.example'
+    # the other scheme's default port is not this one's
+    assert line(authority="keria.example:80", scheme="https") == \
+        '"@authority": keria.example:80'
+    assert line(authority="keria.example:443", scheme="http") == \
+        '"@authority": keria.example:443'
+    assert line(authority="keria.example:8443", scheme="https") == \
         '"@authority": keria.example:8443'
-    assert line(authority="[::1]:443") == '"@authority": [::1]'
-    assert line(authority="[::1]:8080") == '"@authority": [::1]:8080'
+    assert line(authority="[::1]:443", scheme="https") == '"@authority": [::1]'
+    assert line(authority="[::1]:8080", scheme="https") == \
+        '"@authority": [::1]:8080'
+    # no scheme: no port removed, from the caller or from Host
+    for host in ("Keria.Example:443", "keria.example:80", "keria.example"):
+        assert line(authority=host) == f'"@authority": {host.lower()}'
+        assert line(headers={"Host": host}) == f'"@authority": {host.lower()}'
+        assert line(headers={"Host": f" \t{host}\t "}) == \
+            f'"@authority": {host.lower()}'
+    # Host with a scheme the verifier knows, as KERIA passes it
+    assert line(headers={"Host": "keria.example:443"}, scheme="https") == \
+        '"@authority": keria.example'
+
+    # not a valid authority: a base that cannot be built
+    for bad in ("keria.example\xa0", "user@keria.example", "a.example, b.example",
+                "keria.example:x", "kelvin\u212a.example", " keria.example"):
+        with pytest.raises(hs.HttpSigSignatureMismatchError):
+            line(authority=bad)
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
+        line(headers={"Host": "keria.example\xa0"})
 
     # signed for keria.example, received with Host: keria.example:443
     msg = signed(authority=None,
                  headers={"Host": "keria.example", "Content-Length": "7"})
     msg["headers"]["Host"] = "KERIA.example:443"
-    policy = hs.Policy(requireAuthority=True,
-                       authorities=["keria.example:443"])
-    assert policy.authorities == frozenset(["keria.example"])
-    verify(msg)
-    verify(msg, policy=policy)
+    policy = hs.Policy(requireAuthority=True, authorities=["keria.example"])
+    # a Host-only verifier keeps the port, so the base differs
+    with pytest.raises(hs.HttpSigSignatureMismatchError):
+        verify(msg)
+    # one that knows the request came over https removes it
+    verify({**msg, "scheme": "https"})
+    verify({**msg, "scheme": "https"}, policy=policy)
+    # authorities are compared as configured, lowercased only
+    assert hs.Policy(requireAuthority=True,
+                     authorities=["Keria.Example:443"]).authorities == \
+        frozenset(["keria.example:443"])
 
 
 def test_policy_floor():
@@ -1198,10 +1233,18 @@ def test_peek_mode():
     assert hs.peekMode({b"Signature": b"sig=:AAAA:"}) == "canonical"
 
 
+# A well-formed transferable AID no test holds key state for.
+UNKNOWN_AID = Diger(ser=b"no key state").qb64
+
+
 def test_verify_without_resolver():
-    """resolver=None means no key is known: malformed-key for a keyid that is
-    not an AID, otherwise unknown-key, in section 9 order."""
-    refused(craft(COVERED, params()), "unknown-key", resolver=None)
+    """resolver=None means no key state is known: malformed-key for a keyid
+    that is not an AID, unknown-key for a transferable one, in section 9
+    order. A B keyid needs no key state: its key is its prefix (profile
+    R1)."""
+    verify(craft(COVERED, params()), resolver=None)
+    refused(craft(COVERED, params(keyid=f'"{UNKNOWN_AID}"')), "unknown-key",
+            resolver=None)
     refused(craft(COVERED, params(keyid='"bad"')), "malformed-key",
             resolver=None)
     # key group comes after the covered list
@@ -1212,8 +1255,7 @@ def test_verify_without_resolver():
         hs.verifyRequest(method="POST", path="/boot", query=None,
                          headers=keriaHeaders(), body=b"", resolver=None)
     msg, kept = served()
-    with pytest.raises(hs.HttpSigUnknownKeyError):
-        verifyResp(response(kept), kept, resolver=None)
+    verifyResp(response(kept), kept, resolver=None)
 
 
 def test_custom_resolver_sees_only_aids():
@@ -1228,8 +1270,12 @@ def test_custom_resolver_sees_only_aids():
     refused(craft(COVERED, params(keyid='"garbage"')), "malformed-key",
             resolver=resolver)
     assert asked == []
-    refused(craft(COVERED, params()), "unknown-key", resolver=resolver)
-    assert len(asked) == 1
+    # a B keyid's key is its prefix: no resolver is asked about it
+    verify(craft(COVERED, params()), resolver=resolver)
+    assert asked == []
+    refused(craft(COVERED, params(keyid=f'"{UNKNOWN_AID}"')), "unknown-key",
+            resolver=resolver)
+    assert asked == [UNKNOWN_AID]
     msg, kept = served()
     with pytest.raises(hs.HttpSigMalformedKeyError):
         verifyResp(response(kept, sign=dict(keyid="garbage")), kept,
@@ -1800,15 +1846,16 @@ def test_unexpected_errors_propagate(monkeypatch):
 
 
 def test_legacy_lookup_is_kerias():
-    """Legacy mode takes the single effective signer of
-    kevers[Signify-Resource], without canonical mode's derivation-code rules
-    (profile section 8). For a Signify controller that is its first current
-    key, as KERIA has always taken it."""
+    """Legacy mode accepts a signature under any current key of
+    kevers[Signify-Resource] that alone satisfies its signing threshold,
+    without canonical mode's derivation-code rules (profile section 8). For a
+    Signify controller that is its first current key, as KERIA has always
+    taken it."""
     with habbing.openHab(name="ctrl", salt=b"0123456789abcdef",
                          temp=True) as (hby, hab):
         resolver = hs.keverResolver(hby.kevers)
 
-        # a 2-of-2 group has no single effective signer, in either mode
+        # a 2-of-2 group: no key suffices alone, in either mode
         group = hby.makeHab(name="group", icount=2, isith="2", ncount=2,
                             nsith="2")
         with pytest.raises(hs.HttpSigUnsupportedSignerError):
@@ -1821,11 +1868,29 @@ def test_legacy_lookup_is_kerias():
                              resolver=resolver)
         assert ex.value.code == "unsupported-signer"
 
-        # threshold ['0', '1']: the effective signer is the second key
+        # threshold '1' over two keys: either key suffices alone, so legacy
+        # mode accepts either, as signify-ts's createSignedRequest signs with
+        # the first; canonical mode has no single effective signer (R4)
+        either = hby.makeHab(name="either", icount=2, isith="1", ncount=2,
+                             nsith="1")
+        assert [v.qb64 for v in resolver.legacy(either.pre)] == \
+            [v.qb64 for v in either.kever.verfers]
+        with pytest.raises(hs.HttpSigUnsupportedSignerError):
+            resolver(either.pre)
+        for index, key in enumerate(either.kever.verfers):
+            signer = hby.mgr.ks.pris.get(key.qb64, decrypter=hby.mgr.decrypter)
+            verified = hs.verifyRequest(
+                method="POST", path="/boot", query=None, body=b"",
+                headers=legacySigned(either, signers=[signer]),
+                resolver=resolver)
+            assert verified.verfer.qb64 == key.qb64, index
+
+        # threshold ['0', '1']: only the second key suffices alone
         second = hby.makeHab(name="second", icount=2, isith=["0", "1"],
                              ncount=2, nsith="1")
         effective = second.kever.verfers[1]
-        assert resolver.legacy(second.pre).qb64 == effective.qb64
+        assert [v.qb64 for v in resolver.legacy(second.pre)] == \
+            [effective.qb64]
         signer = hby.mgr.ks.pris.get(effective.qb64,
                                      decrypter=hby.mgr.decrypter)
         headers = legacySigned(second, signers=[signer])
@@ -1835,7 +1900,7 @@ def test_legacy_lookup_is_kerias():
         assert verified.mode == "legacy"
         assert verified.keyid == second.pre
         assert verified.verfer.qb64 == effective.qb64
-        # signed by the first key, which does not satisfy the threshold
+        # signed by the first key, which carries no weight
         with pytest.raises(hs.HttpSigSignatureMismatchError):
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=legacySigned(second), body=b"",
@@ -1869,7 +1934,7 @@ def test_legacy_lookup_is_kerias():
             hs.verifyRequest(method="POST", path="/boot", query=None,
                              headers=headers, body=b"", resolver=None)
 
-        # legacy responses: the agent's effective signer, likewise
+        # legacy responses: any key that suffices alone, likewise
         verified = hs.verifyResponse(**rep, request=kept, resolver=resolver,
                                      keyid=second.pre, requestMode="legacy")
         assert verified.mode == "legacy"
@@ -1922,8 +1987,7 @@ def test_verify_response_legacy():
 VECTORS = pathlib.Path(__file__).parent / "vectors" / "keri"
 VECTOR_FILES = ("rfc9421.json", "requests.json", "responses.json",
                 "refusals.json", "legacy.json")
-DEFAULT_PORTS = {"http": 80, "https": 443}
-PROFILE = ("https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/"
+PROFILE = ("https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/"
            "keri-profile.md")
 
 
@@ -1932,8 +1996,8 @@ def loadVectors():
     cases = []
     for filename in VECTOR_FILES:
         data = json.loads((VECTORS / filename).read_text(encoding="utf-8"))
-        assert data["keri_vectors_format"] == 7
-        assert data["profile"]["version"] == "1.1"
+        assert data["keri_vectors_format"] == 8
+        assert data["profile"]["version"] == "1.2"
         assert data["profile"]["where"] == PROFILE
         for case in data["cases"]:
             cases.append(pytest.param(filename, data, case,
@@ -1942,13 +2006,12 @@ def loadVectors():
 
 
 def vectorTarget(url):
-    """Returns (authority, path, query) of a vector's url, as sent. A relative
-    url leaves the authority to Host."""
+    """Returns (scheme, authority, path, query) of a vector's url, as sent. A
+    relative url leaves the authority to Host and the scheme unknown, so
+    @authority keeps whatever port Host carries (profile section 2)."""
     parts = urlsplit(url)
-    authority = parts.netloc.lower() or None
-    if authority and parts.port == DEFAULT_PORTS.get(parts.scheme.lower()):
-        authority = authority.rsplit(":", 1)[0]
-    return authority, parts.path, parts.query
+    return (parts.scheme or None, parts.netloc or None, parts.path,
+            parts.query)
 
 
 def vectorResolver(data):
@@ -1968,7 +2031,8 @@ def vectorResolver(data):
 
 def test_vector_key_states():
     """keripy reduces every key state in the table to the effective key the
-    vectors name, or refuses it when they name none."""
+    vectors name, or refuses it when they name none. A B keyid's key is its
+    prefix."""
     for filename in ("requests.json", "responses.json", "refusals.json"):
         data = json.loads((VECTORS / filename).read_text(encoding="utf-8"))
         resolve = vectorResolver(data)
@@ -1992,10 +2056,10 @@ def vectorPolicy(data, case):
 def vectorRequest(msg):
     """A request as its verifier sees it. body null means none is handed
     over, so the verifier checks the headers and the body check is owed."""
-    authority, path, query = vectorTarget(msg["url"])
+    scheme, authority, path, query = vectorTarget(msg["url"])
     body = hs.Deferred if msg["body"] is None else msg["body"].encode("utf-8")
-    return dict(method=msg["method"], authority=authority, path=path,
-                query=query, headers=msg["headers"], body=body)
+    return dict(method=msg["method"], scheme=scheme, authority=authority,
+                path=path, query=query, headers=msg["headers"], body=body)
 
 
 def keptRequest(msg):
@@ -2105,8 +2169,21 @@ def runRefusals(data, case):
     assert type(ex.value) is klas
 
 
+# Legacy codes a generated case gets from its key state, which runLegacy
+# does not hold; test_legacy_vectors_take_any_sufficient_key checks them.
+LEGACY_KEY_CODES = ("unknown-key", "unsupported-signer", "signature-mismatch")
+
+
 def runLegacy(data, case):
     verfer = Verfer(qb64=case["key"])
+    if case.get("error") not in (None,) + LEGACY_KEY_CODES:
+        # a header refused before any key is tried
+        with pytest.raises(hs.HttpSigError) as ex:
+            hs.verifyLegacy(method=case["method"], path=case["path"],
+                            headers=case["headers"], verfer=verfer)
+        assert ex.value.code == case["error"], str(ex.value)
+        assert type(ex.value) is hs.errorForCode(case["error"])
+        return
     verified = hs.verifyLegacy(method=case["method"], path=case["path"],
                                headers=case["headers"], verfer=verfer)
     assert verified.mode == "legacy"
@@ -2123,31 +2200,39 @@ def runLegacy(data, case):
 
 def legacyKeyStateCases():
     """Returns pytest params for legacy.json's generated cases, which carry
-    the key state the verifier holds for Signify-Resource."""
+    the key state the verifier holds for Signify-Resource, or null for
+    none."""
     data = json.loads((VECTORS / "legacy.json").read_text(encoding="utf-8"))
     return [pytest.param(case, id=case["id"]) for case in data["cases"]
             if "key_state" in case]
 
 
 @pytest.mark.parametrize("case", legacyKeyStateCases())
-def test_legacy_vectors_take_the_effective_signer(case):
-    """Legacy mode verifies with the single effective signer of the key
-    state Signify-Resource names, reduced by keripy's own Tholder, and
-    refuses a controller without one (profile version 1.1, sections 7 R4 and
-    8)."""
+def test_legacy_vectors_take_any_sufficient_key(case):
+    """Legacy mode accepts a signature that verifies under any current key
+    of the key state Signify-Resource names that alone satisfies its signing
+    threshold, reduced by keripy's own Tholder, and refuses a key state with
+    none as unsupported-signer and one it does not hold as unknown-key
+    (profile version 1.2, sections 8 and 9)."""
     state = case["key_state"]
-    kever = SimpleNamespace(verfers=[Verfer(qb64=k) for k in state["keys"]],
-                            tholder=Tholder(sith=state["threshold"]))
-    resolver = hs.keverResolver({case["headers"]["Signify-Resource"]: kever})
+    kevers = {}
+    if state is not None:
+        kevers[case["headers"]["Signify-Resource"]] = SimpleNamespace(
+            verfers=[Verfer(qb64=k) for k in state["keys"]],
+            tholder=Tholder(sith=state["threshold"]))
+    resolver = hs.keverResolver(kevers)
     signer = Signer(raw=bytes.fromhex(case["seed_hex"]),
                     code=MtrDex.Ed25519_Seed, transferable=True)
     assert signer.verfer.qb64 == case["key"]
-    if case["effective_key"] is None:
+    if state is None:
+        with pytest.raises(hs.HttpSigUnknownKeyError):
+            resolver.legacy(case["keyid"])
+    elif not case["sufficient_keys"]:
         with pytest.raises(hs.HttpSigUnsupportedSignerError):
             resolver.legacy(case["keyid"])
     else:
-        assert resolver.legacy(case["keyid"]).raw == \
-            b64url(case["effective_key"])
+        assert [v.raw for v in resolver.legacy(case["keyid"])] == \
+            [b64url(k) for k in case["sufficient_keys"]]
     msg = dict(method=case["method"], path=case["path"], query=None,
                headers=case["headers"], body=b"", resolver=resolver)
     if "error" in case:
@@ -2193,3 +2278,154 @@ def test_small_order_keyid_refused_without_key_state():
         with pytest.raises(hs.HttpSigMalformedKeyError):
             hs.verifyRequest(**msg, resolver=resolver,
                              policy=vectorPolicy(data, case), now=case["now"])
+
+
+# Version 1.2 of the profile, beyond what the shared vectors pin.
+
+# A point of order 8, whose B keyid is small-order, and the mixed-order key
+# of the shared vectors' weak_key entry: an honest key plus a point of order
+# 8 (profile R1).
+TORSION = bytes.fromhex(
+    "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa")
+MIXED = Verfer(qb64="DE_UoJ5rOdBFciLjTX96aNC50vLaB83stZdYselOv9HD").raw
+
+
+@pytest.mark.parametrize("now,error", [
+    (float("nan"), ValueError), (float("inf"), ValueError),
+    (float("-inf"), ValueError), ("1618884473", TypeError), (True, TypeError),
+    (False, TypeError), (b"1", TypeError)])
+def test_now_must_be_a_finite_number(now, error):
+    """now is the caller's clock, so one that is not a finite number is a
+    caller's error, never a refusal or a pass: a NaN makes every freshness
+    comparison false (profile section 6)."""
+    with pytest.raises(error):
+        verify(signed(), now=now)
+    msg, kept = served()
+    with pytest.raises(error):
+        verifyResp(response(kept), kept, now=now)
+
+
+def test_now_is_rounded_down():
+    """A fractional clock is floored to whole seconds, so it moves no
+    boundary (profile section 6)."""
+    msg = signed(sign=dict(created=NOW - 360))
+    verify(msg, now=NOW + 0.999)
+    with pytest.raises(hs.HttpSigSignatureStaleError):
+        verify(msg, now=NOW + 1.0)
+    msg = signed(sign=dict(created=NOW + 61))
+    with pytest.raises(hs.HttpSigSignatureStaleError):
+        verify(msg, now=NOW - 0.5)  # floors to NOW - 1
+    verify(msg, now=NOW + 1)
+
+
+def test_unpadded_byte_sequences():
+    """A Byte Sequence without its '=' padding is accepted in Signature and
+    in Content-Digest (profile section 5); padding is added only to Byte
+    Sequences, never inside a String or a Token."""
+    msg = signed()
+    headers = dict(msg["headers"])
+    headers["Signature"] = headers["Signature"].rstrip(":").rstrip("=") + ":"
+    assert not headers["Signature"].endswith("=:")
+    assert hs.detectMode(headers["Signature"]) == "canonical"
+    verify({**msg, "headers": headers})
+    hs.verifyContentDigest(hs.contentDigest(b"x").rstrip("=:") + ":", b"x")
+    assert hs._padByteSequences(b'a=:ab:, s="x:ab:";t=y:ab, l=(:abc: :a:)') \
+        == b'a=:ab==:, s="x:ab:";t=y:ab, l=(:abc=: :a:)'
+
+
+def test_b_keyid_subgroup():
+    """A B keyid whose key is of small or mixed order is malformed-key, and
+    so is a resolved key of mixed order, and an expected AID that is one is
+    the caller's error (profile R1)."""
+    small = Prefixer(raw=TORSION, code=MtrDex.Ed25519N).qb64
+    mixed = MIXED
+    assert pysodium.sodium.crypto_core_ed25519_is_valid_point(mixed) == 0
+    mixedAid = Prefixer(raw=mixed, code=MtrDex.Ed25519N).qb64
+    for keyid in (small, mixedAid):
+        refused(craft(COVERED, params(keyid=f'"{keyid}"')), "malformed-key",
+                resolver=None)
+    msg, kept = served()
+    for keyid in (small, mixedAid):
+        with pytest.raises(ValueError):
+            verifyResp(response(kept), kept, keyid=keyid)
+    # a resolved key of mixed order
+    aid = UNKNOWN_AID
+    kever = SimpleNamespace(verfers=[Verfer(raw=mixed, code=MtrDex.Ed25519)],
+                            tholder=Tholder(sith="1"))
+    refused(craft(COVERED, params(keyid=f'"{aid}"')), "malformed-key",
+            resolver=hs.keverResolver({aid: kever}))
+
+
+def test_other_non_transferable_keyids():
+    """A non-transferable keyid other than B is unsupported-algorithm; on a
+    response, one other than the expected AID is unknown-key first (profile
+    R1, section 9)."""
+    secp = Prefixer(raw=b"\x02" + bytes(range(32)),
+                    code=MtrDex.ECDSA_256k1N).qb64
+    refused(craft(COVERED, params(keyid=f'"{secp}"')),
+            "unsupported-algorithm", resolver=None)
+    with pytest.raises(hs.HttpSigUnsupportedAlgorithmError):
+        hs.keverResolver({})(secp)
+    msg, kept = served()
+    with pytest.raises(hs.HttpSigUnknownKeyError):
+        verifyResp(response(kept, sign=dict(keyid=secp)), kept)
+
+
+def test_deferred_response_body_uncovered():
+    """A response's content without a covered content-digest is
+    insufficient-coverage at the covered list, and on the deferred path at
+    checkBody, with the same code (profile section 9, step 12)."""
+    msg, kept = served()
+    rep = response(kept, body=b"")
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
+        verifyResp({**rep, "body": b"late"}, kept)
+    verified = verifyResp({**rep, "body": hs.Deferred}, kept)
+    assert verified.bodyOwed is True
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
+        hs.checkBody(verified, rep["headers"], b"late")
+    assert hs.checkBody(verified, rep["headers"], b"").bodyOwed is False
+    # two defects: held content is judged before the signature
+    with pytest.raises(hs.HttpSigInsufficientCoverageError):
+        verifyResp({**rep, "status": 201, "body": b"late"}, kept)
+
+
+def test_huge_content_length_is_a_body():
+    """A Content-Length too long for int() is still read as announcing a
+    body, never as an exception from outside the profile's codes."""
+    msg = signed(sign=dict(covered=["@method", "@path", "@query"]),
+                 body=None, headers={"Content-Length": "1" * 5000})
+    refused(msg, "insufficient-coverage")
+    msg = signed(sign=dict(covered=["@method", "@path", "@query"]),
+                 body=None, headers={"Content-Length": "0" * 5000})
+    verify(msg)
+
+
+def test_legacy_response_without_resource():
+    """A legacy response without Signify-Resource is missing-component,
+    before the expected AID is compared (profile section 9, legacy order)."""
+    with keriaController() as (hby, controller):
+        headers = legacySigned(controller)
+        del headers["Signify-Resource"]
+        kept = hs.Requestage(method="POST", authority=None, path="/boot",
+                             query=None, headers={}, body=b"")
+        with pytest.raises(hs.HttpSigMissingComponentError):
+            hs.verifyResponse(status=200, headers=headers, body=b"",
+                              request=kept, keyid=controller.pre,
+                              requestMode="legacy",
+                              resolver=hs.keverResolver(controller.kevers))
+
+
+def test_verified_request_carries_scheme():
+    """Verified.request carries the scheme, so a response binding
+    "@authority";req rebuilds it as the request's verifier did."""
+    msg = signed(authority="keria.example:443", scheme="https")
+    verified = verify(msg)
+    assert verified.request.scheme == "https"
+    rep = response(verified.request,
+                   sign=dict(covered=hs.responseCovered(
+                       verified.request, b'{"ok":true}') +
+                       ['"@authority";req']))
+    kept = hs.Requestage(method=msg["method"], authority="keria.example",
+                         path=msg["path"], query=msg["query"],
+                         headers=msg["headers"], body=msg["body"])
+    verifyResp(rep, kept)

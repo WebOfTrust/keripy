@@ -40,6 +40,7 @@ from .httpsigning import (HttpSigError, HttpSigMissingSignatureError,
                           signRequest, signResponse, responseCovered,
                           responseMinimum, RequestMinimum, Verified, Deferred,
                           Policy, detectMode, peekMode, effectiveVerfer,
+                          sufficientVerfers,
                           signatureKeyid, verifyRequest, checkBody,
                           verifyResponse, verifyLegacy, KeverResolver,
                           keverResolver)

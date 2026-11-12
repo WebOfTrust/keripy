@@ -543,9 +543,9 @@ class HttpSigInsufficientCoverageError(HttpSigError):
 
 
 class HttpSigMalformedKeyError(HttpSigError):
-    """The keyid is not a well formed AID, or its key is a point of small
-    order, under which no signature authenticates anyone (profile section
-    9)."""
+    """The keyid is not a well formed AID, or a key it carries or resolves to
+    is not a point of Ed25519's prime-order subgroup, under which no
+    signature authenticates anyone (profile R1, section 9)."""
     code = "malformed-key"
 
 
@@ -555,7 +555,9 @@ class HttpSigUnknownKeyError(HttpSigError):
 
 
 class HttpSigUnsupportedSignerError(HttpSigError):
-    """Key state without a single effective signer (profile R4)."""
+    """Key state without a single effective signer in canonical mode
+    (profile R4), or, in legacy mode, without any key that satisfies the
+    signing threshold alone (profile section 8)."""
     code = "unsupported-signer"
 
 

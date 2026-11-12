@@ -8,24 +8,28 @@ of keri.end.ending so a server can accept both while clients upgrade.
 
 The profile itself (covered components, parameters, keyid resolution, mode
 selection and the refusal codes) is specified in the "KERI profile of RFC 9421
-HTTP Message Signatures", version 1.1, published at
-https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md
+HTTP Message Signatures", version 1.2, published at
+https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md
 Section numbers in comments below refer to it where they say "profile", and to
 RFC 9421 otherwise.
 
-Both modes verify with a key state's single effective signer
-(effectiveVerfer), which for every Signify controller is its first current
-key; legacy mode skips canonical mode's derivation-code rules.
+Canonical mode verifies with a key state's single effective signer
+(effectiveVerfer, profile R4). Legacy mode accepts a signature that verifies
+under any current key that alone satisfies the signing threshold
+(sufficientVerfers, profile section 8), and skips canonical mode's
+derivation-code rules.
 
-This module takes plain values (method, authority, path, query, headers, body)
-rather than a framework request object, so any server or client can adapt to
-it. It depends on nothing that is not also present on the keripy 1.2.x line.
+This module takes plain values (method, scheme, authority, path, query,
+headers, body) rather than a framework request object, so any server or client
+can adapt to it. It depends on nothing that is not also present on the keripy
+1.2.x line.
 
 The legacy functions in keri.end.ending are deliberately left untouched.
 """
 import base64
 import hashlib
 import hmac
+import math
 import re
 import secrets
 from collections import namedtuple
@@ -138,11 +142,8 @@ def _parseDigest(value):
 
     Raises HttpSigMalformedDigestError.
     """
-    if isinstance(value, str):
-        value = value.encode("utf-8")
-    members = http_sfv.Dictionary()
     try:
-        members.parse(value)
+        members = _parseDict(value)
     except ValueError as ex:
         raise HttpSigMalformedDigestError(
             f"Content-Digest does not parse: {ex}.") from ex
@@ -182,8 +183,11 @@ Derived = ("@method", "@authority", "@path", "@query", "@status")
 ParamOrder = ("created", "expires", "nonce", "alg", "keyid", "tag")
 
 # Request a response answers, as the requester sent it or the server received
-# it. headers as for signatureBase. body is the content, bytes.
-Requestage = namedtuple("Requestage", "method authority path query headers body")
+# it. headers as for signatureBase. body is the content, bytes. scheme is the
+# scheme it was sent with, or None when unknown (profile section 2).
+Requestage = namedtuple("Requestage",
+                        "method authority path query headers body scheme",
+                        defaults=(None,))
 
 _ObsFold = re.compile(r"[ \t]*\r?\n[ \t]+")
 
@@ -333,25 +337,56 @@ def _components(covered, *, response):
     return items
 
 
-_DefaultPorts = (":80", ":443")
+_DefaultPorts = {"http": ":80", "https": ":443"}
+
+# RFC 3986 section 3.2: host, an IP-literal in brackets or a reg-name (a list
+# separator ',' and userinfo's '@' excluded), and an optional port of digits.
+_Authority = re.compile(
+    r"\A(?:\[[0-9a-z:.]+\]|[a-z0-9\-._~!$&'()*+;=%]*)(?::[0-9]*)?\Z")
 
 
-def normalizeAuthority(authority):
+def normalizeAuthority(authority, scheme=None):
     """
-    Returns authority normalized for @authority (RFC 9421 section 2.2.3):
-    lowercased, with port 80 or 443 removed.
+    Returns authority normalized for @authority (RFC 9421 section 2.2.3,
+    profile section 2): lowercased, with the default port of scheme removed
+    (':443' for https, ':80' for http).
 
-    Both ports are removed whatever the scheme, because a verifier that has
-    only the Host header behind a TLS-terminating proxy cannot know the scheme,
-    which is the input the default-port rule needs. The only request this gets
-    wrong is http on 443 or https on 80, and that fails closed as
-    signature-mismatch.
+    With scheme None, as for a verifier that has only the Host header and so
+    does not know the scheme the request was sent with, no port is removed:
+    the authority is used as received. A Host value has had SP and HTAB
+    trimmed as a field value before it gets here, and nothing else.
+
+    Parameters:
+        authority (str | bytes): host[:port], bytes decoded as latin-1
+        scheme (str | bytes | None): scheme the request was sent with
     """
     authority = _text(authority).lower()
-    for port in _DefaultPorts:
-        if authority.endswith(port):
-            return authority[:-len(port)]
+    port = _DefaultPorts.get((_text(scheme) or "").lower())
+    if port is not None and authority.endswith(port):
+        return authority[:-len(port)]
     return authority
+
+
+def _authorityValue(authority, fields, scheme):
+    """
+    Returns the @authority component value: authority, else the Host field,
+    normalized for scheme, or None when neither is present.
+
+    Raises HttpSigSignatureMismatchError when the value is not a valid
+    authority, so the base cannot be built (profile sections 2 and 9).
+    """
+    if authority is None:
+        authority = _fieldValue(fields, "host")
+        if authority is None:
+            return None
+    authority = _text(authority)
+    # checked before lowercasing, which reads U+212A KELVIN SIGN as 'k'
+    value = normalizeAuthority(authority, scheme) if authority.isascii() else authority
+    if not value.isascii() or not _Authority.match(value):
+        raise HttpSigSignatureMismatchError(
+            f"Signature base cannot be built: {value!r} is not a valid "
+            "authority.")
+    return value
 
 
 _StatusLine = re.compile(r"\A([1-9][0-9]{2})(?: .*)?\Z", re.DOTALL)
@@ -374,15 +409,15 @@ def _statusCode(status):
     raise ValueError(f"Invalid response status {status!r}.")
 
 
-def _componentValue(item, *, method, authority, path, query, fields, status):
+def _componentValue(item, *, method, authority, path, query, fields, status,
+                    scheme=None):
     method, authority, path, query = (_text(v) for v in
                                       (method, authority, path, query))
     name = item.value
     if name == "@method":
         value = method
     elif name == "@authority":
-        value = authority if authority is not None else _fieldValue(fields, "host")
-        value = normalizeAuthority(value) if value is not None else None
+        value = _authorityValue(authority, fields, scheme)
     elif name == "@path":
         value = (path or "/") if path is not None else None
     elif name == "@query":
@@ -434,7 +469,8 @@ def _signatureParamsValue(items, params):
 
 
 def signatureBase(covered, params, *, method=None, authority=None, path=None,
-                  query=None, headers=None, status=None, request=None):
+                  query=None, headers=None, status=None, request=None,
+                  scheme=None):
     """
     Returns the RFC 9421 section 2.5 signature base as str.
 
@@ -446,7 +482,7 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
             A signer passes signatureParams(...); a verifier passes the
             parameters exactly as parsed, so wire order is kept.
         method (str): @method, exactly as sent
-        authority (str): @authority without default port; None means Host
+        authority (str): target authority, host[:port]; None means Host
         path (str): @path as sent, percent-encoding included
         query (str): query as sent without the leading '?'; None or '' is none
             method, authority, path and query may each be bytes, decoded as
@@ -455,12 +491,17 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
         status (int | str): response status, an int or a status line such
             as '200 OK'. Set means the target is a response.
         request (Requestage): request answered, for components marked req
+        scheme (str): scheme the request was sent with, 'http' or 'https',
+            whose default port @authority drops; None, as for a verifier that
+            has only Host, drops none (profile section 2). Ignored for a
+            response, whose req components use request.scheme.
 
     Raises:
         HttpSigMalformedSignatureInputError, HttpSigDuplicateComponentError,
         HttpSigUnsupportedComponentError, HttpSigMissingComponentError, and
         HttpSigSignatureMismatchError when a component value has a newline or
-        a non-ASCII character, so the base cannot be built
+        a non-ASCII character, or @authority is not a valid authority, so the
+        base cannot be built
     """
     response = status is not None
     items = _components(covered, response=response)
@@ -477,11 +518,12 @@ def signatureBase(covered, params, *, method=None, authority=None, path=None,
             value = _componentValue(item, method=request.method,
                                     authority=request.authority,
                                     path=request.path, query=request.query,
-                                    fields=reqFields, status=None)
+                                    fields=reqFields, status=None,
+                                    scheme=request.scheme)
         else:
             value = _componentValue(item, method=method, authority=authority,
                                     path=path, query=query, fields=fields,
-                                    status=status)
+                                    status=status, scheme=scheme)
         if "\n" in value or "\r" in value or not value.isascii():
             raise HttpSigSignatureMismatchError(
                 "Signature base cannot be built: the value of "
@@ -587,7 +629,7 @@ def _sign(items, *, signer, hab, keyid, label, created, expires, nonce, tag,
 def signRequest(*, method, path, query=None, authority=None, headers=None,
                 body=None, signer=None, hab=None, keyid=None, label="signify",
                 covered=None, created=None, expires=None, nonce=None, tag=None,
-                alg=Alg):
+                alg=Alg, scheme=None):
     """
     Sign a request in canonical mode.
 
@@ -598,7 +640,7 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
         method (str): method exactly as it will be sent
         path (str): path as sent, percent-encoding included
         query (str): query as sent without the leading '?'; None if none
-        authority (str): target authority without default port; None uses Host
+        authority (str): target authority, host[:port]; None uses Host
         headers: request header fields, mapping or iterable of pairs
         body (bytes | str | None): content as sent
         signer (Signer): signing key. Exactly one of signer or hab.
@@ -613,6 +655,8 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
         nonce (str): None generates 128 random bits; False omits it
         tag (str): optional application tag
         alg (str): 'ed25519', or None to omit the parameter
+        scheme (str): scheme of the target URI, whose default port @authority
+            drops (profile section 2); None drops none
 
     Raises:
         HttpSigInsufficientCoverageError: covered falls short of
@@ -638,7 +682,7 @@ def signRequest(*, method, path, query=None, authority=None, headers=None,
                            nonce=nonce, tag=tag, alg=alg,
                            baseKwa=dict(method=method, authority=authority,
                                         path=path, query=query,
-                                        headers=fields)))
+                                        headers=fields, scheme=scheme)))
     return added
 
 
@@ -810,8 +854,12 @@ class Policy:
             with the comparison against authorities.
         requireAuthority (bool): also require @authority, compared with
             authorities
-        authorities (frozenset): authorities this verifier serves, lowercase
-            and without default port; required when requireAuthority
+        authorities (frozenset): authorities this verifier serves, compared
+            with the covered @authority as built (profile section 2): lowercase,
+            without the default port of the request's scheme when the verifier
+            passes one, and with whatever port Host carries when it does not.
+            Lowercased here; required when requireAuthority. Applies to
+            canonical requests only; a legacy request covers no authority.
         maxAge (int): seconds a signature stays fresh after created; positive
         skew (int): tolerated clock skew in seconds; positive
 
@@ -871,11 +919,50 @@ _ParamTypes = dict(created=int, expires=int, nonce=str, alg=str, keyid=str,
 _ParseErrors = (kering.KeriError, ValueError, TypeError)
 
 
+_BareItemStart = frozenset(b"=,( \t")
+
+
+def _padByteSequences(value):
+    """
+    Returns value, bytes, with '=' padding added to every Byte Sequence that
+    lacks it, so that one without padding parses (profile section 5, RFC 8941
+    section 4.2.7). A Byte Sequence begins with ':' where a bare item begins,
+    outside a String, and ends at the next ':', since base64 has none.
+    Anything else is left for the parser to judge.
+    """
+    out = bytearray()
+    i, n = 0, len(value)
+    while i < n:
+        c = value[i]
+        if c == 0x22:  # a String, with its escapes
+            j = i + 1
+            while j < n and value[j] != 0x22:
+                j += 2 if value[j] == 0x5C else 1
+            out += value[i:j + 1]
+            i = j + 1
+        elif c == 0x3A and (i == 0 or value[i - 1] in _BareItemStart):
+            j = value.find(b":", i + 1)
+            if j < 0:
+                out += value[i:]
+                break
+            content = value[i + 1:j]
+            if b"=" not in content and len(content) % 4 in (2, 3):
+                content += b"=" * (4 - len(content) % 4)
+            out += b":" + content + b":"
+            i = j + 1
+        else:
+            out.append(c)
+            i += 1
+    return bytes(out)
+
+
 def _parseDict(value):
+    """Returns http_sfv.Dictionary parsed from value, accepting a Byte
+    Sequence without padding. Raises ValueError when it does not parse."""
     if isinstance(value, str):
         value = value.encode("utf-8")
     members = http_sfv.Dictionary()
-    members.parse(value)
+    members.parse(_padByteSequences(value))
     return members
 
 
@@ -1024,7 +1111,7 @@ def _hasBody(fields):
         return False
     if not _Decimal.match(length):
         return True  # not a plain decimal: fail closed, assume a body
-    return int(length) > 0
+    return length.strip("0") != ""  # never int(), which refuses 4301 digits
 
 
 def _checkCoverage(items, required):
@@ -1036,6 +1123,19 @@ def _checkCoverage(items, required):
                                                    f"{_serialize(item)}.")
 
 
+def sufficientVerfers(verfers, tholder):
+    """
+    Returns list of the current signing keys of a key state that each satisfy
+    the signing threshold alone, in key state order (profile section 8).
+
+    Parameters:
+        verfers (list): current signing keys, Verfer instances
+        tholder (Tholder): current signing threshold
+    """
+    return [verfer for index, verfer in enumerate(verfers)
+            if tholder.satisfy(indices=[index])]
+
+
 def effectiveVerfer(verfers, tholder):
     """
     Returns the single effective signing key of a key state (profile section
@@ -1043,7 +1143,8 @@ def effectiveVerfer(verfers, tholder):
     own. A canonical signature carries no key index, so exactly one key may
     qualify. A plain single key state qualifies, and so does a Signify
     controller after a passcode rotation (keys [new, prior-next], threshold
-    ['1', '0']).
+    ['1', '0']). R4 applies to canonical mode only; legacy mode takes any of
+    sufficientVerfers.
 
     Parameters:
         verfers (list): current signing keys, Verfer instances
@@ -1054,8 +1155,7 @@ def effectiveVerfer(verfers, tholder):
             satisfies the threshold alone, e.g. a 2-of-3 group or '1' over
             two keys
     """
-    alone = [verfer for index, verfer in enumerate(verfers)
-             if tholder.satisfy(indices=[index])]
+    alone = sufficientVerfers(verfers, tholder)
     if len(alone) != 1:
         raise HttpSigUnsupportedSignerError(
             "Key state has no single key that satisfies its signing threshold "
@@ -1064,42 +1164,74 @@ def effectiveVerfer(verfers, tholder):
 
 
 def _honestPoint(raw):
-    """Returns True when raw is a canonical Ed25519 point in the prime order
-    subgroup, as every key derived from a seed is (profile section 9,
-    malformed-key). libsodium's check refuses a point of small order, under
-    which a signature verifies over any message, before any signature is
-    examined."""
+    """Returns True when raw is the canonical encoding of an Ed25519 point
+    of the prime-order subgroup, as every key derived from a seed is (profile
+    R1). libsodium's check refuses a point of small order, under which a
+    signature verifies over any message, and one of mixed order, a subgroup
+    point plus a torsion component."""
     return (len(raw) == 32
             and pysodium.sodium.crypto_core_ed25519_is_valid_point(raw) == 1)
 
 
-def _resolve(resolver, keyid, alg):
-    """Returns verfer for keyid, checking alg against the key (section 4).
-    resolver None means no key is known for any keyid. A keyid that is not a
-    well formed AID is malformed-key before any resolver sees it, so every
-    resolver is called only with an AID."""
-    _checkAid(keyid)
-    if resolver is None:
-        raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
-    verfer = resolver(keyid)
-    if verfer is None:
-        raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
-    if verfer.code not in _Ed25519Codes:
+def _resolve(resolver, prefixer, alg):
+    """
+    Returns the verfer for a well-formed keyid (profile R1), checking alg
+    against the key (section 4), with section 9's steps 14 to 17 in order.
+
+    A B keyid's key is its prefix, whose subgroup check _checkAid has made,
+    and no resolver is consulted for it. Any other non-transferable code is
+    unsupported-algorithm. Every transferable code resolves through resolver;
+    resolver None means no key state for any keyid.
+    """
+    keyid = prefixer.qb64
+    if prefixer.code == PreDex.Ed25519N:
+        verfer = Verfer(raw=prefixer.raw, code=MtrDex.Ed25519N)
+    elif prefixer.code in NonTransDex:
         raise HttpSigUnsupportedAlgorithmError(
-            f"Key {keyid} is not an Ed25519 key.")
-    if not _honestPoint(verfer.raw):
-        raise HttpSigMalformedKeyError(
-            f"Key {keyid} is not an Ed25519 key an honest signer holds: a "
-            "signature can be forged for any message under a point of small "
-            "order, so none is checked against it.")
+            f"keyid {keyid} is a non-transferable key that is not Ed25519.")
+    else:
+        verfer = resolver(keyid) if resolver is not None else None
+        if verfer is None:  # step 14; a resolver raises step 15 itself
+            raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
+        if verfer.code in _Ed25519Codes and not _honestPoint(verfer.raw):
+            raise HttpSigMalformedKeyError(  # step 16
+                f"Key {keyid} is not an Ed25519 key an honest signer holds: a "
+                "signature can be forged for any message under a point "
+                "outside the prime-order subgroup, so none is checked against "
+                "it.")
+        if verfer.code not in _Ed25519Codes:  # step 17
+            raise HttpSigUnsupportedAlgorithmError(
+                f"Key {keyid} is not an Ed25519 key.")
     if alg is not None and alg != Alg:
         raise HttpSigUnsupportedAlgorithmError(
             f"Signature algorithm {alg} is not supported.")
     return verfer
 
 
+def _checkNow(now):
+    """
+    Returns now as whole seconds, rounded down (profile section 6), or None.
+
+    now is the caller's clock, not a peer's input, so a value that is not a
+    finite number is the caller's mistake: a NaN would make every freshness
+    comparison false and pass a stale message.
+
+    Raises:
+        TypeError: now is not an int or float, or is a bool
+        ValueError: now is a NaN or an infinity
+    """
+    if now is None:
+        return None
+    if isinstance(now, bool) or not isinstance(now, (int, float)):
+        raise TypeError(f"now must be a number of seconds since the epoch, or "
+                        f"None for the system clock, not {now!r}.")
+    if isinstance(now, float) and not math.isfinite(now):
+        raise ValueError(f"now must be finite, not {now!r}.")
+    return math.floor(now)
+
+
 def _checkFreshness(params, policy, now):
-    now = _now() if now is None else int(now)
+    now = _now() if now is None else now
     created = params["created"]
     if created < now - policy.maxAge - policy.skew or created > now + policy.skew:
         raise HttpSigSignatureStaleError(
@@ -1110,9 +1242,10 @@ def _checkFreshness(params, policy, now):
 
 
 def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
-                     response, expectKeyid=None, authority=None):
+                     response, expectKeyid=None, served=None):
     """Header, covered list, key, base, signature and freshness checks, in the
-    order of profile section 9."""
+    order of profile section 9, steps 6 to 21. served, when not None, is the
+    set of authorities a covered @authority must be in."""
     label, items, params = _parseInput(_fieldValue(fields, "signature-input"))
     raw = _parseSignature(_fieldValue(fields, "signature"), label)
 
@@ -1120,21 +1253,21 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
     _checkCoverage(items, required)
 
     keyid = params["keyid"]
-    if expectKeyid is not None:
-        # signify-ts's order: well-formedness first (malformed-key), then a
-        # keyid other than the expected AID is unknown-key, before any
-        # resolver or alg check runs
-        _checkAid(keyid)
-        if keyid != expectKeyid:
-            raise HttpSigUnknownKeyError(
-                f"Signed by {keyid}, not by {expectKeyid}.")
-    verfer = _resolve(resolver, keyid, params.get("alg"))
+    prefixer = _checkAid(keyid)  # step 13
+    if expectKeyid is not None and keyid != expectKeyid:
+        # step 14, before any key state is read
+        raise HttpSigUnknownKeyError(
+            f"Signed by {keyid}, not by {expectKeyid}.")
+    verfer = _resolve(resolver, prefixer, params.get("alg"))
 
     base = signatureBase(items, params, **baseKwa)
-    if authority is not None and authority not in policy.authorities:
-        raise HttpSigSignatureMismatchError(
-            f"Signature is for authority {authority}, which this verifier "
-            "does not serve.")
+    if served is not None and "@authority" in _plainNames(items):
+        authority = _authorityValue(baseKwa.get("authority"), fields,
+                                    baseKwa.get("scheme"))
+        if authority not in served:
+            raise HttpSigSignatureMismatchError(
+                f"Signature is for authority {authority}, which this verifier "
+                "does not serve.")
     if not verfer.verify(sig=raw, ser=base.encode("utf-8")):
         raise HttpSigSignatureMismatchError("Signature does not verify.")
 
@@ -1147,7 +1280,7 @@ def _verifyCanonical(*, fields, required, resolver, policy, now, baseKwa,
 
 def verifyRequest(*, method, path, query=None, authority=None, headers,
                   body, resolver=None, policy=None, now=None,
-                  acceptLegacy=True):
+                  acceptLegacy=True, scheme=None):
     """
     Verify a signed request in either mode (profile section 8).
 
@@ -1160,33 +1293,46 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
     and is NOT a completed verification: read the body, call
     checkBody(verified, headers, body), and use the Verified it returns. A
     request must not reach application code while bodyOwed is True
-    (profile section 5).
+    (profile section 5). Either way the body stage, steps 22 to 24 of profile
+    section 9, runs after the signature and freshness checks, so a verifier
+    that holds the body and one that reads it later report the same code.
 
     Parameters:
         method (str): method as received
         path (str): path as received, percent-encoding included
         query (str): raw query without the leading '?'; None if none
-        authority (str): authority the request was sent to; None uses Host
+        authority (str): authority of the target URI, host[:port]; None uses
+            Host, from which only SP and HTAB are trimmed
+        scheme (str): scheme the request was sent with, 'http' or 'https',
+            when the verifier knows it; @authority then drops that scheme's
+            default port. None, as for a verifier that has only Host, drops
+            no port (profile section 2).
         headers: request header fields, mapping or iterable of pairs
         body (bytes | Deferred): content as received, b'' for none, or
             Deferred when not yet read. Required; None is a ValueError.
-        resolver (callable | None): keyid -> Verfer for canonical mode, with
-            a .legacy(aid) lookup for legacy mode (without one, legacy mode
-            calls the resolver itself); see KeverResolver. None
-            means no key is known: malformed-key for a keyid that is not an
-            AID, otherwise unknown-key. A canonical keyid that is not an AID
-            is malformed-key before any resolver is called. A custom resolver
-            returns a Verfer, or None for unknown-key, or raises an
-            HttpSigError subclass; any other exception it raises propagates
-            unchanged.
+        resolver (callable | None): keyid -> Verfer for a transferable
+            canonical keyid, with a .legacy(aid) lookup for legacy mode
+            (without one, legacy mode calls the resolver itself); see
+            KeverResolver. A canonical keyid that is not an AID is
+            malformed-key before any resolver is called, and a B keyid's key
+            is its prefix, so no resolver is consulted for it either. None
+            means no key state is known: a transferable keyid is unknown-key.
+            A custom resolver returns a Verfer, or None for unknown-key, or
+            raises an HttpSigError subclass; any other exception it raises
+            propagates unchanged. Its .legacy(aid) returns the keys that each
+            satisfy the threshold alone, a list (a single Verfer is one key).
         policy (Policy): default Policy()
-        now (int): seconds since the epoch; None is now
+        now (int | float): seconds since the epoch, rounded down to whole
+            seconds; None is now. Anything but a finite int or float (a bool
+            included) is a TypeError or ValueError, since it is the caller's
+            clock and not the peer's message.
         acceptLegacy (bool): False refuses legacy mode as malformed-signature
 
     Raises:
         HttpSigError subclass for the first check that fails (section 9)
     """
     _checkBodyArg(body)
+    now = _checkNow(now)
     policy = policy if policy is not None else DefaultPolicy
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
@@ -1207,23 +1353,23 @@ def verifyRequest(*, method, path, query=None, authority=None, headers,
                                         fields=fields, resolver=resolver)
         return verified._replace(request=Requestage(
             method=method, authority=authority, path=path, query=query,
-            headers=fields, body=body))
+            headers=fields, body=body, scheme=scheme))
 
     required = list(policy.request)
     if policy.requireAuthority:
         required.append("@authority")
-    if _hasBody(fields):
+    if _hasBody(fields):  # by the headers alone (profile section 3)
         required.append("content-digest")
 
     verified = _verifyCanonical(
         fields=fields, required=required, resolver=resolver, policy=policy,
         now=now, response=False,
-        authority=normalizeAuthority(authority or "") if policy.requireAuthority else None,
+        served=policy.authorities if policy.requireAuthority else None,
         baseKwa=dict(method=method, authority=authority, path=path,
-                     query=query, headers=fields))
+                     query=query, headers=fields, scheme=scheme))
     verified = verified._replace(request=Requestage(
         method=method, authority=authority, path=path, query=query,
-        headers=fields, body=body))
+        headers=fields, body=body, scheme=scheme))
     return _bodyStage(verified, fields, body)
 
 
@@ -1286,29 +1432,41 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         status (int | str): response status code, or a line such as '200 OK'.
             A status without a three digit code is signature-mismatch.
         headers: response header fields
-        body (bytes | Deferred): response content as received, b'' for none,
-            or Deferred to check the headers first; then the result has
-            bodyOwed True and checkBody must follow, as for verifyRequest.
+        body (bytes | Deferred): response content as received, b'' for none.
+            A client holds a response's content before it verifies it, and
+            profile section 9 judges it at the covered list (step 12), so
+            pass it. Deferred checks the headers first; the result then has
+            bodyOwed True and checkBody must follow, as for verifyRequest, and
+            refuses uncovered content there with the same code,
+            insufficient-coverage. Only a response with that defect and a
+            later one too, such as an altered status, is reported differently
+            when deferred, by the later defect's code.
         request (Requestage): the request as sent, with body the bytes sent
             (b'' for none); None or Deferred is a ValueError
-        resolver (callable | None): keyid -> Verfer for canonical mode, with
-            a .legacy(aid) lookup for legacy mode (without one, legacy mode
-            calls the resolver itself); see KeverResolver. None
-            means no key is known: malformed-key for a keyid that is not an
-            AID, otherwise unknown-key. A canonical keyid that is not an AID
-            is malformed-key before any resolver is called. A custom resolver
-            returns a Verfer, or None for unknown-key, or raises an
-            HttpSigError subclass; any other exception it raises propagates
-            unchanged.
-        keyid (str): AID the client expects to be talking to. Required; None
-            or '' is a ValueError. A response keyid that is well formed but
-            different is unknown-key, checked after malformed-key and before
-            any resolver or alg check.
+        resolver (callable | None): keyid -> Verfer for a transferable
+            canonical keyid, with a .legacy(aid) lookup for legacy mode
+            (without one, legacy mode calls the resolver itself); see
+            KeverResolver. A canonical keyid that is not an AID is
+            malformed-key before any resolver is called, and a B keyid's key
+            is its prefix, so no resolver is consulted for it either. None
+            means no key state is known: a transferable keyid is unknown-key.
+            A custom resolver returns a Verfer, or None for unknown-key, or
+            raises an HttpSigError subclass; any other exception it raises
+            propagates unchanged. Its .legacy(aid) returns the keys that each
+            satisfy the threshold alone, a list (a single Verfer is one key).
+        keyid (str): AID the client expects to be talking to. Required; one
+            that is not a well-formed AID, or a B AID whose key is not a
+            point of the prime-order subgroup, is a ValueError (profile R1).
+            A response keyid that is well formed but different is
+            unknown-key, checked after malformed-key and before any resolver
+            or alg check.
         requestMode (str): mode the request was signed in, 'canonical' or
             'legacy'. A response in the other mode is mode-mismatch
             (section 8).
         policy (Policy): freshness settings; default Policy()
-        now (int): seconds since the epoch; None is now
+        now (int | float): seconds since the epoch, rounded down; None is
+            now. As for verifyRequest, anything but a finite number is a
+            TypeError or ValueError.
 
     When the response covers "content-digest";req, the request's
     Content-Digest is recomputed over request.body.
@@ -1323,6 +1481,12 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
         # without it the expected-AID check (profile R1) would be skipped
         raise ValueError("keyid, the AID the client expects to be talking "
                          "to, is required.")
+    try:
+        _checkAid(keyid)
+    except HttpSigMalformedKeyError as ex:
+        # the caller's expectation, not the peer's message
+        raise ValueError(f"Expected keyid is not usable: {ex}") from ex
+    now = _checkNow(now)
     if requestMode not in (Canonical, Legacy):
         raise ValueError(f"Unknown requestMode {requestMode!r}.")
     policy = policy if policy is not None else DefaultPolicy
@@ -1348,12 +1512,15 @@ def verifyResponse(*, status, headers, body, request, keyid, resolver=None,
             f"{mode.capitalize()} response to a {requestMode} request.")
     if mode == Legacy:
         resource = _fieldValue(fields, "signify-resource")
+        if resource is None:
+            raise HttpSigMissingComponentError(
+                "Missing SIGNIFY-RESOURCE header")
         if resource != keyid:
             raise HttpSigUnknownKeyError(
                 f"Response names {resource}, not {keyid}.")
-        verfer = _legacyVerfer(resolver, keyid)
+        verfers = _legacyVerfers(resolver, keyid)
         return verifyLegacy(method=request.method, path=request.path,
-                            headers=fields, verfer=verfer)
+                            headers=fields, verfers=verfers)
 
     # A response's body is its content; its Content-Length is not evidence,
     # since a HEAD or 304 response announces a length it does not send. A
@@ -1422,7 +1589,8 @@ def _legacyBase(inputage, *, method, path, fields):
     return "\n".join(items).encode("utf-8")
 
 
-def verifyLegacy(*, method, path, headers, verfer, label="signify"):
+def verifyLegacy(*, method, path, headers, verfer=None, verfers=None,
+                 label="signify"):
     """
     Verify a message signed in legacy mode (keri.end.ending.siginput and
     signature), exactly as KERIA's SignedHeaderAuthenticator.inbound does, so
@@ -1430,25 +1598,36 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
     neither query nor body is covered (profile sections 6 and 8).
 
     Resolving the signer is the caller's business; KERIA looks the controller
-    up by Signify-Resource. A response is verified with the method and path of
-    the request it answers.
+    up by Signify-Resource. A legacy signature is not indexed, so nothing on
+    the wire says which key made it: the caller passes every current key that
+    alone satisfies the controller's signing threshold (sufficientVerfers,
+    profile section 8), and the signature is accepted when it verifies under
+    any of them. A response is verified with the method and path of the
+    request it answers.
 
     Returns Verified with mode 'legacy'; keyid is the Signify-Resource value
     (the AID the message claims), or the keyid parameter when that field is
-    absent.
+    absent; verfer is the key the signature verified under.
 
     Parameters:
         method (str): request method
         path (str): request path, as KERIA passes it
         headers: message header fields, mapping or iterable of pairs
-        verfer (Verfer): key to verify with
+        verfer (Verfer): the one key to verify with; or
+        verfers (list): the keys to try, in order. Exactly one of verfer and
+            verfers; an empty verfers is unsupported-signer.
         label (str): signature label; legacy Signify uses 'signify'
 
     Raises:
         HttpSigMissingSignatureError, HttpSigMissingSignatureInputError,
-        HttpSigMalformedSignatureInputError, HttpSigMalformedSignatureError,
-        HttpSigMissingSignatureLabelError, HttpSigSignatureMismatchError
+        HttpSigUnsupportedSignerError, HttpSigMalformedSignatureInputError
+        (including a covered item that is not a String),
+        HttpSigMalformedSignatureError, HttpSigMissingSignatureLabelError,
+        HttpSigSignatureMismatchError (verifies under none of the keys)
     """
+    if (verfer is None) == (verfers is None):
+        raise ValueError("Exactly one of verfer or verfers is required.")
+    verfers = [verfer] if verfer is not None else list(verfers)
     fields = _fieldLines(headers)
     signature = _fieldValue(fields, "signature")
     siginput = _fieldValue(fields, "signature-input")
@@ -1457,12 +1636,20 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
             "Missing SIGNATURE-INPUT header")
     if signature is None:
         raise HttpSigMissingSignatureError("Missing SIGNATURE header")
+    if not verfers:
+        raise HttpSigUnsupportedSignerError(
+            "No current key satisfies the signing threshold alone.")
 
     try:
         inputs = ending.desiginput(siginput.encode("utf-8"))
     except _ParseErrors as ex:
         raise HttpSigMalformedSignatureInputError(
             f"Legacy Signature-Input does not parse: {ex}.") from ex
+    for inputage in inputs:
+        if not all(isinstance(field, str) for field in inputage.fields):
+            raise HttpSigMalformedSignatureInputError(
+                f"Legacy Signature-Input {inputage.name} covers an item that "
+                "is not a String.")
     inputs = [i for i in inputs if i.name == label]
     if not inputs:
         raise HttpSigMissingSignatureLabelError(
@@ -1474,15 +1661,23 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
         raise HttpSigMalformedSignatureError(
             f"Legacy Signature does not parse: {ex}.") from ex
 
+    signed = []
     for inputage in inputs:
-        ser = _legacyBase(inputage, method=method, path=path, fields=fields)
         marker = signages[0].markers.get(inputage.name)
         if marker is None:
             raise HttpSigMissingSignatureLabelError(
                 f"Signature has no member for label {inputage.name}.")
-        if not verfer.verify(sig=marker.raw, ser=ser):
-            raise HttpSigSignatureMismatchError(
-                f"Signature for {inputage} invalid")
+        signed.append((_legacyBase(inputage, method=method, path=path,
+                                   fields=fields), marker.raw))
+
+    for candidate in verfers:
+        if candidate.code in _Ed25519Codes and not _honestPoint(candidate.raw):
+            continue  # under such a key a signature verifies over anything
+        if all(candidate.verify(sig=raw, ser=ser) for ser, raw in signed):
+            break
+    else:
+        raise HttpSigSignatureMismatchError(
+            f"Signature for {inputs[0]} invalid")
 
     inputage = inputs[0]
     params = {name: getattr(inputage, name)
@@ -1493,41 +1688,56 @@ def verifyLegacy(*, method, path, headers, verfer, label="signify"):
     return Verified(mode=Legacy, bodyOwed=False, request=None,
                     keyid=resource if resource is not None else inputage.keyid,
                     label=inputage.name, params=params,
-                    covered=tuple(inputage.fields), verfer=verfer)
+                    covered=tuple(inputage.fields), verfer=candidate)
 
 
-def _legacyVerfer(resolver, aid):
-    """Legacy key lookup (profile section 8): resolver.legacy(aid) when the
-    resolver has it, else resolver(aid) itself; None is unknown-key."""
+def _legacyVerfers(resolver, aid):
+    """
+    Legacy key lookup (profile section 8): returns the list of keys to try,
+    from resolver.legacy(aid) when the resolver has it, else from
+    resolver(aid) itself. A lookup may return a Verfer, which is one key, or
+    a list of them; None is unknown-key. Legacy mode never takes a key from a
+    prefix: without key state even a B AID is unknown-key.
+    """
     if resolver is None:
         raise HttpSigUnknownKeyError(
             "Unknown or invalid controller (controller KEL not resolved)")
     lookup = getattr(resolver, "legacy", resolver)
-    verfer = lookup(aid)
-    if verfer is None:
+    found = lookup(aid)
+    if found is None:
         raise HttpSigUnknownKeyError(
             "Unknown or invalid controller (controller KEL not resolved)")
-    return verfer
+    if isinstance(found, Verfer):
+        return [found]
+    found = list(found)
+    if not found:
+        raise HttpSigUnsupportedSignerError(
+            "No current key satisfies the signing threshold alone.")
+    return found
 
 
 def _verifyLegacyRequest(*, method, path, fields, resolver):
-    """Legacy request: the signer is the AID named by Signify-Resource."""
+    """Legacy request: the signer is the AID named by Signify-Resource, in
+    the order of profile section 9's legacy list."""
     resource = _fieldValue(fields, "signify-resource")
     if resource is None:
         raise HttpSigMissingComponentError("Missing SIGNIFY-RESOURCE header")
-    verfer = _legacyVerfer(resolver, resource)
+    verfers = _legacyVerfers(resolver, resource)
     return verifyLegacy(method=method, path=path, headers=fields,
-                        verfer=verfer)
+                        verfers=verfers)
 
 
 # Resolvers
 
 def _checkAid(keyid):
     """Returns Prefixer of keyid, or raises HttpSigMalformedKeyError when it
-    is not a well formed AID in qb64, or is a non-transferable Ed25519 AID
-    whose key is a point of small order (profile section 9). That key is in
-    the keyid itself, so it is refused before any resolver is consulted, as
-    for a verifier with no key state for it at all."""
+    is not the canonical qb64 spelling of an AID under one of keripy's PreDex
+    codes, or is a B AID whose key is not a point of the prime-order subgroup
+    (profile R1, section 9 step 13). That key is in the keyid itself, so it
+    is refused before any resolver is consulted, as for a verifier with no
+    key state for it at all."""
+    if not isinstance(keyid, str):
+        raise HttpSigMalformedKeyError(f"keyid {keyid!r} is not an AID.")
     try:
         prefixer = Prefixer(qb64=keyid)
     except _ParseErrors as ex:
@@ -1537,8 +1747,8 @@ def _checkAid(keyid):
         raise HttpSigMalformedKeyError(f"keyid {keyid!r} is not an AID.")
     if prefixer.code == PreDex.Ed25519N and not _honestPoint(prefixer.raw):
         raise HttpSigMalformedKeyError(
-            f"keyid {keyid!r} is a key of small order, under which a "
-            "signature can be forged for any message.")
+            f"keyid {keyid!r} is a key outside the prime-order subgroup, "
+            "under which a signature can be forged.")
     return prefixer
 
 
@@ -1549,17 +1759,20 @@ class KeverResolver:
 
     Calling it resolves a canonical keyid (profile section 7, R1 and R4): the
     keyid is an AID in qb64 resolved by its derivation code, never by its
-    first character alone. A non-transferable code yields the key directly;
-    every transferable code, including the basic transferable Ed25519 prefix,
-    must have key state in kevers, and the key returned is that state's single
-    effective signer (effectiveVerfer).
+    first character alone. Every transferable code, including the basic
+    transferable Ed25519 prefix, must have key state in kevers, and the key
+    returned is that state's single effective signer (effectiveVerfer). The
+    verifiers of this module never call it for a B keyid, whose key is its
+    prefix; called directly, it returns that key. Another non-transferable
+    code is unsupported-algorithm.
 
-    .legacy(aid) is the legacy lookup (profile section 8): the single
-    effective signer of kevers[aid] (effectiveVerfer), as in canonical mode,
-    but without canonical mode's derivation-code rules. For every Signify
-    controller that is its first current key, which is the key KERIA has
-    always taken. A key state with no single effective signer, such as a
-    2-of-2 group, is unsupported-signer.
+    .legacy(aid) is the legacy lookup (profile section 8): every current key
+    of kevers[aid] that alone satisfies its signing threshold
+    (sufficientVerfers), without canonical mode's derivation-code rules. For
+    a Signify controller with one key, or after a passcode rotation, that is
+    its first current key alone; for '1' over two keys it is both. A key state
+    in which no key alone suffices, such as a 2-of-3 group, is
+    unsupported-signer.
 
     Both use in and [] on kevers, never get: Baser.kevers reads through to
     the database on in and [] only, so get would miss key state that is
@@ -1575,12 +1788,12 @@ class KeverResolver:
     def __call__(self, keyid):
         prefixer = _checkAid(keyid)
 
+        if prefixer.code == PreDex.Ed25519N:
+            return Verfer(raw=prefixer.raw, code=MtrDex.Ed25519N)
         if prefixer.code in NonTransDex:
-            try:
-                return Verfer(qb64=keyid)
-            except _ParseErrors as ex:
-                raise HttpSigUnsupportedAlgorithmError(
-                    f"Key {keyid} has an unsupported algorithm.") from ex
+            raise HttpSigUnsupportedAlgorithmError(
+                f"keyid {keyid} is a non-transferable key that is not "
+                "Ed25519.")
 
         if keyid not in self.kevers:
             raise HttpSigUnknownKeyError(f"No key state for {keyid}.")
@@ -1588,20 +1801,24 @@ class KeverResolver:
         return effectiveVerfer(kever.verfers, kever.tholder)
 
     def legacy(self, aid):
-        """Returns the single effective signer of aid's key state, which for
-        a Signify controller is its first current key.
+        """Returns list of the current keys of aid's key state that each
+        satisfy its signing threshold alone, in key state order.
 
         Raises:
             HttpSigUnknownKeyError: no key state for aid, with KERIA's legacy
                 message
-            HttpSigUnsupportedSignerError: no single key satisfies the
-                threshold alone
+            HttpSigUnsupportedSignerError: no key satisfies the threshold
+                alone
         """
         if aid not in self.kevers:
             raise HttpSigUnknownKeyError(
                 "Unknown or invalid controller (controller KEL not resolved)")
         kever = self.kevers[aid]
-        return effectiveVerfer(kever.verfers, kever.tholder)
+        verfers = sufficientVerfers(kever.verfers, kever.tholder)
+        if not verfers:
+            raise HttpSigUnsupportedSignerError(
+                "No current key satisfies the signing threshold alone.")
+        return verfers
 
 
 def keverResolver(kevers):

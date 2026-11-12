@@ -1,13 +1,13 @@
 {
   "about": "Messages a canonical verifier must REFUSE, and the section 9 code.",
-  "keri_vectors_format": 7,
+  "keri_vectors_format": 8,
   "generated_by": "vectors/keri/generate.py",
   "profile": {
     "title": "KERI profile of RFC 9421 HTTP Message Signatures",
-    "version": "1.1",
-    "date": "2026-11-10",
-    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.1/docs/keri-profile.md",
-    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails. Every refusal case carries exactly one defect, so it has exactly one correct code."
+    "version": "1.2",
+    "date": "2026-11-12",
+    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails, so every case has exactly one correct code. A refusal case carries one defect unless its note names two, and then it pins which of them section 9's order reports."
   },
   "encoding": {
     "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier, which is how a case tests what the headers alone announce.",
@@ -31,11 +31,11 @@
       "\"@path\";req",
       "\"@query\";req"
     ],
-    "body_rule": "Profile section 3. A REQUEST has a body when it carries Content-Length above zero, any Transfer-Encoding, or a Content-Length that is not a plain decimal, or when a non-empty body arrives whatever the headers said. A RESPONSE has a body when it has content; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A body obliges a covered content-digest. A response to a request whose content was non-empty must also cover \"content-digest\";req; the request's headers do not count there, since both sides hold the whole request by the time a response is signed or verified.",
-    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch.",
-    "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3), whose presence also makes @authority required: a request that does not cover it is insufficient-coverage (fiki @605z9tnw)."
+    "body_rule": "Profile sections 3 and 9. A REQUEST's headers announce a body when it carries any Transfer-Encoding or a Content-Length other than a plain zero (one or more ASCII digits once SP and HTAB are trimmed, of value zero); a body so announced without a covered content-digest is insufficient-coverage at the covered list. A non-empty request body no header announced is insufficient-coverage at the body stage, after the signature and freshness checks. A RESPONSE has a body when it has content, judged at the covered list; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A response to a request whose content was non-empty must also cover \"content-digest\";req; the request's headers do not count there, since both sides hold the whole request by the time a response is signed or verified.",
+    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch; where it has a fractional part, the verifier rounds it down first.",
+    "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3), whose presence also makes @authority required: a request that does not cover it is insufficient-coverage."
   },
-  "keys_rule": "A keyid is a well-formed AID when it is 44 characters, its first character is B, D or E, and the other 43 are base64url that decode, behind one leading pad character, to 32 bytes with a zero pad byte, so that re-encoding gives back the keyid exactly. A keyid that is not is malformed-key. A well-formed B keyid yields its key from the prefix. Every other well-formed keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, and an entry whose effective_key is null is unsupported-signer. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
+  "keys_rule": "Profile R1. A keyid is a well-formed AID when it is the canonical qb64 spelling of one of keripy's PreDex prefix codes: B, D, E, F, G, H and I over 32 bytes; 0D, 0E, 0F and 0G over 64; 1AAA, 1AAB, 1AAI and 1AAJ over 33; 1AAC and 1AAD over 57; 1AAE over 114. The bytes are padded in front with zero bytes to a multiple of three, base64url-encoded, and the code written over the characters the padding became, so re-encoding gives back the keyid exactly. Any other keyid is malformed-key. A B keyid yields its key from the prefix, and the verifier asks no key store about it, so a B keyid this table does not list still verifies; that key must be a valid point of the prime-order subgroup or the keyid is malformed-key. A non-transferable code other than B is unsupported-algorithm. Every other keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, an entry whose effective_key is null is unsupported-signer, and an entry marked weak_key holds a key that is not a valid prime-order point, which is malformed-key as it is resolved. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
   "keys": [
     {
       "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
@@ -130,17 +130,32 @@
         "threshold": "2"
       },
       "note": "A 2-of-3 group: no one key suffices (profile R4). The vectors' messages for this keyid are signed by the first key."
+    },
+    {
+      "keyid": "ECAzpmVbTvNg3tbPLFSf9OMv7hPwcKrTQ_QjsnBxtiit",
+      "kind": "transferable",
+      "effective_key": "T9Sgnms50EVyIuNNf3po0LnS8toHzey1l1ix6U6_0cM",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "key_state": {
+        "keys": [
+          "DE_UoJ5rOdBFciLjTX96aNC50vLaB83stZdYselOv9HD"
+        ],
+        "threshold": "1"
+      },
+      "weak_key": true,
+      "note": "A KEL whose current key is of mixed order: the controller's key plus a point of order 8 (profile R1). No seed yields it, so seed_hex is the key the messages for this keyid were signed with, which the verifier never reaches."
     }
   ],
   "codes": [
+    "unauthenticated",
     "missing-signature",
     "missing-signature-input",
     "malformed-signature",
+    "mode-mismatch",
     "malformed-signature-input",
     "malformed-signature-label",
     "missing-signature-label",
     "malformed-signature-value",
-    "mode-mismatch",
     "duplicate-component",
     "unsupported-component",
     "insufficient-coverage",
@@ -152,7 +167,6 @@
     "signature-mismatch",
     "signature-stale",
     "signature-expired",
-    "unauthenticated",
     "malformed-digest",
     "digest-mismatch",
     "uncovered-body"
@@ -329,7 +343,7 @@
     {
       "id": "signature-member-not-a-byte-sequence",
       "kind": "request",
-      "note": "Section 9: a Signature member that is not a byte sequence is malformed-signature, not malformed-signature-value (since keri_vectors_format 6; fiki @0zq820dl).",
+      "note": "Section 9: a Signature member that is not a byte sequence is malformed-signature, not malformed-signature-value (since keri_vectors_format 6).",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers",
@@ -482,7 +496,7 @@
     {
       "id": "content-length-with-a-no-break-space",
       "kind": "request",
-      "note": "Only SP and HTAB are trimmed from a Content-Length. A no-break space makes it something other than a plain decimal, which is not evidence of no body (fiki @5zrf8gjk); a verifier that trims every kind of space reads zero and accepts.",
+      "note": "Only SP and HTAB are trimmed from a Content-Length. A no-break space makes it something other than a plain decimal, which is not evidence of no body (profile section 3); a verifier that trims every kind of space reads zero and accepts.",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers",
@@ -515,7 +529,7 @@
     {
       "id": "authorities-supplied-but-authority-not-covered",
       "kind": "request",
-      "note": "Signed for attacker.example over the request minimum, which omits @authority, and replayed to a verifier that serves only keria.example.com. The signature is valid over what it covers; a verifier that names the authorities it serves requires @authority, so this is refused rather than accepted as a cross-host replay (fiki @605z9tnw).",
+      "note": "Signed for attacker.example over the request minimum, which omits @authority, and replayed to a verifier that serves only keria.example.com. The signature is valid over what it covers; a verifier that names the authorities it serves requires @authority, so this is refused rather than accepted as a cross-host replay (profile section 3).",
       "request": {
         "method": "GET",
         "url": "https://keria.example.com/identifiers?type=rot",
@@ -553,7 +567,7 @@
     {
       "id": "padding-bit-alias-of-a-b-keyid",
       "kind": "request",
-      "note": "The B keyid with bit 4 of its second character set: the bit lands in the pad byte, so it decodes to the same 32 bytes and is not the AID's canonical spelling (keys_rule; tick 5uvw).",
+      "note": "The B keyid with bit 4 of its second character set: the bit lands in the pad byte, so it decodes to the same 32 bytes and is not the AID's canonical spelling (keys_rule).",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers",
@@ -1191,7 +1205,7 @@
     {
       "id": "response-from-an-unexpected-non-transferable-aid",
       "kind": "response",
-      "note": "Validly signed by a self-certifying B key while the client expects the agent's AID (profile R1). A verifier that waives expected_keyid for keys that carry themselves accepts any stranger (review V-C3; keri_vectors_format 5).",
+      "note": "Validly signed by a self-certifying B key while the client expects the agent's AID (profile R1). A verifier that waives expected_keyid for keys that carry themselves accepts any stranger (since keri_vectors_format 5).",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers/alice/events",
@@ -1247,7 +1261,7 @@
     {
       "id": "unsigned-401-with-an-empty-signature",
       "kind": "response",
-      "note": "An empty Signature header is no signature, so this is the same unsigned 401 (fiki @5zrf8gjk).",
+      "note": "An empty Signature header is no signature, so this is the same unsigned 401 (profile section 8).",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers/alice/events",
@@ -1333,7 +1347,7 @@
     {
       "id": "request-body-contradicts-the-requests-digest",
       "kind": "response",
-      "note": "The response covers \"content-digest\";req, and the request body handed to the verifier does not match the request's Content-Digest (tick 5uvw).",
+      "note": "The response covers \"content-digest\";req, and the request body handed to the verifier does not match the request's Content-Digest (profile section 5).",
       "request": {
         "method": "POST",
         "url": "https://keria.example.com/identifiers/alice/events",
@@ -1387,6 +1401,259 @@
       "error": "missing-signature"
     },
     {
+      "id": "mixed-order-b-keyid",
+      "kind": "request",
+      "note": "A well-formed B keyid whose key is on the curve and not of small order, but of mixed order: a subgroup point plus a point of order 8. It is not a valid point of the prime-order subgroup, so it is refused before the signature is examined (profile R1).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"76rAfsF0krEtqyFTjabrEw\";alg=\"ed25519\";keyid=\"BLFUvWIYiuKD3Rh_7-jDH14nbt8IO0z_EcnVz_hWx0RA\"",
+          "Signature": "signify=:Ztx+zNzfTcGinOSdLZB8e70W+Dhe10jybOsWm11arLAZFG7K9nsUnnEkYO0EZg9CWHClQpqwDOr4vULk/8rTDA==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-key"
+    },
+    {
+      "id": "weak-b-keyid-beside-an-expected-keyid",
+      "kind": "response",
+      "note": "A small-order B keyid that is also not the AID expected. The key a B keyid carries is part of the keyid's own well-formedness, checked before the expected keyid is compared, so this is malformed-key and not unknown-key (profile section 9).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"m4uXfgAF5K7BCBFtzz4EAQ\";alg=\"ed25519\";keyid=\"BAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"",
+          "Signature": "signify=:a2oS1LORVa4tDdC64EeEtKlOu6Vv+yRJgR6WEm4Q+bKILXadKUx6PHzDygurM8wvXNw321sKF8e57Gt7sIrzDA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "error": "malformed-key"
+    },
+    {
+      "id": "resolved-key-of-mixed-order",
+      "kind": "request",
+      "note": "A transferable AID whose key state holds a mixed-order key. A resolved key that is not a valid prime-order point is malformed-key as it is resolved, not signature-mismatch (profile R1, section 9).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"iDwYLQskK8TYRjUOeNY0Ag\";alg=\"ed25519\";keyid=\"ECAzpmVbTvNg3tbPLFSf9OMv7hPwcKrTQ_QjsnBxtiit\"",
+          "Signature": "signify=:KNtbI901Y2QXcipHXEPYyR6sPNCrxcpAKBLUaWO9XebRUaSckIeH+kvhDerrDbs7IyQpws069sttoaL2DY3QCg==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-key"
+    },
+    {
+      "id": "decimal-created",
+      "kind": "request",
+      "note": "created as an RFC 8941 Decimal with a zero fraction. It is not an Integer, and a verifier must not read it as the whole number it equals (profile section 4).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000.0;nonce=\"4BepnZl-i9K6GamuRtpRPA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:DpmD474BtJWBVbWs8EtPoNxUSRld+T1mVP2O5+nz74RWZMZhQ6Zw+yZ/88p/Rop/HCjaqw3OPU3uDOjaOacmDQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "decimal-expires",
+      "kind": "request",
+      "note": "expires as an RFC 8941 Decimal (profile section 4).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;expires=1700000100.0;nonce=\"AdV1ohXhkMZb-5z95F9gFA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:BcfXe72s1zjknB4puq8Jr5QBxQsbdSodgeAr1Ew9oxTabOKetXJ3KMqcLdPB3wkcASpGu5jBOLpFPS+qnJXjDw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "empty-signature-input",
+      "kind": "request",
+      "note": "Signature-Input present and empty once SP and HTAB are trimmed: malformed, not absent (profile section 4).",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot",
+        "headers": {
+          "Signature-Input": " ",
+          "Signature": "signify=:2Mps0HQM5yzaEADXIrIn3QNlOIZ2NKlS/dJBnGOmAr1GjwK8t2h9jtFn0FJB+sY2LkpmChaxtWNEvrx47DUwBw==:"
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "error": "malformed-signature-input"
+    },
+    {
+      "id": "empty-signature-on-a-request",
+      "kind": "request",
+      "note": "Signature present and empty once SP and HTAB are trimmed, on a request: neither form of section 8 (profile section 9). An empty Signature on a response is unsigned instead.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers?type=rot",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"Xwv-ZL1_vwEdFxq9I7jQJg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": " "
+        },
+        "body": null
+      },
+      "now": 1700000030,
+      "error": "malformed-signature"
+    },
+    {
+      "id": "ed448-keyid-with-no-key-state",
+      "kind": "request",
+      "note": "A well-formed transferable Ed448 prefix (code 1AAD) the verifier has no KEL for. It is an AID under keripy's PreDex codes, so it is unknown-key, not malformed-key (profile R1).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KQRDHNkC2fiJ4U9rCwQVBg\";alg=\"ed25519\";keyid=\"1AADAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4\"",
+          "Signature": "signify=:qu7mpgu/gYntaOum3GCuaJrCK1+qMzdc9iJC/lW9IB9zU/IGQmnMYW/ewIGPzIMjmqUcxDZa7tstFoStE5qmDw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unknown-key"
+    },
+    {
+      "id": "non-transferable-secp256k1-keyid",
+      "kind": "request",
+      "note": "A well-formed non-transferable secp256k1 prefix (code 1AAA). Its key is in the prefix and is not Ed25519 (profile R1).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"0ETLRlZzRfNTnnZQA62OCQ\";alg=\"ed25519\";keyid=\"1AAAAgABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f\"",
+          "Signature": "signify=:jhuC4RMkqdabab0FwusGj5x196GVhCzphuzphtWXrfpEP3HH6xTLH7mlCdSBau0P1SmldOVAbTQb+ajCCj6jAg==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000030,
+      "error": "unsupported-algorithm"
+    },
+    {
+      "id": "host-keeps-its-default-port",
+      "kind": "request",
+      "note": "A verifier with only Host does not know the scheme, so it uses Host as received and removes no port: the covered @authority is keria.example.com:443, which this verifier does not serve (profile section 2).",
+      "request": {
+        "method": "POST",
+        "url": "/identifiers",
+        "headers": {
+          "Host": "keria.example.com:443",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"OJFcKyxtHnRVuCZTdqCUkA\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:6M7t/aG+NonwuvHouly5kucoZazkvWkSKxP6e60ummsYNatp+mq0i+sZxDhEuo3PWX6dBDuYyWhQWY/L3ZgKAw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "policy": {
+        "authorities": [
+          "keria.example.com"
+        ]
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "host-with-a-no-break-space",
+      "kind": "request",
+      "note": "Only SP and HTAB are trimmed from Host, so a trailing no-break space leaves a value that is not a valid authority and a base that cannot be built (profile section 2).",
+      "request": {
+        "method": "POST",
+        "url": "/identifiers",
+        "headers": {
+          "Host": "keria.example.com ",
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"8oKv7QxePLkcsxjuMsIx0g\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:VqiWPcg43vR/NE9YqpjPUojJcV9yj/Jx6d93v4oTR1UxUrCU/bkn52yG1A/NZ823uisXvgbJMRDljdYSRKUYAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "policy": {
+        "authorities": [
+          "keria.example.com"
+        ]
+      },
+      "now": 1700000030,
+      "error": "signature-mismatch"
+    },
+    {
+      "id": "unannounced-body-and-stale",
+      "kind": "request",
+      "note": "Two defects: a body no header announced arrives without a covered content-digest, and created is one second past the stale boundary. The body stage runs after freshness, so a verifier holding the body reports what one reading it later would: signature-stale (profile section 9).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"lI_-SJodCCAzh5Ly1rOAkw\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:8WYBC/I+xJ1p05K3r7TWysFLTC+gt7e2HtnuOH44kqAggatt2UScHpL5E5KTc1ThRBoDpLSK0b2+hgrVGxuhBg==:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "now": 1700000361,
+      "error": "signature-stale"
+    },
+    {
+      "id": "response-body-uncovered-and-status-altered",
+      "kind": "response",
+      "note": "Two defects: response content without a covered content-digest, and a status changed in transit. A response is judged by its content at the covered list, before the signature, so this is insufficient-coverage (profile section 9).",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"KhFPkjriyc0blh5Hvr5S2w\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:9gHQrXKRKitBgMB+dAznQcgSCJyUpuRzG2Z4NHShxBTUYfy6t3uZGKAhlHZ3YHUYK43ccnZlVTtndsuBUN1yAQ==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\";req);created=1700000000;nonce=\"sHcb8RscYwdGh2j_6C_2Kw\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:UrpEd+vwKmLLCcELHhsLuAjIMLwbjW1qa7OJodFL+qo2oPqMW7NxlZ6ZehuDU1o9u/xQyLiR6tdBbOte0oRIDw==:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "error": "insufficient-coverage"
+    },
+    {
       "id": "legacy-response-to-a-canonical-request",
       "kind": "response",
       "note": "A canonical request to /boot answered in legacy mode: legacy.json's keria-response-from-agent. The legacy response covers neither status nor body, so a client that sent a canonical request refuses it before any canonical check.",
@@ -1419,7 +1686,7 @@
       "now": 1700000030,
       "error": "mode-mismatch",
       "verified_by_fiki": false,
-      "why": "fiki does not implement legacy mode (this.i @07wstqk7), so it cannot detect a legacy header or know that a request was legacy. The legacy half is legacy.json's material verbatim, apart from what the note says."
+      "why": "fiki does not implement legacy mode, so it cannot detect a legacy header or know that a request was legacy. The legacy half is legacy.json's material verbatim, apart from what the note says."
     },
     {
       "id": "canonical-response-to-a-legacy-request",
@@ -1453,7 +1720,7 @@
       "now": 1700000030,
       "error": "mode-mismatch",
       "verified_by_fiki": false,
-      "why": "fiki does not implement legacy mode (this.i @07wstqk7), so it cannot detect a legacy header or know that a request was legacy. The legacy half is legacy.json's material verbatim, apart from what the note says."
+      "why": "fiki does not implement legacy mode, so it cannot detect a legacy header or know that a request was legacy. The legacy half is legacy.json's material verbatim, apart from what the note says."
     },
     {
       "id": "sign-body-without-digest",
