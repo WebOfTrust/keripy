@@ -9536,14 +9536,25 @@ def test_ipex_v2_full_authentication_flow_across_three_haberies():
                                                   kvy=verifierKvy)
                     assert ims == bytearray()
 
-                verifierRgy.store.accept(presentationRegistry.regk, 1, presented)
-                verifierRgy.store.accept(presentationRegistry.regk, 2, vacuous)
+                # The Grant may beat the presentation TEL to the verifier even
+                # though its KEL source already anchors the missing update.
+                # Keep it retryable while an observer catches the local TEL up.
                 exchangeBetween(grantExn,
                                 grantAtc,
                                 presenterKvy,
                                 verifierKvy)
+                assert verifierHby.db.exns.get(keys=(grantExn.said,)) is None
+                assert verifierHby.db.epse.get(keys=(grantExn.said,)) is not None
+                assert list(verifierExc.cues)[-1] == dict(
+                    kin="proof", said=grantExn.said)
+
+                verifierRgy.store.accept(presentationRegistry.regk, 1, presented)
+                verifierRgy.store.accept(presentationRegistry.regk, 2, vacuous)
+                verifierExc.processEscrow()
+
                 storedGrant, _ = cloneMessage(verifierHby, grantExn.said)
                 assert storedGrant is not None
+                assert verifierHby.db.epse.get(keys=(grantExn.said,)) is None
 
                 admitExn, admitAtc = ipexAdmit(
                     hab=verifier,
