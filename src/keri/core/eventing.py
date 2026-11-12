@@ -4060,11 +4060,16 @@ def delegationRefusal(kevers, db, pre, delpre):
     refusal. ``None`` means that a required KEL, inception event, or anchor is
     not available yet.
 
-    Each hop first uses the same delegation-anchor lookup as KEL event
-    validation. If that lookup cannot recover a superseded anchor without its
-    source-seal cache, the historical KEL supplies a fallback. Any resulting
-    anchor must be a first-seen event; otherwise the result remains pending
-    instead of trusting an unaccepted event.
+    Do not infer approval from ``kever.delpre`` alone: ``di`` records the
+    delegate's claim, and locally owned, membered, or witnessed processing may
+    accept it before a delegator anchor exists. Each hop therefore rechecks DND
+    and requires an accepted SealEvent from the delegator.
+
+    The normal KEL validation lookup uses the verified source-seal couple in
+    ``.aess``. If that cache cannot recover an older approval after its sequence
+    number was superseded, the historical KEL fallback searches accepted
+    first-seen events. This preserves accepted delegation across superseding
+    without trusting an event absent from ``.fons``.
     """
     seen = set()
     while pre not in seen:
