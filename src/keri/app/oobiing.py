@@ -499,6 +499,15 @@ class Oobiery:
                 response = client.responses.popleft()
                 self.clienter.remove(client)
 
+                # An answer fetched after the CA check failed is anybody's word (see
+                # BootstrapClientTls), so from it only what is checked on arrival is taken: signed
+                # CESR, verified by the parser, and a schema whose SAID the URL names. Not the
+                # KERI-AID header, and not an unsigned reply listing further OOBIs, since the
+                # alias would travel with either to an AID the URL never named.
+                unverified = (isinstance(client.connector, BootstrapClientTls)
+                              and client.connector.verified is not True)
+                ctype = response["headers"].get("Content-Type", "")
+
                 if response["status"] == 404:
                     print(f"{url} not found")
                     self.hby.db.coobi.rem(keys=(url,))
@@ -511,16 +520,7 @@ class Oobiery:
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                # An answer fetched after the CA check failed is anybody's word (see
-                # BootstrapClientTls), so from it only what is checked on arrival is taken: signed
-                # CESR, verified by the parser, and a schema whose SAID the URL names. Not the
-                # KERI-AID header, and not an unsigned reply listing further OOBIs, since the
-                # alias would travel with either to an AID the URL never named.
-                unverified = (isinstance(client.connector, BootstrapClientTls)
-                              and client.connector.verified is not True)
-                ctype = response["headers"].get("Content-Type", "")
-
-                if ctype in (
+                elif ctype in (
                     CESR_CONTENT_TYPE,
                     "application/json+cesr",
                     "application/cesr+json",

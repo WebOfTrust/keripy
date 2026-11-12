@@ -525,6 +525,20 @@ def test_a_verified_oobi_answer_still_introduces_further_oobis(oobiery):
     assert hby.db.oobis.get(keys=(child,)) is not None
 
 
+@pytest.mark.parametrize("ctype", [httping.CESR_CONTENT_TYPE, "application/json"])
+def test_an_oobi_answer_that_is_not_200_stays_failed_whatever_its_content_type(oobiery, ctype):
+    """A non-200 answer fails the OOBI and nothing more is read from it. Found by the
+    keripy-oobi-version session: the content-type dispatch had come loose from the status
+    chain, so a 500 carrying a CESR body was parsed and marked resolved after being marked
+    failed."""
+    oobiery, hby = oobiery
+    url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+    robr = _answer(oobiery, hby, url, dict(status=500, body=b"",
+                                           headers={"Content-Type": ctype}), verified=True)
+    assert robr is not None and robr.state == oobiing.Result.failed
+    assert oobiery.org.get(AID) is None
+
+
 @pytest.mark.parametrize("headers, body", [
     ({}, b"hello"),                                  # no Content-Type at all
     ({"Content-Type": "application/json"}, b"hello"),  # not JSON
