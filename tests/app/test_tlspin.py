@@ -224,7 +224,7 @@ def test_a_pinned_connection_to_a_self_signed_witness_succeeds(pair, selfSigned,
     server = serve(certpath, keypath)
     _declare(withab, conhab, fingerprint)
 
-    connector = httping.tlsConnector(conhab.db, withab.pre, server.url)
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, server.url)
     assert isinstance(connector, httping.PinnedClientTls)
 
     rep = _get(server.url, connector=connector)
@@ -238,12 +238,12 @@ def test_a_mismatched_fingerprint_is_refused_before_any_request_is_sent(pair, se
     server = serve(certpath, keypath)
     _declare(withab, conhab, otherFingerprint)
 
-    connector = httping.tlsConnector(conhab.db, withab.pre, server.url)
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, server.url)
     rep = _get(server.url, connector=connector, timeout=1.0)
     assert connector.refused
     # The refusal answers the request, so a caller waiting on a response -- Receiptor, the
     # witness inquisitor, a messenger counting replies -- sees a failure instead of waiting forever.
-    assert rep is not None and rep.status == httping.TlsPinRefusedStatus and rep.errored
+    assert rep is not None and rep.status == httping.TLS_PIN_REFUSED_STATUS and rep.errored
 
     time.sleep(0.3)
     assert all(b"GET" not in data for data in server.received)
@@ -255,18 +255,56 @@ def test_a_mismatch_is_contained_rather_than_raised_out_of_the_doist(pair, selfS
     """A mismatch is routine -- a witness renews its certificate and the consumer has not yet
     re-resolved its OOBI -- so it must not end the process. Raising out of hio's ClientDoer ends
     the whole Doist, and on restart the same stored pin ends it again. The connection fails
-    closed, quietly for the rest of the process, and loudly in the log."""
+    closed, quietly until a new declaration arrives, and loudly in the log."""
     withab, conhab = pair
     certpath, keypath, _ = selfSigned[0]
     server = serve(certpath, keypath)
     _declare(withab, conhab, selfSigned[1][2])
 
-    connector = httping.tlsConnector(conhab.db, withab.pre, server.url)
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, server.url)
     connector.wind(tyming.Tymist().tymen())
     for _ in range(20):  # each of these would have raised
         connector.serviceConnect()
         time.sleep(0.01)
     assert connector.refused and not connector.connected
+
+
+def test_a_refused_connector_recovers_when_a_new_declaration_is_accepted(pair, selfSigned, serve,
+                                                                          monkeypatch):
+    """The remedy the refusal log names -- re-resolve the witness's OOBI -- has to reach a client
+    that is already running. A long-lived messenger built before the renewal would otherwise keep
+    answering 495 after the consumer has accepted the matching pin."""
+    monkeypatch.setattr(httping.PinnedClientTls, "RepinDelay", 0.0)
+    withab, conhab = pair
+    (_, _, oldFp), (newCert, newKey, newFp) = selfSigned
+    server = serve(newCert, newKey)
+    _declare(withab, conhab, oldFp, stamp="2026-01-01T00:00:00.000000+00:00")
+
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, server.url)
+    rep = _get(server.url, connector=connector, timeout=1.0)
+    assert connector.refused and rep.status == httping.TLS_PIN_REFUSED_STATUS
+
+    _declare(withab, conhab, newFp, stamp="2026-02-01T00:00:00.000000+00:00")
+    rep = _get(server.url, connector=connector)
+    assert rep is not None and rep.status == 200
+    assert not connector.refused
+
+
+def test_a_refusal_answers_with_the_request_hio_would_have_reported(pair, selfSigned, serve):
+    """A caller that says which witness failed reads the request back from the response, so the
+    synthesized refusal carries the same fields a real response does."""
+    withab, conhab = pair
+    certpath, keypath, _ = selfSigned[0]
+    server = serve(certpath, keypath)
+    _declare(withab, conhab, selfSigned[1][2])
+
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, server.url)
+    rep = _get(server.url, connector=connector, timeout=1.0)
+    assert rep.status == httping.TLS_PIN_REFUSED_STATUS
+    assert rep.request["host"] == "127.0.0.1"
+    assert rep.request["port"] == server.port
+    assert rep.request["scheme"] == "https"
+    assert rep.request["method"] == "GET"
 
 
 def test_a_self_signed_witness_with_no_declaration_is_refused(pair, selfSigned, serve):
@@ -276,7 +314,7 @@ def test_a_self_signed_witness_with_no_declaration_is_refused(pair, selfSigned, 
     certpath, keypath, _ = selfSigned[0]
     server = serve(certpath, keypath)
 
-    assert httping.tlsConnector(conhab.db, withab.pre, server.url) is None
+    assert httping.makeTlsConnector(conhab.db, withab.pre, server.url) is None
     with pytest.raises(ssl.SSLCertVerificationError):
         _get(server.url)
 
@@ -288,14 +326,14 @@ def test_a_newer_declaration_with_a_new_fingerprint_replaces_the_old_pin(pair, s
     _declare(withab, conhab, newFp, stamp="2026-02-01T00:00:00.000000+00:00")
 
     newServer = serve(newCert, newKey)
-    rep = _get(newServer.url, connector=httping.tlsConnector(conhab.db, withab.pre, newServer.url))
+    rep = _get(newServer.url, connector=httping.makeTlsConnector(conhab.db, withab.pre, newServer.url))
     assert rep is not None and rep.status == 200
 
     oldServer = serve(oldCert, oldKey)
-    connector = httping.tlsConnector(conhab.db, withab.pre, oldServer.url)
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, oldServer.url)
     rep = _get(oldServer.url, connector=connector, timeout=1.0)
     assert connector.refused
-    assert rep is not None and rep.status == httping.TlsPinRefusedStatus
+    assert rep is not None and rep.status == httping.TLS_PIN_REFUSED_STATUS
 
 
 # --- what counts as a declared fingerprint --------------------------------------------------------
@@ -306,20 +344,20 @@ def test_a_declaration_may_list_several_fingerprints(pair, selfSigned, serve, tm
     withab, conhab = pair
     (oneCert, oneKey, oneFp), (twoCert, twoKey, twoFp) = selfSigned
     _declare(withab, conhab, f"{oneFp} {twoFp}")
-    assert httping.declaredCertPins(conhab.db, withab.pre) == frozenset(
+    assert httping.fetchCertPins(conhab.db, withab.pre) == frozenset(
         {bytes.fromhex(oneFp), bytes.fromhex(twoFp)})
 
     for certpath, keypath in ((oneCert, oneKey), (twoCert, twoKey)):
         server = serve(certpath, keypath)
-        rep = _get(server.url, connector=httping.tlsConnector(conhab.db, withab.pre, server.url))
+        rep = _get(server.url, connector=httping.makeTlsConnector(conhab.db, withab.pre, server.url))
         assert rep is not None and rep.status == 200
 
     key = ec.generate_private_key(ec.SECP256R1())
     strangerCert, strangerKey = _write(tmp_path, "stranger", _cert("stranger", key), key)
     stranger = serve(strangerCert, strangerKey)
-    connector = httping.tlsConnector(conhab.db, withab.pre, stranger.url)
+    connector = httping.makeTlsConnector(conhab.db, withab.pre, stranger.url)
     rep = _get(stranger.url, connector=connector, timeout=1.0)
-    assert connector.refused and rep.status == httping.TlsPinRefusedStatus
+    assert connector.refused and rep.status == httping.TLS_PIN_REFUSED_STATUS
 
 
 FP = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
@@ -338,8 +376,8 @@ def test_a_value_not_in_the_convention_is_treated_as_absent(pair, value):
     from which of its values keripy silently ignores."""
     withab, conhab = pair
     _declare(withab, conhab, value)
-    assert httping.declaredCertPins(conhab.db, withab.pre) is None
-    assert httping.tlsConnector(conhab.db, withab.pre, "https://127.0.0.1:1/") is None
+    assert httping.fetchCertPins(conhab.db, withab.pre) is None
+    assert httping.makeTlsConnector(conhab.db, withab.pre, "https://127.0.0.1:1/") is None
 
 
 def test_the_convention_is_written_where_declarers_will_read_it():
@@ -355,14 +393,14 @@ def test_only_a_declaration_by_the_peer_itself_pins_it(pair, selfSigned):
     conhab.psr.parse(bytearray(conhab.makeDeclAttribs(
         attribs={"tls-cert-sha256": fingerprint}, version=Vrsn_1_0, kind=Kinds.json,
         gvrsn=Vrsn_1_0)))
-    assert httping.declaredCertPins(conhab.db, conhab.pre) is not None
-    assert httping.declaredCertPins(conhab.db, withab.pre) is None
+    assert httping.fetchCertPins(conhab.db, conhab.pre) is not None
+    assert httping.fetchCertPins(conhab.db, withab.pre) is None
 
 
 def test_plain_http_is_never_pinned(pair, selfSigned):
     withab, conhab = pair
     _declare(withab, conhab, selfSigned[0][2])
-    assert httping.tlsConnector(conhab.db, withab.pre, "http://127.0.0.1:5642/") is None
+    assert httping.makeTlsConnector(conhab.db, withab.pre, "http://127.0.0.1:5642/") is None
 
 
 # --- first contact: the OOBI fetch ----------------------------------------------------------------
@@ -371,7 +409,7 @@ def test_an_oobi_fetch_reaches_a_self_signed_server_without_a_pin(selfSigned, se
     certpath, keypath, _ = selfSigned[0]
     server = serve(certpath, keypath)
 
-    connector = httping.bootstrapConnector(server.url)
+    connector = httping.makeBootstrapConnector(server.url)
     rep = _get(server.url, connector=connector)
     assert rep is not None and rep.status == 200
     assert connector.verified is False
@@ -382,7 +420,7 @@ def test_an_oobi_fetch_tries_the_ca_check_first(caSigned, serve):
     certpath, keypath, cafile = caSigned
     server = serve(certpath, keypath)
 
-    connector = httping.bootstrapConnector(server.url, cafilepath=cafile)
+    connector = httping.makeBootstrapConnector(server.url, cafilepath=cafile)
     rep = _get(server.url, connector=connector)
     assert rep is not None and rep.status == 200
     assert connector.verified is True
@@ -396,7 +434,7 @@ def test_an_oobi_fetch_ignores_a_stale_pin(pair, selfSigned, serve):
     _declare(withab, conhab, oldFp)
     server = serve(newCert, newKey)
 
-    rep = _get(server.url, connector=httping.bootstrapConnector(server.url))
+    rep = _get(server.url, connector=httping.makeBootstrapConnector(server.url))
     assert rep is not None and rep.status == 200
 
 
@@ -523,6 +561,43 @@ def test_a_verified_oobi_answer_still_introduces_further_oobis(oobiery):
     _answer(oobiery, hby, url, dict(status=200, body=bytes(rpy.raw),
                                     headers={"Content-Type": "application/json"}), verified=True)
     assert hby.db.oobis.get(keys=(child,)) is not None
+
+
+def test_a_multi_oobi_reply_for_another_aid_fails_the_oobi(oobiery):
+    """processMultiOobiRpy refuses a reply whose aid is not the one the OOBI names. The OOBI is
+    then failed, rather than left in coobi with its client gone and no cue ever sent."""
+    from keri.core import eventing
+    oobiery, hby = oobiery
+    url = f"https://127.0.0.1:5643/oobi/{AID}/controller"
+    rpy = eventing.reply(route="/oobi/witness", data=dict(aid=OTHER, urls=["http://x/"]),
+                         version=Vrsn_1_0, kind=Kinds.json)
+    robr = _answer(oobiery, hby, url, dict(status=200, body=bytes(rpy.raw),
+                                           headers={"Content-Type": "application/json"}),
+                   verified=True)
+    assert robr is not None and robr.state == oobiing.Result.failed
+    assert hby.db.coobi.get(keys=(url,)) is None
+    assert hby.db.oobis.get(keys=("http://x/",)) is None
+
+
+def test_an_unverified_controller_oobi_by_bare_aid_binds_its_alias_to_that_aid(oobiery):
+    """/oobi/{aid} is served for a controller but matches the data-OOBI pattern, so the AID
+    arrives as obr.said with no obr.cid. Over a verified connection the KERI-AID header filled
+    the cid in. Over an unverified one the header is ignored, so the alias goes to the AID the
+    path itself names -- which is still a name the URL gave, never one the answer gave."""
+    oobiery, hby = oobiery
+    hab = hby.makeHab(name="ctl", isith="1", icount=1, transferable=True,
+                      version=Vrsn_1_0, kind=Kinds.json)
+    url = f"https://127.0.0.1:5643/oobi/{hab.pre}?name=alice"
+    obr = OobiRecord(date="2026-01-01T00:00:00.000000+00:00", said=hab.pre, oobialias="alice")
+    hby.db.coobi.pin(keys=(url,), val=obr)
+    oobiery.clients[url] = _Answered(dict(
+        status=200, body=bytes(hab.replay()),
+        headers={"Content-Type": httping.CESR_CONTENT_TYPE, oobiing.OOBI_AID_HEADER: OTHER}))
+    oobiery.processClients()
+
+    assert hby.db.roobi.get(keys=(url,)).cid == hab.pre
+    assert oobiery.org.get(hab.pre)["alias"] == "alice"
+    assert oobiery.org.get(OTHER) is None
 
 
 @pytest.mark.parametrize("ctype", [httping.CESR_CONTENT_TYPE, "application/json"])
