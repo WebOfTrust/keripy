@@ -50,13 +50,34 @@ except ImportError:
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
 
+class FakeJSStoreHandle:
+    """Mimics PyScript's JS StorageHandle whose close() releases the IndexedDB connection."""
+
+    def __init__(self, owner):
+        self.owner = owner
+
+    async def close(self):
+        self.owner.closed = True
+        self.owner.backend.events.append(("close", self.owner.namespace))
+        self.owner.backend.close_count += 1
+
+
 class FakeStorageHandle:
-    """Async storage handle with local writes and explicit sync commit."""
+    """Async storage handle modelling the real PyScript ``Storage`` shape.
+
+    The real PyScript ``Storage`` is a ``dict`` subclass with no direct ``close()``
+    method; it holds the closeable JS handle at the literal ``__store__`` attribute.
+    That attribute is set below via ``setattr`` to match the runtime exactly (the
+    double trailing underscores exempt ``__store__`` from PEP 8 name mangling).
+    """
 
     def __init__(self, backend, namespace):
         self.backend = backend
         self.namespace = namespace
         self._local = dict(self.backend.persisted.get(namespace, {}))
+        self.closed = False
+        # Literal "__store__" attribute, matching the real PyScript runtime.
+        setattr(self, "__store__", FakeJSStoreHandle(self))
 
     def get(self, key, default=None):
         return self._local.get(key, default)
@@ -66,9 +87,17 @@ class FakeStorageHandle:
 
     def __setitem__(self, key, value):
         self._local[key] = value
+        self.backend.events.append(("set", self.namespace, key))
 
     async def sync(self):
+        self.backend.events.append(("sync", self.namespace))
+        if getattr(self.backend, "fail_sync", False):
+            raise RuntimeError("sync boom")
         self.backend.persisted[self.namespace] = dict(self._local)
+
+    # Intentionally no direct close(): the real PyScript Storage exposes close only
+    # through the JS handle at ``__store__``, so tests exercise the same path the
+    # runtime does.
 
 
 class FakeStorageBackend:
@@ -76,8 +105,16 @@ class FakeStorageBackend:
 
     def __init__(self):
         self.persisted = {}
+        self.open_count = 0
+        self.close_count = 0
+        self.open_namespaces = []
+        self.events = []
+        self.fail_sync = False
 
     async def open(self, namespace):
+        self.open_count += 1
+        self.open_namespaces.append(namespace)
+        self.events.append(("open", namespace))
         return FakeStorageHandle(self, namespace)
 
 
@@ -543,6 +580,108 @@ def test_close():
         dber2.close()
         assert dber2._stores == {}
         assert dber2.stores == []
+
+
+def test_open_releases_storage_handles():
+    """Test that open() releases every storage handle after reading state.
+
+    Retaining one IndexedDB connection per KERI subdatabase exhausts browser
+    storage resources on iOS, so every handle opened by open() must be closed
+    once its durable state has been loaded into memory.
+    """
+    async def _go():
+        backend = FakeStorageBackend()
+        stores = [f"store.{i:02d}." for i in range(90)]
+        dber, _ = await _open_fake_dber(
+            name="lifecycle", stores=stores, backend=backend,
+        )
+        # every opened handle (stores + meta) was released
+        assert backend.open_count == len(stores) + 1
+        assert backend.close_count == backend.open_count
+        # no live handle is retained on any SubDb
+        assert all(subdb.handle is None for subdb in dber._stores.values())
+
+    asyncio.run(_go())
+
+
+def test_flush_reopens_and_releases_dirty_stores():
+    """Test that flush() reopens, writes, syncs, and releases each dirty store."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="flush-rel", stores=["docs."], clear=True, backend=backend,
+        )
+        opens_after_open = backend.open_count
+        docs = dber.env.open_db("docs.")
+        assert dber.setVal(docs, b"k", b"v") is True
+
+        assert await dber.flush() == 1
+
+        # flush reopened the dirty store and released it again
+        assert backend.open_count == opens_after_open + 1
+        assert backend.close_count == backend.open_count
+
+        # persisted value survives a fresh open
+        reopened, _ = await _open_fake_dber(
+            name="flush-rel", stores=["docs."], backend=backend,
+        )
+        rd = reopened.env.open_db("docs.")
+        assert reopened.getVal(rd, b"k") == b"v"
+
+    asyncio.run(_go())
+
+
+def test_flush_close_after_sync():
+    """Test that a dirty store is closed only after its writes are synced."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="order", stores=["docs."], clear=True, backend=backend,
+        )
+        docs = dber.env.open_db("docs.")
+        assert dber.setVal(docs, b"k", b"v") is True
+
+        backend.events.clear()
+        assert await dber.flush() == 1
+
+        ns = "order:docs."
+        ev = [(kind, event_ns) for (kind, event_ns, *_) in backend.events]
+        # open -> set records -> set meta -> sync -> close, strictly in order
+        assert ev == [
+            ("open", ns),
+            ("set", ns),
+            ("set", ns),
+            ("sync", ns),
+            ("close", ns),
+        ]
+        assert ev.index(("close", ns)) > ev.index(("sync", ns))
+
+    asyncio.run(_go())
+
+
+def test_flush_releases_handle_on_sync_error():
+    """Test that a sync failure still releases the reopened handle and propagates."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="fail-sync", stores=["docs."], clear=True, backend=backend,
+        )
+        docs = dber.env.open_db("docs.")
+        assert dber.setVal(docs, b"k", b"v") is True
+
+        opens_before = backend.open_count
+        closes_before = backend.close_count
+        backend.fail_sync = True
+        with pytest.raises(RuntimeError, match="sync boom"):
+            await dber.flush()
+        backend.fail_sync = False
+
+        # the reopened flush handle was still released despite the error
+        assert backend.open_count == opens_before + 1
+        assert backend.close_count == closes_before + 1
+        assert backend.events[-1] == ("close", "fail-sync:docs.")
+
+    asyncio.run(_go())
 
     asyncio.run(_go())
 
