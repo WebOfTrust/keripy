@@ -274,6 +274,54 @@ def test_witness_publisher_idle_tracks_queued_and_active_work(monkeypatch):
             doist.exit()
 
 
+def test_receiptor_catchup_sends_full_kel(seeder):
+    """Receiptor.catchup must replay every KEL event to the witness, not only
+    the inception event."""
+    with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+        palHab = palHby.makeHab(name="pal", transferable=True)
+        # Without consuming each response, catchup stops waiting after the
+        # first one and the later events are never sent.
+        palHab.interact()
+        palHab.interact()
+        expected = palHab.kever.serder
+        assert expected.sn == 2
+
+        witnessDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wanHab = wanHby.habByName(name="wan")
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab], protocols=[kering.Schemes.http])
+
+        receiptor = agenting.Receiptor(hby=palHby)
+        caughtUp = False
+
+        def catchupDo(tymth, tock=0.0, **kwa):
+            nonlocal caughtUp
+            yield from receiptor.catchup(palHab.pre, wanHab.pre)
+            caughtUp = True
+            return True
+
+        def witnessHasKel():
+            kever = wanHby.kevers.get(palHab.pre)
+            return kever is not None and kever.sn == expected.sn
+
+        doist = doing.Doist(limit=5.0, tock=0.03125,
+                            doers=witnessDoers + [receiptor, doing.doify(catchupDo)])
+        try:
+            doist.enter()
+            tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+            while not ((caughtUp and witnessHasKel()) or tymer.expired):
+                doist.recur()
+                time.sleep(doist.tock)
+        finally:
+            doist.exit()
+
+        assert caughtUp
+        assert palHab.pre in wanHby.kevers
+        actual = wanHby.kevers[palHab.pre].serder
+        assert actual.sn == expected.sn
+        assert actual.said == expected.said
+
+
 def test_witness_receiptor(seeder):
     with habbing.openHby(name="wan", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
             habbing.openHby(name="wil", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \

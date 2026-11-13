@@ -6,6 +6,7 @@ tests.db.dbing module
 
 import logging
 import os
+import socket
 
 from hio.base import doing
 from hio.core.tcp import clienting, serving
@@ -160,15 +161,15 @@ def test_directing_basic():
     """End Test"""
 
 
-def test_runcontroller_demo():
+def test_runcontroller_demo(unused_tcp_port_factory):
     """
     Test demo runController function
     """
     help.ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"  # must be one of 'bob', 'sam', 'eve'
-    remote = 5621
-    local = 5620
+    remote = unused_tcp_port_factory()
+    local = unused_tcp_port_factory()
     expire = 1.0
 
     raw = b"raw salt to test"
@@ -184,7 +185,11 @@ def test_runcontroller_demo():
                                         remotePort=remote,
                                         localPort=local)
 
-    directing.runController(doers=doers, expire=expire)
+    # Listen on the remote port so the demo client connects instead of
+    # retrying a refused connect. On macOS 26+ a retried nonblocking connect
+    # after refusal reports EISCONN, which HIO treats as connected.
+    with socket.create_server(("127.0.0.1", remote)):
+        directing.runController(doers=doers, expire=expire)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
