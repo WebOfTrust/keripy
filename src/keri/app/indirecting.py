@@ -775,13 +775,14 @@ class Poller(doing.DoDoer):
             else:
                 topics[topic] = 0
 
-        kwa = dict()
+        # The topics map is keyed by routes such as '/receipt', which are not valid strict
+        # native-CESR labels, so with no kind given build the query as JSON rather than in
+        # the version's native default, where it cannot be serialized.
+        kwa = dict(kind=self.kind if self.kind is not None else Kinds.json)
         if self.version is not None:
             kwa["version"] = self.version
         if self.gvrsn is not None:
             kwa["gvrsn"] = self.gvrsn
-        if self.kind is not None:
-            kwa["kind"] = self.kind
         if isinstance(self.hab, GroupHab):
             return self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
                                        **kwa)

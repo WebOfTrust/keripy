@@ -11,7 +11,7 @@ from hio.help import ogler
 
 from ...common import Parsery, setupHby
 
-from ....kering import MissingEntryError
+from ....kering import MissingEntryError, Kinds
 
 from ....app import (HaberyDoer, GroupHab,
                      httpClient, createCESRRequest)
@@ -100,10 +100,14 @@ class ReadDoer(doing.DoDoer):
         print()
 
         q = dict(pre=hab.pre, topics=topics)
+        # topics is keyed by routes such as '/receipt', which strict native CESR cannot
+        # label, so build the query as JSON (see Poller.makeQuery)
         if isinstance(hab, GroupHab):
-            msg = hab.mhab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
+            msg = hab.mhab.query(pre=hab.pre, src=self.witness, route="mbx", query=q,
+                                 kind=Kinds.json)
         else:
-            msg = hab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
+            msg = hab.query(pre=hab.pre, src=self.witness, route="mbx", query=q,
+                            kind=Kinds.json)
 
         createCESRRequest(msg, client, dest=self.witness)
 
