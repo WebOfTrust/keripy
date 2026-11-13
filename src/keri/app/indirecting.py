@@ -757,6 +757,36 @@ class Poller(doing.DoDoer):
 
         super(Poller, self).__init__(doers=doers, **kwa)
 
+    def makeQuery(self, witrec):
+        """Return a signed mailbox ``qry`` asking the witness for each of .topics from
+        the index after the last one seen in witrec.
+
+        Parameters:
+            witrec (TopicsRecord): last index seen per topic from this witness
+
+        Returns:
+            bytearray: signed ``qry`` message with attachments
+        """
+        topics = dict()
+        q = dict(pre=self.pre, topics=topics)
+        for topic in self.topics:
+            if topic in witrec.topics:
+                topics[topic] = witrec.topics[topic] + 1
+            else:
+                topics[topic] = 0
+
+        kwa = dict()
+        if self.version is not None:
+            kwa["version"] = self.version
+        if self.gvrsn is not None:
+            kwa["gvrsn"] = self.gvrsn
+        if self.kind is not None:
+            kwa["kind"] = self.kind
+        if isinstance(self.hab, GroupHab):
+            return self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
+                                       **kwa)
+        return self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **kwa)
+
     def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
@@ -782,26 +812,7 @@ class Poller(doing.DoDoer):
 
             self.extend([clientDoer])
 
-            topics = dict()
-            q = dict(pre=self.pre, topics=topics)
-            for topic in self.topics:
-                if topic in witrec.topics:
-                    topics[topic] = witrec.topics[topic] + 1
-                else:
-                    topics[topic] = 0
-
-            kwa = dict()
-            if self.version is not None:
-                kwa["version"] = self.version
-            if self.gvrsn is not None:
-                kwa["gvrsn"] = self.gvrsn
-            if self.kind is not None:
-                kwa["kind"] = self.kind
-            if isinstance(self.hab, GroupHab):
-                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
-                                          **kwa)
-            else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **kwa)
+            msg = self.makeQuery(witrec)
 
             createCESRRequest(msg, client, dest=self.witness)
 
