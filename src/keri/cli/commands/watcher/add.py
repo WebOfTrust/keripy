@@ -12,7 +12,7 @@ from hio.help import ogler
 from ...common import Parsery, setupHby
 
 from ....kering import Roles
-from ....app import Organizer, GroupHab, StreamPoster
+from ....app import Organizer, GroupHab, StreamPoster, Result
 from ....core import SerderKERI
 
 
@@ -78,7 +78,7 @@ class AddDoer(doing.DoDoer):
 
         self.oobi = None
         for (key,), obr in self.hby.db.roobi.getTopItemIter():
-            if obr.cid == watd:
+            if obr.cid == watd and obr.state == Result.resolved:
                 self.oobi = key
 
         if not self.oobi:

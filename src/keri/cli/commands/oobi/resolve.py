@@ -12,7 +12,6 @@ from ...common import Parsery, setupHby, parseVersion
 
 from ....app import HaberyDoer, Authenticator, Oobiery, Result
 from ....help import helping
-from ....kering import ValidationError
 from ....recording import OobiRecord
 
 logger = ogler.getLogger()
@@ -101,7 +100,7 @@ class OobiDoer(doing.DoDoer):
             yield 0.25
 
         obr = self.obi.hby.db.roobi.get(keys=(self.oobi,))
-        if self.force and obr.state == Result.resolved:
+        if self.force and obr.state == Result.resolved and obr.cid:
             while obr.cid not in self.hby.kevers:
                 self.hby.kvy.processEscrows()
                 yield 0.25
@@ -111,4 +110,4 @@ class OobiDoer(doing.DoDoer):
         self.remove([self.hbyDoer, *self.obi.doers, *self.authn.doers])
 
         if obr.state != Result.resolved:  # kli exits nonzero on an escaping error
-            raise ValidationError(f"OOBI {self.oobi} did not resolve")
+            raise RuntimeError(f"OOBI {self.oobi} did not resolve")

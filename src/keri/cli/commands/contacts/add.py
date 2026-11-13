@@ -13,7 +13,7 @@ from hio.help import ogler
 from ...common import setupHby
 
 from ....help import helping
-from ....app import Oobiery, Authenticator, Organizer, HaberyDoer
+from ....app import Oobiery, Authenticator, Organizer, HaberyDoer, Result
 from ....recording import OobiRecord
 
 logger = ogler.getLogger()
@@ -94,6 +94,9 @@ class ContactAddDoer(doing.DoDoer):
             yield 0.25
 
         resolved = self.hby.db.roobi.get(keys=(self.oobi,))
+        if resolved.state != Result.resolved:  # no contact for an AID with no KEL
+            self.remove([self.hbyDoer, *obi.doers, *authn.doers])
+            raise RuntimeError(f"OOBI {self.oobi} did not resolve")
         cid = resolved.cid
 
         org = Organizer(hby=self.hby)

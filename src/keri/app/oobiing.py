@@ -488,6 +488,8 @@ class Oobiery:
 
     # event escrows keyed by (pre, sn) whose events may yet be accepted
     EventEscrows = ("ooes", "pses", "pwes", "pdes", "ldes")
+    # state of an OOBI waiting in the retry escrow for its escrowed events
+    Escrowed = "escrowed"
 
     def judgeAnswer(self, obr, body):
         """Return why a parsed CESR OOBI answer left the OOBI unresolved, or None.
@@ -521,16 +523,16 @@ class Oobiery:
 
         return None
 
-    def isEscrowed(self, pre):
-        """Return True when an event of pre is held in an event escrow, so its key state may
-        yet arrive without a new answer, as when receipts or a delegator's seal come late or
-        out of order.
+    def countEscrowed(self, pre):
+        """Return how many events of pre are held in event escrows, whose key state may yet
+        arrive without a new answer, as when receipts or a delegator's seal come late or out
+        of order.
 
         Parameters:
             pre (str): qb64 identifier prefix
         """
-        return any(next(getattr(self.hby.db, name).getAllItemIter(keys=pre), None) is not None
-                   for name in self.EventEscrows)
+        return sum(1 for name in self.EventEscrows
+                   for _ in getattr(self.hby.db, name).getAllItemIter(keys=pre))
 
     def processClients(self):
         """ Process Client responses by parsing the messages and removing the client/doer"""
@@ -555,7 +557,7 @@ class Oobiery:
                     print("invalid status for oobi response: {}".format(response["status"]))
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] in (
                     CESR_CONTENT_TYPE,
@@ -569,31 +571,47 @@ class Oobiery:
                     # call, and after an error in one message that would reset the version
                     # for the rest of this answer.
                     body = bytes(response["body"])
+                    header = (response["headers"].get(OOBI_AID_HEADER)
+                              if obr.cid is None else None)
+                    before = {pre: (pre in self.hby.kevers, self.countEscrowed(pre))
+                              for pre in (obr.cid, obr.said, header) if pre}
                     self.parser.version = self.version
                     self.parser.parse(ims=bytearray(body))
-                    if obr.cid is None and obr.said:
+
+                    def delivered(pre):  # did this answer give key state or escrow for pre
+                        held, escrowed = before[pre]
+                        return ((pre in self.hby.kevers and not held)
+                                or self.countEscrowed(pre) > escrowed)
+
+                    if obr.cid is None and obr.said and (obr.said in self.hby.kevers
+                                                         or delivered(obr.said)):
                         # /oobi/{aid} matches the data-OOBI pattern, so its AID arrives as
-                        # obr.said. A CESR answer to it is that AID's KEL.
+                        # obr.said. Judge the answer as that AID's KEL only when the SAID
+                        # proves to be an AID, since a data OOBI may name another artifact.
                         obr.cid = obr.said
-                    elif obr.cid is None and OOBI_AID_HEADER in response["headers"]:
+                    elif obr.cid is None and header and not before[header][0]:
                         # The header is unsigned, so it may only name the AID of an OOBI
-                        # whose URL names none, never replace the one the URL names.
-                        obr.cid = response["headers"][OOBI_AID_HEADER]
+                        # whose URL names none, never replace the one the URL names, and
+                        # never bind an alias to an AID already held.
+                        obr.cid = header
 
                     self.hby.db.coobi.rem(keys=(url,))
                     reason = self.judgeAnswer(obr, body)
-                    if reason is not None and obr.cid and obr.cid not in self.hby.kevers:
+                    if reason is not None and body and obr.cid and obr.cid not in self.hby.kevers:
                         self.parser.kvy.processEscrows()  # what escrowed may complete now
                         if obr.cid in self.hby.kevers:
                             reason = self.judgeAnswer(obr, body)
-                        elif self.isEscrowed(obr.cid):
-                            # not failed: retry after RetryDelay, by when receipts or seals
-                            # may have arrived. Escrow timeouts bound how long this lasts.
+                        elif obr.state != self.Escrowed and delivered(obr.cid):
+                            # this answer's events escrowed: not failed yet. Retry once
+                            # after RetryDelay, by when receipts or seals may have arrived.
                             logger.info("OOBI %s: events of %s escrowed, will retry",
                                         url, obr.cid)
+                            obr.state = self.Escrowed
                             obr.date = toIso8601(nowUTC())
                             self.hby.db.eoobi.pin(keys=(url,), val=obr)
                             continue
+                        elif obr.state == self.Escrowed:
+                            reason = f"events of {obr.cid} still escrowed after a retry"
 
                     self.hby.db.eoobi.rem(keys=(url,))
                     if reason is None:
@@ -603,7 +621,7 @@ class Oobiery:
                     else:
                         logger.error("OOBI %s did not resolve: %s", url, reason)
                         obr.state = Result.failed
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
                     try:
@@ -619,7 +637,7 @@ class Oobiery:
 
                     obr.state = result
                     self.hby.db.coobi.rem(keys=(url,))
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"].startswith("application/json"):  # Unsigned rpy OOBI or Schema
 
@@ -633,7 +651,7 @@ class Oobiery:
 
                         obr.state = result
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
                         continue
 
                     except (ValidationError, ValueError):
@@ -644,12 +662,12 @@ class Oobiery:
                     except ValueError:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
                         continue
                     if not serder.ked['t'] == Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                     elif serder.ked['r'] in ('/oobi/witness', '/oobi/controller'):
                         self.processMultiOobiRpy(url, serder, obr)
@@ -657,12 +675,12 @@ class Oobiery:
                     else:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 else:
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
                     logger.error("invalid content type for oobi response: {}"
                                  .format(response["headers"]["Content-Type"]))
 
@@ -684,7 +702,7 @@ class Oobiery:
             if complete:
                 obr.state = result
                 self.hby.db.coobi.rem(keys=(url,))
-                self.hby.db.roobi.put(keys=(url,), val=obr)
+                self.hby.db.roobi.pin(keys=(url,), val=obr)
 
     def processRetries(self):
         """ Process Client responses by parsing the messages and removing the client/doer"""
