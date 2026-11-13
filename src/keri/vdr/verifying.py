@@ -18,8 +18,9 @@ from ..kering import (Ilks, MissingChainError,
                       MissingChainError, RevokedChainError,
                       EdgeRefusalError, UnsupportedOperatorError)
 from ..core import Dater, Saider, Parser, CacheResolver, Schemer
+from ..core.eventing import delegationRefusal
 from ..help import helping
-from ..acdc import chaining, relating
+from ..acdc import chaining
 
 from .eventing import (Tevery, Reger, query, walkEdgeSection,
                        ReservedEdgeLabels)
@@ -920,8 +921,8 @@ class Verifier:
                                        f"targeted far node, which has no issuee")
 
             if issuer != farIssuee:
-                refusal = relating.delegationRefusal(self.hby.kevers, self.hby.db, issuer,
-                                                     farIssuee)
+                refusal = delegationRefusal(self.hby.kevers, self.hby.db, issuer,
+                                            farIssuee)
                 if refusal is None:  # pending: evidence the climb needs is missing
                     return None
                 if refusal:

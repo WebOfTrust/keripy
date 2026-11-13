@@ -4052,6 +4052,78 @@ class Kever:
         return None
 
 
+def delegationRefusal(kevers, db, pre, delpre):
+    """Return a decided delegation refusal, success, or missing evidence.
+
+    The empty string means every hop from ``pre`` reaches ``delpre`` through an
+    anchored delegated inception. A non-empty string explains a permanent
+    refusal. ``None`` means that a required KEL, inception event, or anchor is
+    not available yet.
+
+    Do not infer approval from ``kever.delpre`` alone: ``di`` records the
+    delegate's claim, and locally owned, membered, or witnessed processing may
+    accept it before a delegator anchor exists. Each hop therefore rechecks DND
+    and requires an accepted SealEvent from the delegator.
+
+    The normal KEL validation lookup uses the verified source-seal couple in
+    ``.aess``. If that cache cannot recover an older approval after its sequence
+    number was superseded, the historical KEL fallback searches accepted
+    first-seen events. This preserves accepted delegation across superseding
+    without trusting an event absent from ``.fons``.
+    """
+    seen = set()
+    while pre not in seen:
+        seen.add(pre)
+        if pre not in kevers:
+            return None
+
+        kever = kevers[pre]
+        parent = kever.delpre
+        if parent is None:
+            return f"{pre} is not delegated, and the chain ends there"
+        if parent not in kevers:
+            return None
+        if kevers[parent].doNotDelegate:
+            return f"delegator {parent} of {pre} carries DND"
+
+        inception = db.evts.get(keys=(pre, pre))
+        if inception is None:
+            return None
+
+        anchor = kever.fetchDelegatingEvent(delpre=parent,
+                                             serder=inception,
+                                             original=False,
+                                             eager=True)
+        if anchor is None:
+            expected = SealEvent(i=inception.pre,
+                                 s=inception.snh,
+                                 d=inception.said)
+            for candidate in db.getEvtPreIter(pre=parent):
+                if db.fons.get(keys=(parent, candidate.said)) is None:
+                    continue
+
+                for seal in candidate.seals or []:
+                    if tuple(seal) != SealEvent._fields:
+                        continue
+                    if SealEvent(**seal) == expected:
+                        anchor = candidate
+                        break
+
+                if anchor is not None:
+                    break
+        if anchor is None:
+            return None
+        if db.fons.get(keys=(anchor.pre, anchor.said)) is None:
+            return None
+
+        if parent == delpre:
+            return ""
+
+        pre = parent
+
+    return f"delegation chain from {pre} cycles"
+
+
 class Kevery:
     """
     Kevery (Key Event Message Processing Facility) processes an incoming
@@ -4163,6 +4235,19 @@ class Kevery:
         """
         Returns .db.prefixes"""
         return self.db.prefixes
+
+    def isDelegated(self, pre, delpre) -> bool | None:
+        """Return whether ``pre`` is an anchored descendant of ``delpre``.
+
+        ``None`` means that a required KEL or delegation anchor has not arrived.
+        ``False`` means the complete identifier ancestry reaches another root or
+        crosses an identifier configured with the Do Not Delegate trait, or the
+        ancestry contains a cycle.
+        """
+        refusal = delegationRefusal(self.kevers, self.db, pre, delpre)
+        if refusal is None:
+            return None
+        return not refusal
 
     def fetchWitnessState(self, pre, sn):
         """ Returns the list of witness for the identifier prefix at the sequence number
@@ -6407,7 +6492,7 @@ class Kevery:
                 # valid event escrow.
                 self.db.pwes.rem(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
-                logger.info("Kevery: PWE unescrow succeeded in valid event: key = %s \tdigest = %s",
+                logger.info("Kevery: PWE unescrow succeeded in valid event: key = (%s, %s) \tdigest = %s",
                            pre, sn, edig.decode())
                 logger.debug("Event=\n%s\n", eserder.pretty())
 
