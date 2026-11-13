@@ -16,7 +16,7 @@ from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version, Kinds
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
-from keri.end import OOBI_RE
+from keri.end import OOBI_RE, DOOBI_RE
 from keri.app.oobiing import (loadHandlers as loadOobiingHandlers,
                               loadEnds as loadOobiingEnds)
 
@@ -629,6 +629,9 @@ def _answerOobi(oobiery, hby, url, response):
     if (match := OOBI_RE.match(purl.path)) is not None:
         obr.cid, obr.eid, obr.role = match.group("cid"), match.group("eid"), match.group("role")
         hby.db.coobi.pin(keys=(url,), val=obr)
+    elif (match := DOOBI_RE.match(purl.path)) is not None:
+        obr.said = match.group("said")
+        hby.db.coobi.pin(keys=(url,), val=obr)
     oobiery.clients[url] = _AnsweredClient(response)
     oobiery.processClients()
     return hby.db.roobi.get(keys=(url,))
@@ -728,3 +731,19 @@ def test_genus_code_in_one_oobi_answer_does_not_govern_the_next():
                              _cesr(stream2))
         assert second.state == Result.resolved
         assert dst.db.locs.get(keys=(pre2, Schemes.http)).url == "http://127.0.0.1:5552"
+
+
+def test_bare_aid_oobi_answer_that_gives_no_key_state_is_marked_failed():
+    """/oobi/{aid} matches the data-OOBI pattern, so its AID arrives as obr.said. A CESR answer
+    to it is that AID's KEL, so it resolves only when it gives key state for that AID,
+    whether or not the connection was verified."""
+    with openHby(name="oobi-src-bare") as src, openHby(name="oobi-dst-bare") as dst:
+        pre, stream = _witnessOobi(src, "wit")
+        oobiery = Oobiery(hby=dst)
+
+        empty = _answerOobi(oobiery, dst, f"http://127.0.0.1:5555/oobi/{pre}", _cesr(b""))
+        assert empty.state == Result.failed
+
+        full = _answerOobi(oobiery, dst, f"http://127.0.0.1:5556/oobi/{pre}", _cesr(stream))
+        assert full.state == Result.resolved
+        assert full.cid == pre
