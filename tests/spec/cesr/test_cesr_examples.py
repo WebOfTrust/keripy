@@ -15,18 +15,18 @@ def test_cesr_examples():
 
     # Trans Indexed Sig Group
     # Ean inception taken from keri examples
-    raw = (b'{"v":"KERICAACAAJSONAAKp.","t":"icp","d":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXj'
-                        b'BUcMVtvhmB","i":"EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB","s":"0","kt":'
+    raw = (b'{"v":"KERICAACAAJSONAAKk.","t":"icp","d":"EMZBnss7FmDlFir3D6hpNyyNYyuDWYARuV'
+                        b'SUslB-8uRN","i":"EMZBnss7FmDlFir3D6hpNyyNYyuDWYARuVSUslB-8uRN","s":"0","kt":'
                         b'"2","k":["DBFiIgoCOpJ_zW_OO0GdffhHfEvJWb1HxpDx95bFvufu","DG-YwInLUxzVDD5z8Sq'
                         b'ZmS2FppXSB-ZX_f2bJC_ZnsM5","DGIAk2jkC3xuLIe-DI9rcA0naevtZiKuU9wz91L_qBAV"],"'
                         b'nt":"2","n":["ELeFYMmuJb0hevKjhv97joA5bTfuA8E697cMzi8eoaZB","ENY9GYShOjeh7qZ'
                         b'UpIipKRHgrWcoR2WkJ7Wgj4wZx1YT","EGyJ7y3TlewCW97dgBN-4pckhCqsni-zHNZ_G8zVerPG'
                         b'"],"bt":"3","b":["BGKV6v93ue5L5wsgk75t6j8TcdgABMN9x-eIyPi96J3B","BJfueFAYc7N'
                         b'_V-zmDEn2SPCoVFx3H20alWsNZKgsS1vt","BAPv2MnoiCsgOnklmFyfU07QDK_93NeH9iKfOy8V'
-                        b'22aH","BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB"],"c":["DID"],"a":[]}')
+                        b'22aH","BA4PSatfQMw1lYhQoZkSSvOCrE0Sdw1hmmniDL-yDtrB"],"c":[],"a":[]}')
 
-    pre = 'EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB'
-    said = 'EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB'
+    pre = 'EMZBnss7FmDlFir3D6hpNyyNYyuDWYARuVSUslB-8uRN'
+    said = 'EMZBnss7FmDlFir3D6hpNyyNYyuDWYARuVSUslB-8uRN'
     snh = '0'
 
     salt = b'kerispecworkexam'  # for example
@@ -52,12 +52,12 @@ def test_cesr_examples():
     buf.extend(Counter.enclose(qb64=sigs, code=Codens.ControllerIdxSigs))
     msgs.extend(Counter.enclose(qb64=buf, code=Codens.TransIdxSigGroups))
 
-    assert msgs == bytearray(b'-XBfEPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB0AAAAAAAAAAAAAAA'
-          b'AAAAAAAAEPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB-KBCAADQ-rNV'
-          b'53XEXW1mI24X6uK3LlSMxqQxzM3HuWv_rbEkGP8kVjEYjzrBg8o5hRCxXPnoO2zp'
-          b'Hmh52OdUdog7xb0BABCD_iSjAJvu9JsXHBAnCCTGCA-YSTKiRG-y6gUV42tzkL11'
-          b'OSEqRztXZOq4yCBHcf4WTPT8fsMoaJGbW1a5JFkPACBcPS0C_QwGdJUZTKXvC_qC'
-          b's6069pqV8rdQymrJTdcmJAEYJDJXuHUc6sjgdb0_VlPYIPtVZ9ypbRhkkuXJOykL')
+    assert msgs == bytearray(b'-XBfEMZBnss7FmDlFir3D6hpNyyNYyuDWYARuVSUslB-8uRN0AAAAAAAAAAAAAAA'
+          b'AAAAAAAAEMZBnss7FmDlFir3D6hpNyyNYyuDWYARuVSUslB-8uRN-KBCAADNFAA0'
+          b'6MdZyB47oirQH540n9dMkQjlBxPMybC3hMQoKup35H4UOfA2QIGhbjqZ1cR2gV2G'
+          b'9R_tQ-U_hf73-HELABDGEnrykO6dNBAexQ1_XKWSUrUzbyFYCKv6w8pAP66pdcSl'
+          b'o0-NhDBGg5fSMRzUbS1RX02smM6youZ30Cfri30GACByOZzmxKZdTJdPVKnWybkw'
+          b'TUfcfxZhg4FwOYzbx7rO4N27t2zB-W3U7fie_vG7yrteSA1JcvEbZShc16yHbHAB')
 
     # Said computation
     field0 = "field_0_01234567"
@@ -169,7 +169,7 @@ def test_cesr_examples():
     """Done Test"""
 
     # Sad path
-    ean = 'EPR7FWsN3tOM8PqfMap2FRfF4MFQ4v3ZXjBUcMVtvhmB'
+    ean = 'EMZBnss7FmDlFir3D6hpNyyNYyuDWYARuVSUslB-8uRN'
     amy = "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz"
     bob = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"
     cal = "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT"
