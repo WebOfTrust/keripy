@@ -4257,6 +4257,10 @@ class Kevery:
         sequence number of each establishment event.  If sn represents an interaction event (ixn) it
         searches backwards for the last establishment event prior to sn and returns that witness state.
 
+        When sn is at or after the last establishment event of the current key state, and at or
+        before its latest event, that establishment event is where the walk back ends, so its
+        witness state is read directly without the walk.
+
         Parameters:
             pre (str): identifier prefix qb64
             sn (int): sequence number of the event for which witness state is desired
@@ -4264,6 +4268,9 @@ class Kevery:
         Returns:
             list:  list of Prefixer objects representing the witness state for the identifier prefix at
                 the sequence number"""
+        if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:
+            return self.db.wits.get(keys=(pre, lastEst.d))
+
         preb = pre.encode("utf-8")
         for digb in self.db.kels.getBackIter(keys=preb, on=sn):
             serder = self.db.evts.get(keys=(preb, digb))
@@ -4272,6 +4279,24 @@ class Kevery:
                 return wits
 
         return []
+
+
+    def _fetchLastEstLoc(self, pre, sn):
+        """Returns LastEstLoc of the last establishment event of the current key state of pre when
+        sn lies between it and the latest event of that key state, None otherwise. In that range
+        the backward walk would end at that establishment event, so callers may skip it. This
+        checks only the range; it does not check that an event is stored at sn.
+
+        Parameters:
+            pre (str): identifier prefix qb64
+            sn (int): sequence number of event in KEL of pre
+        """
+        if pre not in self.kevers:  # reads through to db
+            return None
+        kever = self.kevers[pre]
+        if kever.lastEst.s <= sn <= kever.sn:
+            return kever.lastEst
+        return None
 
 
     def processEvent(self, serder, sigers, *, wigers=None, delsner=None, delsger=None,
@@ -5692,6 +5717,15 @@ class Kevery:
         Parameters:
             pre: qb64 of identifier prefix for KEL
             sn: int sequence number of event in KEL of pre"""
+        if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:  # no need to walk back
+            # same first step as the walk: no event at sn means None
+            if not (dig := self.db.kels.getLast(keys=pre, on=sn)):
+                return None
+            if not (serder := self.db.evts.get(keys=(pre, dig))):
+                return None
+            if dig == lastEst.d:  # sn is the establishment event itself
+                return serder
+            return self.db.evts.get(keys=(pre, lastEst.d))
 
         found = False
         while not found:
