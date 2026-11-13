@@ -1507,6 +1507,7 @@ class IpexHandler:
             # Resolve node-local source triples into exact TEL anchor claims.
             sources = {}
             unresolved = False
+            missingUpdate = None
             if requireSource:
                 for prefixer, number, diger in sourceSeals or []:
                     if prefixer.qb64 != controller:
@@ -1530,6 +1531,25 @@ class IpexHandler:
                         unresolved = True
                         continue
 
+                    # Check the event's anchors
+                    for seal in event.ked.get("a", []):
+                        if not isinstance(seal, Mapping) or seal.get("i") != regk:
+                            continue
+                        try:
+                            sn = Number(numh=seal["s"]).num
+                            Diger(qb64=seal["d"])
+                        except (KeyError, TypeError, ValueError, KeriError):
+                            sn = None
+                        if sn is None:
+                            continue
+
+                        # Check the local TEL for the registry update
+                        update = self.rgy.store.seqEvent(regk, sn)
+
+                        # If none is found the verifier is behind
+                        if update is None:
+                            missingUpdate = (sn, seal["d"])
+
                     # Match the source only to TEL events it actually seals.
                     for update in evidence[1]:
                         if regeventing._verifyAnchorCouple(
@@ -1539,6 +1559,11 @@ class IpexHandler:
                                 number=number,
                                 diger=diger):
                             sources[update.said] = diger.qb64
+
+                if missingUpdate is not None:
+                    sn, said = missingUpdate
+                    raise MissingChainError(
+                        f"missing presentation registry update {sn} {said} for {regk}")
 
                 # An unavailable attached source is retryable after KEL retrieval.
                 if not sources and unresolved:
