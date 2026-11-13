@@ -738,8 +738,7 @@ def test_genus_code_in_one_oobi_answer_does_not_govern_the_next():
 
 def test_bare_aid_oobi_answer_that_gives_no_key_state_is_marked_failed():
     """/oobi/{aid} matches the data-OOBI pattern, so its AID arrives as obr.said. A CESR answer
-    to it is that AID's KEL, so it resolves only when it gives key state for that AID,
-    whether or not the connection was verified."""
+    to it is that AID's KEL, so it resolves only when it gives key state for that AID."""
     with openHby(name="oobi-src-bare") as src, openHby(name="oobi-dst-bare") as dst:
         pre, stream = _witnessOobi(src, "wit")
         oobiery = Oobiery(hby=dst)
@@ -753,7 +752,7 @@ def test_bare_aid_oobi_answer_that_gives_no_key_state_is_marked_failed():
 
 
 def test_unsigned_aid_header_does_not_redirect_an_oobi_whose_url_names_an_aid():
-    """The KERI-AID header is unsigned, and plain http counts as verified. When the URL names
+    """The KERI-AID header is unsigned, so anyone on the path can set it. When the URL names
     an AID, the verdict and the alias stay with that AID whatever the header says."""
     with openHby(name="oobi-dst-hdr") as dst:
         held = dst.makeHab(name="held", transferable=False).pre

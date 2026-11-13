@@ -486,29 +486,51 @@ class Oobiery:
             except ValueError as ex:
                 print(f"error requesting invalid OOBI URL {ex}", url)
 
-    def unresolved(self, obr):
+    # event escrows keyed by (pre, sn) whose events may yet be accepted
+    EventEscrows = ("ooes", "pses", "pwes", "pdes", "ldes")
+
+    def unresolved(self, obr, body):
         """Return why a parsed CESR OOBI answer left the OOBI unresolved, or None.
 
         The parser logs and discards what it cannot extract or verify, so success is judged
         by what the answer left in the database: key state for the AID the OOBI names, and
-        for a witness OOBI naming a witness, a location for that witness. An OOBI that names
-        no AID (a blind introduction answered without a verified KERI-AID header) has
-        nothing to check and is taken as resolved.
+        for an OOBI naming an endpoint eid, a location for that endpoint. An empty answer
+        never resolves. An OOBI that names no AID (a blind introduction answered without a
+        KERI-AID header) has no further check.
+
+        Limitation: key state already held before the answer satisfies the check, so an
+        answer to a re-resolved OOBI that was discarded cannot be told from one that had
+        nothing new. Detecting stale key state is a watcher's job, not resolution's.
 
         Parameters:
             obr (OobiRecord): record of the OOBI whose answer was just parsed
+            body (bytes): the answer as received
 
         Returns:
             str|None: reason the OOBI is unresolved, or None when it resolved
         """
+        if not body:
+            return "answer was empty"
+
         if obr.cid and obr.cid not in self.hby.kevers:
             return f"answer gave no key state for {obr.cid}"
 
-        if obr.role == Roles.witness and obr.eid and not any(
+        if obr.eid and not any(
                 loc.url for _, loc in self.hby.db.locs.getTopItemIter(keys=(obr.eid, ""))):
-            return f"answer gave no location for witness {obr.eid}"
+            return f"answer gave no location for {obr.role} {obr.eid}"
 
         return None
+
+    def escrowed(self, pre):
+        """Return True when an event of pre is held in an event escrow, so its key state may
+        yet arrive without a new answer, as when receipts or a delegator's seal come late or
+        out of order.
+
+        Parameters:
+            pre (str): qb64 identifier prefix
+        """
+        return any(next(getattr(self.hby.db, name).getAllItemIter(keys=pre), None) is not None
+                   for name in self.EventEscrows)
 
     def processClients(self):
         """ Process Client responses by parsing the messages and removing the client/doer"""
@@ -541,22 +563,40 @@ class Oobiery:
                     "application/cesr+json",
                 ):  # CESR Stream response to OOBI (canonical + legacy variants)
                     # Each answer is its own CESR stream, so a genus/version code at the
-                    # head of an earlier answer must not govern this one. Reset here rather
-                    # than pass version to parse, which would also reset between the
-                    # messages of this one stream.
+                    # head of an earlier answer must not govern this one; within the answer
+                    # it still governs every later message. Reset here rather than pass
+                    # version to parse: allParsator hands version to each groupParsator
+                    # call, and after an error in one message that would reset the version
+                    # for the rest of this answer.
+                    body = bytes(response["body"])
                     self.parser.version = self.version
-                    self.parser.parse(ims=bytearray(response["body"]))
-                    if OOBI_AID_HEADER in response["headers"]:
-                        obr.cid = response["headers"][OOBI_AID_HEADER]
-                    elif obr.cid is None and obr.said:
+                    self.parser.parse(ims=bytearray(body))
+                    if obr.cid is None and obr.said:
                         # /oobi/{aid} matches the data-OOBI pattern, so its AID arrives as
-                        # obr.said. A CESR answer to it is that AID's KEL, so without the
-                        # header the alias goes to, and resolution is judged by, the AID the
-                        # path names.
+                        # obr.said. A CESR answer to it is that AID's KEL.
                         obr.cid = obr.said
+                    elif obr.cid is None and OOBI_AID_HEADER in response["headers"]:
+                        # The header is unsigned, so it may only name the AID of an OOBI
+                        # whose URL names none, never replace the one the URL names.
+                        obr.cid = response["headers"][OOBI_AID_HEADER]
 
                     self.hby.db.coobi.rem(keys=(url,))
-                    if (reason := self.unresolved(obr)) is None:
+                    reason = self.unresolved(obr, body)
+                    if reason is not None and obr.cid and obr.cid not in self.hby.kevers:
+                        self.parser.kvy.processEscrows()  # what escrowed may complete now
+                        if obr.cid in self.hby.kevers:
+                            reason = self.unresolved(obr, body)
+                        elif self.escrowed(obr.cid):
+                            # not failed: retry after RetryDelay, by when receipts or seals
+                            # may have arrived. Escrow timeouts bound how long this lasts.
+                            logger.info("OOBI %s: events of %s escrowed, will retry",
+                                        url, obr.cid)
+                            obr.date = toIso8601(nowUTC())
+                            self.hby.db.eoobi.pin(keys=(url,), val=obr)
+                            continue
+
+                    self.hby.db.eoobi.rem(keys=(url,))
+                    if reason is None:
                         if obr.oobialias is not None and obr.cid:
                             self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
                         obr.state = Result.resolved
