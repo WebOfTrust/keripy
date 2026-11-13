@@ -489,7 +489,7 @@ class Oobiery:
     # event escrows keyed by (pre, sn) whose events may yet be accepted
     EventEscrows = ("ooes", "pses", "pwes", "pdes", "ldes")
 
-    def unresolved(self, obr, body):
+    def judgeAnswer(self, obr, body):
         """Return why a parsed CESR OOBI answer left the OOBI unresolved, or None.
 
         The parser logs and discards what it cannot extract or verify, so success is judged
@@ -521,7 +521,7 @@ class Oobiery:
 
         return None
 
-    def escrowed(self, pre):
+    def isEscrowed(self, pre):
         """Return True when an event of pre is held in an event escrow, so its key state may
         yet arrive without a new answer, as when receipts or a delegator's seal come late or
         out of order.
@@ -581,12 +581,12 @@ class Oobiery:
                         obr.cid = response["headers"][OOBI_AID_HEADER]
 
                     self.hby.db.coobi.rem(keys=(url,))
-                    reason = self.unresolved(obr, body)
+                    reason = self.judgeAnswer(obr, body)
                     if reason is not None and obr.cid and obr.cid not in self.hby.kevers:
                         self.parser.kvy.processEscrows()  # what escrowed may complete now
                         if obr.cid in self.hby.kevers:
-                            reason = self.unresolved(obr, body)
-                        elif self.escrowed(obr.cid):
+                            reason = self.judgeAnswer(obr, body)
+                        elif self.isEscrowed(obr.cid):
                             # not failed: retry after RetryDelay, by when receipts or seals
                             # may have arrived. Escrow timeouts bound how long this lasts.
                             logger.info("OOBI %s: events of %s escrowed, will retry",
