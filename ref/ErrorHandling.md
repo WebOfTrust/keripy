@@ -160,6 +160,7 @@ suitable or descriptive enough for the named condition.
 |-------|----------------------|
 | Resources / config | `ClosedError`, `ConfigurationError` |
 | AuthN / AuthZ | `AuthError`, `AuthNError`, `AuthZError`, `DecryptError` |
+| HTTP message signatures (under `AuthNError`) | `HttpSigError` and one `HttpSig…Error` subclass per refusal code of the KERI profile of RFC 9421, e.g. `HttpSigUnknownKeyError`, `HttpSigSignatureMismatchError`; each carries its kebab-case code as `.code`. Raised by `keri.end.httpsigning` when verifying a peer's message; a signer's own failures there are `ValueError` |
 | Database | `DatabaseError`, `MissingEntryError` |
 | Material (crypto init) | `MaterialError`, `RawMaterialError`, `SoftMaterialError`, `EmptyMaterialError`, `InvalidVersionError`, `InvalidCodeError`, `InvalidSoftError`, `InvalidTypeError`, `InvalidValueError`, `InvalidSizeError`, and size subclasses |
 | Serialize | `SerializeError` |

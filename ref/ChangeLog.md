@@ -51,6 +51,53 @@ caller is therefore part of its contract, so converting a raw raise on the extra
 to an intake type changes what parseOneBare raises. Parser.parse and parseOne are
 unchanged.
 
+*** New keri.end.httpsigning: canonical RFC 9421 HTTP Message Signatures under the KERI
+profile of RFC 9421, version 1.2, with RFC 9530 Content-Digest, beside a verifier for the
+legacy KERI signed-header scheme of keri.end.ending so a server can accept both while
+clients upgrade. keri.end.ending is unchanged.
+- signRequest and signResponse sign; verifyRequest and verifyResponse verify either mode
+  and return a Verified; checkBody completes a verification made before the body was
+  read (body=Deferred). Policy sets the verifier's minimum coverage, authorities and
+  freshness, and refuses a configuration below the profile's floor with ValueError.
+- A refusal raises a kering.HttpSigError, an AuthNError, whose .code is the profile's
+  kebab-case refusal code, so a server that maps AuthNError to 401 needs no new except
+  clause. errorForCode maps a code back to its class.
+- The refusal classes are defined in keri.kering with keripy's other errors, and named
+  HttpSig<Refusal>Error: HttpSigMissingSignatureError, HttpSigMissingSignatureInputError,
+  HttpSigMalformedSignatureError, HttpSigMalformedSignatureInputError,
+  HttpSigMalformedSignatureLabelError, HttpSigMissingSignatureLabelError,
+  HttpSigMalformedSignatureValueError, HttpSigModeMismatchError,
+  HttpSigDuplicateComponentError, HttpSigUnsupportedComponentError,
+  HttpSigInsufficientCoverageError, HttpSigMalformedKeyError, HttpSigUnknownKeyError,
+  HttpSigUnsupportedSignerError, HttpSigUnsupportedAlgorithmError,
+  HttpSigMissingComponentError, HttpSigSignatureMismatchError, HttpSigSignatureStaleError,
+  HttpSigSignatureExpiredError, HttpSigMalformedDigestError, HttpSigDigestMismatchError,
+  HttpSigUncoveredBodyError and HttpSigUnauthenticatedError. keri.end.httpsigning
+  imports them, so httpsigning.HttpSigUnknownKeyError and kering.HttpSigUnknownKeyError
+  are the same class. Earlier drafts of this module named them without the HttpSig
+  prefix and Error suffix (MissingSignature, UnknownKey, ...) and defined them in
+  keri.end.httpsigning; those names are gone, with no aliases.
+- A signer's own failure (an unsupported or absent component, a hab without a single
+  effective signer, a key that is not Ed25519) is a ValueError naming the code, with the
+  HttpSigError as its cause. Only the two signer refusals the profile names,
+  uncovered-body and insufficient-coverage, are raised as HttpSigError.
+- KeverResolver resolves a keyid against kevers. Canonical mode verifies with the key
+  state's single effective signer (effectiveVerfer). Legacy mode accepts a signature that
+  verifies under any current key that alone satisfies the signing threshold
+  (sufficientVerfers), so '1' over two keys verifies from either key, and refuses a key
+  state with no such key, such as a 2-of-3 group, as unsupported-signer.
+  KeverResolver.legacy returns that list, and verifyLegacy takes verfers to try.
+- A B keyid's key is its prefix, and no resolver is consulted for it; another
+  non-transferable keyid is unsupported-algorithm. A B keyid, a resolved key, or a
+  verifyResponse expected keyid whose key is not a point of Ed25519's prime-order
+  subgroup is refused (malformed-key, or ValueError for the caller's expected keyid).
+- @authority drops only the default port of the scheme the request was sent with:
+  signatureBase, signRequest and verifyRequest take scheme, and Requestage carries it.
+  With no scheme, as for a verifier with only Host, no port is removed.
+- now is floored to whole seconds; one that is not a finite int or float, or is a bool,
+  is a TypeError or ValueError. Byte Sequences without '=' padding are accepted in
+  Signature and Content-Digest.
+
 
 ## 2.0.0-dev6
 
