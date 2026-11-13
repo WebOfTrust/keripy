@@ -4337,7 +4337,8 @@ class Kevery:
                       (ilk == Ilks.rot and  # superseding recovery rot or
                         kever.lastEst.s < sn <= sno) or
                       (ilk == Ilks.drt and #exts['sigers'].extend(result) delegated superseding recovery drt
-                        kever.lastEst.s <= sn <= sno)):
+                        kever.lastEst.s <= sn <= sno and
+                        said != kever.lastEst.d)):
 
                     # verify signatures etc and update state if valid
                     # raise exception if problem.
@@ -6407,7 +6408,7 @@ class Kevery:
                 # valid event escrow.
                 self.db.pwes.rem(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
-                logger.info("Kevery: PWE unescrow succeeded in valid event: key = %s \tdigest = %s",
+                logger.info("Kevery: PWE unescrow succeeded in valid event: pre = %s sn = %s \tdigest = %s",
                            pre, sn, edig.decode())
                 logger.debug("Event=\n%s\n", eserder.pretty())
 

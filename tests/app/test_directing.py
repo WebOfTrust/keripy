@@ -6,6 +6,7 @@ tests.db.dbing module
 
 import logging
 import os
+import socket
 
 from hio.base import doing
 from hio.help import ogler
@@ -197,7 +198,11 @@ def test_runcontroller_demo(unused_tcp_port_factory):
                                 localPort=local,
                                 kind=Kinds.cesr)
 
-    runController(doers=doers, expire=expire)
+    # Listen on the remote port so the demo client connects. Recent macOS
+    # reports EISCONN after a refused nonblocking connect, which hio's Client
+    # treats as connected and then fails on getpeername().
+    with socket.create_server(("127.0.0.1", remote)):
+        runController(doers=doers, expire=expire)
 
     ogler.resetLevel(level=ogler.level)
     """End Test"""
