@@ -493,3 +493,28 @@ if __name__ == "__main__":
     test_mailbox_iter()
     test_qrymailbox_iter()
     test_wit_query_ends()
+
+
+def test_poller_mailbox_query_builds_at_the_default_version():
+    """A mailbox qry's topics map is keyed by routes such as '/receipt', which are not valid
+    strict native-CESR labels. At the default version, with no kind given, the Poller must
+    still build the query (as JSON) rather than fail to serialize it, which stopped kli
+    rotate and interact before they reached any witness. An explicit kind is honoured."""
+    from keri.app.indirecting import Poller
+    from keri.recording import TopicsRecord
+
+    with openHby(name="poller-default") as hby:
+        hab = hby.makeHab(name="ctl")
+        poller = Poller(hab=hab, witness=hab.pre, topics=["/receipt", "/replay", "/reply"])
+
+        msg = poller.makeQuery(TopicsRecord(topics={"/receipt": 3}))
+
+        serder = SerderKERI(raw=bytearray(msg))
+        assert serder.ilk == Ilks.qry
+        assert serder.kind == Kinds.json
+        assert serder.pvrsn == hby.version
+        assert serder.ked["q"]["topics"] == {"/receipt": 4, "/replay": 0, "/reply": 0}
+
+        poller = Poller(hab=hab, witness=hab.pre, topics=["/receipt"], kind=Kinds.mgpk)
+        assert SerderKERI(raw=bytearray(poller.makeQuery(TopicsRecord(topics={})))).kind \
+               == Kinds.mgpk
