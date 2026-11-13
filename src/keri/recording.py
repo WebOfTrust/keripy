@@ -404,6 +404,127 @@ class LocationRecord:  # baser.locs
 
 
 @dataclass
+class DeclRecord:  # baser.decls
+    """
+    Self-declaration Record holding what an identifier says about itself. The eid is usually a
+    nontransferable identifier, because the motivating case is a witness: a witness AID cannot be
+    transferable (it would need witnesses of its own and the definition would not terminate), so
+    its prefix is its public key and commits to nothing in its inception event, and nothing in the
+    ecosystem fetches its KEL because verifying its receipts needs the prefix alone. A declaration
+    reply is therefore the only way a witness can say anything about itself that travels.
+
+    Database Keys are (eid, kind) where eid is the declaring identifier (qb64 prefix) and kind is
+    one of Decls. Kinds are keyed separately, and that is the point: BADA orders each route on its
+    own, so replacing a contact address does not re-stamp an unrelated declaration.
+
+    Two kinds, divided by shape rather than by trust.
+
+    ``tags`` are bare names, which is why they are names rather than key/value pairs: a set of
+    names unions across a witness set, and key/value pairs do not — three witnesses declaring three
+    different regions have no natural merge.
+
+    ``attribs`` are key/value strings. A consumer may act on an attrib, for example by pinning TLS
+    to a declared certificate fingerprint or verifying a feed against a declared key, provided it
+    reads the value from the reply that BADA accepted for ``/decl/attribs``:
+
+    - the reply verifies under the declarer's current key state. For a non-transferable declarer,
+      such as a witness, that is the key ``eid`` itself; for a transferable one it is the signing
+      keys its KEL establishes, and BADA orders by establishment event before ``dt``;
+    - it is the newest reply by ``dt`` that the consumer has accepted for the route. A reply with
+      the same ``dt`` as the accepted one is not newer, so the first one accepted stands;
+    - a newer reply replaces the whole map rather than amending it, so a key the newest reply
+      leaves out is no longer claimed, and an empty map withdraws every earlier claim;
+    - a key the consumer does not understand is treated as absent, and so is a key it does
+      understand whose value it does not recognize. Neither is acted on, and neither is a reason
+      to refuse the rest of the map.
+
+    The same rules order and replace ``tags``, which a consumer may act on in the same way.
+
+    This record holds exactly that map: only an accepted reply writes it, ``.dans`` names the reply
+    it came from, and a map that is not strings to strings is refused before BADA.
+
+    BADA orders replies; it does not make them fresh. A consumer that has never seen the newer reply
+    will accept an older one, and a declarer that stamps a reply in the future holds that map until
+    the clock passes it. A consumer that pins against an attrib should therefore get it from the
+    declarer itself, by resolving the declarer's own OOBI, and re-fetch it as often as the pin
+    matters, rather than act on a copy a relay handed it long ago.
+
+    Acceptance proves the declarer said it, and that nothing newer from the declarer has reached
+    this consumer. It does not prove the claim true. That is enough for a claim about the declarer's own keys and endpoints, because the
+    declarer is the authority on those and a false one only breaks its own consumers. A claim about
+    the world, such as a location or an operator name, is still only the declarer's word; a
+    declaration against interest -- that this witness is test infrastructure -- is the kind worth
+    taking on that word alone, because nobody gains by making it falsely.
+
+    Conventions. keripy enforces no vocabulary, but these names mean the same thing wherever they
+    appear, so any witness can declare them and any consumer can read them.
+
+    The ``testnet`` tag says the witness belongs to an experimental, test or demonstration
+    environment and carries no real-world consequence.
+
+    The ``fips-posture`` attrib states the witness's FIPS posture. keripy does not enforce it. A
+    consumer can test part of the claim by offering a code the posture does not admit, but whether
+    the witness's modules are validated is still only the witness's word. Its values are:
+
+    - ``strict``: every algorithm the witness uses is FIPS-approved and comes from a validated
+      module.
+    - ``hybrid``: the witness admits only AIDs that use FIPS-approved codes, but it verifies
+      evidence that uses some codes that are not FIPS-approved.
+
+    An absent ``fips-posture`` means the witness makes no FIPS claim. It does not mean the witness
+    is not FIPS-capable.
+
+    The ``tls-cert-sha256`` attrib names the TLS certificates the declarer serves https under, so
+    a consumer can authenticate the connection by the declarer's key state instead of a
+    certificate authority. Its value is one or more SHA-256 digests of the DER-encoded leaf
+    certificate -- the whole certificate, not its public key -- each written as 64 lowercase hex
+    digits, separated by single spaces. A declarer renewing its certificate declares the old and
+    the new together until it has switched, and then declares the new alone, so no consumer is
+    refused during the overlap. A consumer that pins against it (keripy's ``PinnedClientTls``)
+    accepts a certificate whose digest is any listed value, in place of the CA and hostname
+    checks, and refuses any other. A value in any other form is not in the convention and is
+    treated as absent, which leaves the consumer to its ordinary CA check.
+
+    A decl reply message is required from which the values of this record are extracted. Routes are
+    /decl/tags and /decl/attribs. Uses enact-anul model: an empty tags list or attribs map
+    nullifies the declaration.
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/decl/tags",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "tags": ["testnet"],
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rpy",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/decl/attribs",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "attribs": {"operator": "Example Org", "contact": "mailto:ops@example.com",
+                     "fips-posture": "strict"},
+      }
+    }
+
+    """
+    tags: list[str] = field(default_factory=list)  # bare names from the accepted reply
+    attribs: dict[str, str] = field(default_factory=dict)  # key/value from the accepted reply
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
 class ObservedRecord:  # baser.obvs
     """
     Watched Record with fields and keys to manage OIDs (Observed IDs) being watched by a watcher, keyed by

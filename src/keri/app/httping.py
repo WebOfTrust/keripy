@@ -4,17 +4,21 @@ keri.peer.httping module
 
 """
 import datetime
+import hashlib
 import json
+import re
+import ssl
+import time
 from dataclasses import dataclass
 from urllib import parse
 
 import falcon
 from hio.base import doing
-from hio.core import http
+from hio.core import http, tcp
 from hio.help import Hict, ogler
 
 from ..kering import (ShortageError, ExtractionError,
-                      ColdStartError, sniff, Colds)
+                      ColdStartError, sniff, Colds, Decls, Schemes)
 from ..core import SerderKERI
 from ..end import designature
 from ..help import nowUTC
@@ -211,6 +215,294 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     return cnt
 
 
+# The attrib a peer declares, in a /decl/attribs reply, to say which TLS certificate it serves.
+TLS_CERT_PIN_ATTRIB = "tls-cert-sha256"
+
+# Status of the response a PinnedClient gives a request it refused, after nginx's 495 "SSL
+# Certificate Error". It never came from the peer, which is why it is not a standard code.
+TLS_PIN_REFUSED_STATUS = 495
+
+# The convention in DeclRecord: one or more lowercase hex SHA-256 digests, single-space separated.
+_PinList = re.compile(r"[0-9a-f]{64}(?: [0-9a-f]{64})*")
+
+
+def fetchCertPins(db, eid):
+    """Return the SHA-256 digests of the TLS certificates ``eid`` declared, or None.
+
+    The value is read from the /decl/attribs map that BADA accepted for ``eid`` itself (see
+    DeclRecord), so the pins are authenticated by the peer's own key state, not by a certificate
+    authority. More than one lets a peer renewing its certificate declare the old and the new
+    together. A value outside the convention DeclRecord writes down is treated as absent, as
+    DeclRecord requires, which leaves the connection to the CA check; it is logged, because a
+    silently ignored pin looks exactly like a peer that never declared one.
+
+    Parameters:
+        db (Baser): database holding accepted declarations
+        eid (str): qb64 prefix of the peer being connected to
+
+    Returns:
+        frozenset[bytes] | None: the 32-byte digests, or None when nothing usable is declared."""
+    record = db.decls.get(keys=(eid, Decls.attribs))
+    if record is None:
+        return None
+    value = record.attribs.get(TLS_CERT_PIN_ATTRIB)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not _PinList.fullmatch(value):
+        logger.warning("Ignoring %s=%r declared by %s: not lowercase hex SHA-256 digests "
+                       "separated by single spaces.", TLS_CERT_PIN_ATTRIB, value, eid)
+        return None
+    return frozenset(bytes.fromhex(digest) for digest in value.split(" "))
+
+
+def _makeUnverifiedContext():
+    """A client context that completes a handshake without judging the certificate.
+
+    The handshake still proves the server holds the private key of the certificate it shows; what
+    is skipped is the CA chain and the hostname, which the caller replaces with its own check."""
+    context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
+class PinnedClientTls(tcp.ClientTls):
+    """A hio TLS connector that accepts only a certificate whose SHA-256 is one of ``pins``.
+
+    The pin replaces the CA and hostname checks rather than adding to them, because the peer it is
+    for has no CA. The comparison runs as soon as the handshake completes and before the connector
+    reports itself connected, so a mismatch closes the connection with nothing sent over it.
+
+    Why a pin and not simply skipping verification for witnesses: KERI messages are signed, so an
+    interloper on an unverified connection cannot forge events or receipts, but it can read the
+    traffic, including the Authorization header HTTPMessenger sends with witness 2FA codes. A pin
+    authenticates the peer by its own key state and closes that.
+
+    A mismatch is refused, not raised. It is routine -- a witness renews its certificate before
+    this consumer has re-resolved its OOBI -- and an exception from the handshake leaves hio's
+    ClientDoer and ends the whole Doist, which on restart reads the same pin and ends again. So the
+    connector logs an error naming the remedy, marks itself ``refused``, and stays closed. While
+    refused it asks ``repin`` for the peer's current pins at most every ``RepinDelay`` seconds, and
+    connects again once they have changed, so re-resolving the peer's OOBI reaches a client that
+    is already running instead of only the next one built.
+
+    Attributes:
+        pins (frozenset[bytes]): SHA-256 digests, one of which a presented certificate must have
+        refused (bool): True while the last presented certificate failed the pins
+        repin (Callable[[], frozenset[bytes] | None] | None): returns the peer's current pins
+    """
+
+    RepinDelay = 5.0  # seconds between looks for a new declaration while refused
+
+    def __init__(self, pins, repin=None, **kwa):
+        """
+        Parameters:
+            pins (Iterable[bytes]): SHA-256 digests of the DER certificates the peer may present
+            repin (Callable | None): returns the peer's current pins, or None; see class docstring
+            **kwa: passed to tcp.ClientTls, typically host and port"""
+        pins = frozenset(pins)
+        size = hashlib.sha256().digest_size
+        if not pins or not all(isinstance(pin, bytes) and len(pin) == size for pin in pins):
+            raise ValueError("TLS pins are one or more 32-byte SHA-256 digests of certificates.")
+        super(PinnedClientTls, self).__init__(context=_makeUnverifiedContext(), **kwa)
+        self.pins = pins
+        self.repin = repin
+        self.refused = False
+        self._nextRepin = 0.0
+
+    def connect(self):
+        """Attempt a connection, unless the last certificate failed the pins and no new ones have
+        been declared since."""
+        if self.refused and not self._acceptRepin():
+            return False
+        return super(PinnedClientTls, self).connect()
+
+    def _acceptRepin(self):
+        """Return True after taking a changed set of pins from ``repin``."""
+        now = time.monotonic()
+        if self.repin is None or now < self._nextRepin:
+            return False
+        self._nextRepin = now + self.RepinDelay
+        pins = self.repin()
+        if not pins or pins == self.pins:
+            return False
+        logger.info("New TLS pins declared for %s; connecting again.", self.ha)
+        self.pins = frozenset(pins)
+        self.refused = False
+        return True
+
+    def handshake(self):
+        """Complete the handshake, then refuse the connection unless the certificate is pinned."""
+        if not super(PinnedClientTls, self).handshake():
+            return False
+        der = self.cs.getpeercert(binary_form=True)
+        digest = hashlib.sha256(der).digest() if der is not None else None
+        if digest not in self.pins:  # the pins are public, so no constant-time compare is needed
+            self.close()
+            self.refused = True
+            self._nextRepin = time.monotonic() + self.RepinDelay
+            logger.error("Refused TLS connection to %s: its certificate (SHA-256 %s) is not one "
+                         "it declared (%s). If it renewed its certificate, re-resolve its OOBI "
+                         "to learn the new declaration.", self.ha,
+                         digest.hex() if digest else None,
+                         " ".join(sorted(pin.hex() for pin in self.pins)))
+            return False
+        return True
+
+
+class BootstrapClientTls(tcp.ClientTls):
+    """A hio TLS connector for fetching an OOBI before any pin for its peer is held.
+
+    It makes the ordinary CA and hostname check first. Only if that check fails does it reconnect
+    once without verifying the certificate. That is safe only for an OOBI whose answer is checked
+    against its own URL -- the signed KEL of the AID the path names, or data whose SAID the path
+    names -- and Oobiery uses it for nothing else. The request carries no secret. An interloper
+    can read the answer, withhold it, or replay an older signed one, which BADA accepts when this
+    consumer holds nothing newer -- a superseded /decl/attribs pin among them. It cannot forge
+    one. A caller must not take anything from such a response that is not checked that way, such
+    as the KERI-AID header.
+
+    Attributes:
+        verified (bool | None): True when the CA check passed, False when the connection was made
+            without it, None before a handshake has completed."""
+
+    def __init__(self, **kwa):
+        super(BootstrapClientTls, self).__init__(**kwa)
+        self.verified = None
+
+    def handshake(self):
+        try:
+            done = super(BootstrapClientTls, self).handshake()
+        except ssl.SSLCertVerificationError as ex:
+            if self.verified is False:  # already unverified, so this is not a CA failure
+                raise
+            logger.info("CA check failed for %s (%s); fetching the OOBI without it, since what it "
+                        "returns is verified on arrival.", self.ha, ex)
+            self.verified = False
+            self.context = _makeUnverifiedContext()
+            self.reopen()  # connect() accepts and wraps again under the new context
+            return False
+        if done and self.verified is None:
+            self.verified = True
+        return done
+
+
+def _splitHostPort(url):
+    up = parse.urlparse(url)
+    return up, dict(host=up.hostname, port=up.port or 443)
+
+
+def makeTlsConnector(db, eid, url, **kwa):
+    """Return the connector for an https connection to ``eid``: pinned when it declared a
+    certificate, else None, which leaves hio to make its ordinary CA-checked connection.
+
+    Parameters:
+        db (Baser): database holding accepted declarations
+        eid (str): qb64 prefix of the peer that ``url`` belongs to
+        url (str): the endpoint being connected to
+        **kwa: passed to the connector
+
+    Returns:
+        PinnedClientTls | None"""
+    up, ha = _splitHostPort(url)
+    if up.scheme != Schemes.https:
+        return None
+    pins = fetchCertPins(db, eid)
+    if pins is None:
+        return None
+    return PinnedClientTls(pins=pins, repin=lambda: fetchCertPins(db, eid), **ha, **kwa)
+
+
+def makeBootstrapConnector(url, **kwa):
+    """Return the connector for fetching an OOBI at ``url``, or None for plain http.
+
+    It never consults a pin. Re-resolving a peer's OOBI is how a consumer learns that the peer
+    rotated its certificate, so this fetch must not be held to the pin it is fetching a
+    replacement for.
+
+    Parameters:
+        url (str): the OOBI being fetched
+        **kwa: passed to the connector, such as cafilepath
+
+    Returns:
+        BootstrapClientTls | None"""
+    up, ha = _splitHostPort(url)
+    if up.scheme != Schemes.https:
+        return None
+    return BootstrapClientTls(**ha, **kwa)
+
+
+class PinnedClient(http.clienting.Client):
+    """A hio http Client over a PinnedClientTls that answers every request a refusal leaves
+    stranded.
+
+    A refused connector does not connect, so without this its requests would never get a
+    response, and every caller that waits for one -- Receiptor, the witness inquisitor, a
+    messenger counting replies -- would wait forever on the witness. Each stranded request instead
+    gets a response with status TLS_PIN_REFUSED_STATUS and ``errored`` set, which a caller treats
+    like any failed request."""
+
+    def service(self):
+        super(PinnedClient, self).service()
+        if not self.connector.refused:
+            return
+        stranded = []
+        if self.waited and self.latest is not None:
+            stranded.append(self.latest)
+        stranded.extend(self.requests)
+        self.requests.clear()
+        self.latest = None
+        self.waited = False
+        self.connector.txbs.clear()
+        for request in stranded:
+            # the fields hio adds to the request it reports with a real response
+            request = dict(dict(host=self.requester.hostname, port=self.requester.port,
+                                scheme=self.requester.scheme), **request)
+            self.responses.append(dict(version=None, status=TLS_PIN_REFUSED_STATUS,
+                                       reason="TLS certificate does not match the declared pin",
+                                       headers={}, body=bytearray(), data=None,
+                                       request=request, errored=True,
+                                       error="TLS pin refused"))
+
+
+def makeClient(url, connector=None, **kwa):
+    """Return a hio http Client for ``url`` over ``connector``.
+
+    A PinnedClientTls gets a PinnedClient, so a refusal answers its requests. Either a pinned or a
+    bootstrap connector turns off redirects, because hio rebuilds the connector for a redirect to
+    another host with the same unverified context, and the new one keeps neither the pin nor the
+    record that the connection was unverified.
+
+    Parameters:
+        url (str): the endpoint
+        connector (tcp.ClientTls | None): from makeTlsConnector or makeBootstrapConnector, or None
+            for hio's default
+        **kwa: passed to http.clienting.Client, such as path
+
+    Returns:
+        http.clienting.Client"""
+    up = parse.urlparse(url)
+    if isinstance(connector, (PinnedClientTls, BootstrapClientTls)):
+        kwa["redirectable"] = False
+    klas = PinnedClient if isinstance(connector, PinnedClientTls) else http.clienting.Client
+    return klas(scheme=up.scheme, hostname=up.hostname, port=up.port, connector=connector, **kwa)
+
+
+def makeClientFor(db, eid, url, **kwa):
+    """Return a hio http Client for ``url``, an endpoint of ``eid``, pinned if ``eid`` declared a
+    certificate.
+
+    Parameters:
+        db (Baser): database holding accepted declarations
+        eid (str): qb64 prefix of the peer that ``url`` belongs to
+        url (str): the endpoint being connected to
+        **kwa: passed to http.clienting.Client, such as path
+
+    Returns:
+        http.clienting.Client: a PinnedClient when pinned; see makeClient"""
+    return makeClient(url, connector=makeTlsConnector(db, eid, url), **kwa)
+
+
 class Clienter(doing.DoDoer):
     """
     Clienter is a DoDoer that manages hio HTTP clients using a ClientDoer for each HTTP request.
@@ -237,7 +529,7 @@ class Clienter(doing.DoDoer):
         doers = [doing.doify(self.clientDo)]
         super(Clienter, self).__init__(doers=doers)
 
-    def request(self, method, url, body=None, headers=None):
+    def request(self, method, url, body=None, headers=None, connector=None):
         """
         Perform an HTTP request using a hio http Client and ClientDoer and returns the Client.
 
@@ -246,6 +538,9 @@ class Clienter(doing.DoDoer):
             url (str): URL to send the request to
             body (str or bytes, optional): Body of the request, defaults to None
             headers (dict, optional): Headers to include in the request, defaults to None
+            connector (tcp.ClientTls | None): TLS connector to use, such as one from
+                makeTlsConnector or makeBootstrapConnector. None means hio's default for the scheme.
+                Either kind also turns off redirects; see makeClient.
 
         Returns:
             http.clienting.Client: The hio HTTP Client used for the request, or None if an error occurs.
@@ -253,10 +548,7 @@ class Clienter(doing.DoDoer):
         purl = parse.urlparse(url)
 
         try:
-            client = http.clienting.Client(scheme=purl.scheme,
-                                           hostname=purl.hostname,
-                                           port=purl.port,
-                                           portOptional=True)
+            client = makeClient(url, connector=connector, portOptional=True)
         except Exception as e:
             print(f"error establishing client connection={e}")
             return None

@@ -13,10 +13,10 @@ import falcon
 from hio.base import doing
 from hio.help import decking, ogler
 
-from .httping import Clienter,CESR_CONTENT_TYPE
+from .httping import Clienter, CESR_CONTENT_TYPE, BootstrapClientTls, makeBootstrapConnector
 from .organizing import Organizer
 from .. import (Vrsn_2_0, Version, Roles, Schemes, Ilks, Kinds,
-                ValidationError, UnverifiedReplyError,
+                KeriError, ValidationError, UnverifiedReplyError,
                 ConfigurationError)
 from ..help import nowIso8601, fromIso8601, toIso8601, nowUTC
 from ..core import (Prefixer, Router, Revery, Kevery,
@@ -499,6 +499,15 @@ class Oobiery:
                 response = client.responses.popleft()
                 self.clienter.remove(client)
 
+                # An answer fetched after the CA check failed is anybody's word (see
+                # BootstrapClientTls), so from it only what is checked on arrival is taken: signed
+                # CESR, verified by the parser, and a schema whose SAID the URL names. Not the
+                # KERI-AID header, and not an unsigned reply listing further OOBIs, since the
+                # alias would travel with either to an AID the URL never named.
+                unverified = (isinstance(client.connector, BootstrapClientTls)
+                              and client.connector.verified is not True)
+                ctype = response["headers"].get("Content-Type", "")
+
                 if response["status"] == 404:
                     print(f"{url} not found")
                     self.hby.db.coobi.rem(keys=(url,))
@@ -511,14 +520,18 @@ class Oobiery:
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"] in (
+                elif ctype in (
                     CESR_CONTENT_TYPE,
                     "application/json+cesr",
                     "application/cesr+json",
                 ):  # CESR Stream response to OOBI (canonical + legacy variants)
                     self.parser.parse(ims=bytearray(response["body"]))
-                    if OOBI_AID_HEADER in response["headers"]:
+                    if OOBI_AID_HEADER in response["headers"] and not unverified:
                         obr.cid = response["headers"][OOBI_AID_HEADER]
+                    elif unverified and obr.cid is None and obr.said:
+                        # /oobi/{aid} matches the data-OOBI pattern, so its AID arrives as
+                        # obr.said. Without the header, the alias goes to the AID the path names.
+                        obr.cid = obr.said
 
                     if obr.oobialias is not None and obr.cid:
                         self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
@@ -527,7 +540,7 @@ class Oobiery:
                     obr.state = Result.resolved
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
+                elif ctype == "application/schema+json":  # Schema response to data OOBI
                     try:
                         schemer = Schemer(raw=bytearray(response["body"]))
                         if schemer.said == obr.said:
@@ -536,14 +549,14 @@ class Oobiery:
                         else:
                             result = Result.failed
 
-                    except (ValidationError, ValueError):
+                    except (KeriError, ValueError, TypeError):  # TypeError: JSON not an object
                         result = Result.failed
 
                     obr.state = result
                     self.hby.db.coobi.rem(keys=(url,))
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"].startswith("application/json"):  # Unsigned rpy OOBI or Schema
+                elif ctype.startswith("application/json"):  # Unsigned rpy OOBI or Schema
 
                     try:
                         schemer = Schemer(raw=bytearray(response["body"]))
@@ -558,25 +571,23 @@ class Oobiery:
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
 
-                    except (ValidationError, ValueError):
+                    except (KeriError, ValueError, TypeError):
                         pass
 
+                    # A body that is neither a schema nor a whole reply fails this OOBI only. Its
+                    # sender may be anyone on the path, so it must not end the service.
                     try:
                         serder = SerderKERI(raw=bytearray(response["body"]))
-                    except ValueError:
-                        obr.state = Result.failed
-                        self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
-                        continue
-                    if not serder.ked['t'] == Ilks.rpy:
-                        obr.state = Result.failed
-                        self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        multi = (not unverified and serder.ked.get('t') == Ilks.rpy
+                                 and serder.ked.get('r') in ('/oobi/witness', '/oobi/controller')
+                                 and isinstance(serder.ked.get('a'), dict)
+                                 and 'aid' in serder.ked['a']
+                                 and isinstance(serder.ked['a'].get('urls'), list))
+                    except (KeriError, ValueError, TypeError):  # not a whole reply
+                        multi = False
 
-                    elif serder.ked['r'] in ('/oobi/witness', '/oobi/controller'):
-                        self.processMultiOobiRpy(url, serder, obr)
-
-                    else:
+                    # processMultiOobiRpy answers Result.failed when the reply names another AID.
+                    if not multi or self.processMultiOobiRpy(url, serder, obr) == Result.failed:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
@@ -585,8 +596,7 @@ class Oobiery:
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
-                    logger.error("invalid content type for oobi response: {}"
-                                 .format(response["headers"]["Content-Type"]))
+                    logger.error("invalid content type for oobi response: {}".format(ctype))
 
                 self.cues.append(dict(kin=obr.state, oobi=url))
 
@@ -619,7 +629,16 @@ class Oobiery:
                 self.hby.db.oobis.pin(keys=(url,), val=obr)
 
     def request(self, url, obr):
-        client = self.clienter.request("GET", url=url)
+        # An https OOBI may be served under a self-signed certificate that its peer has not yet
+        # been able to declare to us, so the fetch may fall back from the CA check to none; see
+        # BootstrapClientTls. That is sound only where the answer is checked against the URL
+        # itself: a KEL for the AID the path names, or data whose SAID the path names. A blind
+        # OOBI takes the server's word for which AID it is, and a well-known OOBI is a domain's
+        # word that it stands behind an AID, so both keep the CA check.
+        path = parse.urlparse(url).path
+        connector = (makeBootstrapConnector(url) if OOBI_RE.match(path) or DOOBI_RE.match(path)
+                     else None)
+        client = self.clienter.request("GET", url=url, connector=connector)
         if client is None:
             self.hby.db.oobis.rem(keys=(url,))
             print(f"error getting client for {url}, aborting OOBI")
