@@ -623,8 +623,12 @@ def _cesr(body, **headers):
 
 def _answerOobi(oobiery, hby, url, response, alias=None):
     """Hand oobiery one already-fetched response for url and return its roobi record."""
-    hby.db.coobi.pin(keys=(url,), val=OobiRecord(date=helping.nowIso8601(),
-                                                 oobialias=alias))
+    # a retried OOBI comes back through the retry escrow with its record, as processRetries
+    # hands it back to processOobis
+    prior = hby.db.eoobi.get(keys=(url,))
+    hby.db.eoobi.rem(keys=(url,))
+    hby.db.coobi.pin(keys=(url,), val=prior if prior is not None else
+                     OobiRecord(date=helping.nowIso8601(), oobialias=alias))
     purl = urlparse(url)
     obr = hby.db.coobi.get(keys=(url,))
     if (match := OOBI_RE.match(purl.path)) is not None:
@@ -813,3 +817,73 @@ def test_oobi_whose_kel_lands_in_escrow_is_retried_not_failed():
 
         assert ctl.pre in dst.kevers
         assert robr.state == Result.resolved
+
+
+def test_failed_oobi_verdict_is_replaced_when_a_later_answer_resolves():
+    with openHby(name="oobi-src-redo") as src, openHby(name="oobi-dst-redo") as dst:
+        pre, stream = _witnessOobi(src, "wit")
+        oobiery = Oobiery(hby=dst)
+        url = f"http://127.0.0.1:5555/oobi/{pre}/controller"
+
+        assert _answerOobi(oobiery, dst, url, _cesr(b"")).state == Result.failed
+        assert _answerOobi(oobiery, dst, url, _cesr(stream)).state == Result.resolved
+
+
+def test_escrowed_oobi_is_retried_once_then_fails():
+    """An escrowed answer earns one retry. If the same events are still escrowed after it,
+    the OOBI fails rather than polling until the escrow times out."""
+    with openHby(name="oobi-src-esc1") as src, openHby(name="oobi-dst-esc1") as dst:
+        wit = src.makeHab(name="wit", transferable=False)
+        ctl = src.makeHab(name="ctl", wits=[wit.pre], toad=1)
+        icp = bytearray(ctl.msgOwnEvent(sn=0))
+        oobiery = Oobiery(hby=dst)
+        url = f"http://127.0.0.1:5555/oobi/{ctl.pre}/controller"
+
+        assert _answerOobi(oobiery, dst, url, _cesr(icp)) is None
+        assert dst.db.eoobi.get(keys=(url,)) is not None
+
+        robr = _answerOobi(oobiery, dst, url, _cesr(icp))
+        assert robr.state == Result.failed
+        assert dst.db.eoobi.get(keys=(url,)) is None
+
+
+def test_escrow_left_by_something_else_does_not_excuse_a_bad_answer():
+    """Events of the AID already escrowed from elsewhere don't make an answer that
+    delivered nothing new a pending one."""
+    with openHby(name="oobi-src-esc2") as src, openHby(name="oobi-dst-esc2") as dst:
+        wit = src.makeHab(name="wit", transferable=False)
+        ctl = src.makeHab(name="ctl", wits=[wit.pre], toad=1)
+        oobiery = Oobiery(hby=dst)
+        oobiery.parser.parse(ims=bytearray(ctl.msgOwnEvent(sn=0)))  # escrowed earlier
+        assert ctl.pre not in dst.kevers
+
+        url = f"http://127.0.0.1:5555/oobi/{ctl.pre}/controller"
+        robr = _answerOobi(oobiery, dst, url, _cesr(b"-_AAABAA"))
+
+        assert robr.state == Result.failed
+
+
+def test_cesr_answer_to_a_data_oobi_that_names_no_aid_is_not_judged_as_a_kel():
+    """/oobi/{said} can name an artifact other than an AID. Its CESR answer is judged as a KEL
+    only when the SAID turns out to be an AID the answer gave key state for."""
+    with openHby(name="oobi-src-data") as src, openHby(name="oobi-dst-data") as dst:
+        _, stream = _witnessOobi(src, "other")
+        said = "EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0"
+        oobiery = Oobiery(hby=dst)
+
+        robr = _answerOobi(oobiery, dst, f"http://127.0.0.1:5555/oobi/{said}", _cesr(stream))
+
+        assert robr.state == Result.resolved
+        assert robr.cid is None
+
+
+def test_unsigned_header_cannot_bind_a_blind_oobi_alias_to_an_aid_already_held():
+    with openHby(name="oobi-src-blindhdr") as src, openHby(name="oobi-dst-blindhdr") as dst:
+        held = dst.makeHab(name="held", transferable=False).pre
+        _, stream = _witnessOobi(src, "other")
+        oobiery = Oobiery(hby=dst)
+
+        _answerOobi(oobiery, dst, "http://127.0.0.1:5555/oobi?name=bank",
+                    _cesr(stream, **{OOBI_AID_HEADER: held}), alias="bank")
+
+        assert oobiery.org.get(held) is None

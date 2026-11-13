@@ -56,3 +56,19 @@ def test_resolve_force_does_not_wait_forever_on_a_failed_oobi(doer):
     with pytest.raises(Exception, match="did not resolve"):
         for _ in range(20):
             next(gen)
+
+
+def test_resolve_force_does_not_wait_on_a_resolved_oobi_that_names_no_aid(doer):
+    """A schema data OOBI or a blind OOBI resolves with no cid; --force must not wait for
+    key state of None."""
+    hby, make = doer
+    oobiDoer = make(force=True)
+    gen = oobiDoer.waitDo(tymth=tyming.Tymist().tymen())
+    next(gen)
+    next(gen)
+    hby.db.roobi.pin(keys=(URL,), val=OobiRecord(date="2026-01-01T00:00:00.000000+00:00",
+                                                 state=Result.resolved))
+
+    with pytest.raises(StopIteration):
+        for _ in range(20):
+            next(gen)
