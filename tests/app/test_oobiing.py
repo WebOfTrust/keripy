@@ -16,7 +16,7 @@ from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version, Kinds
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
-from keri.end import OOBI_RE, DOOBI_RE
+from keri.end import OOBI_RE, DOOBI_RE, OOBI_AID_HEADER
 from keri.app.oobiing import (loadHandlers as loadOobiingHandlers,
                               loadEnds as loadOobiingEnds)
 
@@ -616,14 +616,15 @@ class _AnsweredClient:
         self.connector = None
 
 
-def _cesr(body):
+def _cesr(body, **headers):
     return dict(status=200, body=bytes(body),
-                headers={"Content-Type": "application/cesr"})
+                headers={"Content-Type": "application/cesr", **headers})
 
 
-def _answerOobi(oobiery, hby, url, response):
+def _answerOobi(oobiery, hby, url, response, alias=None):
     """Hand oobiery one already-fetched response for url and return its roobi record."""
-    hby.db.coobi.pin(keys=(url,), val=OobiRecord(date=helping.nowIso8601()))
+    hby.db.coobi.pin(keys=(url,), val=OobiRecord(date=helping.nowIso8601(),
+                                                 oobialias=alias))
     purl = urlparse(url)
     obr = hby.db.coobi.get(keys=(url,))
     if (match := OOBI_RE.match(purl.path)) is not None:
@@ -726,6 +727,8 @@ def test_genus_code_in_one_oobi_answer_does_not_govern_the_next():
         first = _answerOobi(oobiery, dst, f"http://127.0.0.1:5551/oobi/{pre1}/controller",
                             _cesr(b"-_AAABAA" + stream1))
         assert first.state == Result.resolved
+        # the code governs every message of its own answer: the loc reply is the last one
+        assert dst.db.locs.get(keys=(pre1, Schemes.http)).url == "http://127.0.0.1:5551"
 
         second = _answerOobi(oobiery, dst, f"http://127.0.0.1:5552/oobi/{pre2}/controller",
                              _cesr(stream2))
@@ -747,3 +750,67 @@ def test_bare_aid_oobi_answer_that_gives_no_key_state_is_marked_failed():
         full = _answerOobi(oobiery, dst, f"http://127.0.0.1:5556/oobi/{pre}", _cesr(stream))
         assert full.state == Result.resolved
         assert full.cid == pre
+
+
+def test_unsigned_aid_header_does_not_redirect_an_oobi_whose_url_names_an_aid():
+    """The KERI-AID header is unsigned, and plain http counts as verified. When the URL names
+    an AID, the verdict and the alias stay with that AID whatever the header says."""
+    with openHby(name="oobi-dst-hdr") as dst:
+        held = dst.makeHab(name="held", transferable=False).pre
+        named = "BL7Lizsh2-O5W3PL6LujFAzyBNUlwbuFJoDG05UD4it1"
+        oobiery = Oobiery(hby=dst)
+        url = f"http://127.0.0.1:5555/oobi/{named}/controller"
+
+        robr = _answerOobi(oobiery, dst, url, _cesr(b"", **{OOBI_AID_HEADER: held}),
+                           alias="bank")
+
+        assert robr.cid == named
+        assert robr.state == Result.failed
+        assert oobiery.org.get(held) is None
+
+
+def test_blind_oobi_with_empty_answer_is_marked_failed():
+    with openHby(name="oobi-dst-blind") as dst:
+        oobiery = Oobiery(hby=dst)
+
+        robr = _answerOobi(oobiery, dst, "http://127.0.0.1:5555/oobi?name=x", _cesr(b""))
+
+        assert robr.state == Result.failed
+
+
+def test_agent_oobi_answer_without_the_agent_location_is_marked_failed():
+    """Any OOBI that names an endpoint eid exists to locate it, not only a witness OOBI."""
+    with openHby(name="oobi-src-agent") as src, openHby(name="oobi-dst-agent") as dst:
+        pre, stream = _witnessOobi(src, "ctl")
+        missing = "BAz6CgLwdbIR8rp-Pz5UsPtzUxtzQrnJkrr6DwoF7SLe"
+        oobiery = Oobiery(hby=dst)
+        url = f"http://127.0.0.1:5555/oobi/{pre}/agent/{missing}"
+
+        robr = _answerOobi(oobiery, dst, url, _cesr(stream))
+
+        assert pre in dst.kevers
+        assert robr.state == Result.failed
+
+
+def test_oobi_whose_kel_lands_in_escrow_is_retried_not_failed():
+    """An answer whose events escrow (here an inception missing its witness receipt) has not
+    failed: the events may yet be accepted. The OOBI goes to the retry escrow instead of
+    being recorded, and a later answer that completes the KEL resolves it."""
+    with openHby(name="oobi-src-esc") as src, openHby(name="oobi-dst-esc") as dst:
+        wit = src.makeHab(name="wit", transferable=False)
+        ctl = src.makeHab(name="ctl", wits=[wit.pre], toad=1)
+        icp = bytearray(ctl.msgOwnEvent(sn=0))
+        oobiery = Oobiery(hby=dst)
+        url = f"http://127.0.0.1:5555/oobi/{ctl.pre}/controller"
+
+        robr = _answerOobi(oobiery, dst, url, _cesr(icp))
+
+        assert ctl.pre not in dst.kevers
+        assert robr is None
+        assert dst.db.eoobi.get(keys=(url,)) is not None
+
+        rct = bytearray(wit.receipt(serder=ctl.kever.serder))
+        robr = _answerOobi(oobiery, dst, url, _cesr(icp + rct))
+
+        assert ctl.pre in dst.kevers
+        assert robr.state == Result.resolved
