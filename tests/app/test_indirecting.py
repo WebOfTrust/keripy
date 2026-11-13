@@ -526,7 +526,8 @@ def test_make_mailbox_query_is_shared_by_kli_mailbox_debug():
 
         serder = SerderKERI(raw=bytearray(msg))
         assert serder.kind == Kinds.json
-        assert serder.ked["q"] == dict(pre=hab.pre, topics={"/receipt": 0})
+        assert serder.ked["q"]["pre"] == hab.pre
+        assert serder.ked["q"]["topics"] == {"/receipt": 0}
 
 
 if __name__ == "__main__":

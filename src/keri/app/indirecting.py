@@ -728,6 +728,38 @@ class MailboxDirector(doing.DoDoer):
         return times
 
 
+def makeMailboxQuery(hab, witness, topics, version=None, gvrsn=None, kind=None):
+    """Return a signed mailbox ``qry`` asking witness for hab's messages on each topic
+    from the index topics gives it.
+
+    The topics map is keyed by routes such as '/receipt', which strict native-CESR field
+    map labels cannot carry, and eventing.query defaults to native CESR whatever the
+    version. So a missing or native CESR kind builds the query as JSON instead; any other
+    kind is honoured.
+
+    Parameters:
+        hab (Hab|GroupHab): local identifier whose mailbox is queried. A GroupHab's query
+            is signed by its local member.
+        witness (str): qb64 prefix of the witness or mailbox to query
+        topics (dict): index to start from, keyed by topic route
+        version (Versionage|None): KERI protocol version, None for the default
+        gvrsn (Versionage|None): CESR genus version, None for the default
+        kind (str|None): serialization kind from Kinds
+
+    Returns:
+        bytearray: signed ``qry`` message with attachments
+    """
+    q = dict(pre=hab.pre, topics=topics)
+    kwa = dict(kind=Kinds.json if kind in (None, Kinds.cesr) else kind)
+    if version is not None:
+        kwa["version"] = version
+    if gvrsn is not None:
+        kwa["gvrsn"] = gvrsn
+    if isinstance(hab, GroupHab):
+        return hab.mhab.query(pre=hab.pre, src=witness, route="mbx", query=q, **kwa)
+    return hab.query(pre=hab.pre, src=witness, route="mbx", query=q, **kwa)
+
+
 class Poller(doing.DoDoer):
     """
     Polls remote SSE endpoint for event that are KERI messages to be processed"""
@@ -768,25 +800,14 @@ class Poller(doing.DoDoer):
             bytearray: signed ``qry`` message with attachments
         """
         topics = dict()
-        q = dict(pre=self.pre, topics=topics)
         for topic in self.topics:
             if topic in witrec.topics:
                 topics[topic] = witrec.topics[topic] + 1
             else:
                 topics[topic] = 0
 
-        # The topics map is keyed by routes such as '/receipt', which are not valid strict
-        # native-CESR labels, so with no kind given build the query as JSON rather than in
-        # the version's native default, where it cannot be serialized.
-        kwa = dict(kind=self.kind if self.kind is not None else Kinds.json)
-        if self.version is not None:
-            kwa["version"] = self.version
-        if self.gvrsn is not None:
-            kwa["gvrsn"] = self.gvrsn
-        if isinstance(self.hab, GroupHab):
-            return self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
-                                       **kwa)
-        return self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **kwa)
+        return makeMailboxQuery(hab=self.hab, witness=self.witness, topics=topics,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
 
     def eventDo(self, tymth=None, tock=0.0, **kwa):
         """

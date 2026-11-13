@@ -25,7 +25,7 @@ from .httping import (SignatureValidationComponent, CesrRequest, CESR_CONTENT_TY
                       parseCesrHttpRequest, createCESRRequest, streamCESRRequests,
                       Clienter, CESR_DESTINATION_HEADER)
 from .indirecting import (setupWitness, createHttpServer, WitnessStart,
-                          Indirector, MailboxDirector, Poller, HttpEnd,
+                          Indirector, MailboxDirector, Poller, makeMailboxQuery, HttpEnd,
                           QryRpyMailboxIterable, MailboxIterable, ReceiptEnd,
                           QueryEnd)
 from .keeping import (PubLot, PreSit, PrePrm, PubSet, riKey, openKS, Keeper,
