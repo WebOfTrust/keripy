@@ -19,7 +19,7 @@ import hashlib
 
 from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec, utils
+from cryptography.hazmat.primitives.asymmetric import ec, utils, mldsa
 
 from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
@@ -292,6 +292,15 @@ class MatterCodex:
     Tag8:                 str = '1AAN'  # Tag8 8 B64 encoded chars for special values
     Escape:               str = '1AAO'  # Escape code for escaping special map fields
     Empty:                str = '1AAP'  # Empty value for Nonce, UUID, or related fields
+    ML_DSA_65_Sig:        str = '1AAQ'  # ML-DSA-65 signature, FIPS 204
+    ML_DSA_87:            str = '1AAR'  # ML-DSA-87 public verification key, FIPS 204
+    ML_DSA_44_Sig:        str = '2AAA'  # ML-DSA-44 signature, FIPS 204
+    ML_DSA_44_Seed:       str = '2AAB'  # ML-DSA-44 256 bit seed xi for private key, FIPS 204
+    ML_DSA_65:            str = '2AAC'  # ML-DSA-65 public verification key, FIPS 204
+    ML_DSA_65_Seed:       str = '2AAD'  # ML-DSA-65 256 bit seed xi for private key, FIPS 204
+    ML_DSA_87_Seed:       str = '2AAE'  # ML-DSA-87 256 bit seed xi for private key, FIPS 204
+    ML_DSA_44:            str = '3AAA'  # ML-DSA-44 public verification key, FIPS 204
+    ML_DSA_87_Sig:        str = '3AAB'  # ML-DSA-87 signature, FIPS 204
     TBD0S:                str = '1__-'  # Testing purposes only, fixed special values with non-empty raw lead size 0
     TBD0:                 str = '1___'  # Testing purposes only, fixed with lead size 0
     TBD1S:                str = '2__-'  # Testing purposes only, fixed special values with non-empty raw lead size 1
@@ -652,6 +661,18 @@ class PreNonDigCodex:
 PreNonDigDex = PreNonDigCodex()  # Make instance
 
 
+# ML-DSA public verification key code to the FIPS 204 parameter set that verifies it.
+# kswg-cesr-specification#185 defines one public key code per parameter set and no
+# non-transferable variant, so none of these codes is in NonTransDex. None is in PreDex
+# either: an ML-DSA public key is kilobytes long, and an identifier controlled by one takes a
+# digest prefix.
+MLDSAPublicKeys = {
+    MtrDex.ML_DSA_44: mldsa.MLDSA44PublicKey,
+    MtrDex.ML_DSA_65: mldsa.MLDSA65PublicKey,
+    MtrDex.ML_DSA_87: mldsa.MLDSA87PublicKey,
+}
+
+
 # namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
@@ -799,6 +820,15 @@ class Matter:
         '1AAN': Sizage(hs=4, ss=8, xs=0, fs=12, ls=0),
         '1AAO': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
         '1AAP': Sizage(hs=4, ss=0, xs=0, fs=4, ls=0),
+        '1AAQ': Sizage(hs=4, ss=0, xs=0, fs=4416, ls=0),
+        '1AAR': Sizage(hs=4, ss=0, xs=0, fs=3460, ls=0),
+        '2AAA': Sizage(hs=4, ss=0, xs=0, fs=3232, ls=1),
+        '2AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
+        '2AAC': Sizage(hs=4, ss=0, xs=0, fs=2608, ls=1),
+        '2AAD': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
+        '2AAE': Sizage(hs=4, ss=0, xs=0, fs=48, ls=1),
+        '3AAA': Sizage(hs=4, ss=0, xs=0, fs=1756, ls=2),
+        '3AAB': Sizage(hs=4, ss=0, xs=0, fs=6176, ls=2),
         '1__-': Sizage(hs=4, ss=2, xs=0, fs=12, ls=0),
         '1___': Sizage(hs=4, ss=0, xs=0, fs=8, ls=0),
         '2__-': Sizage(hs=4, ss=2, xs=1, fs=12, ls=1),
@@ -3402,6 +3432,8 @@ class Verfer(Matter):
             self._verify = self._secp256r1
         elif self.code in [MtrDex.ECDSA_256k1N, MtrDex.ECDSA_256k1]:
             self._verify = self._secp256k1
+        elif self.code in MLDSAPublicKeys:
+            self._verify = self._mldsa
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
@@ -3477,6 +3509,26 @@ class Verfer(Matter):
             verkey.verify(der, ser, ec.ECDSA(hashes.SHA256()))
             return True
         except exceptions.InvalidSignature:
+            return False
+
+
+    def _mldsa(self, sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verify ML-DSA sig on ser using key, with the parameter set given by .code
+
+        The signature is pure ML-DSA.Sign of FIPS 204 with an empty context string.
+        HashML-DSA pre-hash signatures and signatures over any other context do not verify.
+
+        Parameters:
+            sig: bytes signature
+            ser: bytes serialization
+            key: bytes public key"""
+        verkey = MLDSAPublicKeys[self.code].from_public_bytes(key)
+        try:
+            verkey.verify(bytes(sig), bytes(ser))
+            return True
+        except (exceptions.InvalidSignature, ValueError):  # ValueError on wrong size
             return False
 
 
