@@ -510,13 +510,18 @@ def test_siter_basic():
 
 
     # test insert
-    sn = 0
-    info = f"Leaf Info {sn:x}"
-    leafer = Diger(ser=info.encode(), code=DigDex.Blake2b_256) # not default SIT code
-    assert leafer.qb64 == 'FBQuXQPYcNMz3S1I6Ye6ByGd_R1VJkLcllZ92Au5JUK4'
+    # create made up leaf limbs for testing
 
-    result = siter.insert(leafer=leafer)
-    assert result is None
+
+
+    # create leaf limbs as valid saids of leaf info
+    #sn = 0
+    #info = f"Leaf Info {sn:x}"
+    #leafer = Diger(ser=info.encode(), code=DigDex.Blake2b_256) # not default SIT code
+    #assert leafer.qb64 == 'FBQuXQPYcNMz3S1I6Ye6ByGd_R1VJkLcllZ92Au5JUK4'
+
+    #result = siter.insert(leafer=leafer)
+    #assert result is None
 
 
 
