@@ -20,8 +20,6 @@ def test_siting_siter_class():
     assert MaxDepthBytes == 32
     assert MaxDepth == 2 ** 3 * MaxDepthBytes
 
-    assert Diger._rawSize(DigDex.Blake3_256) == MaxDepthBytes
-
     assert isinstance(Kiths, Kithage)
     assert Kiths._asdict() == {'node': 'nod', 'leaf': 'lea'}
 
@@ -30,6 +28,8 @@ def test_siting_siter_class():
 
     assert Siter.Code == DigDex.Blake3_256
     assert Siter.Dummy == '#'
+    assert Diger._rawSize(Siter.Code) == MaxDepthBytes
+
 
     # test saidify
     # tree wide
@@ -181,29 +181,35 @@ def test_siting_siter_class():
     }
 
 
-    # test staticmethods .extendLimbRaw(limb, span=0, right=False) and
-    # .rightAtDepthInt(limb, depth)
-    limb = nimber.num  # get int
+    # test staticmethods
+    # .extendLimb() and .extendLimbInt()
+    # .rightAtSpan() and .rightAtSpanInt()
+    limber = Diger(num=0, code=Siter.Code)  # use default code
+    spanner = Number(num=0)
+    with pytest.raises(ValueError):
+        Siter.rightAtSpan(limber, spanner)  # depth of zero
+
+    limb = limber.num  # get int
+    span = spanner.num
     assert limb == 0
     span = 0
-    assert limb == 0
     with pytest.raises(ValueError):
-        Siter.rightAtDepthInt(limb, span)  # span of zero
+        Siter.rightAtSpanInt(limb, span)  # span/depth of zero
 
     limb, span = Siter.extendLimbInt(limb=limb, span=span)  # default left
     assert limb == 0
     assert f"{limb:0256b}"[:8] == '00000000'
     assert span == 1
-    assert not Siter.rightAtDepthInt(limb, span)  # left at depth=span=1
+    assert not Siter.rightAtSpanInt(limb, span)  # left at depth=span=1
     limb, span = Siter.extendLimbInt(limb=limb, span=span, right=True)  # right
     assert limb == 2 ** (MaxDepth - span)
     assert f"{limb:0256b}"[:8] == '01000000'
     assert span == 2
-    assert Siter.rightAtDepthInt(limb, span)  # right at depth=span=2
+    assert Siter.rightAtSpanInt(limb, span)  # right at depth=span=2
     limb, span = Siter.extendLimbInt(limb=limb, span=span, right=True)  # right
     assert f"{limb:0256b}"[:8] == '01100000'
     assert span == 3
-    assert Siter.rightAtDepthInt(limb, span)  # right at depth=span=3
+    assert Siter.rightAtSpanInt(limb, span)  # right at depth=span=3
 
     #test staticmethod .extendLimb(limber, spanner, right=False)
     limber = Diger(qb64=nimber.qb64)
@@ -212,28 +218,34 @@ def test_siting_siter_class():
     assert spanner.qb64 == 'MAAA'
 
     limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner)  # default left
+    assert not Siter.rightAtSpan(limber, spanner)  # left at depth=span=1
     assert limber.qb64 == 'EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     assert spanner.qb64 == 'MAAB'
     limb = int.from_bytes(limber.raw)
     assert f"{limb:0256b}"[:8] == '00000000'
     assert spanner.num == 1
-    assert not Siter.rightAtDepthInt(limb, spanner.num)  # left at depth=span=1
+    assert not Siter.rightAtSpanInt(limb, spanner.num)  # left at depth=span=1
 
     limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, right=True)  # right
+    assert Siter.rightAtSpan(limber, spanner)  # right at depth=span=2
     assert limber.qb64 == 'EEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     assert spanner.qb64 == 'MAAC'
     limb = int.from_bytes(limber.raw)
     assert f"{limb:0256b}"[:8] == '01000000'
     assert spanner.num == 2
-    assert Siter.rightAtDepthInt(limb, spanner.num)  # right at depth=span=2
+    assert Siter.rightAtSpanInt(limb, spanner.num)  # right at depth=span=2
 
     limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, right=True)  # right
+    assert Siter.rightAtSpan(limber, spanner)  # right at depth=span=2
     assert limber.qb64 == 'EGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     limb = int.from_bytes(limber.raw)
     assert f"{limb:0256b}"[:8] == '01100000'
     assert spanner.qb64 == 'MAAD'
     assert spanner.num == 3
-    assert Siter.rightAtDepthInt(limb, spanner.num)  # right at depth=span=2
+    assert Siter.rightAtSpanInt(limb, spanner.num)  # right at depth=span=2
+
+
+    # Test twigAtSpan, fitLeafNode, forkSpanSwap staticmethods
 
 
 

@@ -280,29 +280,198 @@ class Siter:
 
 
     @staticmethod
-    def rightAtDepthInt(limb, depth):
-        """Returns side of limb at depth where True is right and False is left
-        Usually applied to leaf limbs so uses convention of MSb at depth 1 and
-        LSb at depth 256 to better reason about leaf limb bit positions.
+    def rightAtSpanInt(limb, span):
+        """Returns which side of limb at span (depth) where:
+        True is right and False is left
+        Usually applied to leaf limbs so uses leaf convention:
+        Convention MSb at span 1 and LSb at span 256.
         Minimum leaf depth is 1 and maximum is 256.
+        span is how many bits into limb either node or leaf.
         A leaf is always attached as a child of a parent node. The leaf child
         side is determined by bit position in leave limb that must be greater
         that span of parent node's span = parent nodes depth.
+
+        Returns:
+            side (bool): False if bit at span is  0 (side is left)
+                         True if bit at span is 1 (side is right)
+
+        Parameters:
+            limb (int): 256 bit int where MSbits are forks (0 left, 1 right)
+            span (int): get bit at span (depth) where:
+                            span = 1 is MSb of limb
+                            span = 256 is LSb of limb
+        """
+        if span <= 0:
+            raise ValueError(f"Invalid {span=} <= 0>")
+
+        return True if (limb >> (MaxDepth - span) & 1) else False
+
+
+    @staticmethod
+    def rightAtSpan(limber, spanner):
+        """Returns which side of limber at spanner where:
+        True is right and False is left
+        where limber and spanner are Matter primitives.
+        Wrapper around Siter.rightAtSpanInt
+        Convention MSb at span 1 and LSb at span 256.
+        Minimum leaf depth is 1 and maximum is 256.
 
         Returns:
             side (bool): False if bit at depth is  0 (side is left)
                          True if bit at depth is 1 (side is right)
 
         Parameters:
-            limb (int): 256 bit int where MSbits are forks (0 left, 1 right)
-            depth (int): get bit at depth where:
-                         depth = 1 is MSb of limb
-                         depth = 256 is LSb of limb
+            limber (Diger): instance .num is 256 bit int where MSbits
+                            are forks (0 left, 1 right)
+            depther (Number): instane .num is depth where:
+                         span = 1 is MSb of limb
+                         span = 256 is LSb of limb
         """
-        if depth <= 0:
-            raise ValueError(f"Invalid {depth=} <= 0>")
+        return Siter.rightAtSpanInt(limb=limber.num, span=spanner.num)
 
-        return True if (limb >> (MaxDepth - depth) & 1) else False
+
+    @staticmethod
+    def twigAtSpanInt(limb, span):
+        """Returns right shifted masked limb with span MS bits in order
+        to match limb prefixes (twigs). Values are ints.
+
+        Returns:
+            twig (int): right shifted masked limb with span MS bits.
+
+        Parameters:
+            limb (int): 256 bit int where MSbits are forks (0 left, 1 right)
+            span (int): number of MS bits in limb to shift and mask where:
+                            span = 1 is MSb of limb
+                            span = 256 is LSb of limb
+        """
+        if span <= 0:
+            raise ValueError(f"Invalid {span=} <= 0>")
+        mask = ((1 << span) - 1)
+        return ((limb >> (MaxDepth-span)) & mask)
+
+
+    @staticmethod
+    def twigAtSpan(limber, spanner):
+        """Returns right shifted masked limb with span MS bits in order
+        to match limb prefixes (twigs).
+        Values are Matter instances
+        Wrapper around Siter.twigAtSpanInt
+
+        Returns:
+            twigger (Diger): instance .num right shifted masked limb with
+                             span MS bits.
+
+        Parameters:
+            limber (Diger): instance .num is 256 bit int where MSbits are forks
+                            (0 left, 1 right)
+            spanner (Number): instance .num  is number of MS bits in limb to
+                              shift and mask where:
+                                span = 1 is MSb of limb
+                                span = 256 is LSb of limb
+        """
+        return Number(num=Siter.twigAtSpanInt(limb=limber.num, span=spanner.num))
+
+
+    @staticmethod
+    def fitLeafNodeInt(leaf, node, span):
+        """Determines if node limb twig of size span is prefix of leaf limb
+        i.e. leaf limb would fit at or below node twig
+        Values are int
+
+        Returns::
+            fit (bool): True means leaf limb would fit on node. i.e. node twig
+                            is prefix of leaf limb so same branch
+                        False means leaf limb not fit on node i.e. node twig
+                            is not prefix of leaf limb so not same branch
+        Parameters::
+            leaf (int): limb
+            node (int): limb
+            span (int): span of node limb used to get node twig
+        """
+        return Siter.twigAtSpanInt(node, span) == Siter.twigAtSpanInt(leaf, span)
+
+
+    @staticmethod
+    def fitLeafNode(leafer, noder, spanner):
+        """Determines if node limb twig of nodel of size spanner is prefix of leaf limb
+        i.e. leaf limb would fit at or below node twig
+        Parameters are Matter instances
+
+        Returns::
+            fit (bool): True means leaf limb would fit on node. i.e. node twig
+                            is prefix of leaf limb so same branch
+                        False means leaf limb not fit on node i.e. node twig
+                            is not prefix of leaf limb so not same branch
+        Parameters::
+            leafer (Diger): limb
+            noder (Diger): limb
+            spanner (Number): span of node limb used to get node twig
+        """
+        return Siter.fitLeafNodeInt(leafer.num, noder.num, spanner.num)
+
+
+    @staticmethod
+    def forkSpanSwapInt(left, right):
+        """Computes and returns tuple (span, swap) where:
+        span is int of shallowest fork (bit position) where limbs differ
+            (1 is shallest, 256 is deepest)
+        swap is boolean True means left and right need to swap at fork
+                            because left limb is 1 and right limb is 0 at fork
+                        False means left and right do not need to swap at fork
+                            because left limb is 0 and right limb is 1 at fork
+        Values are ints
+
+        Returns::
+            fork (tuple): of form (span, swap) where:
+                span is int of shallowest fork (bit position) where
+                    limbs differ (1 is shallest, 256 is deepest)
+                swap is boolean
+                    True means left and right need to swap at fork
+                        because left limb is 1 and right limb is 0 at fork
+                    False means left and right do not need to swap at fork
+                        because left limb is 0 and right limb is 1 at fork
+
+        Parameters::
+            left (int): 256 bit limb on left side
+            right (int): 256 bit limb on right side
+        """
+        for span in range(1, 256):
+            leftbit = (left >> (MaxDepth - span)) & 1
+            rightbit = (right >> (MaxDepth - span)) & 1
+            if leftbit != rightbit:  # shallowest fork found at span
+                swap = True if leftbit else False
+                break
+        return (span, swap)
+
+
+    @staticmethod
+    def forkSpanSwap(left, right):
+        """Computes and returns tuple (span, swap) where:
+        span is int of shallowest fork (bit position) where limbs differ
+            (1 is shallest, 256 is deepest)
+        swap is boolean True means left and right need to swap at fork
+                            because left limb is 1 and right limb is 0 at fork
+                        False means left and right do not need to swap at fork
+                            because left limb is 0 and right limb is 1 at fork
+        Values are matter instances
+
+        Returns::
+            fork (tuple): of form (spanner, swap) where:
+                spanner is Number of shallowest fork (bit position) where
+                    limbs differ (1 is shallest, 256 is deepest)
+                swap is boolean
+                    True means left and right need to swap at fork
+                        because left limb is 1 and right limb is 0 at fork
+                    False means left and right do not need to swap at fork
+                        because left limb is 0 and right limb is 1 at fork
+
+        Parameters::
+            left (Diger): instance of 256 bit limb on left side
+            right (Diger): instance of 256 bit limb on right side
+        """
+        span, swap = Siter.forkSpanSwapInt(left.num, right.num)
+        return (Number(num=span), swap)
+
 
 
 
@@ -674,9 +843,6 @@ class Siter:
             return None  # already inserted
 
         # Setup for insert
-        # leafint is leaf Leafage with values as ints
-        leafint = Leafage(depth=leaf.part.depth.num,
-                          limb=leaf.part.limb.num)
         node = self.root  # start at root with values as matter primitives
         inserted = False
         done = False
@@ -690,22 +856,38 @@ class Siter:
             # walk down nodes on appropriate side if possible
             # leftage is retrieved child qb2, nodage or leafage, empty is None
             # rightage is retrieved child qb2, nodage or leafage, empty is None
-            if not node.left.nonce:  # node left child is empty (only root)
+            if not node.part.left.nonce:  # node left child is empty (only root)
                 leftage = None
                 if node.part.depth.num != 0:  # not root
                     raise ValueError(f"Invalid node={node.said.qb64}, not root "
                                      f"but empty left child")
+
                 # if leaf side at depth 1 is left then attach
-                #leftage = leafage
+                if not self.rightAtSpanInt(leaf.part.limb.num, node.part.depth.num + 1):
+                    leftage = leafage
+                    # update node first remove old node
+                    if not self.remNode(node.said):
+                        raise ValueError(f"Attempt to remove missing node="
+                                         f"{node.said.qb64}")
+                    # replace empty left child of current node with leaf
+                    nodage = node.part._replace(**dict(left=leaf.said))
+                    saider = self.sayNode(nodage)  # update said
+                    self.pinNode(saider, nodage)  # update .nodes
+                    self.putLeaf(leaf.said, leaf.part)  # update leaves
+                    # update infos outside to .insert call after success
+                    # self.infos[saidage.limb.qb64] = leafer.qb64  # insert info
+                    inserted = True
+                    done = True
+
 
             else: # node left child not empty
-                if (leftage := self.nodes.get(node.left.qb2)): # its a node
+                if (leftage := self.hasNode(node.left)): # its a node
                     leftIsNode = True
                     # match limbs and walk down left side if match
                     # right shift to prune suffix and mask with 1s of size depth
-                    mask = ((1 << nodeint.depth) - 1)
-                    leafprefix = (limbleaf >> (MaxDepth - nodeint.depth)) & mask
-                    nodeprefix = (nodeint.limb >> (MaxDepth - nodeint.depth)) & mask
+                    mask = ((1 << node.part.depth.num) - 1)
+                    leafprefix = (limbleaf >> (MaxDepth-node.part.depth.num)) & mask
+                    nodeprefix = (node.part.limb.num >> (MaxDepth-node.part.depth.num)) & mask
                     if leafprefix == nodeprefix:  # match so walk down
                         # replace node with left child node to walk down one
                         nsaid = Noncer(qb2=node.left.qb2)
@@ -716,17 +898,19 @@ class Siter:
                         continue  # resume on next level down on left
                 elif leftage := self.leaves.get(node.left.qb2): # its a leaf
                     leftIsNode = False
+
                 else:  # broken should not ever be
                     raise ValueError(f"Bad left child of node said={nsaid.qb64}")
+
 
             if node.right.nonce: # right child not empty
                 if (rightage := self.nodes.get(node.right.qb2)): # its a node
                     rightIsNode = True
                     # match limbs and walk down right side if match
                     # right shift to prune suffix and mask with 1s of size depth
-                    mask = ((1 << nodeint.depth) - 1)
-                    leafprefix = (limbleaf >> (MaxDepth - nodeint.depth)) & mask
-                    nodeprefix = (nodeint.limb >> (MaxDepth - nodeint.depth)) & mask
+                    mask = ((1 <<  node.part.depth.num) - 1)
+                    leafprefix = (limbleaf >> (MaxDepth-node.part.depth.num)) & mask
+                    nodeprefix = (node.part.limb.num >> (MaxDepth-node.part.depth.num)) & mask
                     if leafprefix == nodeprefix:  # match so walk down
                         # replace node with left child node to walk down one
                         nsaid = Noncer(qb2=node.right.qb2)
