@@ -245,7 +245,120 @@ def test_siting_siter_class():
     assert Siter.rightAtSpanInt(limb, spanner.num)  # right at depth=span=2
 
 
-    # Test twigAtSpan, fitLeafNode, forkSpanSwap staticmethods
+    # Test twigAtSpan staticmethods
+    limber = Diger(num=(1 << 255))
+    assert limber.numh == '8000000000000000000000000000000000000000000000000000000000000000'
+    assert len(limber.numh) == 64
+    limb=limber.num
+    spanner = Number(num=1)
+    span=spanner.num
+    assert span == 1
+
+    twig = Siter.twigAtSpanInt(limb, span)
+    assert twig == 1
+
+    twigger = Siter.twigAtSpan(limber, spanner)
+    assert twigger.num == twig
+
+    limber = Diger(num=(1 << 254))
+    assert limber.numh == '4000000000000000000000000000000000000000000000000000000000000000'
+    assert len(limber.numh) == 64
+    limb=limber.num
+
+    twig = Siter.twigAtSpanInt(limb, span)
+    assert twig == 0
+
+    twigger = Siter.twigAtSpan(limber, spanner)
+    assert twigger.num == twig
+
+    spanner = Number(num=2)
+    span=spanner.num
+    assert span == 2
+
+    twig = Siter.twigAtSpanInt(limb, span)
+    assert twig == 1
+
+    twigger = Siter.twigAtSpan(limber, spanner)
+    assert twigger.num == twig
+
+    spanner = Number(num=3)
+    span=spanner.num
+    assert span == 3
+
+    twig = Siter.twigAtSpanInt(limb, span)
+    assert twig == 2
+
+    twigger = Siter.twigAtSpan(limber, spanner)
+    assert twigger.num == twig
+
+    limber = Diger(num=( 10 << 252))
+    assert limber.numh == 'a000000000000000000000000000000000000000000000000000000000000000'
+    assert len(limber.numh) == 64
+    limb=limber.num
+
+    spanner = Number(num=4)
+    span=spanner.num
+    assert span == 4
+
+    twig = Siter.twigAtSpanInt(limb, span)
+    assert twig == 10
+
+    twigger = Siter.twigAtSpan(limber, spanner)
+    assert twigger.num == twig
+
+    # test fitLeafNode(leaf, node, span)
+    leafer = Diger(num=(11 << 252))
+    assert leafer.numh == 'b000000000000000000000000000000000000000000000000000000000000000'
+
+    noder = Diger(num=(10 << 252))
+    assert noder.numh == 'a000000000000000000000000000000000000000000000000000000000000000'
+
+    span = 1
+    spanner = Number(num=span)
+    assert Siter.fitLeafNodeInt(leafer.num, noder.num, spanner.num)
+    assert Siter.fitLeafNode(leafer, noder, spanner)
+
+    span += 1
+    spanner = Number(num=span)
+    assert Siter.fitLeafNodeInt(leafer.num, noder.num, spanner.num)
+    assert Siter.fitLeafNode(leafer, noder, spanner)
+
+    span += 1
+    spanner = Number(num=span)
+    assert Siter.fitLeafNodeInt(leafer.num, noder.num, spanner.num)
+    assert Siter.fitLeafNode(leafer, noder, spanner)
+
+    span += 1
+    spanner = Number(num=span)
+    assert not Siter.fitLeafNodeInt(leafer.num, noder.num, spanner.num)
+    assert not Siter.fitLeafNode(leafer, noder, spanner)
+
+    # test forkSpanSwapInt(left, right)
+    lefter = Diger(num = (11 << 252))
+    assert lefter.numh == 'b000000000000000000000000000000000000000000000000000000000000000'
+    righter = Diger(num = (10 << 252))
+    assert righter.numh == 'a000000000000000000000000000000000000000000000000000000000000000'
+
+    span, swap = Siter.forkSpanSwapInt(lefter.num, righter.num)
+    assert span == 4
+    assert swap
+
+    spanner, swap = Siter.forkSpanSwap(lefter, righter)
+    assert spanner.num == 4
+    assert swap
+
+    lefter = Diger(num = (10 << 252))
+    assert lefter.numh == 'a000000000000000000000000000000000000000000000000000000000000000'
+    righter = Diger(num = (11 << 252))
+    assert righter.numh == 'b000000000000000000000000000000000000000000000000000000000000000'
+
+    span, swap = Siter.forkSpanSwapInt(lefter.num, righter.num)
+    assert span == 4
+    assert not swap
+
+    spanner, swap = Siter.forkSpanSwap(lefter, righter)
+    assert spanner.num == 4
+    assert not swap
 
 
 
