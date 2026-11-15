@@ -808,62 +808,120 @@ class Siter:
         return True
 
 
+    def updateNode(self, node, childer, right=False):
+        """Updage node said given new child said childer at side given by right
+        remove old node entry in .nodes at old said and pin new node entry at
+        new said.  Values are Matter instances
+
+        Raises error if unsuccessful
+
+        Returns::
+            new (Partage):  instance (said, nodage) with Matter instance values
+                        as new node with updated said and child part of nodage
+
+        Parameters::
+            node (Partage): instance old node to be update
+            childer (Noncer): instance of new child said
+            right (bool):  True means replace right child said
+                           False means replace leaft child said
+        """
+        if not self.remNode(node.said):  # first remove old node
+            raise ValueError(f"Attempt to remove missing node="
+                             f"{node.said.qb64}")
+        # now replace
+        side = 'right' if right else 'left'
+        kwa = dict()
+        kwa[side] = childer
+        nodage = node.part._replace(**kwa)
+        saider = self.sayNode(nodage)  # update said of node
+        self.pinNode(saider, nodage)  # update .nodes with replacement
+        return Partage(saider, nodage)  # return new node
+
+
+
+    def fork(self, leaf, prior):
+        """Given two leaves oldage and newage, create a node fork and attach the
+        leaves to appropriate children given by the deepest depth where the
+        limbs of the two leaves differ. Returns the newly created node
+
+        Parameters:
+            leaf (Partage): instance (said, part) of new leaf
+            prior (Partage): instance (said, part) of prior leaf
+
+
+        Returns:
+            nodepartage (Partage): instance (said, part) where:
+                            said is qb2 of node
+                            part is Nodage instance with qb2 values
+                            old and new provide left and right as appropriate
+
+        """
+        pass
+
+
+
+
     def insert(self, leafer):
         """Inser leafer idempotently
 
         Returns::
-            result (Partage|None): instance (leaf said, leafage) when insert succeeded
-                              None if leaf for leafer already in tree
-                              raises error otherwise
+            leaf (Partage|None)): of inserted leaf corresponding to leafer
+                When successful insert Partage instance (said, part) where:
+                        said is Noncer instance of leaf said
+                        part is Leafage instance with Matter instance values
+                Otherwise:  None
 
         Parameters::
-            leafer (Diger): instance encoding of leaf limb of digest of leaf
-                            info said which said is digest of actual leaf
-                            information but may use a different digest code from
-                            the siter instance. Thus a siter is compatible with all
-                            external leaf info saids while ensuring for security
-                            reasons that all its internal leaf and node saids
-                            and leaf imgs use the same digest algorithm
-                            as given by siter.code.
+            leafer (Noncer): instance encoding of leaf info said which said is
+                            digest of actual leaf information. leafer may use
+                            a different digest code from .code.
+                            Thus a siter is compatible with all external leaf
+                            info saids while ensuring for security reasons that
+                            all its internal leaf limbs, leaf saids, and node saids
+                            use the same digest algorithm give by .code.
 
 
         """
-        if leafer.code != siter.code:
-            raise ValueError(f"Bad leafer wrong code={leafer.code}")
+        limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
+
         # Setup for insert
-        # make leafage from leafer
-        leafage = Leafage(depth=Number(num=256),
-                              limb=leafer)
-        lsaider = self.sayLeaf(leafage)  # compute leaf said
-        leaf = Partage(said=lsaider, part=leafage)  # matter primitives
+        # make leafage from limber
+        leafage = Leafage(depth=Number(num=256), limb=limber)
+        saider = self.sayLeaf(leafage)  # compute leaf said
+        leaf = Partage(said=saider, part=leafage)  # matter primitives
         if self.hasLeaf(leaf.said):
-            return None  # already inserted
+            return (None, None)  # already inserted
 
         # start at root (values as matter primitives)
-        if (root := self._insert(leaf, self.root)) is not None:
-            # leaf was inserted and new root returned
-            self.root = root  # update new root
+        root = self._insert(leaf, self.root)  # new root with inserted leaf
+        self.root = root  # update new root
+        self.pinLeaf(leaf.said, leaf.part)  # add leaf
+        self.infos[leaf.part.limb.qb64] = leafer.qb64  # add ref to leafer to infos
+        return (leaf, root)
 
-            # update infos outside to .insert call after success
-            # self.infos[saidage.limb.qb64] = leafer.qb64  # insert info
 
 
     def _insert(self, leaf, node):
         """Recursive inset of leafer starting at node. Descends tree until finds
         bottom node the recursively climbs back up tree up updating node saids
-        as it climbs.
+        as it climbs.  Values are Matter instances
 
 
         Returns::
-            result (Partage): instance (said, part) of child to use to update
-                              node where recursive ._insert began
+            new (Partage): instance (said, part) of new updated node replacing
+                           old node where recursive ._insert began where:
+                           said is Noncer instance of node said
+                           part is Nodage instance with Matter instance values
 
         Parameters::
             leaf (Partage): instance (said, part) of leaf to be inserted where:
-                            said is leaf said and part is Leafage of leaf.
+                            said is leaf said Noncer instance
+                            part is Leafage of leaf with Matter instance values
 
-            node (Partage): instance of (node said, nodage) as part of tree to
-                            begin/resume recursive insert.
+            node (Partage): instance of (said, part) as part of tree to
+                            begin/resume recursive insert where:
+                            said is node said Noncer instance
+                            part is Nodage of node with Matter instance values
 
 
         Logic:
@@ -893,15 +951,8 @@ class Siter:
             # see if leaf will attach on empty left child of root
             # if leaf side at depth 1 is left then attach to left child of root
             if not self.rightAtSpanInt(leaf.part.limb.num, 1):  # left it is
-                # remove and replace node
-                if not self.remNode(node.said):  # first remove old node
-                    raise ValueError(f"Attempt to remove missing node="
-                                     f"{node.said.qb64}")
-                # replace empty left child of root node with leaf and update
-                nodage = node.part._replace(**dict(left=leaf.said))
-                saider = self.sayNode(nodage)  # update said of root node
-                self.pinNode(saider, nodage)  # update .nodes
-                return Partage(saider, nodage)  # return updated node
+                # remove, replace, and return updated node with new left child
+                return self.updateNode(node, leaf.said, right=False) # left
 
         if not node.part.right.nonce:  # right child is empty (only if root)
             rightIsUnfit = True
@@ -913,16 +964,8 @@ class Siter:
             # see if leaf will attach on empty right child of root
             # if leaf side at depth 1 is right then attach to right child of root
             if self.rightAtSpanInt(leaf.part.limb.num, 1):  # right it is
-                # remove and replace node
-                if not self.remNode(node.said):  # first remove old node
-                    raise ValueError(f"Attempt to remove missing node="
-                                     f"{node.said.qb64}")
-                # replace empty right child of root node with leaf
-                nodage = node.part._replace(**dict(right=leaf.said))
-                saider = self.sayNode(nodage)  # update said of root node
-                self.pinNode(saider, nodage)  # update .nodes
-                return Partage(saider, nodage)  # return updated node
-
+                # remove, replace, and return updated node with new right child
+                return self.updateNode(node, leaf.said, right=True) # right
 
         if (nodage := self.getNode(node.part.left)): # left child is a node
             leftIsUnfit = True
@@ -931,15 +974,8 @@ class Siter:
                 # fits so walk down one
                 # recurse with left child node as new node
                 child = self._insert(leaf, Partage(node.part.left, nodage))
-                # remove and replace node
-                if not self.remNode(node.said):  # first remove old node
-                    raise ValueError(f"Attempt to remove missing node="
-                                     f"{node.said.qb64}")
-                # replace left child with child (node or leaf) and update node
-                nodage = node.part._replace(**dict(left=child.said))
-                saider = self.sayNode(nodage)  # update said of node
-                self.pinNode(saider, nodage)  # update .nodes
-                return Partage(saider, nodage)  # return updated node
+                # remove, replace, and return updated node with new left child
+                return self.updateNode(node, child.said, right=False) # left
 
 
         if (nodage := self.getNode(node.part.right)): # right child is a node
@@ -949,15 +985,8 @@ class Siter:
                 # fits so walk down one
                 # recurse with right child node as new node
                 child = self._insert(leaf, Partage(node.part.right, nodage))
-                # remove and replace node
-                if not self.remNode(node.said):  # first remove old node
-                    raise ValueError(f"Attempt to remove missing node="
-                                     f"{node.said.qb64}")
-                # replace right child with right (node or leaf) and update node
-                nodage = node.part._replace(**dict(right=child.said))
-                saider = self.sayNode(nodage)  # update said of node
-                self.pinNode(saider, nodage)  # update .nodes
-                return Partage(saider, nodage)  # return updated node
+                # remove, replace, and return updated node with new right child
+                return self.updateNode(node, child.said, right=True) # right
 
 
         # When we get here when any side that is a node or empty must be
@@ -1004,23 +1033,3 @@ class Siter:
 
         return node
 
-
-
-    def fork(self, leaf, prior):
-        """Given two leaves oldage and newage, create a node fork and attach the
-        leaves to appropriate children given by the deepest depth where the
-        limbs of the two leaves differ. Returns the newly created node
-
-        Parameters:
-            leaf (Partage): instance (said, part) of new leaf
-            prior (Partage): instance (said, part) of prior leaf
-
-
-        Returns:
-            nodepartage (Partage): instance (said, part) where:
-                            said is qb2 of node
-                            part is Nodage instance with qb2 values
-                            old and new provide left and right as appropriate
-
-        """
-        pass

@@ -467,7 +467,7 @@ def test_siter_basic():
     assert result.right.qb64 == nodage.right.qb64
 
 
-    # test .hashLeaf(self, leafage)
+    # test .sayLeaf(self, leafage)
     depther = Number(num=256)  # leaf
     infoer = Diger(ser=b"Leaf Info get it?", code=DigDex.Blake2b_256) # not default SIT code
     limber = Diger(ser=infoer.qb64b, code=Siter.Code)
@@ -513,10 +513,269 @@ def test_siter_basic():
     assert isinstance(result, Leafage)
     assert result.depth.qb64 == leafage.depth.qb64
     assert result.limb.qb64 == leafage.limb.qb64
+    """Done Test"""
 
 
-    # test insert
+def test_insert():
+    """Test insert logic"""
     # create made up leaf limbs for testing
+    code = DigDex.Blake3_256
+
+    limbers = {}
+
+    limb = 0  # all 0s
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '0'
+    key = f"{(limb >> 248):08b}"
+    assert key == '00000000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 1 << 252 # 1 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '1000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '00010000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 2 << 252 # 2 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '2000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '00100000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 3 << 252 # 3 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '3000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '00110000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 4 << 252 # 4 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '4000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '01000000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 5 << 252 # 5 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '5000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '01010000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 6 << 252 # 6 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '6000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '01100000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 7 << 252 # 7 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '7000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '01110000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 8 << 252 # 8 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '8000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '10000000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 9 << 252 # 9 followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == '9000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '10010000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 10 << 252 # 10  (a hex) followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'a000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '10100000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 11 << 252 # 11  (b hex) followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'b000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '10110000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 12 << 252 # 12  (c hex) followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'c000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '11000000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 13 << 252 # 13  (d hex) followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'd000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '11010000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 14 << 252 # 14  (e hex) followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'e000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '11100000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 15 << 252 # 15  (f hex) followed by all zeros
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'f000000000000000000000000000000000000000000000000000000000000000'
+    key = f"{(limb >> 248):08b}"
+    assert key == '11110000'  # 8 MSbs
+    limbers[key] = limber
+
+    limb = 2 ** 256 - 1  # all 1s
+    limber = Diger(num=limb, code=code)
+    assert limber.num == limb
+    assert limber.numh == 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    key = f"{(limb >> 248):08b}"
+    assert key == '11111111'  # 8 MSbs
+    limbers[key] = limber
+
+
+    # Basic Tests
+    tuid = '0ACiicCYoKAqao8qDdnlFVrY'
+    siter = Siter(tuid=tuid)  # create Siter with known tuid
+    assert siter.tuider.qb64 == tuid
+    assert siter.code == code == DigDex.Blake3_256
+    assert siter.root
+    rqb64 = Partage(said=siter.root.said.qb64,
+                    part=Nodage(depth=siter.root.part.depth.qb64,
+                                limb=siter.root.part.limb.qb64,
+                                  left=siter.root.part.left.qb64,
+                                  right=siter.root.part.right.qb64))
+    assert rqb64._asdict() == \
+    {
+        'said': 'ENtWb6xykmkwzn3hiDmfCOS_crgAI6oQ6jLmHR_HlrF0',
+        'part': Nodage(depth='MAAA',
+                       limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                       left='1AAP',
+                       right='1AAP')
+    }
+    assert len(siter.nodes) == 1
+
+    # test ._siter
+    # test insert leaves on empty node children
+    # test left child
+    # manually create leaf using  limber '01000000'
+    leafage = Leafage(depth=Number(num=256),
+                            limb=limbers['01000000'])
+    saider = siter.sayLeaf(leafage)  # compute leaf said
+    assert saider.qb64 == 'EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-'
+    leaf = Partage(said=saider, part=leafage)  # matter primitives
+
+    root = siter._insert(leaf, siter.root)
+    assert root.said.qb64 != siter.root.said.qb64  # changed value
+    assert len(siter.nodes) == 1  # no new nodes just filled in leaf
+    assert not siter.hasNode(siter.root.said)  # old root node was removed
+    assert siter.hasNode(root.said)  # new root node was inserted
+    assert root.part.left.qb64 == saider.qb64  # leaf said at left child
+
+    siter.root = root # update root with new root
+
+    rqb64 = Partage(said=siter.root.said.qb64,
+                    part=Nodage(depth=siter.root.part.depth.qb64,
+                                limb=siter.root.part.limb.qb64,
+                                  left=siter.root.part.left.qb64,
+                                  right=siter.root.part.right.qb64))
+    assert rqb64._asdict() == \
+    {
+        'said': 'EJWd2kyB2GwB7o0YYt6S_hYlzE6G_ju20ats0h3ho8xQ',
+        'part': Nodage(depth='MAAA',
+                       limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                       left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
+                       right='1AAP')
+    }
+
+    # test right child
+    # manually create leaf using  limber '10000000'
+    leafage = Leafage(depth=Number(num=256),
+                            limb=limbers['10000000'])
+    saider = siter.sayLeaf(leafage)  # compute leaf said
+    assert saider.qb64 == 'EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE'
+    leaf = Partage(said=saider, part=leafage)  # matter primitives
+
+    root = siter._insert(leaf, siter.root)
+    assert root.said.qb64 != siter.root.said.qb64  # changed value
+    assert len(siter.nodes) == 1  # no new nodes just filled in leaf
+    assert not siter.hasNode(siter.root.said)  # old root node was removed
+    assert siter.hasNode(root.said)  # new root node was inserted
+    assert root.part.right.qb64 == saider.qb64  # leaf said at right child
+
+    siter.root = root # update root with new root
+
+    rqb64 = Partage(said=siter.root.said.qb64,
+                    part=Nodage(depth=siter.root.part.depth.qb64,
+                                limb=siter.root.part.limb.qb64,
+                                  left=siter.root.part.left.qb64,
+                                  right=siter.root.part.right.qb64))
+    assert rqb64._asdict() == \
+    {
+        'said': 'EBxJZyJZiHIEdh_LYAGXsiI4211HjgGtn5ktEafekbft',
+        'part': Nodage(depth='MAAA',
+                       limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                       left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
+                       right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
+    }
+
+    # test fork right child
+    # manually create leaf using  limber '01010000'
+    leafage = Leafage(depth=Number(num=256),
+                            limb=limbers['01010000'])
+    saider = siter.sayLeaf(leafage)  # compute leaf said
+    assert saider.qb64 == 'EKzxoQ2y54I_iwOJOlavCEnq52673S9oSKoBOkUAeWyD'
+    leaf = Partage(said=saider, part=leafage)  # matter primitives
+
+    root = siter._insert(leaf, siter.root)
+    assert root.said.qb64 != siter.root.said.qb64  # changed value
+    assert len(siter.nodes) == 1  # no new nodes just filled in leaf
+    assert not siter.hasNode(siter.root.said)  # old root node was removed
+    assert siter.hasNode(root.said)  # new root node was inserted
+    assert root.part.right.qb64 == saider.qb64  # leaf said at right child
+
+    siter.root = root # update root with new root
+
+    rqb64 = Partage(said=siter.root.said.qb64,
+                    part=Nodage(depth=siter.root.part.depth.qb64,
+                                limb=siter.root.part.limb.qb64,
+                                  left=siter.root.part.left.qb64,
+                                  right=siter.root.part.right.qb64))
+    assert rqb64._asdict() == \
+    {
+        'said': 'EBxJZyJZiHIEdh_LYAGXsiI4211HjgGtn5ktEafekbft',
+        'part': Nodage(depth='MAAA',
+                       limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                       left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
+                       right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
+    }
+
 
 
 
@@ -529,10 +788,9 @@ def test_siter_basic():
     #result = siter.insert(leafer=leafer)
     #assert result is None
 
-
-
     """Done Test"""
 
 if __name__ == "__main__":
     test_siting_siter_class()
     test_siter_basic()
+    test_insert()
