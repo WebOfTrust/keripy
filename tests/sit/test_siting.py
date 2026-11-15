@@ -196,17 +196,19 @@ def test_siting_siter_class():
     with pytest.raises(ValueError):
         Siter.rightAtSpanInt(limb, span)  # span/depth of zero
 
-    limb, span = Siter.extendLimbInt(limb=limb, span=span)  # default left
+    limb, span = Siter.extendLimbInt(limb=limb, span=span)  # default side left
     assert limb == 0
     assert f"{limb:0256b}"[:8] == '00000000'
     assert span == 1
     assert not Siter.rightAtSpanInt(limb, span)  # left at depth=span=1
-    limb, span = Siter.extendLimbInt(limb=limb, span=span, right=True)  # right
+
+    limb, span = Siter.extendLimbInt(limb=limb, span=span, side=True)  # side right
     assert limb == 2 ** (MaxDepth - span)
     assert f"{limb:0256b}"[:8] == '01000000'
     assert span == 2
     assert Siter.rightAtSpanInt(limb, span)  # right at depth=span=2
-    limb, span = Siter.extendLimbInt(limb=limb, span=span, right=True)  # right
+
+    limb, span = Siter.extendLimbInt(limb=limb, span=span, side=True)  # side right
     assert f"{limb:0256b}"[:8] == '01100000'
     assert span == 3
     assert Siter.rightAtSpanInt(limb, span)  # right at depth=span=3
@@ -217,7 +219,7 @@ def test_siting_siter_class():
     spanner = Number(num=0)
     assert spanner.qb64 == 'MAAA'
 
-    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner)  # default left
+    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner)  # default side left
     assert not Siter.rightAtSpan(limber, spanner)  # left at depth=span=1
     assert limber.qb64 == 'EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     assert spanner.qb64 == 'MAAB'
@@ -226,7 +228,7 @@ def test_siting_siter_class():
     assert spanner.num == 1
     assert not Siter.rightAtSpanInt(limb, spanner.num)  # left at depth=span=1
 
-    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, right=True)  # right
+    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, side=True)  # side right
     assert Siter.rightAtSpan(limber, spanner)  # right at depth=span=2
     assert limber.qb64 == 'EEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     assert spanner.qb64 == 'MAAC'
@@ -235,7 +237,7 @@ def test_siting_siter_class():
     assert spanner.num == 2
     assert Siter.rightAtSpanInt(limb, spanner.num)  # right at depth=span=2
 
-    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, right=True)  # right
+    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, side=True)  # side right
     assert Siter.rightAtSpan(limber, spanner)  # right at depth=span=2
     assert limber.qb64 == 'EGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     limb = int.from_bytes(limber.raw)

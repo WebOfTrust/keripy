@@ -197,7 +197,7 @@ class Siter:
 
 
     @staticmethod
-    def extendLimbInt(limb, span=0, right=False):
+    def extendLimbInt(limb, span=0, side=False):
         """Extends limb  of span (depth) using  bit value given by right and
         returns new limb extended by 1 bit.  Uses int values not Matter instances
 
@@ -210,8 +210,8 @@ class Siter:
         Parameters:
             limb (int): 256 bit limb path with span MSbits to be extended
             span (int): span (depth) of limb 0-255 MSbits
-            right (bool): True means extend with 1 (right child bit)
-                          False means extend with 0 (left child bit)
+            side (bool): True means extend with 1 (right child bit)
+                         False means extend with 0 (left child bit)
 
         Usage::
             given limber as Diger instance of limb
@@ -235,14 +235,14 @@ class Siter:
         mask = ((1 << span) - 1)  # mask of 1s of length span
         limb = (limb >> (MaxDepth - span)) & mask
         limb = limb << 1  # extend with zero
-        if right:
+        if side:
             limb |= 1  # make lsb 1
         span += 1
         return (limb << (MaxDepth - span), span)
 
 
     @staticmethod
-    def extendLimb(limber, spanner, right=False):
+    def extendLimb(limber, spanner, side=False):
         """Extends limber of span spanner with bit value given by left and
         returns tuple of (limber, spanner) where:
             limber extended by 1 bit and
@@ -257,8 +257,8 @@ class Siter:
             limber (Diger): instance encoding 256 bit limb path with span MSbits
                             to be extended
             spanner (Number): instance encoding limb span MSbits [0..255]
-            right (bool): True means extend with 1 (right child bit)
-                          False means extend with 0 (left child bit)
+            side (bool): True means extend with 1 (right child bit)
+                         False means extend with 0 (left child bit)
 
         Usage::
             given limber as Diger instance of limb
@@ -273,7 +273,7 @@ class Siter:
         code = limber.code  # save to recreate
         limb = limber.num
         span = spanner.num
-        limb, span = Siter.extendLimbInt(limb=limb, span=span, right=right)
+        limb, span = Siter.extendLimbInt(limb=limb, span=span, side=side)
         limber = Diger(raw=limb.to_bytes(MaxDepthBytes), code=code)
         spanner = Number(num=span)
         return (limber, spanner)
@@ -448,7 +448,7 @@ class Siter:
 
 
     @staticmethod
-    def forkSpanSwap(left, right):
+    def forkSpanSwap(lefter, righter):
         """Computes and returns tuple (span, swap) where:
         span is int of shallowest fork (bit position) where limbs differ
             (1 is shallest, 256 is deepest)
@@ -469,10 +469,10 @@ class Siter:
                         because left limb is 0 and right limb is 1 at fork
 
         Parameters::
-            left (Diger): instance of 256 bit limb on left side
-            right (Diger): instance of 256 bit limb on right side
+            lefter (Diger): instance of 256 bit limb on left side
+            righter (Diger): instance of 256 bit limb on right side
         """
-        span, swap = Siter.forkSpanSwapInt(left.num, right.num)
+        span, swap = Siter.forkSpanSwapInt(lefter.num, righter.num)
         return (Number(num=span), swap)
 
 
@@ -808,7 +808,7 @@ class Siter:
         return True
 
 
-    def updateNode(self, node, childer, right=False):
+    def updateNode(self, node, childer, side=False):
         """Updage node said given new child said childer at side given by right
         remove old node entry in .nodes at old said and pin new node entry at
         new said.  Values are Matter instances
@@ -822,14 +822,14 @@ class Siter:
         Parameters::
             node (Partage): instance old node to be update
             childer (Noncer): instance of new child said
-            right (bool):  True means replace right child said
-                           False means replace leaft child said
+            side (bool):  True means replace right child said
+                           False means replace left child said
         """
         if not self.remNode(node.said):  # first remove old node
             raise ValueError(f"Attempt to remove missing node="
                              f"{node.said.qb64}")
         # now replace
-        side = 'right' if right else 'left'
+        side = 'right' if side else 'left'
         kwa = dict()
         kwa[side] = childer
         nodage = node.part._replace(**kwa)
@@ -839,15 +839,17 @@ class Siter:
 
 
 
-    def fork(self, leaf, prior):
-        """Given two leaves oldage and newage, create a node fork and attach the
-        leaves to appropriate children given by the deepest depth where the
-        limbs of the two leaves differ. Returns the newly created node
+    def fork(self, node, lefter, righter, side=False):
+        """Attach new forking node to right/left side of node with
 
         Parameters:
-            leaf (Partage): instance (said, part) of new leaf
-            prior (Partage): instance (said, part) of prior leaf
-
+            node (Partage): instance (said, part) of node where:
+                            said is Noncer instance of node said
+                            part is Nodage instance with Matter instance values
+            lefter (Noncer): instance of left child said of new forking node
+            righter (Noncer): instance of left child said of new forking node
+            side (bool):  False is right side
+                          True is leaft side
 
         Returns:
             nodepartage (Partage): instance (said, part) where:
@@ -856,7 +858,14 @@ class Siter:
                             old and new provide left and right as appropriate
 
         """
-        pass
+        # create new forking node of lefter and righter
+        # extend limb on left side of node
+        limber, spanner = self.extendLimb(node.part.limb, node.part.depth, side=False)
+        # create nodage of new forking node
+        nodage = Nodage(depth=spanner, limb=limber, left=lefter, right=righter)
+        saider = self.sayNode(nodage)  # update said of forking node
+        self.pinNode(saider, nodage)  # update .nodes with forking node
+        return self.updateNode(node, saider, side=side)
 
 
 
@@ -952,7 +961,7 @@ class Siter:
             # if leaf side at depth 1 is left then attach to left child of root
             if not self.rightAtSpanInt(leaf.part.limb.num, 1):  # left it is
                 # remove, replace, and return updated node with new left child
-                return self.updateNode(node, leaf.said, right=False) # left
+                return self.updateNode(node, leaf.said, side=False) # left
 
         if not node.part.right.nonce:  # right child is empty (only if root)
             rightIsUnfit = True
@@ -965,7 +974,7 @@ class Siter:
             # if leaf side at depth 1 is right then attach to right child of root
             if self.rightAtSpanInt(leaf.part.limb.num, 1):  # right it is
                 # remove, replace, and return updated node with new right child
-                return self.updateNode(node, leaf.said, right=True) # right
+                return self.updateNode(node, leaf.said, side=True) # right
 
         if (nodage := self.getNode(node.part.left)): # left child is a node
             leftIsUnfit = True
@@ -975,7 +984,7 @@ class Siter:
                 # recurse with left child node as new node
                 child = self._insert(leaf, Partage(node.part.left, nodage))
                 # remove, replace, and return updated node with new left child
-                return self.updateNode(node, child.said, right=False) # left
+                return self.updateNode(node, child.said, side=False) # left
 
 
         if (nodage := self.getNode(node.part.right)): # right child is a node
@@ -986,7 +995,7 @@ class Siter:
                 # recurse with right child node as new node
                 child = self._insert(leaf, Partage(node.part.right, nodage))
                 # remove, replace, and return updated node with new right child
-                return self.updateNode(node, child.said, right=True) # right
+                return self.updateNode(node, child.said, side=True) # right
 
 
         # When we get here when any side that is a node or empty must be
@@ -1022,14 +1031,61 @@ class Siter:
 
             return node
 
-        # both children are leaves so add on best side a node fork of new leaf
-        # and prior leaf as children.
-        # Balance fork so each leaf is on correct side of new node.
-        # Best side to fork is where leaves new and prior first differ at
-        # the deeper depth. This avoids adding fork that doesnt have enough
-        # limb bits to fit between old node and it leaves.
-        # check for fork at depth 256, if so then error where new leaf is
-        # already in tree but not in .leaves
+        """Logic
+        both children are leaves so add on best side a node fork of new leaf
+        and prior leaf as children.
+        Balance fork so each leaf is on correct side of new node.
+        Best side to fork is where leaves new and prior first differ at
+        the deeper depth. This avoids adding fork that doesnt have enough
+        limb bits to fit between old node and it leaves.
+        check for fork at depth 256, if so then error where new leaf is
+        already in tree but not in .leaves
+        """
+
+        # get left child leaf
+        if (leafage := self.getLeaf(node.part.left)) is None:
+            raise ValueError(f"Missing left leaf at said={node.part.left.qb64} of "
+                             f"node at said={node.said.qb64}")
+        leftChild = Partage(node.part.left, leafage)
+
+        # get right leaf
+        if (leafage := self.getLeaf(node.part.right)) is None:
+            raise ValueError(f"Missing right leaf at said={node.part.right.qb64} of "
+                             f"node at said={node.said.qb64}")
+        rightChild = Partage(node.part.right, leafage)
+
+        # compare leaf with leftChild
+        spannerLeft, swapLeft = self.forkSpanSwap(lefter=leftChild.part.limb,
+                                                  righter=leaf.part.limb)
+
+        # compare leaf with rightChild
+        spannerRight, swapRight = self.forkSpanSwap(lefter=leaf.part.limb,
+                                                    righter=rightChild.part.limb)
+
+        if spannerLeft > spannerRight:  # leaf and left have deeper fork depth
+            # replace left child with new forking node of leaf and old left child
+            # extend limb on left side of node
+            limber, spanner = self.extendLimb(node.part.limb, node.part.depth, side=False)
+            if swapLeft:  # leaf needs to be on left side of fork
+                # create nodage of new forking node
+                nodage = Nodage(depth=spanner, limb=limber, left=leaf.said, right=leftChild.said)
+            else:  # leaf needs to be on right side of fork
+                nodage = Nodage(depth=spanner, limb=limber, left=leftChild.said, right=leaf.said)
+            saider = self.sayNode(nodage)  # update said of forking node
+            self.pinNode(saider, nodage)  # update .nodes with forking node
+            return self.updateNode(node, saider, side=False) # left
+
+        else:  # leaf and right have deeper fork depth
+            # replace right child with new forking node of leaf and old right child
+            # extend limb on right side of node
+            limber, spanner = self.extendLimb(node.limb, node.depth, side=True)
+            if swapRight:  # leaf needs to be on right side of fork
+                nodage = Nodage(depth=spanner, limb=limber, left=rightChild.said, right=leaf.said)
+            else:  # leaf needs to be on left side of fork
+                nodage = Nodage(depth=spanner, limb=limber, left=leaf.said, right=rightChild.said)
+            saider = self.sayNode(nodage)  # update said of forking node
+            self.pinNode(saider, nodage)  # update .nodes with forking node
+            return self.updateNode(node, saider, side=True) # right
 
         return node
 
