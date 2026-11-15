@@ -884,7 +884,7 @@ class Siter:
         leftIsUnfit = False  # keep track when we have  already found left unfit
         rightIsUnfit = False  # keep track when we have already find right unfit
 
-        if not node.part.left.nonce:  # empty left child of node (only if root)
+        if not node.part.left.nonce:  # left child is empty (only if root)
             leftIsUnfit = True
             if node.part.depth.num != 0:  # not root
                 raise ValueError(f"Invalid node={node.said.qb64}, not root "
@@ -903,7 +903,7 @@ class Siter:
                 self.pinNode(saider, nodage)  # update .nodes
                 return Partage(saider, nodage)  # return updated node
 
-        if not node.part.right.nonce:  # empty right child of node (only if root)
+        if not node.part.right.nonce:  # right child is empty (only if root)
             rightIsUnfit = True
             # should only happen if node is root
             if node.part.depth.num != 0:  # not root
@@ -976,7 +976,7 @@ class Siter:
         #    b) right is unfit so left is leaf
         #    c) neigher right nor left are unfit so both must be leaves
 
-        if leftIsUnfit:  # case a) left unfit right is leaf
+        if leftIsUnfit:  # case a) left unfit, right is leaf
             # right child is leaf so add node fork on right with old right and
             # new leaf as children.  Balance fork so each leaf is on correct side
             # check for fork at depth 256, if so then error where new leaf is
@@ -984,7 +984,7 @@ class Siter:
 
             return node
 
-        if rightIsUnfit:  # case a) left is an unfit node or unfit empty,
+        if rightIsUnfit:  # case b) right unfit, left is leaf
 
             # left child is leaf so add node fork on left with old left and
             # new leaf as children.  Balance fork so each leaf is on correct side
@@ -993,9 +993,12 @@ class Siter:
 
             return node
 
-        # both children are leaves so add node fork on best side with old side
-        # and new leaf as children.Balance fork so each leaf is on correct side
-        # best side to fork is one where new fork is at deeper depth
+        # both children are leaves so add on best side a node fork of new leaf
+        # and prior leaf as children.
+        # Balance fork so each leaf is on correct side of new node.
+        # Best side to fork is where leaves new and prior first differ at
+        # the deeper depth. This avoids adding fork that doesnt have enough
+        # limb bits to fit between old node and it leaves.
         # check for fork at depth 256, if so then error where new leaf is
         # already in tree but not in .leaves
 
