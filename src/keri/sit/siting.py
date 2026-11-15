@@ -435,12 +435,15 @@ class Siter:
             left (int): 256 bit limb on left side
             right (int): 256 bit limb on right side
         """
+        if left == right:
+            raise ValueError(f"Bad pair left={right=}")
         for span in range(1, 256):
             leftbit = (left >> (MaxDepth - span)) & 1
             rightbit = (right >> (MaxDepth - span)) & 1
             if leftbit != rightbit:  # shallowest fork found at span
                 swap = True if leftbit else False
                 break
+
         return (span, swap)
 
 
@@ -806,21 +809,61 @@ class Siter:
 
 
     def insert(self, leafer):
-        """Insert leafer idempotently into tree
+        """Inser leafer idempotently
 
         Returns::
-            result (Partage): instance (leaf said, leafage) when insert succeeded
+            result (Partage|None): instance (leaf said, leafage) when insert succeeded
                               None if leaf for leafer already in tree
                               raises error otherwise
 
         Parameters::
-            leafer (Diger): instance encoding of leaf info said which said is
-                            digest of actual leaf information but may use a
-                            different digest code from the Siter. Thus the
-                            Siter is compatible with all external leaf info saids
-                            while ensuring for security reasons that all internal
-                            leaf and node saids use the same digest algorithm
+            leafer (Diger): instance encoding of leaf limb of digest of leaf
+                            info said which said is digest of actual leaf
+                            information but may use a different digest code from
+                            the siter instance. Thus a siter is compatible with all
+                            external leaf info saids while ensuring for security
+                            reasons that all its internal leaf and node saids
+                            and leaf imgs use the same digest algorithm
                             as given by siter.code.
+
+
+        """
+        if leafer.code != siter.code:
+            raise ValueError(f"Bad leafer wrong code={leafer.code}")
+        # Setup for insert
+        # make leafage from leafer
+        leafage = Leafage(depth=Number(num=256),
+                              limb=leafer)
+        lsaider = self.sayLeaf(leafage)  # compute leaf said
+        leaf = Partage(said=lsaider, part=leafage)  # matter primitives
+        if self.hasLeaf(leaf.said):
+            return None  # already inserted
+
+        # start at root (values as matter primitives)
+        if (root := self._insert(leaf, self.root)) is not None:
+            # leaf was inserted and new root returned
+            self.root = root  # update new root
+
+            # update infos outside to .insert call after success
+            # self.infos[saidage.limb.qb64] = leafer.qb64  # insert info
+
+
+    def _insert(self, leaf, node):
+        """Recursive inset of leafer starting at node. Descends tree until finds
+        bottom node the recursively climbs back up tree up updating node saids
+        as it climbs.
+
+
+        Returns::
+            result (Partage): instance (said, part) of child to use to update
+                              node where recursive ._insert began
+
+        Parameters::
+            leaf (Partage): instance (said, part) of leaf to be inserted where:
+                            said is leaf said and part is Leafage of leaf.
+
+            node (Partage): instance of (node said, nodage) as part of tree to
+                            begin/resume recursive insert.
 
 
         Logic:
@@ -838,143 +881,137 @@ class Siter:
             Just attach to side given by depth 1 limb bit. Root at depth 0.
 
         """
-        # Setup for insert
-        # make leafage from leafer
-        leafage = Leafage(depth=Number(num=256),
-                          limb=Diger(ser=leafer.qb64b, code=self.Code))
-        lsaider = self.sayLeaf(leafage)  # compute leaf said
-        leaf = Partage(said=lsaider, part=leafage)  # matter primitives
-        if self.hasLeaf(leaf.said):
-            return None  # already inserted
-        node = self.root  # start at root with values as matter primitives
-        while True:  # returns leaf when leaf inserted
-            # setup pass
-            leftIsNode= False
-            rightIsNode = False
-            # see if leaf will attach on empty child if any,
-            # else see if can walk down child nodes if any
-            # try left side first
-            if not node.part.left.nonce:  # empty left child of node (only root)
-                if node.part.depth.num != 0:  # not root
-                    raise ValueError(f"Invalid node={node.said.qb64}, not root "
-                                     f"but empty left child")
+        leftIsUnfit = False  # keep track when we have  already found left unfit
+        rightIsUnfit = False  # keep track when we have already find right unfit
 
-                # if leaf side at depth 1 is left then attach to root
-                if not self.rightAtSpanInt(leaf.part.limb.num, 1):  # left it is
-                    # update node
-                    if not self.remNode(node.said):  # first remove old node
-                        raise ValueError(f"Attempt to remove missing node="
-                                         f"{node.said.qb64}")
-                    # replace empty left child of current node with leaf
-                    nodage = node.part._replace(**dict(left=leaf.said))
-                    saider = self.sayNode(nodage)  # update said of root node
-                    self.pinNode(saider, nodage)  # update .nodes
-                    self.putLeaf(leaf.said, leaf.part)  # update leaves
-                    # update infos outside to .insert call after success
-                    # self.infos[saidage.limb.qb64] = leafer.qb64  # insert info
-                    return leaf  # insertion succeeded
+        if not node.part.left.nonce:  # empty left child of node (only if root)
+            leftIsUnfit = True
+            if node.part.depth.num != 0:  # not root
+                raise ValueError(f"Invalid node={node.said.qb64}, not root "
+                                 f"but empty left child")
 
-                # else leaf belongs on right side of root so try right side below
+            # see if leaf will attach on empty left child of root
+            # if leaf side at depth 1 is left then attach to left child of root
+            if not self.rightAtSpanInt(leaf.part.limb.num, 1):  # left it is
+                # remove and replace node
+                if not self.remNode(node.said):  # first remove old node
+                    raise ValueError(f"Attempt to remove missing node="
+                                     f"{node.said.qb64}")
+                # replace empty left child of root node with leaf and update
+                nodage = node.part._replace(**dict(left=leaf.said))
+                saider = self.sayNode(nodage)  # update said of root node
+                self.pinNode(saider, nodage)  # update .nodes
+                return Partage(saider, nodage)  # return updated node
 
-            else: # non-empty left child of node
-                if (nodage := self.getNode(node.part.left)): # its a node
-                    leftIsNode = True
-                    if self.fitLeafNode(leaf.part.limb, nodage.limb, nodage.depth):
-                        # fits so walk down one
-                        # repeat with left child node as new node
-                        node = Partage(node.part.left, nodage)
-                        continue  # resume on next level down on left
+        if not node.part.right.nonce:  # empty right child of node (only if root)
+            rightIsUnfit = True
+            # should only happen if node is root
+            if node.part.depth.num != 0:  # not root
+                raise ValueError(f"Invalid node={node.said.qb64}, not root "
+                                 f"but empty right child")
 
-                # else is a leaf so compare rebalance leaf logic below
+            # see if leaf will attach on empty right child of root
+            # if leaf side at depth 1 is right then attach to right child of root
+            if self.rightAtSpanInt(leaf.part.limb.num, 1):  # right it is
+                # remove and replace node
+                if not self.remNode(node.said):  # first remove old node
+                    raise ValueError(f"Attempt to remove missing node="
+                                     f"{node.said.qb64}")
+                # replace empty right child of root node with leaf
+                nodage = node.part._replace(**dict(right=leaf.said))
+                saider = self.sayNode(nodage)  # update said of root node
+                self.pinNode(saider, nodage)  # update .nodes
+                return Partage(saider, nodage)  # return updated node
 
-            if not node.part.right.nonce:  # empty right child of node (only root)
-                if node.part.depth.num != 0:  # not root
-                    raise ValueError(f"Invalid node={node.said.qb64}, not root "
-                                     f"but empty right child")
 
-                # if leaf side at depth 1 is right then attach to root
-                if self.rightAtSpanInt(leaf.part.limb.num, 1):  # right it is
-                    # update node
-                    if not self.remNode(node.said):  # first remove old node
-                        raise ValueError(f"Attempt to remove missing node="
-                                         f"{node.said.qb64}")
-                    # replace empty right child of current node with leaf
-                    nodage = node.part._replace(**dict(right=leaf.said))
-                    saider = self.sayNode(nodage)  # update said of root node
-                    self.pinNode(saider, nodage)  # update .nodes
-                    self.putLeaf(leaf.said, leaf.part)  # update leaves
-                    # update infos outside to .insert call after success
-                    # self.infos[saidage.limb.qb64] = leafer.qb64  # insert info
-                    return leaf  # insertion succeeded
+        if (nodage := self.getNode(node.part.left)): # left child is a node
+            leftIsUnfit = True
+            # see if leaf belongs on left side of node when left child is node
+            if self.fitLeafNode(leaf.part.limb, nodage.limb, nodage.depth):
+                # fits so walk down one
+                # recurse with left child node as new node
+                child = self._insert(leaf, Partage(node.part.left, nodage))
+                # remove and replace node
+                if not self.remNode(node.said):  # first remove old node
+                    raise ValueError(f"Attempt to remove missing node="
+                                     f"{node.said.qb64}")
+                # replace left child with child (node or leaf) and update node
+                nodage = node.part._replace(**dict(left=child.said))
+                saider = self.sayNode(nodage)  # update said of node
+                self.pinNode(saider, nodage)  # update .nodes
+                return Partage(saider, nodage)  # return updated node
 
-                # else leaf belongs on right side of root so try right side below
 
-            else: # non-empty right child of node
-                if (nodage := self.getNode(node.part.right)): # its a node
-                    rightIsNode = True
-                    if self.fitLeafNode(leaf.part.limb, nodage.limb, nodage.depth):
-                        # fits so walk down one
-                        # repeat with left child node as new node
-                        node = Partage(node.part.right, nodage)
-                        continue  # resume on next level down on left
+        if (nodage := self.getNode(node.part.right)): # right child is a node
+            rightIsUnfit = True
+            # see if leaf belongs on right side of node when right child is node
+            if self.fitLeafNode(leaf.part.limb, nodage.limb, nodage.depth):
+                # fits so walk down one
+                # recurse with right child node as new node
+                child = self._insert(leaf, Partage(node.part.right, nodage))
+                # remove and replace node
+                if not self.remNode(node.said):  # first remove old node
+                    raise ValueError(f"Attempt to remove missing node="
+                                     f"{node.said.qb64}")
+                # replace right child with right (node or leaf) and update node
+                nodage = node.part._replace(**dict(right=child.said))
+                saider = self.sayNode(nodage)  # update said of node
+                self.pinNode(saider, nodage)  # update .nodes
+                return Partage(saider, nodage)  # return updated node
 
-                # else is a leaf so compare rebalance leaf logic below
 
-            # When we get here, then both sides as is are unfit
-            # an unfit node on a side means that the node twig on that side does
-            # not fit the leaf limb at depth so leaf must go on other side.
-            # an unfit empty on a side means that the root node child does not
-            # fit the leaf limb at depth so the leaf must go on other side.
-            # Therefore We must then do leaf rebalancing logic
-            # Cases:
-            #    a) left is unfit node or unfit empty and right is leaf
-            #    b) right is unfit node or unfit empty and left is leaf
-            #    c) left and right are both leaves
+        # When we get here when any side that is a node or empty must be
+        # unfit seen we have checked boths sides for fit node or empty.
+        # we track which sides are unfit with leftIsUnfit and rightIsUnfit
+        # Therefore when we get here we must then do leaf rebalancing logic
+        # an unfit empty on a side means that the root node child does not
+        # fit the leaf limb at depth so the leaf must go on other side.
+        # an unfit node on a side means that the node twig on that side does
+        # not fit the leaf limb at depth so leaf must go on other side.
+        # by construction the left and right children of a node can not both be
+        # unfit as any leaf must match one side or the other be it leaf or node.
 
-            if leftIsNode:  # case a) left is an unfit node or unfit empty,
-                if rightIsNode:
-                    raise ValueError(f"Broken tree at node={node.said.qb64}")
-                # right child is leaf so add node fork with old child and new leaf
-                # as children.  Rebalance so each on correct side
-                # check for fork at depth 256, if so then error where new leaf is
-                # already in tree but not in .leaves
+        # Cases:
+        #    a) left is unfit so right is leaf
+        #    b) right is unfit so left is leaf
+        #    c) neigher right nor left are unfit so both must be leaves
 
-                return leaf
-
-            if rightIsNode:  # case a) left is an unfit node or unfit empty,
-                if leftIsNode:
-                    raise ValueError(f"Broken tree at node={node.said.qb64}")
-                # left child is leaf so add node fork with old child and new leaf
-                # as children.  Rebalance so each on correct side
-                # check for fork at depth 256, if so then error where new leaf is
-                # already in tree but not in .leaves
-
-                return leaf
-
-            # both children are leaves, find which side child leaf has shallowest
-            # fork with new leaf and add new leaf to new fork on other side
+        if leftIsUnfit:  # case a) left unfit right is leaf
+            # right child is leaf so add node fork on right with old right and
+            # new leaf as children.  Balance fork so each leaf is on correct side
             # check for fork at depth 256, if so then error where new leaf is
             # already in tree but not in .leaves
 
-            return leaf
+            return node
+
+        if rightIsUnfit:  # case a) left is an unfit node or unfit empty,
+
+            # left child is leaf so add node fork on left with old left and
+            # new leaf as children.  Balance fork so each leaf is on correct side
+            # check for fork at depth 256, if so then error where new leaf is
+            # already in tree but not in .leaves
+
+            return node
+
+        # both children are leaves so add node fork on best side with old side
+        # and new leaf as children.Balance fork so each leaf is on correct side
+        # best side to fork is one where new fork is at deeper depth
+        # check for fork at depth 256, if so then error where new leaf is
+        # already in tree but not in .leaves
+
+        return node
 
 
 
-    def fork(self, oldage, newage, depth, limb, side):
-        """Given two leaves oldage and newage, create a node and attach the
-        leaves to appropriate children given by the lowest depth where the
+    def fork(self, leaf, prior):
+        """Given two leaves oldage and newage, create a node fork and attach the
+        leaves to appropriate children given by the deepest depth where the
         limbs of the two leaves differ. Returns the newly created node
 
         Parameters:
-            old (Leafage): instance (said, part) with said as qb2 where
-                           part is Leafage instance with qb2 values
-            new (Leafage): instance (said, part) with said as qb2 where
-                           part is Leafage instance with qb2 values
-            depth (Number):  depth of prior node
-            limb (Diger): limb of prior node
-            side (bool): side to attach new node to prior node.
-                         False is left side, True is right side
-                         Enables calculation of new limb from prior limb
+            leaf (Partage): instance (said, part) of new leaf
+            prior (Partage): instance (said, part) of prior leaf
+
 
         Returns:
             nodepartage (Partage): instance (said, part) where:
@@ -983,23 +1020,4 @@ class Siter:
                             old and new provide left and right as appropriate
 
         """
-        # make matter instance value variant of oldage leaf
-        old = Leafage(depth=Number(qb2=oldage.depth, limb=Diger(qb2=oldage.limb)))
-        oldLimbInt = old.limb.num
-
-        # make matter instance value variant of newage leaf
-        new = Leafage(depth=Number(qb2=newage.depth, limb=Diger(qb2=newage.limb)))
-        newLimbInt = new.limb.num
-
-        for i in range(MaxDepth - 1, 0, -1):  # start at MSbit of limbs
-            oldbit = (oldLimbInt >> i) & 1  # mask off all but lsb after shift
-            newbit = (newLimbInt >> i) & 1  # mask off all but lsb after shift
-            if oldbit != newbit:
-                if oldbit:
-                    left = new
-                    right = old
-
-                else:
-                    left = old
-                    right = new
-                break
+        pass

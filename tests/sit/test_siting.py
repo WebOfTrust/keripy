@@ -360,6 +360,12 @@ def test_siting_siter_class():
     assert spanner.num == 4
     assert not swap
 
+    with pytest.raises(ValueError):
+        span, swap = Siter.forkSpanSwapInt(lefter.num, lefter.num)
+
+    with pytest.raises(ValueError):
+        span, swap = Siter.forkSpanSwap(lefter, lefter)
+
 
 
 
