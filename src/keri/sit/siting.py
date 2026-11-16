@@ -635,6 +635,20 @@ class Siter:
         return nodage
 
 
+    def isNode(self, saider):
+        """Given said returns True if said belongs to node, False otherwise
+        Checks for presence in .nodes and that 0 <= depth < MaxDepth
+
+        Returns::
+            result (bool):  True means said given by saider corresponds to leaf
+                            False otherwise
+        """
+        if (nodage := self.getNode(saider)) is not None:
+            if 0 <= nodage.depth.num < MaxDepth:
+                return True
+        return False
+
+
     def remNode(self, saider):
         """Removes node from .nodes at said given by saider.
 
@@ -782,6 +796,20 @@ class Siter:
         return leafage
 
 
+    def isLeaf(self, saider):
+        """Given said returns True if said belongs to leaf, False otherwise
+        Checks for presence in .leaves and that depth is MaxDepth
+
+        Returns::
+            result (bool):  True means said given by saider corresponds to leaf
+                            False otherwise
+        """
+        if (leafage := self.getLeaf(saider)) is not None:
+            if leafage.depth.num == MaxDepth:
+                return True
+        return False
+
+
     def remLeaf(self, saider):
         """Removes leaf from .leaves at said given by saider.
 
@@ -839,17 +867,17 @@ class Siter:
 
 
 
-    def fork(self, node, lefter, righter, side=False):
+    def forkNode(self, node, lefter, righter, side=False):
         """Attach new forking node to right/left side of node with
 
         Parameters:
             node (Partage): instance (said, part) of node where:
                             said is Noncer instance of node said
                             part is Nodage instance with Matter instance values
-            lefter (Noncer): instance of left child said of new forking node
-            righter (Noncer): instance of left child said of new forking node
-            side (bool):  False is right side
-                          True is leaft side
+            lefter (Noncer): instance of left child said for new forking node
+            righter (Noncer): instance of right child said for new forking node
+            side (bool):  False is left side
+                          True is right side
 
         Returns:
             nodepartage (Partage): instance (said, part) where:
@@ -859,15 +887,48 @@ class Siter:
 
         """
         # create new forking node of lefter and righter
-        # extend limb on left side of node
-        limber, spanner = self.extendLimb(node.part.limb, node.part.depth, side=False)
+        # extend limb of node on side given by side
+        limber, spanner = self.extendLimb(node.part.limb, node.part.depth, side=side)
         # create nodage of new forking node
         nodage = Nodage(depth=spanner, limb=limber, left=lefter, right=righter)
         saider = self.sayNode(nodage)  # update said of forking node
         self.pinNode(saider, nodage)  # update .nodes with forking node
         return self.updateNode(node, saider, side=side)
 
+    def leafFromLimber(self, limber):
+        """Create leaf to insert from limber. Computes leaf limb and said.
 
+        Returns::
+            leaf (Partage): instance (said, part) where:
+                            said is Noncer instance generated from leafage
+                            part is Leafage instance with Matter instance values
+                                depther is Number 256 and limb from limber
+
+        Parameters::
+            limber (Noncer): instance only per leaf unique value used to generate
+                             leafage and then said of leaf
+        """
+        leafage = Leafage(depth=Number(num=256), limb=limber)
+        saider = self.sayLeaf(leafage)  # compute leaf said
+        return Partage(said=saider, part=leafage)  # matter primitives
+
+
+    def leafFromLeafer(self, leafer):
+        """Create leaf to insert from leafer. Computes leaf limb and said.
+
+        Returns::
+            leaf (Partage): instance (said, part) where:
+                            said is Noncer instance generated from leafage
+                            part is Leafage instance with Matter instance values
+                                depther is Number 256 and limb from limber
+
+        Parameters::
+            leafer (Noncer): instance only per leaf unique value of said of info
+                             used to generate limber which is then used to
+                             generate leafage then used to generate said of leaf
+        """
+        limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
+        return self.leafFromLimber(limber)
 
 
     def insert(self, leafer):
@@ -891,22 +952,28 @@ class Siter:
 
 
         """
-        limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
 
-        # Setup for insert
-        # make leafage from limber
-        leafage = Leafage(depth=Number(num=256), limb=limber)
-        saider = self.sayLeaf(leafage)  # compute leaf said
-        leaf = Partage(said=saider, part=leafage)  # matter primitives
+        #limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
+        #leaf = self.leafFromLimber
+        ## Setup for insert
+        ## make leafage from limber
+        #leafage = Leafage(depth=Number(num=256), limb=limber)
+        #saider = self.sayLeaf(leafage)  # compute leaf said
+        #leaf = Partage(said=saider, part=leafage)  # matter primitives
+
+        # setup for ._insert
+        leaf = self.leafFromLeafer(leafer)
         if self.hasLeaf(leaf.said):
-            return (None, None)  # already inserted
+            return None  # already inserted
 
-        # start at root (values as matter primitives)
-        root = self._insert(leaf, self.root)  # new root with inserted leaf
-        self.root = root  # update new root
+        # start at root (values as matter primitives) raise error if ._insert fails
+        try:
+            self.root = self._insert(leaf, self.root)  # new root with inserted leaf
+        except ValueError as ex:
+            return None
         self.pinLeaf(leaf.said, leaf.part)  # add leaf
         self.infos[leaf.part.limb.qb64] = leafer.qb64  # add ref to leafer to infos
-        return (leaf, root)
+        return leaf
 
 
 
@@ -998,39 +1065,69 @@ class Siter:
                 return self.updateNode(node, child.said, side=True) # right
 
 
-        # When we get here when any side that is a node or empty must be
-        # unfit seen we have checked boths sides for fit node or empty.
-        # we track which sides are unfit with leftIsUnfit and rightIsUnfit
-        # Therefore when we get here we must then do leaf rebalancing logic
-        # an unfit empty on a side means that the root node child does not
-        # fit the leaf limb at depth so the leaf must go on other side.
-        # an unfit node on a side means that the node twig on that side does
-        # not fit the leaf limb at depth so leaf must go on other side.
-        # by construction the left and right children of a node can not both be
-        # unfit as any leaf must match one side or the other be it leaf or node.
+        """Logic
+        When we get here when any side that is a node or empty must be
+        unfit seen we have checked boths sides for fit node or empty.
+        we track which sides are unfit with leftIsUnfit and rightIsUnfit
+        Therefore when we get here we must then do leaf rebalancing logic
+        an unfit empty on a side means that the root node child does not
+        fit the leaf limb at depth so the leaf must go on other side.
+        an unfit node on a side means that the node twig on that side does
+        not fit the leaf limb at depth so leaf must go on other side.
+        by construction the left and right children of a node can not both be
+        unfit as any leaf must match one side or the other be it leaf or node.
 
-        # Cases:
-        #    a) left is unfit so right is leaf
-        #    b) right is unfit so left is leaf
-        #    c) neigher right nor left are unfit so both must be leaves
+        Cases:
 
-        if leftIsUnfit:  # case a) left unfit, right is leaf
-            # right child is leaf so add node fork on right with old right and
-            # new leaf as children.  Balance fork so each leaf is on correct side
-            # check for fork at depth 256, if so then error where new leaf is
-            # already in tree but not in .leaves
+           a) right is unfit so left is leaf
+           b) left is unfit so right is leaf
+           c) neigther right nor left are unfit so both must be leaves
+        """
 
-            return node
+        if rightIsUnfit:  # case a) right unfit, left child is leaf to be forked
+            """Logic
+            left child is leaf so add node fork on left with old left and
+            new leaf as children.  Balance fork so each leaf is on correct side
+            """
+            # get left child leaf
+            if (leafage := self.getLeaf(node.part.left)) is None:
+                raise ValueError(f"Missing left leaf at said={node.part.left.qb64} of "
+                                 f"node at said={node.said.qb64}")
+            child = Partage(node.part.left, leafage)
 
-        if rightIsUnfit:  # case b) right unfit, left is leaf
+            # compare limbs of leaf with left child. Raises error if same limb
+            spanner, swap = self.forkSpanSwap(lefter=child.part.limb,
+                                              righter=leaf.part.limb)
+            side = False  # extend limb on left side of node
+            # if swap: leaf needs to be on left side of fork, child on right
+            # else: leaf needs to be on right side of fork, child on left
+            lefter = leaf.said if swap else child.said
+            righter = child.said if swap else leaf.said
+            return self.forkNode(node, lefter=lefter, righter=righter, side=side)
 
-            # left child is leaf so add node fork on left with old left and
-            # new leaf as children.  Balance fork so each leaf is on correct side
-            # check for fork at depth 256, if so then error where new leaf is
-            # already in tree but not in .leaves
+        if leftIsUnfit:  # case b) left unfit, right child is leaf to be forked
+            """Logic
+            right child is leaf so add node fork on right with old right and
+            new leaf as children.  Balance fork so each leaf is on correct side
+            """
+            # get right child leaf
+            if (leafage := self.getLeaf(node.part.right)) is None:
+                raise ValueError(f"Missing right leaf at said={node.part.right.qb64} of "
+                                 f"node at said={node.said.qb64}")
+            child = Partage(node.part.right, leafage)
 
-            return node
+            # compare limbs of leaf with right child. Raises error if same limb
+            spanner, swap = self.forkSpanSwap(lefter=leaf.part.limb,
+                                              righter=child.part.limb)
 
+            side = True  # extend limb on right side of node
+            # if swap: child needs to be on left side of fork, leaf on right
+            # else: child needs to be on right side of fork, leaf on left
+            lefter = child.said if swap else leaf.said
+            righter = leaf.said if swap else child.said
+            return self.forkNode(node, lefter=lefter, righter=righter, side=side)
+
+        # case c) both children leaves
         """Logic
         both children are leaves so add on best side a node fork of new leaf
         and prior leaf as children.
@@ -1038,54 +1135,47 @@ class Siter:
         Best side to fork is where leaves new and prior first differ at
         the deeper depth. This avoids adding fork that doesnt have enough
         limb bits to fit between old node and it leaves.
-        check for fork at depth 256, if so then error where new leaf is
-        already in tree but not in .leaves
         """
-
+        # get both leaves of node
         # get left child leaf
         if (leafage := self.getLeaf(node.part.left)) is None:
             raise ValueError(f"Missing left leaf at said={node.part.left.qb64} of "
                              f"node at said={node.said.qb64}")
         leftChild = Partage(node.part.left, leafage)
 
-        # get right leaf
+        # get right child leaf
         if (leafage := self.getLeaf(node.part.right)) is None:
             raise ValueError(f"Missing right leaf at said={node.part.right.qb64} of "
                              f"node at said={node.said.qb64}")
         rightChild = Partage(node.part.right, leafage)
 
-        # compare leaf with leftChild
+        # compare limbs of leaf with leftChild. Raises error if same limb
         spannerLeft, swapLeft = self.forkSpanSwap(lefter=leftChild.part.limb,
                                                   righter=leaf.part.limb)
 
-        # compare leaf with rightChild
+        # compare limbs of leaf with rightChild. Raises error if same limb
         spannerRight, swapRight = self.forkSpanSwap(lefter=leaf.part.limb,
                                                     righter=rightChild.part.limb)
 
-        if spannerLeft > spannerRight:  # leaf and left have deeper fork depth
+        if spannerLeft.num > spannerRight.num:  # leaf and left have deeper fork depth
             # replace left child with new forking node of leaf and old left child
-            # extend limb on left side of node
-            limber, spanner = self.extendLimb(node.part.limb, node.part.depth, side=False)
+            side = False  # extend limb on left side of node
             if swapLeft:  # leaf needs to be on left side of fork
-                # create nodage of new forking node
-                nodage = Nodage(depth=spanner, limb=limber, left=leaf.said, right=leftChild.said)
+                lefter = leaf.said
+                righter = leftChild.said
             else:  # leaf needs to be on right side of fork
-                nodage = Nodage(depth=spanner, limb=limber, left=leftChild.said, right=leaf.said)
-            saider = self.sayNode(nodage)  # update said of forking node
-            self.pinNode(saider, nodage)  # update .nodes with forking node
-            return self.updateNode(node, saider, side=False) # left
+                lefter = leftChild.said
+                righter = leaf.said
 
         else:  # leaf and right have deeper fork depth
             # replace right child with new forking node of leaf and old right child
-            # extend limb on right side of node
-            limber, spanner = self.extendLimb(node.limb, node.depth, side=True)
+            side = True # extend limb on right side of node
             if swapRight:  # leaf needs to be on right side of fork
-                nodage = Nodage(depth=spanner, limb=limber, left=rightChild.said, right=leaf.said)
+                lefter = rightChild.said
+                righter = leaf.said
             else:  # leaf needs to be on left side of fork
-                nodage = Nodage(depth=spanner, limb=limber, left=leaf.said, right=rightChild.said)
-            saider = self.sayNode(nodage)  # update said of forking node
-            self.pinNode(saider, nodage)  # update .nodes with forking node
-            return self.updateNode(node, saider, side=True) # right
+                lefter = leaf.said
+                righter = rightChild.said
 
-        return node
+        return self.forkNode(node, lefter=lefter, righter=righter, side=side)
 
