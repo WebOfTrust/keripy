@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.smt.psmting module
+keri.sit.sitingOld module
 
 Package level shared constants, functions, classes, errors etc
 
