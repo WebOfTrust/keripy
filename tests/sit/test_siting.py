@@ -631,6 +631,7 @@ def test_insert_logic():
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
+    leaf0 = leaf  # save for latrer
 
     root = siter._insert(leaf, siter.root)
     siter.pinLeaf(leaf.said, leaf.part)
@@ -760,7 +761,18 @@ def test_insert_logic():
     assert siter.isLeaf(nodage.left)
     assert siter.isLeaf(nodage.right)
 
-    siter0 = siter  # keep around to compare later
+    rootsaid0 = siter.root.said.qb64  # keep around to compare later
+
+    # test attempt to insert same leaf a second time
+    with pytest.raises(ValueError):
+        root = siter._insert(leaf, siter.root)
+
+    with pytest.raises(ValueError):
+        root = siter._insert(leaf0, siter.root)
+
+    assert siter.root.said.qb64 == rootsaid0  # no change to siter
+
+    siter0 = siter  # keep around to compare root later
 
     ##########################
     # Refresh siter start over with new sequence of leaf inserts
