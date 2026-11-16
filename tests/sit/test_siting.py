@@ -620,6 +620,9 @@ def test_insert_logic():
     }
     assert len(siter.nodes) == 1
 
+    trace = siter.trace()
+    assert trace == ['left: empty @ root', 'right: empty @ root']
+
     # test ._siter
     # test insert leaves on empty node children
 
@@ -655,6 +658,8 @@ def test_insert_logic():
                        left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
                        right='1AAP')
     }
+    trace = siter.trace()
+    assert trace == ['left: 01000000 @ root', 'right: empty @ root']
 
     # test right child
     # manually create leaf using  limber '10000000'
@@ -686,6 +691,8 @@ def test_insert_logic():
                        left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
                        right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
     }
+    trace = siter.trace()
+    assert trace == ['left: 01000000 @ root', 'right: 10000000 @ root']
 
     # test fork left child  where MSb of leaf is 0
     # manually create leaf using  limber '01010000'
@@ -717,6 +724,8 @@ def test_insert_logic():
                        left='EKaoMFUP92J_l0NtUTpUGYnaaZ1zBI5wuKllGmMnxjQH',
                        right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
     }
+    trace = siter.trace()
+    assert trace == ['left: 01000000 @ 0', 'right: 01010000 @ 0', 'right: 10000000 @ root']
 
     # walk down
     assert siter.isNode(siter.root.part.left)
@@ -754,6 +763,14 @@ def test_insert_logic():
                        left='EKaoMFUP92J_l0NtUTpUGYnaaZ1zBI5wuKllGmMnxjQH',
                        right='EP2xCuT1JxunHvjB0skYAta2RbZr5G9RVyoa6eS7eiqt')
     }
+    trace = siter.trace()
+    assert trace == \
+    [
+        'left: 01000000 @ 0',
+        'right: 01010000 @ 0',
+        'left: 10000000 @ 1',
+        'right: 10100000 @ 1'
+    ]
 
     # walk down
     assert siter.isNode(siter.root.part.right)
@@ -961,6 +978,23 @@ def test_insert_logic():
     # Test if trees are equal despite different order of adding leafs
     assert siter1.root.said.qb64 == siter0.root.said.qb64  # !!!! root saids match
 
+    trace0 = siter0.trace()
+    assert trace0 == \
+    [
+        'left: 01000000 @ 0',
+        'left: 01010000 @ 01',
+        'left: 01100000 @ 011',
+        'right: 01110000 @ 011',
+        'left: 10000000 @ 1',
+        'left: 10100000 @ 11',
+        'left: 11100000 @ 111',
+        'right: 11110000 @ 111'
+    ]
+
+    trace1 = siter1.trace()
+    assert trace1 == trace0
+
+
     # Is Siter SIT is a set? Suth that order of insert does not matter.
     # always makes same tree structure for same set of leaves?
     # and therefore same root said (hash)?
@@ -1025,7 +1059,69 @@ def test_insert_logic():
     # so current logic is not a set. Was just serindipoudous with few leaves
     # so need to analyze to see if it can be fixed or its not possible
 
-
+    traceA = siterA.trace()
+    assert traceA == \
+    [
+        'left: 00000000 @ 000',
+        'right: 00010000 @ 000',
+        'right: 00100000 @ 00',
+        'left: 00110000 @ 010',
+        'left: 01000000 @ 0101',
+        'right: 01010000 @ 0101',
+        'left: 01100000 @ 011',
+        'right: 01110000 @ 011',
+        'left: 10000000 @ 100',
+        'right: 10010000 @ 100',
+        'left: 10100000 @ 101',
+        'right: 10110000 @ 101',
+        'left: 11000000 @ 110',
+        'right: 11010000 @ 110',
+        'left: 11100000 @ 111',
+        'left: 11110000 @ 1111',
+        'right: 11111111 @ 1111'
+    ]  # note lexicographic order
+    traceB = siterB.trace()
+    assert traceB == \
+    [
+        'left: 00000000 @ 00',
+        'right: 00010000 @ 00',
+        'left: 00100000 @ 010',
+        'left: 01000000 @ 0101',
+        'right: 01010000 @ 0101',
+        'left: 00110000 @ 011',
+        'left: 01100000 @ 0111',
+        'right: 01110000 @ 0111',
+        'left: 10000000 @ 10',
+        'left: 10100000 @ 101',
+        'right: 10110000 @ 101',
+        'left: 10010000 @ 110',
+        'right: 11000000 @ 110',
+        'left: 11010000 @ 1110',
+        'right: 11100000 @ 1110',
+        'left: 11110000 @ 1111',
+        'right: 11111111 @ 1111'
+    ]  # not lexocographic looks like error in logic
+    traceC = siterC.trace()
+    assert traceC == \
+    [
+        'left: 00100000 @ 000',
+        'left: 00010000 @ 0001',
+        'right: 00110000 @ 0001',
+        'right: 01010000 @ 00',
+        'left: 00000000 @ 01',
+        'left: 01000000 @ 011',
+        'left: 01100000 @ 0111',
+        'right: 01110000 @ 0111',
+        'left: 10000000 @ 10',
+        'left: 10010000 @ 101',
+        'left: 10100000 @ 1011',
+        'right: 10110000 @ 1011',
+        'left: 11010000 @ 110',
+        'right: 11100000 @ 110',
+        'left: 11000000 @ 111',
+        'left: 11110000 @ 1111',
+        'right: 11111111 @ 1111'
+    ]  # not lexocograpic  show error in logic
 
 
 

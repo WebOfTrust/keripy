@@ -336,7 +336,8 @@ class Siter:
         to match limb prefixes (twigs). Values are ints.
 
         Returns:
-            twig (int): right shifted masked limb with span MS bits.
+            twig (int|None): right shifted masked limb with span MS bits.
+                             None if root with empty twig at span = 0
 
         Parameters:
             limb (int): 256 bit int where MSbits are forks (0 left, 1 right)
@@ -344,8 +345,10 @@ class Siter:
                             span = 1 is MSb of limb
                             span = 256 is LSb of limb
         """
-        if span <= 0:
+        if span < 0:
             raise ValueError(f"Invalid {span=} <= 0>")
+        elif span == 0:  # root so empty twig
+            return None
         mask = ((1 << span) - 1)
         return ((limb >> (MaxDepth-span)) & mask)
 
@@ -1135,6 +1138,7 @@ class Siter:
         Best side to fork is where leaves new and prior first differ at
         the deeper depth. This avoids adding fork that doesnt have enough
         limb bits to fit between old node and it leaves.
+        Difference depth on both sides cannot be the same since
         """
         # get both leaves of node
         # get left child leaf
@@ -1149,13 +1153,21 @@ class Siter:
                              f"node at said={node.said.qb64}")
         rightChild = Partage(node.part.right, leafage)
 
-        # compare limbs of leaf with leftChild. Raises error if same limb
+        # find depth where left and right child differ
+        spannerChild, swapChild = self.forkSpanSwap(lefter=leftChild.part.limb,
+                                                    righter=rightChild.part.limb)
+        if swapChild:
+            raise ValueError(f"Misplaced children")
+
+        # compare limbs, leaf with leftChild. Raises error if same limb
         spannerLeft, swapLeft = self.forkSpanSwap(lefter=leftChild.part.limb,
                                                   righter=leaf.part.limb)
 
-        # compare limbs of leaf with rightChild. Raises error if same limb
+        # compare limbs, leaf with rightChild. Raises error if same limb
         spannerRight, swapRight = self.forkSpanSwap(lefter=leaf.part.limb,
                                                     righter=rightChild.part.limb)
+        if spannerLeft.num == spannerRight.num:
+            pass
 
         if spannerLeft.num > spannerRight.num:  # leaf and left have deeper fork depth
             # replace left child with new forking node of leaf and old left child
@@ -1167,7 +1179,7 @@ class Siter:
                 lefter = leftChild.said
                 righter = leaf.said
 
-        else:  # leaf and right have deeper fork depth
+        elif spannerLeft.num < spannerRight.num:  # leaf and right have deeper fork depth
             # replace right child with new forking node of leaf and old right child
             side = True # extend limb on right side of node
             if swapRight:  # leaf needs to be on right side of fork
@@ -1178,4 +1190,51 @@ class Siter:
                 righter = rightChild.said
 
         return self.forkNode(node, lefter=lefter, righter=righter, side=side)
+
+
+    def trace(self):
+        """Returns list of leaves in depth first search order.
+        Children firt left then right.
+
+        Each entry is string with leaf limb at node twig MSb)
+        """
+        leaves = []  # mutable will fill in as it traces
+        self._trace(self.root, leaves)
+
+        return leaves
+
+
+    def _trace(self, node, leaves):
+        """Recursive descent depth first trace starting at node to find attached
+        leaves where chidren are searched first left then right
+
+        Each entry is tuple of (leaf limb, node limb MSb)
+        """
+        limb = node.part.limb.num
+        span = node.part.depth.num
+        if (twig := self.twigAtSpanInt(limb, span)) is not None:
+            showtwig = f"{twig:0{span}b}"
+        else:
+            showtwig = f"root"
+
+        lefter = node.part.left
+        if not lefter.nonce:  # left leaf empty
+            leaves.append(f"left: empty @ {showtwig}")
+        elif (leafage := self.getLeaf(lefter)) is not None: # left leaf
+
+            leaves.append(f"left: {(leafage.limb.num>>248):08b} @ {showtwig}")
+        else: #left node so recurse
+            nodage = self.getNode(lefter)
+            self._trace(Partage(lefter, nodage), leaves)
+
+        righter = node.part.right
+        if not righter.nonce:  # right leaf empty
+            leaves.append(f"right: empty @ {showtwig}")
+        elif (leafage := self.getLeaf(righter)) is not None: # right leaf
+            leaves.append(f"right: {(leafage.limb.num>>248):08b} @ {showtwig}")
+        else: #right node so recurse
+            nodage = self.getNode(righter)
+            self._trace(Partage(righter, nodage), leaves)
+
+
 
