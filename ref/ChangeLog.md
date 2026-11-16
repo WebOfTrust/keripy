@@ -49,6 +49,11 @@ scan of every event since that rotation. Other sns still walk. When the event at
 missing from the store, fetchWitnessState now returns that establishment event's witness list
 where the walk raised AttributeError.
 
+*** Kever.update rejects a rot or drt whose n or nt does not parse with ValidationError,
+before the event is escrowed or logged. Previously the event was logged as first seen and
+became the head of the KEL, and then InvalidCodeError or ValidationError was raised, leaving
+the prior next key digests in force.
+
 *** New Parser.parseOneBare: like parseOne, but raises errors to the caller instead of
 logging them, for callers that are not internet-facing services and need to know why a
 msg failed. Intake errors raised while extracting (ExtractionError, ValidationError) are

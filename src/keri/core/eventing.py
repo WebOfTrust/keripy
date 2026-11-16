@@ -12,7 +12,7 @@ from ordered_set import OrderedSet as oset
 from hio.help import decking, ogler
 
 
-from ..kering import (MissingEntryError, UntrustedKeyStateSource,
+from ..kering import (KeriError, MissingEntryError, UntrustedKeyStateSource,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
@@ -2447,6 +2447,17 @@ class Kever:
                                       "delegated pre = {} with evt = {}."
                                       "".format(serder.pre, ked))
 
+            # Parse the new next key digests and next threshold before anything
+            # is logged, as .incept does. Read only after .logEvent, a malformed
+            # n or nt would be accepted as first seen and then raise, leaving the
+            # prior next digests (now exposed as current keys) in force.
+            try:
+                ndigers = serder.ndigers
+                ntholder = serder.ntholder
+            except KeriError as ex:
+                raise ValidationError(f"Invalid next key digests or next "
+                                      f"threshold for evt = {ked}.") from ex
+
             tholder, toader, wits, cuts, adds = self.rotate(serder)
 
             # Validates signers, delegation if any, and witnessing when applicable
@@ -2481,8 +2492,8 @@ class Kever:
             self.ilk = ilk
             self.tholder = tholder
             self.verfers = serder.verfers
-            self.ndigers = serder.ndigers
-            self.ntholder = serder.ntholder
+            self.ndigers = ndigers
+            self.ntholder = ntholder
 
             self.toader = toader
             self.wits = wits

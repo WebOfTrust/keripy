@@ -4,7 +4,7 @@ import pytest
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0, ValidationError, Kinds
+from keri.kering import Vrsn_1_0, Vrsn_2_0, ValidationError, Kinds
 from keri.core import (Salter, Parser, Diger, SerderKERI,
                        Counter, Kever, Kevery, Codens,
                        incept, rotate, interact, receipt)
@@ -589,6 +589,61 @@ def test_witness_receipt_reads_bounded(monkeypatch):
         late = receiptNewest()
         assert hab.kever.sn == 50
         assert late == early, f"read {early} key events at sn 10 and {late} at sn 50"
+
+
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+@pytest.mark.parametrize("field, value", [
+    ("n", "verkey"),  # a public key where a next key digest belongs
+    ("nt", "g"),  # an unparseable next threshold
+])
+def test_rotation_with_malformed_next_is_not_logged(version, field, value):
+    """
+    A rotation whose next key digests or next threshold do not parse must be
+    rejected before it is logged. Logging it first made it the head of the KEL
+    while leaving the prior next digests in force, and those digests commit to
+    the keys the rotation exposed as current, so the current key alone could
+    rotate again.
+    """
+    kwa = dict(version=version, kind=Kinds.json)
+    signers = Salter(raw=b"ABCDEFGH01234567").signers(count=3, path='mal',
+                                                         temp=True)
+
+    with openDB(name="validator", temp=True) as db:
+        kvy = Kevery(db=db)
+
+        icp = incept(keys=[signers[0].verfer.qb64],
+                     ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **kwa)
+        kvy.processEvent(serder=icp,
+                         sigers=[signers[0].sign(icp.raw, index=0)])
+        pre = icp.pre
+        kever = kvy.kevers[pre]
+        assert kever.sn == 0
+
+        rot = rotate(pre=pre, keys=[signers[1].verfer.qb64], dig=icp.said,
+                     ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
+                     sn=1, **kwa)
+        sad = rot.sad
+        sad[field] = ([signers[2].verfer.qb64] if value == "verkey" else value)
+        bad = SerderKERI(sad=sad, makify=True)
+        assert bad.said != rot.said
+
+        with pytest.raises(ValidationError):
+            kvy.processEvent(serder=bad,
+                             sigers=[signers[1].sign(bad.raw, index=0)])
+
+        # key state, KEL and first seen log are untouched
+        assert kever.sn == 0
+        assert kever.serder.said == icp.said
+        assert [d.qb64 for d in kever.ndigers] == icp.ndigs
+        assert db.kels.getLast(keys=pre, on=1) is None
+        assert db.fels.get(keys=pre, on=1) is None
+        assert db.evts.get(keys=(pre, bad.said)) is None
+
+        # the well formed rotation is still accepted afterwards
+        kvy.processEvent(serder=rot, sigers=[signers[1].sign(rot.raw, index=0)])
+        assert kever.sn == 1
+        assert kever.serder.said == rot.said
+        assert kever.ndigs == [Diger(ser=signers[2].verfer.qb64b).qb64]
 
 
 if __name__ == "__main__":
