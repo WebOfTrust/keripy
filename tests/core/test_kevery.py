@@ -594,12 +594,15 @@ def test_witness_receipt_reads_bounded(monkeypatch):
 @pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
 @pytest.mark.parametrize("field, value", [
     ("n", "verkey"),  # a public key where a next key digest belongs
+    ("n", None),  # no list of next key digests at all
     ("nt", "g"),  # an unparseable next threshold
+    ("nt", "3"),  # a next threshold that one next key digest cannot meet
 ])
 def test_rotation_with_malformed_next_is_not_logged(version, field, value):
     """
-    A rotation whose next key digests or next threshold do not parse must be
-    rejected before it is logged. Logging it first made it the head of the KEL
+    A rotation whose next key digests or next threshold are malformed, or
+    whose next threshold the next key digests cannot meet, must be rejected
+    before it is logged. Logging it first made it the head of the KEL
     while leaving the prior next digests in force, and those digests commit to
     the keys the rotation exposed as current, so the current key alone could
     rotate again.
@@ -638,6 +641,7 @@ def test_rotation_with_malformed_next_is_not_logged(version, field, value):
         assert db.kels.getLast(keys=pre, on=1) is None
         assert db.fels.get(keys=pre, on=1) is None
         assert db.evts.get(keys=(pre, bad.said)) is None
+        assert db.states.get(keys=pre).s == '0'
 
         # the well formed rotation is still accepted afterwards
         kvy.processEvent(serder=rot, sigers=[signers[1].sign(rot.raw, index=0)])

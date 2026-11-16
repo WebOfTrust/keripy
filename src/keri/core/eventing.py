@@ -2447,16 +2447,24 @@ class Kever:
                                       "delegated pre = {} with evt = {}."
                                       "".format(serder.pre, ked))
 
-            # Parse the new next key digests and next threshold before anything
-            # is logged, as .incept does. Read only after .logEvent, a malformed
-            # n or nt would be accepted as first seen and then raise, leaving the
-            # prior next digests (now exposed as current keys) in force.
+            # Parse and check the new next key digests and next threshold before
+            # anything is logged. Checked only after .logEvent, by the reads below
+            # or by .state() when key state is pinned, a bad n or nt would be
+            # accepted as first seen and then raise, leaving the prior next
+            # digests (now exposed as current keys) in force.
             try:
                 ndigers = serder.ndigers
                 ntholder = serder.ntholder
             except KeriError as ex:
                 raise ValidationError(f"Invalid next key digests or next "
                                       f"threshold for evt = {ked}.") from ex
+            if ndigers is None or ntholder is None:
+                raise ValidationError(f"Missing next key digests or next "
+                                      f"threshold for evt = {ked}.")
+            if ntholder.size > len(ndigers):
+                raise ValidationError(f"Invalid next threshold = "
+                                      f"{ntholder.sith} for next key digests = "
+                                      f"{serder.ndigs} for evt = {ked}.")
 
             tholder, toader, wits, cuts, adds = self.rotate(serder)
 
