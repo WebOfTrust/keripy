@@ -537,6 +537,12 @@ def setup_limbers_vectors(code=DigDex.Blake3_256):
         key = f"{(limb >> 248):08b}"  # 8 MSbs
         limbers[key] = limber
 
+    limb = 1 << 251  # 00001000
+    limber = Diger(num=limb, code=code)
+    key = f"{(limb >> 248):08b}"
+    assert key == '00001000'  # 8 MSbs
+    limbers[key] = limber
+
     limb = 2 ** 256 - 1  # all 1s
     limber = Diger(num=limb, code=code)
     key = f"{(limb >> 248):08b}"
@@ -569,16 +575,9 @@ def test_setup_limber_vectors():
         {'11010000': 'd000000000000000000000000000000000000000000000000000000000000000'},
         {'11100000': 'e000000000000000000000000000000000000000000000000000000000000000'},
         {'11110000': 'f000000000000000000000000000000000000000000000000000000000000000'},
+        {'00001000': '800000000000000000000000000000000000000000000000000000000000000'},
         {'11111111': 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'}
     ]
-
-    #limb = 0  # all 0s
-    #limber = Diger(num=limb, code=code)
-    #assert limber.num == limb
-    #assert limber.numh == '0'
-    #key = f"{(limb >> 248):08b}"
-    #assert key == '00000000'  # 8 MSbs
-    #limbers[key] = limber
 
     #limb = 1 << 252 # 1 followed by all zeros
     #limber = Diger(num=limb, code=code)
@@ -715,14 +714,19 @@ def test_insert_logic():
                                   right=siter.root.part.right.qb64))
     assert nqb64._asdict() == \
     {
-        'said': 'ECSw2uvc9WNVRChsOWbfAfuqWLqUNchqSHaK-aZ9y7VS',
+        'said': 'EN24QEyfLygm18upXb5y4yDX6FfRRjbCN1GwvfMCkEKe',
         'part': Nodage(depth='MAAA',
                        limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-                       left='EKaoMFUP92J_l0NtUTpUGYnaaZ1zBI5wuKllGmMnxjQH',
+                       left='EArbnstk0UD1VExNPdcgyNMXI9OGKb340wUhqilbcfP6',
                        right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
     }
     trace = siter.trace()
-    assert trace == ['left: 01000000 @ 0', 'right: 01010000 @ 0', 'right: 10000000 @ root']
+    assert trace == \
+    [
+        'left: 01000000 @ 010',
+        'right: 01010000 @ 010',
+        'right: 10000000 @ root'
+    ]
 
     # walk down
     assert siter.isNode(siter.root.part.left)
@@ -754,19 +758,19 @@ def test_insert_logic():
                                   right=siter.root.part.right.qb64))
     assert nqb64._asdict() == \
     {
-        'said': 'ENImcliK7x2rEj3K7yQTjlu8dRpqQaLoxRNdo-J-LqrV',
+        'said': 'ECNZXtp5rJ6AbUnpYgrCMtw6_I3fwcBQlcHorSOYK6dh',
         'part': Nodage(depth='MAAA',
                        limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-                       left='EKaoMFUP92J_l0NtUTpUGYnaaZ1zBI5wuKllGmMnxjQH',
-                       right='EP2xCuT1JxunHvjB0skYAta2RbZr5G9RVyoa6eS7eiqt')
-    }
+                       left='EArbnstk0UD1VExNPdcgyNMXI9OGKb340wUhqilbcfP6',
+                       right='EG-4J3gbg5ok_XNVHxEizVRL6SclilBLf4O971f4DeYn')}
+
     trace = siter.trace()
     assert trace == \
     [
-        'left: 01000000 @ 0',
-        'right: 01010000 @ 0',
-        'left: 10000000 @ 1',
-        'right: 10100000 @ 1'
+        'left: 01000000 @ 010',
+        'right: 01010000 @ 010',
+        'left: 10000000 @ 10',
+        'right: 10100000 @ 10'
     ]
 
     # walk down
@@ -877,12 +881,10 @@ def test_insert_logic():
                                   right=siter.root.part.right.qb64))
     assert nqb64._asdict() == \
     {
-        'said': 'EFLPHG5ITOiBuldDjsoHbPpWdKo_PyQTuhQ5MgT3FlqE',
-        'part': Nodage(depth='MAAA',
-                       limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'said': 'EKS_3YmKF5Wgw1RzPAT12DiO1dJnC0ACuRbdsY3e0QXk',
+        'part': Nodage(depth='MAAA', limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
                        left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
-                       right='EP2xCuT1JxunHvjB0skYAta2RbZr5G9RVyoa6eS7eiqt')
-    }
+                       right='EG-4J3gbg5ok_XNVHxEizVRL6SclilBLf4O971f4DeYn')}
 
     # walk down
     assert siter.isNode(siter.root.part.right)
@@ -915,12 +917,13 @@ def test_insert_logic():
                                   right=siter.root.part.right.qb64))
     assert nqb64._asdict() == \
     {
-        'said': 'ENImcliK7x2rEj3K7yQTjlu8dRpqQaLoxRNdo-J-LqrV',
+        'said': 'ECNZXtp5rJ6AbUnpYgrCMtw6_I3fwcBQlcHorSOYK6dh',
         'part': Nodage(depth='MAAA',
                        limb='EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-                       left='EKaoMFUP92J_l0NtUTpUGYnaaZ1zBI5wuKllGmMnxjQH',
-                       right='EP2xCuT1JxunHvjB0skYAta2RbZr5G9RVyoa6eS7eiqt')
+                       left='EArbnstk0UD1VExNPdcgyNMXI9OGKb340wUhqilbcfP6',
+                       right='EG-4J3gbg5ok_XNVHxEizVRL6SclilBLf4O971f4DeYn')
     }
+
 
     # walk down
     assert siter.isNode(siter.root.part.left)
@@ -978,12 +981,12 @@ def test_insert_logic():
     trace0 = siter0.trace()
     assert trace0 == \
     [
-        'left: 01000000 @ 0',
-        'left: 01010000 @ 01',
+        'left: 01000000 @ 010',
+        'right: 01010000 @ 010',
         'left: 01100000 @ 011',
         'right: 01110000 @ 011',
-        'left: 10000000 @ 1',
-        'left: 10100000 @ 11',
+        'left: 10000000 @ 10',
+        'right: 10100000 @ 10',
         'left: 11100000 @ 111',
         'right: 11110000 @ 111'
     ]
@@ -998,11 +1001,11 @@ def test_insert_logic():
 
     # do random sample insertions of all limbers to compare
     size = len(limbers)
-    assert size == 17
+    assert size == 18
     values = list(limbers.values())
 
     #sample = random.sample(range(0, size), k=size)
-    sample = [3, 0, 14, 7, 6, 2, 5, 8, 4, 1, 13, 16, 10, 9, 12, 15, 11]
+    sample = [10, 2, 8, 0, 9, 7, 1, 12, 16, 6, 5, 13, 17, 11, 4, 14, 3, 15]
     assert len(sample) == size
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid

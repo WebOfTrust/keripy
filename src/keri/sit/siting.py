@@ -870,9 +870,55 @@ class Siter:
         return Partage(saider, nodage)  # return new node
 
 
+    def forkNode(self, node, left, right, side=False):
+        """Attach new forking node to  side (right/left) of node where
+        left and right are forking node's left and right children. The limb of
+        forking node is set to shallowest common twig of left and right limbs.
 
-    def forkNode(self, node, lefter, righter, side=False):
-        """Attach new forking node to right/left side of node with
+        Parameters:
+            node (Partage): instance (said, part) of node where:
+                            said is Noncer instance of node said
+                            part is Nodage instance with Matter instance values
+            left (Partage): instance of left child for new forking node
+                            (said, part) with Matter instance values.
+                            part may be Nodage or Leafage instance
+            right (Partage): instance of right child for new forking node
+                            (said, part) with Matter instance values.
+                            part may be Nodage or Leafage instance
+            side (bool):  False means put forking node on left child of node
+                          True means put forking node on right child of node
+
+        Returns:
+            newnode (Partage): instance (said, part) of updated node where:
+                            said (Noncer): instance of new nodes said
+                            part is Nodage instance with Matter instance values
+
+        """
+        # create new forking node of left and right with limb at shallowest
+        # common span of limbs
+        span, swap = self.forkSpanSwapInt(left.part.limb.num, right.part.limb.num)
+        span = span - 1  # common span is 1 less than diff bit span (depth)
+        # since common does not matter if we use left or right limb to get twig
+        limb = self.twigAtSpanInt(left.part.limb.num, span) << MaxDepth - span
+        if swap:  # swap left and right
+            save = left
+            left = right
+            right = save
+
+        # create nodage of new forking node
+        nodage = Nodage(depth=Number(num=span),
+                        limb=Diger(num=limb),
+                        left=left.said,
+                        right=right.said)
+        saider = self.sayNode(nodage)  # update said of forking node
+        self.pinNode(saider, nodage)  # update .nodes with forking node
+        return self.updateNode(node, saider, side=side)
+
+
+    def forkNodeOld(self, node, lefter, righter, side=False):
+        """Attach new forking node to  side (right/left) of node with where
+        forking node's left child is lefter and right child is righter
+        limb of forking node
 
         Parameters:
             node (Partage): instance (said, part) of node where:
@@ -1006,191 +1052,117 @@ class Siter:
 
         Logic:
             leaf can only attach to child of node on side given by bit in leaf
-            limb which bit is located above the node depth. This leaves room
-            for one more nodes to interpose allowing leaf to rebalance to move
-            to correct child of interposed node. If leaf limb side bit does not
-            exactly match side at depth+1 of node  to which it is attached then
-            there is no way to move it later to rebalance. Consequently leaves
-            attached to root must always attach to side given by bit at depth=1
-            in leaf limb (zero based bit index 0 from left, bit index 255 from right,
-            This means that one side of the root may remain empty always until
-            a leaf is inserted whose depth 1 bit matches the empty side.
-            This means that logic for attaching leaf to empty root is simple.
-            Just attach to side given by depth 1 limb bit. Root at depth 0.
+            limb which bit is located below (greater than) the node depth.
+            This leaves room for one more nodes to interposed either above or
+            below the node to which a leaf is attached. The key is that the
+            limb of a given node is set by the deepest common depth of its
+            child leaves (node and/or leaf). This leaves gaps in the tree where
+            virtual missing nodes with empty children would have been. We can
+            call these ghost nodes. As long as the gaps between non-ghost nodes
+            are stable the ghost nodes themselves do not need to be hashed/digested
+
+            Becaause each node and leaf said is computed over its limb, there
+            is no malleability in structure wrt the said (digest/hash) of a node
+            or leaf. This prevents a collision attack from missing virtual
+            empty nodes. As new leaves are added the new node
+            fork created to accomodate the leaf may interpose either above or
+            below an existing node. A given node's limb once set remains, but its
+            children may change as new leafs and nodes to accomodate the leaves
+            are added. The rules for forking nodes are designed to ensure the
+            essential property that that same set of nodes no matter the order of
+            insertion results in the same root said (digest/hash)
+
+            When a new leaf causes a new fork to be interposed above an existing
+            node, the existing node's said does not change. This means saids
+            lower in that subtree remain stable. So the only hashes (saids) that
+            change are above it in its given branch.  The limb of the new node
+            is always set to the deepest common depth of its children. This
+            leaves a stable gap for any missing ghost nodes above it in the tree.
+
+
+            When a new leaf causes a new fork to be interposed below  existing
+            node then the existing nodes above it must change their saids but
+            the nodes below the new node do not. In order for a fork to be
+            inserted below a node, the leaf must itself fit below that node.
+            The new node always has a limb value that is set to the deepest
+            common depth of its children. This creates a stable gap for the
+            missing ghost nodes.
+
+            Creating stable gaps for missing ghost nodes supports the required
+            property of a sparse Merkle tree, that is, that the order of insertion
+            of its leaves does not change the final node structure.
+            A leaf can only go in one place.
+
+            The act of fixing node limbs, fixes their relative place in the tree.
+            The infil above protects the tructure below so new leaves go to the
+            same place in the tree no matter the order of insertion.
+
+            ToDo: XXX need new function sameSpan between node and leaf since node
+            and leaf may be common all 256. since common comparison is only valid
+            to node depth not beyond and swap not apply when common all the way.
+
+            forkSpanSwap does not work when node and leaf same all the way down.
 
         """
-        leftIsUnfit = False  # keep track when we have  already found left unfit
-        rightIsUnfit = False  # keep track when we have already find right unfit
+        # Walk leaf down appropriate node child branch.
+        # assumes node limb is prefix of leaf limb. leaf fits below node.
+        # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
+        # figure out which side of node, leaf must go
+        if self.rightAtSpanInt(leaf.part.limb.num, node.part.depth.num + 1):  # go right
+            side = True  # set side to right
+            # get child on right
+            childer = node.part.right   # empty or leaf saider or node saider
+        else:  # go left
+            side = False  # set side to left
+            # get child on left
+            childer = node.part.left  # empty or leaf saider or node saider
 
-        if not node.part.left.nonce:  # left child is empty (only if root)
-            leftIsUnfit = True
+        if not childer.nonce:  # child is empty (should only happen at root node)
+            # attach leaf to side of node, update node and return
             if node.part.depth.num != 0:  # not root
                 raise ValueError(f"Invalid node={node.said.qb64}, not root "
-                                 f"but empty left child")
+                                 f"but empty child on {side=}")
+            # remove, replace, and return updated node with new child on side
+            return self.updateNode(node, leaf.said, side=side)
 
-            # see if leaf will attach on empty left child of root
-            # if leaf side at depth 1 is left then attach to left child of root
-            if not self.rightAtSpanInt(leaf.part.limb.num, 1):  # left it is
-                # remove, replace, and return updated node with new left child
-                return self.updateNode(node, leaf.said, side=False) # left
-
-        if not node.part.right.nonce:  # right child is empty (only if root)
-            rightIsUnfit = True
-            # should only happen if node is root
-            if node.part.depth.num != 0:  # not root
-                raise ValueError(f"Invalid node={node.said.qb64}, not root "
-                                 f"but empty right child")
-
-            # see if leaf will attach on empty right child of root
-            # if leaf side at depth 1 is right then attach to right child of root
-            if self.rightAtSpanInt(leaf.part.limb.num, 1):  # right it is
-                # remove, replace, and return updated node with new right child
-                return self.updateNode(node, leaf.said, side=True) # right
-
-        if (nodage := self.getNode(node.part.left)): # left child is a node
-            leftIsUnfit = True
-            # see if leaf belongs on left side of node when left child is node
-            if self.fitLeafNode(leaf.part.limb, nodage.limb, nodage.depth):
-                # fits so walk down one
-                # recurse with left child node as new node
-                child = self._insert(leaf, Partage(node.part.left, nodage))
-                # remove, replace, and return updated node with new left child
-                return self.updateNode(node, child.said, side=False) # left
+        if (leafage := self.getLeaf(childer)) is not None:  # child is leaf
+            # fork node on side.  set limb of new node to common depth before
+            # shallowest diff and put leafs on side at diff bit at common depth +1
+            # update node and return
+            child = Partage(childer, leafage)  # make child
+            # need to updage forkNode to use common limb not just extension
+            return self.forkNode(node, left=leaf, right=child, side=side)
 
 
-        if (nodage := self.getNode(node.part.right)): # right child is a node
-            rightIsUnfit = True
-            # see if leaf belongs on right side of node when right child is node
-            if self.fitLeafNode(leaf.part.limb, nodage.limb, nodage.depth):
-                # fits so walk down one
-                # recurse with right child node as new node
-                child = self._insert(leaf, Partage(node.part.right, nodage))
-                # remove, replace, and return updated node with new right child
-                return self.updateNode(node, child.said, side=True) # right
+        if (nodage := self.getNode(childer)) is not None:  # child is node
+            #  walkdown means span of limb of node is longer than common span
+            #  between node and leaf
+            # if can walk down on side:
+            #          recurse with with child node on side
+            # else: cannot walk down past child node:
+            #          fork  between node and its child node on side.
+            #                above child node and below node.
+            #          fork at shallowest depth diff of leaf and child node on side
+            #          child node should stay on same side of new fork node as it
+            #          was on node and leaf should go on other side of new fork node
+            #          check if swap says otherwise
+            #          update node and return
+            #
+            child = Partage(childer, nodage)  # make child
+            # find span (bit position) where first differ leaf and child limbs
+            span, swap = self.forkSpanSwapInt(left=leaf.part.limb.num,
+                                              right=child.part.limb.num)
 
+            span = span - 1 # common span is 1 less than diff bit span (depth)
+            if span < child.part.depth.num:  # cannot recurse down so insert fork
+                return self.forkNode(node, left=leaf, right=child, side=side)
 
-        """Logic
-        When we get here when any side that is a node or empty must be
-        unfit seen we have checked boths sides for fit node or empty.
-        we track which sides are unfit with leftIsUnfit and rightIsUnfit
-        Therefore when we get here we must then do leaf rebalancing logic
-        an unfit empty on a side means that the root node child does not
-        fit the leaf limb at depth so the leaf must go on other side.
-        an unfit node on a side means that the node twig on that side does
-        not fit the leaf limb at depth so leaf must go on other side.
-        by construction the left and right children of a node can not both be
-        unfit as any leaf must match one side or the other be it leaf or node.
+            # can recurse down child so recurse
+            child = self._insert(leaf=leaf, node=child)  # recursion updates child
+            # remove, replace, and return updated node with new child on side
+            return self.updateNode(node, child.said, side=side) # right
 
-        Cases:
-
-           a) right is unfit so left is leaf
-           b) left is unfit so right is leaf
-           c) neigther right nor left are unfit so both must be leaves
-        """
-
-        if rightIsUnfit:  # case a) right unfit, left child is leaf to be forked
-            """Logic
-            left child is leaf so add node fork on left with old left and
-            new leaf as children.  Balance fork so each leaf is on correct side
-            """
-            # get left child leaf
-            if (leafage := self.getLeaf(node.part.left)) is None:
-                raise ValueError(f"Missing left leaf at said={node.part.left.qb64} of "
-                                 f"node at said={node.said.qb64}")
-            child = Partage(node.part.left, leafage)
-
-            # compare limbs of leaf with left child. Raises error if same limb
-            spanner, swap = self.forkSpanSwap(lefter=child.part.limb,
-                                              righter=leaf.part.limb)
-            side = False  # extend limb on left side of node
-            # if swap: leaf needs to be on left side of fork, child on right
-            # else: leaf needs to be on right side of fork, child on left
-            lefter = leaf.said if swap else child.said
-            righter = child.said if swap else leaf.said
-            return self.forkNode(node, lefter=lefter, righter=righter, side=side)
-
-        if leftIsUnfit:  # case b) left unfit, right child is leaf to be forked
-            """Logic
-            right child is leaf so add node fork on right with old right and
-            new leaf as children.  Balance fork so each leaf is on correct side
-            """
-            # get right child leaf
-            if (leafage := self.getLeaf(node.part.right)) is None:
-                raise ValueError(f"Missing right leaf at said={node.part.right.qb64} of "
-                                 f"node at said={node.said.qb64}")
-            child = Partage(node.part.right, leafage)
-
-            # compare limbs of leaf with right child. Raises error if same limb
-            spanner, swap = self.forkSpanSwap(lefter=leaf.part.limb,
-                                              righter=child.part.limb)
-
-            side = True  # extend limb on right side of node
-            # if swap: child needs to be on left side of fork, leaf on right
-            # else: child needs to be on right side of fork, leaf on left
-            lefter = child.said if swap else leaf.said
-            righter = leaf.said if swap else child.said
-            return self.forkNode(node, lefter=lefter, righter=righter, side=side)
-
-        # case c) both children leaves
-        """Logic
-        both children are leaves so add on best side a node fork of new leaf
-        and prior leaf as children.
-        Balance fork so each leaf is on correct side of new node.
-        Best side to fork is where leaves new and prior first differ at
-        the deeper depth. This avoids adding fork that doesnt have enough
-        limb bits to fit between old node and it leaves.
-        Difference depth on both sides cannot be the same since
-        """
-        # get both leaves of node
-        # get left child leaf
-        if (leafage := self.getLeaf(node.part.left)) is None:
-            raise ValueError(f"Missing left leaf at said={node.part.left.qb64} of "
-                             f"node at said={node.said.qb64}")
-        leftChild = Partage(node.part.left, leafage)
-
-        # get right child leaf
-        if (leafage := self.getLeaf(node.part.right)) is None:
-            raise ValueError(f"Missing right leaf at said={node.part.right.qb64} of "
-                             f"node at said={node.said.qb64}")
-        rightChild = Partage(node.part.right, leafage)
-
-        # find depth where left and right child differ
-        spannerChild, swapChild = self.forkSpanSwap(lefter=leftChild.part.limb,
-                                                    righter=rightChild.part.limb)
-        if swapChild:
-            raise ValueError(f"Misplaced children")
-
-        # compare limbs, leaf with leftChild. Raises error if same limb
-        spannerLeft, swapLeft = self.forkSpanSwap(lefter=leftChild.part.limb,
-                                                  righter=leaf.part.limb)
-
-        # compare limbs, leaf with rightChild. Raises error if same limb
-        spannerRight, swapRight = self.forkSpanSwap(lefter=leaf.part.limb,
-                                                    righter=rightChild.part.limb)
-        if spannerLeft.num == spannerRight.num:
-            pass
-
-        if spannerLeft.num > spannerRight.num:  # leaf and left have deeper fork depth
-            # replace left child with new forking node of leaf and old left child
-            side = False  # extend limb on left side of node
-            if swapLeft:  # leaf needs to be on left side of fork
-                lefter = leaf.said
-                righter = leftChild.said
-            else:  # leaf needs to be on right side of fork
-                lefter = leftChild.said
-                righter = leaf.said
-
-        elif spannerLeft.num < spannerRight.num:  # leaf and right have deeper fork depth
-            # replace right child with new forking node of leaf and old right child
-            side = True # extend limb on right side of node
-            if swapRight:  # leaf needs to be on right side of fork
-                lefter = rightChild.said
-                righter = leaf.said
-            else:  # leaf needs to be on left side of fork
-                lefter = leaf.said
-                righter = rightChild.said
-
-        return self.forkNode(node, lefter=lefter, righter=righter, side=side)
+        raise ValueError(f"Should never get here")
 
 
     def trace(self):
