@@ -415,6 +415,25 @@ class Siter:
 
 
     @staticmethod
+    def sameLeafNodeSpan(leafer, noder, spanner):
+        """Returns span of bits for which prefix for leaf and node limbs are the
+        same.  Values are Matter instances
+
+        Returns:
+            samer (Number): instance span of prefix for which leaf and node
+                            limbs are same
+                        O when first bit differs. same is <= span (depth) of node
+
+        Parameters:
+            leafer (Number): instance limb of leaf with MaxDepth MSbits
+            noder (Number): instance limb of node with span MSbits
+            spanner (Number): instance span (depth) of node limb (max MaxDepth-1, min 0)
+        """
+        same = self.sameLeafNodeSpanInt(leaf=leafer.num, node=noder.num, span=spanner.num)
+        return(Number(num=same))
+
+
+    @staticmethod
     def forkSpanSwapInt(left, right):
         """Computes and returns tuple (span, swap) where:
         span is int of shallowest fork (bit position) where limbs differ
@@ -1097,7 +1116,7 @@ class Siter:
             The infil above protects the tructure below so new leaves go to the
             same place in the tree no matter the order of insertion.
 
-            ToDo: XXX need new function sameSpan between node and leaf since node
+            ToDo: XXX need new function sameLimbSpan between node and leaf since node
             and leaf may be common all 256. since common comparison is only valid
             to node depth not beyond and swap not apply when common all the way.
 
@@ -1149,13 +1168,20 @@ class Siter:
             #          update node and return
             #
             child = Partage(childer, nodage)  # make child
-            # find span (bit position) where first differ leaf and child limbs
-            span, swap = self.forkSpanSwapInt(left=leaf.part.limb.num,
-                                              right=child.part.limb.num)
 
-            span = span - 1 # common span is 1 less than diff bit span (depth)
-            if span < child.part.depth.num:  # cannot recurse down so insert fork
+            if not self.fitLeafNode(leafer=leaf.part.limb,
+                                    noder=child.part.limb,
+                                    spanner=child.part.depth):  # cannot walk down
+                # leaf cannot recurese down child node path
                 return self.forkNode(node, left=leaf, right=child, side=side)
+
+            ## find span (bit position) where first differ leaf and child limbs
+            #span, swap = self.forkSpanSwapInt(left=leaf.part.limb.num,
+                                              #right=child.part.limb.num)
+
+            #span = span - 1 # common span is 1 less than diff bit span (depth)
+            #if span < child.part.depth.num:  # cannot recurse down so insert fork
+                #return self.forkNode(node, left=leaf, right=child, side=side)
 
             # can recurse down child so recurse
             child = self._insert(leaf=leaf, node=child)  # recursion updates child

@@ -995,9 +995,64 @@ def test_insert_logic():
     assert trace1 == trace0
 
 
-    # Is Siter SIT is a set? Suth that order of insert does not matter.
-    # always makes same tree structure for same set of leaves?
-    # and therefore same root said (hash)?
+    # Verity that order of insertion does not change root. I.e. structrure of
+    # tree is stable for same set of leaves
+
+    # Test special set known to fail for old rules when change order
+    # test forward  order
+    leaves = [limbers['01000000'],
+              limbers['00100000'],
+              limbers['00010000'],
+              limbers['00001000']]
+
+    siter = Siter(tuid=tuid)  # create Siter with known tuid
+    for limber in leaves:
+        leaf = siter.leafFromLimber(limber)
+        siter.root = siter._insert(leaf, siter.root)
+        siter.pinLeaf(leaf.said, leaf.part)
+
+    assert len(siter.leaves) == len(leaves)
+    assert len(siter.nodes) == len(leaves)
+
+    siterT0 = siter
+    traceT0 = siter.trace()
+    assert traceT0 == \
+    [
+        'left: 00001000 @ 000',
+        'right: 00010000 @ 000',
+        'right: 00100000 @ 00',
+        'right: 01000000 @ 0',
+        'right: empty @ root'
+    ]
+
+    # test reverse  order
+    leaves = [limbers['00001000'],
+              limbers['00010000'],
+              limbers['00100000'],
+              limbers['01000000']]
+
+    siter = Siter(tuid=tuid)  # create Siter with known tuid
+    for limber in leaves:
+        leaf = siter.leafFromLimber(limber)
+        siter.root = siter._insert(leaf, siter.root)
+        siter.pinLeaf(leaf.said, leaf.part)
+
+    assert len(siter.leaves) == len(leaves)
+    assert len(siter.nodes) == len(leaves)
+
+    siterT1 = siter
+    traceT1 = siter.trace()
+    assert traceT1 == \
+    [
+        'left: 00001000 @ 000',
+        'right: 00010000 @ 000',
+        'right: 00100000 @ 00',
+        'right: 01000000 @ 0',
+        'right: empty @ root'
+    ]
+
+    assert siterT1.root.said.qb64 == siterT0.root.said.qb64
+
 
     # do random sample insertions of all limbers to compare
     size = len(limbers)
@@ -1014,14 +1069,13 @@ def test_insert_logic():
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
-    assert len(siter.leaves) == 17
-    assert len(siter.nodes) == 16
-
+    assert len(siter.leaves) == size
+    assert len(siter.nodes) == size - 1
 
     siterA = siter
 
     #sample = random.sample(range(0, size), k=size)
-    sample = [9, 2, 1, 8, 13, 3, 16, 10, 12, 15, 7, 4, 6, 0, 5, 11, 14]
+    sample = [14, 11, 6, 4, 2, 9, 15, 12, 8, 13, 7, 3, 0, 16, 10, 5, 1, 17]
     assert len(sample) == size
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
@@ -1030,15 +1084,13 @@ def test_insert_logic():
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
-    assert len(siter.leaves) == 17
-    assert len(siter.nodes) == 16
+    assert len(siter.leaves) == size
+    assert len(siter.nodes) == size - 1
 
     siterB = siter
 
-
-
     #sample = random.sample(range(0, size), k=size)
-    sample = [14, 6, 5, 8, 9, 0, 16, 4, 11, 12, 2, 3, 13, 7, 10, 15, 1]
+    sample =[16, 3, 7, 2, 4, 12, 8, 0, 14, 13, 10, 6, 15, 5, 9, 1, 17, 11]
     assert len(sample) == size
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
@@ -1047,14 +1099,14 @@ def test_insert_logic():
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
-    assert len(siter.leaves) == 17
-    assert len(siter.nodes) == 16
+    assert len(siter.leaves) == size
+    assert len(siter.nodes) == size - 1
 
     siterC = siter
 
-    assert siterB.root.said.qb64 != siterA.root.said.qb64
-    assert siterC.root.said.qb64 != siterB.root.said.qb64
-    assert siterC.root.said.qb64 != siterA.root.said.qb64
+    assert siterB.root.said.qb64 == siterA.root.said.qb64
+    assert siterC.root.said.qb64 == siterB.root.said.qb64
+    assert siterC.root.said.qb64 == siterA.root.said.qb64
 
     # so current logic is not a set. Was just serindipoudous with few leaves
     # so need to analyze to see if it can be fixed or its not possible
@@ -1062,12 +1114,13 @@ def test_insert_logic():
     traceA = siterA.trace()
     assert traceA == \
     [
-        'left: 00000000 @ 000',
+        'left: 00000000 @ 0000',
+        'right: 00001000 @ 0000',
         'right: 00010000 @ 000',
-        'right: 00100000 @ 00',
-        'left: 00110000 @ 010',
-        'left: 01000000 @ 0101',
-        'right: 01010000 @ 0101',
+        'left: 00100000 @ 001',
+        'right: 00110000 @ 001',
+        'left: 01000000 @ 010',
+        'right: 01010000 @ 010',
         'left: 01100000 @ 011',
         'right: 01110000 @ 011',
         'left: 10000000 @ 100',
@@ -1079,51 +1132,7 @@ def test_insert_logic():
         'left: 11100000 @ 111',
         'left: 11110000 @ 1111',
         'right: 11111111 @ 1111'
-    ]  # note lexicographic order
-    traceB = siterB.trace()
-    assert traceB == \
-    [
-        'left: 00000000 @ 00',
-        'right: 00010000 @ 00',
-        'left: 00100000 @ 010',
-        'left: 01000000 @ 0101',
-        'right: 01010000 @ 0101',
-        'left: 00110000 @ 011',
-        'left: 01100000 @ 0111',
-        'right: 01110000 @ 0111',
-        'left: 10000000 @ 10',
-        'left: 10100000 @ 101',
-        'right: 10110000 @ 101',
-        'left: 10010000 @ 110',
-        'right: 11000000 @ 110',
-        'left: 11010000 @ 1110',
-        'right: 11100000 @ 1110',
-        'left: 11110000 @ 1111',
-        'right: 11111111 @ 1111'
-    ]  # not lexocographic looks like error in logic
-    traceC = siterC.trace()
-    assert traceC == \
-    [
-        'left: 00100000 @ 000',
-        'left: 00010000 @ 0001',
-        'right: 00110000 @ 0001',
-        'right: 01010000 @ 00',
-        'left: 00000000 @ 01',
-        'left: 01000000 @ 011',
-        'left: 01100000 @ 0111',
-        'right: 01110000 @ 0111',
-        'left: 10000000 @ 10',
-        'left: 10010000 @ 101',
-        'left: 10100000 @ 1011',
-        'right: 10110000 @ 1011',
-        'left: 11010000 @ 110',
-        'right: 11100000 @ 110',
-        'left: 11000000 @ 111',
-        'left: 11110000 @ 1111',
-        'right: 11111111 @ 1111'
-    ]  # not lexocograpic  show error in logic
-
-
+    ]
 
     """Done Test"""
 
