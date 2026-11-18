@@ -1147,29 +1147,30 @@ def siter_insert():
 
 
     # make leafers
-    count = 128
-    leafers = {f"info_{i:04x}": Noncer(ser=f"info_{i:04x}", code=code)
-                                                for i in range(0, count)}
-    leafervals= [leafers.values()]
-    size = leafervals
+    count = 1024
+    leafers = {}
+    for i in range(0, count):
+        key = f"info_{i:04x}"
+        val = Noncer(ser=key.encode(), code=code)
+        leafers[key] = val
 
 
-    sample = random.sample(range(0, size), k=size)
-    assert len(sample) == size
+    sample = random.sample(range(0, count), k=count)
+    assert len(sample) == count
+    vals = list(leafers.values())
 
-    roots = []
+    roots = set()
     runs = 4
-
     for i in range(0, runs):
-
         siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
-        for leafer in leafervals:
-            assert siter.insert(leafer)
+        for i in sample:
+            siter.insert(vals[i])
+        roots.add(siter.root.said.qb64)
 
-    siterA = siter
+    assert len(roots) == 1  # set only adds unique values
 
-
-
+    # 1000 random leafs in 4  random orders same root. Stron evidence of insert
+    # ghost node rules are correct. !!!
 
 
 
