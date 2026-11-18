@@ -2308,7 +2308,8 @@ class Ilker(Tagger):
     """
 
 
-    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', ilk='', **kwa):
+    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', ilk='',
+                 strict=True, **kwa):
         """Initialize instance
 
         Inherited Parameters:  (see Tagger)
@@ -2329,6 +2330,8 @@ class Ilker(Tagger):
 
         Parameters:
             ilk (str):  message type from Ilks of Ilkage
+            strict (bool): True means ilk must be in Ilks else raise error
+                           False means ilk not limited to Ilks value
         """
 
         if not (qb64b or qb64 or qb2):
@@ -2341,7 +2344,7 @@ class Ilker(Tagger):
         if self.code not in (MtrDex.Tag3, ):
             raise InvalidCodeError(f"Invalid code={self.code} for Ilker "
                                    f"{self.ilk=}.")
-        if self.ilk not in Ilks:
+        if strict and self.ilk not in Ilks:
             raise InvalidSoftError(f"Ivalid ilk={self.ilk} for Ilker.")
 
 
@@ -3587,31 +3590,57 @@ class Diger(Matter):
         return (raw)
 
 
-    def __init__(self, raw=None, code=DigDex.Blake3_256, ser=None, strict=True,
-                 **kwa):
+    def __init__(self, raw=None, code=DigDex.Blake3_256, ser=None, num=None,
+                 strict=True, **kwa):
         """Initialize attributes
 
-        Inherited Parameters:
+        Inherited Parameters::
             See Matter
 
-        Parameters:
+        Parameters::
             ser (bytes): serialization from which raw is computed if not raw
+            num (int): creates raw from num.bytes of code fullsize
+                       useful for Diger instance as hash tree limb bit fork path
             strict (bool): True means enforce code must be in DigDex
                 False means do not enfoce code in DigDex this allows
                     subclasses to enforce different codex"""
 
         try:
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not ser:
-                raise ex
 
-            raw = self._digest(ser, code=code)
+        except EmptyMaterialError as ex:
+            if ser:
+                if hasattr(ser, 'encode'): # str
+                    ser.encode()  # make bytes
+                raw = self._digest(ser, code=code)
+            elif num is not None:
+                raw = num.to_bytes(length=self._rawSize(code))
+            if not raw:
+                raise ex
 
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
 
         if strict and self.code not in DigDex:
             raise InvalidCodeError(f"Unsupported Digest code={self.code}.")
+
+    @property
+    def num(self):
+        """Property num: raw bytes converted to int.
+        Useful when using digest as hash tree limb bit fork path.
+
+        Returns::
+            num(int): .raw converted to int
+        """
+        return int.from_bytes(self.raw, 'big')
+
+    @property
+    def numh(self):
+        """Property numh: raw bytes converted to int as hex string no leading zeros.
+        Useful when using digest as hash tree limb bit fork path.
+
+        Returns::
+            numh (str): .num int converted to hex str"""
+        return f"{self.num:x}"
 
 
     def verify(self, ser):
@@ -3723,8 +3752,8 @@ class Noncer(Diger):
         Parameters:
             nonce (str|bytes|None):  round trippable nonce value with nonce property
                 that accounts for empty nonce indicated by empty string.
-                Otherwise nonce holds qb64 or qb64b encoded nonce value
-                None means generate crypto strength random nonce value
+                Otherwise when not None, nonce holds qb64 or qb64b encoded nonce value
+                When None means generate crypto strength random nonce value
         """
         try:
             super(Noncer, self).__init__(raw=raw, qb64b=qb64b, code=code,
