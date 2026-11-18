@@ -1145,6 +1145,50 @@ def siter_insert():
     code = DigDex.Blake3_256
     tuid = '0ACiicCYoKAqao8qDdnlFVrY'
 
+    # make leafers
+    count = 8
+    leafers = {}
+    for i in range(0, count):
+        key = f"info_{i:04x}"
+        val = Noncer(ser=key.encode(), code=code)
+        leafers[key] = val
+
+    leafersqb64 = {key: val.qb64 for key, val in leafers.items()}
+    assert leafersqb64 == \
+    {
+        'info_0000': 'EPEyrH2H4BwnYnoBMa1f_BgOUGkjbgb4401f74WkXiq9',
+        'info_0001': 'EBg0nWFi_-_5S_qmdHAMuHEN5S5lR3BWRmX9q27O8Sdj',
+        'info_0002': 'EBnVf13snqclzWJ6TRZJ2IpBu_YlHBMD0v4urifXoCNF',
+        'info_0003': 'ECwvvGbzhpdbKnM-PCYaDFi984QYP5jH_1nto6O8xSzR',
+        'info_0004': 'EHFqFW8w0TUZTs53RdI5CH5nLMGDN_laoKTqJd444tK-',
+        'info_0005': 'EPgOUHTHcRHuY4uaQ2UMr0SgWWe_i8Vw0LX4tGmNpbCm',
+        'info_0006': 'ENlDE5eJ-HfSSdURrQ8P313-ymKScOeadQEc7T6GSqHj',
+        'info_0007': 'EAkFX_ou2tauGDzxd7rRGehYiq3xRjL5TW7wVzDQ6TAe'
+    }
+
+
+    vals = list(leafers.values())
+
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
+    for val in vals:  # leafers
+        siter.insert(val)
+
+    assert len(siter.leaves) == count
+    assert len(siter.nodes) == count - 1
+    assert siter.infos == \
+    {
+        'EMvv-63b4v1XWIV-fitjNZb-nFxB2uZvrTaPq6KDcqmI': 'EPEyrH2H4BwnYnoBMa1f_BgOUGkjbgb4401f74WkXiq9',
+        'EHLw2bpH6U2JjDdC84LjO5vIiLL5glKUt6whyHFeFqWP': 'EBg0nWFi_-_5S_qmdHAMuHEN5S5lR3BWRmX9q27O8Sdj',
+        'EAsnChbkFJFgbiHys3j16WVf9RnebUqqSFtk12LqO0UH': 'EBnVf13snqclzWJ6TRZJ2IpBu_YlHBMD0v4urifXoCNF',
+        'EAb318FbH_kvubLWdYTvw8k_oQYXOggjWwbB9QGrT_Eg': 'ECwvvGbzhpdbKnM-PCYaDFi984QYP5jH_1nto6O8xSzR',
+        'EFgOCYefLxUz-oTzPpGXJZfiFANExtgn-5tnrWxQWEDI': 'EHFqFW8w0TUZTs53RdI5CH5nLMGDN_laoKTqJd444tK-',
+        'EA1YwV2fa3KyI5geqkiXYzQPsWoUMfSSNaTdOY7w4U9z': 'EPgOUHTHcRHuY4uaQ2UMr0SgWWe_i8Vw0LX4tGmNpbCm',
+        'ECa221FTFyhjXW_q1xwkDyg3pU4Fw1r1x8oEbdJnEzu3': 'ENlDE5eJ-HfSSdURrQ8P313-ymKScOeadQEc7T6GSqHj',
+        'EOmlLKztmVgPxMx7qopoLsbC_Ddi6ZgWNP9WBBOEC8hF': 'EAkFX_ou2tauGDzxd7rRGehYiq3xRjL5TW7wVzDQ6TAe'
+    }
+
+    assert list(siter.infos.values()) == list(leafersqb64.values())  # ordering is serendipitous
+
 
     # make leafers
     count = 1024
