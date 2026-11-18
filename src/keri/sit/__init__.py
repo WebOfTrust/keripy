@@ -7,6 +7,6 @@ SAIDed Info Tree
 
 """
 
-from .siting import (Version, MaxDepth, MaxDepthBytes, Kithage, Kiths,
+from .siting import (Version, MaxSpan, MaxSpanBytes, Kithage, Kiths,
                       NodeSaidage, Nodage, LeafSaidage, Leafage, Partage,
                       Siter, Emptier, EmptyQb2, EmptyQb64)

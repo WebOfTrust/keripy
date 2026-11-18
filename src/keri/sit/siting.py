@@ -2,7 +2,7 @@
 """
 keri.sit.siting module
 
-Package level shared constants, functions, classes, errors etc
+Siter functionality
 
 """
 
@@ -13,8 +13,8 @@ from ..core import (MtrDex, DigDex, NonceDex, Noncer,  Ilker, Diger, Number)
 from ..help import intToB64
 
 Version = Versionage(major=0, minor=0)
-MaxDepth = 256 # 256 bits or forks == limb span
-MaxDepthBytes = 32  # MaxDepth in bytes equivalent
+MaxSpan = 256 # 256 bits or forks == leaf limb span
+MaxSpanBytes = 32  # MaxSpan in bytes equivalent
 
 Emptier = Noncer(nonce="")  # empty string
 EmptyQb2 = Emptier.qb2
@@ -39,14 +39,14 @@ Per tree/part type field values:
 Per node fields:
     said is Noncer instance digesting NodeSaidage content using SAID protocol
         said filled with dummy values for digest then replaced with computed SAID
-        saided data = kith+tuid+saiddummy+depth+limb+left+right
-    depth is Number instance encoding 2 byte int of depth of node
-    limb is Diger instance encoding of 256 bit branch path to node with MSbits
-        == depth == limb span
+        saided data = kith+tuid+saiddummy+span+limb+left+right
+    span is Number instance encoding 2 byte int of number of MSbits in node limb
+             min 0 for root to max of 255 = MaxSpan-1
+    limb is Diger instance encoding of up to 256 bits with limb span MSbits
     left is Noncer instance encoding said of left child (node, leaf or empty)
     right is Noncer instance encoding said of right child (node, leaf or empty)
 """
-NodeSaidage = namedtuple("NodeSaidage", "kith tuid said depth limb left right")
+NodeSaidage = namedtuple("NodeSaidage", "kith tuid said span limb left right")
 
 """LeafSaidage Doc String
 Full Set of Fields (per tree and per part) used to compute leaf SAID.
@@ -62,11 +62,11 @@ Per tree/part type field values:
 Per leaf fields:
     said is Noncer instance digesting LeafSaidage content using SAID protocol
         said filled with dummy values for digest then replaced with computed SAID
-        saided data = kith+tuid+saiddummy+depth+limb
-    depth is Number instance encoding 2 byte int of potential depth of leaf
-        leaf depth is always MaxDepth 256
+        saided data = kith+tuid+saiddummy+span+limb
+    span is Number instance encoding 2 byte int of number of MSbits in leaf limb
+             always 256 == MaxSpan
     limb is Diger instance encoding of 256 bit branch path to leaf with MSbits
-        == 256 == MaxDepth == limb span
+        always 256 == MaxSpan
         limb calculated on leaf info said using tree specific digest code so
         limb inhabits same hash space as all other parts of tree.
         Leaf info said may use different digest algo from tree wide digest algo.
@@ -74,7 +74,7 @@ Per leaf fields:
         need to store leaf info said per leaf. It may be stored in separate
         field map indexed by limb for convenience.
        """
-LeafSaidage = namedtuple("LeafSaidage", "kith tuid said depth limb")
+LeafSaidage = namedtuple("LeafSaidage", "kith tuid said span limb")
 
 """Nodage Doc String
 A Nodage instance holds the per node fields where values use the appropriate
@@ -87,15 +87,16 @@ For archival (disk) storage the field values are serialized as the corresponding
 .qb64 value of each instance
 
 Nodage fields:
-    depth is Number instance NumDex.Short encoding 2 byte int node depth
+    span is Number instance encoding 2 byte int of number of MSbits in node limb
+        min 0 for root to max of 255 = MaxSpan-1
     limb is Diger instance encoding the 256 bits of which the MS (big endian)
-        depth bits provide the child forks to node. Depth == limb span MSbits
+        span bits provide the child forks to node. Depth == limb span MSbits
     left is Noncer instance of left child's Saidage:
         node or leaf or empty (only root node children can be empty)
     right is Noncer instance of right child's Saidage:
         node or leaf or empty (only root node children can be empty)
 """
-Nodage = namedtuple("Nodage", "depth limb left right", defaults=(EmptyQb2, EmptyQb2))
+Nodage = namedtuple("Nodage", "span limb left right", defaults=(EmptyQb2, EmptyQb2))
 
 """Leafage Doc String
 A Leafage instance holds the per leaf fields where values use the appropriate
@@ -108,16 +109,16 @@ For archival (disk) storage the field values are serialized as the corresponding
 .qb64 value of each instance
 
 Leafage Fields:
-    depth is Number instance NumDex.Short encoding 2 byte int leaf depth.
-        The leaf depth is always MaxDepth == 256
+    span is Number instance encoding 2 byte int of number of MSbits in leaf limb
+             always 256 == MaxSpan
     limb is Diger instance encoding the 256 bits (big endian) of potential
         child forks to leaf. All 256 bits are meaningful but for any leaf attached
-        to a given node only the MS node depth+1 are used to address that leaf
+        to a given node only the MS node span+1 are used to address that leaf
         The limb digest is computed on leaf infos said which said is bound to
         actual leaf info. The info said algo may differ from the tree wide algo
         used to compute node and leaf saids.
 """
-Leafage = namedtuple("Leafage", "depth limb")
+Leafage = namedtuple("Leafage", "span limb")
 
 """Partage Doc String
 Partage is namedtuple of tree part (node or leaf) of form (said, part).
@@ -199,7 +200,7 @@ class Siter:
 
     @staticmethod
     def extendLimbInt(limb, span=0, side=False):
-        """Extends limb  of span (depth) using  bit value given by right and
+        """Extends limb  of span using  bit value given by right and
         returns new limb extended by 1 bit.  Uses int values not Matter instances
 
         Returns:
@@ -210,13 +211,13 @@ class Siter:
 
         Parameters:
             limb (int): 256 bit limb path with span MSbits to be extended
-            span (int): span (depth) of limb 0-255 MSbits
+            span (int): span of limb 0-255 MSbits
             side (bool): True means extend with 1 (right child bit)
                          False means extend with 0 (left child bit)
 
         Usage::
             given limber as Diger instance of limb
-            given spanner as Number instance of depth
+            given spanner as Number instance of span
 
             limb = Sider.extendLimbInt(limb=limber.num),
                                        span=spanner.num)
@@ -227,19 +228,19 @@ class Siter:
                                        span=spanner.num,
                                        right=True)
 
-            limber = Diger(raw=limb.to_bytes(MaxDepthBytes))
-            depther = Number(num=depther.num+1)
+            limber = Diger(raw=limb.to_bytes(MaxSpanBytes))
+            spanner = Number(num=spanner.num+1)
         """
-        if span >= MaxDepth:
-            raise ValueError(f"Invalid {span=} greater than MaxDepth")
+        if span >= MaxSpan:
+            raise ValueError(f"Invalid {span=} greater than MaxSpan")
 
         mask = ((1 << span) - 1)  # mask of 1s of length span
-        limb = (limb >> (MaxDepth - span)) & mask
+        limb = (limb >> (MaxSpan - span)) & mask
         limb = limb << 1  # extend with zero
         if side:
             limb |= 1  # make lsb 1
         span += 1
-        return (limb << (MaxDepth - span), span)
+        return (limb << (MaxSpan - span), span)
 
 
     @staticmethod
@@ -263,7 +264,7 @@ class Siter:
 
         Usage::
             given limber as Diger instance of limb
-            given spanner as Number instance of depth
+            given spanner as Number instance of span
 
             limber, spanner = Sider.extendLimb(limber=limber, spanner=spanner)
 
@@ -275,22 +276,22 @@ class Siter:
         limb = limber.num
         span = spanner.num
         limb, span = Siter.extendLimbInt(limb=limb, span=span, side=side)
-        limber = Diger(raw=limb.to_bytes(MaxDepthBytes), code=code)
+        limber = Diger(raw=limb.to_bytes(MaxSpanBytes), code=code)
         spanner = Number(num=span)
         return (limber, spanner)
 
 
     @staticmethod
     def rightAtSpanInt(limb, span):
-        """Returns which side of limb at span (depth) where:
+        """Returns which side of limb at span where:
         True is right and False is left
         Usually applied to leaf limbs so uses leaf convention:
         Convention MSb at span 1 and LSb at span 256.
-        Minimum leaf depth is 1 and maximum is 256.
+        Minimum span allowed is 1 and maximum is 256.
         span is how many bits into limb either node or leaf.
         A leaf is always attached as a child of a parent node. The leaf child
         side is determined by bit position in leave limb that must be greater
-        that span of parent node's span = parent nodes depth.
+        that span of parent node's span
 
         Returns:
             side (bool): False if bit at span is  0 (side is left)
@@ -298,14 +299,14 @@ class Siter:
 
         Parameters:
             limb (int): 256 bit int where MSbits are forks (0 left, 1 right)
-            span (int): get bit at span (depth) where:
+            span (int): get bit at span where:
                             span = 1 is MSb of limb
                             span = 256 is LSb of limb
         """
         if span <= 0:
             raise ValueError(f"Invalid {span=} <= 0>")
 
-        return True if (limb >> (MaxDepth - span) & 1) else False
+        return True if (limb >> (MaxSpan - span) & 1) else False
 
 
     @staticmethod
@@ -315,16 +316,16 @@ class Siter:
         where limber and spanner are Matter primitives.
         Wrapper around Siter.rightAtSpanInt
         Convention MSb at span 1 and LSb at span 256.
-        Minimum leaf depth is 1 and maximum is 256.
+        Minimum allowed span is 1 and maximum is 256.
 
         Returns:
-            side (bool): False if bit at depth is  0 (side is left)
-                         True if bit at depth is 1 (side is right)
+            side (bool): False if bit at span is  0 (side is left)
+                         True if bit at span is 1 (side is right)
 
         Parameters:
             limber (Diger): instance .num is 256 bit int where MSbits
                             are forks (0 left, 1 right)
-            depther (Number): instane .num is depth where:
+            spanner (Number): instane .num is span where:
                          span = 1 is MSb of limb
                          span = 256 is LSb of limb
         """
@@ -351,7 +352,7 @@ class Siter:
         elif span == 0:  # root so empty twig
             return None
         mask = ((1 << span) - 1)
-        return ((limb >> (MaxDepth-span)) & mask)
+        return ((limb >> (MaxSpan-span)) & mask)
 
 
     @staticmethod
@@ -378,7 +379,7 @@ class Siter:
 
     @staticmethod
     def fitLeafNodeInt(leaf, node, span):
-        """Determines if node limb twig of size span=depth is prefix of leaf limb
+        """Determines if node limb twig of size span is prefix of leaf limb
         i.e. leaf limb would fit at or below node twig on child branch of node
         Values are int
 
@@ -422,12 +423,12 @@ class Siter:
         Returns:
             samer (Number): instance span of prefix for which leaf and node
                             limbs are same
-                        O when first bit differs. same is <= span (depth) of node
+                        O when first bit differs. same is <= span of node
 
         Parameters:
-            leafer (Number): instance limb of leaf with MaxDepth MSbits
+            leafer (Number): instance limb of leaf with MaxSpan MSbits
             noder (Number): instance limb of node with span MSbits
-            spanner (Number): instance span (depth) of node limb (max MaxDepth-1, min 0)
+            spanner (Number): instance span of node limb (max MaxSpan-1, min 0)
         """
         same = self.sameLeafNodeSpanInt(leaf=leafer.num, node=noder.num, span=spanner.num)
         return(Number(num=same))
@@ -461,8 +462,8 @@ class Siter:
         if left == right:
             raise ValueError(f"Bad pair left={right=}")
         for span in range(1, 256):
-            leftbit = (left >> (MaxDepth - span)) & 1
-            rightbit = (right >> (MaxDepth - span)) & 1
+            leftbit = (left >> (MaxSpan - span)) & 1
+            rightbit = (right >> (MaxSpan - span)) & 1
             if leftbit != rightbit:  # shallowest fork found at span
                 swap = True if leftbit else False
                 break
@@ -520,9 +521,9 @@ class Siter:
 
 
         # make and insert root node in .nodes
-        # depth is 0, limb is all zeros, left is empty, right is empty
-        rootage = Nodage(depth=Number(num=0),
-                         limb=Diger(raw=bytes(MaxDepthBytes), code=self.code),
+        # span is 0, limb is all zeros, left is empty, right is empty
+        rootage = Nodage(span=Number(num=0),
+                         limb=Diger(raw=bytes(MaxSpanBytes), code=self.code),
                          left=Noncer(nonce=""),
                          right=Noncer(nonce=""))
         self.root = Partage(self.sayNode(rootage), rootage)
@@ -546,7 +547,7 @@ class Siter:
         saidage = NodeSaidage(kith=Ilker(ilk=Kiths.node, strict=False),
                               tuid=self.tuider,
                               said=Noncer(nonce=""),
-                              depth=nodage.depth,
+                              span=nodage.span,
                               limb=nodage.limb,
                               left=nodage.left,
                               right=nodage.right)
@@ -599,7 +600,7 @@ class Siter:
             return False  # already in .nodes
 
         # convert to qb2 for compact storage
-        nodage = Nodage(depth=nodage.depth.qb2,
+        nodage = Nodage(span=nodage.span.qb2,
                         limb = nodage.limb.qb2,
                         left=nodage.left.qb2,
                         right=nodage.right.qb2)
@@ -624,7 +625,7 @@ class Siter:
 
         """
         # convert to qb2 for compact storage
-        nodage = Nodage(depth=nodage.depth.qb2,
+        nodage = Nodage(span=nodage.span.qb2,
                         limb = nodage.limb.qb2,
                         left=nodage.left.qb2,
                         right=nodage.right.qb2)
@@ -651,7 +652,7 @@ class Siter:
         """
         if nodage := self.nodes.get(saider.qb2):
             # convert to Matter instances for computation
-            nodage = Nodage(depth=Number(qb2=nodage.depth),
+            nodage = Nodage(span=Number(qb2=nodage.span),
                             limb=Diger(qb2=nodage.limb),
                             left=Noncer(qb2=nodage.left),
                             right=Noncer(qb2=nodage.right))
@@ -660,14 +661,14 @@ class Siter:
 
     def isNode(self, saider):
         """Given said returns True if said belongs to node, False otherwise
-        Checks for presence in .nodes and that 0 <= depth < MaxDepth
+        Checks for presence in .nodes and that 0 <= span < MaxSpan
 
         Returns::
             result (bool):  True means said given by saider corresponds to leaf
                             False otherwise
         """
         if (nodage := self.getNode(saider)) is not None:
-            if 0 <= nodage.depth.num < MaxDepth:
+            if 0 <= nodage.span.num < MaxSpan:
                 return True
         return False
 
@@ -715,7 +716,7 @@ class Siter:
         saidage = LeafSaidage(kith=Ilker(ilk=Kiths.leaf, strict=False),
                               tuid=self.tuider,
                               said=Noncer(nonce=""),
-                              depth=leafage.depth,
+                              span=leafage.span,
                               limb=leafage.limb)
         saidage = self.saidify(saidage)
         return saidage.said
@@ -766,7 +767,7 @@ class Siter:
             return False  # already in .leaves
 
         # convert to qb2 for compact storage
-        leafage = Leafage(depth=leafage.depth.qb2,
+        leafage = Leafage(span=leafage.span.qb2,
                         limb = leafage.limb.qb2)
         self.leaves[saider.qb2] = leafage
         return True
@@ -789,7 +790,7 @@ class Siter:
 
         """
         # convert to qb2 for compact storage
-        leafage = Leafage(depth=leafage.depth.qb2,
+        leafage = Leafage(span=leafage.span.qb2,
                           limb = leafage.limb.qb2)
         self.leaves[saider.qb2] = leafage
 
@@ -814,21 +815,21 @@ class Siter:
         """
         if leafage := self.leaves.get(saider.qb2):
             # convert to Matter instances for computation
-            leafage = Leafage(depth=Number(qb2=leafage.depth),
+            leafage = Leafage(span=Number(qb2=leafage.span),
                               limb=Diger(qb2=leafage.limb))
         return leafage
 
 
     def isLeaf(self, saider):
         """Given said returns True if said belongs to leaf, False otherwise
-        Checks for presence in .leaves and that depth is MaxDepth
+        Checks for presence in .leaves and that span is MaxSpan
 
         Returns::
             result (bool):  True means said given by saider corresponds to leaf
                             False otherwise
         """
         if (leafage := self.getLeaf(saider)) is not None:
-            if leafage.depth.num == MaxDepth:
+            if leafage.span.num == MaxSpan:
                 return True
         return False
 
@@ -916,16 +917,16 @@ class Siter:
         # create new forking node of left and right with limb at shallowest
         # common span of limbs
         span, swap = self.forkSpanSwapInt(left.part.limb.num, right.part.limb.num)
-        span = span - 1  # common span is 1 less than diff bit span (depth)
+        span = span - 1  # common span is 1 less than diff bit span
         # since common does not matter if we use left or right limb to get twig
-        limb = self.twigAtSpanInt(left.part.limb.num, span) << MaxDepth - span
+        limb = self.twigAtSpanInt(left.part.limb.num, span) << MaxSpan - span
         if swap:  # swap left and right
             save = left
             left = right
             right = save
 
         # create nodage of new forking node
-        nodage = Nodage(depth=Number(num=span),
+        nodage = Nodage(span=Number(num=span),
                         limb=Diger(num=limb),
                         left=left.said,
                         right=right.said)
@@ -957,9 +958,9 @@ class Siter:
         """
         # create new forking node of lefter and righter
         # extend limb of node on side given by side
-        limber, spanner = self.extendLimb(node.part.limb, node.part.depth, side=side)
+        limber, spanner = self.extendLimb(node.part.limb, node.part.span, side=side)
         # create nodage of new forking node
-        nodage = Nodage(depth=spanner, limb=limber, left=lefter, right=righter)
+        nodage = Nodage(span=spanner, limb=limber, left=lefter, right=righter)
         saider = self.sayNode(nodage)  # update said of forking node
         self.pinNode(saider, nodage)  # update .nodes with forking node
         return self.updateNode(node, saider, side=side)
@@ -971,13 +972,12 @@ class Siter:
             leaf (Partage): instance (said, part) where:
                             said is Noncer instance generated from leafage
                             part is Leafage instance with Matter instance values
-                                depther is Number 256 and limb from limber
 
         Parameters::
             limber (Noncer): instance only per leaf unique value used to generate
                              leafage and then said of leaf
         """
-        leafage = Leafage(depth=Number(num=256), limb=limber)
+        leafage = Leafage(span=Number(num=256), limb=limber)
         saider = self.sayLeaf(leafage)  # compute leaf said
         return Partage(said=saider, part=leafage)  # matter primitives
 
@@ -989,7 +989,6 @@ class Siter:
             leaf (Partage): instance (said, part) where:
                             said is Noncer instance generated from leafage
                             part is Leafage instance with Matter instance values
-                                depther is Number 256 and limb from limber
 
         Parameters::
             leafer (Noncer): instance only per leaf unique value of said of info
@@ -1062,10 +1061,10 @@ class Siter:
 
         Logic:
             leaf can only attach to child of node on side given by bit in leaf
-            limb which bit is located below (greater than) the node depth.
+            limb which bit is located below (greater than) the node span.
             This leaves room for one more nodes to interposed either above or
             below the node to which a leaf is attached. The key is that the
-            limb of a given node is set by the deepest common depth of its
+            limb of a given node is set by the deepest common span of its
             child leaves (node and/or leaf). This leaves gaps in the tree where
             virtual missing nodes with empty children would have been. We can
             call these ghost nodes. As long as the gaps between non-ghost nodes
@@ -1086,7 +1085,7 @@ class Siter:
             node, the existing node's said does not change. This means saids
             lower in that subtree remain stable. So the only hashes (saids) that
             change are above it in its given branch.  The limb of the new node
-            is always set to the deepest common depth of its children. This
+            is always set to the deepest common span of its children. This
             leaves a stable gap for any missing ghost nodes above it in the tree.
 
 
@@ -1095,7 +1094,7 @@ class Siter:
             the nodes below the new node do not. In order for a fork to be
             inserted below a node, the leaf must itself fit below that node.
             The new node always has a limb value that is set to the deepest
-            common depth of its children. This creates a stable gap for the
+            common span of its children. This creates a stable gap for the
             missing ghost nodes.
 
             Creating stable gaps for missing ghost nodes supports the required
@@ -1109,7 +1108,7 @@ class Siter:
 
             ToDo: XXX need new function sameLimbSpan between node and leaf since node
             and leaf may be common all 256. since common comparison is only valid
-            to node depth not beyond and swap not apply when common all the way.
+            to node span not beyond and swap not apply when common all the way.
 
             forkSpanSwap does not work when node and leaf same all the way down.
 
@@ -1118,7 +1117,7 @@ class Siter:
         # assumes node limb is prefix of leaf limb. leaf fits below node.
         # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
         # figure out which side of node, leaf must go
-        if self.rightAtSpanInt(leaf.part.limb.num, node.part.depth.num + 1):  # go right
+        if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
             side = True  # set side to right
             # get child on right
             childer = node.part.right   # empty or leaf saider or node saider
@@ -1129,15 +1128,15 @@ class Siter:
 
         if not childer.nonce:  # child is empty (should only happen at root node)
             # attach leaf to side of node, update node and return
-            if node.part.depth.num != 0:  # not root
+            if node.part.span.num != 0:  # not root
                 raise ValueError(f"Invalid node={node.said.qb64}, not root "
                                  f"but empty child on {side=}")
             # remove, replace, and return updated node with new child on side
             return self.updateNode(node, leaf.said, side=side)
 
         if (leafage := self.getLeaf(childer)) is not None:  # child is leaf
-            # fork node on side.  set limb of new node to common depth before
-            # shallowest diff and put leafs on side at diff bit at common depth +1
+            # fork node on side.  set limb of new node to common span before
+            # shallowest diff and put leafs on side at diff bit at common span +1
             # update node and return
             child = Partage(childer, leafage)  # make child
             # need to updage forkNode to use common limb not just extension
@@ -1152,7 +1151,7 @@ class Siter:
             # else: cannot walk down past child node:
             #          fork  between node and its child node on side.
             #                above child node and below node.
-            #          fork at shallowest depth diff of leaf and child node on side
+            #          fork at shallowest span diff of leaf and child node on side
             #          child node should stay on same side of new fork node as it
             #          was on node and leaf should go on other side of new fork node
             #          check if swap says otherwise
@@ -1162,17 +1161,9 @@ class Siter:
 
             if not self.fitLeafNode(leafer=leaf.part.limb,
                                     noder=child.part.limb,
-                                    spanner=child.part.depth):  # cannot walk down
+                                    spanner=child.part.span):  # cannot walk down
                 # leaf cannot recurese down child node path
                 return self.forkNode(node, left=leaf, right=child, side=side)
-
-            ## find span (bit position) where first differ leaf and child limbs
-            #span, swap = self.forkSpanSwapInt(left=leaf.part.limb.num,
-                                              #right=child.part.limb.num)
-
-            #span = span - 1 # common span is 1 less than diff bit span (depth)
-            #if span < child.part.depth.num:  # cannot recurse down so insert fork
-                #return self.forkNode(node, left=leaf, right=child, side=side)
 
             # can recurse down child so recurse
             child = self._insert(leaf=leaf, node=child)  # recursion updates child
@@ -1201,7 +1192,7 @@ class Siter:
         Each entry is tuple of (leaf limb, node limb MSb)
         """
         limb = node.part.limb.num
-        span = node.part.depth.num
+        span = node.part.span.num
         if (twig := self.twigAtSpanInt(limb, span)) is not None:
             showtwig = f"{twig:0{span}b}"
         else:
