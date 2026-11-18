@@ -7,7 +7,7 @@ import random
 import pytest
 from keri import Versionage
 from keri.core import NumDex, Number, DigDex, Diger, Noncer, Verser, Ilker
-from keri.sit.siting import (Version, MaxDepth, MaxDepthBytes, Kithage, Kiths,
+from keri.sit import (Version, MaxDepth, MaxDepthBytes, Kithage, Kiths,
                       NodeSaidage, Nodage, LeafSaidage, Leafage, Partage,
                       Siter, Emptier, EmptyQb2, EmptyQb64)
 
@@ -1134,10 +1134,51 @@ def test_insert_logic():
         'right: 11111111 @ 1111'
     ]
 
+    # Preliminary tests show that core property of sparse Merkle tree is provided
+    # same set of leaves == same structure == same root said (digest)
+
     """Done Test"""
+
+
+def siter_insert():
+    """Test .insert method of Siter"""
+    code = DigDex.Blake3_256
+    tuid = '0ACiicCYoKAqao8qDdnlFVrY'
+
+
+    # make leafers
+    count = 128
+    leafers = {f"info_{i:04x}": Noncer(ser=f"info_{i:04x}", code=code)
+                                                for i in range(0, count)}
+    leafervals= [leafers.values()]
+    size = leafervals
+
+
+    sample = random.sample(range(0, size), k=size)
+    assert len(sample) == size
+
+    roots = []
+    runs = 4
+
+    for i in range(0, runs):
+
+        siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
+        for leafer in leafervals:
+            assert siter.insert(leafer)
+
+    siterA = siter
+
+
+
+
+
+
+    """Done Test"""
+
 
 if __name__ == "__main__":
     test_siting_siter_class()
     test_siter_basic()
     test_setup_limber_vectors()
     test_insert_logic()
+    siter_insert()

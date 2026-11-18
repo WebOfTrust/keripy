@@ -1001,7 +1001,7 @@ class Siter:
 
 
     def insert(self, leafer):
-        """Inser leafer idempotently
+        """Insert leafer idempotently
 
         Returns::
             leaf (Partage|None)): of inserted leaf corresponding to leafer
@@ -1021,15 +1021,6 @@ class Siter:
 
 
         """
-
-        #limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
-        #leaf = self.leafFromLimber
-        ## Setup for insert
-        ## make leafage from limber
-        #leafage = Leafage(depth=Number(num=256), limb=limber)
-        #saider = self.sayLeaf(leafage)  # compute leaf said
-        #leaf = Partage(said=saider, part=leafage)  # matter primitives
-
         # setup for ._insert
         leaf = self.leafFromLeafer(leafer)
         if self.hasLeaf(leaf.said):
