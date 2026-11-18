@@ -12,6 +12,10 @@ from .messaging import (regcept, blindate, update, acdcmap, acdcatt, acdcagg,
 from .ipexing import (Ipex, IpexHandler, loadHandlers, apply, offer, agree,
                       grant, admit, spurn)
 
+from .chaining import (Verdicts, EdgeVerdict, valid, invalid, unknown,
+                       reduceAnd, reduceOr, reduce, MAryReducers)
+from .evaluating import EdgeEvaluator, SchemaEvaluator
+
 from .regbasing import RegBaser
 from .webregbasing import WebRegBaser
 from .registering import RegistryStore, openRegistry

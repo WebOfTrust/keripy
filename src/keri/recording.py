@@ -178,6 +178,33 @@ class TopicsRecord:  # baser.tops
 
 
 @dataclass
+class ExchangeRegistryStateRecord:  # baser.exrs
+    """
+    The registry state an accepted IPEX grant authenticated for one disclosed ACDC.
+
+    IPEX authenticates the registry proof and keeps what the registry says. Whether
+    that state makes the ACDC acceptable for a given use is not IPEX's to decide, so
+    nothing on the protocol path reads these records back; an application or EGF
+    evaluator does. Database keys are (exchange SAID, disclosed node SAID).
+    (baser.exrs)
+
+    Attributes:
+        regid (str): qb64 SAID of the registry that vetted the node
+        said (str): qb64 SAID of the registry's head event at verification
+        sn (int): sequence number of that head event
+        state (str | None): transaction state the head discloses for the node,
+            or None when the head discloses none
+        stamp (str | None): the ISO-8601 datetime the registry check reported
+            (the head event's, or the latest binding event's)
+    """
+    regid: str
+    said: str
+    sn: int
+    state: str | None = None
+    stamp: str | None = None
+
+
+@dataclass
 class OobiQueryRecord:  # information for responding to OOBI query
     """
     Keyed by cid in oobis field of HabitatRecord  (oobiq).

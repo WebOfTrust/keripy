@@ -140,6 +140,7 @@ class Exchanger:
         behavior = self.routes[route] if route in self.routes else None
         # Read the route's optional evidence-selection hook.
         evidenceVerifier = getattr(behavior, "verifyEvidence", None)
+        acceptsEvidence = getattr(behavior, "acceptsEvidence", False)
         # Read whether unresolved extras may be dropped after querying.
         acceptsMissingEvidence = getattr(behavior, "acceptsMissingEvidence", False)
         tsgs = list(tsgs or [])
@@ -211,7 +212,7 @@ class Exchanger:
         validSenderTsgs = []
         validSenderCigars = []
         if validSenderSourceSeals:
-            # A valid sender seal authenticates the EXN. Retain only valid
+            # A valid sender seal authenticates the exchange. Retain only valid
             # optional sender TSGs and do not fail on invalid ones.
             validSenderTsgs, _, _, _, _ = verifyAttachments(
                 hby=self.hby, serder=serder, tsgs=senderTsgs)
@@ -383,10 +384,9 @@ class Exchanger:
         # Isolate verification-only arguments from handler arguments.
         verifyKwa = dict(kwa)
         # Pass selected evidence only to handlers that advertise support.
-        if getattr(behavior, "acceptsEvidence", False):
-            # Only an opted-in V2 behavior sees the post-KRAM evidence selected
-            # by its policy.  Legacy handlers retain their existing signatures.
-            verifyKwa["evidence"] = acceptedExtras
+        if acceptsEvidence:
+            # Keep signatures available through route-level authentication.
+            verifyKwa["evidence"] = (tsgs, cigars, sourceSeals)
         try:
             if verifier is not None and not verifier(serder=serder, **verifyKwa):
                 logger.error("exn event for route %s failed behavior verification. said=%s", route, serder.said)
@@ -535,7 +535,7 @@ class Exchanger:
         # Keep one deadline for all missing schemas in this exchange
         if stored and self.hby.db.emsd.get(keys=(dig,)) is None:
             expiry = helping.nowUTC() + datetime.timedelta(seconds=self.TimeoutMSE)
-            xid = serder.ked.get("x")
+            xid = serder.said if serder.ilk == Ilks.xip else serder.ked.get("x")
             if xid:
                 cache = self.hby.db.kramTMSC.get(
                     keys=(serder.pre, xid, dig))
@@ -712,7 +712,7 @@ class Exchanger:
     def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None,
                  sourceSeals=None, nests=None, endorsers=None):
         dig = serder.said
-        pdig = serder.ked['p']
+        pdig = serder.ked.get('p', '')
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
@@ -751,7 +751,7 @@ class Exchanger:
 
         # Only behavior-approved non-sender endorsements enter this durable
         # reverse index; sender authentication and escrow evidence do not.
-        # Add one Grant SAID entry under each accepted grantor AID.
+        # Add one Grant SAID entry under each accepted endorser AID.
         for endorser in endorsers:
             self.hby.db.eidx.add(keys=(endorser,), val=exnDiger)
         if pdig:

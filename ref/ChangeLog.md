@@ -14,6 +14,16 @@ The intermediate 2.0.0 branch largely
 provides that backwards compatibility but does not fully implement all the new
 features.
 
+### IPEX flow-opening messages changed from exn to xip
+- A flow-opening Apply, Offer, or Grant is now an xip, while subsequent messages
+  in the flow remain exn messages.
+- An opening xip has no x transaction identifier or p prior-message field. Its
+  own d SAID is the transaction identifier.
+- Each subsequent exn carries the opener's SAID in x and its immediate prior
+  message's SAID in p.
+- Notification consumers must accept /xip/ipex/... for
+  opening messages and /exn/ipex/... for subsequent messages.
+
 *** Breaking for callers that catch builtin exceptions: malformed input to several parsers
 now raises a keri.kering error (a KeriError) instead of a raw Python exception.
 - Tholder: an invalid sith raises kering.ValidationError instead of ValueError,
@@ -31,6 +41,22 @@ now raises a keri.kering error (a KeriError) instead of a raw Python exception.
   ValueError, matching Indexer.
 Code that catches ValueError or KeyError around these calls should catch the kering error
 named above, or KeriError.
+
+*** Kevery.fetchWitnessState and Kevery.fetchEstEvent read the last establishment event
+of the current key state directly when sn lies between it and the latest event, instead of
+walking back to it, so a receipt on an event at or after the last rotation no longer costs a
+scan of every event since that rotation. Other sns still walk. When the event at sn is
+missing from the store, fetchWitnessState now returns that establishment event's witness list
+where the walk raised AttributeError.
+
+*** New Parser.parseOneBare: like parseOne, but raises errors to the caller instead of
+logging them, for callers that are not internet-facing services and need to know why a
+msg failed. Intake errors raised while extracting (ExtractionError, ValidationError) are
+raised as ExtractionError with the original on the chain; any other extraction error
+propagates unchanged; processing errors are raised as themselves. Which types reach a
+caller is therefore part of its contract, so converting a raw raise on the extraction path
+to an intake type changes what parseOneBare raises. Parser.parse and parseOne are
+unchanged.
 
 
 ## 2.0.0-dev6

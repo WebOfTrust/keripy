@@ -7,11 +7,12 @@ from types import SimpleNamespace
 import pytest
 from jsonschema import Draft202012Validator as SchemaValidator
 
-from keri import Kinds, Vrsn_2_0
+from keri import Ilks, Kinds, Vrsn_2_0
 from keri.acdc import (
     IpexHandler,
     Regery,
     Registrar,
+    acdcagg,
     acdcmap,
     admit as ipexAdmit,
     agree as ipexAgree,
@@ -21,8 +22,10 @@ from keri.acdc import (
     loadHandlers,
     offer as ipexOffer,
 )
+from keri.acdc.chaining import Verdicts
 from keri.app import openCF, openHby
 from keri.core import (
+    Aggor,
     Blinder,
     Compactor,
     Diger,
@@ -30,6 +33,7 @@ from keri.core import (
     Kramer,
     Mapper,
     Noncer,
+    Number,
     Parser,
     Salter,
     Schemer,
@@ -45,12 +49,20 @@ from keri.peer.exchanging import loadParsedNestedSubstreams
 from tests.sedi.test_sedi import (
     AgentSchema,
     AgentSchemaSaid,
+    AgeSchema,
+    AgeSchemaSaid,
+    BespokeSchema,
+    BespokeSchemaSaid,
     CoreSchema,
     CoreSchemaSaid,
+    GuardianSchema,
+    GuardianSchemaSaid,
     IarSchema,
     IarSchemaSaid,
     ResidenceSchema,
     ResidenceSchemaSaid,
+    SocialSchema,
+    SocialSchemaSaid,
     UnitSchema,
     UnitSchemaSaid,
 )
@@ -72,6 +84,10 @@ _SEDI_SCHEMAS = (
     (AgentSchemaSaid, AgentSchema),
     (CoreSchemaSaid, CoreSchema),
     (ResidenceSchemaSaid, ResidenceSchema),
+    (GuardianSchemaSaid, GuardianSchema),
+    (AgeSchemaSaid, AgeSchema),
+    (SocialSchemaSaid, SocialSchema),
+    (BespokeSchemaSaid, BespokeSchema),
 )
 
 
@@ -200,6 +216,40 @@ def _proofed(acdc, *proofs, source=None):
     return messagize(serder=acdc, bonds=bonds, framed=False, gvrsn=Vrsn_2_0)
 
 
+def _signed(acdc, hab):
+    """Attach the issuer's current transferable signature to an ACDC."""
+    return messagize(
+        serder=acdc,
+        tsgs=[(
+            hab.kever.prefixer,
+            Number(sn=hab.kever.lastEst.s),
+            Diger(qb64=hab.kever.lastEst.d),
+            hab.sign(ser=acdc.raw, indexed=True),
+        )],
+        framed=False,
+        gvrsn=Vrsn_2_0,
+    )
+
+
+def _edgeSection(nonce, **edges):
+    """Saidify an expanded Edge Section and all of its named edges."""
+    compactor = Compactor(
+        mad=dict(d="", u=nonce, **edges),
+        makify=True,
+        compactify=True,
+        saidive=True,
+        kind=Kinds.json,
+    )
+    return compactor.partials[tuple(f".{label}" for label in edges)].mad
+
+
+def _issue(registrar, registry, issuer, acdc):
+    """Issue and anchor one registry-backed ACDC, returning its proofed stream."""
+    proof, event = registrar.issue(registry, acdc=acdc)
+    _anchor(issuer, registry, event)
+    return _proofed(acdc, proof)
+
+
 def _exchange(exn, atc, senderKvy, receiverKvy):
     """Process one IPEX message in both parties' independent stores."""
     message = bytearray(exn.raw)
@@ -221,6 +271,7 @@ def _buildSediCredentials(
     coreRegistry,
     residenceRegistry,
     presentationRegistry,
+    corePresentation=True,
     residencePresentation=True,
     residenceOperators=None,
 ):
@@ -357,7 +408,6 @@ def _buildSediCredentials(
         d="",
         u=nonces[3],
         i=holder.pre,
-        rd=presentationRegistry.regk,
         primary=True,
         givenName=dict(d="", u=nonces[4], value="Guy"),
         middleName=dict(d="", u=nonces[5], value="Marty McFly"),
@@ -373,6 +423,8 @@ def _buildSediCredentials(
             d="", u=nonces[12], value="2028-09-01T00:00:00.000000+00:00"
         ),
     )
+    if corePresentation:
+        coreAttributesMad["rd"] = presentationRegistry.regk
     coreAttributePaths = [
         ".givenName",
         ".middleName",
@@ -468,7 +520,7 @@ def _buildSediCredentials(
             n=core.said,
             s=CoreSchemaSaid,
             o=(
-                ["E1E", "NI2I"]
+                ["E1E", "I1I"]
                 if residenceOperators is None
                 else residenceOperators
             ),
@@ -515,6 +567,7 @@ def _setupSediCredentials(
     orgRgy,
     issuerRgy,
     holderRgy,
+    corePresentation=True,
     residencePresentation=True,
     residenceOperators=None,
 ):
@@ -567,6 +620,7 @@ def _setupSediCredentials(
         coreRegistry,
         residenceRegistry,
         presentationRegistry,
+        corePresentation=corePresentation,
         residencePresentation=residencePresentation,
         residenceOperators=residenceOperators,
     )
@@ -783,7 +837,7 @@ def test_ipex_v2_rejects_schema_invalid_sedi_with_valid_issuer_registry():
             assert handler._verifyIssuerAuthNode(
                 serder=node.serder,
                 nest=node,
-            ) is True
+            ).verdict == Verdicts.valid
 
             # Set up the recipient's IPEX processor
             recorder = Recorder()
@@ -941,8 +995,8 @@ def test_signed_iar_through_ipex():
             assert storedGrant.pre == holder.pre
             assert storedGrant.ked["ri"] == verifier.pre
             assert storedGrant.ked["r"] == "/ipex/grant"
-            assert storedGrant.ked["p"] == ""
-            assert storedGrant.ked["x"] == grant.ked["x"]
+            assert storedGrant.ilk == Ilks.xip
+            assert storedGrant.said == grant.said
             assert storedGrant.ked["a"]["o"] == [iar.said]
             iarNests = loadParsedNestedSubstreams(verifierHby, grant.said)
             assert len(iarNests) == 1
@@ -1089,8 +1143,8 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 assert storedApply.pre == verifier.pre
                 assert storedApply.ked["ri"] == holder.pre
                 assert storedApply.ked["r"] == "/ipex/apply"
-                assert storedApply.ked["p"] == ""
-                assert storedApply.ked["x"] == coreApply.ked["x"]
+                assert storedApply.ilk == Ilks.xip
+                assert storedApply.said == coreApply.said
                 assert storedApply.ked["q"] == coreApply.ked["q"]
                 assert storedApply.ked["a"]["ax"] == [True]
 
@@ -1242,7 +1296,7 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 assert storedGrant.ked["ri"] == verifier.pre
                 assert storedGrant.ked["r"] == "/ipex/grant"
                 assert storedGrant.ked["p"] == storedAgree.said
-                assert storedGrant.ked["x"] == storedApply.ked["x"]
+                assert storedGrant.ked["x"] == storedApply.said
                 assert storedGrant.ked["a"]["ax"] == [True]
                 assert storedGrant.ked["a"]["o"] == [core.said]
 
@@ -1290,9 +1344,10 @@ def test_core_sedi_offer_to_admit_flow_with_interleaved_kel_events():
                 _exchange(admit, admitAtc, verifierKvy, holderKvy)
 
                 # Assert KRAM cache was created
+                xid = grant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, grant.ked["x"], grant.said)
+                        keys=(holder.pre, xid, grant.said)
                     )
                     is not None
                 )
@@ -1798,8 +1853,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedStateApply.pre == verifier.pre
                 assert storedStateApply.ked["ri"] == holder.pre
                 assert storedStateApply.ked["r"] == "/ipex/apply"
-                assert storedStateApply.ked["p"] == ""
-                assert storedStateApply.ked["x"] == stateApply.ked["x"]
+                assert storedStateApply.ilk == Ilks.xip
+                assert storedStateApply.said == stateApply.said
                 assert storedStateApply.ked["a"]["ax"] == [True]
 
                 # Guy rotates before signing and presenting the first Grant.
@@ -1887,7 +1942,7 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedStateGrant.ked["ri"] == verifier.pre
                 assert storedStateGrant.ked["r"] == "/ipex/grant"
                 assert storedStateGrant.ked["p"] == storedStateApply.said
-                assert storedStateGrant.ked["x"] == storedStateApply.ked["x"]
+                assert storedStateGrant.ked["x"] == storedStateApply.said
                 assert storedStateGrant.ked["a"]["ax"] == [True]
                 assert storedStateGrant.ked["a"]["o"] == [residence.said]
                 stateNests = loadParsedNestedSubstreams(
@@ -1967,8 +2022,8 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedDistrictApply.pre == verifier.pre
                 assert storedDistrictApply.ked["ri"] == holder.pre
                 assert storedDistrictApply.ked["r"] == "/ipex/apply"
-                assert storedDistrictApply.ked["p"] == ""
-                assert storedDistrictApply.ked["x"] == districtApply.ked["x"]
+                assert storedDistrictApply.ilk == Ilks.xip
+                assert storedDistrictApply.said == districtApply.said
                 assert storedDistrictApply.ked["q"] == districtApply.ked["q"]
                 assert storedDistrictApply.ked["a"]["ax"] == [True]
 
@@ -2041,7 +2096,7 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 assert storedDistrictGrant.ked["ri"] == verifier.pre
                 assert storedDistrictGrant.ked["r"] == "/ipex/grant"
                 assert storedDistrictGrant.ked["p"] == storedDistrictApply.said
-                assert storedDistrictGrant.ked["x"] == storedDistrictApply.ked["x"]
+                assert storedDistrictGrant.ked["x"] == storedDistrictApply.said
                 assert storedDistrictGrant.ked["a"]["ax"] == [True]
                 assert storedDistrictGrant.ked["a"]["o"] == [residence.said]
                 districtNests = loadParsedNestedSubstreams(
@@ -2078,15 +2133,17 @@ def test_sedi_flow_survives_holder_and_verifier_rotations():
                 _exchange(districtAdmit, districtAdmitAtc, verifierKvy, holderKvy)
 
                 # Each disclosure has its own timely presentation binding.
+                stateXid = stateGrant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, stateGrant.ked["x"], stateGrant.said)
+                        keys=(holder.pre, stateXid, stateGrant.said)
                     )
                     is not None
                 )
+                districtXid = districtGrant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, districtGrant.ked["x"], districtGrant.said)
+                        keys=(holder.pre, districtXid, districtGrant.said)
                     )
                     is not None
                 )
@@ -2263,8 +2320,8 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 assert storedApply.pre == verifier.pre
                 assert storedApply.ked["ri"] == holder.pre
                 assert storedApply.ked["r"] == "/ipex/apply"
-                assert storedApply.ked["p"] == ""
-                assert storedApply.ked["x"] == apply.ked["x"]
+                assert storedApply.ilk == Ilks.xip
+                assert storedApply.said == apply.said
                 assert storedApply.ked["q"] == apply.ked["q"]
                 assert storedApply.ked["a"]["ax"] == [True]
 
@@ -2331,7 +2388,7 @@ def test_selective_sedi_grant_does_not_leak_hidden_fields():
                 assert storedGrant.ked["ri"] == verifier.pre
                 assert storedGrant.ked["r"] == "/ipex/grant"
                 assert storedGrant.ked["p"] == storedApply.said
-                assert storedGrant.ked["x"] == storedApply.ked["x"]
+                assert storedGrant.ked["x"] == storedApply.said
                 assert storedGrant.ked["a"]["ax"] == [True]
                 assert storedGrant.ked["a"]["o"] == [core.said]
                 selectiveNests = loadParsedNestedSubstreams(
@@ -3377,8 +3434,8 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 assert storedResidenceApply.pre == verifier.pre
                 assert storedResidenceApply.ked["ri"] == holder.pre
                 assert storedResidenceApply.ked["r"] == "/ipex/apply"
-                assert storedResidenceApply.ked["p"] == ""
-                assert storedResidenceApply.ked["x"] == residenceApply.ked["x"]
+                assert storedResidenceApply.ilk == Ilks.xip
+                assert storedResidenceApply.said == residenceApply.said
                 assert storedResidenceApply.ked["q"] == residenceApply.ked["q"]
                 assert storedResidenceApply.ked["a"]["ax"] == [True]
 
@@ -3473,7 +3530,7 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 assert storedResidenceGrant.ked["ri"] == verifier.pre
                 assert storedResidenceGrant.ked["r"] == "/ipex/grant"
                 assert storedResidenceGrant.ked["p"] == storedResidenceApply.said
-                assert storedResidenceGrant.ked["x"] == storedResidenceApply.ked["x"]
+                assert storedResidenceGrant.ked["x"] == storedResidenceApply.said
                 assert storedResidenceGrant.ked["a"]["ax"] == [True]
                 assert storedResidenceGrant.ked["a"]["o"] == [residence.said]
 
@@ -3508,9 +3565,10 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 _exchange(residenceAdmit, residenceAdmitAtc, verifierKvy, holderKvy)
 
                 # KRAM records when Vic accepted the authenticated Grant.
+                xid = residenceGrant.ked["x"]
                 assert (
                     verifierHby.db.kramTMSC.get(
-                        keys=(holder.pre, residenceGrant.ked["x"], residenceGrant.said)
+                        keys=(holder.pre, xid, residenceGrant.said)
                     )
                     is not None
                 )
@@ -3546,3 +3604,451 @@ def test_residence_sedi_supporting_dag_through_ipex():
                 d=residenceGrant.said,
                 m="Present Residence and supporting Core SEDI",
             )
+
+def test_gal_and_wyn_bespoke_sedi_dags_through_ipex():
+    """Present the same-agent Gal and multi-agent Wyn bespoke DAGs."""
+    with openHby(name="ipex-bespoke-sedi", base="test", version=Vrsn_2_0) as hby:
+        root = hby.makeHab(name="roy-state-root")
+        org = hby.makeHab(name="deb-sedi-program")
+        proofer = hby.makeHab(name="pat-proofer")
+        sue = hby.makeHab(name="sue-issuing-agent")
+        stu = hby.makeHab(name="stu-issuing-agent")
+        guy = hby.makeHab(name="guy-guardian")
+        gal = hby.makeHab(name="gal-holder")
+        wyn = hby.makeHab(name="wyn-holder")
+        verifier = hby.makeHab(name="vic-verifier")
+
+        rgy = Regery(hby=hby, name="ipex-bespoke-sedi", temp=True)
+        try:
+            _cacheSediSchemas(hby.db)
+            registrar = Registrar(rgy=rgy)
+            registries = {}
+            for name, controller in (
+                ("unit", root),
+                ("sue-agent", org),
+                ("stu-agent", org),
+                ("gal-core", sue),
+                ("gal-residence", sue),
+                ("gal-guardian", sue),
+                ("wyn-core", sue),
+                ("guy-guardian", sue),
+                ("wyn-age", stu),
+                ("wyn-social", guy),
+            ):
+                registry = registrar.makeRegistry(
+                    name=f"{name}-issuer-registry",
+                    prefix=controller.pre,
+                )
+                _anchor(controller, registry, rgy.store.event(registry.regk))
+                registries[name] = registry
+
+            # Reuse the worked SEDI builder for the common Unit -> Sue Agent
+            # authority chain and each holder's Core credential. Presentation
+            # registry tethers are omitted here because the bespoke ACDC itself
+            # is what the test presents and authenticates.
+            _, unit, sueAgent, galCore, galResidence, _ = _buildSediCredentials(
+                root,
+                org,
+                proofer,
+                sue,
+                gal,
+                registries["unit"],
+                registries["sue-agent"],
+                registries["gal-core"],
+                registries["gal-residence"],
+                None,
+                corePresentation=False,
+                residencePresentation=False,
+                residenceOperators=["E1E", "DI1I", "NI2I"],
+            )
+            _, wynUnit, wynSueAgent, wynCore, _, _ = _buildSediCredentials(
+                root,
+                org,
+                proofer,
+                sue,
+                wyn,
+                registries["unit"],
+                registries["sue-agent"],
+                registries["wyn-core"],
+                registries["gal-residence"],
+                None,
+                corePresentation=False,
+                residencePresentation=False,
+            )
+            assert wynUnit.said == unit.said
+            assert wynSueAgent.said == sueAgent.said
+
+            salter = Salter(raw=b"bespoke-sedi!!!!")
+            nonces = [
+                Noncer(raw=salter.stretch(size=16, path=f"{index:x}", temp=True)).qb64
+                for index in range(32)
+            ]
+            rule = Mapper(
+                mad=dict(d="", l="Use only for the disclosed SEDI presentation."),
+                makify=True,
+                saidive=True,
+                kind=Kinds.json,
+            ).mad
+            blockSaid = Diger(ser=b"SEDI compact attribute block").qb64
+
+            stuAgentAttributes = Mapper(
+                mad=dict(
+                    d="",
+                    u=nonces[0],
+                    i=stu.pre,
+                    issuedDate="2026-09-01T00:00:00.000000+00:00",
+                    role="SediIssuingAgent",
+                    name=blockSaid,
+                ),
+                makify=True,
+                saidive=True,
+                kind=Kinds.json,
+            ).mad
+            stuAgent = acdcmap(
+                israid=org.pre,
+                uuid=nonces[1],
+                regid=registries["stu-agent"].regk,
+                schema=AgentSchemaSaid,
+                attribute=stuAgentAttributes,
+                edge=_edgeSection(
+                    nonces[2],
+                    orgUnit=dict(
+                        d="",
+                        u=nonces[3],
+                        n=unit.said,
+                        s=UnitSchemaSaid,
+                        o="I2I",
+                    ),
+                ),
+                rule=rule,
+                kind=Kinds.json,
+            )
+
+            def guardianCredential(issuee, registry, nonceOffset):
+                attributes = Mapper(
+                    mad=dict(
+                        d="",
+                        u=nonces[nonceOffset],
+                        i=issuee.pre,
+                        role="guardian",
+                        ward=wyn.pre,
+                        issuedDate=blockSaid,
+                    ),
+                    makify=True,
+                    saidive=True,
+                    kind=Kinds.json,
+                ).mad
+                return acdcmap(
+                    israid=sue.pre,
+                    uuid=nonces[nonceOffset + 1],
+                    regid=registry.regk,
+                    schema=GuardianSchemaSaid,
+                    attribute=attributes,
+                    edge=_edgeSection(
+                        nonces[nonceOffset + 2],
+                        utahAgent=dict(
+                            d="",
+                            u=nonces[nonceOffset + 3],
+                            n=sueAgent.said,
+                            s=AgentSchemaSaid,
+                            o="DI2I",
+                        ),
+                    ),
+                    rule=rule,
+                    kind=Kinds.json,
+                )
+
+            galGuardian = guardianCredential(gal, registries["gal-guardian"], 4)
+            guyGuardian = guardianCredential(guy, registries["guy-guardian"], 8)
+
+            ageAggregate = Aggor(
+                ael=["", dict(d="", u=nonces[12], i=wyn.pre)],
+                makify=True,
+                kind=Kinds.json,
+            ).ael
+            wynAge = acdcagg(
+                israid=stu.pre,
+                uuid=nonces[13],
+                regid=registries["wyn-age"].regk,
+                schema=AgeSchemaSaid,
+                aggregate=ageAggregate,
+                edge=_edgeSection(
+                    nonces[14],
+                    coreIdentity=dict(
+                        d="",
+                        u=nonces[15],
+                        n=wynCore.said,
+                        s=CoreSchemaSaid,
+                        o=["E1E", "NI2I"],
+                    ),
+                    utahAgent=dict(
+                        d="",
+                        u=nonces[16],
+                        n=stuAgent.said,
+                        s=AgentSchemaSaid,
+                        o="DI2I",
+                    ),
+                ),
+                rule=rule,
+                kind=Kinds.json,
+            )
+
+            socialAttributes = Mapper(
+                mad=dict(
+                    d="",
+                    u=nonces[17],
+                    i=wyn.pre,
+                    issued="2026-10-24T09:30:00.000000+00:00",
+                    expires="2026-10-31T22:00:00.000000+00:00",
+                    rc={"myEmptySpace": ["all"]},
+                ),
+                makify=True,
+                saidive=True,
+                kind=Kinds.json,
+            ).mad
+            wynSocial = acdcmap(
+                israid=guy.pre,
+                uuid=nonces[18],
+                regid=registries["wyn-social"].regk,
+                schema=SocialSchemaSaid,
+                attribute=socialAttributes,
+                edge=_edgeSection(
+                    nonces[19],
+                    guardian=dict(
+                        d="",
+                        u=nonces[20],
+                        n=guyGuardian.said,
+                        s=GuardianSchemaSaid,
+                        o="I2I",
+                    ),
+                ),
+                rule=rule,
+                kind=Kinds.json,
+            )
+
+            galBespokeAttributes = Mapper(
+                mad=dict(d="", u=nonces[21], i=gal.pre),
+                makify=True,
+                saidive=True,
+                kind=Kinds.json,
+            ).mad
+
+            # Gal's bespoke ACDC
+            galBespoke = acdcmap(
+                israid=gal.pre,
+                uuid=nonces[22],
+                schema=BespokeSchemaSaid,
+                attribute=galBespokeAttributes,
+                edge=_edgeSection(
+                    nonces[23],
+                    residence=dict( # Edge pointing to Residence SEDI
+                        d="",
+                        u=nonces[24],
+                        n=galResidence.said,
+                        s=ResidenceSchemaSaid,
+                        o="I2I",
+                    ),
+                    guardian=dict(  # Edge pointing to Guardian SEDI
+                        d="",
+                        u=nonces[25],
+                        n=galGuardian.said,
+                        s=GuardianSchemaSaid,
+                        o="I2I",
+                    ),
+                ),
+                rule=rule,
+                kind=Kinds.json,
+            )
+            wynBespokeAttributes = Mapper(
+                mad=dict(d="", u=nonces[26], i=wyn.pre),
+                makify=True,
+                saidive=True,
+                kind=Kinds.json,
+            ).mad
+
+            # Wyn's bespoke ACDC
+            wynBespoke = acdcmap(
+                israid=wyn.pre,
+                uuid=nonces[27],
+                schema=BespokeSchemaSaid,
+                attribute=wynBespokeAttributes,
+                edge=_edgeSection(
+                    nonces[28],
+                    age=dict(   # Edge pointing to Age SEDI
+                        d="",
+                        u=nonces[29],
+                        n=wynAge.said,
+                        s=AgeSchemaSaid,
+                        o="I2I",
+                    ),
+                    social=dict(    # Edge pointing to Social SEDI
+                        d="",
+                        u=nonces[30],
+                        n=wynSocial.said,
+                        s=SocialSchemaSaid,
+                        o="I2I",
+                    ),
+                ),
+                rule=rule,
+                kind=Kinds.json,
+            )
+
+            # Registry proofs of the State authority's issuance
+            proofedUnit = _issue(registrar, registries["unit"], root, unit)
+            proofedSueAgent = _issue(
+                registrar, registries["sue-agent"], org, sueAgent)
+            proofedStuAgent = _issue(
+                registrar, registries["stu-agent"], org, stuAgent)
+
+            # Registry proofs of the Core, Residence
+            proofedGalCore = _issue(
+                registrar, registries["gal-core"], sue, galCore)
+            proofedGalResidence = _issue(
+                registrar, registries["gal-residence"], sue, galResidence)
+            proofedWynCore = _issue(
+                registrar, registries["wyn-core"], sue, wynCore)
+
+            # Registry proofs of the Age, Social, and Guardian credentials
+            proofedGalGuardian = _issue(
+                registrar, registries["gal-guardian"], sue, galGuardian)
+            proofedGuyGuardian = _issue(
+                registrar, registries["guy-guardian"], sue, guyGuardian)
+            proofedWynAge = _issue(
+                registrar, registries["wyn-age"], stu, wynAge)
+            proofedWynSocial = _issue(
+                registrar, registries["wyn-social"], guy, wynSocial)
+
+            recorder = Recorder()
+            exc = Exchanger(hby=hby, handlers=[])
+            loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
+
+            # Build Gal's Grant message with all supporting artifacts
+            galArtifacts = [
+                proofedGalResidence,
+                proofedGalGuardian,
+                proofedGalCore,
+                proofedSueAgent,
+                proofedUnit,
+            ]
+            galPlan = [
+                [BespokeSchemaSaid, "/", []],
+                [ResidenceSchemaSaid, "/e/residence/_/", []],
+                [GuardianSchemaSaid, "/e/guardian/_/", []],
+                [CoreSchemaSaid, "/e/residence/_/e/coreIdentity/_/", []],
+                [AgentSchemaSaid, "/e/guardian/_/e/utahAgent/_/", []],
+                [
+                    UnitSchemaSaid,
+                    "/e/guardian/_/e/utahAgent/_/e/orgUnit/_/",
+                    [],
+                ],
+            ]
+
+            # Gal's Grant message
+            galGrant, galGrantAtc = ipexGrant(
+                hab=gal,
+                recp=verifier.pre,
+                message="Present Gal's residence and guardianship SEDI",
+                origin=_signed(galBespoke, gal),
+                artifacts=galArtifacts,
+                modifiers=dict(dp=[galPlan]),
+            )
+            ims = bytearray(galGrant.raw + galGrantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            storedGalGrant, _ = cloneMessage(hby, galGrant.said)
+            assert storedGalGrant is not None
+            assert hby.db.epse.get(keys=(galGrant.said,)) is None
+
+            galAdmit, galAdmitAtc = ipexAdmit(
+                hab=verifier,
+                message=f"Accepted: Present Gal's residence and guardianship SEDI",
+                grant=storedGalGrant,
+            )
+            ims = bytearray(galAdmit.raw + galAdmitAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(galAdmit.said,)) is not None
+
+            # Build Wyn's Grant message with all supporting artifacts
+            wynArtifacts = [
+                proofedWynAge,
+                proofedWynSocial,
+                proofedWynCore,
+                proofedStuAgent,
+                proofedGuyGuardian,
+                proofedSueAgent,
+                proofedUnit,
+            ]
+            wynPlan = [
+                [BespokeSchemaSaid, "/", []],
+                [AgeSchemaSaid, "/e/age/_/", []],
+                [SocialSchemaSaid, "/e/social/_/", []],
+                [CoreSchemaSaid, "/e/age/_/e/coreIdentity/_/", []],
+                [AgentSchemaSaid, "/e/age/_/e/utahAgent/_/", []],
+                [GuardianSchemaSaid, "/e/social/_/e/guardian/_/", []],
+                [
+                    AgentSchemaSaid,
+                    "/e/age/_/e/coreIdentity/_/e/utahAgent/_/",
+                    [],
+                ],
+                [
+                    UnitSchemaSaid,
+                    "/e/age/_/e/utahAgent/_/e/orgUnit/_/",
+                    [],
+                ],
+            ]
+
+            # Wyn's Grant message
+            wynGrant, wynGrantAtc = ipexGrant(
+                hab=wyn,
+                recp=verifier.pre,
+                message="Present Wyn's age and social-media authorization SEDI",
+                origin=_signed(wynBespoke, wyn),
+                artifacts=wynArtifacts,
+                modifiers=dict(dp=[wynPlan]),
+            )
+            ims = bytearray(wynGrant.raw + wynGrantAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            storedWynGrant, _ = cloneMessage(hby, wynGrant.said)
+            assert storedWynGrant is not None
+            assert hby.db.epse.get(keys=(wynGrant.said,)) is None
+
+            wynAdmit, wynAdmitAtc = ipexAdmit(
+                hab=verifier,
+                message=f"Accepted: Present Wyn's age and social-media authorization SEDI",
+                grant=storedWynGrant,
+            )
+            ims = bytearray(wynAdmit.raw + wynAdmitAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(wynAdmit.said,)) is not None
+
+            assert [
+                nest.serder.said
+                for nest in loadParsedNestedSubstreams(hby, galGrant.said)
+            ] == [
+                galBespoke.said,
+                galResidence.said,
+                galGuardian.said,
+                galCore.said,
+                sueAgent.said,
+                unit.said,
+            ]
+            assert [
+                nest.serder.said
+                for nest in loadParsedNestedSubstreams(hby, wynGrant.said)
+            ] == [
+                wynBespoke.said,
+                wynAge.said,
+                wynSocial.said,
+                wynCore.said,
+                stuAgent.said,
+                guyGuardian.said,
+                sueAgent.said,
+                unit.said,
+            ]
+            notified = {item["d"] for item in recorder.items}
+            assert {galGrant.said, wynGrant.said}.issubset(notified)
+        finally:
+            rgy.close()

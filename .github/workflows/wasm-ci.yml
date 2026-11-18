@@ -36,6 +36,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install \
             playwright==1.61.0 \
+            pytest==9.1.1 \
             pytest-pyodide==0.59.2
           python -m pip download \
             --dest wheels \

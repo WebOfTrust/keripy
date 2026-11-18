@@ -5,11 +5,13 @@ tests.acdc.test_ipexing module
 """
 from copy import deepcopy
 from datetime import timedelta
+from collections import deque
 from types import SimpleNamespace
 
 import pytest
 from keri import Ilks, Kinds, Vrsn_2_0
-from keri.acdc import (IpexHandler, Regery, Registrar, acdcagg, acdcatt, acdcmap,
+from keri.acdc import (IpexHandler, Regery, Registrar, SchemaEvaluator, acdcagg,
+                       acdcatt, acdcmap,
                        blindate, apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
                        loadHandlers, offer as ipexOffer, regcept,
@@ -20,6 +22,8 @@ from keri.core import (Aggor, Blinder, Codens, Compactor, Counter, Diger, GenDex
                        Kevery, Kramer, Noncer, Number, Parser, Schemer, SealEvent,
                        SealSource, messagize, SerderKERI, Serdery, Texter, exchange)
 from keri.db import reopenDB
+from keri.acdc import chaining
+from keri.acdc.chaining import Verdicts
 from keri.kering import Colds, MissingSignatureError, sniff
 from keri.help import helping
 from keri.peer import Exchanger, cloneMessage, serializeMessage
@@ -207,6 +211,15 @@ def test_ipex_v2_builders_parse_happypath():
             assert serder.pvrsn == Vrsn_2_0
             assert "ri" in serder.ked
             assert "rp" not in serder.ked
+
+        # Apply opens the transaction. Every linked response is an EXN whose
+        # exchange ID is the opening XIP's SAID.
+        assert applyExn.ilk == Ilks.xip
+        assert "x" not in applyExn.ked
+        assert "p" not in applyExn.ked
+        for serder in (offerExn, agreeExn, grantExn, admitExn, spurnExn):
+            assert serder.ilk == Ilks.exn
+            assert serder.ked["x"] == applyExn.said
 
         # Assert fields
         assert applyExn.ked["a"]["m"] == "Please issue a credential"    # message
@@ -512,7 +525,8 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
         assert grantExn.ked["a"]["ax"] == [True]
         assert admitExn.ked["a"]["ax"] == [True]
 
-        # Negotiation messages carry signatures only; binding replies add seals.
+        # Negotiation messages carry signatures; anchored binding replies use
+        # only their stronger KEL source seals for sender authentication.
         signaling = ((applyExn, applyAtc), (offerExn, offerAtc))
         binding = ((agreeExn, agreeAtc), (grantExn, grantAtc), (admitExn, admitAtc))
         for exn, atc in signaling:
@@ -529,7 +543,7 @@ def test_ipex_v2_ax_echo_and_anchor_construction():
                 framed=False,
                 processive=False)[0]
             assert len(result.sscs) == 1
-            assert len(result.tsgs) == 1
+            assert result.tsgs == []
             number, diger = result.sscs[0]
             event = hby.db.evts.get(keys=(exn.pre, diger.qb64))
             assert hby.db.kels.getLast(keys=exn.pre, on=number.sn) == diger.qb64
@@ -630,12 +644,8 @@ def test_ipex_v2_establishment_only_anchor_construction():
         assert number.sn == anchor.sn
         assert diger.qb64 == anchor.said
 
-        # Signing happens after rotation, so the EXN signature uses the new lastEst.
-        assert len(result.tsgs) == 1
-        prefixer, number, diger, _ = result.tsgs[0]
-        assert prefixer.qb64 == grantor.pre
-        assert number.sn == anchor.sn
-        assert diger.qb64 == anchor.said
+        # The source seal replaces a redundant sender signature on the EXN.
+        assert result.tsgs == []
 
         # Finally dispatch the stream to prove the V2 handler accepts this proof.
         recorder = Recorder()
@@ -715,7 +725,7 @@ def test_ipex_v2_accepts_historical_anchor_after_rotation():
 
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(grantExn.said,)) is not None
-        assert recorder.items == [{"r": "/exn/ipex/grant",
+        assert recorder.items == [{"r": "/xip/ipex/grant",
                                    "d": grantExn.said,
                                    "m": "Anchor predates rotation"}]
 
@@ -1048,7 +1058,7 @@ def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
                 modifiers=dp,
                 dt=helping.nowIso8601(),
                 ax=[True])
-            assert firstOffer.ked["p"] == ""
+            assert firstOffer.ilk == Ilks.xip
             # A bare offer negotiates anchoring but is not itself anchored.
             assert receive(firstOffer, firstOfferAtc, grantor).sscs == []
 
@@ -1104,7 +1114,7 @@ def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
                 origin=_signed(acdc, grantor),
                 dt=helping.nowIso8601(),
                 ax=[True])
-            assert bareGrant.ked["p"] == ""
+            assert bareGrant.ilk == Ilks.xip
             assert len(receive(bareGrant, bareGrantAtc, grantor).sscs) == 1
 
             # Advance before the applicant admits the bare grant.
@@ -1119,15 +1129,15 @@ def test_ipex_v2_anchored_flows_through_kram(fakeHelpingClock):
 
             # Prove the grantor handler saw only messages sent by the applicant.
             assert [item["r"] for item in grantorRecorder.items] == [
-                "/exn/ipex/apply", "/exn/ipex/agree", "/exn/ipex/admit",
-                "/exn/ipex/apply", "/exn/ipex/admit", "/exn/ipex/agree",
+                "/xip/ipex/apply", "/exn/ipex/agree", "/exn/ipex/admit",
+                "/xip/ipex/apply", "/exn/ipex/admit", "/exn/ipex/agree",
                 "/exn/ipex/admit", "/exn/ipex/admit",
             ]
             # Prove the applicant handler saw only messages sent by the grantor.
             assert [item["r"] for item in applicantRecorder.items] == [
                 "/exn/ipex/offer", "/exn/ipex/grant", "/exn/ipex/grant",
-                "/exn/ipex/grant", "/exn/ipex/offer", "/exn/ipex/grant",
-                "/exn/ipex/grant",
+                "/xip/ipex/grant", "/xip/ipex/offer", "/exn/ipex/grant",
+                "/xip/ipex/grant",
             ]
 
 
@@ -1214,7 +1224,7 @@ def test_ipex_v2_anchored_grant_waits_for_sender_kel_event(fakeHelpingClock):
             assert len(recipientHby.db.ests.get(
                 keys=(grantExn.said, issuerHab.pre))) == 1
             assert recorder.items == [
-                {"r": "/exn/ipex/grant", "d": grantExn.said,
+                {"r": "/xip/ipex/grant", "d": grantExn.said,
                  "m": "Anchor will arrive later"},
             ]
             assert list(exc.cues) == [
@@ -1308,9 +1318,10 @@ def test_ipex_v2_required_anchors_fail_closed_through_kram(fakeHelpingClock):
                     attrs["ax"] = [True]
 
                 # Preserve the prior's participants and transaction identifier.
+                xid = prior.said if prior.ilk == Ilks.xip else prior.ked["x"]
                 return exchange(sender=applicant.pre,
                                 receiver=grantor.pre,
-                                xid=prior.ked["x"],
+                                xid=xid,
                                 prior=prior.said,
                                 route=f"/ipex/{verb}",
                                 stamp=helping.nowIso8601(),
@@ -1419,8 +1430,8 @@ def test_ipex_v2_required_anchors_fail_closed_through_kram(fakeHelpingClock):
 
             # Only the two valid priors should have reached the notification handler.
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/offer", "Anchored offer"),
-                ("/exn/ipex/grant", "Anchored grant"),
+                ("/xip/ipex/offer", "Anchored offer"),
+                ("/xip/ipex/grant", "Anchored grant"),
             ]
 
 
@@ -1492,9 +1503,10 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
             assert hby.db.exns.get(keys=(offerExn.said,)) is not None
 
             # A valid anchor cannot authorize Agree to upgrade the prior's ax.
+            xid = offerExn.said
             inventedAgree = exchange(sender=applicant.pre,
                                       receiver=grantor.pre,
-                                      xid=offerExn.ked["x"],
+                                      xid=xid,
                                       prior=offerExn.said,
                                       route="/ipex/agree",
                                       stamp=helping.nowIso8601(),
@@ -1518,9 +1530,10 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
 
             # A direct Grant linked to that Apply cannot invent truthy ax either.
             fakeHelpingClock.advance(milliseconds=1)
+            xid = applyExn.said
             inventedGrant = exchange(sender=grantor.pre,
                                      receiver=applicant.pre,
-                                     xid=applyExn.ked["x"],
+                                     xid=xid,
                                      prior=applyExn.said,
                                      route="/ipex/grant",
                                      stamp=helping.nowIso8601(),
@@ -1546,9 +1559,10 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
 
             # Admit inherits the Grant's optional state and cannot upgrade it.
+            xid = grantExn.said
             inventedAdmit = exchange(sender=applicant.pre,
                                       receiver=grantor.pre,
-                                      xid=grantExn.ked["x"],
+                                      xid=xid,
                                       prior=grantExn.said,
                                       route="/ipex/admit",
                                       stamp=helping.nowIso8601(),
@@ -1561,9 +1575,9 @@ def test_ipex_v2_rejects_reply_only_ax_invention_through_kram(fakeHelpingClock):
 
             # Only the three valid optional messages reached the IPEX handler.
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/offer", "Optional offer"),
-                ("/exn/ipex/apply", "Optional apply"),
-                ("/exn/ipex/grant", "Optional grant"),
+                ("/xip/ipex/offer", "Optional offer"),
+                ("/xip/ipex/apply", "Optional apply"),
+                ("/xip/ipex/grant", "Optional grant"),
             ]
 
 
@@ -1795,7 +1809,7 @@ def test_ipex_v2_offer_metadata_dag_binds_grant_nodes():
         assert grantResults[0].nests[1].serder.sad["a"]["role"] == "member"
 
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
@@ -1916,7 +1930,7 @@ def test_ipex_v2_offer_metadata_dag_rejects_substituted_child():
         assert verifierHby.db.exns.get(keys=(grantExn.said,)) is None
         assert verifierHby.db.epse.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -1991,8 +2005,17 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
                                        modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
         offerExn, offerAtc = ipexOffer(hab=holder,
                                        message="Here are the terms",
-                                       origin=origin,
+                                       origin=origin.said,
                                        apply=applyExn)
+
+        # A bare SAID can commit to the origin but cannot supply its nested body.
+        with pytest.raises(ValueError,
+                           match="SAID-only offer origin cannot carry artifacts"):
+            ipexOffer(hab=holder,
+                      message="Missing origin body",
+                      origin=origin.said,
+                      artifacts=[],
+                      apply=applyExn)
 
         for exn, atc in ((applyExn, applyAtc), (offerExn, offerAtc)):
             ims = bytearray(exn.raw)
@@ -2015,7 +2038,7 @@ def test_ipex_v2_offer_can_name_origin_without_disclosing_the_dag():
         assert len(storedOfferResults) == 1
         assert storedOfferResults[0].nests == []
         assert recorder.items == [
-            {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Prove over-21"},
+            {"r": "/xip/ipex/apply", "d": applyExn.said, "m": "Prove over-21"},
             {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here are the terms"},
         ]
 
@@ -2113,6 +2136,57 @@ def test_ipex_v2_offer_accepts_baseline_content_forms():
         ]
 
 
+def test_ipex_v2_offer_accepts_full_disclosure_for_issuance():
+    """An Issuee can inspect the complete ACDC before agreeing to issuance."""
+    with openHby(name="ipex-v2-full-issuance-offer",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        issuee = hby.makeHab(name="issuee")
+        acdc = acdcmap(israid=issuer.pre,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36",
+                                      role="member"),
+                       rule=dict(d="", l="Use only for onboarding."),
+                       iseaid=issuee.pre)
+        schema = acdc.sad["s"]["$id"]
+        whole = dict(dp=[[[schema, "/", [""]]]])
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        applyExn, applyAtc = ipexApply(
+            hab=issuee, recp=issuer.pre,
+            message="Show the complete credential before issuance",
+            modifiers=whole)
+        offerExn, offerAtc = ipexOffer(
+            hab=issuer, message="Review the credential",
+            origin=acdc, artifacts=[], apply=applyExn)
+        agreeExn, agreeAtc = ipexAgree(
+            hab=issuee, message="I agree to this credential", offer=offerExn)
+        grantExn, grantAtc = ipexGrant(
+            hab=issuer, recp=issuee.pre, message="Issue the credential",
+            origin=_signed(acdc, issuer), agree=agreeExn)
+
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(offerExn.raw + offerAtc),
+            framed=False,
+            processive=False)[0]
+        assert len(parsed.nests) == 1
+        assert parsed.nests[0].serder.said == acdc.said
+        assert parsed.nests[0].serder.sad["a"]["role"] == "member"
+        assert parsed.nests[0].serder.sad["r"]["l"] == "Use only for onboarding."
+
+        for exn, atc in ((applyExn, applyAtc),
+                         (offerExn, offerAtc),
+                         (agreeExn, agreeAtc),
+                         (grantExn, grantAtc)):
+            ims = bytearray(exn.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(exn.said,)) is not None
+
+
 def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
     """Offer may disclose a reachable metadata subgraph without full closure."""
     with openHby(name="ipex-v2-offer-partial-subgraph",
@@ -2172,9 +2246,53 @@ def test_ipex_v2_offer_accepts_reachable_partial_metadata_subgraph():
         assert len(offerResults) == 1
         assert [nest.serder.said for nest in offerResults[0].nests] == [origin.said, child.said]
         assert recorder.items == [
-            {"r": "/exn/ipex/apply", "d": applyExn.said, "m": "Show me the metadata path"},
+            {"r": "/xip/ipex/apply", "d": applyExn.said, "m": "Show me the metadata path"},
             {"r": "/exn/ipex/offer", "d": offerExn.said, "m": "Here is the partial metadata DAG"},
         ]
+
+
+def test_ipex_v2_offer_accepts_compact_edge_section():
+    """Offer may commit to an Edge Section without disclosing its contents."""
+    with openHby(name="ipex-v2-offer-compact-edge-section",
+                 base="test", version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+        hiddenTarget = regcept(israid=holder.pre).said
+        hiddenSection = Compactor(
+            mad=dict(d="", source=dict(d="", n=hiddenTarget, o="I1I")),
+            makify=True,
+        )
+        hiddenSection.compact()
+        origin = acdcmap(
+            israid=holder.pre,
+            uuid="",
+            attribute=dict(d="", role="metadata"),
+            edge=hiddenSection.said,
+        )
+        schema = origin.sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        exn, atc = ipexOffer(
+            hab=holder,
+            recp=verifier.pre,
+            message="Here is the blinded Edge Section commitment",
+            origin=origin,
+            artifacts=[],
+            modifiers=dict(dp=[[[schema, "/", []]]]),
+        )
+        ims = bytearray(exn.raw + atc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is not None
+        assert recorder.items == [{
+            "r": "/xip/ipex/offer",
+            "d": exn.said,
+            "m": "Here is the blinded Edge Section commitment",
+        }]
 
 
 def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
@@ -2186,13 +2304,13 @@ def test_ipex_v2_offer_validates_disclosed_node_schema(monkeypatch):
 
         # Record when schema validation runs
         stages = []
-        verifyNodeSchemas = IpexHandler._verifyNodeSchemas
+        validateSchemas = SchemaEvaluator.validateSchemas
 
         def recordNodeSchemas(self, *args, **kwa):
             stages.append("node-schema")
-            return verifyNodeSchemas(self, *args, **kwa)
+            return validateSchemas(self, *args, **kwa)
 
-        monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
+        monkeypatch.setattr(SchemaEvaluator, "validateSchemas", recordNodeSchemas)
 
         # Set up the IPEX receiver
         recorder = Recorder()
@@ -2371,6 +2489,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
         recorder = Recorder()
         exc = Exchanger(hby=hby, handlers=[])
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
+        handler = exc.routes["/ipex/grant"]
 
         def assert_accepted(message, origin, artifacts, prefixes):
             plan = [[origin.sad["s"]["$id"], "/", []]]
@@ -2388,7 +2507,7 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(exn.said,)) is not None
-            assert recorder.items[-1] == {"r": "/exn/ipex/grant",
+            assert recorder.items[-1] == {"r": "/xip/ipex/grant",
                                           "d": exn.said,
                                           "m": message}
 
@@ -2465,16 +2584,25 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         [orMember, orStaff],
                         ["/e/either/member/_/", "/e/either/staff/_/"])
 
-        # Case 4: a leaf edge may omit `o`. The V2 edge shape allows that, and
-        # IPEX does not infer an I2I/NI2I default when the operator is absent.
+        # Case 4: a leaf edge may omit `o`, and the spec's default rule then applies.
+        # "If the node pointed to by the Edge is a targeted ACDC, i.e., has an
+        # Issuee, then the `I2I` Operator MUST be appended to the Operator, `o`,
+        # field's effective list value" (ACDC spec, Edge Section > Edge > Operator;
+        # the v1.1 line suppresses the default when the list already includes I2I,
+        # NI2I, DI2I or E1E). So a bare edge is not an unconstrained edge.
+        # Which default is right is still open on keripy #1556; this is the
+        # one that is normative today
+        #
+        # Here the far node is targeted at issuer, and the near node's issuer is
+        # issuer, so the appended I2I holds and the bare edge verifies.
         noOpChild = acdcmap(israid=issuer.pre,
                             attribute=dict(d="", role="member"),
-                            iseaid=subject.pre)
+                            iseaid=issuer.pre)
         noOpOrigin = acdcmap(israid=issuer.pre,
                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                              edge=_edge("holder", noOpChild),
                              iseaid=subject.pre)
-        assert_accepted("Here is the no-operator DAG",
+        assert_accepted("Here is the no-operator DAG satisfying the default I2I",
                         noOpOrigin,
                         [noOpChild],
                         ["/e/holder/_/"])
@@ -2494,9 +2622,153 @@ def test_ipex_v2_accepts_grant_graph_shape_and_semantics():
                         [listOpChild],
                         ["/e/holder/_/"])
 
+        # An untargeted far node takes NI2I as its default, which constrains
+        # nothing, so a bare edge to one verifies regardless of the issuer pair.
+        untargetedChild = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", role="member"))
+        untargetedOrigin = acdcmap(israid=issuer.pre,
+                                   attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                   edge=_edge("holder", untargetedChild),
+                                   iseaid=subject.pre)
+        assert untargetedChild.iseaid is None
+        assert_accepted("Here is the no-operator DAG to an untargeted far node",
+                        untargetedOrigin,
+                        [untargetedChild],
+                        ["/e/holder/_/"])
+
+        # Explicit NI2I still suppresses the default, which is how an Issuer says
+        # the relation does not apply -- the same pair the rejection sweep proves
+        # is refused when the operator is omitted.
+        relaxedChild = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", role="member"),
+                               iseaid=subject.pre)
+        relaxedOrigin = acdcmap(israid=issuer.pre,
+                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                edge=_edge("holder", relaxedChild, op="NI2I"),
+                                iseaid=subject.pre)
+        assert_accepted("Here is the explicitly relaxed no-relation DAG",
+                        relaxedOrigin,
+                        [relaxedChild],
+                        ["/e/holder/_/"])
+
+        # Case 6: `o` may be a list. "When more than one unary Operator is applied
+        # to a given Edge, then the value of the Operator, `o`, field is a list of
+        # those unary Operators" (ACDC spec, Edge Section > Edge > Operator, `o`
+        # field), so the list is the spec's own spelling and not an error. This one
+        # resolves to NI2I, which the near issuer/far issuee pair below does not
+        # satisfy under I2I.
+        listOpChild = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", role="member"),
+                              iseaid=issuer.pre)
+        listOpOrigin = acdcmap(israid=issuer.pre,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=_edge("holder", listOpChild, op=["NI2I"]),
+                               iseaid=subject.pre)
+        assert_accepted("Here is the list-valued leaf-operator DAG",
+                        listOpOrigin,
+                        [listOpChild],
+                        ["/e/holder/_/"])
+
+        # Latest-wins among the conflicting (delegative) operators, and composition
+        # with E1E, asserted directly on the evaluator rather than through six more
+        # grants. The far node here is issued by issuer to issuer, and the near node
+        # by issuer to subject, so I2I holds on the far pair and E1E does not.
+        # The far node's own verdict is seeded as valid: it carries no issuer-auth
+        # proof here, and what is under test is the Operator relation alone.
+        nodes = {listOpChild.said: {"serder": listOpChild}}
+
+        def evaluate(op):
+            edge = dict(d="", n=listOpChild.said, o=op)
+            memo = {listOpChild.said: chaining.valid("far node vetted elsewhere")}
+            return handler.edgeEvaluator._evaluateLeafEdge(
+                edge, nodes=nodes, nserder=listOpOrigin, memo=memo,
+                inheritedPins=())
+
+        assert evaluate(["NI2I"]).verdict == Verdicts.valid
+        # latest of the conflicting pair
+        assert evaluate(["I2I", "NI2I"]).verdict == Verdicts.valid
+        # I2I wins, and holds here
+        assert evaluate(["NI2I", "I2I"]).verdict == Verdicts.valid
+        # E1E composes and fails
+        assert evaluate(["I2I", "E1E"]).verdict == Verdicts.invalid
+        # empty: no constraint, as absent
+        assert evaluate([]).verdict == Verdicts.valid
+        # A token this verifier cannot evaluate leaves the edge undecided rather
+        # than decided against. It is an unknown no arrival settles, so a section
+        # that needs it refuses without escrow -- but a satisfied sibling under OR
+        # decides the group without it, which is what the spec's OR row says.
+        unevaluable = evaluate(["NI2I", "BOGUS"])
+        assert unevaluable.verdict == Verdicts.unknown
+        assert unevaluable.retryable is False
+
+
+def test_ipex_v2_issuer_identity_operator_dispositions():
+    """IPEX accepts, refuses, or escrows issuer-identity edge results."""
+    with openHby(name="ipex-v2-issuer-identity-operators",
+                 base="test", version=Vrsn_2_0) as hby:
+        root = hby.makeHab(name="root")
+        delegate = hby.makeHab(name="delegate", delpre=root.pre)
+        unrelated = hby.makeHab(name="unrelated")
+        bounded = hby.makeHab(name="bounded", DnD=True)
+        blocked = hby.makeHab(name="blocked", delpre=bounded.pre)
+        recipient = hby.makeHab(name="recipient")
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        def send(message, issuer, farIssuer, operator):
+            far = acdcmap(israid=farIssuer.pre,
+                          attribute=dict(d="", role="far"))
+            origin = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="near"),
+                             edge=_edge("source", far, op=operator),
+                             iseaid=recipient.pre)
+            exn, atc = ipexGrant(
+                hab=issuer,
+                recp=recipient.pre,
+                message=message,
+                origin=_signed(origin, issuer),
+                artifacts=[_signed(far, farIssuer)],
+                modifiers=dict(dp=[[
+                    [origin.sad["s"]["$id"], "/", []],
+                    [far.sad["s"]["$id"], "/e/source/_/", []],
+                ]]),
+            )
+            ims = bytearray(exn.raw + atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            return exn
+
+        equal = send("I1I equality", root, root, "I1I")
+        assert hby.db.exns.get(keys=(equal.said,)) is not None
+        assert hby.db.epse.get(keys=(equal.said,)) is None
+
+        refused = send("DI1I unrelated roots", unrelated, root, "DI1I")
+        assert hby.db.exns.get(keys=(refused.said,)) is None
+        assert hby.db.epse.get(keys=(refused.said,)) is None
+
+        bounded.interact(data=[SealEvent(i=blocked.pre,
+                                         s=blocked.kever.serder.snh,
+                                         d=blocked.kever.serder.said)._asdict()])
+        refused = send("DI1I honors DND", blocked, bounded, "DI1I")
+        assert hby.db.exns.get(keys=(refused.said,)) is None
+        assert hby.db.epse.get(keys=(refused.said,)) is None
+
+        pending = send("DI1I awaits an anchor", delegate, root, "DI1I")
+        assert hby.db.exns.get(keys=(pending.said,)) is None
+        assert hby.db.epse.get(keys=(pending.said,)) is not None
+
+        root.interact(data=[SealEvent(i=delegate.pre,
+                                      s=delegate.kever.serder.snh,
+                                      d=delegate.kever.serder.said)._asdict()])
+        exc.processEscrow()
+        assert hby.db.exns.get(keys=(pending.said,)) is not None
+        assert hby.db.epse.get(keys=(pending.said,)) is None
+
 
 def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
-    """Grant rejects malformed graph closure and false leaf edge semantics."""
+    """Grant rejects malformed graph shapes and false leaf edge semantics."""
     with openHby(name="ipex-v2-bad-grant-graph-semantics",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -2534,17 +2806,8 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(exn.said,)) is None
+            assert hby.db.epse.get(keys=(exn.said,)) is None
             assert len(recorder.items) == before
-
-        # Missing referenced node: the walk is not closed.
-        missingChild = acdcmap(israid=issuer.pre,
-                               attribute=dict(d="", role="member"),
-                               iseaid=issuer.pre)
-        missingOrigin = acdcmap(israid=issuer.pre,
-                                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
-                                edge=_edge("holder", missingChild),
-                                iseaid=subject.pre)
-        assert_rejected("Here is the incomplete DAG", missingOrigin)
 
         # Duplicate disclosed node: one DAG node must not appear twice.
         duplicateChild = acdcmap(israid=issuer.pre,
@@ -2558,7 +2821,8 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                         duplicateOrigin,
                         [duplicateChild, duplicateChild])
 
-        # Compacted edge section is not walkable.
+        # A compact Edge Section is well formed but cannot prove the hidden
+        # operators required to validate this Grant, so it refuses without escrow.
         compactOrigin = acdcmap(israid=issuer.pre,
                                 attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                                 iseaid=subject.pre)
@@ -2566,6 +2830,30 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         compactSad["e"] = regcept(israid=issuer.pre).said
         assert_rejected("Here is the compacted DAG",
                         type(compactOrigin)(sad=compactSad, makify=True))
+
+        # The Edge Section is the top-level Edge-group, so it cannot itself be
+        # an Edge carrying `n`; Edges must be labeled members of that group.
+        topLevelEdgeOrigin = acdcmap(
+            israid=issuer.pre,
+            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+            edge=dict(d="", n=baseChild.said, o="I1I"),
+            iseaid=subject.pre,
+        )
+        assert_rejected("Here is an Edge where the Edge-group must be",
+                        topLevelEdgeOrigin,
+                        [baseChild])
+
+        # An empty field map is the specified empty Edge Section value. Other
+        # falsy values are neither an expanded Edge-group nor its compact SAID.
+        for value in ("", []):
+            malformedEmptyOrigin = acdcmap(
+                israid=issuer.pre,
+                attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                edge=value,
+                iseaid=subject.pre,
+            )
+            assert_rejected("Here is a malformed empty Edge Section",
+                            malformedEmptyOrigin)
 
         # Extra carried node must still be reachable from the origin.
         reachableChild = acdcmap(israid=issuer.pre,
@@ -2606,8 +2894,10 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
                         wrongE1EOrigin,
                         [wrongE1EChild])
 
-        # Recognized but unevaluated operators are well-formed leaves whose
-        # relation is unsatisfied, instead of malformed graph input.
+        # Recognized but unevaluated operators are well-formed leaves this verifier
+        # cannot decide, instead of malformed graph input. A section that needs one
+        # refuses without escrow, since no arrival makes an unimplemented Operator
+        # implemented; a satisfied sibling under OR decides the group without it.
         notChild = acdcmap(israid=issuer.pre,
                            attribute=dict(d="", role="member"),
                            iseaid=issuer.pre)
@@ -2618,14 +2908,21 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the NOT-operator DAG",
                         notOrigin,
                         [notChild])
-        assert handler._evaluateLeafEdge(notOrigin.sad["e"]["holder"],
-                                         nodes={notChild.said: {"serder": notChild}},
-                                         nserder=notOrigin,
-                                         inheritedSchema=None) is False
+        notVerdict = handler.edgeEvaluator._evaluateLeafEdge(
+            notOrigin.sad["e"]["holder"],
+            nodes={notChild.said: {"serder": notChild}},
+            nserder=notOrigin,
+            memo={notChild.said: chaining.valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert notVerdict.verdict == Verdicts.unknown
+        assert notVerdict.retryable is False
 
+        # DI2I with a far Issuee the near issuer is neither equal to nor delegated
+        # from. Decided against, not undecided: issuer was incepted undelegated, and
+        # no later event can give it a delegator.
         diChild = acdcmap(israid=issuer.pre,
                           attribute=dict(d="", role="member"),
-                          iseaid=issuer.pre)
+                          iseaid=subject.pre)
         diOrigin = acdcmap(israid=issuer.pre,
                            attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
                            edge=_edge("holder", diChild, op="DI2I"),
@@ -2633,10 +2930,14 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the DI2I-operator DAG",
                         diOrigin,
                         [diChild])
-        assert handler._evaluateLeafEdge(diOrigin.sad["e"]["holder"],
-                                         nodes={diChild.said: {"serder": diChild}},
-                                         nserder=diOrigin,
-                                         inheritedSchema=None) is False
+        diVerdict = handler.edgeEvaluator._evaluateLeafEdge(
+            diOrigin.sad["e"]["holder"],
+            nodes={diChild.said: {"serder": diChild}},
+            nserder=diOrigin,
+            memo={diChild.said: chaining.valid("far node vetted elsewhere")},
+            inheritedPins=())
+        assert diVerdict.verdict == Verdicts.invalid
+        assert "is not delegated" in diVerdict.reason
 
         # A list containing any unknown operator is malformed.
         listOpChild = acdcmap(israid=issuer.pre,
@@ -2662,6 +2963,23 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the unknown-operator DAG",
                         bogusOrigin,
                         [bogusChild])
+
+        # A bare edge is not an unconstrained edge: the spec appends I2I when the far
+        # node is targeted (ACDC spec, Edge Section > Edge > Operator, `o` field), and
+        # here the far node's issuee is subject while the near node's issuer is issuer,
+        # so the appended operator is violated. Before the default was applied on this
+        # path, this was the cheapest edge to satisfy -- one pointed at any targeted
+        # ACDC the Discloser could obtain, with no relation checked at all.
+        defaultedChild = acdcmap(israid=issuer.pre,
+                                 attribute=dict(d="", role="member"),
+                                 iseaid=subject.pre)
+        defaultedOrigin = acdcmap(israid=issuer.pre,
+                                  attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                  edge=_edge("holder", defaultedChild),
+                                  iseaid=subject.pre)
+        assert_rejected("Here is the default-I2I-violating DAG",
+                        defaultedOrigin,
+                        [defaultedChild])
 
         # An OR group fails when none of its children satisfy the
         # disclosed relation constraints.
@@ -2700,6 +3018,34 @@ def test_ipex_v2_rejects_invalid_grant_graph_shape_and_semantics():
         assert_rejected("Here is the incompatible-schema DAG",
                         badSchemaOrigin,
                         [badSchemaChild])
+
+        # An inherited group pin is a floor, not a default: a member carrying its own
+        # compatible `s` must still satisfy the pin its group placed. Composing by
+        # override would let any member release itself from a constraint the Issuer
+        # put on the whole group. This is the #1534 rule ("two schema validations
+        # must be performed and both must be valid") applied one level out.
+        floorCompatSchema = dict(baseChild.sad["s"])
+        floorCompatSchema["title"] = "ACM Default Schema (compatible, group floor)"
+        floorCompatSchemer = Schemer(sed=floorCompatSchema)
+        hby.db.schema.pin(floorCompatSchemer.said, floorCompatSchemer)
+
+        floorChild = acdcmap(israid=issuer.pre,
+                             attribute=dict(d="", role="member"),
+                             iseaid=issuer.pre)
+        floorOrigin = acdcmap(israid=issuer.pre,
+                              attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                              edge=dict(d="",
+                                        u=Noncer().qb64,
+                                        reports=dict(d="",
+                                                     s=incompatSchemer.said,
+                                                     member=dict(d="",
+                                                                 n=floorChild.said,
+                                                                 o="I2I",
+                                                                 s=floorCompatSchemer.said))),
+                              iseaid=subject.pre)
+        assert_rejected("Here is the group-floor-escaping DAG",
+                        floorOrigin,
+                        [floorChild])
 
 
 def test_ipex_v2_rejects_false_attribute_section_said():
@@ -2913,7 +3259,7 @@ def test_ipex_v2_requires_grant_to_fulfill_offer_metadata(carryMetadata):
         assert offerExn.ked["a"]["o"] != grantExn.ked["a"]["o"]
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -2998,7 +3344,7 @@ def test_ipex_v2_rejects_metadata_acdc_as_grant():
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert hby.db.epse.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -3073,7 +3419,7 @@ def test_ipex_v2_accepts_full_public_or_private_offer(private, carryBody, ilk):
         assert offerExn.ked["a"]["o"] == [offered.said]
         assert grantExn.ked["a"]["o"] == [offered.said]
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
@@ -3162,7 +3508,7 @@ def test_ipex_v2_public_fixed_field_offer_binds_root_said():
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert hby.db.epse.get(keys=(grantExn.said,)) is None
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
         ]
@@ -3202,9 +3548,10 @@ def test_ipex_v2_rejects_proof_bearing_offer_node():
         assert ims == bytearray()
 
         # Bypass the builder to verify receiver-side enforcement too.
+        xid = applyExn.said
         offerExn = exchange(sender=hab.pre,
                             receiver=hab.pre,
-                            xid=applyExn.ked["x"],
+                            xid=xid,
                             prior=applyExn.said,
                             route="/ipex/offer",
                             modifiers=applyExn.ked["q"],
@@ -3232,7 +3579,7 @@ def test_ipex_v2_rejects_proof_bearing_offer_node():
         assert hby.db.epse.get(keys=(offerExn.said,)) is None
 
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
         ]
 
 
@@ -3412,6 +3759,84 @@ def test_ipex_v2_offer_fulfillment_allows_compatible_acdc_message_types():
         assert hby.db.epse.get(keys=(grantExn.said,)) is None
 
 
+def test_ipex_v2_di2i_climbs_delegation_and_escrows_a_missing_anchor():
+    """A v2 grant evaluates DI2I through the same climb the v1 Verifier uses.
+
+    The near ACDC's issuer must be the far node's Issuee or a delegated AID of it, at
+    any depth (ACDC spec, Edge Section > Edge > Operator, `o` field). Every dip here is
+    accepted through the locallyOwned exemption, so `delpre` is set whether or not the
+    delegator anchored anything; only the anchoring seal on the delegator's trunk
+    distinguishes an authorized delegate. Registry-less ACDCs authenticated by
+    signature, so unlike v1 the path is reachable end to end at v2.
+    """
+    with openHby(name="ipex-v2-di2i", base="test", version=Vrsn_2_0) as hby:
+        gar = hby.makeHab(name="gar")
+        qvi = hby.makeHab(name="qvi")
+        recipient = hby.makeHab(name="recipient")
+
+        def approve(delegator, delegate):
+            kever = delegate.kever
+            seal = SealEvent(i=kever.prefixer.qb64, s=kever.serder.snh,
+                             d=kever.serder.said)._asdict()
+            delegator.interact(data=[seal])
+
+        sub = hby.makeHab(name="sub", delpre=qvi.pre)
+        approve(qvi, sub)
+        grand = hby.makeHab(name="grand", delpre=sub.pre)
+        approve(sub, grand)
+        late = hby.makeHab(name="late", delpre=qvi.pre)  # approved only later
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Far node: gar -> qvi. Its Issuee is the AID whose delegates DI2I admits.
+        far = acdcmap(israid=gar.pre, attribute=dict(d="", role="qvi"),
+                      iseaid=qvi.pre)
+
+        def grantFrom(hab, claim):
+            origin = acdcmap(israid=hab.pre, attribute=dict(d="", claim=claim),
+                             edge=_edge("qvi", far, op="DI2I"),
+                             iseaid=recipient.pre)
+            exn, atc = ipexGrant(hab=hab, recp=recipient.pre, message=claim,
+                                 origin=_signed(origin, hab),
+                                 artifacts=[_signed(far, gar)],
+                                 modifiers=dict(dp=[[
+                                     [origin.sad["s"]["$id"], "/", []],
+                                     [far.sad["s"]["$id"], "/e/qvi/_/", []],
+                                 ]]))
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            return exn
+
+        # Accepted: a direct delegate, a delegate's delegate, and the Issuee itself
+        # (DI2I is a superset of I2I).
+        for hab in (sub, grand, qvi):
+            exn = grantFrom(hab, f"issued by {hab.name}")
+            assert hby.db.exns.get(keys=(exn.said,)) is not None
+
+        # Refused, not escrowed: gar was incepted undelegated, so no arrival can
+        # make it a delegate of qvi.
+        exn = grantFrom(gar, "issued by an undelegated AID")
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert hby.db.epse.get(keys=(exn.said,)) is None
+
+        # Pending: late claims qvi as delegator and qvi has anchored nothing yet, so
+        # the grant waits in escrow rather than being refused...
+        exn = grantFrom(late, "issued before approval")
+        assert hby.kevers[late.pre].delpre == qvi.pre
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert hby.db.epse.get(keys=(exn.said,)) is not None
+
+        # ...and the delegator's anchoring event alone releases it.
+        approve(qvi, late)
+        exc.processEscrow()
+        assert hby.db.exns.get(keys=(exn.said,)) is not None
+        assert hby.db.epse.get(keys=(exn.said,)) is None
+
+
 def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
     """A missing edge schema is queried and succeeds after it is cached."""
     # Configure KRAM for the Grant
@@ -3476,11 +3901,12 @@ def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
             ims = bytearray(grant.raw + atc)
             Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
             escrowKey = (grant.said, edgeSchemer.said)
-            kramKey = (issuer.pre, grant.ked["x"], grant.said)
+            xid = grant.said
+            kramKey = (issuer.pre, xid, grant.said)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grant.said,)) is None
             assert hby.db.kramTMSC.get(keys=kramKey) is not None
-            assert hby.db.kramXDT.get(keys=(grant.ked["x"],)) is not None
+            assert hby.db.kramXDT.get(keys=(xid,)) is not None
 
             # Missing Schema escrow entry is created and a query cue is generated
             assert hby.db.emse.get(keys=escrowKey) is not None
@@ -3499,7 +3925,7 @@ def test_ipex_v2_edge_schema_uses_missing_schema_escrow(fakeHelpingClock):
             assert hby.db.emsd.get(keys=(grant.said,)) is None
             assert hby.db.kramTMSC.get(keys=kramKey) is not None
             assert [item["r"] for item in recorder.items] == [
-                "/exn/ipex/grant",
+                "/xip/ipex/grant",
             ]
 
 
@@ -3568,7 +3994,8 @@ def test_ipex_v2_edge_schema_escrow_expires_after_kram_timeout(
             ims = bytearray(grant.raw + atc)
             Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
             escrowKey = (grant.said, edgeSchemer.said)
-            kramKey = (issuer.pre, grant.ked["x"], grant.said)
+            xid = grant.said
+            kramKey = (issuer.pre, xid, grant.said)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grant.said,)) is None
             assert hby.db.kramTMSC.get(keys=kramKey) is not None
@@ -3586,7 +4013,7 @@ def test_ipex_v2_edge_schema_escrow_expires_after_kram_timeout(
             now = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
             assert kramer._pruneExchanges(rdt_ms=now)
             assert hby.db.kramTMSC.get(keys=kramKey) is None
-            assert hby.db.kramXDT.get(keys=(grant.ked["x"],)) is None
+            assert hby.db.kramXDT.get(keys=(xid,)) is None
 
             # Reject the Grant when the schema arrives too late
             hby.db.schema.pin(edgeSchemer.said, edgeSchemer)
@@ -3611,21 +4038,22 @@ def test_ipex_v2_grant_validates_disclosed_node_schema(monkeypatch):
                  version=Vrsn_2_0) as hby:
         hab = hby.makeHab(name="test")
 
-        # Record issuer and schema validation order
+        # Record issuer and schema validation order. Issuer-auth runs per node
+        # inside the DAG reduction, so hook the per-node check.
         stages = []
-        verifyIssuerAuth = IpexHandler._verifyIssuerAuthGraph
-        verifyNodeSchemas = IpexHandler._verifyNodeSchemas
+        verifyIssuerAuth = IpexHandler._verifyIssuerAuthNode
+        evaluateSchema = SchemaEvaluator.evaluate
 
         def recordIssuerAuth(self, *args, **kwa):
             stages.append("issuer-auth")
             return verifyIssuerAuth(self, *args, **kwa)
 
-        def recordNodeSchemas(self, *args, **kwa):
+        def recordNodeSchema(self, *args, **kwa):
             stages.append("node-schema")
-            return verifyNodeSchemas(self, *args, **kwa)
+            return evaluateSchema(self, *args, **kwa)
 
-        monkeypatch.setattr(IpexHandler, "_verifyIssuerAuthGraph", recordIssuerAuth)
-        monkeypatch.setattr(IpexHandler, "_verifyNodeSchemas", recordNodeSchemas)
+        monkeypatch.setattr(IpexHandler, "_verifyIssuerAuthNode", recordIssuerAuth)
+        monkeypatch.setattr(SchemaEvaluator, "evaluate", recordNodeSchema)
 
         # Set up the IPEX receiver
         recorder = Recorder()
@@ -3852,8 +4280,8 @@ def test_ipex_v2_empty_opener_disclosure_plan_requests_nothing():
 
         # Assert that only Apply, Offer and Agree were recorded
         assert [item["r"] for item in recorder.items] == [
-            "/exn/ipex/apply",
-            "/exn/ipex/offer",
+            "/xip/ipex/apply",
+            "/xip/ipex/offer",
             "/exn/ipex/agree",
         ]
 
@@ -3874,7 +4302,7 @@ def test_ipex_v2_empty_bare_grant_is_vacuous():
             message="Disclose nothing",
             modifiers=dict(dp=[[]]),    # Empty dp
         )
-        assert grant.ked["p"] == ""
+        assert grant.ilk == Ilks.xip
         assert grant.ked["q"]["dp"] == [[]]
         assert grant.ked["a"]["o"] == []
 
@@ -4360,7 +4788,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
                                       origin=acdc,
                                       recp=hab.pre,
                                       modifiers=dict(dp=[[[acdc.sad["s"]["$id"], "/", []]]]))
-        assert offer1.ked["x"] != ""
+        assert offer1.said != ""
         spurn2, spurn2Atc = ipexSpurn(hab=hab,
                                       message="I reject this offer",
                                       spurned=offer1)
@@ -4381,7 +4809,9 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Assert routes and their coressponding message  
         routes = {item["r"] for item in recorder.items}
         assert routes == {
-            "/exn/ipex/apply",
+            "/xip/ipex/apply",
+            "/xip/ipex/offer",
+            "/xip/ipex/grant",
             "/exn/ipex/offer",
             "/exn/ipex/agree",
             "/exn/ipex/grant",
@@ -4389,14 +4819,14 @@ def test_ipex_v2_dispatch_linear_and_spurn():
             "/exn/ipex/spurn",
         }
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/apply", "Please issue a credential"),
+            ("/xip/ipex/apply", "Please issue a credential"),
             ("/exn/ipex/offer", "Here is the offered credential"),
             ("/exn/ipex/agree", "I agree to the offer"),
             ("/exn/ipex/grant", "Here is the granted credential"),
             ("/exn/ipex/admit", "Thanks for the credential"),
-            ("/exn/ipex/grant", "Bare grant without agreement"),
+            ("/xip/ipex/grant", "Bare grant without agreement"),
             ("/exn/ipex/spurn", "I reject this grant"),
-            ("/exn/ipex/offer", "Bare offer for spurn path"),
+            ("/xip/ipex/offer", "Bare offer for spurn path"),
             ("/exn/ipex/spurn", "I reject this offer"),
         ]
 
@@ -4481,7 +4911,7 @@ def test_ipex_v2_nontransferable_nested_artifacts():
 
         # Check recorder for correct route/message pairs
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/apply", "Please issue a credential"),
+            ("/xip/ipex/apply", "Please issue a credential"),
             ("/exn/ipex/offer", "Here is the offered credential"),
             ("/exn/ipex/agree", "I agree to the offer"),
             ("/exn/ipex/grant", "Here is the granted credential"),
@@ -4594,7 +5024,7 @@ def test_ipex_v2_accepts_offer_with_missing_origin_attr_without_throwing():
         stored = hby.db.exns.get(keys=(badOffer.said,))
         assert stored is not None
         assert "o" not in stored.ked["a"]
-        assert recorder.items == [{"r": "/exn/ipex/offer", "d": badOffer.said, "m": "Here is the offered credential"}]
+        assert recorder.items == [{"r": "/xip/ipex/offer", "d": badOffer.said, "m": "Here is the offered credential"}]
 
 
 def test_ipex_v2_rejects_offer_with_nonstring_origin_without_throwing():
@@ -4893,9 +5323,9 @@ def test_ipex_v2_responders_set_receiver():
                                origin=acdc,
                                recp=verifier.pre,
                                modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
-        assert bootExn.ked["p"] == ""
+        assert bootExn.ilk == Ilks.xip
         assert bootExn.ked["ri"] == verifier.pre
-        assert bootExn.ked["x"] != ""
+        assert bootExn.said != ""
 
         # An explicit recp that matches the prior-derived receiver is still valid.
         overrideExn, _ = ipexAgree(hab=verifier,
@@ -5033,9 +5463,9 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                  origin=acdc,
                                  recp=verifier.pre,
                                  modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
-        assert bareOffer.ked["p"] == ""
+        assert bareOffer.ilk == Ilks.xip
         assert bareOffer.ked["ri"] == verifier.pre
-        assert bareOffer.ked["x"] != ""
+        assert bareOffer.said != ""
         assert bareOffer.ked["a"]["o"] == [acdc.said]
         assert bareOffer.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
         # Supplying xid directly is no longer supported at all.
@@ -5051,9 +5481,9 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                  recp=verifier.pre,
                                  message="Bare grant",
                                  origin=acdc)
-        assert bareGrant.ked["p"] == ""
+        assert bareGrant.ilk == Ilks.xip
         assert bareGrant.ked["ri"] == verifier.pre
-        assert bareGrant.ked["x"] != ""
+        assert bareGrant.said != ""
         # Apply starts a new thread too, so an empty receiver must still be rejected immediately.
         with pytest.raises(ValueError):
             ipexApply(hab=verifier,
@@ -5067,9 +5497,9 @@ def test_ipex_v2_builders_reject_prior_party_mismatches_and_caller_xid():
                                  message="Generated xid",
                                  attrs=dict(role="member"),
                                  modifiers=dict(dp=[[[schema, "/", ["a/role"]]]]))
-        assert bareApply.ked["p"] == ""
+        assert bareApply.ilk == Ilks.xip
         assert bareApply.ked["ri"] == holder.pre
-        assert bareApply.ked["x"] != ""
+        assert bareApply.said != ""
         assert bareApply.ked["q"]["dp"] == [[[schema, "/", ["a/role"]]]]
 
         # Set 5: apply still enforces its own disclosure-plan contract after starter fields pass.
@@ -5141,6 +5571,141 @@ def test_ipex_v2_rejects_inbound_apply_with_malformed_disclosure_path():
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(badApply.said,)) is None
         assert recorder.items == []
+
+
+def test_ipex_v2_rejects_exn_flow_opener():
+    """An IPEX transaction opener must be an XIP, not an EXN with no prior."""
+    with openHby(name="ipex-v2-exn-opener",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        applicant = hby.makeHab(name="applicant")
+        discloser = hby.makeHab(name="discloser")
+        schema = acdcmap(israid=discloser.pre,
+                         attribute=dict(d="", role="member"),
+                         iseaid=applicant.pre).sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        legacyApply = exchange(
+            sender=applicant.pre,
+            receiver=discloser.pre,
+            xid=Noncer().qb64,
+            route="/ipex/apply",
+            modifiers=dict(dp=[[[schema, "/", []]]]),
+            attributes=dict(m="Legacy EXN opener"),
+            pvrsn=Vrsn_2_0,
+            gvrsn=Vrsn_2_0,
+            kind=applicant.kever.serder.kind,
+        )
+        msg = applicant.endorse(serder=legacyApply,
+                                framed=False,
+                                gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=msg, framed=False, exc=exc)
+
+        assert msg == bytearray()
+        assert hby.db.exns.get(keys=(legacyApply.said,)) is None
+        assert recorder.items == []
+
+
+def test_ipex_v2_multikey_xip_signatures_through_kram():
+    """KRAM forwards complete and accumulated XIP thresholds to IPEX."""
+    kramConfig = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 60000, 300000,
+                      5000, 60000, 300000],
+            },
+        },
+    }
+
+    with openHby(name="ipex-v2-multikey-xip",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        applicant = hby.makeHab(name="applicant", isith="2", icount=3)
+        discloser = hby.makeHab(name="discloser")
+        schema = acdcmap(israid=discloser.pre,
+                         attribute=dict(d="", role="member"),
+                         iseaid=applicant.pre).sad["s"]["$id"]
+
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        with openCF(name="ipex-v2-multikey-xip-kram",
+                    base="test", temp=True) as cf:
+            cf.put(kramConfig)
+            kvy = Kevery(db=hby.db,
+                         lax=False,
+                         local=False,
+                         kramer=Kramer(db=hby.db, cf=cf),
+                         exc=exc)
+
+            applyExn, _ = ipexApply(
+                hab=applicant,
+                recp=discloser.pre,
+                message="Please disclose to the group applicant",
+                modifiers=dict(dp=[[[schema, "/", []]]]),
+            )
+            sigers = applicant.sign(ser=applyExn.raw, indexed=True)
+            cacheKey = (applicant.pre, applyExn.said, applyExn.said)
+            partialKey = (applicant.pre, applyExn.said)
+
+            first = messagize(serder=applyExn,
+                               sigers=[sigers[0]],
+                               framed=False,
+                               gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=first, kvy=kvy)
+
+            cache = hby.db.kramTMSC.get(keys=cacheKey)
+            assert cache is not None
+            assert cache.rdt == ""
+            assert len(hby.db.kramPMKS.get(keys=partialKey)) == 1
+            assert hby.db.exns.get(keys=(applyExn.said,)) is None
+
+            second = messagize(serder=applyExn,
+                                sigers=[sigers[1]],
+                                framed=False,
+                                gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=second, kvy=kvy)
+
+            cache = hby.db.kramTMSC.get(keys=cacheKey)
+            assert cache is not None
+            assert cache.rdt
+            assert hby.db.kramPMKM.get(keys=partialKey) is None
+            assert hby.db.kramPMKS.get(keys=partialKey) == []
+            assert hby.db.exns.get(keys=(applyExn.said,)) is not None
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(applyExn.said, applicant.pre, "")))) == 2
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/xip/ipex/apply", "Please disclose to the group applicant"),
+            ]
+
+            immediateExn, _ = ipexApply(
+                hab=applicant,
+                recp=discloser.pre,
+                message="Please accept the complete group threshold",
+                modifiers=dict(dp=[[[schema, "/", []]]]),
+            )
+            immediateSigers = applicant.sign(
+                ser=immediateExn.raw, indexed=True)
+            immediate = messagize(serder=immediateExn,
+                                   sigers=immediateSigers[:2],
+                                   framed=False,
+                                   gvrsn=Vrsn_2_0)
+            Parser(version=Vrsn_2_0).parse(ims=immediate, kvy=kvy)
+
+            assert hby.db.exns.get(keys=(immediateExn.said,)) is not None
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(immediateExn.said, applicant.pre, "")))) == 2
+            assert [(item["r"], item["m"]) for item in recorder.items] == [
+                ("/xip/ipex/apply", "Please disclose to the group applicant"),
+                ("/xip/ipex/apply",
+                 "Please accept the complete group threshold"),
+            ]
 
 
 def test_ipex_v2_rejects_third_party_prior_response_without_throwing():
@@ -5238,7 +5803,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=unsigned) is False
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=unsigned).verdict == Verdicts.invalid
 
         # A valid signature from an AID other than the issuer is insufficient.
         wrongSigner, = Parser(version=Vrsn_2_0).parse(
@@ -5246,7 +5811,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=wrongSigner) is False
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=wrongSigner).verdict == Verdicts.invalid
 
         # The issuer's current transferable signature authenticates the node.
         signed, = Parser(version=Vrsn_2_0).parse(
@@ -5254,7 +5819,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed).verdict == Verdicts.valid
 
         # An inner rd without top-level rd declares the unsupported hidden
         # issuer-registry form, so even a valid issuer signature cannot replace it.
@@ -5269,7 +5834,7 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             processive=False,
         )
         assert handler._verifyIssuerAuthNode(
-            serder=hidden, nest=hiddenSigned) is False
+            serder=hidden, nest=hiddenSigned).verdict == Verdicts.invalid
 
         # A source couple points to the issuer event that permanently seals it.
         anchor = issuer.interact(data=[dict(d=acdc.said)],
@@ -5286,15 +5851,15 @@ def test_ipex_v2_requires_an_issuer_authentication_factor():
             framed=True,
             processive=False,
         )
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored).verdict == Verdicts.valid
 
         # Bare signatures expire when the issuer rotates, but the historical KEL
         # event continues to authenticate the ACDC it permanently anchored.
         issuer.rotate(version=Vrsn_2_0,
                       kind=issuer.kever.serder.kind,
                       gvrsn=Vrsn_2_0)
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed) is False
-        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored) is True
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=signed).verdict == Verdicts.invalid
+        assert handler._verifyIssuerAuthNode(serder=acdc, nest=anchored).verdict == Verdicts.valid
 
 
 def test_ipex_v2_rejects_hidden_issuer_registry_signature_fallback():
@@ -5331,6 +5896,77 @@ def test_ipex_v2_rejects_hidden_issuer_registry_signature_fallback():
         assert ims == bytearray()
         assert hby.db.exns.get(keys=(grantExn.said,)) is None
         assert recorder.items == []
+
+
+def _grantAccepted(hby, issuer, recipient, acdc, message):
+    """Process a signed Grant of ``acdc`` and report whether it was accepted."""
+    grantExn, grantAtc = ipexGrant(
+        hab=issuer,
+        recp=recipient.pre,
+        message=message,
+        origin=_signed(acdc, issuer),
+    )
+
+    recorder = Recorder()
+    exc = Exchanger(hby=hby, handlers=[])
+    loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+    ims = bytearray(grantExn.raw)
+    ims.extend(grantAtc)
+    Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+    assert ims == bytearray()
+
+    accepted = hby.db.exns.get(keys=(grantExn.said,)) is not None
+    assert (recorder.items != []) == accepted
+    return accepted
+
+
+def _hiddenRegistryAggregate(issuer, compact=False):
+    """Build an aggregate ACDC whose only rd hides in an ``A`` entry."""
+    nonces = [Noncer(raw=b"hiddenaggregate%01d" % k).qb64 for k in range(3)]
+    ael = ["",
+           dict(d="", u=nonces[0], rd=Diger(ser=b"hidden registry").qb64),
+           dict(d="", u=nonces[1], entitlement="member")]
+    aggor = Aggor(ael=ael, makify=True, kind=Kinds.json)
+    aggregate = list(aggor.ael)
+    if compact:
+        # Disclose the registry entry only by its SAID.
+        aggregate[1] = aggregate[1]["d"]
+    acdc = acdcagg(israid=issuer.pre, uuid=nonces[2], aggregate=aggregate)
+    assert not acdc.sad.get("rd")
+    return acdc
+
+
+def test_ipex_v2_rejects_hidden_aggregate_issuer_registry_signature_fallback():
+    """A Grant cannot replace an rd hidden in an aggregate entry with a signature."""
+    with openHby(name="ipex-v2-hidden-aggregate-registry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+        hidden = _hiddenRegistryAggregate(issuer)
+
+        assert not _grantAccepted(hby, issuer, recipient, hidden,
+                                  "Hidden aggregate registry must not downgrade")
+
+
+def test_ipex_v2_compact_aggregate_entry_is_not_a_hidden_issuer_registry():
+    """An undisclosed aggregate entry gives the verifier no rd to act on.
+
+    A compact entry looks the same whether or not it hides an rd, so treating
+    it as a hidden issuer registry would refuse every registry-less aggregate
+    that is partially disclosed. The signature factor still applies.
+    """
+    with openHby(name="ipex-v2-compact-aggregate-entry",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        recipient = hby.makeHab(name="recipient")
+        compact = _hiddenRegistryAggregate(issuer, compact=True)
+        assert isinstance(compact.sad["A"][1], str)
+
+        assert _grantAccepted(hby, issuer, recipient, compact,
+                              "Compact aggregate entry falls back to signature")
 
 
 def test_ipex_v2_blindable_registry_roundtrip():
@@ -5687,7 +6323,7 @@ def test_ipex_v2_escrows_registry_backed_grant_until_tel_evidence_arrives(sender
             assert len(recipientHby.db.ests.get(
                 keys=(grantExn.said, anchorHab.pre))) == 1
             assert len(recorder.items) == 1
-            assert recorder.items[0]["r"] == "/exn/ipex/grant"
+            assert recorder.items[0]["r"] == "/xip/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Waiting on observer TEL"
             assert list(exc.cues) == [
@@ -5820,7 +6456,7 @@ def test_ipex_v2_blind_registry_update_roundtrip():
 
             # The notifier should report the accepted linear IPEX exchange in send order
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please issue the blind credential"),
+                ("/xip/ipex/apply", "Please issue the blind credential"),
                 ("/exn/ipex/offer", "Here is the blind credential"),
                 ("/exn/ipex/agree", "I agree to the blind credential"),
                 ("/exn/ipex/grant", "Here is the blind registry disclosure"),
@@ -5923,6 +6559,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                                                attrs={},
                                                modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=applyStamp)
+                xid = applyExn.said
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
                 # Deliver apply first so the later offer retry can legally answer
@@ -5934,14 +6571,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 applyStored = hby.db.exns.get(keys=(applyExn.said,))
                 assert applyStored is not None
-                assert applyStored.ked["x"] == applyExn.ked["x"]
+                assert applyStored.said == xid
 
                 applyCache = hby.db.kramTMSC.get(
-                    keys=(recipient.pre, applyExn.ked["x"], applyExn.said))
+                    keys=(recipient.pre, xid, applyExn.said))
                 assert applyCache is not None
                 assert applyCache.mdt == applyStamp
                 assert applyCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 applyMdtMs = helping.fromIso8601(applyCache.mdt).timestamp() * 1000
                 applyXdtMs = helping.fromIso8601(applyCache.xdt).timestamp() * 1000
@@ -5962,7 +6599,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 # The stale offer still points at the same transaction, but its
                 # message timestamp is just outside the lower timeliness bound.
-                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
+                assert staleOfferExn.ked["x"] == xid
                 staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
                 assert staleOfferMs < (staleOfferReceiveMs - d - sl)
 
@@ -5976,10 +6613,10 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 assert staleOfferIms == bytearray()
                 assert hby.db.kramTMSC.get(
-                    keys=(hab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
+                    keys=(hab.pre, xid, staleOfferExn.said)) is None
                 assert hby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                 ]
 
                 # Resend the same logical offer from the current fake-clock time.
@@ -5999,14 +6636,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 offerStored = hby.db.exns.get(keys=(offerExn.said,))
                 assert offerStored is not None
-                assert offerStored.ked["x"] == applyExn.ked["x"]
+                assert offerStored.ked["x"] == xid
 
                 offerCache = hby.db.kramTMSC.get(
-                    keys=(hab.pre, applyExn.ked["x"], offerExn.said))
+                    keys=(hab.pre, xid, offerExn.said))
                 assert offerCache is not None
                 assert offerCache.mdt == offerRetryStamp
                 assert offerCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 offerMdtMs = helping.fromIso8601(offerCache.mdt).timestamp() * 1000
                 offerXdtMs = helping.fromIso8601(offerCache.xdt).timestamp() * 1000
@@ -6028,14 +6665,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 agreeStored = hby.db.exns.get(keys=(agreeExn.said,))
                 assert agreeStored is not None
-                assert agreeStored.ked["x"] == applyExn.ked["x"]
+                assert agreeStored.ked["x"] == xid
 
                 agreeCache = hby.db.kramTMSC.get(
-                    keys=(recipient.pre, applyExn.ked["x"], agreeExn.said))
+                    keys=(recipient.pre, xid, agreeExn.said))
                 assert agreeCache is not None
                 assert agreeCache.mdt == agreeStamp
                 assert agreeCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 agreeMdtMs = helping.fromIso8601(agreeCache.mdt).timestamp() * 1000
                 agreeXdtMs = helping.fromIso8601(agreeCache.xdt).timestamp() * 1000
@@ -6059,14 +6696,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 grantStored = hby.db.exns.get(keys=(grantExn.said,))
                 assert grantStored is not None
-                assert grantStored.ked["x"] == applyExn.ked["x"]
+                assert grantStored.ked["x"] == xid
 
                 grantCache = hby.db.kramTMSC.get(
-                    keys=(hab.pre, applyExn.ked["x"], grantExn.said))
+                    keys=(hab.pre, xid, grantExn.said))
                 assert grantCache is not None
                 assert grantCache.mdt == grantStamp
                 assert grantCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 grantMdtMs = helping.fromIso8601(grantCache.mdt).timestamp() * 1000
                 grantXdtMs = helping.fromIso8601(grantCache.xdt).timestamp() * 1000
@@ -6088,14 +6725,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
 
                 admitStored = hby.db.exns.get(keys=(admitExn.said,))
                 assert admitStored is not None
-                assert admitStored.ked["x"] == applyExn.ked["x"]
+                assert admitStored.ked["x"] == xid
 
                 admitCache = hby.db.kramTMSC.get(
-                    keys=(recipient.pre, applyExn.ked["x"], admitExn.said))
+                    keys=(recipient.pre, xid, admitExn.said))
                 assert admitCache is not None
                 assert admitCache.mdt == admitStamp
                 assert admitCache.xdt == applyStamp
-                assert hby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert hby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 admitMdtMs = helping.fromIso8601(admitCache.mdt).timestamp() * 1000
                 admitXdtMs = helping.fromIso8601(admitCache.xdt).timestamp() * 1000
@@ -6128,7 +6765,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/offer", "Here is the blind credential"),
                     ("/exn/ipex/agree", "I agree to the blind credential"),
                     ("/exn/ipex/grant", "Here is the blind registry disclosure"),
@@ -6145,7 +6782,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram(fakeHelpingClock):
                 assert helping.nowIso8601() == admitStamp
 
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/offer", "Here is the blind credential"),
                     ("/exn/ipex/agree", "I agree to the blind credential"),
                     ("/exn/ipex/grant", "Here is the blind registry disclosure"),
@@ -6312,6 +6949,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                                                attrs={},
                                                modifiers=dict(dp=[[[schema, "/", [""]]]]),
                                                dt=applyStamp)
+                xid = applyExn.said
                 applyReceiveMs = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
 
                 # Parse the apply locally on the sender side first so the
@@ -6335,20 +6973,20 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # xid intact because later replies will inherit this xdt.
                 applyStored, _ = cloneMessage(issuerHby, applyExn.said)
                 assert applyStored is not None
-                assert applyStored.ked["x"] == applyExn.ked["x"]
+                assert applyStored.said == xid
 
                 # On the receiver side of the apply, KRAM should store both the
                 # per-message cache row and the thread-wide opener time.
                 applyCache = issuerHby.db.kramTMSC.get(
-                    keys=(recipientHab.pre, applyExn.ked["x"], applyExn.said))
+                    keys=(recipientHab.pre, xid, applyExn.said))
                 assert applyCache is not None
                 assert applyCache.mdt == applyStamp
                 assert applyCache.xdt == applyStamp
-                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 # The sender-side self-parse should also have seeded the same xid
                 # opener time locally for future inbound replies.
-                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 # Confirm the accepted apply sits inside both the receiver's
                 # timeliness window and the thread's exchange-lifetime window.
@@ -6371,7 +7009,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 # The stale offer must still target the same transaction, but its
                 # mdt should sit just below the lower timeliness bound.
-                assert staleOfferExn.ked["x"] == applyExn.ked["x"]
+                assert staleOfferExn.ked["x"] == xid
                 staleOfferMs = helping.fromIso8601(staleOfferStamp).timestamp() * 1000
                 assert staleOfferMs < (staleOfferReceiveMs - d - sl)
 
@@ -6384,10 +7022,10 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 assert ims == bytearray()
                 assert recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], staleOfferExn.said)) is None
+                    keys=(issuerHab.pre, xid, staleOfferExn.said)) is None
                 assert recipientHby.db.exns.get(keys=(staleOfferExn.said,)) is None
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                 ]
                 assert recipientRecorder.items == []
 
@@ -6417,16 +7055,16 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # agree builder replies to this local prior message.
                 storedOffer, _ = cloneMessage(recipientHby, offerExn.said)
                 assert storedOffer is not None
-                assert storedOffer.ked["x"] == applyExn.ked["x"]
+                assert storedOffer.ked["x"] == xid
 
                 # Even though this is not the opener, KRAM must keep the offer's
                 # own mdt while still inheriting the original apply xdt.
                 offerCache = recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], offerExn.said))
+                    keys=(issuerHab.pre, xid, offerExn.said))
                 assert offerCache is not None
                 assert offerCache.mdt == offerRetryStamp
                 assert offerCache.xdt == applyStamp
-                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 # The recovered offer should now satisfy the same two KRAM
                 # windows the stale one missed.
@@ -6458,16 +7096,16 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
 
                 storedAgree, _ = cloneMessage(issuerHby, agreeExn.said)
                 assert storedAgree is not None
-                assert storedAgree.ked["x"] == applyExn.ked["x"]
+                assert storedAgree.ked["x"] == xid
 
                 # The reply keeps the same opener xdt even though its own mdt is
                 # later in the exchange.
                 agreeCache = issuerHby.db.kramTMSC.get(
-                    keys=(recipientHab.pre, applyExn.ked["x"], agreeExn.said))
+                    keys=(recipientHab.pre, xid, agreeExn.said))
                 assert agreeCache is not None
                 assert agreeCache.mdt == agreeStamp
                 assert agreeCache.xdt == applyStamp
-                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 agreeMdtMs = helping.fromIso8601(agreeCache.mdt).timestamp() * 1000
                 agreeXdtMs = helping.fromIso8601(agreeCache.xdt).timestamp() * 1000
@@ -6606,7 +7244,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # be built as a real reply to the accepted inbound message.
                 storedGrant, _ = cloneMessage(recipientHby, grantExn.said)
                 assert storedGrant is not None
-                assert storedGrant.ked["x"] == applyExn.ked["x"]
+                assert storedGrant.ked["x"] == xid
 
                 senderRows = list(recipientHby.db.esigs.getTopItemIter(
                     keys=(grantExn.said, issuerHab.pre, "")))
@@ -6648,11 +7286,11 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 assert response.qb64 == grantExn.said
 
                 grantCache = recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said))
+                    keys=(issuerHab.pre, xid, grantExn.said))
                 assert grantCache is not None
                 assert grantCache.mdt == grantStamp
                 assert grantCache.xdt == applyStamp
-                assert recipientHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert recipientHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 grantMdtMs = helping.fromIso8601(grantCache.mdt).timestamp() * 1000
                 grantXdtMs = helping.fromIso8601(grantCache.xdt).timestamp() * 1000
@@ -6677,14 +7315,14 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # consistent with the opener that started the transaction.
                 storedAdmit, _ = cloneMessage(issuerHby, admitExn.said)
                 assert storedAdmit is not None
-                assert storedAdmit.ked["x"] == applyExn.ked["x"]
+                assert storedAdmit.ked["x"] == xid
 
                 admitCache = issuerHby.db.kramTMSC.get(
-                    keys=(recipientHab.pre, applyExn.ked["x"], admitExn.said))
+                    keys=(recipientHab.pre, xid, admitExn.said))
                 assert admitCache is not None
                 assert admitCache.mdt == admitStamp
                 assert admitCache.xdt == applyStamp
-                assert issuerHby.db.kramXDT.get(keys=(applyExn.ked["x"],)).dts == applyStamp
+                assert issuerHby.db.kramXDT.get(keys=(xid,)).dts == applyStamp
 
                 admitMdtMs = helping.fromIso8601(admitCache.mdt).timestamp() * 1000
                 admitXdtMs = helping.fromIso8601(admitCache.xdt).timestamp() * 1000
@@ -6710,7 +7348,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                     grantCache.xdt).timestamp() * 1000) + grantCache.pxl + 1)
                 assert recipientKvy.kramer._pruneExchanges(rdt_ms=pruneMs)
                 assert recipientHby.db.kramTMSC.get(
-                    keys=(issuerHab.pre, applyExn.ked["x"], grantExn.said)) is None
+                    keys=(issuerHab.pre, xid, grantExn.said)) is None
                 assert recipientHby.db.kramPMKM.get(keys=partialKey) is None
                 assert recipientHby.db.kramPMKS.get(keys=partialKey) == []
                 assert recipientHby.db.kramTSGS.get(keys=partialKey) == []
@@ -6831,7 +7469,7 @@ def test_ipex_v2_blind_registry_update_roundtrip_through_kram_two_haberies(fakeH
                 # recipient-originated messages, and the recipient only saw the
                 # issuer-originated ones.
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the blind credential"),
+                    ("/xip/ipex/apply", "Please issue the blind credential"),
                     ("/exn/ipex/agree", "I agree to the blind credential"),
                     ("/exn/ipex/admit", "Thanks for the blind credential"),
                 ]
@@ -6989,6 +7627,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                                                    [schema, "/e/holder/_/", [""]],
                                                ]]),
                                                dt=applyStamp)
+                xid = applyExn.said
 
                 assert applyExn.ked["q"]["dp"] == [[
                     [schema, "/", [""]],
@@ -7008,7 +7647,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 applyStored, _ = cloneMessage(issuerHby, applyExn.said)
                 assert applyStored is not None
-                assert applyStored.ked["x"] == applyExn.ked["x"]
+                assert applyStored.said == xid
 
                 # The issuer answers with the origin SAID but does not yet
                 # disclose any ACDC node bodies.
@@ -7033,7 +7672,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedOffer, _ = cloneMessage(recipientHby, offerExn.said)
                 assert storedOffer is not None
-                assert storedOffer.ked["x"] == applyExn.ked["x"]
+                assert storedOffer.ked["x"] == xid
 
                 offerWire = bytearray(serializeMessage(recipientHby, offerExn.said, framed=True))
                 offerResults = Parser(version=Vrsn_2_0).parse(ims=offerWire,
@@ -7065,7 +7704,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedAgree, _ = cloneMessage(issuerHby, agreeExn.said)
                 assert storedAgree is not None
-                assert storedAgree.ked["x"] == applyExn.ked["x"]
+                assert storedAgree.ked["x"] == xid
 
                 # The issuer grants the same two-node DAG, but now the origin
                 # node carries the node-local blind proof group that step 4 vets.
@@ -7092,7 +7731,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedGrant, _ = cloneMessage(recipientHby, grantExn.said)
                 assert storedGrant is not None
-                assert storedGrant.ked["x"] == applyExn.ked["x"]
+                assert storedGrant.ked["x"] == xid
 
                 grantWire = bytearray(serializeMessage(recipientHby, grantExn.said, framed=True))
                 grantResults = Parser(version=Vrsn_2_0).parse(ims=grantWire,
@@ -7134,10 +7773,10 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
 
                 storedAdmit, _ = cloneMessage(issuerHby, admitExn.said)
                 assert storedAdmit is not None
-                assert storedAdmit.ked["x"] == applyExn.ked["x"]
+                assert storedAdmit.ked["x"] == xid
 
-                # A second grant that omits the child nest should now fail the
-                # graph walk even though the origin still carries a valid proof.
+                # The negotiated disclosure plan still requires the child, so a
+                # second grant that omits it is refused before Edge evaluation.
                 clock.advance(milliseconds=1)
                 badGrantExn, badGrantAtc = ipexGrant(hab=issuerHab,
                                                      recp=recipientHab.pre,
@@ -7151,7 +7790,7 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
                 assert recipientHby.db.exns.get(keys=(badGrantExn.said,)) is None
 
                 assert [(item["r"], item["m"]) for item in issuerRecorder.items] == [
-                    ("/exn/ipex/apply", "Please issue the DAG credential"),
+                    ("/xip/ipex/apply", "Please issue the DAG credential"),
                     ("/exn/ipex/agree", "I agree to the DAG credential"),
                     ("/exn/ipex/admit", "Thanks for the DAG credential"),
                 ]
@@ -7164,16 +7803,22 @@ def test_ipex_v2_two_node_registry_dag_roundtrip_through_kram_two_haberies(fakeH
             issuerRgy.close()
 
 
-def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
-    """An offer-first IPEX flow can start transactionally with a generated xid."""
+def test_ipex_v2_offer_starts_flow_with_xip_through_kram(fakeHelpingClock):
+    """An offer-first IPEX flow starts with an XIP whose SAID is the xid."""
     # Keep the KRAM cache timings local to this test so the window assertions
-    # below read directly against the exact policy in force.
+    # below read directly against the exact policy in force. XIP openers have
+    # their own entries because EXN route policies do not apply to XIP messages.
+    xipPolicy = [500, 3000, 60000, 240000, 3000, 60000, 240000]
+    fallbackPolicy = [1000, 5000, 60000, 300000, 5000, 60000, 300000]
     kramConfig = {
         "kram": {
             "enabled": True,
             "denials": [],
             "caches": {
-                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+                "xip.R./ipex/apply": xipPolicy,
+                "xip.R./ipex/offer": xipPolicy,
+                "xip.R./ipex/grant": xipPolicy,
+                "~": fallbackPolicy,
             },
         },
     }
@@ -7185,9 +7830,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
     # d  = allowed clock drift
     # sl = short-lag timeliness window for single-key / current-est auth
     # xl = total exchange lifetime measured from xdt
-    d = kramConfig["kram"]["caches"]["~"][0]
-    sl = kramConfig["kram"]["caches"]["~"][1]
-    xl = kramConfig["kram"]["caches"]["~"][3]
+    d = xipPolicy[0]
 
     with openHby(name="ipex-v2-offer-start-kram",
                  base="test",
@@ -7267,10 +7910,14 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                                                grant=grantExn,
                                                dt=admitStamp)
 
-                # Offer-first means there is no prior message, so the builder
-                # generates the xid that anchors the rest of the thread.
-                assert offerExn.ked["p"] == ""
-                assert offerExn.ked["x"] != ""
+                # Offer-first means the offer is the XIP whose SAID identifies
+                # the transaction carried by every subsequent EXN.
+                assert offerExn.ilk == Ilks.xip
+                xid = offerExn.said
+                assert "x" not in offerExn.ked
+                assert "p" not in offerExn.ked
+                assert all(exn.ilk == Ilks.exn
+                           for exn in (agreeExn, grantExn, admitExn))
 
                 # Every accepted exn in the chain should keep the same xid and
                 # land inside both the timeliness and exchange-lifetime windows.
@@ -7291,16 +7938,23 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                     # persist the exn body and preserve the exchange id.
                     stored = hby.db.exns.get(keys=(exn.said,))
                     assert stored is not None
-                    assert stored.ked["x"] == offerExn.ked["x"]
+                    storedXid = (stored.said if stored.ilk == Ilks.xip
+                                 else stored.ked["x"])
+                    assert storedXid == xid
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original offer xdt.
                     cache = hby.db.kramTMSC.get(
-                        keys=(exn.ked["i"], offerExn.ked["x"], exn.said))
+                        keys=(exn.ked["i"], xid, exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == offerStamp
-                    assert hby.db.kramXDT.get(keys=(offerExn.ked["x"],)).dts == offerStamp
+                    assert hby.db.kramXDT.get(keys=(xid,)).dts == offerStamp
+
+                    policy = xipPolicy if exn.ilk == Ilks.xip else fallbackPolicy
+                    d, sl, _, xl, _, _, _ = policy
+                    assert cache.d == d
+                    assert cache.xl == xl
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
@@ -7336,7 +7990,7 @@ def test_ipex_v2_offer_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/offer", "Offer starts the blind credential flow"),
+                    ("/xip/ipex/offer", "Offer starts the blind credential flow"),
                     ("/exn/ipex/agree", "I agree to the offer-first credential"),
                     ("/exn/ipex/grant", "Here is the offer-first blind registry disclosure"),
                     ("/exn/ipex/admit", "Thanks for the offer-first blind credential"),
@@ -7420,12 +8074,12 @@ def test_ipex_v2_nested_signature_does_not_authenticate_outer_grant(
             keys=(grantExn.said, ""))) == []
         assert hby.db.enst.get(keys=(grantExn.said,)) == []
         assert hby.db.kramTMSC.get(
-            keys=(sender.pre, grantExn.ked["x"], grantExn.said)) is None
+            keys=(sender.pre, grantExn.said, grantExn.said)) is None
         assert recorder.items == []
 
 
-def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
-    """A grant-first IPEX flow can start transactionally with a generated xid."""
+def test_ipex_v2_grant_starts_flow_with_xip_through_kram(fakeHelpingClock):
+    """A grant-first IPEX flow starts with an XIP whose SAID is the xid."""
 
     kramConfig = {
         "kram": {
@@ -7507,10 +8161,13 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                                                grant=grantExn,
                                                dt=admitStamp)
 
-                # Grant-first means there is no prior message, so the builder
-                # generates the xid that anchors the rest of the thread.
-                assert grantExn.ked["p"] == ""
-                assert grantExn.ked["x"] != ""
+                # Grant-first means the grant is the XIP whose SAID identifies
+                # the transaction carried by the subsequent Admit EXN.
+                assert grantExn.ilk == Ilks.xip
+                xid = grantExn.said
+                assert "x" not in grantExn.ked
+                assert "p" not in grantExn.ked
+                assert admitExn.ilk == Ilks.exn
 
                 # Every accepted exn in the chain should keep the same xid and
                 # land inside both the timeliness and exchange-lifetime windows.
@@ -7529,16 +8186,18 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                     # persist the exn body and preserve the exchange id.
                     stored = hby.db.exns.get(keys=(exn.said,))
                     assert stored is not None
-                    assert stored.ked["x"] == grantExn.ked["x"]
+                    storedXid = (stored.said if stored.ilk == Ilks.xip
+                                 else stored.ked["x"])
+                    assert storedXid == xid
 
                     # KRAM should also record one transaction-cache row that keeps
                     # the message's own mdt and the original grant xdt.
                     cache = hby.db.kramTMSC.get(
-                        keys=(exn.ked["i"], grantExn.ked["x"], exn.said))
+                        keys=(exn.ked["i"], xid, exn.said))
                     assert cache is not None
                     assert cache.mdt == stamp
                     assert cache.xdt == grantStamp
-                    assert hby.db.kramXDT.get(keys=(grantExn.ked["x"],)).dts == grantStamp
+                    assert hby.db.kramXDT.get(keys=(xid,)).dts == grantStamp
 
                     mdtMs = helping.fromIso8601(cache.mdt).timestamp() * 1000
                     xdtMs = helping.fromIso8601(cache.xdt).timestamp() * 1000
@@ -7574,7 +8233,7 @@ def test_ipex_v2_grant_starts_flow_with_xid_through_kram(fakeHelpingClock):
                 # Recorder order proves the whole accepted chain actually reached
                 # the IPEX handlers after KRAM let each message through.
                 assert [(item["r"], item["m"]) for item in recorder.items] == [
-                    ("/exn/ipex/grant", "Grant starts the blind credential flow"),
+                    ("/xip/ipex/grant", "Grant starts the blind credential flow"),
                     ("/exn/ipex/admit", "Thanks for the grant-first blind credential"),
                 ]
         finally:
@@ -7754,12 +8413,12 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
 
             # The notifier should reflect both full disclosures in the order they were sent
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/apply", "Please issue the issued blind credential"),
+                ("/xip/ipex/apply", "Please issue the issued blind credential"),
                 ("/exn/ipex/offer", "Here is the issued blind credential"),
                 ("/exn/ipex/agree", "I agree to the issued blind credential"),
                 ("/exn/ipex/grant", "Here is the issued blind registry disclosure"),
                 ("/exn/ipex/admit", "Thanks for the issued blind credential"),
-                ("/exn/ipex/apply", "Please issue the revoked blind credential"),
+                ("/xip/ipex/apply", "Please issue the revoked blind credential"),
                 ("/exn/ipex/offer", "Here is the revoked blind credential"),
                 ("/exn/ipex/agree", "I agree to the revoked blind credential"),
                 ("/exn/ipex/grant", "Here is the revoked blind registry disclosure"),
@@ -7769,8 +8428,8 @@ def test_ipex_v2_successive_blind_registry_updates_roundtrip():
             rgy.close()
 
 
-def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
-    """Presentation requirements may be declared in either ACDC section form."""
+def test_ipex_v2_finds_attribute_presentation_registry():
+    """Only the top-level attribute pair declares a presentation registry."""
     with openHby(name="ipex-v2-presentation-declarations",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -7778,13 +8437,22 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
         issuerReg = Diger(ser=b"issuer registry").qb64
         presentationReg = Diger(ser=b"presentation registry").qb64
 
-        # Model expanded attribute and aggregate declarations for one Issuee.
+        # Model the canonical expanded attribute declaration for one Issuee.
         attribute = SimpleNamespace(
             sad=dict(rd=issuerReg,
-                     a=dict(i=issuee.pre, rd=presentationReg)))
+                     a=dict(i=issuee.pre, rd=presentationReg),
+                     A=Diger(ser=b"hidden aggregate").qb64))
+
+        # Aggregate registries have application-specific semantics and do not
+        # become presentation requirements merely from an i/rd pair.
         aggregate = SimpleNamespace(
             sad=dict(rd=issuerReg,
                      A=["", dict(i=issuee.pre, rd=presentationReg)]))
+        selectiveAggregate = SimpleNamespace(
+            sad=dict(rd=issuerReg,
+                     A=[Diger(ser=b"aggregate").qb64,
+                        dict(i=issuee.pre, rd=presentationReg),
+                        Diger(ser=b"hidden aggregate element").qb64]))
 
         # Model missing issuer context and compact or partial disclosures.
         hiddenIssuer = SimpleNamespace(
@@ -7798,19 +8466,20 @@ def test_ipex_v2_finds_attribute_and_aggregate_presentation_registries():
                      A=[Diger(ser=b"aggregate").qb64,
                         Diger(ser=b"aggregate element").qb64]))
 
-        # Expanded presentation forms resolve the same requirement, while the
-        # explicit hidden issuer-registry form is rejected as unsupported.
+        # The attribute pair selects the registry. Aggregate disclosure state
+        # cannot add, remove, or hide that presentation requirement.
         expected = [(issuee.pre, presentationReg)]
         assert IpexHandler._presentationRegistries(attribute) == expected
-        assert IpexHandler._presentationRegistries(aggregate) == expected
+        assert IpexHandler._presentationRegistries(aggregate) == []
+        assert IpexHandler._presentationRegistries(selectiveAggregate) == []
         assert IpexHandler._presentationRegistries(hiddenIssuer) is None
         assert IpexHandler._presentationRegistries(compactAttribute) is None
-        assert IpexHandler._presentationRegistries(compactAggregate) is None
-        assert IpexHandler._presentationRegistries(partialAggregate) is None
+        assert IpexHandler._presentationRegistries(compactAggregate) == []
+        assert IpexHandler._presentationRegistries(partialAggregate) == []
 
 
 def test_ipex_v2_presentation_registry_binds_proxy_grant():
-    """An issuee TEL can satisfy grant ax while sharing a nest with issuer proof."""
+    """A proxy signature or KEL anchor and Issuee TEL authenticate the Grant."""
     with openHby(name="ipex-v2-presentation-registry",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -7864,7 +8533,9 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             recorder = Recorder()
             exc = Exchanger(hby=hby, handlers=[])
             loadHandlers(hby=hby, exc=exc, notifier=recorder, rgy=rgy)
+            kvy = Kevery(db=hby.db, lax=False, local=False, exc=exc)
 
+            # The proxy signs the Grant as its sender.
             senderTsg = (proxy.kever.prefixer,
                          Number(sn=proxy.kever.lastEst.s),
                          Diger(qb64=proxy.kever.lastEst.d),
@@ -7896,16 +8567,32 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 vacuousProof,
                 anchors=[(issuee, presentedAnchor)],
             )
-            registryOnly = messagize(grantExn,
-                                     tsgs=[senderTsg],
-                                     nests=[_nest(node)],
-                                     framed=False,
-                                     gvrsn=Vrsn_2_0)
+
             complete = messagize(grantExn,
-                                 tsgs=[senderTsg, issueeTsg],
+                                 tsgs=[senderTsg],
                                  nests=[_nest(node)],
                                  framed=False,
                                  gvrsn=Vrsn_2_0)
+
+            directAnchor = proxy.interact(
+                data=[dict(d=grantExn.said)],
+                kind=proxy.kever.serder.kind,
+                version=proxy.kever.serder.pvrsn,
+                gvrsn=Vrsn_2_0,
+            )
+            directAnchor = _serder(directAnchor)
+
+            # A direct sender anchor can authenticate the outer Grant while the
+            # Issuee's presentation registry supplies its separate fresh proof.
+            anchorOnly = messagize(
+                grantExn,
+                bonds=[SealEvent(i=proxy.pre,
+                                 s=directAnchor.snh,
+                                 d=directAnchor.said)],
+                nests=[_nest(node)],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
 
             # Complete TEL evidence still fails closed without KRAM acceptance.
             ims = bytearray(complete)
@@ -7916,8 +8603,9 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             # Direct Exchanger dispatch has no KRAM decision unless the test
             # supplies it; presentation timing must not fail open in that case.
             stamp = grantExn.ked["dt"]
+            xid = grantExn.said
             hby.db.kramTMSC.pin(
-                keys=(grantExn.pre, grantExn.ked["x"], grantExn.said),
+                keys=(grantExn.pre, xid, grantExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
                                       rdt=helping.nowIso8601(),
@@ -7943,13 +8631,21 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # Sender authentication plus the Issuee's presentation TEL is
-            # sufficient; the Issuee does not need a redundant EXN endorsement.
-            ims = bytearray(registryOnly)
+            # KRAM accepts either sender authentication factor before IPEX
+            # validates the Issuee's presentation registry.
+            ims = bytearray(anchorOnly)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, kvy=kvy)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(grantExn.said,)) is not None
+            assert len(hby.db.ests.get(keys=(grantExn.said, proxy.pre))) == 1
+
+            # The proxy signature authenticates the sender while the timely
+            # Issuee TEL supplies Bob's fresh proof without multiple endorsement.
+            ims = bytearray(complete)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
-            assert hby.db.ests.get(keys=(grantExn.said, proxy.pre)) == []
+            assert len(hby.db.ests.get(keys=(grantExn.said, proxy.pre))) == 1
             assert hby.db.ests.get(keys=(grantExn.said, issuee.pre)) == []
             assert len(list(hby.db.esigs.getTopItemIter(
                 keys=(grantExn.said, proxy.pre, "")))) == 1
@@ -7970,19 +8666,85 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
             assert sourceNumber.sn == presentedAnchorSerder.sn
             assert sourceDiger.qb64 == presentedAnchorSerder.said
 
-            # Presentation anchoring is mandatory from issuance metadata even
-            # when a later grant omits ax.
+            # The disclosed Issuee registry makes its proof mandatory for this
+            # proxy presentation; omitting it must not disable the check.
             missingExn, missingAtc = ipexGrant(
                 hab=proxy,
                 recp=recipient.pre,
-                message="Missing mandatory presentation proof",
+                message="Proxy-only presentation",
                 origin=_proofed(acdc, issuerProof),
+            )
+            stamp = missingExn.ked["dt"]
+            missingXid = missingExn.said
+            hby.db.kramTMSC.pin(
+                keys=(missingExn.pre, missingXid, missingExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
             )
             ims = bytearray(missingExn.raw)
             ims.extend(missingAtc)
             Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(missingExn.said,)) is None
+
+            # The same declaration is inactive while the Issuer grants the
+            # credential to its Issuee. Additional Issuee authentication does
+            # not turn the original issuance into a presentation.
+            issuanceExn, issuanceAtc = ipexGrant(
+                hab=issuer,
+                recp=issuee.pre,
+                message="Issue credential to its Issuee",
+                origin=_proofed(acdc, issuerProof),
+                endorsers=[issuee],
+            )
+            ims = bytearray(issuanceExn.raw)
+            ims.extend(issuanceAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(issuanceExn.said,)) is not None
+
+            # When the Issuer discloses the credential to someone other than
+            # its Issuee, it is a presentation and the declaration applies.
+            issuerPresentationExn, issuerPresentationAtc = ipexGrant(
+                hab=issuer,
+                recp=recipient.pre,
+                message="Issuer presents credential to a third party",
+                origin=_proofed(acdc, issuerProof),
+            )
+            stamp = issuerPresentationExn.ked["dt"]
+            presentationXid = issuerPresentationExn.said
+            hby.db.kramTMSC.pin(
+                keys=(issuerPresentationExn.pre,
+                      presentationXid,
+                      issuerPresentationExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
+            )
+            ims = bytearray(issuerPresentationExn.raw)
+            ims.extend(issuerPresentationAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(issuerPresentationExn.said,)) is None
+
+            # In contrast, the registry is mandatory when the Issuee itself is
+            # the Grant sender and therefore acts as the Presentor.
+            holderExn, holderAtc = ipexGrant(
+                hab=issuee,
+                recp=recipient.pre,
+                message="Issuee presents its credential",
+                origin=_proofed(acdc, issuerProof),
+            )
+            ims = bytearray(holderExn.raw)
+            ims.extend(holderAtc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+            assert hby.db.exns.get(keys=(holderExn.said,)) is None
 
             # A compact attribute commits to the same ACDC but hides whether
             # the issuer mandated this presentation registry. It cannot be
@@ -8023,7 +8785,7 @@ def test_ipex_v2_presentation_registry_binds_proxy_grant():
                 target=grantExn.said,
                 controller=issuee.pre,
                 cutoff=hby.db.kramTMSC.get(
-                    keys=(grantExn.pre, grantExn.ked["x"], grantExn.said)).rdt,
+                    keys=(grantExn.pre, xid, grantExn.said)).rdt,
             )
             assert earlierRecord.acdc == grantExn.said
 
@@ -8092,8 +8854,55 @@ def test_ipex_v2_rejects_substituted_presentation_registry():
             rgy.close()
 
 
-def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
-    """Every declared node-local presentation registry must bind the grant."""
+def test_ipex_v2_issuance_exempts_linked_recipient_registry():
+    """Linked credentials targeted to the issuance recipient need no presentation proof."""
+    with openHby(name="ipex-v2-recipient-registry-exemption",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        issuer = hby.makeHab(name="issuer")
+        issuee = hby.makeHab(name="issuee")
+        issuerRegistry = Diger(ser=b"issuer registry").qb64
+        presentationRegistry = Diger(ser=b"presentation registry").qb64
+
+        child = acdcmap(
+            israid=issuer.pre,
+            regid=issuerRegistry,
+            attribute=dict(d="", rd=presentationRegistry,
+                           entitlement="child"),
+            iseaid=issuee.pre,
+        )
+        origin = acdcmap(
+            israid=issuer.pre,
+            regid=issuerRegistry,
+            attribute=dict(d="", rd=presentationRegistry,
+                           entitlement="origin"),
+            edge=_edge("child", child),
+            iseaid=issuee.pre,
+        )
+        grant = SimpleNamespace(
+            pre=issuer.pre,
+            ilk=Ilks.xip,
+            said=Diger(ser=b"issuance grant").qb64,
+            ked=dict(ri=issuee.pre),
+        )
+        nodes = {
+            origin.said: dict(serder=origin),
+            child.said: dict(serder=child),
+        }
+        handler = IpexHandler(resource="/ipex/grant",
+                              hby=hby,
+                              notifier=Recorder())
+
+        assert handler._verifyPresentationAuthGraph(
+            serder=grant,
+            nodes=nodes,
+            order=[origin.said, child.said],
+            grantors={issuer.pre, issuee.pre},
+        ) == set()
+
+
+def test_ipex_v2_verifies_presentation_registries_for_different_grantors():
+    """Every participating Grantor's presentation registry binds the grant."""
     with openHby(name="ipex-v2-multiple-presentation-registries",
                  base="test",
                  version=Vrsn_2_0) as hby:
@@ -8127,7 +8936,10 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             _anchor(childIssuee, childPresentationRegistry,
                     rgy.store.event(childPresentationRegistry.regk))
 
-            # Link the origin and child into one two-node disclosure DAG.
+            # Link the origin and child into one two-node disclosure DAG. The edge
+            # is explicitly NI2I: the child's issuee is not the origin's issuer, so
+            # the default I2I the spec appends to a bare edge would refuse it, and
+            # what is under test here is the presentation registries.
             child = acdcmap(
                 israid=issuer.pre,
                 regid=childIssuerRegistry.regk,
@@ -8142,7 +8954,7 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                 attribute=dict(d="",
                                rd=originPresentationRegistry.regk,
                                entitlement="origin"),
-                edge=_edge("child", child),
+                edge=_edge("child", child, op="NI2I"),
                 iseaid=originIssuee.pre,
             )
 
@@ -8191,8 +9003,9 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                                               childPresentedAnchor)])
             grantExn = draftGrant
             stamp = grantExn.ked["dt"]
+            xid = grantExn.said
             hby.db.kramTMSC.pin(
-                keys=(grantExn.pre, grantExn.ked["x"], grantExn.said),
+                keys=(grantExn.pre, xid, grantExn.said),
                 val=TxnMsgCacheRecord(mdt=stamp,
                                       xdt=stamp,
                                       rdt=helping.nowIso8601(),
@@ -8207,21 +9020,33 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
                          Number(sn=proxy.kever.lastEst.s),
                          Diger(qb64=proxy.kever.lastEst.d),
                          proxy.sign(ser=grantExn.raw, indexed=True))
-            originIssueeTsg = (originIssuee.kever.prefixer,
-                               Number(sn=originIssuee.kever.lastEst.s),
-                               Diger(qb64=originIssuee.kever.lastEst.d),
-                               originIssuee.sign(ser=grantExn.raw, indexed=True))
-            childIssueeTsg = (childIssuee.kever.prefixer,
-                              Number(sn=childIssuee.kever.lastEst.s),
-                              Diger(qb64=childIssuee.kever.lastEst.d),
-                              childIssuee.sign(ser=grantExn.raw, indexed=True))
-            grantorTsgs = [senderTsg, originIssueeTsg, childIssueeTsg]
+            childTsg = (childIssuee.kever.prefixer,
+                        Number(sn=childIssuee.kever.lastEst.s),
+                        Diger(qb64=childIssuee.kever.lastEst.d),
+                        childIssuee.sign(ser=grantExn.raw, indexed=True))
 
-            # Endorsements cannot replace the child presentation proof.
+            # A declaration belonging to a disclosed but non-participating
+            # Issuee does not require that Issuee's registry proof.
+            handler = exc.routes["/ipex/grant"]
+            originNest = Parser(version=Vrsn_2_0).parse(
+                ims=_nest(proofedOrigin), framed=True, processive=False)[0]
+            childNest = Parser(version=Vrsn_2_0).parse(
+                ims=_nest(_proofed(child, childIssuerProof)),
+                framed=True,
+                processive=False,
+            )[0]
+            assert handler._verifyPresentationAuthGraph(
+                serder=grantExn,
+                nodes={origin.said: originNest, child.said: childNest},
+                order=[origin.said, child.said],
+                grantors={proxy.pre, originIssuee.pre},
+            ) == {originIssuee.pre}
+
+            # One valid presentation registry cannot replace the child's proof.
             incompleteChild = _proofed(child, childIssuerProof)
             ims = messagize(
                 grantExn,
-                tsgs=grantorTsgs,
+                tsgs=[senderTsg, childTsg],
                 nests=[_nest(proofedOrigin), _nest(incompleteChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -8230,10 +9055,11 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert ims == bytearray()
             assert hby.db.exns.get(keys=(grantExn.said,)) is None
 
-            # The sender factor and both Issuee TEL factors accept the Grant.
+            # The origin Issuee is the principal presenter, while the child's
+            # endorsement makes it another Grantor. Both registries are required.
             ims = messagize(
                 grantExn,
-                tsgs=[senderTsg],
+                tsgs=[senderTsg, childTsg],
                 nests=[_nest(proofedOrigin), _nest(proofedChild)],
                 framed=False,
                 gvrsn=Vrsn_2_0,
@@ -8243,12 +9069,87 @@ def test_ipex_v2_verifies_presentation_registries_for_different_issuees():
             assert hby.db.exns.get(keys=(grantExn.said,)) is not None
             assert list(hby.db.esigs.getTopItemIter(
                 keys=(grantExn.said, originIssuee.pre, ""))) == []
-            assert list(hby.db.esigs.getTopItemIter(
-                keys=(grantExn.said, childIssuee.pre, ""))) == []
+            assert len(list(hby.db.esigs.getTopItemIter(
+                keys=(grantExn.said, childIssuee.pre, "")))) == 1
             assert len(recorder.items) == 1
-            assert recorder.items[0]["r"] == "/exn/ipex/grant"
+            assert recorder.items[0]["r"] == "/xip/ipex/grant"
             assert recorder.items[0]["d"] == grantExn.said
             assert recorder.items[0]["m"] == "Present both credentials"
+
+            # The linked child targets a different Issuee, so issuing the
+            # origin directly exempts only the origin declaration.
+            issuanceExn, _ = ipexGrant(
+                hab=issuer,
+                recp=originIssuee.pre,
+                message="Issue origin with supporting credential",
+                origin=origin,
+                artifacts=[child],
+                modifiers=dict(dp=[[
+                    [origin.sad["s"]["$id"], "/", []],
+                    [child.sad["s"]["$id"], "/e/child/_/", []],
+                ]]),
+            )
+            childProof, childPresented = registrar.present(
+                childPresentationRegistry, grant=issuanceExn)
+            childAnchor = _anchor(
+                childIssuee, childPresentationRegistry, childPresented)
+            stamp = issuanceExn.ked["dt"]
+            issuanceXid = issuanceExn.said
+            hby.db.kramTMSC.pin(
+                keys=(issuanceExn.pre,
+                      issuanceXid,
+                      issuanceExn.said),
+                val=TxnMsgCacheRecord(mdt=stamp,
+                                      xdt=stamp,
+                                      rdt=helping.nowIso8601(),
+                                      d=1000,
+                                      ml=5000),
+            )
+            issuanceTsg = (issuer.kever.prefixer,
+                           Number(sn=issuer.kever.lastEst.s),
+                           Diger(qb64=issuer.kever.lastEst.d),
+                           issuer.sign(ser=issuanceExn.raw, indexed=True))
+            childIssuanceTsg = (
+                childIssuee.kever.prefixer,
+                Number(sn=childIssuee.kever.lastEst.s),
+                Diger(qb64=childIssuee.kever.lastEst.d),
+                childIssuee.sign(ser=issuanceExn.raw, indexed=True),
+            )
+
+            # The other Issuee explicitly co-grants this issuance, so its
+            # declared registry remains mandatory.
+            missing = messagize(
+                issuanceExn,
+                tsgs=[issuanceTsg, childIssuanceTsg],
+                nests=[_nest(_proofed(origin, originIssuerProof)),
+                       _nest(_proofed(child, childIssuerProof))],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
+            Parser(version=Vrsn_2_0).parse(ims=missing,
+                                           framed=False,
+                                           exc=exc)
+            assert missing == bytearray()
+            assert hby.db.exns.get(keys=(issuanceExn.said,)) is None
+
+            # The child registry binds this issuance Grant while the origin's
+            # own presentation registry remains correctly exempt.
+            complete = messagize(
+                issuanceExn,
+                tsgs=[issuanceTsg, childIssuanceTsg],
+                nests=[_nest(_proofed(origin, originIssuerProof)),
+                       _nest(_proofed(child,
+                                      childIssuerProof,
+                                      childProof,
+                                      anchors=[(childIssuee, childAnchor)]))],
+                framed=False,
+                gvrsn=Vrsn_2_0,
+            )
+            Parser(version=Vrsn_2_0).parse(ims=complete,
+                                           framed=False,
+                                           exc=exc)
+            assert complete == bytearray()
+            assert hby.db.exns.get(keys=(issuanceExn.said,)) is not None
         finally:
             rgy.close()
 
@@ -8398,7 +9299,7 @@ def test_ipex_v2_sign_endorsers_anchorers_through_kram_three_haberies():
             assert ims == bytearray()
 
         assert verifierHby.db.exns.get(keys=(grantExn.said,)) is not None
-        assert recorder.items == [{"r": "/exn/ipex/grant",
+        assert recorder.items == [{"r": "/xip/ipex/grant",
                                    "d": grantExn.said,
                                    "m": "Proxy presents principal's entitlement"}]
 
@@ -8422,8 +9323,9 @@ def test_ipex_v2_sign_endorsers_anchorers_through_kram_three_haberies():
         assert [diger.qb64 for diger in verifierHby.db.eidx.get(
             keys=(presenter.pre,))] == [grantExn.said]
 
+        xid = grantExn.said if grantExn.ilk == Ilks.xip else grantExn.ked["x"]
         cache = verifierHby.db.kramTMSC.get(
-            keys=(proxy.pre, grantExn.ked["x"], grantExn.said))
+            keys=(proxy.pre, xid, grantExn.said))
         assert cache is not None
 
 
@@ -8731,14 +9633,25 @@ def test_ipex_v2_full_authentication_flow_across_three_haberies():
                                                   kvy=verifierKvy)
                     assert ims == bytearray()
 
-                verifierRgy.store.accept(presentationRegistry.regk, 1, presented)
-                verifierRgy.store.accept(presentationRegistry.regk, 2, vacuous)
+                # The Grant may beat the presentation TEL to the verifier even
+                # though its KEL source already anchors the missing update.
+                # Keep it retryable while an observer catches the local TEL up.
                 exchangeBetween(grantExn,
                                 grantAtc,
                                 presenterKvy,
                                 verifierKvy)
+                assert verifierHby.db.exns.get(keys=(grantExn.said,)) is None
+                assert verifierHby.db.epse.get(keys=(grantExn.said,)) is not None
+                assert list(verifierExc.cues)[-1] == dict(
+                    kin="proof", said=grantExn.said)
+
+                verifierRgy.store.accept(presentationRegistry.regk, 1, presented)
+                verifierRgy.store.accept(presentationRegistry.regk, 2, vacuous)
+                verifierExc.processEscrow()
+
                 storedGrant, _ = cloneMessage(verifierHby, grantExn.said)
                 assert storedGrant is not None
+                assert verifierHby.db.epse.get(keys=(grantExn.said,)) is None
 
                 admitExn, admitAtc = ipexAdmit(
                     hab=verifier,
@@ -8797,9 +9710,532 @@ def test_ipex_v2_full_authentication_flow_across_three_haberies():
                 presentationProof.said,
                 vacuousProof.said,
             }
+            xid = (grantExn.said if grantExn.ilk == Ilks.xip
+                   else grantExn.ked["x"])
             assert verifierHby.db.kramTMSC.get(
-                keys=(proxy.pre, grantExn.ked["x"], grantExn.said)) is not None
+                keys=(proxy.pre, xid, grantExn.said)) is not None
         finally:
             issuerRgy.close()
             presenterRgy.close()
             verifierRgy.close()
+
+
+def test_ipex_v2_reduces_far_node_status_inside_the_edge_operator():
+    """A far node's own verdict is a member of the reduction, not a separate sweep.
+
+    ``verify()`` ran two flat passes over the same breadth-first walk order.
+    ``_verifyGraphSemantics`` reduced the edge Operators correctly, and then
+    ``_verifyIssuerAuthGraph`` visited every walked node **with no knowledge of which
+    Operator reached it**, refusing or escrowing the whole grant on account of any
+    node whose issuer-auth proof did not vet. So a grant carrying ``OR(a -> X, b ->
+    Y)`` was escrowed and queried on Y's account even though the reduction had
+    already concluded the group was satisfied without Y -- and was refused outright
+    if Y's proof was permanently bad, although the Issuer wrote Y as optional.
+
+    The two passes are one recursive evaluation now. A node's verdict is its own
+    issuer-auth conjoined with its reduced Edge Section, a leaf's verdict is its
+    Operator relation and pins conjoined with the far node's verdict, and the origin
+    is where the answer is read. That makes the far-node axis a member of the
+    reduction instead of a sweep beside it, which is the only way an m-ary Operator
+    aggregates what the ACDC specification says it aggregates.
+
+    A far node's status here is whether its issuer-auth proof authenticates. What its
+    registry says about it -- issued, revoked, or a state keripy has no word for --
+    is recorded in ``Baser.exrs`` and never judged, because which states make an
+    ACDC acceptable is the EGF's rule rather than the protocol's.
+    """
+    with (openHby(name="ipex-v2-status-axis-issuer",
+                  base="test",
+                  version=Vrsn_2_0) as issuerHby,
+          openHby(name="ipex-v2-status-axis-recipient",
+                  base="test",
+                  version=Vrsn_2_0) as recipientHby):
+        issuerHab = issuerHby.makeHab(name="issuer")
+        recipientHab = recipientHby.makeHab(name="recipient")
+        issuerRgy = Regery(hby=issuerHby, name="ipex-v2-status-axis-issuer", temp=True)
+        recipientRgy = Regery(hby=recipientHby, name="ipex-v2-status-axis-recipient",
+                              temp=True)
+        try:
+            registrar = Registrar(rgy=issuerRgy)
+            kvy = Kevery(db=recipientHby.db, lax=False, local=False)
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(issuerHab.msgOwnEvent(sn=0, framed=True,
+                                                    gvrsn=Vrsn_2_0)),
+                kvy=kvy)
+
+            def makeRegistry(name):
+                """Create an anchored registry and replicate its KEL anchor."""
+                registry = registrar.makeRegistry(name=name, prefix=issuerHab.pre)
+                rip = issuerRgy.store.event(registry.regk)
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(_anchor(issuerHab, registry, rip, framed=True)),
+                    kvy=kvy)
+                return registry, rip
+
+            issuedNodes = {}  # SAID to ACDC, for deriving disclosure plans
+
+            def issue(registry, role):
+                """Issue one registry-backed ACDC targeted at the issuer itself."""
+                acdc = acdcmap(israid=issuerHab.pre,
+                               regid=registry.regk,
+                               attribute=dict(d="", role=role),
+                               iseaid=issuerHab.pre)
+                issuedNodes[acdc.said] = acdc
+                blinder, serder = registrar.issue(registry, acdc=acdc, state="issued")
+                Parser(version=Vrsn_2_0).parse(
+                    ims=bytearray(_anchor(issuerHab, registry, serder, framed=False)),
+                    framed=False,
+                    kvy=kvy)
+                return acdc, blinder, serder
+
+            # One registry per credential, because a blinded state proof is
+            # disclosed against its registry's head and a later issuance into the
+            # same registry supersedes it. `alpha` and `gamma` are registries whose
+            # TELs the recipient has fetched from observers; `beta` is one it has
+            # not, which is the ordinary state of affairs for a far node that has
+            # just been disclosed.
+            alpha, alphaRip = makeRegistry("alpha")
+            gamma, gammaRip = makeRegistry("gamma")
+            beta, betaRip = makeRegistry("beta")
+
+            good, goodBlinder, goodIssued = issue(alpha, "trusted")
+            spare, spareBlinder, spareIssued = issue(gamma, "spare")
+            pending, pendingBlinder, pendingIssued = issue(beta, "pending")
+            undisclosed = acdcmap(israid=issuerHab.pre,
+                                  attribute=dict(d="", role="undisclosed"),
+                                  iseaid=issuerHab.pre)
+
+            recipientRgy.store.accept(alpha.regk, 0, alphaRip)
+            recipientRgy.store.accept(alpha.regk, 1, goodIssued)
+            recipientRgy.store.accept(gamma.regk, 0, gammaRip)
+            recipientRgy.store.accept(gamma.regk, 1, spareIssued)
+
+            # A far node the issuer has revoked, in a registry the recipient has
+            # fully loaded. Its blinded head discloses "revoked" rather than
+            # "issued", and that state is the other half of what the ACDC
+            # specification decides an edge on -- so it must reach the reduction as
+            # a member verdict, not be computed and thrown away.
+            delta, deltaRip = makeRegistry("delta")
+            revoked, _, revokedIssued = issue(delta, "revoked later")
+            revokedBlinder, revokedUpdate = registrar.issue(delta, acdc=revoked,
+                                                            state="revoked")
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(_anchor(issuerHab, delta, revokedUpdate, framed=False)),
+                framed=False,
+                kvy=kvy)
+            recipientRgy.store.accept(delta.regk, 0, deltaRip)
+            recipientRgy.store.accept(delta.regk, 1, revokedIssued)
+            recipientRgy.store.accept(delta.regk, 2, revokedUpdate)
+
+            # A node whose proof belongs to a different credential in a registry the
+            # recipient *has* loaded: vet refuses it by name, permanently.
+            forged = acdcmap(israid=issuerHab.pre,
+                             regid=alpha.regk,
+                             attribute=dict(d="", role="never issued"),
+                             iseaid=issuerHab.pre)
+
+            def origin(edge, schema=None):
+                return acdcmap(israid=issuerHab.pre,
+                               schema=schema,
+                               attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                               edge=edge,
+                               iseaid=recipientHab.pre)
+
+            def planFor(originSerder, artifacts):
+                """Disclosure plan selecting every node, in the walk's BFS order."""
+                known = dict(issuedNodes)
+                known[forged.said] = forged
+                known.update((node.said, node) for node in artifacts
+                             if hasattr(node, "sad"))
+                disclosed = {_serder(node).said for node in artifacts}
+
+                def schemaId(node):
+                    schema = node.sad["s"]
+                    return schema if isinstance(schema, str) else schema["$id"]
+
+                plan = [[schemaId(originSerder), "/", []]]
+                seen = {originSerder.said}
+                groups = deque([(originSerder.sad["e"], "/e/")])
+                while groups:
+                    grp, path = groups.popleft()
+                    if "n" in grp:
+                        if grp["n"] in disclosed and grp["n"] not in seen:
+                            seen.add(grp["n"])
+                            plan.append([schemaId(known[grp["n"]]),
+                                         f"{path}_/", []])
+                        continue
+                    for label, node in grp.items():
+                        if label in ("d", "u", "s", "o", "w"):
+                            continue
+                        if isinstance(node, dict):
+                            groups.append((node, f"{path}{label}/"))
+                        elif isinstance(node, str) and node in disclosed:
+                            if node not in seen:
+                                seen.add(node)
+                                plan.append([schemaId(known[node]),
+                                             f"{path}{label}/_/", []])
+                return plan
+
+            def run(originStream, artifacts, message, originSerder=None):
+                """Parse one grant and return its exn.
+
+                A multi-node grant carries an explicit disclosure plan, derived from
+                ``originSerder``; a one-node grant takes the derived root plan.
+                """
+                recorder = Recorder()
+                exc = Exchanger(hby=recipientHby, handlers=[])
+                loadHandlers(hby=recipientHby, exc=exc, notifier=recorder,
+                             rgy=recipientRgy)
+                modifiers = (dict(dp=[planFor(originSerder, artifacts)])
+                             if artifacts else None)
+                exn, atc = ipexGrant(hab=issuerHab,
+                                     recp=recipientHab.pre,
+                                     message=message,
+                                     origin=originStream,
+                                     artifacts=artifacts,
+                                     modifiers=modifiers)
+                ims = bytearray(exn.raw)
+                ims.extend(atc)
+                Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+                assert ims == bytearray()
+                return exn
+
+            def accepted(edge, artifacts, message, schema=None):
+                originSerder = origin(edge, schema=schema)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
+                assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
+                assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+                return exn
+
+            def escrowed(edge, artifacts, message):
+                originSerder = origin(edge)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
+                assert recipientHby.db.exns.get(keys=(exn.said,)) is None
+                assert recipientHby.db.epse.get(keys=(exn.said,)) is not None
+
+            def refused(edge, artifacts, message, schema=None):
+                originSerder = origin(edge, schema=schema)
+                exn = run(_signed(originSerder, issuerHab), artifacts, message,
+                          originSerder=originSerder)
+                assert recipientHby.db.exns.get(keys=(exn.said,)) is None
+                assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+                return exn
+
+            def leaf(node, op="I2I"):
+                return dict(d="", n=node.said, o=op)
+
+            def group(op, **members):
+                return dict(d="", o=op, **members)
+
+            def edgeSchema(properties):
+                schema = deepcopy(good.schema)
+                schema["$id"] = ""
+                schema["properties"]["e"] = {
+                    "type": "object",
+                    "properties": properties,
+                }
+                return Schemer(sed=schema).sed
+
+            compactBlock = {
+                "oneOf": [
+                    {"type": "string"},
+                    {
+                        "type": "object",
+                        "required": ["d", "n"],
+                        "properties": {
+                            "d": {"type": "string"},
+                            "n": {"type": "string"},
+                        },
+                    },
+                ],
+            }
+            opaqueSchema = edgeSchema({
+                "either": {
+                    "type": "object",
+                    "properties": {"compact": compactBlock},
+                },
+            })
+            simpleSchema = edgeSchema({"compact": {"type": "string"}})
+
+            goodNest = _proofed(good, goodBlinder)
+            pendingNest = _proofed(pending, pendingBlinder)
+            forgedNest = _proofed(forged, goodBlinder)
+
+            # The driving case. The reduction is satisfied by `good` on evidence
+            # already in hand, so the grant is accepted without escrow -- `pending`'s
+            # registry never having replicated is a member verdict the OR absorbs,
+            # not a reason to park the whole disclosure and query for a node the
+            # Issuer said was optional.
+            accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(pending))),
+                     [goodNest, pendingNest],
+                     "OR satisfied while a far node's TEL has not replicated")
+
+            # A valid disclosed branch satisfies OR without forcing disclosure
+            # of an irrelevant far ACDC.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             b=leaf(undisclosed))),
+                     [goodNest],
+                     "OR satisfied while an optional far node is undisclosed")
+
+            # AND refuses the same incomplete presentation rather than escrowing
+            # it as though external evidence could supply the omitted ACDC.
+            refused(dict(d="", both=group("AND", a=leaf(good),
+                                          b=leaf(undisclosed))),
+                    [goodNest],
+                    "AND cannot wait on an undisclosed far node")
+
+            # The schema declares this string to be an opaque compact Edge-block.
+            # A satisfied sibling may carry the OR group without guessing that the
+            # SAID names a far node.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                              compact=spare.said)),
+                     [goodNest],
+                     "OR satisfied beside a valid compact Edge",
+                     schema=opaqueSchema)
+
+            # The schema declares this string to be the far-node SAID form of a
+            # simple Edge, so it is evaluated as an Edge containing only `n`.
+            accepted(dict(d="", compact=good.said),
+                     [goodNest],
+                     "simple Edge to a disclosed far node",
+                     schema=simpleSchema)
+            refused(dict(d="", compact=undisclosed.said),
+                    [], # No artifact
+                    "simple Edge cannot wait on an undisclosed far node",
+                    schema=simpleSchema)
+
+            refused(dict(d="", w=1, holder=leaf(good)),
+                    [goodNest],
+                    "top-level Edge-group cannot carry a weight")
+
+            refused(dict(d=spare.said, holder=leaf(good)),
+                    [goodNest],
+                    "false Edge Section commitment")
+            refused(dict(d="", holder=dict(d=spare.said, n=good.said,
+                                            o="I2I")),
+                    [goodNest],
+                    "false Edge block commitment")
+
+            # An arbitrary string is neither compact form. It is malformed structure,
+            # not an unknown verdict that a satisfied OR member may absorb.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                             compact="garbage")),
+                    [goodNest],
+                    "OR cannot absorb a malformed compact Edge")
+
+            # The contrast under AND: `pending` is exactly what the group waits on,
+            # so the grant stays retryable, which is the behaviour that must survive
+            # the merge of the two passes.
+            escrowed(dict(d="", both=group("AND", a=leaf(good), b=leaf(pending))),
+                     [goodNest, pendingNest],
+                     "AND waiting on a far node's TEL")
+
+            # A far node whose proof is permanently refused is an invalid member, and
+            # a valid sibling under OR carries the group over it. Before this, a node
+            # reachable only through the discarded branch still had to vet, so the
+            # Issuer could not write an optional branch at all.
+            accepted(dict(d="", either=group("OR", a=leaf(good), b=leaf(forged))),
+                     [goodNest, forgedNest],
+                     "OR over a far node whose proof is refused")
+
+            # ...and under AND it still refuses, without escrow: no arrival makes a
+            # proof for a different credential vet against this one.
+            refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(forged))),
+                    [goodNest, forgedNest],
+                    "AND over a far node whose proof is refused")
+
+            # The registry state is authenticated and recorded, never judged here.
+            # Whether a revoked far node makes the chain unacceptable is the EGF's
+            # rule, so IPEX accepts the grant and keeps what the registry said, for
+            # an application or EGF evaluator to apply its own state policy to.
+            revokedNest = _proofed(revoked, revokedBlinder)
+            exn = accepted(dict(d="", both=group("AND", a=leaf(good),
+                                                 b=leaf(revoked))),
+                           [goodNest, revokedNest],
+                           "AND over a revoked far node")
+            record = recipientHby.db.exrs.get(keys=(exn.said, revoked.said))
+            assert record.state == "revoked"
+            assert record.regid == delta.regk
+            assert record.sn == 2
+            assert recipientHby.db.exrs.get(keys=(exn.said, good.said)).state == "issued"
+            assert len(list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, "")))) == 2
+
+            # The grant's origin is recorded the same way as a far node, since the
+            # handler no longer distinguishes them by whether it judges the state.
+            exn = run(revokedNest, [], "the origin's own registry state is recorded")
+            assert recipientHby.db.exns.get(keys=(exn.said,)) is not None
+            assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+            assert recipientHby.db.exrs.get(keys=(exn.said, revoked.said)).state == "revoked"
+
+            # A refused grant leaves no record behind.
+            exn = refused(dict(d="", both=group("AND", a=leaf(good), b=leaf(forged))),
+                          [goodNest, forgedNest], "refused, so nothing is recorded")
+            assert list(recipientHby.db.exrs.getTopItemIter(keys=(exn.said, ""))) == []
+
+            # An Operator this verifier cannot evaluate is an unknown in the lattice,
+            # so a satisfied sibling decides the group without it. NOT is recognized
+            # and unimplemented; BOGUS is not recognized at all; neither can change a
+            # verdict its siblings already decide.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             b=leaf(spare, op="NOT"))),
+                     [goodNest, _proofed(spare, spareBlinder)],
+                     "OR over an unimplemented unary Operator")
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             b=leaf(spare, op="BOGUS"))),
+                     [goodNest, _proofed(spare, spareBlinder)],
+                     "OR over an unrecognized unary Operator")
+
+            # ...and an m-ary Operator this verifier does not reduce is the same kind
+            # of unknown.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             nor=group("NOR", b=leaf(spare)))),
+                     [goodNest, _proofed(spare, spareBlinder)],
+                     "OR over a group whose Operator is not reduced")
+
+            # Malformed input is where the lattice stops. An Edge-group's `o` is a
+            # single Operator token, so a list there says the ACDC is not well-formed
+            # rather than that a member's validity is unknown. If it entered the
+            # lattice, OR(valid, malformed) would accept -- a well-formedness failure
+            # outvoted by a sibling -- so it aborts before any reduction runs.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            broken=dict(d="", o=["AND"],
+                                                        b=leaf(spare)))),
+                    [goodNest, _proofed(spare, spareBlinder)],
+                    "OR cannot outvote a malformed group shape")
+
+            # ...and a leaf whose Operator this verifier cannot evaluate must still
+            # have its far node evaluated. The leaf's own verdict is already
+            # unknown and nothing below can change that, but the far node's
+            # *shape* is not a truth value, and returning before reaching it lets
+            # a malformed subtree ride in behind an unevaluable token.
+            malformedChild = acdcmap(israid=issuerHab.pre,
+                                     attribute=dict(d="", role="member"),
+                                     iseaid=issuerHab.pre)
+            malformedFar = acdcmap(israid=issuerHab.pre,
+                                   attribute=dict(d="", role="hides a bad shape"),
+                                   edge=dict(d="", broken=dict(d="", o=["AND"],
+                                                               b=leaf(malformedChild))),
+                                   iseaid=issuerHab.pre)
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            b=leaf(malformedFar, op="BOGUS"))),
+                    [goodNest, malformedFar, malformedChild],
+                    "an unevaluable Operator must not hide a malformed far subtree")
+
+            # A compact Edge -- the spec-legal form whose value is the Edge block's
+            # SAID rather than the block -- cannot be dereferenced by either path,
+            # since keripy does not store Edge blocks apart from the ACDC carrying
+            # them. That is an unknown no arrival settles, not a malformed shape, so
+            # a satisfied sibling under OR decides the group. The v1 path deleted
+            # such a member from the reduction entirely and saved the ACDC having
+            # checked nothing about it; both now give the same answer.
+            accepted(dict(d="", either=group("OR", a=leaf(good),
+                                             compact=spare.said)),
+                     [goodNest],
+                     "OR over a compact Edge")
+
+            # ...and a section that depends on one still refuses.
+            refused(dict(d="", both=group("AND", a=leaf(good),
+                                           compact=spare.said)),
+                    [goodNest],
+                    "AND over a compact Edge")
+
+            # A schema pinned on the Edge Section binds every edge below it, exactly
+            # as one pinned on a nested Edge-group does -- the Section is itself an
+            # Edge-group. This path read `s` only on a nested group and treated it
+            # as a child block at the top, so the same bytes were refused as
+            # malformed here and silently unenforced on v1.
+            goodSchema = dict(good.sad["s"])
+            goodSchema["title"] = "ACM Default Schema (compatible, section floor)"
+            sectionSchemer = Schemer(sed=goodSchema)
+            recipientHby.db.schema.pin(sectionSchemer.said, sectionSchemer)
+            accepted(dict(d="", s=sectionSchemer.said, holder=leaf(good)),
+                     [goodNest],
+                     "a satisfiable pin on the Edge Section itself")
+
+            unsatisfiable = deepcopy(good.sad["s"])
+            unsatisfiable["$id"] = ""
+            unsatisfiable["properties"]["a"]["oneOf"][1]["required"] = ["d", "i", "nope"]
+            unsatisfiableSchemer = Schemer(sed=unsatisfiable)
+            recipientHby.db.schema.pin(unsatisfiableSchemer.said, unsatisfiableSchemer)
+            refused(dict(d="", s=unsatisfiableSchemer.said, holder=leaf(good)),
+                    [goodNest],
+                    "an unsatisfiable pin on the Edge Section itself")
+
+            # A registry's transaction state is "a string from a small finite set"
+            # defined *per registry*, with issued/revoked only the spec's example.
+            # A state keripy has no word for is recorded verbatim, like any other,
+            # for a policy that knows that registry's vocabulary to judge.
+            epsilon, epsilonRip = makeRegistry("epsilon")
+            withdrawn, _, withdrawnIssued = issue(epsilon, "withdrawn later")
+            withdrawnBlinder, withdrawnUpdate = registrar.issue(
+                epsilon, acdc=withdrawn, state="withdrawn")
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(_anchor(issuerHab, epsilon, withdrawnUpdate,
+                                      framed=False)),
+                framed=False,
+                kvy=kvy)
+            recipientRgy.store.accept(epsilon.regk, 0, epsilonRip)
+            recipientRgy.store.accept(epsilon.regk, 1, withdrawnIssued)
+            recipientRgy.store.accept(epsilon.regk, 2, withdrawnUpdate)
+            withdrawnNest = _proofed(withdrawn, withdrawnBlinder)
+
+            exn = accepted(dict(d="", both=group("AND", a=leaf(good),
+                                                 b=leaf(withdrawn))),
+                           [goodNest, withdrawnNest],
+                           "AND over a far node in a registry-specific state")
+            assert recipientHby.db.exrs.get(
+                keys=(exn.said, withdrawn.said)).state == "withdrawn"
+
+            # An edge's `s` pin must be enforced by validation, not by the far node
+            # asserting its own type. Nothing on this path ever validates a
+            # disclosed node against its schema -- v1's identical short-circuit is
+            # safe only because a far node had to be saved, and saving runs the
+            # schema check -- so a pin satisfied by declared-SAID equality is
+            # satisfied by saying so.
+            strict = deepcopy(good.sad["s"])
+            strict["$id"] = ""
+            strict["properties"]["a"]["oneOf"][1]["required"] = ["d", "i", "role"]
+            strictSchemer = Schemer(sed=strict)
+            recipientHby.db.schema.pin(strictSchemer.said, strictSchemer)
+
+            liar = acdcmap(israid=issuerHab.pre,
+                           schema=strictSchemer.sed,
+                           attribute=dict(d="", notRole="absent"),
+                           iseaid=issuerHab.pre)
+            assert liar.sad["s"]["$id"] == strictSchemer.said
+
+            refused(dict(d="", holder=dict(d="", n=liar.said, o="I2I",
+                                           s=strictSchemer.said)),
+                    [liar],
+                    "a pin the far node satisfies only by declaring it")
+
+            # The lesson from the leaf path applies to a group: an Operator this
+            # verifier does not reduce says nothing about whether the members below
+            # it are well-formed, and a malformed shape is not a truth value. The
+            # group returned its unknown before looking at a single child, so a
+            # list-valued `o` -- the exact shape asserted above to be refused even
+            # under OR -- rode in behind a NOR.
+            refused(dict(d="", either=group("OR", a=leaf(good),
+                                            nor=dict(d="", o="NOR",
+                                                     c=dict(d="", o=["AND"],
+                                                            b=leaf(good))))),
+                    [goodNest],
+                    "an unreduced group Operator must not hide a malformed child")
+
+            # The origin's own issuer-auth is not a member of anything: no edge
+            # points at it, so nothing can outvote it however satisfied its Edge
+            # Section is.
+            forgedOrigin = acdcmap(israid=issuerHab.pre,
+                                   regid=alpha.regk,
+                                   attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                                   edge=dict(d="", holder=leaf(good)),
+                                   iseaid=recipientHab.pre)
+            exn = run(_proofed(forgedOrigin, goodBlinder), [goodNest],
+                      "the origin's own proof is refused", originSerder=forgedOrigin)
+            assert recipientHby.db.exns.get(keys=(exn.said,)) is None
+            assert recipientHby.db.epse.get(keys=(exn.said,)) is None
+        finally:
+            recipientRgy.close()
+            issuerRgy.close()
