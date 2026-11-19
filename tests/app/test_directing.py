@@ -6,7 +6,6 @@ tests.db.dbing module
 
 import logging
 import os
-import socket
 
 from hio.base import doing
 from hio.help import ogler
@@ -180,6 +179,7 @@ def test_runcontroller_demo(unused_tcp_port_factory):
     ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"  # must be one of 'bob', 'sam', 'eve'
+    remote = unused_tcp_port_factory()
     local = unused_tcp_port_factory()
     expire = 1.0
 
@@ -191,17 +191,13 @@ def test_runcontroller_demo(unused_tcp_port_factory):
                                                 path=name,
                                                 temp=True)]
 
-    with socket.create_server(('127.0.0.1', 0)) as peer:
-        peer.settimeout(1.0)
-        doers = setupDemoController(secrecies=secrecies,
-                                    name=name,
-                                    remotePort=peer.getsockname()[1],
-                                    localPort=local,
-                                    kind=Kinds.cesr)
+    doers = setupDemoController(secrecies=secrecies,
+                                name=name,
+                                remotePort=remote,
+                                localPort=local,
+                                kind=Kinds.cesr)
 
-        runController(doers=doers, expire=expire)
-        connection, _ = peer.accept()
-        connection.close()
+    runController(doers=doers, expire=expire)
 
     ogler.resetLevel(level=ogler.level)
     """End Test"""

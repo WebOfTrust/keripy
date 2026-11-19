@@ -423,6 +423,354 @@ def _registry(schemer, db):
     return registry
 
 
+def _resolveSchema(acdc, db, schema=None):
+    """Resolve and verify an embedded or locally cached ACDC schema.
+
+    Parameters:
+        acdc (SerderACDC): ACDC whose declared schema is used when ``schema``
+            is not supplied.
+        db (Baser): Database containing schemas indexed by SAID.
+        schema (Mapping | str | None): Optional schema body or schema SAID that
+            overrides the schema declared by the ACDC.
+
+    Returns:
+        tuple: The verified ``Schemer`` and a local registry containing its
+            verified static dependencies.
+
+    Raises:
+        MissingSchemaError: If a schema or referenced dependency is not cached.
+        FailedSchemaValidationError: If a schema field, SAID, schema body, or
+            dependency is invalid.
+    """
+    source = acdc.schema if schema is None else schema
+    if isinstance(source, Mapping):
+        schemer = _verifySchemer(source)
+    elif isinstance(source, str):
+        try:
+            saider = Saider(qb64=source)
+        except Exception:
+            saider = None
+        if saider is None or saider.qb64 != source:
+            raise FailedSchemaValidationError(
+                f"credential {acdc.said} has invalid schema SAID {source}")
+
+        cached = db.schema.get(source)
+        if cached is None:
+            raise MissingSchemaError(source)
+        schemer = _verifySchemer(cached, expected=source)
+    else:
+        raise FailedSchemaValidationError(
+            f"credential {acdc.said} has an invalid schema field")
+
+    return schemer, _registry(schemer, db)
+
+
+def _propertySchemas(schema, label, resolver, instance, seen):
+    """Collect alternative sets of schemas that constrain a property.
+
+    Follow locally resolved ``$ref`` values and preserve JSON Schema composition
+    semantics. Direct properties, references, and ``allOf`` branches contribute
+    simultaneous constraints. Each viable ``anyOf`` or ``oneOf`` branch produces
+    a separate alternative so an unconstrained branch cannot be silently ignored.
+    Dynamic references are excluded by schema profile validation.
+
+    Parameters:
+        schema (Mapping | bool): Schema or boolean subschema to inspect.
+        label (str): Property name whose subschemas are requested.
+        resolver (referencing.Resolver): Resolver for the current schema scope.
+        instance: Value of the object containing ``label``. It selects viable
+            ``anyOf`` and ``oneOf`` branches.
+        seen (set): Recursion markers accumulated during this lookup.
+
+    Returns:
+        list[list[tuple]]: Alternative constraint sets. Every inner list holds
+            ``(subschema, resolver)`` pairs that apply together. An empty inner
+            list means that viable alternative does not constrain ``label``.
+
+    Raises:
+        FailedSchemaValidationError: If a static reference cannot be resolved.
+    """
+    # True is unconstrained; false has no valid match.
+    if isinstance(schema, bool):
+        return [[]] if schema else []
+
+    # Reject values that are not schemas.
+    if not isinstance(schema, Mapping):
+        return []
+
+    # Stop cyclic references without inferring a meaning.
+    marker = (id(schema), label, resolver._base_uri)
+    if marker in seen:
+        return [[]]
+    seen = seen | {marker}
+
+    # Use a nested schema's reference scope.
+    if "$id" in schema:
+        resolver = resolver.in_subresource(DRAFT202012.create_resource(schema))
+
+    # Outer entries are alternatives; constraints inside each entry all apply.
+    alternatives = [[]]
+
+    # A $ref and its sibling constraints both apply.
+    reference = schema.get("$ref")
+    if reference is not None:
+        try:
+            resolved = resolver.lookup(reference)
+        except (referencing.exceptions.Unresolvable, LookupError) as ex:
+            raise FailedSchemaValidationError(
+                f"schema reference {reference} cannot be resolved") from ex
+        referenced = _propertySchemas(resolved.contents, label,
+                                      resolved.resolver, instance, seen)
+
+        # Combine referenced constraints with the current ones.
+        combined = []
+        for existing in alternatives:
+            for constraints in referenced:
+                combined.append(existing + constraints)
+        alternatives = combined
+
+    # A direct property applies to every alternative.
+    properties = schema.get("properties")
+    if isinstance(properties, Mapping) and label in properties:
+        for constraints in alternatives:
+            constraints.append((properties[label], resolver))
+
+    # Every allOf branch applies.
+    branches = schema.get("allOf", ())
+    if isinstance(branches, list):
+        for branch in branches:
+            branchAlternatives = _propertySchemas(
+                branch, label, resolver, instance, seen)
+
+            # Combine this branch with the constraints already collected.
+            combined = []
+            for existing in alternatives:
+                for constraints in branchAlternatives:
+                    combined.append(existing + constraints)
+            alternatives = combined
+
+    # Keep anyOf and oneOf branches as separate alternatives.
+    for keyword in ("anyOf", "oneOf"):
+        branches = schema.get(keyword)
+        if not isinstance(branches, list):
+            continue
+
+        viable = []
+        for branch in branches:
+            # Keep only branches matching the actual value.
+            validator = jsonschema.Draft202012Validator(
+                branch, _resolver=resolver)
+            if not validator.is_valid(instance):
+                continue
+
+            # An empty result records an unconstrained branch.
+            viable.extend(_propertySchemas(
+                branch, label, resolver, instance, seen))
+
+        # No branch accepts this value.
+        if not viable:
+            return []
+
+        # Add shared constraints to each alternative.
+        combined = []
+        for existing in alternatives:
+            for constraints in viable:
+                combined.append(existing + constraints)
+        alternatives = combined
+
+    return alternatives
+
+
+def _edgeForms(schema, resolver, seen):
+    """Find the compact and expanded forms declared by an Edge schema.
+
+    Parameters:
+        schema (Mapping | bool): Edge-member schema to inspect.
+        resolver (referencing.Resolver): Resolver for the current schema scope.
+        seen (set): Recursion markers accumulated during this lookup.
+
+    Returns:
+        set[str]: Forms found in the schema. ``string`` denotes a SAID value,
+            ``block`` an expanded Edge block, ``simple`` an expanded simple
+            reference, and ``unknown`` an object form that is not distinctive.
+
+    Raises:
+        FailedSchemaValidationError: If a static reference cannot be resolved.
+    """
+    # These schemas do not identify an Edge form.
+    if isinstance(schema, bool) or not isinstance(schema, Mapping):
+        return {"unknown"}
+
+    # Stop cyclic references.
+    marker = (id(schema), resolver._base_uri)
+    if marker in seen:
+        return set()
+    seen.add(marker)
+
+    # Use a nested schema's reference scope.
+    if "$id" in schema:
+        resolver = resolver.in_subresource(DRAFT202012.create_resource(schema))
+
+    # Collect the forms declared by this schema.
+    forms = set()
+
+    # Include forms from a referenced schema.
+    reference = schema.get("$ref")
+    if reference is not None:
+        try:
+            resolved = resolver.lookup(reference)
+        except (referencing.exceptions.Unresolvable, LookupError) as ex:
+            raise FailedSchemaValidationError(
+                f"schema reference {reference} cannot be resolved") from ex
+        forms.update(_edgeForms(resolved.contents, resolved.resolver, seen))
+
+    # Include forms from composed schemas.
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        branches = schema.get(keyword, ())
+        if isinstance(branches, list):
+            for branch in branches:
+                forms.update(_edgeForms(branch, resolver, seen))
+
+    # Normalize one type or a list of types.
+    types = schema.get("type")
+    types = set(types) if isinstance(types, list) else {types}
+
+    # A compact representation is a string.
+    if "string" in types:
+        forms.add("string")
+
+    # Object keywords may imply an object without an explicit type.
+    objectish = ("object" in types or "properties" in schema
+                 or "required" in schema)
+    if objectish:
+        properties = schema.get("properties", {})
+        required = schema.get("required", [])
+
+        # Field order does not affect the shape.
+        propertyLabels = (set(properties)
+                          if isinstance(properties, Mapping) else set())
+        requiredLabels = set(required) if isinstance(required, list) else set()
+
+        # Required `d` identifies a SAIDed Edge block.
+        if "d" in requiredLabels:
+            forms.add("block")
+
+        # A strict `{n}` object identifies a simple Edge.
+        elif (requiredLabels == {"n"} and propertyLabels == {"n"}
+              and schema.get("additionalProperties") is False):
+            forms.add("simple")
+
+        # Other object shapes are ambiguous.
+        else:
+            forms.add("unknown")
+
+    # Do not guess when no form was recognized.
+    if not forms:
+        forms.add("unknown")
+    return forms
+
+
+def classifyEdge(acdc, db, path):
+    """Classify a string-valued Edge from its verified near-node schema.
+
+    ``simple`` means the string is the far-node ACDC SAID. ``compact`` means
+    it is the SAID of a hidden Edge block. ``None`` means the schema does not
+    make that distinction machine-readable.
+
+    Parameters:
+        acdc (SerderACDC): Near-node ACDC whose schema defines the Edge Section.
+        db (Baser): Database used to resolve schema SAIDs and dependencies.
+        path (tuple | list): Non-reserved Edge labels from the Edge Section to
+            the string-valued member being classified.
+
+    Returns:
+        str | None: ``simple``, ``compact``, or ``None`` when the schema is
+            missing a usable declaration or permits ambiguous forms.
+
+    Raises:
+        ValueError: If ``path`` is empty or contains a non-string label.
+        MissingSchemaError: If the ACDC schema or a dependency is not cached.
+        FailedSchemaValidationError: If the schema or a dependency is invalid.
+    """
+    # The path must name a member below `e`.
+    if (not isinstance(path, (list, tuple)) or not path
+            or not all(isinstance(label, str) for label in path)):
+        raise ValueError("edge schema path must contain field labels")
+
+    # Load the verified schema and its local dependencies.
+    schemer, registry = _resolveSchema(acdc, db)
+
+    # Outer entries are alternatives; pairs inside each entry all apply.
+    candidates = [[(schemer.sed, registry.resolver(base_uri=schemer.said))]]
+
+    # Follow the schema and disclosed value together.
+    instance = acdc.sad
+    for label in ("e", *path):
+        # The path must exist in the ACDC.
+        if not isinstance(instance, Mapping) or label not in instance:
+            return None
+
+        # Find constraints for this property.
+        found = []
+        for alternative in candidates:
+            # Combine constraints that apply together.
+            combinations = [[]]
+            for candidate, resolver in alternative:
+                propertyAlternatives = _propertySchemas(candidate, label, resolver, instance, set())
+
+                # Keep alternative property constraints separate.
+                combined = []
+                for existing in combinations:
+                    for constraints in propertyAlternatives:
+                        combined.append(existing + constraints)
+                combinations = combined
+            found.extend(combinations)
+
+        # No schema path reaches this property.
+        if not found:
+            return None
+
+        # Move to the next path level.
+        candidates = found
+        instance = instance[label]
+
+    # Classify each alternative independently.
+    kinds = set()
+    for alternative in candidates:
+        # An unconstrained alternative is ambiguous.
+        if not alternative:
+            return None
+
+        # Gather forms from constraints that apply together.
+        forms = set()
+        for candidate, resolver in alternative:
+            forms.update(_edgeForms(candidate, resolver, set()))
+
+        # The schema must clearly allow a string form.
+        if "string" not in forms or "unknown" in forms:
+            return None
+
+        # Check the expanded form paired with the string.
+        expanded = forms.intersection(("simple", "block"))
+
+        # A SAIDed block means the string identifies that block.
+        if expanded == {"block"}:
+            kinds.add("compact")
+
+        # A bare string or strict `{n}` means a far-node SAID.
+        elif expanded in (set(), {"simple"}):
+            kinds.add("simple")
+
+        # Conflicting forms are ambiguous.
+        else:
+            return None
+
+    # All alternatives must agree.
+    if len(kinds) == 1:
+        return kinds.pop()
+    return None
+
+
 def validateSchema(acdc, db, schema=None):
     """Validate an ACDC against a verified local schema.
 
@@ -445,36 +793,8 @@ def validateSchema(acdc, db, schema=None):
         FailedSchemaValidationError: If the schema is invalid or the ACDC does
             not satisfy it.
     """
-    # Select the schema to use
-    source = acdc.schema if schema is None else schema
     try:
-        # Verify an embedded schema
-        if isinstance(source, Mapping):
-            schemer = _verifySchemer(source)
-
-        # Load a schema by its SAID
-        elif isinstance(source, str):
-            try:
-                saider = Saider(qb64=source)
-            except Exception:
-                saider = None
-            if saider is None or saider.qb64 != source:
-                raise FailedSchemaValidationError(
-                    f"credential {acdc.said} has invalid schema SAID {source}")
-
-            # Get the schema from the local cache
-            cached = db.schema.get(source)
-            if cached is None:
-                raise MissingSchemaError(source)
-
-            # Verify the cached schema
-            schemer = _verifySchemer(cached, expected=source)
-        else:
-            raise FailedSchemaValidationError(
-                f"credential {acdc.said} has an invalid schema field")
-
-        # Build the local schema registry
-        registry = _registry(schemer, db)
+        schemer, registry = _resolveSchema(acdc, db, schema=schema)
 
         # Create the Draft 2020-12 validator
         validator = jsonschema.Draft202012Validator(schema=schemer.sed,

@@ -7,17 +7,303 @@ import os
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0, Kinds
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.core import (Number, Seqner, Diger, Kevery,
                        SealEvent, Salter, Counter, parsing,
                        NumDex, MtrDex, Codens,
-                       incept, delcept, interact, deltate)
+                       incept, delcept, interact, rotate, deltate)
 
 from keri.app import Manager, openKS, openHby, openHab
 from keri.db import snKey, openDB
 
 logger = ogler.getLogger()
 
+
+def test_is_delegated():
+    """Resolve anchored delegation at any depth without trusting declarations."""
+    with (openHby(name="delegation-query", base="test",
+                  version=Vrsn_2_0) as hby,
+          openHby(name="delegation-query-other", base="test",
+                  version=Vrsn_2_0) as otherHby):
+        for kind in (Kinds.json, Kinds.cesr):
+            root = hby.makeHab(name=f"root-{kind}", kind=kind)
+            unrelated = hby.makeHab(name=f"unrelated-{kind}", kind=kind)
+
+            # Create delegate Hab with delegator root
+            delegate = hby.makeHab(name=f"delegate-{kind}",
+                                   delpre=root.pre, kind=kind)
+            missing = otherHby.makeHab(name=f"missing-{kind}", kind=kind)
+
+            # Assert that delegation is not established before the anchor event is created
+            assert hby.kvy.isDelegated(delegate.pre, root.pre) is None
+            assert hby.kvy.isDelegated(missing.pre, root.pre) is None
+
+            # Assert that isDelegated checks for a "delegated descendant"
+            # not "equal" to the delegator which returns False
+            assert hby.kvy.isDelegated(root.pre, root.pre) is False
+
+            # Create the SealEvent anchor in the root's KEL
+            root.interact(data=[SealEvent(i=delegate.pre, s="0", d=delegate.pre)._asdict()], kind=kind)
+            
+            # Assert that delegation is established
+            assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+            assert hby.kvy.isDelegated(delegate.pre, unrelated.pre) is False
+
+            # Rotate the delegator's keys and assert that delegation is still established
+            root.rotate(kind=kind)
+            assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+
+            # Create a grandchild Hab with delegate as delegator
+            grandchild = hby.makeHab(name=f"grandchild-{kind}", delpre=delegate.pre, kind=kind)
+            
+            # Create the SealEvent in the delegate's KEL to anchor the grandchild
+            delegate.interact(data=[SealEvent(i=grandchild.pre, s="0", d=grandchild.pre)._asdict()], kind=kind)
+            
+            # Assert that isDelegated returns True for the grandchild in relation to the root delegator
+            assert hby.kvy.isDelegated(grandchild.pre, root.pre) is True
+            
+            # Rotate the delegate's keys and assert that delegation is still established 
+            # between the grandchild and the root delegator
+            delegate.rotate(kind=kind)
+            assert hby.kvy.isDelegated(grandchild.pre, root.pre) is True
+
+
+def test_is_delegated_requires_every_anchor():
+    """Require the delegator's anchored approval at every ancestry hop."""
+    with openHby(name="delegation-anchor-query", base="test",
+                 version=Vrsn_2_0) as hby:
+        def makeChain(case):
+            root = hby.makeHab(name=f"root-{case}", kind=Kinds.cesr)
+            child = hby.makeHab(name=f"child-{case}", delpre=root.pre,
+                                kind=Kinds.cesr)
+            grandchild = hby.makeHab(name=f"grandchild-{case}",
+                                     delpre=child.pre, kind=Kinds.cesr)
+            issuer = hby.makeHab(name=f"issuer-{case}",
+                                 delpre=grandchild.pre, kind=Kinds.cesr)
+            return root, child, grandchild, issuer
+
+        def approve(delegator, delegate):
+            delegator.interact(
+                data=[SealEvent(i=delegate.pre, s="0",
+                                d=delegate.pre)._asdict()],
+                kind=Kinds.cesr)
+
+        # Root to child delegation is missing.
+        root, child, grandchild, issuer = makeChain("missing-root-anchor")
+        approve(child, grandchild)
+        approve(grandchild, issuer)
+        assert hby.kvy.isDelegated(issuer.pre, root.pre) is None
+
+        # Add the missing delegation
+        approve(root, child)
+        assert hby.kvy.isDelegated(issuer.pre, root.pre) is True
+
+        # Child to grandchild delegation is missing
+        root, child, grandchild, issuer = makeChain("missing-middle-anchor")
+        approve(root, child)
+        approve(grandchild, issuer)
+        assert hby.kvy.isDelegated(issuer.pre, root.pre) is None
+
+        # Add the missing delegation
+        approve(child, grandchild)
+        assert hby.kvy.isDelegated(issuer.pre, root.pre) is True
+
+        # Grandchild to issuer delegation is missing
+        root, child, grandchild, issuer = makeChain("missing-issuer-anchor")
+        approve(root, child)
+        approve(child, grandchild)
+        assert hby.kvy.isDelegated(issuer.pre, root.pre) is None
+
+        # Add the missing delegation
+        approve(grandchild, issuer)
+        assert hby.kvy.isDelegated(issuer.pre, root.pre) is True
+
+
+def test_is_delegated_ignores_unaccepted_anchor():
+    """Do not treat a disputed KEL candidate as delegation approval."""
+    with openHby(name="delegation-unaccepted-anchor", base="test",
+                 version=Vrsn_2_0) as hby:
+        root = hby.makeHab(name="root", kind=Kinds.json)
+        delegate = hby.makeHab(name="delegate", delpre=root.pre, kind=Kinds.json)
+
+        rootInception = root.kever.serder
+        delegateInception = delegate.kever.serder
+        seal = SealEvent(i=delegate.pre, s=delegateInception.snh,
+                         d=delegateInception.said)._asdict()
+
+        disputed = interact(pre=root.pre, dig=rootInception.said, sn=1,
+                             data=[seal, dict(note="unaccepted candidate")],
+                             version=Vrsn_2_0, kind=Kinds.json)
+
+        # Put the delegation seal event into db                     
+        hby.db.evts.put(keys=(root.pre, disputed.said), val=disputed)
+        hby.db.kels.add(keys=root.pre.encode("utf-8"), on=1,
+                        val=disputed.saidb)
+
+        # Since the event was never processed and accepted, it has no
+        # first-seen records. It prevents a validator from treating
+        # any manually stored or disputed event as a valid delegation approval
+        assert hby.db.fons.get(keys=(root.pre, disputed.said)) is None
+        assert hby.db.fullyWitnessed(disputed)
+
+        #  isDelegated returns None, a valid anchor may arrive later
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is None
+
+
+def test_is_delegated_honors_dnd():
+    """Let an inception DND trait terminate delegation authority."""
+    with openHby(name="delegation-dnd-query", base="test",
+                 version=Vrsn_2_0) as hby:
+        root = hby.makeHab(name="root", kind=Kinds.cesr)
+
+        # Delegate has a DND (Do Not Delegate) trait which prevents any delegation
+        delegate = hby.makeHab(name="delegate", delpre=root.pre, DnD=True,
+                               kind=Kinds.cesr)
+        grandchild = hby.makeHab(name="grandchild", delpre=delegate.pre,
+                                 kind=Kinds.cesr)
+        greatGrandchild = hby.makeHab(name="great-grandchild",
+                                      delpre=grandchild.pre, kind=Kinds.cesr)
+        
+        # Create the Chain of authority Root -> Delegate -> Granchild -> Greatgrandchild
+        root.interact(data=[SealEvent(i=delegate.pre, s="0", d=delegate.pre)._asdict()], kind=Kinds.cesr)
+        delegate.interact(data=[SealEvent(i=grandchild.pre, s="0", d=grandchild.pre)._asdict()], kind=Kinds.cesr)
+        grandchild.interact(data=[SealEvent(i=greatGrandchild.pre, s="0", d=greatGrandchild.pre)._asdict()], kind=Kinds.cesr)
+
+        # Assert that the delegate's DND trait stops the chain of delegation authority
+        assert delegate.kever.doNotDelegate is True
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+        assert hby.kvy.isDelegated(grandchild.pre, root.pre) is False
+        assert hby.kvy.isDelegated(greatGrandchild.pre, root.pre) is False
+
+        # Assert that it also works as a root delegator 
+        blockedRoot = hby.makeHab(name="blocked-root", DnD=True, kind=Kinds.cesr)
+        blockedChild = hby.makeHab(name="blocked-child", delpre=blockedRoot.pre, kind=Kinds.cesr)
+        blockedRoot.interact(
+            data=[SealEvent(i=blockedChild.pre,
+                            s="0",
+                            d=blockedChild.pre)._asdict()],
+            kind=Kinds.cesr)
+        assert hby.kvy.isDelegated(blockedChild.pre, blockedRoot.pre) is False
+
+
+def test_is_delegated_requires_anchor_for_local_verifier():
+    """Do not treat a verifier's locally accepted dip as delegated authority."""
+    with (openHby(name="delegation-controller", base="test",
+                  version=Vrsn_2_0) as controllerHby,
+          openHby(name="delegation-verifier", base="test",
+                  version=Vrsn_2_0) as witnessHby):
+        verifier = witnessHby.makeHab(name="verifier", transferable=False,
+                                     kind=Kinds.cesr)
+        root = controllerHby.makeHab(name="root", wits=[verifier.pre], toad=1,
+                                     kind=Kinds.cesr)
+        delegate = controllerHby.makeHab(name="delegate", delpre=root.pre,
+                                         wits=[verifier.pre], toad=1,
+                                         kind=Kinds.cesr)
+
+        parsing.Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(delegate.msgOwnEvent(sn=0, framed=True)),
+            kvy=witnessHby.kvy, local=True)
+        verifier.processCues(witnessHby.kvy.cues)
+
+        assert delegate.pre in witnessHby.kvy.kevers
+        assert root.pre not in witnessHby.kvy.kevers
+        assert witnessHby.kvy.kevers[delegate.pre].delpre == root.pre
+
+        # isDelegated returns None because the root's anchor event is missing
+        # Only the delegate's inception event is ingested
+        assert witnessHby.kvy.isDelegated(delegate.pre, root.pre) is None
+
+        parsing.Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(root.msgOwnEvent(sn=0, framed=True)),
+            kvy=witnessHby.kvy, local=True)
+        verifier.processCues(witnessHby.kvy.cues)
+
+        # verifier has the root's icp and the delegate's icp but not the anchor event
+        assert witnessHby.kvy.isDelegated(delegate.pre, root.pre) is None
+
+        anchor = root.interact(
+            data=[SealEvent(i=delegate.pre,
+                            s="0",
+                            d=delegate.pre)._asdict()],
+            kind=Kinds.cesr, framed=True)
+        parsing.Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(anchor), kvy=witnessHby.kvy, local=True)
+        verifier.processCues(witnessHby.kvy.cues)
+
+        # verifier has the root's icp, the delegate's icp
+        # and the anchor event so delegation is established
+        assert witnessHby.kvy.isDelegated(delegate.pre, root.pre) is True
+
+
+def test_is_delegated_recovers_superseded_anchor_without_cache():
+    """Recover a first-seen superseded anchor without relying on its cache."""
+    with openHby(name="delegation-cache-query", base="test",
+                 version=Vrsn_2_0) as hby:
+        root = hby.makeHab(name="root", kind=Kinds.json)
+        delegate = hby.makeHab(name="delegate", delpre=root.pre, kind=Kinds.json)
+
+        rootInception = root.kever.serder
+        delegateInception = delegate.kever.serder
+
+        root.interact(
+            data=[SealEvent(i=delegate.pre,
+                            s=delegateInception.snh,
+                            d=delegateInception.said)._asdict()],
+            kind=Kinds.json)
+        
+        # Assert delegation between root and delegate was processed and cached
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+        assert hby.db.aess.get(
+            keys=(delegate.pre, delegateInception.said)) is not None
+
+        # Create a rotation event for the root delegator
+        verfers, digers = root.mgr.rotate(pre=root.pre, temp=True, erase=False)
+        alternate = rotate(pre=root.pre,
+                           keys=[verfer.qb64 for verfer in verfers],
+                           dig=rootInception.said,
+                           sn=1,    # Same sn as root's SealEvent
+                           isith=root.kever.ntholder.sith,
+                           nsith=root.kever.ntholder.sith,
+                           ndigs=[diger.qb64 for diger in digers],
+                           version=Vrsn_2_0,
+                           kind=Kinds.json)
+        sigers = root.sign(ser=alternate.raw, verfers=verfers, rotated=True)
+
+        # Process the rotation so it replaces the SealEvent in the KEL
+        hby.kvy.processEvent(serder=alternate, sigers=sigers)
+
+        # Delegation is still established 
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+        hby.db.aess.rem(keys=(delegate.pre, delegateInception.said))
+        assert hby.db.aess.get(keys=(delegate.pre, delegateInception.said)) is None
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+
+
+def test_is_delegated_recovers_anchor_after_witness_change_without_cache():
+    """Use accepted historical evidence after the witness threshold changes."""
+    with openHby(name="delegation-witness-change", base="test",
+                 version=Vrsn_2_0) as hby:
+        witness = hby.makeHab(name="witness", transferable=False,
+                              kind=Kinds.json)
+        root = hby.makeHab(name="root", kind=Kinds.json)
+        delegate = hby.makeHab(name="delegate", delpre=root.pre,
+                               kind=Kinds.json)
+        inception = delegate.kever.serder
+
+        root.interact(
+            data=[SealEvent(i=delegate.pre,
+                            s=inception.snh,
+                            d=inception.said)._asdict()],
+            kind=Kinds.json)
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+
+        root.rotate(adds=[witness.pre], kind=Kinds.json)
+        assert root.kever.toader.num == 1
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
+
+        hby.db.aess.rem(keys=(delegate.pre, inception.said))
+        assert hby.db.aess.get(keys=(delegate.pre, inception.said)) is None
+        assert hby.kvy.isDelegated(delegate.pre, root.pre) is True
 
 
 def test_delegation():
