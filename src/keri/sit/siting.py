@@ -1106,11 +1106,33 @@ class Siter:
             The infil above protects the tructure below so new leaves go to the
             same place in the tree no matter the order of insertion.
 
-            ToDo: XXX need new function sameLimbSpan between node and leaf since node
-            and leaf may be common all 256. since common comparison is only valid
-            to node span not beyond and swap not apply when common all the way.
+            This means that when inserting or removing a leaf, the number of
+            hashes to update the root is only the depth of real nodes from leaf
+            to root not 256 like other sparse merkle trees.  The number of nodes
+            in a SIT is log2(L)  where L is the number of leaves inserted.
+            This differs from other sparse Merkle trees where the number of
+            hashes is log2(M) where M is the maximum number of leaves the tree
+            can hold.
 
-            forkSpanSwap does not work when node and leaf same all the way down.
+            A non optimized SMT merge with precomputed empty nodes for each
+            height of the tree of height 256. The Jellyfish SMT collapses
+            a single leaf on an empty subtree up to one node holding the subtree
+            so its only one hash for the subtree (this skipping hashes that are
+            the height of the subtree). Jellyfish however expands all ancester
+            nodes above any node with two non-empty children.
+            Nervos, is similar to Jellyfish in that is skips hashes by merging
+            non empty nodes upto the highest node with two non-empty children.
+            Although Nervos does iterate 256 times to merge up. Unlike jellyfish
+            Nervos stores the key prefix with each node so that it does not have
+            to expand the ancestors. Any leave can compare the prefix to its key
+            to skip empty sub-trees between nodes with two non-empty children.
+            SIT is therefore most similar to Nervos but has simpler logic.
+            The security of SIT is stronger since the key prefix (limb in SIT)
+            of each real node (i.e. two non-empty children) is also hashed with
+            the node, not just the leaves.
+
+            The advantage of the SIT algorithm is that it does not re-collapse
+
 
         """
         # Walk leaf down appropriate node child branch.
