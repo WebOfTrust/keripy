@@ -42,6 +42,13 @@ now raises a keri.kering error (a KeriError) instead of a raw Python exception.
 Code that catches ValueError or KeyError around these calls should catch the kering error
 named above, or KeriError.
 
+*** Kevery.fetchWitnessState and Kevery.fetchEstEvent read the last establishment event
+of the current key state directly when sn lies between it and the latest event, instead of
+walking back to it, so a receipt on an event at or after the last rotation no longer costs a
+scan of every event since that rotation. Other sns still walk. When the event at sn is
+missing from the store, fetchWitnessState now returns that establishment event's witness list
+where the walk raised AttributeError.
+
 *** New Parser.parseOneBare: like parseOne, but raises errors to the caller instead of
 logging them, for callers that are not internet-facing services and need to know why a
 msg failed. Intake errors raised while extracting (ExtractionError, ValidationError) are

@@ -146,34 +146,12 @@ _VERSION_KEY = b"__version__"
 
 
 async def _close_storage_handle(handle):
-    """Best-effort release of the IndexedDB connection behind a PyScript storage handle.
+    """Release the IndexedDB connection without masking read or write errors.
 
-    PyScript's Python ``Storage`` object (a ``dict`` subclass) retains the live JS
-    storage handle at its literal ``__store__`` attribute. The name-mangled form
-    ``_Storage__store__`` never exists because ``__store__`` ends in two trailing
-    underscores, which Python's name-mangling rule exempts. The JS handle's
-    ``close()`` awaits its pending write queue and then closes the underlying
-    ``IDBDatabase`` connection. Keeping a connection open for every KERI subdatabase
-    exhausts browser IndexedDB resources on iOS, so WebDBer closes each handle once
-    its durable state has been read into memory.
-
-    This is best-effort cleanup: it is a no-op for fake/CPython storage handles and
-    never masks the caller's original error.
-
-    Note: reaching ``__store__`` is a private-API dependency on PyScript's storage
-    implementation (PRIVATE_API_DEPENDENCY) and is intended to be replaced by a
-    project-owned IndexedDB adapter.
+    PyScript exposes the connection through its private ``__store__`` attribute.
+    An injected storage handle can expose ``close()`` directly.
     """
-    if handle is None:
-        return
-    closer = None
-    # Literal ``__store__`` is the real PyScript runtime attribute (no name mangling).
-    underlying = getattr(handle, "__store__", None)
-    if underlying is None:
-        # Defensive fallback for any runtime that exposes the name-mangled form.
-        underlying = getattr(handle, "_Storage__store__", None)
-    if underlying is not None:
-        closer = getattr(underlying, "close", None)
+    closer = getattr(getattr(handle, "__store__", None), "close", None)
     if closer is None:
         closer = getattr(handle, "close", None)
     if closer is None:

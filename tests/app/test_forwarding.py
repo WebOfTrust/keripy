@@ -337,6 +337,8 @@ def test_postman(seeder, witnessPorter):
 
         assert doist.limit == limit
 
+        assert pman.sent(exn.said)
+        assert len(pman.doers) == 1  # only the delivery worker remains
         doist.exit()
 
         msgs = []

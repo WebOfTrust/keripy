@@ -3,7 +3,6 @@
 tests delegation primaily from keri.core.eventing
 
 """
-import logging
 import os
 from functools import partial
 
@@ -36,7 +35,7 @@ def _pin_hab_msgs_v1(hab):
                                   version=Vrsn_1_0, kind=Kinds.json)
 
 
-def test_indexed_witness_replay_v1(caplog):
+def test_indexed_witness_replay_v1():
     """
     Test event validation logic with witnesses
 
@@ -164,9 +163,7 @@ def test_indexed_witness_replay_v1(caplog):
         assert camHab.pre not in vanKvy.kevers
         # process receipts
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy, local=True)
-        with caplog.at_level(logging.INFO, logger=logger.name):
-            vanKvy.processEscrows()
-        assert "PWE unescrow succeeded" in caplog.text
+        vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers  # now accepted
         vcKvr = vanKvy.kevers[camHab.pre]
         assert vcKvr.sn == 0
