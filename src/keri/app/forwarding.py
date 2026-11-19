@@ -14,7 +14,7 @@ from hio.help import decking, ogler
 
 from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
                       ConfigurationError, ValidationError)
-from .agenting import messengerFrom, streamMessengerFrom
+from .agenting import HTTPMessenger, messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
                     Counter, SerderKERI, Parser, exchange,
                     MtrDex, Codens, NonTransDex)
@@ -226,45 +226,16 @@ class Poster(doing.DoDoer):
         witer.msgs.append(bytearray(msg))  # make a copy
         self.extend([witer])
 
-        while not witer.idle:
-            _ = (yield self.tock)
+        try:
+            while not witer.idle:
+                yield self.tock
+        finally:
+            # TCP can report idle before its send loop consumes the queued message.
+            if isinstance(witer, HTTPMessenger):
+                self.remove([witer])
 
     def forwardToWitness(self, hab, ends, recp, serder, atc, topic):
-        # If we are one of the mailboxes, just store locally in mailbox
-        owits = oset(ends.keys())
-        if self.mbx and owits.intersection(hab.prefixes):
-            msg = bytearray(serder.raw)
-            if atc is not None:
-                msg.extend(atc)
-            self.mbx.storeMsg(topic=f"{recp}/{topic}".encode("utf-8"), msg=msg)
-            return
-
-        # Its not us, randomly select a mailbox and forward it on
-        mbx, mailbox = random.choice(list(ends.items()))
-        msg = bytearray()
-        msg.extend(introduce(hab, mbx, gvrsn=self.version))
-        # create the forward message with payload embedded at `a` field
-
-        evt = bytearray(serder.raw)
-        evt.extend(atc)
-        fwd, atc = specialExchange(sender=hab.pre,
-                                   route='/fwd',
-                                   modifiers=dict(pre=recp, topic=topic),
-                                   attributes={},
-                                   embeds=dict(evt=evt),
-                                   version=Vrsn_1_0, kind=self.kind)
-        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=self.version)
-
-        # Transpose the signatures to point to the new location
-        witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
-        msg.extend(ims)
-        msg.extend(atc)
-
-        witer.msgs.append(bytearray(msg))  # make a copy
-        self.extend([witer])
-
-        while not witer.idle:
-            _ = (yield self.tock)
+        yield from self.forward(hab, ends, recp, serder, atc, topic)
 
 
 class StreamPoster:

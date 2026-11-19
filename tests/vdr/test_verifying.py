@@ -14,13 +14,13 @@ from keri.app import openHab, openHby
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent, Salter,
                        MtrDex, Saids, Aggor, Noncer, Schemer)
+from keri.core.eventing import delegationRefusal
 from keri.kering import (Ilks, Kinds, Vrsn_2_0, KeriError, MissingSchemaError,
                         EdgeRefusalError, UnsupportedOperatorError)
 from keri.help import helping
 from keri.vc import credential
 from keri.acdc import acdcagg
 from keri.acdc.messaging import acgSchemaDefault
-from keri.acdc.relating import delegationRefusal
 from keri.vdr import Verifier, Regery, Tevery
 from keri.acdc import chaining
 from keri.acdc.ipexing import IpexHandler
@@ -1998,7 +1998,7 @@ def test_verifier_di2i_climbs_v2_and_native_cesr_kels(seeder):
 
     Unit level on purpose. ``Regery.makeRegistry`` is v1-only -- ``vcp`` is a v1 ilk -- so
     a v2 far node cannot reach .verifyChain end to end. Nothing in the climb touches a
-    registry, so exercising relating.delegationRefusal directly loses no coverage of it.
+    registry, so exercising eventing.delegationRefusal directly loses no coverage of it.
     The v2 IPEX path, which needs no registry, is covered end to end in
     tests/acdc/test_ipexing.py.
     """

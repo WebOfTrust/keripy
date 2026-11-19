@@ -4169,6 +4169,10 @@ def test_ilker():
     with pytest.raises(InvalidSoftError):
         ilker = Ilker(ilk='bad')
 
+    # test not strict condition
+    ilker = Ilker(ilk='bad', strict=False)
+    assert ilker.ilk == 'bad'
+
     # ignores code
     ilker = Ilker(ilk=ilk, code=MtrDex.Tag4)
     assert ilker.code == ilker.hard == code
@@ -6023,6 +6027,36 @@ def test_diger():
     assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
     assert not diger.verify(ser=ser + b'ABCDEF')
+
+    assert diger.num == 79934255688530727098852804500393089505535828727415781789409630334812377050033
+    assert diger.numh == 'b0b92f7881543efb77f3186d8186094420a90063bb5a38c7551dfb3dac2febb1'
+
+    num = 2 ** 255
+    assert num.to_bytes(length=32) == (b'\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                                      b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+    assert f"{num:0256b}"[:8] == '10000000'
+    assert Diger._rawSize(code=DigDex.Blake3_256) == 32
+    diger = Diger(num=num)  # create digest directly as num converted to bytes
+    assert diger.num == num
+    assert diger.numh == '8000000000000000000000000000000000000000000000000000000000000000'
+
+    num = 0
+    assert num.to_bytes(length=32) == (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                                      b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+    assert f"{num:0256b}"[:8] == '00000000'
+    assert Diger._rawSize(code=DigDex.Blake3_256) == 32
+    diger = Diger(num=num)  # create digest directly as num converted to bytes
+    assert diger.num == num
+    assert diger.numh == '0'
+
+    num = 1
+    assert num.to_bytes(length=32) == (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                                      b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01')
+    assert f"{num:0256b}"[-8:] == '00000001'
+    assert Diger._rawSize(code=DigDex.Blake3_256) == 32
+    diger = Diger(num=num)  # create digest directly as num converted to bytes
+    assert diger.num == num
+    assert diger.numh == '1'
 
     diger = Diger(raw=dig, code=MtrDex.Blake3_256)
     assert diger.code == MtrDex.Blake3_256
