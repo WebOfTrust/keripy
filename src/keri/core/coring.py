@@ -2185,11 +2185,13 @@ class Tagger(Matter):
 
     Hidden:
 
-    Methods:"""
+    Methods:
+    """
 
 
     def __init__(self, tag='', soft='', code=None, **kwa):
-        """
+        """Initialize instance
+
         Inherited Parameters:  (see Matter)
             raw (bytes | bytearray | None): unqualified crypto material usable
             for crypto operations.
@@ -2205,7 +2207,9 @@ class Tagger(Matter):
                 bytearray after parsing qb64b or qb2. False means do not strip
 
         Parameters:
-            tag (str | bytes):  Base64 automatic sets code given size of tag"""
+            tag (str | bytes):  Base64 automatic sets code given size of tag
+        """
+
         if tag:
             if hasattr(tag, "encode"):  # make tag bytes for regex
                 tag = tag.encode("utf-8")
@@ -2231,14 +2235,15 @@ class Tagger(Matter):
             tag (str | bytes):  Base64 value
 
         Returns:
-            code (str): derivation code for tag"""
+            code (str): derivation code for tag
+        """
+
         # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
         codes = astuple(TagDex)
         l = len(tag)
         if l < 1 or l > len(codes):
             raise InvalidSoftError(f"Invalid {tag=} size {l=}, empty or oversized.")
         return codes[l-1]  # return code at index = len - 1
-
 
 
     @property
@@ -2249,8 +2254,7 @@ class Tagger(Matter):
 
 
 class Ilker(Tagger):
-    """
-    Ilker is subclass of Tagger, cryptographic material, for formatted
+    """Ilker is subclass of Tagger, cryptographic material, for formatted
     message types (ilks) in Base64. Leverages Tagger support compact special
     fixed size primitives with non-empty soft part and empty raw part.
 
@@ -2300,11 +2304,14 @@ class Ilker(Tagger):
 
     Hidden:
 
-    Methods:"""
+    Methods:
+    """
 
 
-    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', ilk='', **kwa):
-        """
+    def __init__(self, qb64b=None, qb64=None, qb2=None, tag='', ilk='',
+                 strict=True, **kwa):
+        """Initialize instance
+
         Inherited Parameters:  (see Tagger)
             raw (bytes | bytearray | None): unqualified crypto material usable
             for crypto operations.
@@ -2322,7 +2329,11 @@ class Ilker(Tagger):
             tag (str | bytes):  Base64 plain. Prepad is added as needed.
 
         Parameters:
-            ilk (str):  message type from Ilks of Ilkage"""
+            ilk (str):  message type from Ilks of Ilkage
+            strict (bool): True means ilk must be in Ilks else raise error
+                           False means ilk not limited to Ilks value
+        """
+
         if not (qb64b or qb64 or qb2):
             if ilk:
                 tag = ilk
@@ -2333,7 +2344,7 @@ class Ilker(Tagger):
         if self.code not in (MtrDex.Tag3, ):
             raise InvalidCodeError(f"Invalid code={self.code} for Ilker "
                                    f"{self.ilk=}.")
-        if self.ilk not in Ilks:
+        if strict and self.ilk not in Ilks:
             raise InvalidSoftError(f"Ivalid ilk={self.ilk} for Ilker.")
 
 
@@ -3579,31 +3590,57 @@ class Diger(Matter):
         return (raw)
 
 
-    def __init__(self, raw=None, code=DigDex.Blake3_256, ser=None, strict=True,
-                 **kwa):
+    def __init__(self, raw=None, code=DigDex.Blake3_256, ser=None, num=None,
+                 strict=True, **kwa):
         """Initialize attributes
 
-        Inherited Parameters:
+        Inherited Parameters::
             See Matter
 
-        Parameters:
+        Parameters::
             ser (bytes): serialization from which raw is computed if not raw
+            num (int): creates raw from num.bytes of code fullsize
+                       useful for Diger instance as hash tree limb bit fork path
             strict (bool): True means enforce code must be in DigDex
                 False means do not enfoce code in DigDex this allows
                     subclasses to enforce different codex"""
 
         try:
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not ser:
-                raise ex
 
-            raw = self._digest(ser, code=code)
+        except EmptyMaterialError as ex:
+            if ser:
+                if hasattr(ser, 'encode'): # str
+                    ser.encode()  # make bytes
+                raw = self._digest(ser, code=code)
+            elif num is not None:
+                raw = num.to_bytes(length=self._rawSize(code))
+            if not raw:
+                raise ex
 
             super(Diger, self).__init__(raw=raw, code=code, **kwa)
 
         if strict and self.code not in DigDex:
             raise InvalidCodeError(f"Unsupported Digest code={self.code}.")
+
+    @property
+    def num(self):
+        """Property num: raw bytes converted to int.
+        Useful when using digest as hash tree limb bit fork path.
+
+        Returns::
+            num(int): .raw converted to int
+        """
+        return int.from_bytes(self.raw, 'big')
+
+    @property
+    def numh(self):
+        """Property numh: raw bytes converted to int as hex string no leading zeros.
+        Useful when using digest as hash tree limb bit fork path.
+
+        Returns::
+            numh (str): .num int converted to hex str"""
+        return f"{self.num:x}"
 
 
     def verify(self, ser):
@@ -3715,16 +3752,17 @@ class Noncer(Diger):
         Parameters:
             nonce (str|bytes|None):  round trippable nonce value with nonce property
                 that accounts for empty nonce indicated by empty string.
-                Otherwise nonce is qb64 of nonce value"""
+                Otherwise when not None, nonce holds qb64 or qb64b encoded nonce value
+                When None means generate crypto strength random nonce value
+        """
         try:
             super(Noncer, self).__init__(raw=raw, qb64b=qb64b, code=code,
                                          strict=False, **kwa)
 
         except EmptyMaterialError as ex:
             if nonce is not None:
-                if hasattr(nonce, "encode"):
-                    nonce = nonce.encode()
-
+                if hasattr(nonce, "encode"):  # str so convert to bytes
+                    nonce = nonce.encode()  # convert to bytes
                 if nonce == b'':
                     raw = nonce
                     code = NonceDex.Empty

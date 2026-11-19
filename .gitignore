@@ -145,3 +145,6 @@ keripy/
 # ctags
 .tags
 scripts/demo/scripts
+
+# Wing private task files (not committed)
+.TASKS/

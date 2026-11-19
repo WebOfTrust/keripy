@@ -4052,6 +4052,78 @@ class Kever:
         return None
 
 
+def delegationRefusal(kevers, db, pre, delpre):
+    """Return a decided delegation refusal, success, or missing evidence.
+
+    The empty string means every hop from ``pre`` reaches ``delpre`` through an
+    anchored delegated inception. A non-empty string explains a permanent
+    refusal. ``None`` means that a required KEL, inception event, or anchor is
+    not available yet.
+
+    Do not infer approval from ``kever.delpre`` alone: ``di`` records the
+    delegate's claim, and locally owned, membered, or witnessed processing may
+    accept it before a delegator anchor exists. Each hop therefore rechecks DND
+    and requires an accepted SealEvent from the delegator.
+
+    The normal KEL validation lookup uses the verified source-seal couple in
+    ``.aess``. If that cache cannot recover an older approval after its sequence
+    number was superseded, the historical KEL fallback searches accepted
+    first-seen events. This preserves accepted delegation across superseding
+    without trusting an event absent from ``.fons``.
+    """
+    seen = set()
+    while pre not in seen:
+        seen.add(pre)
+        if pre not in kevers:
+            return None
+
+        kever = kevers[pre]
+        parent = kever.delpre
+        if parent is None:
+            return f"{pre} is not delegated, and the chain ends there"
+        if parent not in kevers:
+            return None
+        if kevers[parent].doNotDelegate:
+            return f"delegator {parent} of {pre} carries DND"
+
+        inception = db.evts.get(keys=(pre, pre))
+        if inception is None:
+            return None
+
+        anchor = kever.fetchDelegatingEvent(delpre=parent,
+                                             serder=inception,
+                                             original=False,
+                                             eager=True)
+        if anchor is None:
+            expected = SealEvent(i=inception.pre,
+                                 s=inception.snh,
+                                 d=inception.said)
+            for candidate in db.getEvtPreIter(pre=parent):
+                if db.fons.get(keys=(parent, candidate.said)) is None:
+                    continue
+
+                for seal in candidate.seals or []:
+                    if tuple(seal) != SealEvent._fields:
+                        continue
+                    if SealEvent(**seal) == expected:
+                        anchor = candidate
+                        break
+
+                if anchor is not None:
+                    break
+        if anchor is None:
+            return None
+        if db.fons.get(keys=(anchor.pre, anchor.said)) is None:
+            return None
+
+        if parent == delpre:
+            return ""
+
+        pre = parent
+
+    return f"delegation chain from {pre} cycles"
+
+
 class Kevery:
     """
     Kevery (Key Event Message Processing Facility) processes an incoming
@@ -4164,6 +4236,19 @@ class Kevery:
         Returns .db.prefixes"""
         return self.db.prefixes
 
+    def isDelegated(self, pre, delpre) -> bool | None:
+        """Return whether ``pre`` is an anchored descendant of ``delpre``.
+
+        ``None`` means that a required KEL or delegation anchor has not arrived.
+        ``False`` means the complete identifier ancestry reaches another root or
+        crosses an identifier configured with the Do Not Delegate trait, or the
+        ancestry contains a cycle.
+        """
+        refusal = delegationRefusal(self.kevers, self.db, pre, delpre)
+        if refusal is None:
+            return None
+        return not refusal
+
     def fetchWitnessState(self, pre, sn):
         """ Returns the list of witness for the identifier prefix at the sequence number
 
@@ -4172,6 +4257,10 @@ class Kevery:
         sequence number of each establishment event.  If sn represents an interaction event (ixn) it
         searches backwards for the last establishment event prior to sn and returns that witness state.
 
+        When sn is at or after the last establishment event of the current key state, and at or
+        before its latest event, that establishment event is where the walk back ends, so its
+        witness state is read directly without the walk.
+
         Parameters:
             pre (str): identifier prefix qb64
             sn (int): sequence number of the event for which witness state is desired
@@ -4179,6 +4268,9 @@ class Kevery:
         Returns:
             list:  list of Prefixer objects representing the witness state for the identifier prefix at
                 the sequence number"""
+        if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:
+            return self.db.wits.get(keys=(pre, lastEst.d))
+
         preb = pre.encode("utf-8")
         for digb in self.db.kels.getBackIter(keys=preb, on=sn):
             serder = self.db.evts.get(keys=(preb, digb))
@@ -4187,6 +4279,24 @@ class Kevery:
                 return wits
 
         return []
+
+
+    def _fetchLastEstLoc(self, pre, sn):
+        """Returns LastEstLoc of the last establishment event of the current key state of pre when
+        sn lies between it and the latest event of that key state, None otherwise. In that range
+        the backward walk would end at that establishment event, so callers may skip it. This
+        checks only the range; it does not check that an event is stored at sn.
+
+        Parameters:
+            pre (str): identifier prefix qb64
+            sn (int): sequence number of event in KEL of pre
+        """
+        if pre not in self.kevers:  # reads through to db
+            return None
+        kever = self.kevers[pre]
+        if kever.lastEst.s <= sn <= kever.sn:
+            return kever.lastEst
+        return None
 
 
     def processEvent(self, serder, sigers, *, wigers=None, delsner=None, delsger=None,
@@ -5607,6 +5717,15 @@ class Kevery:
         Parameters:
             pre: qb64 of identifier prefix for KEL
             sn: int sequence number of event in KEL of pre"""
+        if (lastEst := self._fetchLastEstLoc(pre, sn)) is not None:  # no need to walk back
+            # same first step as the walk: no event at sn means None
+            if not (dig := self.db.kels.getLast(keys=pre, on=sn)):
+                return None
+            if not (serder := self.db.evts.get(keys=(pre, dig))):
+                return None
+            if dig == lastEst.d:  # sn is the establishment event itself
+                return serder
+            return self.db.evts.get(keys=(pre, lastEst.d))
 
         found = False
         while not found:
@@ -6407,7 +6526,7 @@ class Kevery:
                 # valid event escrow.
                 self.db.pwes.rem(keys=pre, on=sn, val=edig)  # removes one escrow at key val
                 self.db.udes.rem(keys=dgkey)  # remove escrow if any
-                logger.info("Kevery: PWE unescrow succeeded in valid event: key = %s \tdigest = %s",
+                logger.info("Kevery: PWE unescrow succeeded in valid event: key = (%s, %s) \tdigest = %s",
                            pre, sn, edig.decode())
                 logger.debug("Event=\n%s\n", eserder.pretty())
 
