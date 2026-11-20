@@ -6,6 +6,7 @@ Siter functionality
 
 """
 
+
 from collections import namedtuple, deque
 
 from .. import Versionage, InvalidCodeError
@@ -139,7 +140,77 @@ Partage = namedtuple("Partage", "said part")
 
 
 class Siter:
-    """Siter manages a SAIDed Info Tree (SIT)
+    """Siter manages a SAIDed Info Tree (SIT) that implements a compact optimized
+    sparse Merkle tree compatible with the KERI CESR cryptographically agile
+    serializations.
+
+    Provides the property that the same set of leaves results in the same root
+    said (hash digest).
+
+    Uses node space stretching technique so that the number of nodes is always
+    the theoretical minimum (1 less than the number of leaves except for the case
+    where a root node as one or two empty leaves)
+
+    This node space stretching also ensures that the average depth of leaves int
+    the tree approaches the theoretical minimum of log2(L) where L is the number
+    of leaves. This maximizes performance by minimizing the number of hashes
+    (digest operations) and reads for inclusion/exclusion proofs. This is
+    particularly beneficial when the leaf key space is dense at low elevations
+    as is the case for sequential keys.
+
+    Each new leaf effectively stretches the node space as needed to fill in/out
+    the new leaf. Once a node is created is stays in place and other nodes
+    are inserted above it or below it in order to hold new leaves. A given
+    set of leaves no matter the order of insertion always produces the same
+    root said (hash, digest), thus preserving the most important property of
+    a sparse Merkle tree.
+
+    Except for the root node, all real nodes have two non-empty children.
+    Thus the number of nodes is always 1 less than the number of leaves
+    (except when the root has one or more empty leaves). This minimizes the
+    number of real nodes to its theoretical limit.
+
+    The keys or indices for each leaf is called its limb. All limbs
+    are of length MaxSpan (256). Each node also has a limb whose span is less
+    than MaxSpan. Thus any node limb is a prefix to some set of potential
+    leaf limbs. The node's limb and span is stored along with its children's
+    limbs.
+
+    A new leaf is inserted by climbing down a branch by following the child
+    node whose limb is a prefix of the leaf.
+
+    When the leaf hits child node with a non-matching prefix then a new
+    forking node is inserted above the non-matching node and below the parent
+    node of the non-matching node. The new forking node's prefix is set to
+    the maximally length common span of the new leaf's limb and the old
+    non-matching node's limb. The children of the new forking node are the
+    leaf and the old node attached at the appropriate child as determined
+    by the bit where their limbs differ. The new forking node replaces the
+    old node as a child of the prior partent node.
+
+    When the leaf hits a child leaf attached to a node, then a new forking
+    node is created whose prefix is the common span of both leaves. The
+    new forking node replaces the old child leaf as the parent node's child
+    and the two leaves are attached at the appropriate child as determined by
+    the bit where their limbs differ.
+
+    The insert logic is elegantly simple. The tree streches by adding new
+    nodes between existing nodes as needed to fit leaves without expanding
+    any branches with nodes with one or more empty children. Because each
+    node includes its prefix, its position within the virtual sparse Merkle
+    tree is fixed. Nodes with different prefixes are placed above or below it.
+    This lack of ancestor expansion means that the average depth for any
+    given set of leaves is always minimized and for uniformly distributed
+    leaf limbs (keys) the average depth always approaches the theoretical
+    minimum of log2(L) where L is the number of inserted leaves.  Stretching
+    without ancestor expansion means that dense subtrees such as subtrees
+    with sequential leaf limbs (keys) that reside at the bottom of the
+    leaf limb (key) space, do not explode the average depth of the whole tree.
+
+    Thus the second important property of a SIT is that the number of hashes
+    and/or database reads to verify an inclusion/exclusion proof for a leaf
+    is always about log2(L) where L is the number of leaves. The maximizes
+    performance for the most common operations.
 
 
     Attributes::
@@ -154,8 +225,10 @@ class Siter:
         leaves (dict): Leafage instances indexed by leaf said
         infos (dict): leaf info saids as indexed by leaf limb
 
-    ToDo: change .nodes, .leaves, and .infos to have virtual interface
+    ToDo: XXXX change .nodes, .leaves, and .infos to have virtual interface
           that supports either in-memory and disk based storage
+
+
     """
     Dummy = '#'  # default dummy for computing SAIDs
     Code = MtrDex.Blake3_256  # class default code for computing SAIDs
@@ -924,9 +997,45 @@ class Siter:
 
 
     def _insert(self, leaf, node):
-        """Recursive inset of leafer starting at node. Descends tree until finds
-        bottom node the recursively climbs back up tree up updating node saids
-        as it climbs.  Values are Matter instances
+        """Recursive inset of leafer starting at node. The act of insertion of
+        a new leaf effectively stretches the node space as needed to fill in/out
+        the new leaf. Once a node is created is stays in place and other nodes
+        are inserted above it or below it in order to hold new leaves. A given
+        set of leaves no matter the order of insertion always produces the same
+        root said (hash, digest), thus preserving the most important property of
+        a sparse Merkle tree.
+
+        Except for the root node, all real nodes have two non-empty children.
+        Thus the number of nodes is always 1 less than the number of leaves
+        (except when the root has one or more empty leaves). This minimizes the
+        number of real nodes to its theoretical limit.
+
+        The keys or indices for each leaf is called its limb. All limbs
+        are of length MaxSpan (256). Each node also has a limb whose span is less
+        than MaxSpan. Thus any node limb is a prefix to some set of potential
+        leaf limbs. The node's limb and span is stored along with its children's
+        limbs.
+
+        A new leaf is inserted by climbing down a branch by following the child
+        node whose limb is a prefix of the leaf.
+
+        When the leaf hits child node with a non-matching prefix then a new
+        forking node is inserted above the non-matching node and below the parent
+        node of the non-matching node. The new forking node's prefix is set to
+        the maximally length common span of the new leaf's limb and the old
+        non-matching node's limb. The children of the new forking node are the
+        leaf and the old node attached at the appropriate child as determined
+        by the bit where their limbs differ. The new forking node replaces the
+        old node as a child of the prior partent node.
+
+        When the leaf hits a child leaf attached to a node, then a new forking
+        node is created whose prefix is the common span of both leaves. The
+        new forking node replaces the old child leaf as the parent node's child
+        and the two leaves are attached at the appropriate child as determined by
+        the bit where their limbs differ.
+
+
+        Values are Matter instances
 
 
         Returns::
@@ -945,129 +1054,6 @@ class Siter:
                             said is node said Noncer instance
                             part is Nodage of node with Matter instance values
 
-
-        Logic:
-            leaf can only attach to child of node on side given by bit in leaf
-            limb which bit is located below (greater than) the node span.
-            This leaves room for one more nodes to interposed either above or
-            below the node to which a leaf is attached. The key is that the
-            limb of a given node is set by the deepest common span of its
-            child leaves (node and/or leaf). This leaves gaps in the tree where
-            virtual missing nodes with empty children would have been. We can
-            call these ghost nodes. As long as the gaps between non-ghost nodes
-            are stable the ghost nodes themselves do not need to be hashed/digested
-
-            Becaause each node and leaf said is computed over its limb, there
-            is no malleability in structure wrt the said (digest/hash) of a node
-            or leaf. This prevents a collision attack from missing virtual
-            empty nodes. As new leaves are added the new node
-            fork created to accomodate the leaf may interpose either above or
-            below an existing node. A given node's limb once set remains, but its
-            children may change as new leafs and nodes to accomodate the leaves
-            are added. The rules for forking nodes are designed to ensure the
-            essential property that that same set of nodes no matter the order of
-            insertion results in the same root said (digest/hash)
-
-            When a new leaf causes a new fork to be interposed above an existing
-            node, the existing node's said does not change. This means saids
-            lower in that subtree remain stable. So the only hashes (saids) that
-            change are above it in its given branch.  The limb of the new node
-            is always set to the deepest common span of its children. This
-            leaves a stable gap for any missing ghost nodes above it in the tree.
-
-
-            When a new leaf causes a new fork to be interposed below  existing
-            node then the existing nodes above it must change their saids but
-            the nodes below the new node do not. In order for a fork to be
-            inserted below a node, the leaf must itself fit below that node.
-            The new node always has a limb value that is set to the deepest
-            common span of its children. This creates a stable gap for the
-            missing ghost nodes.
-
-            Creating stable gaps for missing ghost nodes supports the required
-            property of a sparse Merkle tree, that is, that the order of insertion
-            of its leaves does not change the final node structure.
-            A leaf can only go in one place.
-
-            The act of fixing node limbs, fixes their relative place in the tree.
-            The infil above protects the tructure below so new leaves go to the
-            same place in the tree no matter the order of insertion.
-
-            This means that when inserting or removing a leaf, the number of
-            hashes to update the root is only the depth of real nodes from leaf
-            to root not 256 like other sparse merkle trees.  The number of nodes
-            in a SIT is log2(L)  where L is the number of leaves inserted.
-            This differs from other sparse Merkle trees where the number of
-            hashes is log2(M) where M is the maximum number of leaves the tree
-            can hold.
-
-            A non optimized SMT merge with precomputed empty nodes for each
-            height of the tree of height 256. The Jellyfish SMT collapses
-            a single leaf on an empty subtree up to one node holding the subtree
-            so its only one hash for the subtree (this skipping hashes that are
-            the height of the subtree). Jellyfish however expands all ancester
-            nodes on the branch above any node with two non-empty children.
-            This makes the average depth a worst case for dense leaf key spaces
-            such as sequential leaf keys.
-
-            Nervos, is similar to Jellyfish in that is skips hashes by merging
-            non empty nodes upto the highest node with two non-empty children.
-            Unlike jellyfish, however, Nervos stores the key prefix with each
-            node so that it does not have to expand the ancestors of nodes with
-            non-empty children. Any leaf can compare the node prefix to its key
-            to skip empty sub-trees between real nodes (those with two non-empty
-            children).
-            SIT is therefore most similar to Nervos but has simpler logic.
-            Whereas SIT builds the tree from the top down and stretches the node
-            space to hold leaves. Nervos walks the leaf from the bottom up merging
-            virtual nodes until if finds the place to fill in. They end up in
-            the same place but Nervos logic is more convoluted. Nervos iterates
-            up to 256 times to merge up. Whereas SIT only iterates the number
-            of nodes it encounter on the way down. Which is always about
-            log2(L) of the number of real leaves.
-
-            Moreover the security of SIT is stronger since in SIT the key prefix
-            (limb in SIT) of each real node (i.e. two non-empty children) is
-            also hashed with the node, not just for the leaves. This better partitions
-            the hash input space (partitioned input space better follows the
-            Efficient Sparse Merkle Tree security policy to increase collison
-            resistance)
-
-            SIT (and Nervos) stretch the nodes space by filling in or filling out
-            nodes as needed. The fill in/out is both above and below existing nodes
-            Thus the node space is stretched to fit the leaves.
-
-            SIT starts with a fully shrunken node key space upon insert of a leaf
-            while the Nervos logic re-shrinks the node key space upon insert of
-            a leaf.
-
-            Because SIT (and Nervos) never expand ancestor nodes of nodes with
-            two non-empty childen the number of nodes is always 1 less than
-            the number of leaves (except for the corner case where the root has
-            one or two empty leaves). This enables the average depth in SIT (Nervos)
-            to approach the minimal node depth = log2(L) where L is the number
-            of real leaves. Whereas because Jellyfish and other similar algorithms
-            expand all nodes above nodes with two non-empty children, the average
-            depth is always greater. And sequential keys that lay at bottom
-            elevations exponentially explode the average depth. This creates
-            a worst case for dense key spaces. Thus the radix compression in
-            Jellyfish solves a problem of its own making.
-            A problem that SIT does not have.
-
-            To clarify, because SIT shinks the node space to fit the leaf key space,
-            even dense leaf key spaces at the botoom elevations do not significantly
-            increase the overall average depth beyond that of the average depth
-            of the dense sub tree itself as measured from the top of the dense
-            subtree not from the top of the full tree. Whereas in algos that
-            expand ancestors, the overall average depth is exploded by the
-            distance from the top of the tree to the top of the dense sub tree
-            at the bottom elevations.
-
-            The shrinking of node key space by SIT (not expanding ancestors)
-            minimizes the number of hashes needed for inclusion/exclusion proofs
-            becasue the average number of hashes for inclusion/exclusion proofs
-            is a function of the average depth of leaves which approaches
-            log2(L) where L is the number of real leaves.
         """
         # Walk leaf down appropriate node child branch.
         # assumes node limb is prefix of leaf limb. leaf fits below node.
