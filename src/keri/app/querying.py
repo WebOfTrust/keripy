@@ -46,27 +46,17 @@ class KeyStateNoticer(doing.DoDoer):
         else:
             return super(KeyStateNoticer, self).recur(tyme, deeds)
 
-        if self.cues:
-            cue = self.cues.pull()
-            match cue['kin']:
-                case "keyStateSaved":
-                    kcue = cue
-                    ksn = kcue['ksn']  # key state notice dict
-                    match ksn["i"]:
-                        case self.pre:
-                            if kever.sn < int(ksn["s"], 16):
-                                # Add new doer here instead of cueing to a while loop
-                                self.extend([LogQuerier(hby=self.hby, hab=self.hab, ksn=ksn, **self.kwa)])
-                                self.remove([self.witq])
-
-                            else:
-                                return True
-
-                        case _:
-                            self.cues.append(cue)
-
-                case _:
-                    self.cues.append(cue)
+        cue = next((cue for cue in self.cues
+                    if cue['kin'] == "keyStateSaved" and cue['ksn']["i"] == self.pre), None)
+        if cue is not None:
+            self.cues.remove(cue)
+            ksn = cue['ksn']  # key state notice dict
+            if kever.sn < int(ksn["s"], 16):
+                # Add new doer here instead of cueing to a while loop
+                self.extend([LogQuerier(hby=self.hby, hab=self.hab, ksn=ksn, **self.kwa)])
+                self.remove([self.witq])
+            else:
+                return True
 
         return super(KeyStateNoticer, self).recur(tyme, deeds)
 
