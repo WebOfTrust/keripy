@@ -227,7 +227,9 @@ class CredentialIssuer(doing.DoDoer):
         registry = self.rgy.registryByName(self.registryName)
         hab = registry.hab
 
-        dt = self.creder.attrib["dt"] if "dt" in self.creder.attrib else helping.nowIso8601()
+        attrib = self.creder.attrib
+        dt = (attrib["dt"] if attrib is not None and "dt" in attrib
+              else helping.nowIso8601())
         iserder = registry.issue(said=self.creder.said, dt=dt)
 
         rseal = SealEvent(iserder.pre, iserder.snh, iserder.said)
