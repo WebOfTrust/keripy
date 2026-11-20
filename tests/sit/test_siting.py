@@ -184,7 +184,6 @@ def test_siting_siter_class():
 
 
     # test staticmethods
-    # .extendLimb() and .extendLimbInt()
     # .rightAtSpan() and .rightAtSpanInt()
     limber = Diger(num=0, code=Siter.Code)  # use default code
     spanner = Number(num=0)
@@ -198,53 +197,44 @@ def test_siting_siter_class():
     with pytest.raises(ValueError):
         Siter.rightAtSpanInt(limb, span)  # span of zero
 
-    limb, span = Siter.extendLimbInt(limb=limb, span=span)  # default side left
-    assert limb == 0
+    limb = 0
     assert f"{limb:0256b}"[:8] == '00000000'
-    assert span == 1
+    span = 1
     assert not Siter.rightAtSpanInt(limb, span)  # left at span=1
 
-    limb, span = Siter.extendLimbInt(limb=limb, span=span, side=True)  # side right
-    assert limb == 2 ** (MaxSpan - span)
+    limb = 4 << 252
     assert f"{limb:0256b}"[:8] == '01000000'
-    assert span == 2
+    span = 2
     assert Siter.rightAtSpanInt(limb, span)  # right at span=2
 
-    limb, span = Siter.extendLimbInt(limb=limb, span=span, side=True)  # side right
+    limb = 6 << 252
     assert f"{limb:0256b}"[:8] == '01100000'
-    assert span == 3
+    span = 3
     assert Siter.rightAtSpanInt(limb, span)  # right at span=3
 
-    #test staticmethod .extendLimb(limber, spanner, right=False)
     limber = Diger(qb64=nimber.qb64)
     assert limber.qb64 == 'EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-    spanner = Number(num=0)
-    assert spanner.qb64 == 'MAAA'
-
-    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner)  # default side left
-    assert not Siter.rightAtSpan(limber, spanner)  # left at span=1
-    assert limber.qb64 == 'EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+    spanner = Number(num=1)
     assert spanner.qb64 == 'MAAB'
+    assert not Siter.rightAtSpan(limber, spanner)  # left at span=1
     limb = int.from_bytes(limber.raw)
     assert f"{limb:0256b}"[:8] == '00000000'
     assert spanner.num == 1
     assert not Siter.rightAtSpanInt(limb, spanner.num)  # left at span=1
 
-    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, side=True)  # side right
+    limber = Diger(qb64='EEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+    spanner = Number(qb64='MAAC')
     assert Siter.rightAtSpan(limber, spanner)  # right at span=2
-    assert limber.qb64 == 'EEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-    assert spanner.qb64 == 'MAAC'
     limb = int.from_bytes(limber.raw)
     assert f"{limb:0256b}"[:8] == '01000000'
     assert spanner.num == 2
     assert Siter.rightAtSpanInt(limb, spanner.num)  # right at span=2
 
-    limber, spanner = Siter.extendLimb(limber=limber, spanner=spanner, side=True)  # side right
+    limber = Diger(qb64='EGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+    spanner = Number(qb64='MAAD')
     assert Siter.rightAtSpan(limber, spanner)  # right at span=2
-    assert limber.qb64 == 'EGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     limb = int.from_bytes(limber.raw)
     assert f"{limb:0256b}"[:8] == '01100000'
-    assert spanner.qb64 == 'MAAD'
     assert spanner.num == 3
     assert Siter.rightAtSpanInt(limb, spanner.num)  # right at span=2
 
@@ -1204,9 +1194,50 @@ def test_insert_logic():
     }
     assert math.log2(metricsA['leafcount']) == 4.169925001442312
 
+    # test dense key space (limbs are densly packed at lower elevations)
+    assert code == DigDex.Blake3_256
+    limbers = [Diger(num=limb, code=code) for limb in range(16)]
 
-    # Preliminary tests show that core property of sparse Merkle tree is provided
-    # same set of leaves == same structure == same root said (digest)
+    limbs = [limber.numh for limber in limbers]
+    assert limbs == \
+    ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
+
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
+    for limber in limbers:
+        leaf = siter.leafFromLimber(limber)
+        siter.root = siter._insert(leaf, siter.root)
+        siter.pinLeaf(leaf.said, leaf.part)
+
+    trace, metrics = siter.trace(terse=False)
+    assert trace == \
+    [
+        'left#5=0@0@0@0@0@root',
+        'right#5=1@0@0@0@0@root',
+        'left#5=2@2@0@0@0@root',
+        'right#5=3@2@0@0@0@root',
+        'left#5=4@4@4@0@0@root',
+        'right#5=5@4@4@0@0@root',
+        'left#5=6@6@4@0@0@root',
+        'right#5=7@6@4@0@0@root',
+        'left#5=8@8@8@8@0@root',
+        'right#5=9@8@8@8@0@root',
+        'left#5=a@a@8@8@0@root',
+        'right#5=b@a@8@8@0@root',
+        'left#5=c@c@c@8@0@root',
+        'right#5=d@c@c@8@0@root',
+        'left#5=e@e@c@8@0@root',
+        'right#5=f@e@c@8@0@root',
+        'right#1=empty@root'
+    ]  # notice SIT tree compression to low elevation subtree
+    assert metrics == \
+    {
+        'depthmax': 5,
+        'depthmin': 5,
+        'depthsum': 80,
+        'depthave': 5.0,
+        'leafcount': 16
+    }
+    assert math.log2(metrics['leafcount']) == 4.0  # worst case depthave only 1 more than optimal
 
     """Done Test"""
 
