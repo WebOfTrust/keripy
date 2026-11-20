@@ -361,3 +361,28 @@ def test_contacts_multiple_alias_match():
         # Partial match returns both
         contacts = org.find('alias', 'joe')
         assert len(contacts) == 2
+
+
+def test_contacts_add_refuses_a_failed_oobi(monkeypatch):
+    """A failed OOBI must not become a contact for an AID with no KEL."""
+    import pytest
+    from hio.base import tyming
+    from keri.app import Result
+    from keri.cli.commands.contacts import add as contacts_add
+    from keri.recording import OobiRecord
+
+    ken = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
+    url = "http://127.0.0.1:5642/oobi/" + ken
+    with openHby(name="test-add-failed", temp=True) as hby:
+        monkeypatch.setattr(contacts_add, "setupHby", lambda **kwa: hby)
+        doer = contacts_add.ContactAddDoer(name="x", base="", bran=None, oobi=url,
+                                           alias="ken", fields=[])
+        hby.db.roobi.pin(keys=(url,), val=OobiRecord(date="2026-01-01T00:00:00.000000+00:00",
+                                                     cid=ken, state=Result.failed))
+        gen = doer.add(tymth=tyming.Tymist().tymen())
+        next(gen)
+
+        with pytest.raises(Exception, match="did not resolve"):
+            for _ in range(5):
+                next(gen)
+        assert Organizer(hby=hby).get(ken) is None

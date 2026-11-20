@@ -486,6 +486,54 @@ class Oobiery:
             except ValueError as ex:
                 print(f"error requesting invalid OOBI URL {ex}", url)
 
+    # event escrows keyed by (pre, sn) whose events may yet be accepted
+    EventEscrows = ("ooes", "pses", "pwes", "pdes", "ldes")
+    # state of an OOBI waiting in the retry escrow for its escrowed events
+    Escrowed = "escrowed"
+
+    def judgeAnswer(self, obr, body):
+        """Return why a parsed CESR OOBI answer left the OOBI unresolved, or None.
+
+        The parser logs and discards what it cannot extract or verify, so success is judged
+        by what the answer left in the database: key state for the AID the OOBI names, and
+        for an OOBI naming an endpoint eid, a location for that endpoint. An empty answer
+        never resolves. An OOBI that names no AID (a blind introduction answered without a
+        KERI-AID header) has no further check.
+
+        Limitation: key state already held before the answer satisfies the check, so an
+        answer to a re-resolved OOBI that was discarded cannot be told from one that had
+        nothing new. Detecting stale key state is a watcher's job, not resolution's.
+
+        Parameters:
+            obr (OobiRecord): record of the OOBI whose answer was just parsed
+            body (bytes): the answer as received
+
+        Returns:
+            str|None: reason the OOBI is unresolved, or None when it resolved
+        """
+        if not body:
+            return "answer was empty"
+
+        if obr.cid and obr.cid not in self.hby.kevers:
+            return f"answer gave no key state for {obr.cid}"
+
+        if obr.eid and not any(
+                loc.url for _, loc in self.hby.db.locs.getTopItemIter(keys=(obr.eid, ""))):
+            return f"answer gave no location for {obr.role} {obr.eid}"
+
+        return None
+
+    def countEscrowed(self, pre):
+        """Return how many events of pre are held in event escrows, whose key state may yet
+        arrive without a new answer, as when receipts or a delegator's seal come late or out
+        of order.
+
+        Parameters:
+            pre (str): qb64 identifier prefix
+        """
+        return sum(1 for name in self.EventEscrows
+                   for _ in getattr(self.hby.db, name).getAllItemIter(keys=pre))
+
     def processClients(self):
         """ Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.coobi.getTopItemIter():
@@ -509,23 +557,71 @@ class Oobiery:
                     print("invalid status for oobi response: {}".format(response["status"]))
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] in (
                     CESR_CONTENT_TYPE,
                     "application/json+cesr",
                     "application/cesr+json",
                 ):  # CESR Stream response to OOBI (canonical + legacy variants)
-                    self.parser.parse(ims=bytearray(response["body"]))
-                    if OOBI_AID_HEADER in response["headers"]:
-                        obr.cid = response["headers"][OOBI_AID_HEADER]
+                    # Each answer is its own CESR stream, so a genus/version code at the
+                    # head of an earlier answer must not govern this one; within the answer
+                    # it still governs every later message. Reset here rather than pass
+                    # version to parse: allParsator hands version to each groupParsator
+                    # call, and after an error in one message that would reset the version
+                    # for the rest of this answer.
+                    body = bytes(response["body"])
+                    header = (response["headers"].get(OOBI_AID_HEADER)
+                              if obr.cid is None else None)
+                    before = {pre: (pre in self.hby.kevers, self.countEscrowed(pre))
+                              for pre in (obr.cid, obr.said, header) if pre}
+                    self.parser.version = self.version
+                    self.parser.parse(ims=bytearray(body))
 
-                    if obr.oobialias is not None and obr.cid:
-                        self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
+                    def delivered(pre):  # did this answer give key state or escrow for pre
+                        held, escrowed = before[pre]
+                        return ((pre in self.hby.kevers and not held)
+                                or self.countEscrowed(pre) > escrowed)
+
+                    if obr.cid is None and obr.said and (obr.said in self.hby.kevers
+                                                         or delivered(obr.said)):
+                        # /oobi/{aid} matches the data-OOBI pattern, so its AID arrives as
+                        # obr.said. Judge the answer as that AID's KEL only when the SAID
+                        # proves to be an AID, since a data OOBI may name another artifact.
+                        obr.cid = obr.said
+                    elif obr.cid is None and header and not before[header][0]:
+                        # The header is unsigned, so it may only name the AID of an OOBI
+                        # whose URL names none, never replace the one the URL names, and
+                        # never bind an alias to an AID already held.
+                        obr.cid = header
 
                     self.hby.db.coobi.rem(keys=(url,))
-                    obr.state = Result.resolved
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    reason = self.judgeAnswer(obr, body)
+                    if reason is not None and body and obr.cid and obr.cid not in self.hby.kevers:
+                        self.parser.kvy.processEscrows()  # what escrowed may complete now
+                        if obr.cid in self.hby.kevers:
+                            reason = self.judgeAnswer(obr, body)
+                        elif obr.state != self.Escrowed and delivered(obr.cid):
+                            # this answer's events escrowed: not failed yet. Retry once
+                            # after RetryDelay, by when receipts or seals may have arrived.
+                            logger.info("OOBI %s: events of %s escrowed, will retry",
+                                        url, obr.cid)
+                            obr.state = self.Escrowed
+                            obr.date = toIso8601(nowUTC())
+                            self.hby.db.eoobi.pin(keys=(url,), val=obr)
+                            continue
+                        elif obr.state == self.Escrowed:
+                            reason = f"events of {obr.cid} still escrowed after a retry"
+
+                    self.hby.db.eoobi.rem(keys=(url,))
+                    if reason is None:
+                        if obr.oobialias is not None and obr.cid:
+                            self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
+                        obr.state = Result.resolved
+                    else:
+                        logger.error("OOBI %s did not resolve: %s", url, reason)
+                        obr.state = Result.failed
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
                     try:
@@ -541,7 +637,7 @@ class Oobiery:
 
                     obr.state = result
                     self.hby.db.coobi.rem(keys=(url,))
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"].startswith("application/json"):  # Unsigned rpy OOBI or Schema
 
@@ -555,7 +651,7 @@ class Oobiery:
 
                         obr.state = result
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
                         continue
 
                     except (ValidationError, ValueError):
@@ -566,12 +662,12 @@ class Oobiery:
                     except ValueError:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
                         continue
                     if not serder.ked['t'] == Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                     elif serder.ked['r'] in ('/oobi/witness', '/oobi/controller'):
                         self.processMultiOobiRpy(url, serder, obr)
@@ -579,12 +675,12 @@ class Oobiery:
                     else:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
-                        self.hby.db.roobi.put(keys=(url,), val=obr)
+                        self.hby.db.roobi.pin(keys=(url,), val=obr)
 
                 else:
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
-                    self.hby.db.roobi.put(keys=(url,), val=obr)
+                    self.hby.db.roobi.pin(keys=(url,), val=obr)
                     logger.error("invalid content type for oobi response: {}"
                                  .format(response["headers"]["Content-Type"]))
 
@@ -606,7 +702,7 @@ class Oobiery:
             if complete:
                 obr.state = result
                 self.hby.db.coobi.rem(keys=(url,))
-                self.hby.db.roobi.put(keys=(url,), val=obr)
+                self.hby.db.roobi.pin(keys=(url,), val=obr)
 
     def processRetries(self):
         """ Process Client responses by parsing the messages and removing the client/doer"""

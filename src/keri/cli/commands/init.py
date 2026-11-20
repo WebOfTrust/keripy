@@ -132,7 +132,7 @@ class InitDoer(doing.DoDoer):
             for (oobi,), obr in hby.db.roobi.getTopItemIter():
                 if obr.state in (Result.resolved,):
                     print(oobi, "succeeded")
-                if obr in (Result.failed,):
+                if obr.state in (Result.failed,):
                     print(oobi, "failed")
 
             self.remove(obi.doers)
