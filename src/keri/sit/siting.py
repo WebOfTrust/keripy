@@ -199,89 +199,6 @@ class Siter:
 
 
     @staticmethod
-    def extendLimbInt(limb, span=0, side=False):
-        """Extends limb  of span using  bit value given by right and
-        returns new limb extended by 1 bit.  Uses int values not Matter instances
-
-        Returns:
-            result (tuple): (limb, span) where:
-                            limb is extended limb with span+1 MSbits. All other bits
-                                masked to 0s.
-                            span is span+1
-
-        Parameters:
-            limb (int): 256 bit limb path with span MSbits to be extended
-            span (int): span of limb 0-255 MSbits
-            side (bool): True means extend with 1 (right child bit)
-                         False means extend with 0 (left child bit)
-
-        Usage::
-            given limber as Diger instance of limb
-            given spanner as Number instance of span
-
-            limb = Sider.extendLimbInt(limb=limber.num),
-                                       span=spanner.num)
-
-            or
-
-            limb = Sider.extendLimbInt(limb=limber.num),
-                                       span=spanner.num,
-                                       right=True)
-
-            limber = Diger(raw=limb.to_bytes(MaxSpanBytes))
-            spanner = Number(num=spanner.num+1)
-        """
-        if span >= MaxSpan:
-            raise ValueError(f"Invalid {span=} greater than MaxSpan")
-
-        mask = ((1 << span) - 1)  # mask of 1s of length span
-        limb = (limb >> (MaxSpan - span)) & mask
-        limb = limb << 1  # extend with zero
-        if side:
-            limb |= 1  # make lsb 1
-        span += 1
-        return (limb << (MaxSpan - span), span)
-
-
-    @staticmethod
-    def extendLimb(limber, spanner, side=False):
-        """Extends limber of span spanner with bit value given by left and
-        returns tuple of (limber, spanner) where:
-            limber extended by 1 bit and
-            spanner incremented by 1.
-
-        Returns:
-            result (tuple): of form (limer, spanner) where:
-                            limber is Diger instance of extended limb
-                            spanner is Number instance of incremented span
-
-        Parameters:
-            limber (Diger): instance encoding 256 bit limb path with span MSbits
-                            to be extended
-            spanner (Number): instance encoding limb span MSbits [0..255]
-            side (bool): True means extend with 1 (right child bit)
-                         False means extend with 0 (left child bit)
-
-        Usage::
-            given limber as Diger instance of limb
-            given spanner as Number instance of span
-
-            limber, spanner = Sider.extendLimb(limber=limber, spanner=spanner)
-
-            limber, spanner = Sider.extendLimb(limber=limber,
-                                               spanner=spanner,
-                                               right=True)
-        """
-        code = limber.code  # save to recreate
-        limb = limber.num
-        span = spanner.num
-        limb, span = Siter.extendLimbInt(limb=limb, span=span, side=side)
-        limber = Diger(raw=limb.to_bytes(MaxSpanBytes), code=code)
-        spanner = Number(num=span)
-        return (limber, spanner)
-
-
-    @staticmethod
     def rightAtSpanInt(limb, span):
         """Returns which side of limb at span where:
         True is right and False is left
@@ -461,7 +378,7 @@ class Siter:
         """
         if left == right:
             raise ValueError(f"Bad pair left={right=}")
-        for span in range(1, 256):
+        for span in range(1, 257):  # maxrange==256, one less than upper limit
             leftbit = (left >> (MaxSpan - span)) & 1
             rightbit = (right >> (MaxSpan - span)) & 1
             if leftbit != rightbit:  # shallowest fork found at span
@@ -935,36 +852,6 @@ class Siter:
         return self.updateNode(node, saider, side=side)
 
 
-    def forkNodeOld(self, node, lefter, righter, side=False):
-        """Attach new forking node to  side (right/left) of node with where
-        forking node's left child is lefter and right child is righter
-        limb of forking node
-
-        Parameters:
-            node (Partage): instance (said, part) of node where:
-                            said is Noncer instance of node said
-                            part is Nodage instance with Matter instance values
-            lefter (Noncer): instance of left child said for new forking node
-            righter (Noncer): instance of right child said for new forking node
-            side (bool):  False is left side
-                          True is right side
-
-        Returns:
-            nodepartage (Partage): instance (said, part) where:
-                            said is qb2 of node
-                            part is Nodage instance with qb2 values
-                            old and new provide left and right as appropriate
-
-        """
-        # create new forking node of lefter and righter
-        # extend limb of node on side given by side
-        limber, spanner = self.extendLimb(node.part.limb, node.part.span, side=side)
-        # create nodage of new forking node
-        nodage = Nodage(span=spanner, limb=limber, left=lefter, right=righter)
-        saider = self.sayNode(nodage)  # update said of forking node
-        self.pinNode(saider, nodage)  # update .nodes with forking node
-        return self.updateNode(node, saider, side=side)
-
     def leafFromLimber(self, limber):
         """Create leaf to insert from limber. Computes leaf limb and said.
 
@@ -1344,3 +1231,15 @@ class Siter:
 
         return show
 
+    def shake(self, node):
+        """Returns list of leaves from recursive descent traveral of tree attached
+        to node.
+
+        Useful for consistency testing of leaves in tree vs. leaves in database
+        """
+
+
+    def _shake(self, node, leaves):
+        """Recursive depth first traversal of tree attached to node.
+        Populates leaves list with leaves as encountered in traversal
+        """
