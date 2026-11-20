@@ -1278,12 +1278,13 @@ class Siter:
 
         return show
 
-    def shake(self, node):
+    def shake(self, node=None):
         """Returns list of leaves from recursive descent traveral of tree attached
         to node.
 
         Useful for consistency testing of leaves in tree vs. leaves in database
         """
+        node = node if node is not None else self.root
 
 
     def _shake(self, node, leaves):
