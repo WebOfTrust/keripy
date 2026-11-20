@@ -51,6 +51,8 @@ parser.add_argument('--nsith',        '-x', default=None, required=False,
                     help='signing threshold for the next rotation event',)
 parser.add_argument('--est-only',     '-e', type=bool, default=None,
                     help='only allow establishment events in KEL for this prefix')
+parser.add_argument('--dnd', action="store_true",
+                    help='do not allow this prefix to act as a delegator of delegated identifiers')
 parser.add_argument('--data',         '-d', default=None, required=False, action="store",
                     help='Anchor data, \'@\' allowed',)
 parser.add_argument('--delpre',       '-di', default=None, required=False, action="store",
@@ -71,6 +73,7 @@ class InceptOptions:
     toad: int = 0
     delpre: str = None
     estOnly: bool = False
+    DnD: bool = False
     data: list = None
     version: Versionage = Version
     kind: str = Kinds.json
@@ -141,6 +144,9 @@ def mergeArgsWithFile(args):
         incept_opts.nsith = args.nsith
     if args.est_only is not None:
         incept_opts.estOnly = args.est_only
+    # store_true, so absent is False rather than None. Only ever turns the trait on, leaving a
+    # DnD already set in the options file alone.
+    incept_opts.DnD = True if args.dnd else incept_opts.DnD
     if args.data is not None:
         incept_opts.data = config.parseData(args.data)
     if args.delpre is not None:
