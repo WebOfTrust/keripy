@@ -506,6 +506,8 @@ new leaf insertion (hopefully 1 on average)
 
 ### Design Trade Space
 
+#### Average Node Depth
+
 A SIT makes some trade-offs vis-a-vis other SMT algorithms.
 The primary trade-off is that each node in the tree must store its structure
 as meta-data in addition to the hashes (SAIDs) of its two children.
@@ -548,25 +550,54 @@ then the new total storage
 `T1 = N1 * S1 = 1.5* S * 0.5 * N = (1.5)*(0.5)* N * S = 0.75* M * S = 3/4(N*S)`
 or a 25% improvement.
 
-To elaborate, we can double the per node storage if we decrease the average
-depth by one and not incur a storage penalty. This gives us a per-node storage
+To elaborate, if we decrease the average depth by one we can we can double the
+per node storage and not incur a storage penalty. This gives us a per-node storage
 budget target for optimizing the tree using structural (limb, span) meta-data.
 
-The popular SMT algorithms like JellyFish, Aergo, and Ethereum use a radix to
-minimize disk reads. Each read returns a sub tree of 16 nodes (4 bit radix).
-This turns the binary tree into a trie of that radix. Internally all 16 nodes
-in each radix subtree must be examined with doing operations and typically the
-ancestor nodes of any nodes with non-empty children must be expanded in order
-position a given radix subtree to generate stable root hashes. This increase
-the complexity and computation load of operations and significantly increases
-the average depth of the tree which significantly increases the number of
-hashes and may severely reduce any savings in disk read operations despite the
-radix chunking. Indeed ancestor expansion resulting from radix chunking becomes
-largely self defeating.
 
-Most importantly reducing the average tree depth also minimizes the computation
-requirements for reads and hashes for insertion/deletion/inclusion/exclusion
-which are always on the order of the actual number of nodes on the branch
+### Comparison to Other SMTs
+
+The most popular SMT Trillian is typically used as a verifiable log not a
+verifiable map. The SEDI use cases (bulk update, bulk anchoring, age range proofs)
+all require a verifiable map. When used as a verifiable map Trillian is not
+considered a compact optimized SMT. It uses pre-computed hashes that when used
+as a verifiable map requires computing 256 internal node hashes to insert a
+non-empty leaf and recomputing those 256 internal hashes for delete,inclusion and
+exclusion proofs. The  successor to  Trillian now called Tessera uses a tile
+based disk interface that  pushes the computation load onto its clients for
+distributed computing. It has  some of the read optimization of radix tree
+chunking but does not optimize the internal tree structure to reduce
+the number of hashes for verifiable maps. It pushes the hashing onto the clients
+who buld their own trees.
+
+The popular optimized compact SMT algorithms like JellyFish, Aergo, and Ethereum
+whose main use case are verifiable maps for smart contracts all use a radix tree
+(called a trie) to minimize disk reads by chunking the tree into subtrees.
+In a radix tree (trie) each read returns a sub tree of 16 nodes (4 bit radix).
+Internally all 16 nodes in each radix subtree must be
+examined when doing insertion/deletion/inclusing/exclusion operations. The
+primary advantage of radix chunking is the worst case for traversing a tree of
+depth 256 requires only 32 reads (256 / 16). Thus the optimization is to
+minimize disk access. In the case of  Jellyfish and Aergo the ancestor nodes
+of any nodes with non-empty children must be expanded in order to correctly
+position a given radix subtree  to generate stable root hashes that do not change
+with a change in leaf insertion order. This expansion increases the number of
+hashes and average depth of the tree which on average increases the number of reads.
+Thus in Jellyfish and Aergo increasing the average tree depth can increase the
+depth of the radix sub-trees which in turn increases the average number of reads.
+Thus somewhat becoming self-defeating. In Ethereum the storage is not increased
+but all the ancestor node hashes must be computed thereby significantly increasing
+computation. Overall using a radix tree (trie) significantly increases the
+the code complexity and computation load and in some cases the average tree depth.
+which may net be overall disadvantageous. To restate ancestor expansion
+may conteract savings in disk read operations despite the radix chunking.
+When combined with the increase in hashing required for all operations, radix
+chunking may be largely self defeating for many applications.
+
+Most importantly reducing shallow SMT algorithms like SIT and Nervos
+minimize the average tree depth which in turn minimizes the baseline computation
+requirements hashes and the baseline number of disk reads for all operations which
+baselines are always on the order of the actual number of nodes on the branch
 to a given leaf i.e. its depth.
 
 So a tree whose average depth approaches the minimum of `Log2(L)` where `L`
@@ -576,12 +607,15 @@ and inclusion/exclusion proofing operations.  So overall performance is
 maximized by minimizing average leaf depth.
 
 The simplicity of the SIT approach means that radix chunking to minimize reads
-is still possible via the storage interface, but without incurring the
+is still possible via the external storage interface, but without incurring the
 self-defeating trade-off of ancestor node expansion.
 
-Thus the main trade-off for the SIT approach is increased storage overhead that
-results from storing stuctural metadata with each node and leaf to that we
-can stretch the node space.
+Thus the main trade-off for the SIT approach is increased per part (node/leaf) storage
+resulting from storing stuctural metadata with each part in order to  stretch
+the node space. But as explained above, this increased per part storage
+is more than compensated for a reduction of one in average tree depth. In real
+world applications it is anticipated that SIT could reduce average tree depth
+compared to radix based SMTs by much more than 1.
 
 Finally, the most frequent operations on a tree are inclusion/exclusion proofs
 not insertion/deletion. The former can be cached in memory with a read/write through
