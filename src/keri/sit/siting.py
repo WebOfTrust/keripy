@@ -1006,21 +1006,68 @@ class Siter:
             a single leaf on an empty subtree up to one node holding the subtree
             so its only one hash for the subtree (this skipping hashes that are
             the height of the subtree). Jellyfish however expands all ancester
-            nodes above any node with two non-empty children.
+            nodes on the branch above any node with two non-empty children.
+            This makes the average depth a worst case for dense leaf key spaces
+            such as sequential leaf keys.
+
             Nervos, is similar to Jellyfish in that is skips hashes by merging
             non empty nodes upto the highest node with two non-empty children.
-            Although Nervos does iterate 256 times to merge up. Unlike jellyfish
-            Nervos stores the key prefix with each node so that it does not have
-            to expand the ancestors. Any leave can compare the prefix to its key
-            to skip empty sub-trees between nodes with two non-empty children.
+            Unlike jellyfish, however, Nervos stores the key prefix with each
+            node so that it does not have to expand the ancestors of nodes with
+            non-empty children. Any leaf can compare the node prefix to its key
+            to skip empty sub-trees between real nodes (those with two non-empty
+            children).
             SIT is therefore most similar to Nervos but has simpler logic.
-            The security of SIT is stronger since the key prefix (limb in SIT)
-            of each real node (i.e. two non-empty children) is also hashed with
-            the node, not just the leaves.
+            Whereas SIT builds the tree from the top down and stretches the node
+            space to hold leaves. Nervos walks the leaf from the bottom up merging
+            virtual nodes until if finds the place to fill in. They end up in
+            the same place but Nervos logic is more convoluted. Nervos iterates
+            up to 256 times to merge up. Whereas SIT only iterates the number
+            of nodes it encounter on the way down. Which is always about
+            log2(L) of the number of real leaves.
 
-            The advantage of the SIT algorithm is that it does not re-collapse
+            Moreover the security of SIT is stronger since in SIT the key prefix
+            (limb in SIT) of each real node (i.e. two non-empty children) is
+            also hashed with the node, not just for the leaves. This better partitions
+            the hash input space (partitioned input space better follows the
+            Efficient Sparse Merkle Tree security policy to increase collison
+            resistance)
 
+            SIT (and Nervos) stretch the nodes space by filling in or filling out
+            nodes as needed. The fill in/out is both above and below existing nodes
+            Thus the node space is stretched to fit the leaves.
 
+            SIT starts with a fully shrunken node key space upon insert of a leaf
+            while the Nervos logic re-shrinks the node key space upon insert of
+            a leaf.
+
+            Because SIT (and Nervos) never expand ancestor nodes of nodes with
+            two non-empty childen the number of nodes is always 1 less than
+            the number of leaves (except for the corner case where the root has
+            one or two empty leaves). This enables the average depth in SIT (Nervos)
+            to approach the minimal node depth = log2(L) where L is the number
+            of real leaves. Whereas because Jellyfish and other similar algorithms
+            expand all nodes above nodes with two non-empty children, the average
+            depth is always greater. And sequential keys that lay at bottom
+            elevations exponentially explode the average depth. This creates
+            a worst case for dense key spaces. Thus the radix compression in
+            Jellyfish solves a problem of its own making.
+            A problem that SIT does not have.
+
+            To clarify, because SIT shinks the node space to fit the leaf key space,
+            even dense leaf key spaces at the botoom elevations do not significantly
+            increase the overall average depth beyond that of the average depth
+            of the dense sub tree itself as measured from the top of the dense
+            subtree not from the top of the full tree. Whereas in algos that
+            expand ancestors, the overall average depth is exploded by the
+            distance from the top of the tree to the top of the dense sub tree
+            at the bottom elevations.
+
+            The shrinking of node key space by SIT (not expanding ancestors)
+            minimizes the number of hashes needed for inclusion/exclusion proofs
+            becasue the average number of hashes for inclusion/exclusion proofs
+            is a function of the average depth of leaves which approaches
+            log2(L) where L is the number of real leaves.
         """
         # Walk leaf down appropriate node child branch.
         # assumes node limb is prefix of leaf limb. leaf fits below node.
