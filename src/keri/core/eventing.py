@@ -12,7 +12,7 @@ from ordered_set import OrderedSet as oset
 from hio.help import decking, ogler
 
 
-from ..kering import (MissingEntryError, UntrustedKeyStateSource,
+from ..kering import (KeriError, MissingEntryError, UntrustedKeyStateSource,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
@@ -2447,6 +2447,25 @@ class Kever:
                                       "delegated pre = {} with evt = {}."
                                       "".format(serder.pre, ked))
 
+            # Parse and check the new next key digests and next threshold before
+            # anything is logged. Checked only after .logEvent, by the reads below
+            # or by .state() when key state is pinned, a bad n or nt would be
+            # accepted as first seen and then raise, leaving the prior next
+            # digests (now exposed as current keys) in force.
+            try:
+                ndigers = serder.ndigers
+                ntholder = serder.ntholder
+            except KeriError as ex:
+                raise ValidationError(f"Invalid next key digests or next "
+                                      f"threshold for evt = {ked}.") from ex
+            if ndigers is None or ntholder is None:
+                raise ValidationError(f"Missing next key digests or next "
+                                      f"threshold for evt = {ked}.")
+            if ntholder.size > len(ndigers):
+                raise ValidationError(f"Invalid next threshold = "
+                                      f"{ntholder.sith} for next key digests = "
+                                      f"{serder.ndigs} for evt = {ked}.")
+
             tholder, toader, wits, cuts, adds = self.rotate(serder)
 
             # Validates signers, delegation if any, and witnessing when applicable
@@ -2481,8 +2500,8 @@ class Kever:
             self.ilk = ilk
             self.tholder = tholder
             self.verfers = serder.verfers
-            self.ndigers = serder.ndigers
-            self.ntholder = serder.ntholder
+            self.ndigers = ndigers
+            self.ntholder = ntholder
 
             self.toader = toader
             self.wits = wits
