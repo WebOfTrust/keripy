@@ -695,7 +695,7 @@ class TCPMessenger(doing.DoDoer):
         self.wit = wit
         self.url = url
         self.version = self.hab.psr.version
-        self.posted = 0
+        self.messageInProgress = False
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -731,7 +731,7 @@ class TCPMessenger(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.posted += 1
+            self.messageInProgress = True
 
             client.tx(msg)  # send to connected remote
 
@@ -739,6 +739,7 @@ class TCPMessenger(doing.DoDoer):
                 yield self.tock
 
             self.sent.append(msg)
+            self.messageInProgress = False
             yield self.tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -747,7 +748,8 @@ class TCPMessenger(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.sent) == self.posted
+        """Whether all queued messages have finished sending."""
+        return not self.msgs and not self.messageInProgress
 
 
 class TCPStreamMessenger(doing.DoDoer):
@@ -766,7 +768,7 @@ class TCPStreamMessenger(doing.DoDoer):
         self.wit = wit
         self.url = url
         self.version = self.hab.psr.version
-        self.posted = 0
+        self.messageInProgress = False
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -804,7 +806,7 @@ class TCPStreamMessenger(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.posted += 1
+            self.messageInProgress = True
 
             client.tx(msg)  # send to connected remote
 
@@ -812,6 +814,7 @@ class TCPStreamMessenger(doing.DoDoer):
                 yield self.tock
 
             self.sent.append(msg)
+            self.messageInProgress = False
             yield self.tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -820,7 +823,8 @@ class TCPStreamMessenger(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.sent) == self.posted
+        """Whether all queued messages have finished sending."""
+        return not self.msgs and not self.messageInProgress
 
 
 class HTTPMessenger(doing.DoDoer):
@@ -838,7 +842,7 @@ class HTTPMessenger(doing.DoDoer):
             auth (str | None): optional 2FA auth codes for witnesses."""
         self.hab = hab
         self.wit = wit
-        self.posted = 0
+        self.pending = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -877,9 +881,9 @@ class HTTPMessenger(doing.DoDoer):
                                 "Content-Length": len(msg),
                                 CESR_DESTINATION_HEADER: self.wit})
                 self.client.request(method="PUT", path="/", headers=headers, body=bytes(msg))
-                self.posted += 1
+                self.pending += 1
             else:
-                self.posted += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
+                self.pending += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
                 yield self.tock
 
@@ -895,12 +899,14 @@ class HTTPMessenger(doing.DoDoer):
             while self.client.responses:
                 rep = self.client.respond()
                 self.sent.append(rep)
+                self.pending -= 1
                 yield
             yield
 
     @property
     def idle(self):
-        return len(self.msgs) == 0 and self.posted == len(self.sent)
+        """Whether all queued requests have received responses."""
+        return not self.msgs and self.pending == 0
 
 
 class HTTPStreamMessenger(doing.DoDoer):
