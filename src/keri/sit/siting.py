@@ -6,7 +6,7 @@ Siter functionality
 
 """
 
-from collections import namedtuple
+from collections import namedtuple, deque
 
 from .. import Versionage, InvalidCodeError
 from ..core import (MtrDex, DigDex, NonceDex, Noncer,  Ilker, Diger, Number)
@@ -1195,50 +1195,152 @@ class Siter:
         raise ValueError(f"Should never get here")
 
 
-    def trace(self):
+    def trace(self, terse=True, leafive=True):
         """Returns list of leaves in depth first search order.
         Children firt left then right.
 
-        Each entry is string with leaf limb at node twig MSb)
+        Returns:
+            result (tuple): of form (leaves, metrics) where:
+                            leaves (list); str rep in depth first order.
+                                should be lexocrographic by leaf limb
+                                Each entry leaf limb with branch of node twigs
+                                and leaf depth = # nodes in branch including root
+
+                            metrics (dict):  of leaves  with fields:
+                                depthmax (int): maximum depth among leaves
+                                depthmin (int): minimum depth among leaves
+                                depthsum (int): sum of leaf depths for depthave
+                                depthave (float): average depth for L leaves
+                                leafcount (int): count of leaves
+
+        Parameters:
+            terse (bool): True means leaf limb and node twig in string are
+                            represented as 8 bits of binary for debugging
+                          False means leaf limb and node twig in string are
+                            represented in hex
+            leafive(bool):  True fill leaves list (default)
+                             False do not fill leaves list
+
         """
-        leaves = []  # mutable will fill in as it traces
-        self._trace(self.root, leaves)
+        leaves = []  # mutable holds leaves in depth first search order
+        branch = deque()  # mutable nodes on a given branch to leaf
+        branch.appendleft(self.root)
+        metrics = dict(depthmax=0, depthmin=0, depthsum=0, depthave=0.0, leafcount=0)  # mutable of leves
+        self._trace(self.root, leaves, branch, metrics, terse=terse, leafive=leafive)
+        if metrics['leafcount']:
+            metrics['depthave'] = metrics['depthsum'] / metrics['leafcount']
+        return (leaves, metrics)
 
-        return leaves
 
-
-    def _trace(self, node, leaves):
+    def _trace(self, node, leaves, branch, metrics, terse=True, leafive=True):
         """Recursive descent depth first trace starting at node to find attached
         leaves where chidren are searched first left then right
 
         Each entry is tuple of (leaf limb, node limb MSb)
+
+        Parameters:
+            node (Partage): instance of node at current level of trace
+                            has Matter instance values
+            leaves (list): append leave as encountered via depth first traversal
+                           mutable so can update via recursive calls
+            branch (deque): nodes in current branch to leaf
+                           mutable so can update via recursive calls
+            metrics (dict):  fields are metrics
+                            mutable so can update via recursive
+                                depthmax (int): maximum depth among leaves
+                                depthmin (int): minimum depth among leaves
+                                depthsum (int): sum of leaf depths for depthave
+                                depthave (float): average depth for L leaves
+                                leafcount (int): count of leaves
+            terse (bool): True means leaf limb and node twig in string are
+                            represented as 8 bits of binary for debugging
+                          False means leaf limb and node twig in string are
+                            represented in hex
+            leafive(bool):  True fill leaves list (default)
+                             False do not fill leaves list
+
+
         """
-        limb = node.part.limb.num
-        span = node.part.span.num
-        if (twig := self.twigAtSpanInt(limb, span)) is not None:
-            showtwig = f"{twig:0{span}b}"
-        else:
-            showtwig = f"root"
-
+        depth = len(branch)
         lefter = node.part.left
-        if not lefter.nonce:  # left leaf empty
-            leaves.append(f"left: empty @ {showtwig}")
-        elif (leafage := self.getLeaf(lefter)) is not None: # left leaf
+        side = 'left'
+        if leafive and not lefter.nonce:  # left leaf empty
+            leaves.append(f"{side}#{depth}=empty@{self._showtwig(node, terse=terse)}")
 
-            leaves.append(f"left: {(leafage.limb.num>>248):08b} @ {showtwig}")
+        elif (leafage := self.getLeaf(lefter)) is not None: # left leaf
+            if leafive:
+                shows = '@'.join(self._showtwig(n, terse) for n in branch)
+                if terse:
+                    #size = min(leafage.span.num, 16)
+                    leaves.append(f"{side}#{depth}={(leafage.limb.num>>248):08b}@{shows}")
+                else:
+                    leaves.append(f"{side}#{depth}={leafage.limb.numh}@{shows}")
+            metrics['depthsum'] += depth
+            if depth > metrics['depthmax']:
+                metrics['depthmax'] = depth
+            if metrics['depthmin'] == 0 or metrics['depthmin'] > depth:
+                metrics['depthmin'] = depth
+            metrics['leafcount'] += 1
+
         else: #left node so recurse
             nodage = self.getNode(lefter)
-            self._trace(Partage(lefter, nodage), leaves)
+            child = Partage(lefter, nodage)
+            branch.appendleft(child)
+            self._trace(child, leaves, branch, metrics, terse, leafive)
+            branch.popleft()
+
 
         righter = node.part.right
-        if not righter.nonce:  # right leaf empty
-            leaves.append(f"right: empty @ {showtwig}")
+        side = "right"
+        if leafive and not righter.nonce:  # right leaf empty
+            leaves.append(f"{side}#{depth}=empty@{self._showtwig(node, terse=terse)}")
+
         elif (leafage := self.getLeaf(righter)) is not None: # right leaf
-            leaves.append(f"right: {(leafage.limb.num>>248):08b} @ {showtwig}")
+            if leafive:
+                shows = '@'.join(self._showtwig(n, terse) for n in branch)
+                if terse:
+                    #size = min(leafage.span.num, 16)
+                    leaves.append(f"{side}#{depth}={(leafage.limb.num>>248):08b}@{shows}")
+                else:
+                    leaves.append(f"{side}#{depth}={leafage.limb.numh}@{shows}")
+            metrics['depthsum'] += depth
+            if depth > metrics['depthmax']:
+                metrics['depthmax'] = depth
+            if metrics['depthmin'] == 0 or metrics['depthmin'] > depth:
+                metrics['depthmin'] = depth
+            metrics['leafcount'] += 1
+
         else: #right node so recurse
             nodage = self.getNode(righter)
-            self._trace(Partage(righter, nodage), leaves)
+            child = Partage(lefter, nodage)
+            branch.appendleft(child)
+            self._trace(child, leaves, branch, metrics, terse, leafive)
+            branch.popleft()
 
 
 
+    def _showtwig(self, node, terse=True):
+        """Create string of node twig for trace display purposes
+
+        Returns:
+            show (str):  string representation of node twig modified by terse
+
+        Parameters:
+            node (Partage): instace whose values are Matter primitive instances
+            terse (bool):  True means compact display in bits may cut off longer twigs
+                           False means full display in hex
+        """
+        if (twig := self.twigAtSpanInt(node.part.limb.num, node.part.span.num)) is not None:
+            if terse:
+                size = min(node.part.span.num, 8)
+                show = f"{twig:0{size}b}"
+                if size < node.part.span.num:
+                    show += "..."
+            else:
+                show = node.part.limb.numh
+
+        else:
+            show = f"root"
+
+        return show
 

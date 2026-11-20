@@ -4,6 +4,8 @@ tests.sit.test_siting module
 
 """
 import random
+import math
+
 import pytest
 from keri import Versionage
 from keri.core import NumDex, Number, DigDex, Diger, Noncer, Verser, Ilker
@@ -616,8 +618,20 @@ def test_insert_logic():
     }
     assert len(siter.nodes) == 1
 
-    trace = siter.trace()
-    assert trace == ['left: empty @ root', 'right: empty @ root']
+    trace, metrics = siter.trace()
+    assert trace == \
+    [
+        'left#1=empty@root',
+        'right#1=empty@root'
+    ]
+    assert metrics == \
+    {
+        'depthmax': 0,
+        'depthmin': 0,
+        'depthsum': 0,
+        'depthave': 0.0,
+        'leafcount': 0
+    }
 
     # test ._siter
     # test insert leaves on empty node children
@@ -654,8 +668,9 @@ def test_insert_logic():
                        left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
                        right='1AAP')
     }
-    trace = siter.trace()
-    assert trace == ['left: 01000000 @ root', 'right: empty @ root']
+    trace, metrics = siter.trace()
+    assert trace == ['left#1=01000000@root', 'right#1=empty@root']
+    metrics == {'depthmax': 1, 'depthmin': 1, 'depthsum': 1}
 
     # test right child
     # manually create leaf using  limber '10000000'
@@ -687,8 +702,22 @@ def test_insert_logic():
                        left='EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-',
                        right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
     }
-    trace = siter.trace()
-    assert trace == ['left: 01000000 @ root', 'right: 10000000 @ root']
+    trace, metrics = siter.trace()
+    assert trace == \
+    [
+        'left#1=01000000@root',
+        'right#1=10000000@root'
+    ]
+    metrics['depthave'] = metrics['depthsum'] / metrics['leafcount']
+    assert metrics == \
+    {
+        'depthmax': 1,
+        'depthmin': 1,
+        'depthsum': 2,
+        'depthave': 1.0,
+        'leafcount': 2
+    }
+
 
     # test fork left child  where MSb of leaf is 0
     # manually create leaf using  limber '01010000'
@@ -720,13 +749,23 @@ def test_insert_logic():
                        left='EArbnstk0UD1VExNPdcgyNMXI9OGKb340wUhqilbcfP6',
                        right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')
     }
-    trace = siter.trace()
+    trace, metrics = siter.trace()
     assert trace == \
     [
-        'left: 01000000 @ 010',
-        'right: 01010000 @ 010',
-        'right: 10000000 @ root'
+        'left#2=01000000@010@root',
+        'right#2=01010000@010@root',
+        'right#1=10000000@root'
     ]
+    metrics['depthave'] = metrics['depthsum'] / metrics['leafcount']
+    assert metrics == \
+    {
+        'depthmax': 2,
+        'depthmin': 1,
+        'depthsum': 5,
+        'depthave': 1.6666666666666667,
+        'leafcount': 3
+    }
+    assert math.log2(metrics["leafcount"]) == 1.584962500721156
 
     # walk down
     assert siter.isNode(siter.root.part.left)
@@ -764,14 +803,24 @@ def test_insert_logic():
                        left='EArbnstk0UD1VExNPdcgyNMXI9OGKb340wUhqilbcfP6',
                        right='EG-4J3gbg5ok_XNVHxEizVRL6SclilBLf4O971f4DeYn')}
 
-    trace = siter.trace()
+    trace, metrics = siter.trace()
     assert trace == \
     [
-        'left: 01000000 @ 010',
-        'right: 01010000 @ 010',
-        'left: 10000000 @ 10',
-        'right: 10100000 @ 10'
+        'left#2=01000000@010@root',
+        'right#2=01010000@010@root',
+        'left#2=10000000@10@root',
+        'right#2=10100000@10@root'
     ]
+    metrics['depthave'] = metrics['depthsum'] / metrics['leafcount']
+    assert metrics == \
+    {
+        'depthmax': 2,
+        'depthmin': 2,
+        'depthsum': 8,
+        'depthave': 2.0,
+        'leafcount': 4
+    }
+    assert math.log2(metrics["leafcount"]) == 2.0
 
     # walk down
     assert siter.isNode(siter.root.part.right)
@@ -978,21 +1027,33 @@ def test_insert_logic():
     # Test if trees are equal despite different order of adding leafs
     assert siter1.root.said.qb64 == siter0.root.said.qb64  # !!!! root saids match
 
-    trace0 = siter0.trace()
+    trace0, metrics0 = siter0.trace()
     assert trace0 == \
     [
-        'left: 01000000 @ 010',
-        'right: 01010000 @ 010',
-        'left: 01100000 @ 011',
-        'right: 01110000 @ 011',
-        'left: 10000000 @ 10',
-        'right: 10100000 @ 10',
-        'left: 11100000 @ 111',
-        'right: 11110000 @ 111'
+        'left#3=01000000@010@01@root',
+        'right#3=01010000@010@01@root',
+        'left#3=01100000@011@01@root',
+        'right#3=01110000@011@01@root',
+        'left#3=10000000@10@1@root',
+        'right#3=10100000@10@1@root',
+        'left#3=11100000@111@1@root',
+        'right#3=11110000@111@1@root'
     ]
+    assert metrics0 == \
+    {
+        'depthmax': 3,
+        'depthmin': 3,
+        'depthsum': 24,
+        'depthave': 3.0,
+        'leafcount': 8
+    }
+    assert math.log2(metrics0["leafcount"]) == 3.0
 
-    trace1 = siter1.trace()
+
+    trace1, metrics1 = siter1.trace()
+    metrics1['depthave'] = metrics1['depthsum'] / metrics1['leafcount']
     assert trace1 == trace0
+    assert metrics1 == metrics0
 
 
     # Verity that order of insertion does not change root. I.e. structrure of
@@ -1015,15 +1076,23 @@ def test_insert_logic():
     assert len(siter.nodes) == len(leaves)
 
     siterT0 = siter
-    traceT0 = siter.trace()
+    traceT0, metricsT0 = siter.trace()
     assert traceT0 == \
     [
-        'left: 00001000 @ 000',
-        'right: 00010000 @ 000',
-        'right: 00100000 @ 00',
-        'right: 01000000 @ 0',
-        'right: empty @ root'
+        'left#4=00001000@000@00@0@root',
+        'right#4=00010000@000@00@0@root',
+        'right#3=00100000@00@0@root',
+        'right#2=01000000@0@root',
+        'right#1=empty@root'
     ]
+    assert metricsT0 == \
+    {
+        'depthmax': 4,
+        'depthmin': 2,
+        'depthsum': 13,
+        'depthave': 3.25,
+        'leafcount': 4
+    }
 
     # test reverse  order
     leaves = [limbers['00001000'],
@@ -1041,17 +1110,10 @@ def test_insert_logic():
     assert len(siter.nodes) == len(leaves)
 
     siterT1 = siter
-    traceT1 = siter.trace()
-    assert traceT1 == \
-    [
-        'left: 00001000 @ 000',
-        'right: 00010000 @ 000',
-        'right: 00100000 @ 00',
-        'right: 01000000 @ 0',
-        'right: empty @ root'
-    ]
-
-    assert siterT1.root.said.qb64 == siterT0.root.said.qb64
+    traceT1, metricsT1 = siter.trace()
+    assert traceT1 == traceT0
+    assert metricsT1 == metricsT0
+    assert siterT1.root.said.qb64 == siterT0.root.said.qb64 # !yes equiv
 
 
     # do random sample insertions of all limbers to compare
@@ -1104,35 +1166,44 @@ def test_insert_logic():
 
     siterC = siter
 
+    # verify order independent
     assert siterB.root.said.qb64 == siterA.root.said.qb64
     assert siterC.root.said.qb64 == siterB.root.said.qb64
     assert siterC.root.said.qb64 == siterA.root.said.qb64
 
-    # so current logic is not a set. Was just serindipoudous with few leaves
-    # so need to analyze to see if it can be fixed or its not possible
 
-    traceA = siterA.trace()
+    traceA, metricsA = siterA.trace()
     assert traceA == \
     [
-        'left: 00000000 @ 0000',
-        'right: 00001000 @ 0000',
-        'right: 00010000 @ 000',
-        'left: 00100000 @ 001',
-        'right: 00110000 @ 001',
-        'left: 01000000 @ 010',
-        'right: 01010000 @ 010',
-        'left: 01100000 @ 011',
-        'right: 01110000 @ 011',
-        'left: 10000000 @ 100',
-        'right: 10010000 @ 100',
-        'left: 10100000 @ 101',
-        'right: 10110000 @ 101',
-        'left: 11000000 @ 110',
-        'right: 11010000 @ 110',
-        'left: 11100000 @ 111',
-        'left: 11110000 @ 1111',
-        'right: 11111111 @ 1111'
+        'left#5=00000000@0000@000@00@0@root',
+        'right#5=00001000@0000@000@00@0@root',
+        'right#4=00010000@000@00@0@root',
+        'left#4=00100000@001@00@0@root',
+        'right#4=00110000@001@00@0@root',
+        'left#4=01000000@010@01@0@root',
+        'right#4=01010000@010@01@0@root',
+        'left#4=01100000@011@01@0@root',
+        'right#4=01110000@011@01@0@root',
+        'left#4=10000000@100@10@1@root',
+        'right#4=10010000@100@10@1@root',
+        'left#4=10100000@101@10@1@root',
+        'right#4=10110000@101@10@1@root',
+        'left#4=11000000@110@11@1@root',
+        'right#4=11010000@110@11@1@root',
+        'left#4=11100000@111@11@1@root',
+        'left#5=11110000@1111@111@11@1@root',
+        'right#5=11111111@1111@111@11@1@root'
     ]
+    assert metricsA == \
+    {
+        'depthmax': 5,
+        'depthmin': 4,
+        'depthsum': 76,
+        'depthave': 4.222222222222222,
+        'leafcount': 18
+    }
+    assert math.log2(metricsA['leafcount']) == 4.169925001442312
+
 
     # Preliminary tests show that core property of sparse Merkle tree is provided
     # same set of leaves == same structure == same root said (digest)
@@ -1189,6 +1260,29 @@ def siter_insert():
 
     assert list(siter.infos.values()) == list(leafersqb64.values())  # ordering is serendipitous
 
+    trace, metrics = siter.trace(terse=False)
+    assert trace == \
+    [
+        'left#4=6f7d7c15b1ff92fb9b2d67584efc3c93fa106173a08235b06c1f501ab4ff120@0@0@0@root',
+        'left#5=b270a16e41491606e21f2b378f5e9655ff519de6d4aaa485b64d762ea3b4507@800000000000000000000000000000000000000000000000000000000000000@0@0@0@root',
+        'right#5=d58c15d9f6b72b223981eaa489763340fb16a1431f49235a4dd398ef0e14f73@800000000000000000000000000000000000000000000000000000000000000@0@0@0@root',
+        'right#3=26b6db51531728635d6fead71c240f2837a54e05c35af5c7ca046dd267133bb7@0@0@root',
+        'left#3=580e09879f2f1533fa84f33e91972597e2140344c6d827fb9b67ad6c505840c8@4000000000000000000000000000000000000000000000000000000000000000@0@root',
+        'right#3=72f0d9ba47e94d898c3742f382e33b9bc888b2f9825294b7ac21c8715e16a58f@4000000000000000000000000000000000000000000000000000000000000000@0@root',
+        'left#2=cbeffbaddbe2fd5758857e7e2b633596fe9c5c41dae66fad368faba28372a988@c000000000000000000000000000000000000000000000000000000000000000@root',
+        'right#2=e9a52caced99580fc4cc7baa8a682ec6c2fc3762e9981634ff560413840bc845@c000000000000000000000000000000000000000000000000000000000000000@root'
+    ]
+
+    assert metrics == \
+    {
+        'depthmax': 5,
+        'depthmin': 2,
+        'depthsum': 27,
+        'depthave': 3.375,
+        'leafcount': 8
+    }
+    assert math.log2(metrics['leafcount']) == 3.0
+
 
     # make leafers
     count = 1024
@@ -1213,8 +1307,37 @@ def siter_insert():
 
     assert len(roots) == 1  # set only adds unique values
 
-    # 1000 random leafs in 4  random orders same root. Stron evidence of insert
-    # ghost node rules are correct. !!!
+
+    # test metrics
+    # make leafers
+    count = 1024
+    leafers = {}
+    for i in range(0, count):
+        key = f"info_{i:04x}"
+        val = Noncer(ser=key.encode(), code=code)
+        leafers[key] = val
+
+    vals = list(leafers.values())
+
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
+    for val in vals:
+        siter.insert(val)
+
+    leaves, metrics =siter.trace(terse=False, leafive=False)
+    assert not leaves
+    assert metrics == \
+    {
+        'depthmax': 13,
+        'depthmin': 8,
+        'depthsum': 10543,
+        'depthave': 10.2958984375,
+        'leafcount': 1024
+    }
+    assert math.log2(metrics["leafcount"]) == 10.0
+    # good metrics well balanced tree
+    # depthave ~= log2(leafcount)
+    # depthmax only 3 greater than log2(leafcount)
+    # depthmin only 2 less than log2(leafcount)
 
 
 
