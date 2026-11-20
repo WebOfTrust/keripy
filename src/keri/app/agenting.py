@@ -647,12 +647,12 @@ class WitnessPublisher(doing.DoDoer):
                     _ = (yield self.tock)
 
                 while self.witers:
-                    witer = self.witers[0]
-                    while not witer.idle:
-                        _ = (yield self.tock)
-
-                    self.remove([witer])
-                    self.witers.remove(witer)
+                    for witer in self.witers.copy():
+                        if witer.idle:
+                            self.remove([witer])
+                            self.witers.remove(witer)
+                    if self.witers:
+                        yield self.tock
                 self.cues.push(evt)
 
                 yield self.tock

@@ -451,25 +451,26 @@ def test_witness_publisher_removes_completed_messengers(monkeypatch):
             assert any(deed[2] is second for deed in publisher.deeds)
             assert not publisher.idle
 
-            first.msgs.clear()
-            doist.recur()
-            assert first not in publisher.doers
-            assert not any(deed[2] is first for deed in publisher.deeds)
-            assert first.closed
-            assert second in publisher.doers
-            assert any(deed[2] is second for deed in publisher.deeds)
-            assert not second.closed
-            assert not publisher.idle
-
             second.msgs.clear()
+            doist.recur()
+            assert second not in publisher.doers
+            assert not any(deed[2] is second for deed in publisher.deeds)
+            assert second.closed
+            assert first in publisher.doers
+            assert any(deed[2] is first for deed in publisher.deeds)
+            assert not first.closed
+            assert not publisher.idle
+            assert not publisher.cues
+
+            first.msgs.clear()
             for _ in range(3):
                 doist.recur()
                 if publisher.cues:
                     break
 
-            assert second not in publisher.doers
-            assert not any(deed[2] is second for deed in publisher.deeds)
-            assert second.closed
+            assert first not in publisher.doers
+            assert not any(deed[2] is first for deed in publisher.deeds)
+            assert first.closed
             assert list(publisher.cues) == [evt]
             assert publisher.sent(said=evt["said"])
             assert publisher.idle
