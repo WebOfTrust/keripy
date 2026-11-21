@@ -58,8 +58,9 @@ class Siter:
     leaf limbs. The node's limb and span is stored along with its children's
     limbs.
 
-    A new leaf is inserted by climbing down a branch by following the child
-    node whose limb is a prefix of the leaf.
+    A new leaf is inserted by climbing down a branch where at each fork
+    the leaf follows child nodes whose limb is a prefix of the leaf and if
+    not then creates a new forking node to accomodate the leaf.
 
     When the leaf hits child node with a non-matching prefix then a new
     forking node is inserted above the non-matching node and below the parent
@@ -838,6 +839,8 @@ class Siter:
                              generate leafage then used to generate said of leaf
         """
         limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
+        if not limber.nonce:  # empty limber
+            raise ValueError("Invalid leafer limb={limber.qb64} empty")
         return self.leafFromLimber(limber)
 
 
@@ -879,7 +882,7 @@ class Siter:
 
 
     def _insert(self, leaf, node):
-        """Recursive inset of leafer starting at node. The act of insertion of
+        """Recursive insert of leaf starting at node. The act of insertion of
         a new leaf effectively stretches the node space as needed to fill in/out
         the new leaf. Once a node is created is stays in place and other nodes
         are inserted above it or below it in order to hold new leaves. A given
@@ -970,19 +973,18 @@ class Siter:
         if (nodage := self.getNode(childer)) is not None:  # child is node
             #  walkdown means span of limb of node is longer than common span
             #  between node and leaf
-            # if can walk down on side:
-            #          recurse with with child node on side
-            # else: cannot walk down past child node:
-            #          fork  between node and its child node on side.
-            #                above child node and below node.
-            #          fork at shallowest span diff of leaf and child node on side
-            #          child node should stay on same side of new fork node as it
-            #          was on node and leaf should go on other side of new fork node
-            #          check if swap says otherwise
-            #          update node and return
+            # if cannot walk down on side:
+            #    fork  between node and its child node on side.
+            #     above child node and below node.
+            #    fork at shallowest span diff of leaf and child node on side
+            #    child node should stay on same side of new fork node as it
+            #    was on node and leaf should go on other side of new fork node
             #
+            #    return updated node with forked child
+            # else: cannot walk down past child node:
+            #     recurse with with child node on side
+            #     update node and return
             child = Partage(childer, nodage)  # make child
-
             if not self.fitLeafNode(leafer=leaf.part.limb,
                                     noder=child.part.limb,
                                     spanner=child.part.span):  # cannot walk down
@@ -992,9 +994,148 @@ class Siter:
             # can recurse down child so recurse
             child = self._insert(leaf=leaf, node=child)  # recursion updates child
             # remove, replace, and return updated node with new child on side
-            return self.updateNode(node, child.said, side=side) # right
+            return self.updateNode(node, child.said, side=side)
 
         raise ValueError(f"Should never get here")
+
+
+
+    def delete(self, leafer, strict=False):
+        """Delete leafer
+
+        Returns::
+            result (bool|None):  True means leaf from to leafer was deleted
+                                 False means leaf from leafer was not in tree to delete
+                                 None means problem deleting
+
+        Parameters::
+            leafer (Noncer): instance encoding of leaf info said which said is
+                            digest of actual leaf information. leafer may use
+                            a different digest code from .code.
+                            Thus a siter is compatible with all external leaf
+                            info saids while ensuring for security reasons that
+                            all its internal leaf limbs, leaf saids, and node saids
+                            use the same digest algorithm give by .code.
+            strict (bool): False means check for presence of leaf in .leaves
+                               If not present in .leaves return False
+                               Else traverse tree to find and delete
+                           True means ignore presence and always attempt to find
+                               leaf in tree to delete.
+
+
+        """
+        # setup for ._insert
+        leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+        if not self.hasLeaf(leaf.said) and not strict:
+            return False  # already deleted
+
+        # start at root (values as matter primitives) raise error if ._insert fails
+        try:
+            root = self._delete(leaf, self.root)  # new root with deleted leaf
+            if not root:  # None problems deleting
+                return False  # leaf not present nothing to delete
+            self.root = root
+
+        except ValueError as ex:
+            return None
+
+        self.remLeaf(leaf.said)  # remove leaf from .leaves
+        del self.infos[leaf.part.limb.qb64]  # rem from infos
+        return True
+
+
+
+    def _delete(self, leaf, node, parent=None):
+        """Recursive delete of leaf starting at node.
+
+        Values are Matter instances
+
+
+        Returns::
+            new (Partage|None): instance (said, part) of new updated node replacing
+                           old node where recursive ._delet began where:
+                           said is Noncer instance of node said
+                           part is Nodage instance with Matter instance values
+                           None means leaf not found in tree
+
+        Parameters::
+            leaf (Partage): instance (said, part) of leaf to be deleted where:
+                            said is leaf said Noncer instance
+                            part is Leafage of leaf with Matter instance values
+
+            node (Partage): instance of (said, part) as part of tree to
+                            begin/resume recursive delete where:
+                            said is node said Noncer instance
+                            part is Nodage of node with Matter instance values
+            parent (Partage): parent node of node if any.
+                              None means no parent as when node is root
+
+        """
+        # Walk leaf down appropriate node child branch.
+        # assumes node limb is prefix of leaf limb. leaf fits below node.
+        # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
+        # figure out which side of node, leaf must go
+        if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
+            side = True  # set side to right
+            # get child on right
+            childer = node.part.right   # empty or leaf saider or node saider
+        else:  # go left
+            side = False  # set side to left
+            # get child on left
+            childer = node.part.left  # empty or leaf saider or node saider
+
+        if not childer.nonce:  # child is empty (should only happen at root node)
+            return None  # empty side so leaf not in tree
+
+        if (leafage := self.getLeaf(childer)) is not None:  # child is leaf
+            if leafage.limb.num != leaf.part.limb.num:   # leaf not in tree
+                return None  # nothing to delete
+
+            # found leaf
+            # no parent so node is root, update node on side with empty
+            if not parent:  # node is root
+                childer = Noncer(nonce="")  # replace child with empty
+                return self.updateNode(node, childer, side=side)
+
+            # has parent so shift other side child of node upto parent and
+            # remove node
+            if side:  # leaf on right of node so left child shifts up
+                childer = node.part.left  # other child on left
+            else:  # leaf on left of node so right child shifts up
+                childer = node.part.right
+
+            # which side of parent was node
+            if node.said == parent.part.left:  # node was on left of parent
+                nside = False  # replace on left of parent
+            else:  # node was on right of parent
+                nside = True   # replace on right of parent
+
+            self.remNode(node.said)  # remove node, leaf gets removed in .delete
+            self.updateNode(parent, childer, side=nside)
+
+
+        if (nodage := self.getNode(childer)) is not None:  # child is node
+            #  walkdown means span of limb of node is longer than common span
+            #  between node and leaf
+            # if cannot  walk down on side:
+            #      return None  leaf not in tree
+            # else: can  walk down past child node
+            #       recurse with with child node on side
+            #       update node and return
+            child = Partage(childer, nodage)  # make child to examine
+            if not self.fitLeafNode(leafer=leaf.part.limb,
+                                    noder=child.part.limb,
+                                    spanner=child.part.span):  # cannot walk down
+                # leaf cannot recurese down child node path so leaf not in tree
+                return None  # nothing to delete
+
+            # can recurse down child so recurse
+            child = self._delete(leaf=leaf, node=child, parent=node)  # recursion updates child
+            # remove, replace, and return updated node with deleted leaf in subtree
+            return self.updateNode(node, child.said, side=side)
+
+        raise ValueError(f"Should never get here")
+
 
 
     def trace(self, terse=True, leafive=True):

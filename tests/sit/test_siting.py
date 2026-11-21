@@ -1369,10 +1369,14 @@ def siter_insert():
     # depthave ~= log2(leafcount)
     # depthmax only 3 greater than log2(leafcount)
     # depthmin only 2 less than log2(leafcount)
+    """Done Test"""
 
 
+def test_delete():
+    """Test .delete and ._delete logic"""
 
     """Done Test"""
+
 
 
 if __name__ == "__main__":
@@ -1381,3 +1385,4 @@ if __name__ == "__main__":
     test_setup_limber_vectors()
     test_insert_logic()
     siter_insert()
+    test_delete()
