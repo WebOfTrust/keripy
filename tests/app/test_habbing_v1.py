@@ -671,6 +671,85 @@ def test_habery_reconfigure_v1(mockHelpingNowUTC):
     """Done Test"""
 
 
+@pytest.mark.parametrize(
+    "field, store_name",
+    [("iurls", "oobis"), ("durls", "oobis"), ("wurls", "woobi")])
+@pytest.mark.parametrize(
+    "value",
+    ["https://example.test/oobi/ABC",
+     {"url": "https://example.test/oobi/ABC"},
+     7,
+     None,
+     ("https://example.test/oobi/ABC",),
+     ["https://example.test/oobi/ABC", 7]])
+def test_habery_reconfigure_rejects_invalid_oobi_configuration(
+        field, store_name, value, monkeypatch):
+    with openHby(name="invalid-oobi-config", temp=True,
+                 salt=Salter(raw=b'0123456789abcdef').qb64,
+                 version=TEST_VERSION) as hby:
+        conf = {"dt": "2021-01-01T00:00:00.000000+00:00", field: value}
+        hby.cf.put(conf)
+        if isinstance(value, tuple):
+            monkeypatch.setattr(hby.cf, "get", lambda: conf)
+        store = getattr(hby.db, store_name)
+        before = list(store.getTopItemIter(keys=()))
+
+        with pytest.raises(ConfigurationError, match=field):
+            hby.reconfigure()
+
+        assert list(store.getTopItemIter(keys=())) == before
+
+
+def test_habery_reconfigure_validates_all_oobi_fields_before_writing():
+    with openHby(name="partial-oobi-config", temp=True,
+                 salt=Salter(raw=b'0123456789abcdef').qb64,
+                 version=TEST_VERSION) as hby:
+        hby.cf.put({"dt": "2021-01-01T00:00:00.000000+00:00",
+                    "iurls": ["ftp://localhost/oobi/intro"],
+                    "durls": ["http://localhost/oobi/delegation", 7],
+                    "wurls": ["tcp://localhost/oobi/well-known"]})
+
+        with pytest.raises(ConfigurationError, match="durls"):
+            hby.reconfigure()
+
+        assert list(hby.db.oobis.getTopItemIter(keys=())) == []
+        assert list(hby.db.woobi.getTopItemIter(keys=())) == []
+
+
+def test_habery_reconfigure_accepts_oobi_string_lists_and_empty_lists():
+    with openHby(name="valid-oobi-config", temp=True,
+                 salt=Salter(raw=b'0123456789abcdef').qb64,
+                 version=TEST_VERSION) as hby:
+        dt = "2021-01-01T00:00:00.000000+00:00"
+        hby.cf.put({"dt": dt,
+                    "iurls": ["ftp://localhost/oobi/intro"],
+                    "durls": ["http://localhost/oobi/delegation"],
+                    "wurls": ["tcp://localhost/oobi/well-known"]})
+
+        hby.reconfigure()
+
+        iurl = "ftp://localhost/oobi/intro"
+        durl = "http://localhost/oobi/delegation"
+        wurl = "tcp://localhost/oobi/well-known"
+        assert hby.db.oobis.get(keys=(iurl,)).date == dt
+        assert hby.db.oobis.get(keys=(durl,)).date == dt
+        assert hby.db.woobi.get(keys=(wurl,)).date == dt
+
+        hby.cf.put({"dt": dt, "iurls": [], "durls": [], "wurls": []})
+        hby.reconfigure()
+
+
+def test_habery_reconfigure_ignores_oobi_fields_without_datetime():
+    with openHby(name="undated-oobi-config", temp=True,
+                 salt=Salter(raw=b'0123456789abcdef').qb64,
+                 version=TEST_VERSION) as hby:
+        hby.cf.put({"iurls": "https://example.test/oobi/ABC"})
+
+        hby.reconfigure()
+
+        assert list(hby.db.oobis.getTopItemIter(keys=())) == []
+
+
 if __name__ == "__main__":
     test_make_load_hab_with_habery_v1()
     test_hab_rotate_with_witness_v1()

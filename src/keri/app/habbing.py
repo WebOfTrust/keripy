@@ -851,18 +851,24 @@ class Habery:
         conf = self.cf.get()
         if "dt" in conf:  # datetime of config file
             dt = fromIso8601(conf["dt"])  # raises error if not convert
-            if "iurls" in conf:  # process OOBI URLs
-                for oobi in conf["iurls"]:
+            urls = {}
+            for field in ("iurls", "durls", "wurls"):
+                if field not in conf:
+                    continue
+                values = conf[field]
+                valid = isinstance(values, list) and all(
+                    isinstance(url, str) for url in values)
+                if not valid:
+                    raise ConfigurationError(
+                        f"Invalid {field}: expected a list of strings")
+                urls[field] = values
+
+            for field, store in (("iurls", self.db.oobis),
+                                 ("durls", self.db.oobis),
+                                 ("wurls", self.db.woobi)):
+                for oobi in urls.get(field, []):
                     obr = OobiRecord(date=toIso8601(dt))
-                    self.db.oobis.put(keys=(oobi,), val=obr)
-            if "durls" in conf:  # process OOBI URLs
-                for oobi in conf["durls"]:
-                    obr = OobiRecord(date=toIso8601(dt))
-                    self.db.oobis.put(keys=(oobi,), val=obr)
-            if "wurls" in conf:  # well known OOBI URLs for MFA
-                for oobi in conf["wurls"]:
-                    obr = OobiRecord(date=toIso8601(dt))
-                    self.db.woobi.put(keys=(oobi,), val=obr)
+                    store.put(keys=(oobi,), val=obr)
 
     @property
     def signator(self):
