@@ -12,13 +12,50 @@ import pytest
 from falcon import testing
 from hio.base import doing, tyming
 from hio.core.http.clienting import Response
+from hio.core.tcp import serving
 
 from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.core import Counter, Codens, Salter, SerderKERI, Siger
 from keri.app import (Receiptor, WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
                       runController, openHby, setupWitness)
-from keri.app import agenting, indirecting
+from keri.app import agenting, directing, indirecting
 from keri.help import nowIso8601
+
+
+@pytest.mark.parametrize("messengerKlas", [agenting.TCPMessenger, agenting.TCPStreamMessenger])
+def test_tcp_messenger_idle_tracks_delivery(messengerKlas):
+    with openHby(name="sender") as senderHby, openHby(name="receiver") as receiverHby:
+        sender = senderHby.makeHab(name="sender")
+        receiver = receiverHby.makeHab(name="receiver")
+        server = serving.Server(host="127.0.0.1", port=0)
+        doist = doing.Doist(tock=0.01, limit=3.0,
+                            doers=[serving.ServerDoer(server=server),
+                                   directing.Directant(hab=receiver, server=server)])
+        doist.enter()
+        try:
+            assert server.opened
+            server.eha = server.ha
+            messenger = messengerKlas(hab=sender, wit=receiver.pre,
+                                      url=f"tcp://127.0.0.1:{server.ha[1]}")
+            msg = bytearray(sender.msgOwnEvent(sn=0))
+            assert messenger.idle
+            messenger.msgs.append(msg)
+            assert not messenger.idle
+
+            doist.extend([messenger])
+            while messenger.msgs and doist.tyme < doist.limit:
+                doist.recur()
+            assert not messenger.msgs
+            assert not messenger.idle
+
+            while (not messenger.idle or sender.pre not in receiverHby.kevers) and doist.tyme < doist.limit:
+                doist.recur()
+                time.sleep(doist.tock)
+            assert sender.pre in receiverHby.kevers
+            assert messenger.sent.popleft() == msg
+            assert messenger.idle
+        finally:
+            doist.exit()
 
 
 @pytest.mark.parametrize("version,kind,binary", [
@@ -45,13 +82,15 @@ def test_http_messenger_key_history(version, kind, binary):
         try:
             next(sending)
             next(responding)
+            assert messenger.idle
             messenger.msgs.append(bytearray(stream))
+            assert not messenger.idle
             next(sending)
             assert not messenger.idle
             requests = list(messenger.client.requests)
             messenger.client.requests.clear()
             assert len(requests) == (1 if kind == Kinds.cesr else 2)
-            for request in requests:
+            for index, request in enumerate(requests, start=1):
                 assert request["method"] == ("PUT" if kind == Kinds.cesr else "POST")
                 assert request["headers"]["Authorization"] == "test-auth"
                 assert request["headers"]["CESR-DESTINATION"] == receiver.pre
@@ -68,12 +107,13 @@ def test_http_messenger_key_history(version, kind, binary):
                 reply.update(status=result.status_code, body=result.data, headers={})
                 messenger.client.responses.append(reply)
                 next(responding)
+                assert messenger.sent.popleft().status == 204
+                assert messenger.idle == (index == len(requests))
 
             receiver.psr.parse(ims=end.rxbs, local=False, version=version)
             assert rhby.kevers[sender.pre].sn == sender.kever.sn == 1
             assert rhby.kevers[sender.pre].serder.said == sender.kever.serder.said
             assert messenger.idle
-            assert messenger.posted == len(messenger.sent) == len(requests)
         finally:
             sending.close()
             responding.close()
@@ -412,6 +452,123 @@ def test_witness_sender(seeder, witnessPorter):
         pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder, witnessPorts, witnessUrls)
         runController(doers=[pdoer], expire=15.0)
         assert pdoer.done is True
+
+
+class FakeMessenger(doing.Doer):
+
+    def __init__(self):
+        super().__init__()
+        self.msgs = []
+        self.closed = False
+
+    @property
+    def idle(self):
+        return not self.msgs
+
+    def exit(self):
+        self.closed = True
+
+
+def test_witness_publisher_removes_completed_messengers(monkeypatch):
+    with openHby(name="publisher-lifecycle", temp=True) as hby:
+        first_wit = hby.makeHab(name="first-witness", transferable=False)
+        second_wit = hby.makeHab(name="second-witness", transferable=False)
+        hab = hby.makeHab(name="controller", wits=[first_wit.pre, second_wit.pre])
+        messengers = {}
+
+        def make_messenger(_hab, wit):
+            messenger = FakeMessenger()
+            messengers[wit] = messenger
+            return messenger
+
+        monkeypatch.setattr(agenting, "messenger", make_messenger)
+        publisher = WitnessPublisher(hby=hby)
+        evt = dict(pre=hab.pre, said=hab.pre, msg=hab.msgOwnInception())
+        assert publisher.idle
+        publisher.msgs.append(evt)
+        assert not publisher.idle
+
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[publisher])
+        doist.enter()
+        try:
+            for _ in range(4):
+                doist.recur()
+                if len(messengers) == 2:
+                    break
+
+            first = messengers[first_wit.pre]
+            second = messengers[second_wit.pre]
+            assert first in publisher.doers and second in publisher.doers
+            assert any(deed[2] is first for deed in publisher.deeds)
+            assert any(deed[2] is second for deed in publisher.deeds)
+            assert not publisher.idle
+
+            second.msgs.clear()
+            doist.recur()
+            assert second not in publisher.doers
+            assert not any(deed[2] is second for deed in publisher.deeds)
+            assert second.closed
+            assert first in publisher.doers
+            assert any(deed[2] is first for deed in publisher.deeds)
+            assert not first.closed
+            assert not publisher.idle
+            assert not publisher.cues
+
+            first.msgs.clear()
+            for _ in range(3):
+                doist.recur()
+                if publisher.cues:
+                    break
+
+            assert first not in publisher.doers
+            assert not any(deed[2] is first for deed in publisher.deeds)
+            assert first.closed
+            assert list(publisher.cues) == [evt]
+            assert publisher.sent(said=evt["said"])
+            assert publisher.idle
+            publisher.cues.popleft()
+            assert publisher.idle
+        finally:
+            doist.exit()
+
+
+def test_witness_publisher_skipped_request_does_not_remain_active():
+    with openHby(name="publisher-skipped", temp=True) as hby:
+        publisher = WitnessPublisher(hby=hby)
+        publisher.msgs.append(dict(pre="missing", msg=b"event"))
+        assert not publisher.idle
+
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[publisher])
+        doist.enter()
+        try:
+            for _ in range(3):
+                doist.recur()
+                if not publisher.msgs:
+                    break
+
+            assert not publisher.msgs
+            assert not publisher.cues
+            assert publisher.idle
+        finally:
+            doist.exit()
+
+
+def test_witness_publisher_completes_without_witnesses():
+    with openHby(name="publisher-no-witnesses", temp=True) as hby:
+        hab = hby.makeHab(name="controller", wits=[])
+        publisher = WitnessPublisher(hby=hby)
+        evt = dict(pre=hab.pre, said=hab.pre, msg=hab.msgOwnInception())
+        publisher.msgs.append(evt)
+
+        doist = doing.Doist(tock=0.03125, limit=1.0, doers=[publisher])
+        doist.enter()
+        try:
+            doist.recur()
+            assert list(publisher.cues) == [evt]
+            assert publisher.sent(said=evt["said"])
+            assert publisher.idle
+        finally:
+            doist.exit()
 
 
 class PublishDoer(doing.DoDoer):
