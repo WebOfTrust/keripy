@@ -573,11 +573,12 @@ who buld their own trees.
 The popular optimized compact SMT algorithms like JellyFish, Aergo, and Ethereum
 whose main use case are verifiable maps for smart contracts all use a radix tree
 (called a trie) to minimize disk reads by chunking the tree into subtrees.
-In a radix tree (trie) each read returns a sub tree of 16 nodes (4 bit radix).
+In a radix tree (trie) each read returns a sub tree of 16 nodes (radix 16 or
+4 bits = 4 level subtree).
 Internally all 16 nodes in each radix subtree must be
 examined when doing insertion/deletion/inclusing/exclusion operations. The
 primary advantage of radix chunking is the worst case for traversing a tree of
-depth 256 requires only 32 reads (256 / 16). Thus the optimization is to
+depth 256 requires only 64 reads (256 / 4). Thus the optimization is to
 minimize disk access. In the case of  Jellyfish and Aergo the ancestor nodes
 of any nodes with non-empty children must be expanded in order to correctly
 position a given radix subtree  to generate stable root hashes that do not change
