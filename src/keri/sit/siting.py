@@ -403,7 +403,7 @@ class Siter:
         self.pinNode(saider=self.root.said, nodage=self.root.part)
 
 
-    def saidagize(self, partage):
+    def saidagize(self, partage, sayit=False):
         """Populates and saidifys an appropriate saidage derived from partage
         as determined by type of partage
 
@@ -414,12 +414,16 @@ class Siter:
 
         Parameters::
             partage (Partage): instance with Matter instance field values
+            sayit (bool): True means recompute said of resultant saidage
+                          False means use said from partage. default False
+                            for use case of generating proofs from already
+                            saided parts.
 
         """
         if isinstance(partage.part, Nodage):
             saidage = NodeSaidage(kith=Ilker(ilk=Kiths.node, strict=False),
                                   tuid=self.tuider,
-                                  said=Noncer(nonce=""),
+                                  said=partage.said,
                                   span=partage.part.span,
                                   limb=partage.part.limb,
                                   left=partage.part.left,
@@ -428,14 +432,17 @@ class Siter:
         elif isinstance(partage.part, Leafage):
             saidage = LeafSaidage(kith=Ilker(ilk=Kiths.leaf, strict=False),
                                   tuid=self.tuider,
-                                  said=Noncer(nonce=""),
+                                  said=partage.said,
                                   span=partage.part.span,
                                   limb=partage.part.limb)
 
         else:
             raise ValueError(f"Unrecognized {partage=}")
 
-        return self.saidify(saidage)
+        if sayit:
+            saidage = self.saidify(saidage)
+
+        return saidage
 
 
     def say(self, sayage):
@@ -1219,7 +1226,12 @@ class Siter:
 
 
     def prove(self, leafer):
-        """Delete leafer
+        """Return proof of leafer in tree, either inclusion or exclusion
+        proof is branch of saidages (NodeSaidage|LeafSaidage) down from root where:
+            inclusion proof ends with saidage matching leaf from leafer
+            exclusion proof ends with either saidage of node with uncommon prefix to
+                leaf created from leafer or saidage of leaf that does not match
+                leaf from leafer
 
         Returns::
             proof (tuple):  of form (kind, branch) with values:
@@ -1252,7 +1264,7 @@ class Siter:
         except Exception as ex:  # invalid leafer maybe empty
             return (None, None)  # not provable include nor exclude
 
-        branch = deque()  # mutable so gets populated by recursive descent
+        branch = list()  # mutable so gets populated by recursive descent
         try:
             # populate branch return kind of proof
             kind = self._prove(leaf, self.root, branch)  # proof kind
@@ -1284,7 +1296,7 @@ class Siter:
                             begin/resume recursive descent where:
                             said is node said Noncer instance
                             part is Nodage of node with Matter instance values
-            branch (deque): deque of parts in branch from bottom up order.
+            branch (list):  of parts in branch in top down order including node.
                             branch is mutable and is populated on the way down.
                             When leaf included then bottom of branch is
                                  leaf of leafer
@@ -1296,7 +1308,7 @@ class Siter:
         # assumes node limb is prefix of leaf limb. leaf fits below node.
         # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
         # figure out which side of node, leaf must go
-        branch.appendleft(self.saidagize)  # add node as saidage to branch
+        branch.append(self.saidagize(node))  # add node as saidage to branch
 
         if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
             # get child on right other on left
@@ -1314,7 +1326,7 @@ class Siter:
             else:
                 kind = True  # bottom leaf matches leaf so inclusion proof
             child = Partage(said=childer, part=leafage)  # bottom leaf
-            branch.appendleft(self.saidagize(child))
+            branch.append(self.saidagize(child))
             return kind  # of proof
 
         if (nodage := self.getNode(childer)) is not None:  # child is node
@@ -1329,7 +1341,7 @@ class Siter:
                                     noder=child.part.limb,
                                     spanner=child.part.span):  # cannot walk down
                 # leaf cannot recurse down child node path so leaf not in tree
-                branch.appendleft(self.saidagize(child))  # child is unwalkable node
+                branch.append(self.saidagize(child))  # child is unwalkable node
                 return False  # exclusion proof
 
             # can recurse down child node so recurse

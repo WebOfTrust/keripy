@@ -541,17 +541,26 @@ def test_siter_basic():
     leaf = Partage(said=saider, part=leafage)
 
     # Test .saidagize
-    said = node.said.qb64 # save to compare later
-    node = node._replace(said=Noncer(nonce=""))  # empty said so can verify it recomputes
+    saidnode = node.said.qb64 # save to compare later
     saidage = siter.saidagize(node)
     assert isinstance(saidage, NodeSaidage)
-    assert saidage.said.qb64 == said
+    assert saidage.said.qb64 == saidnode
 
-    said = leaf.said.qb64  # save to compare later
-    leaf = leaf._replace(said=Noncer(nonce=""))  # remove said so can verify it recomputes
+    saidleaf = leaf.said.qb64  # save to compare later
     saidage = siter.saidagize(leaf)
     assert isinstance(saidage, LeafSaidage)
-    assert saidage.said.qb64 == said
+    assert saidage.said.qb64 == saidleaf
+
+    # test sayit parameter
+    node = node._replace(said=Noncer(nonce=""))  # empty said so can verify it recomputes
+    saidage = siter.saidagize(node, sayit=True)
+    assert isinstance(saidage, NodeSaidage)
+    assert saidage.said.qb64 == saidnode
+
+    leaf = leaf._replace(said=Noncer(nonce=""))  # remove said so can verify it recomputes
+    saidage = siter.saidagize(leaf, sayit=True)
+    assert isinstance(saidage, LeafSaidage)
+    assert saidage.said.qb64 == saidleaf
     """Done Test"""
 
 
@@ -1563,8 +1572,165 @@ def test_delete():
 
     """Done Test"""
 
-def test_proof():
+def test_prove():
     """Test Siter.proof method"""
+    code = DigDex.Blake3_256
+    tuid = '0ACiicCYoKAqao8qDdnlFVrY'
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
+
+    # create leafers to build tree
+    leafers = {f"info_{i:04x}": Noncer(ser=f"info_{i:04x}".encode(), code=code)
+                                                            for i in range(16)}
+    leafersqb64 = {key: val.qb64 for key, val in leafers.items()}
+    assert leafersqb64 == \
+    {
+        'info_0000': 'EPEyrH2H4BwnYnoBMa1f_BgOUGkjbgb4401f74WkXiq9',
+        'info_0001': 'EBg0nWFi_-_5S_qmdHAMuHEN5S5lR3BWRmX9q27O8Sdj',
+        'info_0002': 'EBnVf13snqclzWJ6TRZJ2IpBu_YlHBMD0v4urifXoCNF',
+        'info_0003': 'ECwvvGbzhpdbKnM-PCYaDFi984QYP5jH_1nto6O8xSzR',
+        'info_0004': 'EHFqFW8w0TUZTs53RdI5CH5nLMGDN_laoKTqJd444tK-',
+        'info_0005': 'EPgOUHTHcRHuY4uaQ2UMr0SgWWe_i8Vw0LX4tGmNpbCm',
+        'info_0006': 'ENlDE5eJ-HfSSdURrQ8P313-ymKScOeadQEc7T6GSqHj',
+        'info_0007': 'EAkFX_ou2tauGDzxd7rRGehYiq3xRjL5TW7wVzDQ6TAe',
+        'info_0008': 'EAnGd4LBqVE3WahAIyUv9bVjP_iCVx8HFs9BlhWxLAaa',
+        'info_0009': 'ENedSCupUwuEVTW80mw4FVY4Der5wF8jaYFAaFMGMFD1',
+        'info_000a': 'EDutYkYEq02bANrsWWWhfNylWHWxCCPtKKlV5es6bEXt',
+        'info_000b': 'EEFzMPXyGxSdb7ogrxQle1M8FMATatdgg4jsmZRlSyHh',
+        'info_000c': 'EOUEu55gf2tZBkG0L3la5wQ7t-1HTpwUPFPbDV5BcEXe',
+        'info_000d': 'EAGaqrvDEfasmdvy5_RajoV7r9ZwYTkQekaekVk8yBZv',
+        'info_000e': 'EBLmt_4Xj-zsnpozq8FBn-sdeHraFon0iILCGraDZDuh',
+        'info_000f': 'EIc1hX3Ithl24BsE8yLA7tTIKv7o36Fe7qkAr08t0b2t'
+    }
+
+    # build tree from subset of leafers using .insert
+    items = list(leafers.items())
+    leaves = {}
+    for i in range(2, 14):
+        leafer = items[i][1]
+        leaf = siter.insert(leafer)
+        leaves[items[i][0]] = leaf
+
+    # qb64 of limbs of leaves so can see path
+    leavesqb64 =  {key: val.part.limb.qb64 for key, val in leaves.items()}
+    assert leavesqb64 == \
+    {
+        'info_0002': 'EAsnChbkFJFgbiHys3j16WVf9RnebUqqSFtk12LqO0UH',
+        'info_0003': 'EAb318FbH_kvubLWdYTvw8k_oQYXOggjWwbB9QGrT_Eg',
+        'info_0004': 'EFgOCYefLxUz-oTzPpGXJZfiFANExtgn-5tnrWxQWEDI',
+        'info_0005': 'EA1YwV2fa3KyI5geqkiXYzQPsWoUMfSSNaTdOY7w4U9z',
+        'info_0006': 'ECa221FTFyhjXW_q1xwkDyg3pU4Fw1r1x8oEbdJnEzu3',
+        'info_0007': 'EOmlLKztmVgPxMx7qopoLsbC_Ddi6ZgWNP9WBBOEC8hF',
+        'info_0008': 'EAN7kvxCpryZT1FhzvwfFTTBqEgyYtntjqqc1tJt-_H7',
+        'info_0009': 'EKtBkpp_DTKdM3jBpoFVG-B6dcOqIDGeL7fSjzPGac5L',
+        'info_000a': 'EE8S4Oa7MI4R3PrMU0bYx0vB1dZoSOg4N-0rlQ3IGthl',
+        'info_000b': 'EOHGa7O6gv3iS7rjy4iypGwzclrA4MlQZDpaCYpwqX13',
+        'info_000c': 'EG7gHg7ppJuxerH3tJEGEvC_dmIz2nYz_cf-JIVNBFpU',
+        'info_000d': 'EIZiOVOcAHdy-yFIi2P1DcXtw3zL2Q5aQ9w2yG-VQsM7'
+    }
+
+    # make some proofs from leafers
+    key = 'info_0002'
+    kind, branch = siter.prove(leafers[key])
+    assert kind
+    assert len(branch) == 6
+    assert branch[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+
+    key = 'info_0007'
+    kind, branch = siter.prove(leafers[key])
+    assert kind
+    assert len(branch) == 4
+    assert branch[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+
+    key = 'info_000d'
+    kind, branch = siter.prove(leafers[key])
+    assert kind
+    assert len(branch) == 4
+    assert branch[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+
+    # test all leaves
+    for key in leaves.keys():
+        kind, branch = siter.prove(leafers[key])
+        assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+
+    # make exclusion proof
+    key = 'info_0000'  # key not in leaves
+    leafer = leafers[key]
+    leaf = siter.leafFromLeafer(leafer)
+    kind, branch = siter.prove(leafer)
+    assert not kind
+    assert branch[0].said.qb64 == siter.root.said.qb64
+    assert len(branch) == 3
+    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+
+    # test exclusion with empty siter
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
+    kind, branch = siter.prove(leafer)
+    assert not kind
+    assert branch[0].said.qb64 == siter.root.said.qb64
+    assert len(branch) == 1  # so root
+    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+
+    # add left leaf to root
+    siter.insert(leafers['info_0003'])  # limb starts with 0
+    kind, branch = siter.prove(leafer)
+    assert not kind
+    assert branch[0].said.qb64 == siter.root.said.qb64
+    assert len(branch) == 1  # so root
+    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+
+    # add right leaf to root
+    siter.insert(leafers['info_0004'])  # limb starts with 1
+    kind, branch = siter.prove(leafer)
+    assert not kind
+    assert branch[0].said.qb64 == siter.root.said.qb64
+    assert len(branch) == 1  # so root
+    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+
+
+
+    # build tree from leaves from limbers directly using ._insert
+    limbers = setup_limbers_vectors(code=code)
+
+    # setup leaves from limbers
+    leaves = {key: siter.leafFromLimber(val) for key, val in limbers.items()}
+    leavesqb64 = {key: val.part.limb.qb64 for key, val in leaves.items()}
+    assert leavesqb64 == \
+    {
+        '00000000': 'EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '00010000': 'EBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '00100000': 'ECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '00110000': 'EDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '01000000': 'EEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '01010000': 'EFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '01100000': 'EGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '01110000': 'EHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '10000000': 'EIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '10010000': 'EJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '10100000': 'EKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '10110000': 'ELAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '11000000': 'EMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '11010000': 'ENAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '11100000': 'EOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '11110000': 'EPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '00001000': 'EAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        '11111111': 'EP__________________________________________'
+    }
+
+
+    # build tree from leaves using ._insert
+    for leaf in leaves.values():
+        siter.root = siter._insert(leaf, siter.root)
+        siter.pinLeaf(leaf.said, leaf.part)
+
+    # now create some proofs
+
+
+
+
+
 
 
     """Done Test"""
