@@ -1506,15 +1506,19 @@ def test_delete():
     assert len(siter.infos) == count
     assert len(siter.nodes) == count - 1
 
+    leaves = []
     roots.popleft()
     vals.reverse()  # delete in opposite order of insert
     for val in vals:
-        assert siter.delete(val)
+        leaves.append(siter.delete(val))
         assert roots.popleft().said.qb64 == siter.root.said.qb64
 
     assert len(siter.leaves) == 0
     assert len(siter.infos) == 0
     assert len(siter.nodes) == 1
+
+    for leaf, val in zip(leaves, vals):
+        assert leaf.said.qb64 == siter.leafFromLeafer(val).said.qb64
 
     """Done Test"""
 

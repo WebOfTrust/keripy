@@ -866,6 +866,7 @@ class Siter:
 
         """
         # setup for ._insert
+        # return None if ._insert fails
         try:
             leaf = self.leafFromLeafer(leafer)
         except Exception as ex:  # invalid leafer maybe empty
@@ -1008,9 +1009,8 @@ class Siter:
         """Delete leafer
 
         Returns::
-            result (bool|None):  True means leaf from to leafer was deleted
-                                 False means leaf from leafer was not in tree to delete
-                                 None means problem deleting
+            result (Partage|None): when leaf from leafer was found and deleted
+                                   otherwise None means problem deleting
 
         Parameters::
             leafer (Noncer): instance encoding of leaf info said which said is
@@ -1028,21 +1028,23 @@ class Siter:
 
 
         """
-        result = True
-        # setup for ._insert
+        # setup for ._delete
         try:
             leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
         except Exception as ex:  # invalid leafer maybe empty
             return None  # not deletable
 
         if not self.hasLeaf(leaf.said) and not strict:
-            return False  # already deleted
+            return None  # already deleted
 
-        # start at root (values as matter primitives) raise error if ._insert fails
+        result = leaf
+
+        # start at root (values as matter primitives)
+        # return None if ._delete fails due to error
         try:
             root = self._delete(leaf, self.root)  # new root with deleted leaf
             if not root:  # None returned  so leaf not found
-                return False  # nothing to delete
+                return None  # nothing to delete
             self.root = root  # deleted so update root
 
         except ValueError as ex:  # problem deletong
@@ -1151,6 +1153,150 @@ class Siter:
                 return child  # child is already updated parent so skip node update
             # remove, replace, and return updated node after deleted leaf in subtree
             return self.updateNode(node, child.said, side=side)
+
+        raise ValueError(f"Should never get here")
+
+
+    def proof(self, leafer):
+        """Delete leafer
+
+        Returns::
+            proof (tuple):  of form (kind, branch) with values:
+                            kind (bool|None): True means leafer leaf is included
+                                                branch contains proof of inclusion
+                                             False means leafer leaf is excluded
+                                                branch contains proof of exclusion
+                                             None means not provable bad leafer
+                            branch (deque|None): deque of leaves and nodes in
+                                    branch from bottom up order.
+                                    When leaf included then bottom of branch is
+                                         leaf of leafer
+                                    When leaf excluded then bottom of branch is
+                                         some other leaf not leaf of leafer
+
+        Parameters::
+            leafer (Noncer): instance encoding of leaf info said which said is
+                            digest of actual leaf information. leafer may use
+                            a different digest code from .code.
+                            Thus a siter is compatible with all external leaf
+                            info saids while ensuring for security reasons that
+                            all its internal leaf limbs, leaf saids, and node saids
+                            use the same digest algorithm give by .code.
+
+        """
+        # setup for ._proof
+        try:
+            leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+        except Exception as ex:  # invalid leafer maybe empty
+            return (None, None)  # not provable include nor exclude
+
+        branch = deque()  # mutable so gets populated by recursive descent
+        try:
+            # populate branch return kind of proof
+            kind = self._proof(leaf, self.root, branch)  # proof kind
+
+        except ValueError as ex:  # problem proofing
+            return (None, None)
+
+        return (kind, branch) if kind is not None else (None, None)
+
+
+    def _proof(self, leaf, node, branch):
+        """Recursive descent to populate branch from bottom up and to determine
+        proof kind (inclusion or exclusion) for leaf starting at node.
+
+        Values are Matter instances
+
+        Returns::
+            kind (bool|None): True means leafer leaf is included
+                                                branch contains proof of inclusion
+                              False means leafer leaf is excluded
+                                   branch contains proof of exclusion
+                              None means not provable bad leafer
+
+        Parameters::
+            leaf (Partage): instance (said, part) of leaf to be proven where:
+                            said is leaf said Noncer instance
+                            part is Leafage of leaf with Matter instance values
+            node (Partage): instance of (said, part) as part of tree to
+                            begin/resume recursive descent where:
+                            said is node said Noncer instance
+                            part is Nodage of node with Matter instance values
+            branch (deque): deque of leaves and nodes in branch from bottom up order.
+                            branch is multable and is populated on the way down.
+                            When leaf included then bottom of branch is
+                                 leaf of leafer
+                            When leaf excluded then bottom of branch is
+                                 either a node that leaf cannot traverse below
+                                 or some other leaf that is not leaf of leafer
+        """
+        # Walk leaf down appropriate node child branch.
+        # assumes node limb is prefix of leaf limb. leaf fits below node.
+        # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
+        # figure out which side of node, leaf must go
+        if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
+            side = True  # set side to right
+            # get child on right other on left
+            childer = node.part.right   # empty or leaf saider or node saider
+            other = node.part.left
+        else:  # go left
+            side = False  # set side to left
+            # get child on left other on right
+            childer = node.part.left  # empty or leaf saider or node saider
+            other = node.part.right
+
+        if not childer.nonce:  # child is empty (should only happen at root node)
+            if node.part.span.num == 0:  # node is root so not recursed
+                if other.nonce:
+                    if (otherage := self.getLeaf(other)) is None:
+                        if (otherage := self.getNode(other)) is None:
+                            return None  # broken tree
+                    branch.append(Partage(said=other, part=otherage))
+
+                branch.append(node)  # proof of root node with empty on leaf side
+            return False  # empty on leaf side so leaf not in tree exclusion proof
+
+        if (leafage := self.getLeaf(childer)) is not None:  # child is leaf
+            if leafage.limb.num != leaf.part.limb.num:   # leaf not in tree
+                kind = False  # bottom leaf is not leaf so exclusion proof
+            else:
+                kind = True  # bottom leaf is leaf so inclusion proof
+
+            branch.append(Partage(said=childer, part=leafage))
+            if node.part.span.num == 0:  # node is root so not recursed
+                if other.nonce:  # not recursed so append other child here
+                    if (otherage := self.getLeaf(other)) is None:
+                        if (otherage := self.getNode(other)) is None:
+                            return None  # broken tree
+                    branch.append(Partage(said=other, part=otherage))
+                branch.append(node)  #  not recursed to append root here
+
+            return kind  # of proof
+
+        if (nodage := self.getNode(childer)) is not None:  # child is node
+            #  walkdown means span of limb of node is longer than common span
+            #  between node and leaf
+            # if cannot  walk down child node on side:
+            #      return None  leaf not in tree
+            # else: can  walk down past child node
+            #       recurse with with child node on side
+            child = Partage(childer, nodage)  # make child to examine
+            if not self.fitLeafNode(leafer=leaf.part.limb,
+                                    noder=child.part.limb,
+                                    spanner=child.part.span):  # cannot walk down
+                # leaf cannot recurse down child node path so leaf not in tree
+                branch.append(child)  # bottom is unwalkable node
+                return False  # exclusion proof
+
+            # can recurse down child so recurse
+            kind = self._proof(leaf=leaf, node=child, branch=branch)  # recursion
+            if other.nonce:  # append other child
+                if (otherage := self.getLeaf(other)) is None:
+                    if (otherage := self.getNode(other)) is None:
+                        return None  # broken tree
+                branch.append(Partage(said=other, part=otherage))  # append other child
+            branch.append(node)  # append node
+            return kind
 
         raise ValueError(f"Should never get here")
 
