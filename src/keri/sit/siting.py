@@ -849,7 +849,7 @@ class Siter:
 
         Returns::
             leaf (Partage|None)): of inserted leaf corresponding to leafer
-                When successful insert Partage instance (said, part) where:
+                When insert successful, Partage instance (said, part) where:
                         said is Noncer instance of leaf said
                         part is Leafage instance with Matter instance values
                 Otherwise:  None
@@ -866,7 +866,11 @@ class Siter:
 
         """
         # setup for ._insert
-        leaf = self.leafFromLeafer(leafer)
+        try:
+            leaf = self.leafFromLeafer(leafer)
+        except Exception as ex:  # invalid leafer maybe empty
+            return None  # not insertable
+
         if self.hasLeaf(leaf.said):
             return None  # already inserted
 
@@ -1024,24 +1028,36 @@ class Siter:
 
 
         """
+        result = True
         # setup for ._insert
-        leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+        try:
+            leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+        except Exception as ex:  # invalid leafer maybe empty
+            return None  # not deletable
+
         if not self.hasLeaf(leaf.said) and not strict:
             return False  # already deleted
 
         # start at root (values as matter primitives) raise error if ._insert fails
         try:
             root = self._delete(leaf, self.root)  # new root with deleted leaf
-            if not root:  # None problems deleting
-                return False  # leaf not present nothing to delete
-            self.root = root
+            if not root:  # None returned  so leaf not found
+                return False  # nothing to delete
+            self.root = root  # deleted so update root
 
-        except ValueError as ex:
+        except ValueError as ex:  # problem deletong
             return None
 
-        self.remLeaf(leaf.said)  # remove leaf from .leaves
-        del self.infos[leaf.part.limb.qb64]  # rem from infos
-        return True
+        if not self.remLeaf(leaf.said) and not strict:  # remove leaf from .leaves
+            result = None  # delete not clean
+
+        try:
+            del self.infos[leaf.part.limb.qb64]  # rem from infos
+        except KeyError as ex:
+            if not strict:  # strict
+                return None  # malformed .infos
+
+        return result
 
 
 
@@ -1091,9 +1107,9 @@ class Siter:
             if leafage.limb.num != leaf.part.limb.num:   # leaf not in tree
                 return None  # nothing to delete
 
-            # found leaf
-            # no parent so node is root, update node on side with empty
+            #else leafage.limb.num == leaf.part.limb.num found leaf
             if not parent:  # node is root
+                # no parent so node is root, update node on side with empty
                 childer = Noncer(nonce="")  # replace child with empty
                 return self.updateNode(node, childer, side=side)
 
@@ -1111,7 +1127,7 @@ class Siter:
                 nside = True   # replace on right of parent
 
             self.remNode(node.said)  # remove node, leaf gets removed in .delete
-            self.updateNode(parent, childer, side=nside)
+            return self.updateNode(parent, childer, side=nside)  # update parent
 
 
         if (nodage := self.getNode(childer)) is not None:  # child is node
@@ -1131,7 +1147,9 @@ class Siter:
 
             # can recurse down child so recurse
             child = self._delete(leaf=leaf, node=child, parent=node)  # recursion updates child
-            # remove, replace, and return updated node with deleted leaf in subtree
+            if not self.hasNode(node.said):   # was removed as part of removing leaf
+                return child  # child is already updated parent so skip node update
+            # remove, replace, and return updated node after deleted leaf in subtree
             return self.updateNode(node, child.said, side=side)
 
         raise ValueError(f"Should never get here")
