@@ -403,10 +403,78 @@ class Siter:
         self.pinNode(saider=self.root.said, nodage=self.root.part)
 
 
+    def saidagize(self, partage, sayit=False):
+        """Populates and saidifys an appropriate saidage derived from partage
+        as determined by type of partage
+
+        Returns::
+            saidage (NodeSaidage|LeafSaidage): instance where said is computed
+                    from saidage derived from partage as supplemented with tree
+                    fields from .self.
+
+        Parameters::
+            partage (Partage): instance with Matter instance field values
+            sayit (bool): True means recompute said of resultant saidage
+                          False means use said from partage. default False
+                            for use case of generating proofs from already
+                            saided parts.
+
+        """
+        if isinstance(partage.part, Nodage):
+            saidage = NodeSaidage(kith=Ilker(ilk=Kiths.node, strict=False),
+                                  tuid=self.tuider,
+                                  said=partage.said,
+                                  span=partage.part.span,
+                                  limb=partage.part.limb,
+                                  left=partage.part.left,
+                                  right=partage.part.right)
+
+        elif isinstance(partage.part, Leafage):
+            saidage = LeafSaidage(kith=Ilker(ilk=Kiths.leaf, strict=False),
+                                  tuid=self.tuider,
+                                  said=partage.said,
+                                  span=partage.part.span,
+                                  limb=partage.part.limb)
+
+        else:
+            raise ValueError(f"Unrecognized {partage=}")
+
+        if sayit:
+            saidage = self.saidify(saidage)
+
+        return saidage
+
+
+    def say(self, sayage):
+        """Computes and returns said as Matter primitive of part given by sayage
+        (either nodage or leafage) where said is computed with a Saidage derived
+        from sayage supplemented with per tree and per part field values taken
+        from .self (Siter instance).
+
+        To 'say' is to 'hash' or to 'digest' the part.
+
+        Returns::
+            saider (Diger): instance where said is computed from saidage
+                            derived from sayage as supplemented with tree fields
+
+        Parameters::
+            sayage (Nodage|Leafage): instance of nodage whose field values are Matter
+                             instances
+
+        """
+        if isinstance(sayage, Nodage):
+            return self.sayNode(sayage)
+        elif isinstance(sayage, Leafage):
+            return self.sayLeaf(sayage)
+        else:
+            raise ValueError(f"Unrecognized {sayage=}")
+
+
     def sayNode(self, nodage):
-        """Computes and returns said of node as Matter primitive where said is
-        computed with a NodeSaidage derived from nodage supplemented with per
-        tree and per part field values taken from self (Siter instance)
+        """Computes and returns said as Matter primitive of node given by nodage
+        where said is computed with a NodeSaidage derived from nodage
+        supplemented with per tree and per part field values taken from .self
+        (Siter instance).
         To 'say' is to 'hash' or to 'digest' the node.
 
         Returns::
@@ -424,6 +492,29 @@ class Siter:
                               limb=nodage.limb,
                               left=nodage.left,
                               right=nodage.right)
+        saidage = self.saidify(saidage)
+        return saidage.said
+
+
+    def sayLeaf(self, leafage):
+        """Computes and returns said of leaf as Matter primitive where said is
+        computed with a LeafSaidage derived from leafage supplemented with per
+        tree and per part field values taken from self (Siter instance)
+        To 'say' is to 'hash' or to 'digest' the leaf.
+
+        Returns::
+            saider (Diger): instance where said is computed from LeafSaidage
+                            derived from leafage as supplemented with tree fields
+
+        Parameters::
+            leafage (Leafage): instance of leafage whose field values are Matter
+                             instances
+        """
+        saidage = LeafSaidage(kith=Ilker(ilk=Kiths.leaf, strict=False),
+                              tuid=self.tuider,
+                              said=Noncer(nonce=""),
+                              span=leafage.span,
+                              limb=leafage.limb)
         saidage = self.saidify(saidage)
         return saidage.said
 
@@ -570,29 +661,6 @@ class Siter:
             return False
 
         return True
-
-
-    def sayLeaf(self, leafage):
-        """Computes and returns said of leaf as Matter primitive where said is
-        computed with a LeafSaidage derived from leafage supplemented with per
-        tree and per part field values taken from self (Siter instance)
-        To 'say' is to 'hash' or to 'digest' the leaf.
-
-        Returns::
-            saider (Diger): instance where said is computed from LeafSaidage
-                            derived from leafage as supplemented with tree fields
-
-        Parameters::
-            leafage (Leafage): instance of leafage whose field values are Matter
-                             instances
-        """
-        saidage = LeafSaidage(kith=Ilker(ilk=Kiths.leaf, strict=False),
-                              tuid=self.tuider,
-                              said=Noncer(nonce=""),
-                              span=leafage.span,
-                              limb=leafage.limb)
-        saidage = self.saidify(saidage)
-        return saidage.said
 
 
     def hasLeaf(self, saider):
@@ -866,6 +934,7 @@ class Siter:
 
         """
         # setup for ._insert
+        # return None if ._insert fails
         try:
             leaf = self.leafFromLeafer(leafer)
         except Exception as ex:  # invalid leafer maybe empty
@@ -1008,9 +1077,8 @@ class Siter:
         """Delete leafer
 
         Returns::
-            result (bool|None):  True means leaf from to leafer was deleted
-                                 False means leaf from leafer was not in tree to delete
-                                 None means problem deleting
+            result (Partage|None): when leaf from leafer was found and deleted
+                                   otherwise None means problem deleting
 
         Parameters::
             leafer (Noncer): instance encoding of leaf info said which said is
@@ -1028,21 +1096,23 @@ class Siter:
 
 
         """
-        result = True
-        # setup for ._insert
+        # setup for ._delete
         try:
             leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
         except Exception as ex:  # invalid leafer maybe empty
             return None  # not deletable
 
         if not self.hasLeaf(leaf.said) and not strict:
-            return False  # already deleted
+            return None  # already deleted
 
-        # start at root (values as matter primitives) raise error if ._insert fails
+        result = leaf
+
+        # start at root (values as matter primitives)
+        # return None if ._delete fails due to error
         try:
             root = self._delete(leaf, self.root)  # new root with deleted leaf
             if not root:  # None returned  so leaf not found
-                return False  # nothing to delete
+                return None  # nothing to delete
             self.root = root  # deleted so update root
 
         except ValueError as ex:  # problem deletong
@@ -1154,6 +1224,130 @@ class Siter:
 
         raise ValueError(f"Should never get here")
 
+
+    def prove(self, leafer):
+        """Return proof of leafer in tree, either inclusion or exclusion
+        proof is branch of saidages (NodeSaidage|LeafSaidage) down from root where:
+            inclusion proof ends with saidage matching leaf from leafer
+            exclusion proof ends with either saidage of node with uncommon prefix to
+                leaf created from leafer or saidage of leaf that does not match
+                leaf from leafer
+
+        Returns::
+            proof (tuple):  of form (kind, branch) with values:
+                            kind (bool|None): True means leafer leaf is included
+                                                branch contains proof of inclusion
+                                             False means leafer leaf is excluded
+                                                branch contains proof of exclusion
+                                             None means not provable bad leafer
+                            branch (deque|None): deque parts (nodes and leaves)
+                                    branch from bottom up order.
+                                    When leaf included then bottom of branch is
+                                         leaf of leafer
+                                    When leaf excluded then bottom of branch is
+                                         either some other leaf not leaf of leafer
+                                         or node whose prefix is not common to leaf
+
+        Parameters::
+            leafer (Noncer): instance encoding of leaf info said which said is
+                            digest of actual leaf information. leafer may use
+                            a different digest code from .code.
+                            Thus a siter is compatible with all external leaf
+                            info saids while ensuring for security reasons that
+                            all its internal leaf limbs, leaf saids, and node saids
+                            use the same digest algorithm give by .code.
+
+        """
+        # setup for ._prove
+        try:
+            leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+        except Exception as ex:  # invalid leafer maybe empty
+            return (None, None)  # not provable include nor exclude
+
+        branch = list()  # mutable so gets populated by recursive descent
+        try:
+            # populate branch return kind of proof
+            kind = self._prove(leaf, self.root, branch)  # proof kind
+
+        except ValueError as ex:  # problem proofing
+            return (None, None)
+
+        return (kind, branch) if kind is not None else (None, None)
+
+
+    def _prove(self, leaf, node, branch):
+        """Recursive descent to populate branch from bottom up and to determine
+        proof kind (inclusion or exclusion) for leaf starting at node.
+
+        Values are Matter instances
+
+        Returns::
+            kind (bool|None): True means leafer leaf is included
+                                    branch contains proof of inclusion
+                              False means leafer leaf is excluded
+                                   branch contains proof of exclusion
+                              None means not provable bad leafer
+
+        Parameters::
+            leaf (Partage): instance (said, part) of leaf to be proven where:
+                            said is leaf said Noncer instance
+                            part is Leafage of leaf with Matter instance values
+            node (Partage): instance of (said, part) as part of tree to
+                            begin/resume recursive descent where:
+                            said is node said Noncer instance
+                            part is Nodage of node with Matter instance values
+            branch (list):  of parts in branch in top down order including node.
+                            branch is mutable and is populated on the way down.
+                            When leaf included then bottom of branch is
+                                 leaf of leafer
+                            When leaf excluded then bottom of branch is
+                                 either a node whose prefix is uncommon with leaf
+                                 or some other leaf that is not leaf of leafer
+        """
+        # Walk leaf down appropriate node child branch.
+        # assumes node limb is prefix of leaf limb. leaf fits below node.
+        # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
+        # figure out which side of node, leaf must go
+        branch.append(self.saidagize(node))  # add node as saidage to branch
+
+        if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
+            # get child on right other on left
+            childer = node.part.right   # empty or leaf saider or node saider
+        else:  # go left
+            # get child on left other on right
+            childer = node.part.left  # empty or leaf saider or node saider
+
+        if not childer.nonce:  # child is empty (should only happen at root node)
+            return False  # empty on leaf side so leaf not in tree exclusion proof
+
+        if (leafage := self.getLeaf(childer)) is not None:  # child is leaf
+            if leafage.limb.num != leaf.part.limb.num:   # leaf not in tree
+                kind = False  # bottom leaf not match leaf so exclusion proof
+            else:
+                kind = True  # bottom leaf matches leaf so inclusion proof
+            child = Partage(said=childer, part=leafage)  # bottom leaf
+            branch.append(self.saidagize(child))
+            return kind  # of proof
+
+        if (nodage := self.getNode(childer)) is not None:  # child is node
+            #  walkdown means span of limb of node is longer than common span
+            #  between node and leaf
+            # if cannot  walk down child node on side:
+            #      return None  leaf not in tree
+            # else: can  walk down past child node
+            #       recurse with with child node on side
+            child = Partage(childer, nodage)  # make child to examine
+            if not self.fitLeafNode(leafer=leaf.part.limb,
+                                    noder=child.part.limb,
+                                    spanner=child.part.span):  # cannot walk down
+                # leaf cannot recurse down child node path so leaf not in tree
+                branch.append(self.saidagize(child))  # child is unwalkable node
+                return False  # exclusion proof
+
+            # can recurse down child node so recurse
+            return self._prove(leaf=leaf, node=child, branch=branch)  # recursion
+
+        raise ValueError(f"Should never get here")
 
 
     def trace(self, terse=True, leafive=True):
