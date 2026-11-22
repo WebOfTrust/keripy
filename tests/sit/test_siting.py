@@ -5,6 +5,7 @@ tests.sit.test_siting module
 """
 import random
 import math
+from collections import deque
 
 import pytest
 from keri import Versionage
@@ -1474,7 +1475,7 @@ def test_delete():
     siter.root = root
     assert siter.root.said.qb64 == rootA.said.qb64
 
-    # reinsert in different order
+    # reinsert in different order to see if get same root as before
     siter.root = siter._insert(leaf5, node=siter.root)
     siter.pinLeaf(leaf5.said, leaf5.part)
 
@@ -1482,6 +1483,38 @@ def test_delete():
     siter.pinLeaf(leaf4.said, leaf4.part)
     assert siter.root.said.qb64 == rootC.said.qb64  # get same root as before
 
+
+    # Test .delete
+    # make leafers and insert so can delete
+    count = 8
+    leafers = {}
+    for i in range(0, count):
+        key = f"info_{i:04x}"
+        val = Noncer(ser=key.encode(), code=code)
+        leafers[key] = val
+
+    vals = list(leafers.values())
+    roots = deque()  # roots after every insert
+
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
+    roots.appendleft(siter.root)
+    for val in vals:  # leafers
+        siter.insert(val)
+        roots.appendleft(siter.root)
+
+    assert len(siter.leaves) == count
+    assert len(siter.infos) == count
+    assert len(siter.nodes) == count - 1
+
+    roots.popleft()
+    vals.reverse()  # delete in opposite order of insert
+    for val in vals:
+        assert siter.delete(val)
+        assert roots.popleft().said.qb64 == siter.root.said.qb64
+
+    assert len(siter.leaves) == 0
+    assert len(siter.infos) == 0
+    assert len(siter.nodes) == 1
 
     """Done Test"""
 
