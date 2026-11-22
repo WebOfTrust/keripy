@@ -511,6 +511,47 @@ def test_siter_basic():
     assert isinstance(result, Leafage)
     assert result.span.qb64 == leafage.span.qb64
     assert result.limb.qb64 == leafage.limb.qb64
+
+    # test .say(sayage) where sayage is either Nodage or Leafage
+    # test with nodage
+    spanner = Number(num=1)
+    limb = 2 ** 254
+    limber = Diger(num=limb, code=Siter.Code)  # limb all 0s
+    assert limber.qb64 == 'EEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+    nodage = Nodage(span=spanner,
+                    limb=limber,
+                    left=Noncer(nonce=""),
+                    right=Noncer(nonce=""))
+    saider = siter.sayNode(nodage)
+    assert saider.qb64 == 'ECD_U3STi9BvTJc5RSsBJubJtAFD-UTtS10biijM1hLE'
+    sayage = nodage
+    assert siter.say(sayage).qb64 == saider.qb64
+    node = Partage(said=saider, part=nodage)
+
+    # test with leafage
+    spanner = Number(num=256)  # leaf
+    infoer = Diger(ser=b"Leaf Info get it?", code=DigDex.Blake2b_256) # not default SIT code
+    limber = Diger(ser=infoer.qb64b, code=Siter.Code)
+    assert limber.qb64 == 'ECxPASxNTXD8J_qHJGxwvLqzjCNto7bJtIBivJNCJLS2'
+    leafage = Leafage(span=spanner, limb=limber)
+    saider = siter.sayLeaf(leafage)
+    assert saider.qb64 == 'EMOv2iXtQ43LBLXVs6xXrlH5ldjGCAHF-tMc0UqWA4sB'
+    sayage = leafage
+    assert siter.say(sayage).qb64 == saider.qb64
+    leaf = Partage(said=saider, part=leafage)
+
+    # Test .saidagize
+    said = node.said.qb64 # save to compare later
+    node = node._replace(said=Noncer(nonce=""))  # empty said so can verify it recomputes
+    saidage = siter.saidagize(node)
+    assert isinstance(saidage, NodeSaidage)
+    assert saidage.said.qb64 == said
+
+    said = leaf.said.qb64  # save to compare later
+    leaf = leaf._replace(said=Noncer(nonce=""))  # remove said so can verify it recomputes
+    saidage = siter.saidagize(leaf)
+    assert isinstance(saidage, LeafSaidage)
+    assert saidage.said.qb64 == said
     """Done Test"""
 
 
@@ -1519,6 +1560,12 @@ def test_delete():
 
     for leaf, val in zip(leaves, vals):
         assert leaf.said.qb64 == siter.leafFromLeafer(val).said.qb64
+
+    """Done Test"""
+
+def test_proof():
+    """Test Siter.proof method"""
+
 
     """Done Test"""
 
