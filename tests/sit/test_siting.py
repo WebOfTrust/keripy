@@ -5,6 +5,7 @@ tests.sit.test_siting module
 """
 import random
 import math
+from collections import deque
 
 import pytest
 from keri import Versionage
@@ -1369,10 +1370,154 @@ def siter_insert():
     # depthave ~= log2(leafcount)
     # depthmax only 3 greater than log2(leafcount)
     # depthmin only 2 less than log2(leafcount)
+    """Done Test"""
 
 
+def test_delete():
+    """Test .delete and ._delete logic"""
+    code = DigDex.Blake3_256
+
+    # Basic Tests
+    tuid = '0ACiicCYoKAqao8qDdnlFVrY'
+    siter = Siter(tuid=tuid)  # create Siter with known tuid
+    emptyroot = siter.root
+
+    # try to delete empty from empty tree (root with empty children)
+    leafer = Noncer(nonce="")  # empty leafer
+    assert siter.delete(leafer) is None
+
+    limbers = setup_limbers_vectors(code=code)
+    # test ._delete logic
+    leaf0 = siter.leafFromLimber(limbers['01000000'])
+    leaf1 = siter.leafFromLimber(limbers['10000000'])
+
+    # try to delete leaf not in tree
+    assert siter._delete(leaf=leaf0, node=siter.root) == None
+    assert siter._delete(leaf=leaf1, node=siter.root) == None
+
+    # insert and delete left leaf on empty root
+    siter.root = siter._insert(leaf0, siter.root)
+    siter.pinLeaf(leaf0.said, leaf0.part)
+    assert siter.hasNode(siter.root.said)
+    rootleft = siter.root
+    assert rootleft.said.qb64 != emptyroot.said.qb64
+
+    siter.root = siter._delete(leaf=leaf0, node=siter.root)
+    assert siter.hasNode(siter.root.said)
+    siter.remLeaf(leaf0.said)
+    assert siter.root.said.qb64 == emptyroot.said.qb64
+
+    # insert and delete right leaf on empty root
+    siter.root = siter._insert(leaf1, siter.root)
+    siter.pinLeaf(leaf1.said, leaf1.part)
+    rootright = siter.root
+    assert rootright.said.qb64 != emptyroot.said.qb64 != rootleft.said.qb64
+
+    siter.root = siter._delete(leaf=leaf1, node=siter.root)
+    assert siter.hasNode(siter.root.said)
+    siter.remLeaf(leaf1.said)
+    assert siter.root.said.qb64 == emptyroot.said.qb64
+
+    # siter back to empty
+    assert len(siter.nodes) == 1
+    assert siter.hasNode(siter.root.said)
+    assert siter.root.said.qb64 == emptyroot.said.qb64
+
+    # ok add enough leaves so have nodes
+    leaf2 = siter.leafFromLimber(limbers['00100000'])
+    leaf3 = siter.leafFromLimber(limbers['11000000'])
+    leaf4 = siter.leafFromLimber(limbers['01100000'])
+    leaf5 = siter.leafFromLimber(limbers['10100000'])
+
+    siter.root = siter._insert(leaf0, node=siter.root)
+    siter.pinLeaf(leaf0.said, leaf0.part)
+    assert siter.hasNode(siter.root.said)
+
+    siter.root = siter._insert(leaf1, node=siter.root)
+    siter.pinLeaf(leaf1.said, leaf1.part)
+    assert siter.hasNode(siter.root.said)
+
+    siter.root = siter._insert(leaf2, node=siter.root)
+    siter.pinLeaf(leaf2.said, leaf2.part)
+    assert siter.hasNode(siter.root.said)
+
+    siter.root = siter._insert(leaf3, node=siter.root)
+    siter.pinLeaf(leaf3.said, leaf3.part)
+    assert siter.hasNode(siter.root.said)
+    rootA = siter.root
+
+    siter.root = siter._insert(leaf4, node=siter.root)
+    siter.pinLeaf(leaf4.said, leaf4.part)
+    rootB = siter.root
+
+    siter.root = siter._insert(leaf5, node=siter.root)
+    siter.pinLeaf(leaf5.said, leaf5.part)
+    rootC = siter.root
+
+    leaves, metrics = siter.trace()
+    assert leaves == \
+    [
+        'left#2=00100000@0@root',
+        'left#3=01000000@01@0@root',
+        'right#3=01100000@01@0@root',
+        'left#3=10000000@10@1@root',
+        'right#3=10100000@10@1@root',
+        'right#2=11000000@1@root'
+    ]
+
+    root = siter._delete(leaf=leaf5, node=siter.root)
+    siter.remLeaf(leaf5.said)
+    siter.root = root
+    assert siter.root.said.qb64 == rootB.said.qb64
+
+    root = siter._delete(leaf=leaf4, node=siter.root)
+    siter.remLeaf(leaf4.said)
+    siter.root = root
+    assert siter.root.said.qb64 == rootA.said.qb64
+
+    # reinsert in different order to see if get same root as before
+    siter.root = siter._insert(leaf5, node=siter.root)
+    siter.pinLeaf(leaf5.said, leaf5.part)
+
+    siter.root = siter._insert(leaf4, node=siter.root)
+    siter.pinLeaf(leaf4.said, leaf4.part)
+    assert siter.root.said.qb64 == rootC.said.qb64  # get same root as before
+
+
+    # Test .delete
+    # make leafers and insert so can delete
+    count = 8
+    leafers = {}
+    for i in range(0, count):
+        key = f"info_{i:04x}"
+        val = Noncer(ser=key.encode(), code=code)
+        leafers[key] = val
+
+    vals = list(leafers.values())
+    roots = deque()  # roots after every insert
+
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
+    roots.appendleft(siter.root)
+    for val in vals:  # leafers
+        siter.insert(val)
+        roots.appendleft(siter.root)
+
+    assert len(siter.leaves) == count
+    assert len(siter.infos) == count
+    assert len(siter.nodes) == count - 1
+
+    roots.popleft()
+    vals.reverse()  # delete in opposite order of insert
+    for val in vals:
+        assert siter.delete(val)
+        assert roots.popleft().said.qb64 == siter.root.said.qb64
+
+    assert len(siter.leaves) == 0
+    assert len(siter.infos) == 0
+    assert len(siter.nodes) == 1
 
     """Done Test"""
+
 
 
 if __name__ == "__main__":
@@ -1381,3 +1526,4 @@ if __name__ == "__main__":
     test_setup_limber_vectors()
     test_insert_logic()
     siter_insert()
+    test_delete()
