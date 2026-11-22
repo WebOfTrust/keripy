@@ -1225,7 +1225,7 @@ class Siter:
         raise ValueError(f"Should never get here")
 
 
-    def prove(self, leafer):
+    def prove(self, leafer=None, limber=None):
         """Return proof of leafer in tree, either inclusion or exclusion
         proof is branch of saidages (NodeSaidage|LeafSaidage) down from root where:
             inclusion proof ends with saidage matching leaf from leafer
@@ -1249,33 +1249,51 @@ class Siter:
                                          or node whose prefix is not common to leaf
 
         Parameters::
-            leafer (Noncer): instance encoding of leaf info said which said is
+            leafer (Noncer|None): instance encoding of leaf info said which said is
                             digest of actual leaf information. leafer may use
                             a different digest code from .code.
                             Thus a siter is compatible with all external leaf
                             info saids while ensuring for security reasons that
                             all its internal leaf limbs, leaf saids, and node saids
                             use the same digest algorithm give by .code.
+                            When None then use limber
+            limber (Noncer|None): instance encoding of leaf info said which said is
+                            digest of actual leaf information. leafer may use
+                            a different digest code from .code.
+                            Thus a siter is compatible with all external leaf
+                            info saids while ensuring for security reasons that
+                            all its internal leaf limbs, leaf saids, and node saids
+                            use the same digest algorithm give by .code.
+                            Only applies when leafer is None
 
         """
         # setup for ._prove
-        try:
-            leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
-        except Exception as ex:  # invalid leafer maybe empty
-            return (None, None)  # not provable include nor exclude
+        if not leafer and not limber:
+            raise ValueError(f"Missing leafer or limber to prove against")
 
-        branch = list()  # mutable so gets populated by recursive descent
+        if leafer:
+            try:
+                leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+            except Exception as ex:  # invalid leafer maybe empty
+                return (None, None)  # not provable include nor exclude
+        elif limber:
+            try:
+                leaf = self.leafFromLimber(limber)  # prevents limber being empty
+            except Exception as ex:  # invalid limber maybe empty
+                return (None, None)  # not provable include nor exclude
+
+        proof = list()  # mutable so gets populated by recursive descent
         try:
-            # populate branch return kind of proof
-            kind = self._prove(leaf, self.root, branch)  # proof kind
+            # populate proof and return kind of proof
+            kind = self._prove(leaf, self.root, proof)  # proof kind
 
         except ValueError as ex:  # problem proofing
             return (None, None)
 
-        return (kind, branch) if kind is not None else (None, None)
+        return (kind, proof) if kind is not None else (None, None)
 
 
-    def _prove(self, leaf, node, branch):
+    def _prove(self, leaf, node, proof):
         """Recursive descent to populate branch from bottom up and to determine
         proof kind (inclusion or exclusion) for leaf starting at node.
 
@@ -1283,9 +1301,9 @@ class Siter:
 
         Returns::
             kind (bool|None): True means leafer leaf is included
-                                    branch contains proof of inclusion
+                                proof of inclusion
                               False means leafer leaf is excluded
-                                   branch contains proof of exclusion
+                                proof of exclusion
                               None means not provable bad leafer
 
         Parameters::
@@ -1296,11 +1314,11 @@ class Siter:
                             begin/resume recursive descent where:
                             said is node said Noncer instance
                             part is Nodage of node with Matter instance values
-            branch (list):  of parts in branch in top down order including node.
-                            branch is mutable and is populated on the way down.
-                            When leaf included then bottom of branch is
+            proof (list):  of parts in branch in top down order including node.
+                            proof is mutable and is populated on the way down.
+                            When leaf included then bottom of proof is
                                  leaf of leafer
-                            When leaf excluded then bottom of branch is
+                            When leaf excluded then bottom of proof is
                                  either a node whose prefix is uncommon with leaf
                                  or some other leaf that is not leaf of leafer
         """
@@ -1308,7 +1326,7 @@ class Siter:
         # assumes node limb is prefix of leaf limb. leaf fits below node.
         # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
         # figure out which side of node, leaf must go
-        branch.append(self.saidagize(node))  # add node as saidage to branch
+        proof.append(self.saidagize(node))  # add node as saidage to proof
 
         if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
             # get child on right other on left
@@ -1326,7 +1344,7 @@ class Siter:
             else:
                 kind = True  # bottom leaf matches leaf so inclusion proof
             child = Partage(said=childer, part=leafage)  # bottom leaf
-            branch.append(self.saidagize(child))
+            proof.append(self.saidagize(child))
             return kind  # of proof
 
         if (nodage := self.getNode(childer)) is not None:  # child is node
@@ -1341,11 +1359,11 @@ class Siter:
                                     noder=child.part.limb,
                                     spanner=child.part.span):  # cannot walk down
                 # leaf cannot recurse down child node path so leaf not in tree
-                branch.append(self.saidagize(child))  # child is unwalkable node
+                proof.append(self.saidagize(child))  # child is unwalkable node
                 return False  # exclusion proof
 
             # can recurse down child node so recurse
-            return self._prove(leaf=leaf, node=child, branch=branch)  # recursion
+            return self._prove(leaf=leaf, node=child, proof=proof)  # recursion
 
         raise ValueError(f"Should never get here")
 

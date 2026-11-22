@@ -1630,72 +1630,72 @@ def test_prove():
 
     # make some proofs from leafers
     key = 'info_0002'
-    kind, branch = siter.prove(leafers[key])
+    kind, proof = siter.prove(leafers[key])
     assert kind
-    assert len(branch) == 6
-    assert branch[0].said.qb64 == siter.root.said.qb64  # top is root
-    assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+    assert len(proof) == 6
+    assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
 
     key = 'info_0007'
-    kind, branch = siter.prove(leafers[key])
+    kind, proof = siter.prove(leafers[key])
     assert kind
-    assert len(branch) == 4
-    assert branch[0].said.qb64 == siter.root.said.qb64  # top is root
-    assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+    assert len(proof) == 4
+    assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
 
     key = 'info_000d'
-    kind, branch = siter.prove(leafers[key])
+    kind, proof = siter.prove(leafers[key])
     assert kind
-    assert len(branch) == 4
-    assert branch[0].said.qb64 == siter.root.said.qb64  # top is root
-    assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+    assert len(proof) == 4
+    assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
 
     # test all leaves
     for key in leaves.keys():
-        kind, branch = siter.prove(leafers[key])
-        assert branch[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
+        kind, proof = siter.prove(leafers[key])
+        assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from leafer
 
     # make exclusion proof
     key = 'info_0000'  # key not in leaves
     leafer = leafers[key]
     leaf = siter.leafFromLeafer(leafer)
-    kind, branch = siter.prove(leafer)
+    kind, proof = siter.prove(leafer)
     assert not kind
-    assert branch[0].said.qb64 == siter.root.said.qb64
-    assert len(branch) == 3
-    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+    assert proof[0].said.qb64 == siter.root.said.qb64
+    assert len(proof) == 3
+    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
 
     # test exclusion with empty siter
     siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
-    kind, branch = siter.prove(leafer)
+    kind, proof = siter.prove(leafer)
     assert not kind
-    assert branch[0].said.qb64 == siter.root.said.qb64
-    assert len(branch) == 1  # so root
-    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+    assert proof[0].said.qb64 == siter.root.said.qb64
+    assert len(proof) == 1  # so root
+    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
 
     # add left leaf to root
     siter.insert(leafers['info_0003'])  # limb starts with 0
-    kind, branch = siter.prove(leafer)
+    kind, proof = siter.prove(leafer)
     assert not kind
-    assert branch[0].said.qb64 == siter.root.said.qb64
-    assert len(branch) == 1  # so root
-    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+    assert proof[0].said.qb64 == siter.root.said.qb64
+    assert len(proof) == 1  # so root
+    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
 
     # add right leaf to root
     siter.insert(leafers['info_0004'])  # limb starts with 1
-    kind, branch = siter.prove(leafer)
+    kind, proof = siter.prove(leafer)
     assert not kind
-    assert branch[0].said.qb64 == siter.root.said.qb64
-    assert len(branch) == 1  # so root
-    assert branch[-1].said.qb64 != leaf.said.qb64  # different said
+    assert proof[0].said.qb64 == siter.root.said.qb64
+    assert len(proof) == 1  # so root
+    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
 
 
-
-    # build tree from leaves from limbers directly using ._insert
+    # build tree from leaves from limbers directly using .insert
     limbers = setup_limbers_vectors(code=code)
 
     # setup leaves from limbers
     leaves = {key: siter.leafFromLimber(val) for key, val in limbers.items()}
+    # qb64 of limbs of leaves so can see paths
     leavesqb64 = {key: val.part.limb.qb64 for key, val in leaves.items()}
     assert leavesqb64 == \
     {
@@ -1721,16 +1721,44 @@ def test_prove():
 
 
     # build tree from leaves using ._insert
-    for leaf in leaves.values():
+    siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
+
+    items = list(leaves.items())
+    for i in range(2, 14):
+        leaf = items[i][1]
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
-    # now create some proofs
+    # now create some proofs using limbers
+    key = '00100000'
+    kind, proof = siter.prove(limber=limbers[key])
+    assert kind
+    assert len(proof) == 4
+    assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf
 
 
+    key = '10000000'
+    kind, proof = siter.prove(limber=limbers[key])
+    assert kind
+    assert len(proof) == 5
+    assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf
 
+    # now create exclusion proof
+    key = '00010000'
+    kind, proof = siter.prove(limber=limbers[key])
+    assert not kind
+    assert len(proof) == 3
+    assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
+    assert proof[-1].said.qb64 != leaves[key].said.qb64  # bottom is not leaf
 
-
+    # now test all inserted leaves
+    for i in range(2, 14):
+        leaf = items[i][1]
+        kind, proof = siter.prove(limber=leaf.part.limb)
+        assert kind
+        assert proof[-1].said.qb64 == leaf.said.qb64  # bottom is leaf
 
 
     """Done Test"""
