@@ -564,42 +564,42 @@ def test_siter_basic():
     """Done Test"""
 
 
-def setup_limbers_vectors(code=DigDex.Blake3_256):
-    """Creates a dict of limbers used to test ._insert logic
+def setup_leafer_vectors(code=DigDex.Blake3_256):
+    """Creates a dict of leafers (leaf limbers) used to test ._insert logic
     """
-    limbers = {}
+    leafers = {}
 
     limb = 0  # all 0s
-    limber = Diger(num=limb, code=code)
+    leafer = Noncer(num=limb, code=code)
     key = f"{(limb >> 248):08b}"  # 8 MSbs
-    limbers[key] = limber
+    leafers[key] = leafer
 
     for i in range(1, 16): # MSByte is 1 .. 15
         limb = i << 252
-        limber = Diger(num=limb, code=code)
+        leafer = Noncer(num=limb, code=code)
         key = f"{(limb >> 248):08b}"  # 8 MSbs
-        limbers[key] = limber
+        leafers[key] = leafer
 
     limb = 1 << 251  # 00001000
-    limber = Diger(num=limb, code=code)
+    leafer = Noncer(num=limb, code=code)
     key = f"{(limb >> 248):08b}"
     assert key == '00001000'  # 8 MSbs
-    limbers[key] = limber
+    leafers[key] = leafer
 
     limb = 2 ** 256 - 1  # all 1s
-    limber = Diger(num=limb, code=code)
+    leafer = Noncer(num=limb, code=code)
     key = f"{(limb >> 248):08b}"
     assert key == '11111111'  # 8 MSbs
-    limbers[key] = limber
+    leafers[key] = leafer
 
-    return limbers
+    return leafers
 
 
-def test_setup_limber_vectors():
+def test_setup_leafer_vectors():
     code = DigDex.Blake3_256
-    limbers = setup_limbers_vectors(code=code)
+    leafers = setup_leafer_vectors(code=code)
 
-    show = [{key: val.numh} for key, val in limbers.items()]
+    show = [{key: val.numh} for key, val in leafers.items()]
     assert show == \
     [
         {'00000000': '0'},
@@ -623,12 +623,12 @@ def test_setup_limber_vectors():
     ]
 
     #limb = 1 << 252 # 1 followed by all zeros
-    #limber = Diger(num=limb, code=code)
-    #assert limber.num == limb
-    #assert limber.numh == '1000000000000000000000000000000000000000000000000000000000000000'
+    #leafer = Diger(num=limb, code=code)
+    #assert leafer.num == limb
+    #assert leafer.numh == '1000000000000000000000000000000000000000000000000000000000000000'
     #key = f"{(limb >> 248):08b}"
     #assert key == '00010000'  # 8 MSbs
-    #limbers[key] = limber
+    #limbers[key] = leafer
 
 
 def test_insert_logic():
@@ -636,7 +636,7 @@ def test_insert_logic():
     # create made up leaf limbs for testing
     code = DigDex.Blake3_256
 
-    limbers = setup_limbers_vectors(code=code)
+    leafers = setup_leafer_vectors(code=code)
 
     # Basic Tests
     tuid = '0ACiicCYoKAqao8qDdnlFVrY'
@@ -679,9 +679,9 @@ def test_insert_logic():
 
 
     # test left child
-    # manually create leaf using  limber '01000000'
+    # manually create leaf using  leafer '01000000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['01000000'])
+                            limb=leafers['01000000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -714,9 +714,9 @@ def test_insert_logic():
     metrics == {'depthmax': 1, 'depthmin': 1, 'depthsum': 1}
 
     # test right child
-    # manually create leaf using  limber '10000000'
+    # manually create leaf using  leafer '10000000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['10000000'])
+                            limb=leafers['10000000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -761,9 +761,9 @@ def test_insert_logic():
 
 
     # test fork left child  where MSb of leaf is 0
-    # manually create leaf using  limber '01010000'
+    # manually create leaf using  leafer '01010000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['01010000'])
+                            limb=leafers['01010000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EKzxoQ2y54I_iwOJOlavCEnq52673S9oSKoBOkUAeWyD'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -815,9 +815,9 @@ def test_insert_logic():
     assert siter.isLeaf(nodage.right)
 
     # test fork right child  where MSb of leaf is 1
-    # manually create leaf using  limber '10100000'
+    # manually create leaf using  leafer '10100000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['10100000'])
+                            limb=leafers['10100000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EKJiinLOmPefFZf41HHgHRBR7qaX5gzdyq6MKuFIbC3O'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -889,9 +889,9 @@ def test_insert_logic():
     # test insert leaves on empty node children
 
     # test right child
-    # manually create leaf using  limber '10000000'
+    # manually create leaf using  leafer '10000000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['10000000'])
+                            limb=leafers['10000000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -919,9 +919,9 @@ def test_insert_logic():
     }
 
     # test left child
-    # manually create leaf using  limber '01000000'
+    # manually create leaf using  leafer '01000000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['01000000'])
+                            limb=leafers['01000000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EJznHYoQUmXOV9q1BhUc7TzgsiAlxX-8Kow3_I_8PCC-'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -948,9 +948,9 @@ def test_insert_logic():
                        right='EDLbCF6fGry4Bsi8bIX8ZsQ0UNTPP4zQxmQciUfEjROE')}
 
     # test fork right child  where MSb of leaf is 1
-    # manually create leaf using  limber '10100000'
+    # manually create leaf using  leafer '10100000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['10100000'])
+                            limb=leafers['10100000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EKJiinLOmPefFZf41HHgHRBR7qaX5gzdyq6MKuFIbC3O'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -984,9 +984,9 @@ def test_insert_logic():
 
 
     # test fork left child  where MSb of leaf is 0
-    # manually create leaf using  limber '01010000'
+    # manually create leaf using  leafer '01010000'
     leafage = Leafage(span=Number(num=256),
-                            limb=limbers['01010000'])
+                            limb=leafers['01010000'])
     saider = siter.sayLeaf(leafage)  # compute leaf said
     assert saider.qb64 == 'EKzxoQ2y54I_iwOJOlavCEnq52673S9oSKoBOkUAeWyD'
     leaf = Partage(said=saider, part=leafage)  # matter primitives
@@ -1028,38 +1028,38 @@ def test_insert_logic():
 
     # already inserted '10000000', '01000000', '10100000', '01010000'
     # insert a bunch more in siter1
-    leaf = siter1.leafFromLimber(limbers['11100000'])
+    leaf = siter1.leafFromLeafer(leafers['11100000'])
     siter1.root = siter1._insert(leaf, siter1.root)
     siter1.pinLeaf(leaf.said, leaf.part)
 
-    leaf = siter1.leafFromLimber(limbers['11110000'])
+    leaf = siter1.leafFromLeafer(leafers['11110000'])
     siter1.root = siter1._insert(leaf, siter1.root)
     siter1.pinLeaf(leaf.said, leaf.part)
 
-    leaf = siter1.leafFromLimber(limbers['01100000'])
+    leaf = siter1.leafFromLeafer(leafers['01100000'])
     siter1.root = siter1._insert(leaf, siter1.root)
     siter1.pinLeaf(leaf.said, leaf.part)
 
-    leaf = siter1.leafFromLimber(limbers['01110000'])
+    leaf = siter1.leafFromLeafer(leafers['01110000'])
     siter1.root = siter1._insert(leaf, siter1.root)
     siter1.pinLeaf(leaf.said, leaf.part)
 
     assert len(siter1.nodes) == 7
 
     # insert same but in different order into siter0
-    leaf = siter0.leafFromLimber(limbers['01100000'])
+    leaf = siter0.leafFromLeafer(leafers['01100000'])
     siter0.root = siter0._insert(leaf, siter0.root)
     siter0.pinLeaf(leaf.said, leaf.part)
 
-    leaf = siter0.leafFromLimber(limbers['11100000'])
+    leaf = siter0.leafFromLeafer(leafers['11100000'])
     siter0.root = siter0._insert(leaf, siter0.root)
     siter0.pinLeaf(leaf.said, leaf.part)
 
-    leaf = siter0.leafFromLimber(limbers['01110000'])
+    leaf = siter0.leafFromLeafer(leafers['01110000'])
     siter0.root = siter0._insert(leaf, siter0.root)
     siter0.pinLeaf(leaf.said, leaf.part)
 
-    leaf = siter0.leafFromLimber(limbers['11110000'])
+    leaf = siter0.leafFromLeafer(leafers['11110000'])
     siter0.root = siter0._insert(leaf, siter0.root)
     siter0.pinLeaf(leaf.said, leaf.part)
 
@@ -1102,14 +1102,14 @@ def test_insert_logic():
 
     # Test special set known to fail for old rules when change order
     # test forward  order
-    leaves = [limbers['01000000'],
-              limbers['00100000'],
-              limbers['00010000'],
-              limbers['00001000']]
+    leaves = [leafers['01000000'],
+              leafers['00100000'],
+              leafers['00010000'],
+              leafers['00001000']]
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
-    for limber in leaves:
-        leaf = siter.leafFromLimber(limber)
+    for leafer in leaves:
+        leaf = siter.leafFromLeafer(leafer)
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
@@ -1136,14 +1136,14 @@ def test_insert_logic():
     }
 
     # test reverse  order
-    leaves = [limbers['00001000'],
-              limbers['00010000'],
-              limbers['00100000'],
-              limbers['01000000']]
+    leaves = [leafers['00001000'],
+              leafers['00010000'],
+              leafers['00100000'],
+              leafers['01000000']]
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
-    for limber in leaves:
-        leaf = siter.leafFromLimber(limber)
+    for leafer in leaves:
+        leaf = siter.leafFromLeafer(leafer)
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
@@ -1157,10 +1157,10 @@ def test_insert_logic():
     assert siterT1.root.said.qb64 == siterT0.root.said.qb64 # !yes equiv
 
 
-    # do random sample insertions of all limbers to compare
-    size = len(limbers)
+    # do random sample insertions of all leafers to compare
+    size = len(leafers)
     assert size == 18
-    values = list(limbers.values())
+    values = list(leafers.values())
 
     #sample = random.sample(range(0, size), k=size)
     sample = [10, 2, 8, 0, 9, 7, 1, 12, 16, 6, 5, 13, 17, 11, 4, 14, 3, 15]
@@ -1168,7 +1168,7 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for i in sample:
-        leaf = siter.leafFromLimber(values[i])
+        leaf = siter.leafFromLeafer(values[i])
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
@@ -1183,7 +1183,7 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for i in sample:
-        leaf = siter.leafFromLimber(values[i])
+        leaf = siter.leafFromLeafer(values[i])
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
@@ -1198,7 +1198,7 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for i in sample:
-        leaf = siter.leafFromLimber(values[i])
+        leaf = siter.leafFromLeafer(values[i])
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
@@ -1247,15 +1247,15 @@ def test_insert_logic():
 
     # test dense key space (limbs are densly packed at lower elevations)
     assert code == DigDex.Blake3_256
-    limbers = [Diger(num=limb, code=code) for limb in range(16)]
+    leafers = [Diger(num=limb, code=code) for limb in range(16)]
 
-    limbs = [limber.numh for limber in limbers]
+    limbs = [leafer.numh for leafer in leafers]
     assert limbs == \
     ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
 
     siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
-    for limber in limbers:
-        leaf = siter.leafFromLimber(limber)
+    for leafer in leafers:
+        leaf = siter.leafFromLeafer(leafer)
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
@@ -1436,10 +1436,10 @@ def test_delete():
     infoer = Noncer(nonce="")  # empty infoer
     assert siter.delete(infoer) is None
 
-    limbers = setup_limbers_vectors(code=code)
+    leafers = setup_leafer_vectors(code=code)
     # test ._delete logic
-    leaf0 = siter.leafFromLimber(limbers['01000000'])
-    leaf1 = siter.leafFromLimber(limbers['10000000'])
+    leaf0 = siter.leafFromLeafer(leafers['01000000'])
+    leaf1 = siter.leafFromLeafer(leafers['10000000'])
 
     # try to delete leaf not in tree
     assert siter._delete(leaf=leaf0, node=siter.root) == None
@@ -1474,10 +1474,10 @@ def test_delete():
     assert siter.root.said.qb64 == emptyroot.said.qb64
 
     # ok add enough leaves so have nodes
-    leaf2 = siter.leafFromLimber(limbers['00100000'])
-    leaf3 = siter.leafFromLimber(limbers['11000000'])
-    leaf4 = siter.leafFromLimber(limbers['01100000'])
-    leaf5 = siter.leafFromLimber(limbers['10100000'])
+    leaf2 = siter.leafFromLeafer(leafers['00100000'])
+    leaf3 = siter.leafFromLeafer(leafers['11000000'])
+    leaf4 = siter.leafFromLeafer(leafers['01100000'])
+    leaf5 = siter.leafFromLeafer(leafers['10100000'])
 
     siter.root = siter._insert(leaf0, node=siter.root)
     siter.pinLeaf(leaf0.said, leaf0.part)
@@ -1690,11 +1690,11 @@ def test_prove():
     assert proof[-1].said.qb64 != leaf.said.qb64  # different said
 
 
-    # build tree from leaves from limbers directly using .insert
-    limbers = setup_limbers_vectors(code=code)
+    # build tree from leaves from leafers (leaf limbers) directly using .insert
+    leafers = setup_leafer_vectors(code=code)
 
-    # setup leaves from limbers
-    leaves = {key: siter.leafFromLimber(val) for key, val in limbers.items()}
+    # setup leaves from leafers
+    leaves = {key: siter.leafFromLeafer(val) for key, val in leafers.items()}
     # qb64 of limbs of leaves so can see paths
     leavesqb64 = {key: val.part.limb.qb64 for key, val in leaves.items()}
     assert leavesqb64 == \
@@ -1729,9 +1729,9 @@ def test_prove():
         siter.root = siter._insert(leaf, siter.root)
         siter.pinLeaf(leaf.said, leaf.part)
 
-    # now create some proofs using limbers
+    # now create some proofs using leafers
     key = '00100000'
-    proof, kind = siter.prove(limber=limbers[key])
+    proof, kind = siter.prove(leafer=leafers[key])
     assert kind
     assert len(proof) == 4
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
@@ -1739,7 +1739,7 @@ def test_prove():
 
 
     key = '10000000'
-    proof, kind = siter.prove(limber=limbers[key])
+    proof, kind = siter.prove(leafer=leafers[key])
     assert kind
     assert len(proof) == 5
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
@@ -1747,7 +1747,7 @@ def test_prove():
 
     # now create exclusion proof
     key = '00010000'
-    proof, kind = siter.prove(limber=limbers[key])
+    proof, kind = siter.prove(leafer=leafers[key])
     assert not kind
     assert len(proof) == 3
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
@@ -1756,7 +1756,7 @@ def test_prove():
     # now test all inserted leaves
     for i in range(2, 14):
         leaf = items[i][1]
-        proof, kind = siter.prove(limber=leaf.part.limb)
+        proof, kind = siter.prove(leafer=leaf.part.limb)
         assert kind
         assert proof[-1].said.qb64 == leaf.said.qb64  # bottom is leaf
 
@@ -1768,7 +1768,7 @@ def test_prove():
 if __name__ == "__main__":
     test_siting_siter_class()
     test_siter_basic()
-    test_setup_limber_vectors()
+    test_setup_leafer_vectors()
     test_insert_logic()
     siter_insert()
     test_delete()
