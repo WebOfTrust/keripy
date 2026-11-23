@@ -375,7 +375,6 @@ def test_siter_basic():
     assert siter.root
     assert len(siter.nodes) == 1
     assert siter.leaves == {}
-    assert siter.infos == {}
 
     tuid = '0ACiicCYoKAqao8qDdnlFVrY'
     siter = Siter(tuid=tuid)  # Siter with known tuid
@@ -404,7 +403,6 @@ def test_siter_basic():
     assert nqb64 == rqb64.part  # round trips
 
     assert siter.leaves == {}
-    assert siter.infos == {}
 
     # test .sayNode(self, nodage)   (compute said)
     spanner = Number(num=1)
@@ -1331,19 +1329,6 @@ def siter_insert():
 
     assert len(siter.leaves) == count
     assert len(siter.nodes) == count - 1
-    assert siter.infos == \
-    {
-        'EMvv-63b4v1XWIV-fitjNZb-nFxB2uZvrTaPq6KDcqmI': 'EPEyrH2H4BwnYnoBMa1f_BgOUGkjbgb4401f74WkXiq9',
-        'EHLw2bpH6U2JjDdC84LjO5vIiLL5glKUt6whyHFeFqWP': 'EBg0nWFi_-_5S_qmdHAMuHEN5S5lR3BWRmX9q27O8Sdj',
-        'EAsnChbkFJFgbiHys3j16WVf9RnebUqqSFtk12LqO0UH': 'EBnVf13snqclzWJ6TRZJ2IpBu_YlHBMD0v4urifXoCNF',
-        'EAb318FbH_kvubLWdYTvw8k_oQYXOggjWwbB9QGrT_Eg': 'ECwvvGbzhpdbKnM-PCYaDFi984QYP5jH_1nto6O8xSzR',
-        'EFgOCYefLxUz-oTzPpGXJZfiFANExtgn-5tnrWxQWEDI': 'EHFqFW8w0TUZTs53RdI5CH5nLMGDN_laoKTqJd444tK-',
-        'EA1YwV2fa3KyI5geqkiXYzQPsWoUMfSSNaTdOY7w4U9z': 'EPgOUHTHcRHuY4uaQ2UMr0SgWWe_i8Vw0LX4tGmNpbCm',
-        'ECa221FTFyhjXW_q1xwkDyg3pU4Fw1r1x8oEbdJnEzu3': 'ENlDE5eJ-HfSSdURrQ8P313-ymKScOeadQEc7T6GSqHj',
-        'EOmlLKztmVgPxMx7qopoLsbC_Ddi6ZgWNP9WBBOEC8hF': 'EAkFX_ou2tauGDzxd7rRGehYiq3xRjL5TW7wVzDQ6TAe'
-    }
-
-    assert list(siter.infos.values()) == list(infoersqb64.values())  # ordering is serendipitous
 
     trace, metrics = siter.trace(terse=False)
     assert trace == \
@@ -1556,7 +1541,6 @@ def test_delete():
         roots.appendleft(siter.root)
 
     assert len(siter.leaves) == count
-    assert len(siter.infos) == count
     assert len(siter.nodes) == count - 1
 
     leaves = []
@@ -1567,7 +1551,6 @@ def test_delete():
         assert roots.popleft().said.qb64 == siter.root.said.qb64
 
     assert len(siter.leaves) == 0
-    assert len(siter.infos) == 0
     assert len(siter.nodes) == 1
 
     for leaf, val in zip(leaves, vals):

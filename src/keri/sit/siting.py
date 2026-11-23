@@ -105,9 +105,8 @@ class Siter:
                            values are Matter instances
         nodes (dict): Nodage instances indexed by node said
         leaves (dict): Leafage instances indexed by leaf said
-        infos (dict): leaf info saids as indexed by leaf limb
 
-    ToDo: XXXX change .nodes, .leaves, and .infos to have virtual interface
+    ToDo: XXXX change .nodes, .leaves,  to have virtual interface
           that supports either in-memory and disk based storage
 
 
@@ -470,8 +469,6 @@ class Siter:
             raise ValueError(f"Invalid digest code={self.code}")
         self.nodes = dict()
         self.leaves = dict()
-        self.infos = dict()
-
 
         # make and insert root node in .nodes
         # span is 0, limb is all zeros, left is empty, right is empty
@@ -1030,7 +1027,6 @@ class Siter:
         except ValueError as ex:
             return None
         self.pinLeaf(leaf.said, leaf.part)  # add leaf
-        self.infos[leaf.part.limb.qb64] = infoer.qb64  # add ref to leafer to infos
         return leaf
 
 
@@ -1202,12 +1198,6 @@ class Siter:
 
         if not self.remLeaf(leaf.said) and not strict:  # remove leaf from .leaves
             result = None  # delete not clean
-
-        try:
-            del self.infos[leaf.part.limb.qb64]  # rem from infos
-        except KeyError as ex:
-            if not strict:  # strict
-                return None  # malformed .infos
 
         return result
 
