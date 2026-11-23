@@ -14,7 +14,7 @@ from hio.help import decking, ogler
 
 from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
                       ConfigurationError, ValidationError)
-from .agenting import HTTPMessenger, messengerFrom, streamMessengerFrom
+from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
                     Counter, SerderKERI, Parser, exchange,
                     MtrDex, Codens, NonTransDex)
@@ -230,9 +230,7 @@ class Poster(doing.DoDoer):
             while not witer.idle:
                 yield self.tock
         finally:
-            # TCP can report idle before its send loop consumes the queued message.
-            if isinstance(witer, HTTPMessenger):
-                self.remove([witer])
+            self.remove([witer])
 
     def forwardToWitness(self, hab, ends, recp, serder, atc, topic):
         yield from self.forward(hab, ends, recp, serder, atc, topic)
