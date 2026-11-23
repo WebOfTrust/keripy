@@ -14,6 +14,57 @@ The intermediate 2.0.0 branch largely
 provides that backwards compatibility but does not fully implement all the new
 features.
 
+### IPEX flow-opening messages changed from exn to xip
+- A flow-opening Apply, Offer, or Grant is now an xip, while subsequent messages
+  in the flow remain exn messages.
+- An opening xip has no x transaction identifier or p prior-message field. Its
+  own d SAID is the transaction identifier.
+- Each subsequent exn carries the opener's SAID in x and its immediate prior
+  message's SAID in p.
+- Notification consumers must accept /xip/ipex/... for
+  opening messages and /exn/ipex/... for subsequent messages.
+
+*** Breaking for callers that catch builtin exceptions: malformed input to several parsers
+now raises a keri.kering error (a KeriError) instead of a raw Python exception.
+- Tholder: an invalid sith raises kering.ValidationError instead of ValueError,
+  ZeroDivisionError, OverflowError or TypeError. Thresholds with more than Tholder.Limit
+  clauses, weights per clause, or total weights, and JSON sith strings longer than
+  Tholder.MaxSith, are now rejected.
+- Pather.resolve: a missing key, traversal into a scalar, or a non-digit list index raises
+  kering.InvalidValueError instead of KeyError or ValueError, and paths deeper than
+  Pather.MaxDepth are rejected. KERIA's exchange indexer (src/keria/db/basing.py) catches
+  KeyError around Pather.resolve to skip messages lacking an indexed field, and needs
+  `except (KeyError, kering.InvalidValueError)` before it moves to this version.
+- helping.b64ToInt and the Matter/Counter/Indexer/Texter/Labeler decode paths raise
+  kering.ConversionError instead of KeyError, UnicodeDecodeError or binascii.Error.
+- A truncated variable-size Matter primitive raises kering.ShortageError instead of
+  ValueError, matching Indexer.
+Code that catches ValueError or KeyError around these calls should catch the kering error
+named above, or KeriError.
+
+*** Kevery.fetchWitnessState and Kevery.fetchEstEvent read the last establishment event
+of the current key state directly when sn lies between it and the latest event, instead of
+walking back to it, so a receipt on an event at or after the last rotation no longer costs a
+scan of every event since that rotation. Other sns still walk. When the event at sn is
+missing from the store, fetchWitnessState now returns that establishment event's witness list
+where the walk raised AttributeError.
+
+*** Kever.update raises ValidationError for a rot or drt whose n or nt is missing or does not
+parse, or whose nt cannot be met by its n, before the event is escrowed or logged. Previously
+the event was logged as first seen and became the head of the KEL, and then InvalidCodeError,
+ValidationError, ValueError or TypeError was raised, leaving the prior next key digests in
+force. A store that logged such an event before this change still holds it at the head of the
+KEL, with db.states at the prior event.
+
+*** New Parser.parseOneBare: like parseOne, but raises errors to the caller instead of
+logging them, for callers that are not internet-facing services and need to know why a
+msg failed. Intake errors raised while extracting (ExtractionError, ValidationError) are
+raised as ExtractionError with the original on the chain; any other extraction error
+propagates unchanged; processing errors are raised as themselves. Which types reach a
+caller is therefore part of its contract, so converting a raw raise on the extraction path
+to an intake type changes what parseOneBare raises. Parser.parse and parseOne are
+unchanged.
+
 
 ## 2.0.0-dev6
 

@@ -334,3 +334,36 @@ async def test_habery_reopen_signing_and_auth_cleanup(selenium_keri):
             await keeper.aclose(clear=True)
         finally:
             await baser.aclose(clear=True)
+
+
+@run_in_pyodide
+async def test_signed_ipex_apply(selenium_keri):
+    from unittest.mock import Mock
+
+    from keri import Vrsn_2_0, acdc
+    from keri.acdc import ipexing
+    from webbasing_fixtures import FakeStorageBackend, close_habery, open_habery
+
+    assert hasattr(acdc, "WebRegBaser")
+    hby = await open_habery(FakeStorageBackend(), "ipex-apply")
+    try:
+        sender = hby.makeHab(name="sender")
+        recipient = hby.makeHab(name="recipient")
+        notifier = Mock()
+        ipexing.loadHandlers(hby=hby, exc=hby.exc, notifier=notifier)
+
+        schema, _ = acdc.actSchemaDefault()
+        plan = [[[schema, "/", ["a/d"]]]]
+        xip, atc = ipexing.apply(hab=sender, recp=recipient.pre, message="Apply",
+                                 modifiers=dict(dp=plan))
+        hby.psr.parse(ims=bytearray(xip.raw) + atc, framed=False)
+
+        stored = hby.db.exns.get(keys=(xip.said,))
+        assert stored is not None
+        assert stored.pvrsn == Vrsn_2_0
+        assert stored.ked["ri"] == recipient.pre
+        assert stored.ked["q"]["dp"] == plan
+        notifier.add.assert_called_once_with(
+            attrs=dict(r="/xip/ipex/apply", d=xip.said, m="Apply"))
+    finally:
+        await close_habery(hby, clear=True)

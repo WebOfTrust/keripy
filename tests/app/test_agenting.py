@@ -4,17 +4,80 @@ tests.app.agenting module
 
 """
 import time
+from base64 import urlsafe_b64decode
 from types import SimpleNamespace
 
+import falcon
 import pytest
+from falcon import testing
 from hio.base import doing, tyming
+from hio.core.http.clienting import Response
 
 from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.core import Counter, Codens, Salter, SerderKERI, Siger
 from keri.app import (Receiptor, WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
                       runController, openHby, setupWitness)
-from keri.app import agenting
+from keri.app import agenting, indirecting
 from keri.help import nowIso8601
+
+
+@pytest.mark.parametrize("version,kind,binary", [
+    (Vrsn_2_0, Kinds.cesr, False),
+    (Vrsn_2_0, Kinds.cesr, True),
+    (Vrsn_2_0, Kinds.json, False),
+    (Vrsn_1_0, Kinds.json, False),
+])
+def test_http_messenger_key_history(version, kind, binary):
+    with openHby(name="sender", version=version) as shby, \
+            openHby(name="receiver", version=version) as rhby:
+        sender = shby.makeHab(name="sender", version=version, kind=kind)
+        receiver = rhby.makeHab(name="receiver", version=version)
+        sender.interact(version=version, gvrsn=version, kind=kind)
+        stream = sender.replay(gvrsn=version)
+        if binary:
+            stream = urlsafe_b64decode(stream)
+
+        end = indirecting.HttpEnd()
+        messenger = agenting.HTTPMessenger(hab=sender, wit=receiver.pre,
+                                           url="http://127.0.0.1:65500", auth="test-auth")
+        sending = messenger.msgDo(tymth=lambda: 0.0)
+        responding = messenger.responseDo(tymth=lambda: 0.0)
+        try:
+            next(sending)
+            next(responding)
+            messenger.msgs.append(bytearray(stream))
+            next(sending)
+            assert not messenger.idle
+            requests = list(messenger.client.requests)
+            messenger.client.requests.clear()
+            assert len(requests) == (1 if kind == Kinds.cesr else 2)
+            for request in requests:
+                assert request["method"] == ("PUT" if kind == Kinds.cesr else "POST")
+                assert request["headers"]["Authorization"] == "test-auth"
+                assert request["headers"]["CESR-DESTINATION"] == receiver.pre
+                if kind == Kinds.cesr:
+                    assert request["body"] == stream
+                headers = {key: (bytes(value).decode() if isinstance(value, (bytes, bytearray))
+                                 else str(value)) for key, value in request["headers"].items()}
+                req = testing.create_req(method=request["method"], path=request["path"],
+                                         headers=headers, body=request["body"])
+                result = falcon.Response()
+                getattr(end, "on_" + request["method"].lower())(req, result)
+                assert result.status_code == 204
+                reply = dict.fromkeys(Response._fields)
+                reply.update(status=result.status_code, body=result.data, headers={})
+                messenger.client.responses.append(reply)
+                next(responding)
+
+            receiver.psr.parse(ims=end.rxbs, local=False, version=version)
+            assert rhby.kevers[sender.pre].sn == sender.kever.sn == 1
+            assert rhby.kevers[sender.pre].serder.said == sender.kever.serder.said
+            assert messenger.idle
+            assert messenger.posted == len(messenger.sent) == len(requests)
+        finally:
+            sending.close()
+            responding.close()
+            messenger.client.close()
 
 
 def test_receiptor_v2_propagates_witness_receipts(monkeypatch, seeder, witnessPorter):
@@ -103,6 +166,58 @@ def test_receiptor_v2_propagates_witness_receipts(monkeypatch, seeder, witnessPo
             counter = Counter(qb64b=attachments, version=Vrsn_2_0)
             assert counter.name == Codens.WitnessIdxSigs
             assert counter.count == (len(attachments) - len(counter.qb64b)) // 4
+
+
+def test_receiptor_catchup_sends_full_kel(seeder, witnessPorter):
+    """Regression test for issue #1745: Receiptor.catchup() must replay every
+    KEL event to the witness, not only the inception event."""
+    with openHby(name="wan-cup", salt=Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            openHby(name="pal-cup", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
+        palHab = palHby.makeHab(name="pal-cup", transferable=True)
+        # events after inception: without consuming each response, catchup()
+        # stops waiting after the first one and the rest are never sent
+        palHab.interact()
+        palHab.interact()
+        expected = palHab.kever.serder
+        assert expected.sn == 2
+
+        witnessPorts, witnessUrls = witnessPorter("wan-cup")
+        witnessDoers = setupWitness(alias="wan-cup", hby=wanHby,
+                                    tcpPort=witnessPorts["wan-cup"]["tcp"],
+                                    httpPort=witnessPorts["wan-cup"]["http"])
+        wanHab = wanHby.habByName("wan-cup")
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls)
+
+        receiptor = Receiptor(hby=palHby)
+        caughtUp = False
+
+        def catchupDo(tymth, tock=0.0, **kwa):
+            nonlocal caughtUp
+            yield from receiptor.catchup(palHab.pre, wanHab.pre)
+            caughtUp = True
+            return True
+
+        def witnessHasKel():
+            kever = wanHby.kevers.get(palHab.pre)
+            return kever is not None and kever.sn == expected.sn
+
+        doist = doing.Doist(limit=5.0, tock=0.03125,
+                            doers=witnessDoers + [receiptor, doing.doify(catchupDo)])
+        try:
+            doist.enter()
+            tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+            while not ((caughtUp and witnessHasKel()) or tymer.expired):
+                doist.recur()
+                time.sleep(doist.tock)
+        finally:
+            doist.exit()
+
+        assert caughtUp
+        assert palHab.pre in wanHby.kevers
+        actual = wanHby.kevers[palHab.pre].serder
+        assert actual.sn == expected.sn
+        assert actual.said == expected.said
 
 
 @pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])

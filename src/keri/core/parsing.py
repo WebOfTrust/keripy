@@ -24,7 +24,7 @@ from .indexing import Siger
 from .counting import Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .structing import (SealSource, SealEvent, SealKind, BlindState, BoundState,
-                        TypeMedia, FirstSeen, TransReceipts, TransSigs,
+                        TypeMedia, FirstSeen, TransSigs,
                         TransLastSigs)
 
 logger = ogler.getLogger()
@@ -49,13 +49,13 @@ class MsgParseDom:
     sigers: list[Siger] = field(default_factory=list)  # ControllerIdxSigs
     wigers: list[Siger] = field(default_factory=list)  # WitnessIdxSigs
     cigars: list[Cigar] = field(default_factory=list)  # NonTransReceiptCouples cigar with verfer from (pre+sig)
-    rsgs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+    #rsgs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
     tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [sigers])
     lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
     sscs:   list[SealSource] = field(default_factory=list)  # SealSourceCouples (number, diger) sealing or sealed event
     ssts:   list[SealEvent] = field(default_factory=list)  # SealSourceTriples (prefixer, number, diger) sealing or sealed event
-    tdcs:   list[SealKind] = field(default_factory=list)  # TypedDigestSealCouples SealKind (verser, diger)
+    tdcs:   list[SealKind] = field(default_factory=list)  # TypedDigestSealCouples SealKind (verser, noncer)
     bsqs:   list[BlindState] = field(default_factory=list)  # BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
     bsss:   list[BoundState] = field(default_factory=list)  # BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
     tmqs:   list[TypeMedia] = field(default_factory=list)  # TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
@@ -134,10 +134,6 @@ class Parser:
     Methods[1][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples1"
     Methods[2][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples2"
     Methods[2][0][Codens.BigNonTransReceiptCouples] = "_NonTransReceiptCouples2"
-
-    Methods[1][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups1"
-    Methods[2][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
-    Methods[2][0][Codens.BigTransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
 
     Methods[1][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups1"
     Methods[2][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups2"
@@ -466,6 +462,137 @@ class Parser:
                 break
 
         return result
+
+
+    def parseOneBare(self, ims=None, framed=True, piped=False, kvy=None,
+                     tvy=None, exc=None, rvy=None, vry=None, local=None,
+                     version=None, processive=True):
+        """Processes one message from incoming message stream, ims, like
+        .parseOne but raises any error to the caller instead of logging it.
+
+        .parse and .parseOne log and drop every error because a long running
+        service facing the open internet should not tell a remote sender why
+        its message failed. A caller that is not such a service, for example
+        one vetting a stream it was handed, may need the reason. This gives it
+        the reason and leaves the choice of what to do next to it.
+
+        Which step raised is what tells extraction from processing apart, not
+        the class of the error, since some processing errors are subclasses of
+        ExtractionError. So a caller that needs to know the phase uses
+        processive=False, which only extracts, and then passes asdict() of the
+        returned msg to .msgProcess itself.
+
+        Errors of the intake types, ExtractionError and ValidationError, raised
+        while extracting are raised as ExtractionError with the originating
+        error on the exception chain, via __cause__ or, where the original was
+        raised implicitly inside a handler, __context__. A ValidationError
+        here means the msg body itself did not verify, for example its SAID.
+        What the chain means for the rest of ims:
+            SizedGroupError on the chain: an enclosed attachment group failed.
+                The group was stripped first so the rest of ims is intact. Any
+                ShortageError beneath it is about the group's contents and does
+                not mean the stream ran short.
+            TopLevelStreamError on the chain: ims is at a generic group, which
+                like .parseOne this does not descend into. The group was not
+                consumed, so calling again raises the same error.
+            otherwise: stream framing is lost. ShortageError on the chain
+                means more bytes may complete it. Anything else, such as
+                ColdStartError or a ValidationError for a body that did not
+                verify, means more bytes will not. What is left of ims should
+                be discarded as .parse would.
+
+        Any other error raised while extracting propagates unchanged, since
+        ref/ErrorHandling.md presumes it a bug. Some such errors are currently
+        reachable from malformed input rather than from local bugs. A caller
+        vetting an untrusted stream should be ready for them and treat
+        framing as lost. Known cases are an AttributeError when a CESR v1
+        stream is at a count code that does not begin a msg, InvalidVersionError
+        for a genus-version counter naming an unsupported version, and
+        ValueError for primitives with nonzero prepad bits.
+
+        A leading genus-version counter is consumed even when what follows it
+        fails, and the version it names stays set on the Parser for later
+        calls. Pass version to reset it, or use one Parser per stream.
+
+        Processing errors are raised as themselves, with the msg already
+        consumed from ims, so calling again resumes at the next msg. An error
+        does not say whether Kevery escrowed the event before raising, as it
+        does for OutOfOrderError and others, so look in the escrows for that.
+        Malformed peer input can raise errors outside the KeriError hierarchy,
+        such as ValueError, so such an error does not by itself mean a local
+        defect.
+
+        ims is consumed in place only when it is a bytearray. Any other type
+        is copied first, so resuming requires passing a bytearray.
+
+        With framed False a short msg waits for more bytes by looping, which
+        for a stream already in hand never ends. Keep the default framed=True
+        for such a stream.
+
+        Parameters:
+            ims (bytearray): serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+            framed (bool) True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor to process
+                ims msgs when stream includes pipelineable count codes.
+            kvy (Kevery): route KERI KEL message types to this instance
+            tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
+            vry (Verfifier): credential verifier with wallet storage
+            local (bool): True means event source is local (protected) for validation
+                False means event source is remote (unprotected) for validation
+                None means use default .local
+            version (Versionage): default genera version of CESR to use
+                None means do not change default
+            processive (bool): True means process the msg and return True
+                False means do not process and return the extracted msg as
+                    a MsgParseDom
+        """
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
+        else:
+            ims = self.ims  # use instance attribute by default
+
+        framed = framed if framed is not None else self.framed
+        piped = piped if piped is not None else self.piped
+        kvy = kvy if kvy is not None else self.kvy
+        tvy = tvy if tvy is not None else self.tvy
+        exc = exc if exc is not None else self.exc
+        rvy = rvy if rvy is not None else self.rvy
+        vry = vry if vry is not None else self.vry
+        local = local if local is not None else self.local
+        local = True if local else False
+
+        parsator = self._extractMsg(ims=ims,
+                                    framed=framed,
+                                    piped=piped,
+                                    local=local,
+                                    version=version,
+                                    narrow=True)
+        try:
+            while True:
+                try:
+                    next(parsator)
+                except StopIteration as ex:
+                    exts = ex.value
+                    break
+        except TopLevelStreamError as ex:  # not descending, so report it
+            raise ExtractionError from ex
+
+        if not processive:
+            return exts
+
+        self.msgProcess(exts=asdict(exts),
+                        kvy=kvy,
+                        tvy=tvy,
+                        exc=exc,
+                        rvy=rvy,
+                        vry=vry)
+        return True
 
 
     def allParsator(self, ims=None, framed=None, piped=None, kvy=None,
@@ -857,20 +984,17 @@ class Parser:
 
                 # extract substream at current nesting level
                 try:
-                    exts = yield from self.msgParsator(ims=ims,
-                                                          framed=framed,
-                                                          piped=piped,
-                                                          local=local,
-                                                          version=self.version)
+                    exts = yield from self._extractMsg(ims=ims,
+                                                       framed=framed,
+                                                       piped=piped,
+                                                       local=local,
+                                                       version=self.version)
 
                 except TopLevelStreamError as ex:  # encountered GenericGroup
                     # before getting a message so need to nest down into new
                     # generic group which has been not extracted yet
                     # this is the normal way to handle it, so do not log
                     continue  # control thrown here to parse new generic group
-
-                except (ExtractionError, Exception) as ex:  # error while extracting
-                    raise ExtractionError from ex
 
                 # process successful extraction at current nexting level)
                 if processive:
@@ -919,6 +1043,47 @@ class Parser:
         return result if processive else results
 
 
+    def _extractMsg(self, ims, framed, piped, local, version, narrow=False):
+        """Returns generator that extracts one msg plus attachments from ims via
+        .msgParsator and returns it, shifting a failure to ExtractionError with
+        the original on __cause__. The one extraction step shared by
+        .groupParsator and .parseOneBare, each of which applies its own policy
+        to what this raises. Use `yield from` to call.
+
+        TopLevelStreamError is raised as itself so .groupParsator can nest down
+        into the generic group that caused it.
+
+        Parameters:
+            ims (bytearray): incoming message stream
+            framed (bool): True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor
+            local (bool): True means event source is local (protected)
+            version (Versionage): default version of CESR to use
+                None means do not change default
+            narrow (bool): True means shift only the intake types,
+                ExtractionError and ValidationError, and let any other error
+                propagate unchanged, so that a bug is not mistaken for bad
+                input. See ref/ErrorHandling.md
+                False means shift every Exception, as .groupParsator has
+        """
+        try:
+            exts = yield from self.msgParsator(ims=ims,
+                                               framed=framed,
+                                               piped=piped,
+                                               local=local,
+                                               version=version)
+        except TopLevelStreamError:
+            raise
+        except (ExtractionError, ValidationError) as ex:  # intake types
+            raise ExtractionError from ex
+        except Exception as ex:
+            if narrow:
+                raise
+            raise ExtractionError from ex
+        return exts
+
+
     def msgParsator(self, ims=None, framed=True, piped=False, local=None,
                        version=None):
         """Returns generator that upon each iteration extracts and parses msg
@@ -944,13 +1109,12 @@ class Parser:
             sigers (list[Siger]): ControllerIdxSigs
             wigers (list[Siger]): WitnessIdxSigs
             cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-            rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
             tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
             lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
             frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
             sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
             ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
-            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, noncer)
             bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
             bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
             tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
@@ -1339,13 +1503,12 @@ class Parser:
             sigers (list[Siger]): ControllerIdxSigs
             wigers (list[Siger]): WitnessIdxSigs
             cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-            rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
             tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
             lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
             frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
             sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
             ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
-            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, noncer)
             bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
             bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
             tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
@@ -1415,7 +1578,7 @@ class Parser:
                     if exts['cigars']:  # cigars
                         kvy.processAttachedReceiptCouples(**exts)
 
-                    if exts['rsgs']:  # rsgs  TransReceiptIdxSigGroups (was trqs)
+                    if exts['tsgs']:  # tsgs  TransIdxSigGroups (was trqs)
                         kvy.processAttachedReceiptSigGroups(**exts)
 
                 except AttributeError as ex:
@@ -1425,7 +1588,7 @@ class Parser:
                     raise ValidationError(msg) from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-                if not (exts['cigars'] or exts['wigers'] or exts['tsgs'] or exts['rsgs']):
+                if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):
                     msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
                     logger.info(msg)
                     logger.debug("Receipt body=\n%s\n", serder.pretty())
@@ -1491,10 +1654,11 @@ class Parser:
                     raise ValidationError(f"Invalid resource type {route}"
                                                  f"so dropped msg={serder.pretty()}.")
 
-            elif ilk in (Ilks.exn,):
-                if not (exts['cigars'] or exts['tsgs']):
+            elif ilk in (Ilks.exn, Ilks.xip):
+                if not (exts['cigars'] or exts['tsgs'] or
+                        exts['sscs'] or exts['ssts']):
                     raise ValidationError(f"Missing attached exchanger "
-                                        f"signatures for msg={serder.pretty()}")
+                                        f"authentication for msg={serder.pretty()}")
 
                 try:
                     exc.processEvent(**exts)
@@ -1750,130 +1914,6 @@ class Parser:
             exts.cigars.extend(cigars)
         except KeyError:
             exts.cigars = cigars
-
-
-    def _TransReceiptIdxSigGroups1(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESRv1 TransReceiptIdxSigGroups group
-
-        Parameters:
-            exts (dict): of extracted group elements for keyword args.
-            ims (bytearray): of serialized incoming message stream.
-            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
-            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
-            abort (bool): True means abort if not enough bytes in ims. Use when
-                    this group is enclosed in another group that has
-                    already been extracted from stream
-                False yield if not enough bytes in ims. Use when this
-                    group is at top level of stream not enclosed in
-                    another already extracted group.
-
-        Returns:
-            rsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
-
-                extract attaced trans receipt idx sig groups
-
-        spre+ssnu+sdig+[sigs]
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg"""
-        gs = ctr.byteCount(cold=cold)
-        while len(ims) < gs:
-            if abort:  # assumes already full frame extracted unexpected problem
-                raise ShortageError(f"Unexpected stream shortage on enclosed "
-                                    f"group code={ctr.qb64}")
-            yield  # wait until have full group size
-
-        gims = ims[:gs]  # copy out group sized substream
-        del ims[:gs]  # strip off from ims
-        rsgs = []
-        isigers = []
-        while gims:   # extract each attached group and strip from gims
-            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            number = self.extract(ims=gims, klas=Number, cold=cold)
-            diger = self.extract(ims=gims, klas=Diger, cold=cold)
-            ictr = self.extract(ims=gims, klas=Counter, cold=cold)
-
-            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
-                raise UnexpectedCountCodeError(f"Expected count code="
-                            f"{CtrDex_1_0.ControllerIdxSigs}, got code={ictr.code}")
-
-            isigers = []
-            for i in range(ictr.count):  # extract each signature in idx cnt
-                isiger = self.extract(ims=gims, klas=Siger, cold=cold)
-                isigers.append(isiger)
-
-            rsgs.append((prefixer, number, diger, isigers))
-
-        try:
-            exts.rsgs.extend(rsgs)
-        except KeyError:
-            exts.rsgs = rsgs
-
-
-    def _TransReceiptIdxSigGroups2(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESRv2 TransReceiptIdxSigGroups
-
-        Parameters:
-            exts (dict): of extracted group elements for keyword args.
-            ims (bytearray): of serialized incoming message stream.
-            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
-            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
-            abort (bool): True means abort if not enough bytes in ims. Use when
-                    this group is enclosed in another group that has
-                    already been extracted from stream
-                False yield if not enough bytes in ims. Use when this
-                    group is at top level of stream not enclosed in
-                    another already extracted group.
-
-        Returns:
-            rsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
-
-        extract attaced trans receipt idx sig groups
-        spre+ssnu+sdig+[sigs]
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        [sigs] is list of indexed signature of signer
-
-        When attached to event or routed mesag signature on msg attached
-        When attached to receipt msg signature on event referenced in receipt"""
-        gs = ctr.byteCount(cold=cold)
-        while len(ims) < gs:
-            if abort:  # assumes already full frame extracted unexpected problem
-                raise ShortageError(f"Unexpected stream shortage on enclosed "
-                                    f"group code={ctr.qb64}")
-            yield  # wait until have full group size
-
-        gims = ims[:gs]  # copy out group sized substream
-        del ims[:gs]  # strip off from ims
-        rsgs = []
-        isigers = []
-        while gims:   # extract each attached group and strip from gims
-            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            number = self.extract(ims=gims, klas=Number, cold=cold)
-            diger = self.extract(ims=gims, klas=Diger, cold=cold)
-            ictr = self.extract(ims=gims, klas=Counter, cold=cold)
-            if ictr.code != CtrDex_2_0.ControllerIdxSigs:
-                raise UnexpectedCountCodeError(f"Expected count code="
-                            f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
-            igs = ictr.byteCount(cold=cold)
-            # already extracted enclosing group bytes so igs must be < len(gims)
-            if len(gims) < igs:  # should not happen unless malformed counter
-                raise ShortageError(f"Unexpected stream shortage on enclosed "
-                                    f"group code={ctr.qb64}")
-            igims = gims[:igs]
-            del gims[:igs]  # strip igims from gims
-            isigers = []
-            while igims:
-                isiger = self.extract(ims=igims, klas=Siger, cold=cold)
-                isigers.append(isiger)
-            rsgs.append((prefixer, number, diger, isigers))  # tuple
-        try:
-            exts.rsgs.extend(rsgs)
-        except KeyError:
-            exts.rsgs = rsgs
-
 
 
     def _TransIdxSigGroups1(self, exts, ims, ctr, cold, abort):
@@ -2312,7 +2352,7 @@ class Parser:
                     another already extracted group.
 
         Returns:
-            tdcs (list[tuple]): [(verser, diger)]"""
+            tdcs (list[tuple]): [(verser, noncer)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2325,8 +2365,8 @@ class Parser:
         tdcs = []
         while gims:   # extract each attached group and strip from gims
             verser = self.extract(ims=gims, klas=Verser, cold=cold)
-            diger = self.extract(ims=gims, klas=Diger, cold=cold)
-            tdcs.append((verser, diger))
+            noncer = self.extract(ims=gims, klas=Noncer, cold=cold)
+            tdcs.append((verser, noncer))
         try:
             exts.tdcs.extend(tdcs)
         except KeyError:

@@ -9,7 +9,7 @@ import copy
 from dataclasses import dataclass, astuple, asdict
 from collections import namedtuple
 
-from ..help import (sceil, intToB64, b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
+from ..help import (sceil, intToB64, b64ToInt, decodeUtf8, codeB64ToB2, codeB2ToB64, Reb64,
                     nabSextets)
 
 from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0, InvalidVersionError,
@@ -56,7 +56,6 @@ class CounterCodex_1_0(IceMapDom):
     ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs: str = '-B'  # Qualified Base64 Indexed Signature.
     NonTransReceiptCouples: str = '-C'  # Composed Base64 Couple, pre+cig.
-    TransReceiptIdxSigGroups: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+ControllerIdxSigs of qb64.
     FirstSeenReplayCouples: str = '-E'  # Composed Base64 Couple, fnu+dts.
     TransIdxSigGroups: str = '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
     SealSourceCouples: str = '-G'  # Composed Base64 couple, snu+dig of given delegator/issuer/transaction event
@@ -92,7 +91,6 @@ class QuadTripCodex_1_0(IceMapDom):
 
     As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]"""
-    TransReceiptIdxSigGroups: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+ControllerIdxSigs of qb64.
     PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
@@ -227,8 +225,8 @@ class CounterCodex_2_0(IceMapDom):
     BigWitnessIdxSigs: str = '--L'  # Big Witness Indexed Signature(s) of qb64.
     NonTransReceiptCouples: str = '-M'  # NonTrans Receipt Couple(s), pre+cig.
     BigNonTransReceiptCouples: str = '--M'  # Big NonTrans Receipt Couple(s), pre+cig.
-    TransReceiptIdxSigGroups: str = '-N'  # Trans Receipt Indexed Signature Groups(s), pre+snu+dig+ControllerIdxSigs of qb64.
-    BigTransReceiptIdxSigGroups: str = '--N'  # Big Trans Receipt Indexed Signature Groups(s)(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    NonceSealSingles: str = '-N'  # Nonce Seal Single(s), nonce as sealed data, nonce or dig.
+    BigNonceSealSingles: str = '--N'  # Big Nonce Seal Single(s), nonce as sealed data, nonce or dig.
     FirstSeenReplayCouples: str = '-O'  # First Seen Replay Couple(s), fnu+dts.
     BigFirstSeenReplayCouples: str = '--O'  # First Seen Replay Couple(s), fnu+dts.
     PathedMaterialCouples: str = '-P'  # Pathed Material couples. path+text
@@ -617,7 +615,7 @@ class Counter:
                 '-A': Cizage(hs=2, ss=2, fs=4),
                 '-B': Cizage(hs=2, ss=2, fs=4),
                 '-C': Cizage(hs=2, ss=2, fs=4),
-                '-D': Cizage(hs=2, ss=2, fs=4),
+                #'-D': Cizage(hs=2, ss=2, fs=4),
                 '-E': Cizage(hs=2, ss=2, fs=4),
                 '-F': Cizage(hs=2, ss=2, fs=4),
                 '-G': Cizage(hs=2, ss=2, fs=4),
@@ -1181,8 +1179,7 @@ class Counter:
 
 
         first = qb64b[:2]  # extract first two char code selector
-        if hasattr(first, "decode"):
-            first = first.decode("utf-8")
+        first = decodeUtf8(first)  # narrows non-UTF-8 to ConversionError
         if first not in self.Hards:
             if first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected op code start"
@@ -1195,8 +1192,7 @@ class Counter:
             raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
 
         hard = qb64b[:hs]  # get hard code
-        if hasattr(hard, "decode"):
-            hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
+        hard = decodeUtf8(hard)  # decode converts bytearray/bytes to str (narrows non-UTF-8)
         if hard not in self._sizes:  # Sizes needs str not bytes
             raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
@@ -1210,8 +1206,7 @@ class Counter:
             raise ShortageError("Need {} more characters.".format(fs - len(qb64b)))
 
         count = qb64b[hs:fs]  # extract count chars
-        if hasattr(count, "decode"):
-            count = count.decode("utf-8")
+        count = decodeUtf8(count)  # narrows non-UTF-8 to ConversionError
         count = b64ToInt(count)  # compute int count
 
         self._code = hard

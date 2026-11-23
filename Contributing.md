@@ -27,7 +27,8 @@ However, this particular file is more about contributing code.  The general prin
 ## Contribution Guidelines
 
 ### Code Style/Conventions
-[PythonStyleGuide](./ref/PythonStyleGuide.md)  
+[Coding Conventions: Naming and Style](./ref/naming.md)  
+[Coding Conventions: KERI Error Hierarchy](./ref/ErrorHandling.md)  
 
 ### Commit Message Guidelines
 There are no hard and fast guidelines but it is helpful to:

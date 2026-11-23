@@ -4,10 +4,10 @@ import pytest
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0, ValidationError, Kinds
+from keri.kering import Vrsn_1_0, Vrsn_2_0, ValidationError, Kinds
 from keri.core import (Salter, Parser, Diger, SerderKERI,
                        Counter, Kever, Kevery, Codens,
-                       incept, rotate, interact)
+                       incept, rotate, interact, receipt)
 from keri.app import openHby
 from keri.db import openDB
 
@@ -425,6 +425,229 @@ def test_stale_event_receipts():
         assert len(wigers) == 3
 
         """ Done Test """
+
+
+def _walkWitnessState(kvy, pre, sn):
+    """The backward walk fetchWitnessState made before it read key state,
+    kept here as the reference its answers must match."""
+    preb = pre.encode("utf-8")
+    for digb in kvy.db.kels.getBackIter(keys=preb, on=sn):
+        serder = kvy.db.evts.get(keys=(preb, digb))
+        if serder.estive:
+            return kvy.db.wits.get(keys=(preb, digb))
+    return []
+
+
+def _makeWitnessedHab(hby, signers):
+    return hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
+                       wits=[signers[0].verfer.qb64, signers[1].verfer.qb64])
+
+
+class _Reads:
+    """Counts key events read out of db.evts while armed."""
+
+    def __init__(self, db, monkeypatch):
+        self.count = 0
+        original = db.evts.get
+
+        def counting(*pa, **kwa):
+            self.count += 1
+            return original(*pa, **kwa)
+
+        monkeypatch.setattr(db.evts, "get", counting)
+
+    def during(self, act):
+        self.count = 0
+        result = act()
+        return self.count, result
+
+
+def test_witness_state_matches_walk():
+    """fetchWitnessState and fetchEstEvent answer at every sn as the walks do,
+    across rotations that change the witness list."""
+    signers = Salter(raw=b'0123456789abcdef').signers(count=5, path='wit',
+                                                     transferable=False, temp=True)
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = _makeWitnessedHab(hby, signers)
+        hab.interact()
+        hab.interact()
+        hab.rotate(cuts=[signers[0].verfer.qb64], adds=[signers[2].verfer.qb64])
+        hab.interact()
+        hab.rotate()
+        hab.interact()
+        hab.interact()
+        assert hab.kever.sn == 7
+
+        for sn in range(hab.kever.sn + 3):
+            got = [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, sn)]
+            want = [w.qb64 for w in _walkWitnessState(hab.kvy, hab.pre, sn)]
+            assert got == want, sn
+        assert [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, 7)] == [
+            signers[1].verfer.qb64, signers[2].verfer.qb64]
+
+        ests = [0, 0, 0, 3, 3, 5, 5, 5]
+        for sn, esn in enumerate(ests):
+            assert hab.kvy.fetchEstEvent(hab.pre, sn).said == hby.db.kels.getLast(
+                keys=hab.pre, on=esn)
+        assert hab.kvy.fetchEstEvent(hab.pre, 8) is None
+        assert hab.kvy.fetchWitnessState(signers[4].verfer.qb64, 0) == []
+
+        # no event at sn means no establishment event for it, whatever key state says
+        dig = hby.db.kels.getLast(keys=hab.pre, on=6)
+        hby.db.kels.rem(keys=hab.pre, on=6, val=dig)
+        assert hab.kvy.fetchEstEvent(hab.pre, 6) is None
+        hby.db.kels.add(keys=hab.pre, on=6, val=dig)
+        assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
+        # nor when the entry at sn names an event that is not stored
+        evt = hby.db.evts.get(keys=(hab.pre, dig))
+        hby.db.evts.rem(keys=(hab.pre, dig))
+        assert hab.kvy.fetchEstEvent(hab.pre, 6) is None
+        hby.db.evts.put(keys=(hab.pre, dig), val=evt)
+        assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
+
+        # key state reloaded from the db, as after a restart, gives the same answers
+        hby.db.kevers.clear()
+        assert [w.qb64 for w in hab.kvy.fetchWitnessState(hab.pre, 6)] == [
+            signers[1].verfer.qb64, signers[2].verfer.qb64]
+        assert hab.kvy.fetchEstEvent(hab.pre, 6).sn == 5
+
+
+def test_witness_state_matches_walk_after_recovery():
+    """After a recovery rotation supersedes interaction events, both methods
+    still answer at every sn as the walks do. The sn holding a displaced
+    leftover above the recovered tip is outside the shortcut's range, so it
+    checks that the shortcut steps aside there.
+
+    The recovery keeps the same witnesses. A recovery rotation's cuts and
+    adds are currently ignored by Kever.deriveBacks, so a witness-changing
+    recovery would test that, not this. A delegated rotation superseding a
+    delegated rotation at the same sn, the one case with two establishment
+    events at one sn, is not covered: keripy has no working delegated
+    supersession fixture yet (see test_delegation_supersede)."""
+    signers = Salter(raw=b'0123456789abcdef').signers(count=3, path='rec', temp=True)
+    wits = [s.verfer.qb64 for s in Salter(raw=b'0123456789abcdef').signers(
+        count=2, path='wit', transferable=False, temp=True)]
+    with openDB(name="recovery-witness-state") as db:
+        kvy = Kevery(db=db, local=True)
+
+        def accept(serder, signer):
+            db.prefixes.add(serder.pre)  # locally owned, so receipts are not awaited
+            kvy.processEvent(serder=serder, sigers=[signer.sign(serder.raw, index=0)])
+            assert db.kels.getLast(keys=serder.pre, on=serder.sn) == serder.said
+            return serder
+
+        events = [accept(incept(keys=[signers[0].verfer.qb64],
+                                ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64],
+                                wits=wits, toad=1), signers[0])]
+        pre = events[0].pre
+        for sn in (1, 2, 3):
+            events.append(accept(interact(pre=pre, dig=events[-1].said, sn=sn), signers[0]))
+        recovery = accept(rotate(pre=pre, keys=[signers[1].verfer.qb64], dig=events[1].said,
+                                 ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64], sn=2,
+                                 wits=wits, toad=1), signers[1])
+        assert kvy.kevers[pre].sn == 2 and kvy.kevers[pre].lastEst.d == recovery.said
+        assert db.kels.getLast(keys=pre, on=3) == events[3].said  # leftover above the tip
+
+        for sn in range(5):
+            got = [w.qb64 for w in kvy.fetchWitnessState(pre, sn)]
+            want = [w.qb64 for w in _walkWitnessState(kvy, pre, sn)]
+            assert got == want, sn
+        assert kvy.fetchEstEvent(pre, 2).said == recovery.said
+        assert kvy.fetchEstEvent(pre, 1).said == events[0].said
+        assert kvy.fetchEstEvent(pre, 3).said == recovery.said  # the walk's answer too
+
+
+def test_witness_receipt_reads_bounded(monkeypatch):
+    """THE BOUND. A witness receipt on the newest event, and the witness state
+    and establishment event behind it, read as many key events at sn 50 as at
+    sn 10, though the KEL has grown by forty interaction events between them.
+    processReceipt used to walk back to the last establishment event."""
+    signers = Salter(raw=b'0123456789abcdef').signers(count=2, path='wit',
+                                                     transferable=False, temp=True)
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = _makeWitnessedHab(hby, signers)
+        reads = _Reads(hby.db, monkeypatch)
+
+        def receiptNewest():
+            hab.interact()
+            serder = hab.kever.serder
+            rct = receipt(pre=hab.pre, sn=serder.sn, said=serder.said)
+            cigar = signers[0].sign(ser=serder.raw)
+            count, _ = reads.during(
+                lambda: hab.kvy.processReceipt(serder=rct, cigars=[cigar], wigers=[], tsgs=[]))
+            assert len(hby.db.wigs.get(keys=(hab.pre, serder.said))) == 1
+            return count, reads.during(
+                lambda: (hab.kvy.fetchWitnessState(hab.pre, serder.sn),
+                         hab.kvy.fetchEstEvent(hab.pre, serder.sn)))[0]
+
+        for _ in range(9):
+            receiptNewest()
+        early = receiptNewest()
+        assert hab.kever.sn == 10
+        for _ in range(39):
+            receiptNewest()
+        late = receiptNewest()
+        assert hab.kever.sn == 50
+        assert late == early, f"read {early} key events at sn 10 and {late} at sn 50"
+
+
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+@pytest.mark.parametrize("field, value", [
+    ("n", "verkey"),  # a public key where a next key digest belongs
+    ("n", None),  # no list of next key digests at all
+    ("nt", "g"),  # an unparseable next threshold
+    ("nt", "3"),  # a next threshold that one next key digest cannot meet
+])
+def test_rotation_with_malformed_next_is_not_logged(version, field, value):
+    """
+    A rotation whose next key digests or next threshold are malformed, or
+    whose next threshold the next key digests cannot meet, must be rejected
+    before it is logged. Logging it first made it the head of the KEL
+    while leaving the prior next digests in force, and those digests commit to
+    the keys the rotation exposed as current, so the current key alone could
+    rotate again.
+    """
+    kwa = dict(version=version, kind=Kinds.json)
+    signers = Salter(raw=b"ABCDEFGH01234567").signers(count=3, path='mal',
+                                                         temp=True)
+
+    with openDB(name="validator", temp=True) as db:
+        kvy = Kevery(db=db)
+
+        icp = incept(keys=[signers[0].verfer.qb64],
+                     ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **kwa)
+        kvy.processEvent(serder=icp,
+                         sigers=[signers[0].sign(icp.raw, index=0)])
+        pre = icp.pre
+        kever = kvy.kevers[pre]
+        assert kever.sn == 0
+
+        rot = rotate(pre=pre, keys=[signers[1].verfer.qb64], dig=icp.said,
+                     ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
+                     sn=1, **kwa)
+        sad = rot.sad
+        sad[field] = ([signers[2].verfer.qb64] if value == "verkey" else value)
+        bad = SerderKERI(sad=sad, makify=True)
+        assert bad.said != rot.said
+
+        with pytest.raises(ValidationError):
+            kvy.processEvent(serder=bad,
+                             sigers=[signers[1].sign(bad.raw, index=0)])
+
+        # key state, KEL and first seen log are untouched
+        assert kever.sn == 0
+        assert kever.serder.said == icp.said
+        assert [d.qb64 for d in kever.ndigers] == icp.ndigs
+        assert db.kels.getLast(keys=pre, on=1) is None
+        assert db.fels.get(keys=pre, on=1) is None
+        assert db.evts.get(keys=(pre, bad.said)) is None
+        assert db.states.get(keys=pre).s == '0'
+
+        # the well formed rotation is still accepted afterwards
+        kvy.processEvent(serder=rot, sigers=[signers[1].sign(rot.raw, index=0)])
+        assert kever.sn == 1
+        assert kever.serder.said == rot.said
+        assert kever.ndigs == [Diger(ser=signers[2].verfer.qb64b).qb64]
 
 
 if __name__ == "__main__":

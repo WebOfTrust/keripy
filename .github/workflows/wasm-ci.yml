@@ -36,18 +36,17 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install \
             playwright==1.61.0 \
+            pytest==9.1.1 \
             pytest-pyodide==0.59.2 \
-            build==1.6.1 setuptools==83.0.0 wheel==0.47.0
+            build==1.6.1 setuptools==84.0.0 wheel==0.48.0
       - name: Prepare browser dependencies and current Keripy wheel
         run: |
           curl --fail --location --retry 3 \
-            https://github.com/keri-foundation/fortweb/releases/download/runtime-source-pyodide-314-hio-0.7.20-20260910/runtime-source.tar.gz \
-            --output runtime-source.tar.gz
-          echo '394db70ecbed6e5718e6ec0afbcb43eaf6384e2ab78218e55067ec9e5d83fb34  runtime-source.tar.gz' | sha256sum --check
+            https://github.com/keri-foundation/fortweb/releases/download/keripy-wasm-deps-pyodide-314-hio-0.7.21/keripy-wasm-dependencies.tar.gz \
+            --output keripy-wasm-dependencies.tar.gz
+          echo 'c44327739283edacaca48acfc4e4c48be6e93898411467c3787a96b1b9beaadb  keripy-wasm-dependencies.tar.gz' | sha256sum --check
           mkdir -p wheels/dependencies
-          # Reuse dependency artifacts only. Test Keripy built from this checkout.
-          tar -xzf runtime-source.tar.gz -C wheels/dependencies \
-            --wildcards --exclude='wheelhouse/keri-*' 'wheelhouse/*.whl'
+          tar -xzf keripy-wasm-dependencies.tar.gz -C wheels/dependencies
           python -m build --wheel --no-isolation --outdir wheels/current
       - name: Install Playwright browser
         if: matrix.runner == 'playwright'

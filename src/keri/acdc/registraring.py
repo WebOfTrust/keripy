@@ -325,10 +325,22 @@ class Registry:
                 ``SerderACDC``, if the ACDC does not belong to this registry or
                 controlling habitat, or if an unsupported explicit ``blinder``
                 argument is supplied.
+            MissingSchemaError: if the ACDC's external schema is unavailable.
+            FailedSchemaValidationError: if the ACDC violates its schema.
         """
         # Blind issuance remains a Registry method for callers, but the staged
         # frontier walk and TEL event creation now live in regeventing.py.
         return self._eventer.blind(acdc=acdc, state=state, **kwa)
+
+    def present(self, grant, state="presented", **kwa):
+        """Create a blinded registry update binding a grant message SAID."""
+        # Delegate event construction to this registry's TEL engine.
+        return self._eventer.present(grant=grant, state=state, **kwa)
+
+    def vacate(self, **kwa):
+        """Create a vacuous update that leaves the prior registry state in force."""
+        # Delegate vacuous event construction to the TEL engine.
+        return self._eventer.vacate(**kwa)
 
 
 class Registrar:
@@ -395,6 +407,24 @@ class Registrar:
         Returns:
             tuple: ``(blinder, serder)`` where ``blinder`` is the created
                 ``Blinder`` and ``serder`` is the created ``bup`` event.
+
+        Raises:
+            MissingSchemaError: if the ACDC's external schema is unavailable.
+            FailedSchemaValidationError: if the ACDC violates its schema.
         """
         reg = self._registry(registry)
         return reg.blind(acdc=acdc, state=state, **kwa)
+
+    def present(self, registry, grant, state="presented", **kwa):
+        """Bind a grant message SAID in an issuee-controlled registry."""
+        # Resolve an instance, registry key, or local alias.
+        reg = self._registry(registry)
+        # Build the presentation update through the resolved registry.
+        return reg.present(grant=grant, state=state, **kwa)
+
+    def vacate(self, registry, **kwa):
+        """Append a vacuous blinded update through the public facade."""
+        # Resolve an instance, registry key, or local alias.
+        reg = self._registry(registry)
+        # Build the vacuous update through the resolved registry.
+        return reg.vacate(**kwa)

@@ -125,12 +125,12 @@ class ListDoer(doing.DoDoer):
 
         self.notes = []
 
-        q = "/exn/ipex"
+        qs = ("/xip/ipex", "/exn/ipex")
         if self.type is not None:
-            q = f"/exn/ipex/{self.type}"
+            qs = tuple(f"{q}/{self.type}" for q in qs)
 
         for keys, notice in self.notifier.noter.notes.getTopItemIter():
-            if notice.pad['a']['r'].startswith(q):
+            if notice.pad['a']['r'].startswith(qs):
                 self.notes.append(notice)
 
         for note in self.notes:

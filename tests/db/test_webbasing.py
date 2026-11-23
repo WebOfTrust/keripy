@@ -4340,7 +4340,15 @@ def test_clean_subdb_swap():
         assert baser.chas.get(keys=("challenge_pre",))
 
         nested = "nested-substream"
-        assert baser.enst.pin(keys=("exchange",), vals=[nested])
+        accepted = eventing.exchept(sender=test_diger.qb64, receiver=test_diger.qb64,
+                                    route="/test/clean")
+        assert baser.exns.put(keys=(accepted.said,), val=accepted)
+        assert baser.enst.pin(keys=(accepted.said,), vals=[nested])
+        assert baser.enst.pin(keys=(test_diger.qb64,), vals=[nested])
+        assert baser.eidx.add(keys=(test_diger.qb64,), val=Diger(qb64=accepted.said))
+        assert baser.eidx.add(keys=(test_diger.qb64,), val=test_diger)
+        stamp = Dater()
+        assert baser.kramXDT.pin(keys=(accepted.said,), val=stamp)
 
         # Write to a SubDb NOT in the unsecured/sets lists
         baser.names.put(keys=("", "myname"), val="somepre")
@@ -4356,7 +4364,10 @@ def test_clean_subdb_swap():
         assert chas_vals
         assert test_diger.qb64 in [v.qb64 for v in chas_vals]
 
-        assert baser.enst.get(keys=("exchange",)) == [nested]
+        assert baser.enst.get(keys=(accepted.said,)) == [nested]
+        assert baser.enst.get(keys=(test_diger.qb64,)) == []
+        assert [diger.qb64 for diger in baser.eidx.get(keys=(test_diger.qb64,))] == [accepted.said]
+        assert baser.kramXDT.get(keys=(accepted.said,)).qb64 == stamp.qb64
 
         # names data should be gone (not copied to clone)
         assert baser.names.get(keys=("", "myname")) is None

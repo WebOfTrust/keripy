@@ -196,10 +196,10 @@ class statedict(dict):
             kever: converted from underlying dict or database
 
         """
-        if not super(statedict, self).__contains__(k):
-            return default
-        else:
+        try:
             return self.__getitem__(k)
+        except KeyError:
+            return default
 
 
 class BaserBase:
@@ -313,9 +313,9 @@ class BaserBase:
         escrows = [
             self.ures, self.vres, self.pses, self.pwes, self.ooes,
             self.qnfs, self.uwes, self.misfits, self.delegables,
-            self.pdes, self.udes, self.rpes, self.ldes, self.epsd,
+            self.pdes, self.udes, self.rpes, self.ldes, self.epsd, self.emsd,
             self.eoobi, self.dpub, self.gpwe, self.gdee, self.dpwe,
-            self.gpse, self.epse, self.dune,
+            self.gpse, self.epse, self.emse, self.dune,
         ]
         total = 0
         for escrow in escrows:
@@ -333,9 +333,10 @@ class BaserBase:
         for escrow in [self.ures, self.vres, self.pses, self.pwes, self.ooes,
                        self.qnfs, self.uwes,
                        self.qnfs, self.misfits, self.delegables, self.pdes,
-                       self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
+                       self.udes, self.rpes, self.ldes, self.epsd, self.emsd,
+                       self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
-                       self.epse, self.dune]:
+                       self.epse, self.emse, self.dune]:
             count = escrow.cntAll()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
@@ -496,27 +497,26 @@ class BaserBase:
                 cigar.verfer = prefixer  # assign verfer
                 cigars.append(cigar)
 
-        # get trans receipt/endorsement attachments not controller
-        # vrcsNew get non-controller trans receipt attachments
+        # get non-controller trans endorsement attachments from vrcs
         # may have been originally non-controller sigs or receipted endorsements
         topkeys = (pre, dig)
-        rsets = dict()  # collate  by triple of rpre,rsnh,rdig
+        tsets = dict()  # collate  by triple of tpre,tsnh,tdig
         for quintkeys, siger in self.vrcs.getTopItemIter(keys=topkeys):
-            epre, edig, rpre, rsnh, rdig = quintkeys  # expand quintkeys tuple
-            triple = (rpre, rsnh, rdig)  # create triple of receiptor/endorser
-            if triple not in rsets:
-                rsets[triple] = [siger]
+            epre, edig, tpre, tsnh, tdig = quintkeys  # expand quintkeys tuple
+            triple = (tpre, tsnh, tdig)  # create triple of receiptor/endorser
+            if triple not in tsets:
+                tsets[triple] = [siger]
             else:
-                rsets[triple].append(siger)
+                tsets[triple].append(siger)
 
-        rsgs = []
-        if rsets:  # convert rsets dict to rsgs list of tuples
-            for triple, rigers in rsets.items():
-                rpre, rsnh, rdig = triple
-                rsgs.append((Prefixer(qb64=rpre),
-                             Number(snh=rsnh),
-                             Diger(qb64=rdig),
-                             rigers))
+        tsgs = []
+        if tsets:  # convert tsets dict to tsgs list of tuples
+            for triple, tigers in tsets.items():
+                tpre, tsnh, tdig = triple
+                tsgs.append((Prefixer(qb64=tpre),
+                             Number(snh=tsnh),
+                             Diger(qb64=tdig),
+                             tigers))
 
 
         # get authorizer (delegator/issuer) source seal event couple if any
@@ -533,7 +533,7 @@ class BaserBase:
 
 
         msg = messagize(serder=serder, sigers=sigers, wigers=wigers,
-                        cigars=cigars, rsgs=rsgs, bonds=bonds, gvrsn=gvrsn)
+                        cigars=cigars, tsgs=tsgs, bonds=bonds, gvrsn=gvrsn)
         return msg
 
 
