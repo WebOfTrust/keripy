@@ -1110,9 +1110,7 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for leafer in leaves:
-        leaf = siter.leafFromLeafer(leafer)
-        siter.root = siter._insert(leaf, siter.root)
-        siter.pinLeaf(leaf.said, leaf.part)
+        leaf = siter.insert(leaf=leafer)  # use leafer param not infoer default
 
     assert len(siter.leaves) == len(leaves)
     assert len(siter.nodes) == len(leaves)
@@ -1144,9 +1142,10 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for leafer in leaves:
-        leaf = siter.leafFromLeafer(leafer)
-        siter.root = siter._insert(leaf, siter.root)
-        siter.pinLeaf(leaf.said, leaf.part)
+        leaf = siter.insert(leaf=leafer)  # use leafer param not infoer default
+        #leaf = siter.leafFromLeafer(leafer)
+        #siter.root = siter._insert(leaf, siter.root)
+        #siter.pinLeaf(leaf.said, leaf.part)
 
     assert len(siter.leaves) == len(leaves)
     assert len(siter.nodes) == len(leaves)
@@ -1169,9 +1168,10 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for i in sample:
-        leaf = siter.leafFromLeafer(values[i])
-        siter.root = siter._insert(leaf, siter.root)
-        siter.pinLeaf(leaf.said, leaf.part)
+        leaf = siter.insert(leaf=values[i])  # use leafer not default infoer
+        #leaf = siter.leafFromLeafer(values[i])
+        #siter.root = siter._insert(leaf, siter.root)
+        #siter.pinLeaf(leaf.said, leaf.part)
 
     assert len(siter.leaves) == size
     assert len(siter.nodes) == size - 1
@@ -1184,9 +1184,10 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for i in sample:
-        leaf = siter.leafFromLeafer(values[i])
-        siter.root = siter._insert(leaf, siter.root)
-        siter.pinLeaf(leaf.said, leaf.part)
+        leaf = siter.insert(leaf=values[i])  # use leafer not default infoer
+        #leaf = siter.leafFromLeafer(values[i])
+        #siter.root = siter._insert(leaf, siter.root)
+        #siter.pinLeaf(leaf.said, leaf.part)
 
     assert len(siter.leaves) == size
     assert len(siter.nodes) == size - 1
@@ -1199,9 +1200,10 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid)  # create Siter with known tuid
     for i in sample:
-        leaf = siter.leafFromLeafer(values[i])
-        siter.root = siter._insert(leaf, siter.root)
-        siter.pinLeaf(leaf.said, leaf.part)
+        leaf = siter.insert(leaf=values[i])  # use leafer not default infoer
+        #leaf = siter.leafFromLeafer(values[i])
+        #siter.root = siter._insert(leaf, siter.root)
+        #siter.pinLeaf(leaf.said, leaf.part)
 
     assert len(siter.leaves) == size
     assert len(siter.nodes) == size - 1
@@ -1248,7 +1250,7 @@ def test_insert_logic():
 
     # test dense key space (limbs are densly packed at lower elevations)
     assert code == DigDex.Blake3_256
-    leafers = [Diger(num=limb, code=code) for limb in range(16)]
+    leafers = [Noncer(num=limb, code=code) for limb in range(16)]
 
     limbs = [leafer.numh for leafer in leafers]
     assert limbs == \
@@ -1256,9 +1258,10 @@ def test_insert_logic():
 
     siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid
     for leafer in leafers:
-        leaf = siter.leafFromLeafer(leafer)
-        siter.root = siter._insert(leaf, siter.root)
-        siter.pinLeaf(leaf.said, leaf.part)
+        leaf = siter.insert(leaf=leafer)  # use leafer not default infoer
+        #leaf = siter.leafFromLeafer(leafer)
+        #siter.root = siter._insert(leaf, siter.root)
+        #siter.pinLeaf(leaf.said, leaf.part)
 
     trace, metrics = siter.trace(terse=False)
     assert trace == \
@@ -1294,7 +1297,7 @@ def test_insert_logic():
     """Done Test"""
 
 
-def siter_insert():
+def test_insert():
     """Test .insert method of Siter"""
     code = DigDex.Blake3_256
     tuid = '0ACiicCYoKAqao8qDdnlFVrY'
@@ -1467,29 +1470,14 @@ def test_delete():
     leaf4 = siter.leafFromLeafer(leafers['01100000'])
     leaf5 = siter.leafFromLeafer(leafers['10100000'])
 
-    siter.root = siter._insert(leaf0, node=siter.root)
-    siter.pinLeaf(leaf0.said, leaf0.part)
-    assert siter.hasNode(siter.root.said)
-
-    siter.root = siter._insert(leaf1, node=siter.root)
-    siter.pinLeaf(leaf1.said, leaf1.part)
-    assert siter.hasNode(siter.root.said)
-
-    siter.root = siter._insert(leaf2, node=siter.root)
-    siter.pinLeaf(leaf2.said, leaf2.part)
-    assert siter.hasNode(siter.root.said)
-
-    siter.root = siter._insert(leaf3, node=siter.root)
-    siter.pinLeaf(leaf3.said, leaf3.part)
-    assert siter.hasNode(siter.root.said)
+    leaf = siter.insert(leaf=leaf0.part.limb)
+    leaf = siter.insert(leaf=leaf1.part.limb)
+    leaf = siter.insert(leaf=leaf2.part.limb)
+    leaf = siter.insert(leaf=leaf3.part.limb)
     rootA = siter.root
-
-    siter.root = siter._insert(leaf4, node=siter.root)
-    siter.pinLeaf(leaf4.said, leaf4.part)
+    leaf = siter.insert(leaf=leaf4.part.limb)
     rootB = siter.root
-
-    siter.root = siter._insert(leaf5, node=siter.root)
-    siter.pinLeaf(leaf5.said, leaf5.part)
+    leaf = siter.insert(leaf=leaf5.part.limb)
     rootC = siter.root
 
     leaves, metrics = siter.trace()
@@ -1503,26 +1491,18 @@ def test_delete():
         'right#2=11000000@1@root'
     ]
 
-    root = siter._delete(leaf=leaf5, node=siter.root)
-    siter.remLeaf(leaf5.said)
-    siter.root = root
+    leaf = siter.delete(leaf=leaf5.part.limb)
     assert siter.root.said.qb64 == rootB.said.qb64
 
-    root = siter._delete(leaf=leaf4, node=siter.root)
-    siter.remLeaf(leaf4.said)
-    siter.root = root
+    leaf = siter.delete(leaf=leaf4.part.limb)
     assert siter.root.said.qb64 == rootA.said.qb64
 
     # reinsert in different order to see if get same root as before
-    siter.root = siter._insert(leaf5, node=siter.root)
-    siter.pinLeaf(leaf5.said, leaf5.part)
-
-    siter.root = siter._insert(leaf4, node=siter.root)
-    siter.pinLeaf(leaf4.said, leaf4.part)
+    leaf = siter.insert(leaf=leaf5.part.limb)
+    leaf = siter.insert(leaf=leaf4.part.limb)
     assert siter.root.said.qb64 == rootC.said.qb64  # get same root as before
 
-
-    # Test .delete
+    # Test .delete with infoers
     # make infoers and insert so can delete
     count = 8
     infoers = {}
@@ -1648,32 +1628,36 @@ def test_prove():
     proof, kind = siter.prove(infoer)
     assert not kind
     assert proof[0].said.qb64 == siter.root.said.qb64
-    assert len(proof) == 3
-    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
+    assert len(proof) == 4  # bottom + target when exclusion
+    assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said bottom
 
     # test exclusion with empty siter
     siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
     proof, kind = siter.prove(infoer)
     assert not kind
     assert proof[0].said.qb64 == siter.root.said.qb64
-    assert len(proof) == 1  # so root
-    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
+    assert len(proof) == 2  # so root + target  when exclusion
+    assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
 
     # add left leaf to root
     siter.insert(infoers['info_0003'])  # limb starts with 0
     proof, kind = siter.prove(infoer)
     assert not kind
     assert proof[0].said.qb64 == siter.root.said.qb64
-    assert len(proof) == 1  # so root
-    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
+    assert len(proof) == 2  # so root plus target  when exclusion
+    assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
 
     # add right leaf to root
     siter.insert(infoers['info_0004'])  # limb starts with 1
     proof, kind = siter.prove(infoer)
     assert not kind
     assert proof[0].said.qb64 == siter.root.said.qb64
-    assert len(proof) == 1  # so root
-    assert proof[-1].said.qb64 != leaf.said.qb64  # different said
+    assert len(proof) == 2  # so root when exclusion
+    assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
 
 
     # build tree from leaves from leafers (leaf limbers) directly using .insert
@@ -1717,7 +1701,7 @@ def test_prove():
 
     # now create some proofs using leafers
     key = '00100000'
-    proof, kind = siter.prove(leafer=leafers[key])
+    proof, kind = siter.prove(leaf=leafers[key])
     assert kind
     assert len(proof) == 4
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
@@ -1725,7 +1709,7 @@ def test_prove():
 
 
     key = '10000000'
-    proof, kind = siter.prove(leafer=leafers[key])
+    proof, kind = siter.prove(leaf=leafers[key])
     assert kind
     assert len(proof) == 5
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
@@ -1733,16 +1717,24 @@ def test_prove():
 
     # now create exclusion proof
     key = '00010000'
-    proof, kind = siter.prove(leafer=leafers[key])
+    proof, kind = siter.prove(leaf=leafers[key])
     assert not kind
-    assert len(proof) == 3
+    assert len(proof) == 4
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
-    assert proof[-1].said.qb64 != leaves[key].said.qb64  # bottom is not leaf
+    assert proof[-1].said.qb64 == leaves[key].said.qb64  # exclusion last is leaf
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said of bottom
 
     # now test all inserted leaves
     for i in range(2, 14):
         leaf = items[i][1]
-        proof, kind = siter.prove(leafer=leaf.part.limb)
+        proof, kind = siter.prove(leaf=leaf)
+        assert kind
+        assert proof[-1].said.qb64 == leaf.said.qb64  # bottom is leaf
+
+    # now test all inserted leaves again but with qb64 for leaf
+    for i in range(2, 14):
+        leaf = items[i][1]
+        proof, kind = siter.prove(leaf=leaf.part.limb.qb64)
         assert kind
         assert proof[-1].said.qb64 == leaf.said.qb64  # bottom is leaf
 
@@ -1756,5 +1748,5 @@ if __name__ == "__main__":
     test_siter_basic()
     test_setup_leafer_vectors()
     test_insert_logic()
-    siter_insert()
+    test_insert()
     test_delete()
