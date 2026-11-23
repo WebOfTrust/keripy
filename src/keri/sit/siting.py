@@ -466,6 +466,8 @@ class Siter:
         """
         self.tuider = Noncer(nonce=tuid)  # None generates crypto random value
         self.code = code if code is not None else self.Code
+        if self.code not in DigDex:
+            raise ValueError(f"Invalid digest code={self.code}")
         self.nodes = dict()
         self.leaves = dict()
         self.infos = dict()

@@ -9,7 +9,7 @@ from collections import deque
 
 import pytest
 from keri import Versionage
-from keri.core import NumDex, Number, DigDex, Diger, Noncer, Verser, Ilker
+from keri.core import (NumDex, Number, DigDex, Diger, NonceDex, Noncer, Ilker)
 from keri.sit import (Version, MaxSpan, MaxSpanBytes, Kithage, Kiths,
                       NodeSaidage, Nodage, LeafSaidage, Leafage, Partage,
                       Siter, Emptier, EmptyQb2, EmptyQb64)
@@ -366,6 +366,9 @@ def test_siting_siter_class():
 
 def test_siter_basic():
     """Test basic siter instance creation and methods"""
+    with pytest.raises(ValueError):
+        siter = Siter(code=NonceDex.Empty)
+
     siter = Siter()  # default Siter
     assert len(siter.tuider.qb64) == 24  # random tuid
     assert siter.code == DigDex.Blake3_256
