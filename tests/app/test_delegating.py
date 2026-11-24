@@ -4,6 +4,7 @@ tests.app.delegating module
 
 """
 import time
+from types import SimpleNamespace
 
 from hio.base import doing, tyming
 
@@ -22,6 +23,20 @@ def test_anchorer_explicit_version_propagates_to_postman():
 
         assert bts.postman.version == Version
         assert bts.postman.kind == Kinds.json
+
+
+def test_anchorer_does_not_complete_skipped_witness_publication():
+    with openHby(name="delegation-publication", temp=True) as hby:
+        hab = hby.makeHab(name="delegated")
+        serder = hab.kever.serder
+        anchorer = Anchorer(hby=hby)
+        anchorer.publishers[hab.pre] = SimpleNamespace(idle=True, cues=[])
+        hby.db.dpub.pin(keys=(hab.pre, serder.said), val=serder)
+
+        anchorer.processWitnessPublication()
+
+        assert hby.db.dpub.get(keys=(hab.pre, serder.said)) is not None
+        assert hby.db.cdel.get(keys=hab.pre, on=serder.sn) is None
 
 
 def test_anchorer(seeder, witnessPorter):

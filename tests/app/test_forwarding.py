@@ -272,6 +272,39 @@ def test_stream_poster_forwards_native_grant_with_registry_proof(monkeypatch, ki
         assert b"".join(item.qb64b for item in proofs[0]) == blinder.qb64b
 
 
+def test_poster_removes_completed_forwarding_messenger(monkeypatch):
+    with openHab(name="sender", temp=True, version=Vrsn_1_0,
+                 kind=Kinds.json) as (hby, hab), \
+            openHab(name="receiver", temp=True, version=Vrsn_1_0) as (_, recp):
+        messenger = doing.Doer()
+        messenger.msgs = []
+        messenger.idle = False
+        monkeypatch.setattr("keri.app.forwarding.messengerFrom",
+                            lambda **kwa: messenger)
+        poster = Poster(hby=hby)
+        poster.wind(tymth=tyming.Tymist().tymen())
+        event = exchange(route="/echo", attributes=dict(msg="test"),
+                         sender=hab.pre, version=Vrsn_1_0, kind=Kinds.json)
+        attachment = hab.endorse(event, last=False, framed=False,
+                                 gvrsn=Vrsn_1_0)
+        del attachment[:event.size]
+        forward = poster.forward(
+            hab=hab,
+            ends={recp.pre: {Schemes.tcp: "tcp://127.0.0.1:5631"}},
+            recp=recp.pre,
+            serder=event,
+            atc=attachment,
+            topic="echo",
+        )
+
+        next(forward)
+        assert messenger in poster.doers
+        messenger.idle = True
+        with pytest.raises(StopIteration):
+            next(forward)
+        assert messenger not in poster.doers
+
+
 def test_postman(seeder, witnessPorter):
     with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
