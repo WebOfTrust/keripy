@@ -4,7 +4,9 @@ tests.wasm.test_webdbing_wasm module
 
 Browser storage tests run against the current Keripy wheel in Pyodide 314.
 """
+import json
 import os
+from itertools import batched
 from pathlib import Path
 
 import pytest
@@ -56,13 +58,26 @@ def selenium_keri(selenium):
     root = Path(__file__).resolve().parents[2]
     current = list((root / "wheels/current").glob("keri-*.whl"))
     assert len(current) == 1, "Build exactly one Keripy wheel from this checkout"
-    dependencies = sorted((root / "wheels/dependencies/wheelhouse").glob("*.whl"))
+    dependencies = sorted((root / "wheels/dependencies").glob("*.whl"))
     assert dependencies, "Prepare the pinned browser dependency wheels"
     assert not any(path.name.startswith("keri-") for path in dependencies)
     files = [(path, f"/wheels/{path.name}") for path in [*dependencies, *current]]
     files.append((root / "tests/db/test_webbasing.py", "/home/pyodide/webbasing_fixtures.py"))
-    copy_files_to_emscripten_fs(files, selenium, install_wheels=False)
+    # Keep parallel wheel downloads within the test server's listen backlog.
+    for batch in batched(files, 4):
+        copy_files_to_emscripten_fs(batch, selenium, install_wheels=False)
+    packages = json.loads((selenium.dist_dir / "pyodide-lock.json").read_bytes())["packages"]
+
+    def load_package(name):
+        for dependency in packages[name]["depends"]:
+            selenium.load_package(dependency)
+        selenium.load_package(name)
+
+    for package in ("micropip", "packaging", "jsonschema", "pyyaml", "sortedcontainers",
+                    "wcwidth", "cffi"):
+        load_package(package)
     install_keri(selenium)
+    load_package("pytest")
     return selenium
 
 

@@ -1,0 +1,8 @@
+build==1.6.1
+cffi==2.1.1
+maturin==1.16.0
+pyodide-build==0.39.4
+setuptools==84.0.0
+setuptools-rust==1.13.0
+setuptools-scm==10.3.4
+wheel==0.48.0

@@ -90,6 +90,11 @@ pytest tests/ --ignore tests/demo/ -n auto
 pytest tests/demo/
 ```
 
+For the WASM tests, follow the toolchain setup in [WASM Tests](.github/workflows/wasm-ci.yml).
+In a clean checkout, run `bash tests/wasm/build-dependencies.sh` to prepare the
+dependency wheels. Build Keripy from that checkout with
+`python -m build --wheel --no-isolation --outdir wheels/current`.
+
 ## Building Documentation in `/docs`
 * Install sphinx: 
   * `$ pip install sphinx`
