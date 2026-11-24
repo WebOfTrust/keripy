@@ -2,27 +2,43 @@
 
 ## Introduction
 
-
 A SAIDed Info Tree (SIT) is a shallow verifiable Map where
 the stucture metadata of each part of the tree (namely the part's path plus tree
 metadata) is included in each part's hash.
 
-This structure of digesting data and using that digest as a content addressable
-identifier that is included with the digested data is exactly the SAID approch.
+The approach of digesting data and using that digest as a content addressable
+identifier that is the index into the verifiable map is an extension of the
+SAID approach. A SAID is a self-contained content addressable identifier.
+When the tree structure is itself digested to form the digests (hashes) in the
+tree then the Tree is itself a tree of SAIDs and the root digest (hash) it a
+SAID of the whold tree. This is exactly the SAID approach to managing data.
 
-Thus we generalize the data storage as a SAIDed Information Tree or SIT.
+Thus we generalize the verifiable map as a SAIDed Information Tree or SIT.
+
+We use CESR encodings throughout the tree for the cryptographic digests.
 This provides both cryptographic agility and increased collision resistance.
 
 The most important concept needed to understand a SIT relative to other sparse
 Merkle tree algorithms is that a SIT grows from the root down by stretching the
-node space between nodes to allow leaves to be inserted and the shallowest possible
-depth and a node's prefix (limb and span) is fixed once inserted.
+node space between nodes to allow leaves to be inserted. A node is inserted
+in a way that maximizes the shrink of the tree (thereby maximizing its potential
+to stretch). This is done by including the node's prefix in the index (key) space
+in the tree. This prefix (limb and span) fixes the node's absolute location in
+the tree once inserted. Other nodes and leaves can be inserted above or below it
+but the node itself never moves in an absolute sense. This ensures the essential
+verifiable map property that the same set of leaves always results in the same
+root digest no matter the insertion order of the leaves.
 
 Using CESR enables a tree or parts of a tree to be streamed in a CESR stream
 in either compact CESR binary or readable text mode. CESR streams can attached to KERI
 messages, or stored in a database. Each set of data elements uses a special
 group code when included in a CESR stream. Each element uses a CESR primitive code
 appropriate to the element type.
+
+Security is based on the concept of partitioning the input space to the cryptograpic
+digest algorithm used to compute the node and leaf digests (hashes). This concept
+is developed in the security analysis section of the paper:
+[Efficient Sparse Merkle Trees](https://eprint.iacr.org/2016/683.pdf)
 
 Tree metadata associated with each tree
 - The type of digest algorithm used to create the SAIDs for each node and leaf.
@@ -205,6 +221,26 @@ the node to which that leaf is attached. A node does not count itself in its
 own depth. The root node has a depth of 0.
 
 
+## Inclusion and Exclusion Proofs
+
+In SIT a proof is fully self-contained. It consists of a list of nodes and leaves
+with each containing the  full node or leaf data needed to compute its SAID.
+The list starts at the root and traverses the branch down to the bottom.
+
+When its an inclusion proof then the bottom of the branch is the target leaf of
+the proof. This is the last element in the list.
+
+When its an exclusion proof then the bottom of the branch is either a non-matching
+leaf with respect to the target leaf or a node whose prefix is not common to
+the limb of the target leaf. For non-exclusion proofs the target leaf is appended
+to the end of the list after the bottom of the branch.
+
+In either case the last item in the proof is the target leaf of the proof i.e.
+the leaf being proven as either included or excluded from the tree. This makes
+the proof self-contained. A verifier can confirm what the proof is proving given
+the root at the front of the list and the target leaf at the end.
+
+
 ## Design Logic
 
 A leaf can only attach to child of node on side given by bit in leaf
@@ -271,60 +307,79 @@ This differs from other sparse Merkle trees where the number of
 hashes is log2(M) where M is the maximum number of leaves the tree
 can hold.
 
-Many optimized SMT hash all the ancester nodes of any non-empty node
-where the ancestor nodes are precomputed placeholder empty nodes for each
-height of the tree up to the height 256. Compression only happens in order
-to reach the first non-empty parent node of a leaf. For example, the Jellyfish
+Many optimized SMTs when used as a verifiable map (such as
+[Trillian](https://github.com/google/trillian/blob/master/docs/papers/RevocationTransparency.pdf)
+expand and hash all the ancester nodes of any non-empty node. Typically these
+the ancestor nodes are precomputed placeholder empty nodes for each
+height of the tree up to the height 256. In compact SMT, empty subtrees below
+a non-empty node are compresses. Compression only happens up to the first
+first non-empty parent node of a leaf. For example, the
+[Jellyfish](https://developers.diem.com/papers/jellyfish-merkle-tree/2021-01-14.pdf)
 SMT compresses a single leaf on an empty subtree up to the non empty node holding
 the empty subtree so only one hash is needed for the subtree (thus skipping
 hashes equal to the height of the subtree). Jellyfish however expands all ancester
 nodes on the branch above any node with two non-empty children.
 This makes the average depth a worst case for dense leaf key spaces
 such as sequential leaf keys that inhabit the bottom elevations of the leaf key
-space.
+space. Other compact SMTs like
+[Aergo](https://medium.com/aergo/releasing-statetrie-a-hash-tree-built-for-high-performance-interoperability-6ce0406b12ae)
+have similar charactericts, namely, compression of empty subtrees with expanded
+ancestor branches.
 
-Nervos, is similar to Jellyfish in that is skips hashes of empty subtrees by merging
-non empty nodes up to the highest node with two non-empty children.
-Unlike jellyfish, however, Nervos stores the key prefix with each
-real node so that it does not have to expand the ancestors of nodes with
+Another compact SMT,
+[Nervos](https://github.com/nervosnetwork/sparse-merkle-tree/blob/master/SMT.md),
+is similar to Jellyfish (and others like Jellyfish) in that is compresses hashes
+of empty subtrees by merging non-empty nodes up to the highest node with two
+non-empty children. Unlike jellyfish, however, Nervos stores the key prefix with
+each real node so that it does not have to expand the ancestors of nodes with
 non-empty children. Any leaf can compare the node prefix to its key
 to skip empty sub-trees between real nodes (those with two non-empty
-children).
+children).  This minimizes the average effective depth of nodes in the tree.
 
-SIT is therefore most similar to Nervos and was inspired by Nervos. The main
-difference of SIT is that it has simpler logic, stronger security, and is
-cryptographically agile by using CESR and KERI Matter primitives.
+SIT was inspired by this feature of Nervos, namely, storing the node prefix with
+the node in order to minimize the average effective depth of the tree).
+SIT is therefore most similar to Nervos. The main
+differences between SIT and Nervos are full cryptographic agility, simpler logic,
+stronger security, and KERI/ACDC friendly. SIT gets both crypto agility and
+KERI/ACDC friendliness because it CESR encodes all cryptographic primitives.
 
 SIT's logic is conceptually much simpler than Nervos' (and hence code) because
 logically SIT builds the tree by stetching a shrunk tree from the top down
-instead of shrinking a full size tree from the bottom up. The both arrive at the
+instead of shrinking a full size tree from the bottom up. They both arrive at the
 same place its just simpler to do it the SIT way. SIT borrows from Nervos the concept
 of including a key space prefix in each node but Nervos logic for applying that
-concept is way more convoluted. Nervos can iterates up to 256 times to merge up the
+concept is way more convoluted. Nervos my iterate up to 256 times to merge up the
 virtual ghost (empty) nodes. Whereas SIT only iterates the number of real nodes
 it actually encounters on the way down. The number of real nodes encounted on
-average is less than  log2(L) where L is the number of real leaves.
+average is always `O(log2(L))` where `L` is the number of real leaves.
 
-As mentioned above,  the security of SIT is stronger than Nervos since in SIT
+As mentioned above,  the security of SIT is stronger than Nervos because in SIT
 the key prefix (limb in SIT) of each real node (i.e. two non-empty children) is
-also hashed for the node, not just for the leaves. This better partitions
-the hash input space (partitioned input space better follows the
-Efficient Sparse Merkle Tree security policy to increase collison
-resistance)
+also hashed for the node, not just for the leaves. Nervos only hashes a leaf's
+key with the leaf. It does not hash the node prefix with the node. Hashing the
+node prefix with the node better partitions the hash input space as per the
+approach to security outlined in
+[Efficient Sparse Merkle Trees](https://eprint.iacr.org/2016/683.pdf).
+Partitioning the hash input space increases the collision resistance that must
+be overcome to perfom a successful malleability attack on an SMT used as a
+verifiable map.
 
-To elaborate: SIT (and Nervos) stretch the nodes space by filling in or filling out
-nodes as needed. The fill in/out is both above and below existing nodes
+To elaborate: both SIT (and Nervos) stretch the nodes space by filling in or
+filling out nodes as needed. The fill in/out is both above and below existing nodes
 Thus the node space is stretched to fit the leaves.
 
-Logically, SIT starts with a fully shrunken node space and stretches it to
-insert a leaf while the Nervos with an expanded virtual node space and re-shrinks
-it to insert a leaf.
+Conceptually, SIT starts with a fully shrunken real node space and stretches it to
+insert a leaf while the Nervos starts with an expanded virtual node space and
+re-shrinks it to insert a leaf.
 
 Because SIT (and Nervos) never expand ancestor nodes of nodes with
-two non-empty childen the number of nodes is always 1 less than
-the number of leaves (except for the corner case where the root has
-one or two empty leaves). This enables the average depth in SIT (Nervos)
-to approach the minimal node depth = log2(L) where L is the number
+two non-empty childen the number of nodes is minimized to the theoretical minimum
+for a binary tree of `L` leaves. The number of nodes `N` is always 1 less than
+the number of leaves `L`, `N = L-1` for trees with at least two real leaves.
+In the SIT case there is one exception and that is when the the root has one
+or two empty leaves).
+This minimized node count enables the average depth of leaves in SIT
+to approach the minimum  of `O(log2(L))` where `L` is the number
 of real leaves.
 
 Whereas because Jellyfish and other similar algorithms
@@ -558,24 +613,31 @@ budget target for optimizing the tree using structural (limb, span) meta-data.
 ### Comparison to Other SMTs
 
 The most popular SMT Trillian is typically used as a verifiable log not a
-verifiable map. The SEDI use cases (bulk update, bulk anchoring, age range proofs)
-all require a verifiable map. When used as a verifiable map Trillian is not
-considered a compact optimized SMT. It uses pre-computed hashes that when used
+verifiable map. It can however be modified to be used as a verifiable map. But
+it is much less compact than other SMT algorithms that are intended to be used
+as verifiable maps. The KERI and SEDI use cases (registry bulk update,
+issuance bulk anchoring,  age range proofs, watcher bulk updates)
+all require a verifiable map. When used as a verifiable map
+[Trillian](https://github.com/google/trillian/blob/master/docs/papers/RevocationTransparency.pdf)
+is not considered a compact optimized SMT. It uses pre-computed hashes that when used
 as a verifiable map requires computing 256 internal node hashes to insert a
 non-empty leaf and recomputing those 256 internal hashes for delete,inclusion and
-exclusion proofs. The  successor to  Trillian now called Tessera uses a tile
-based disk interface that  pushes the computation load onto its clients for
+exclusion proofs . The  successor to  Trillian now called
+[Tessera](https://tesseralabs.ai/download/Tessera-EnterpriseAI-Whitepaper.pdf)
+uses a tile based disk interface that  pushes the computation load onto its clients for
 distributed computing. It has  some of the read optimization of radix tree
 chunking but does not optimize the internal tree structure to reduce
 the number of hashes for verifiable maps. It pushes the hashing onto the clients
 who buld their own trees.
 
-The popular optimized compact SMT algorithms like JellyFish, Aergo, and Ethereum
-whose main use case are verifiable maps for smart contracts all use a radix tree
-(called a trie) to minimize disk reads by chunking the tree into subtrees.
+Other popular optimized compact SMT algorithms for verifiable maps, namely,
+[Jellyfish](https://developers.diem.com/papers/jellyfish-merkle-tree/2021-01-14.pdf),
+[Aergo](https://medium.com/aergo/releasing-statetrie-a-hash-tree-built-for-high-performance-interoperability-6ce0406b12ae),
+and [Ethereum](https://eprint.iacr.org/2018/955.pdf) use a radix tree, called a
+trie to minimize disk reads by chunking the tree into subtrees.
+
 In a radix tree (trie) each read returns a sub tree of 16 nodes (radix 16 or
-4 bits = 4 level subtree).
-Internally all 16 nodes in each radix subtree must be
+4 bits = 4 level subtree). Internally all 16 nodes in each radix subtree must be
 examined when doing insertion/deletion/inclusing/exclusion operations. The
 primary advantage of radix chunking is the worst case for traversing a tree of
 depth 256 requires only 64 reads (256 / 4). Thus the optimization is to
