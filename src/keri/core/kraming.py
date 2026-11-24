@@ -1129,6 +1129,7 @@ class Kramer:
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
                         None,
+                        None,
                     )
                     raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -1237,6 +1238,7 @@ class Kramer:
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
+                        None,
                         None,
                     )
                     raise MissingSenderKeyStateError(
@@ -1376,6 +1378,7 @@ class Kramer:
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
                         None,
+                        None,
                     )
                     raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -1488,6 +1491,7 @@ class Kramer:
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
                         None,
+                        None,
                     )
                     raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -1522,8 +1526,8 @@ class Kramer:
                                 xdts = cacheRecord.xdt
                             else:
                                 # If the current sender has no row yet (ie no prior message)
-                                # fall back to the Exchange Opener Datetime cache (XDT) 
-                                # and use the xid for this exchange to find the 
+                                # fall back to the Exchange Opener Datetime cache (XDT)
+                                # and use the xid for this exchange to find the
                                 # opener's xdt
                                 threadDater = self.db.kramXDT.get(keys=(exId,))
                                 if threadDater is not None:

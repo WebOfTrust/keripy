@@ -13,8 +13,7 @@ from .. import Versionage, InvalidCodeError
 from ..core import (MtrDex, DigDex, NonceDex, Noncer,  Ilker, Diger, Number)
 from ..help import intToB64
 
-from .parting import (Emptier, EmptyQb2, EmptyQb64, Kithage, Kiths,
-                      NodeSaidage, Nodage, LeafSaidage, Leafage, Partage)
+from .parting import Kiths, NodeSaidage, Nodage, LeafSaidage, Leafage, Partage
 
 Version = Versionage(major=0, minor=0)
 MaxSpan = 256 # 256 bits or forks == leaf limb span
@@ -106,12 +105,9 @@ class Siter:
                            values are Matter instances
         nodes (dict): Nodage instances indexed by node said
         leaves (dict): Leafage instances indexed by leaf said
-        infos (dict): leaf info saids as indexed by leaf limb
 
-    ToDo: XXXX change .nodes, .leaves, and .infos to have virtual interface
+    ToDo: XXXX change .nodes, .leaves,  to have virtual interface
           that supports either in-memory and disk based storage
-
-
     """
     Dummy = '#'  # default dummy for computing SAIDs
     Code = MtrDex.Blake3_256  # class default code for computing SAIDs
@@ -373,6 +369,203 @@ class Siter:
         return (Number(num=span), swap)
 
 
+    @staticmethod
+    def verify(proof, kind=True, root=None, leaf=None):
+        """verify proof (inclusion/exclusion) with root said for leaf
+
+        Returns::
+            result (bool|None):  True if proof verifies of kind for leaf
+                                 False if proof does not verify as kind for leaf
+                                 None if problem with proof verification
+        Parameters::
+            proof (iterable[NodeSaidage|LeafSaidage]): of parts of branch from
+                    root down to bottom.
+            kind (bool): of proof True means inclusion False meams exclusion
+            root (Partage|Noncer|Diger|str|None): said polymorphic used to get
+                        root saider where:
+                    None means assume top node of proof is valid root so root
+                         saider is top.said
+                    Noncer then root said is instance.qb64
+                    Partage  instance with Matter instance values with root said
+                        instance.said.qb64
+                    str then root said is in qb64 form
+
+            leaf (Partage|Noncer|str|None): used to get leaf limb to compare
+                        for proof instance is polymorphic where:
+                    None means use last part of proof as target since all proofs
+                        inclusion and exclusion end in target leaf of proof
+                        use target.limb as leafer
+                    Noncer instance uses instance as leafer
+                    Partage instance with Matter instance values whose
+                        instance.part.limb as leafer
+                    str qb64 use to create leafer from Noncer(qb64=leaf)
+
+        NodeSaidage = (kith, tuid, said, span, limb, left, right)
+        LeafSaidage = (kith, tuid, said, span, limb)
+
+        """
+        proof = deque(proof)  # make copy as deque since destructive
+
+        try:
+            if root is None:  # use top of proof
+                rooter = proof[0].said  # use said from top of proof as rooter
+            elif isinstance(root, Noncer):  # rooter is root as Noncer
+                rooter = root
+            elif isinstance(root, Partage):  # root.part.said is rooter
+                rooter = root.said
+            elif isinstance(root, str):  # rooter is Noncer using root as qb64
+                rooter = Noncer(qb64=root)
+            else:
+                return None  # bad leaf
+            if not rooter.nonce:  # empty rooter so bad verify request
+                return None  # bad empty target root
+        except Exception as ex:  # invalid rooter maybe empty
+            return None  # not provable include nor exclude
+
+        try:
+            if leaf is None:  # use bottom of proof
+                leafer = proof[-1].limb  # last always target of proof
+            elif isinstance(leaf, Noncer):  # leaf is leafer
+                leafer = leaf
+            elif isinstance(leaf, Partage):  # leaf.part.limb is leafer
+                leafer = leaf.part.limb
+            elif isinstance(leaf, str):  # leaf is qb64 of leafer
+                leafer = Noncer(qb64=leaf)
+            else:
+                return None  # bad leaf
+            if not leafer.nonce:  # empty leafer so bad verify request
+                return None  # bad empty target leaf
+        except Exception as ex:  # invalid leafer maybe empty
+            return None  # not provable include nor exclude
+
+        # rooter provides Noncer instance of proof target root said
+        # leafer provides Noncer instance of proof target leaf limb
+
+        # start verification
+        top = proof.popleft()  # saidage of top which should the root
+        if top.span.num != 0:
+            return None  # invalid top as root node in proof
+
+        saidage = Siter.saidify(saidage=top)  # verify top node said
+        if saidage.said.qb64 != top.said.qb64:
+            return None  # invalid top node in proof said does not verify
+
+        if top.said.qb64 != rooter.qb64:
+            return None  # mismatch between target and proof roots
+
+        return Siter._verify(proof, kind, top, leafer)
+
+    @staticmethod
+    def _verify(proof, kind, node, leafer):
+        """Recursive descent of proof or kind with target leafer
+
+        Returns::
+            result (bool|None):  True if proof verifies of kind for leaf
+                                 False if proof does not verify as kind for leaf
+                                 None if problem with proof verification
+
+
+        Parameters::
+            proof (deque[NodeSaidage|LeafSaidage]): of parts of branch after
+                        node down to bottom with last part leaf target
+            kind (bool): of proof True means inclusion False meams exclusion
+            node (NodeSaidage): current node
+            leafer(Noncer): instance of target leaf said
+
+        NodeSaidage = (kith, tuid, said, span, limb, left, right)
+        LeafSaidage = (kith, tuid, said, span, limb)
+        """
+        # get childer on side of node that matches limb of leafer
+        if Siter.rightAtSpanInt(leafer.num, node.span.num + 1):  # go right
+            # get child on right side
+            childer = node.right   # empty or leaf saider or node saider
+        else:  # go left
+            # get child on left side
+            childer = node.left  # empty or leaf saider or node saider
+
+        if not proof:  # no target or child remaining so bad proof
+            return None
+
+        if not childer.nonce:  # empty child of node can only happen at root
+            if node.span.num != 0:  # empty child but not root so bad proof
+                return None  # bad proof
+            if not proof:  # missing last so bad proof
+                return None
+            last = proof.popleft()
+            saidage = Siter.saidify(saidage=last)  # verify last said
+            if saidage.said.qb64 != last.said.qb64:  # last said  does not verify
+                return None  # bad last so bad proof
+            if last.limb.qb64 != leafer.qb64:  # last not match target
+                return None  # bad proof
+
+            if kind:  # inclusion
+                return False   # invalid inclusion when empty child of root
+            else:  # exclusion
+                return True  # valid exclusion when empty child of root
+
+        child = proof.popleft()
+        saidage = Siter.saidify(saidage=child)  # verify child said
+        if saidage.said.qb64 != child.said.qb64:
+            return None  # invalid child in proof, said does not verify
+
+        if child.said.qb64 != childer.qb64:  # bad link down tree
+            # node's child said given by childer does not match said of child
+            # saidage provided as next proof part so branch broken
+            return None  # bad proof
+
+        if child.kith.ilk == Kiths.leaf:  # child is leaf not node
+            if not kind:  # exclusion get last as target leaf
+                if not proof:  # missing last so bad proof
+                    return None
+                last = proof.popleft()
+                saidage = Siter.saidify(saidage=last)  # verify last said
+                if saidage.said.qb64 != last.said.qb64:  # last said invalid
+                    return None  # bad last in proof, so bad proof
+
+                if last.limb.qb64 != leafer.qb64:  # last not match target
+                    return None  # bad proof
+
+                if (child.limb.qb64 != leafer.qb64 and
+                        child.said.qb64 != last.said.qb64):  # child not match target
+                    return True  # valid exclusion
+                return False  # invalid exclusion
+
+            else:  # inclusion child is target
+                if child.limb.qb64 == leafer.qb64:  # child matches target
+                    return True
+                return False
+
+        # else child is node so attempt to walkdown node based on its prefix
+        #  walkdown means span of limb of node is longer than common span
+        #  between node and leaf
+        # if cannot  walk down child node on side:
+        #      then target is excluded
+        # else: can  walk down past child node
+        #       recurse with with child node on side
+        if not Siter.fitLeafNode(leafer=leafer,
+                                 noder=child.limb,
+                                 spanner=child.span):  # cannot walk down
+            # leaf cannot walk down child node path so leaf not in tree
+            if not kind:  # exclusion get last as target leaf
+                if not proof:  # missing last so invalid proof
+                    return None
+                last = proof.popleft()
+                saidage = Siter.saidify(saidage=last)  # verify last said
+                if saidage.said.qb64 != last.said.qb64:
+                    return None  # invalid last in proof, said does not verify
+
+                if last.limb.qb64 != leafer.qb64:  # last not match target
+                    return None  # invalid proof attempt
+
+                if (child.said.qb64 == last.said.qb64):  # child node match last
+                    return None  # bad proof node must never match last leaf said
+                return True  # valid exclusion
+
+            else:  # inclusion child is node so can't match target leaf
+                return None  # bad inclusion proof
+
+        # can walk down child node, so recurse
+        return Siter._verify(proof=proof, kind=kind, node=child, leafer=leafer)
 
 
     def __init__(self, tuid=None, code=MtrDex.Blake3_256, **kwa):
@@ -388,15 +581,15 @@ class Siter:
         """
         self.tuider = Noncer(nonce=tuid)  # None generates crypto random value
         self.code = code if code is not None else self.Code
+        if self.code not in DigDex:
+            raise ValueError(f"Invalid digest code={self.code}")
         self.nodes = dict()
         self.leaves = dict()
-        self.infos = dict()
-
 
         # make and insert root node in .nodes
         # span is 0, limb is all zeros, left is empty, right is empty
         rootage = Nodage(span=Number(num=0),
-                         limb=Diger(raw=bytes(MaxSpanBytes), code=self.code),
+                         limb=Noncer(raw=bytes(MaxSpanBytes), code=self.code),
                          left=Noncer(nonce=""),
                          right=Noncer(nonce=""))
         self.root = Partage(self.sayNode(rootage), rootage)
@@ -617,7 +810,7 @@ class Siter:
         if nodage := self.nodes.get(saider.qb2):
             # convert to Matter instances for computation
             nodage = Nodage(span=Number(qb2=nodage.span),
-                            limb=Diger(qb2=nodage.limb),
+                            limb=Noncer(qb2=nodage.limb),
                             left=Noncer(qb2=nodage.left),
                             right=Noncer(qb2=nodage.right))
         return nodage
@@ -674,7 +867,7 @@ class Siter:
         For archival on disk use .qb64 values.
 
         Returns::
-            result (bool): True if leafer key in .leaves
+            result (bool): True if saider key in .leaves
                            False otherwise
 
         Parameters::
@@ -757,7 +950,7 @@ class Siter:
         if leafage := self.leaves.get(saider.qb2):
             # convert to Matter instances for computation
             leafage = Leafage(span=Number(qb2=leafage.span),
-                              limb=Diger(qb2=leafage.limb))
+                              limb=Noncer(qb2=leafage.limb))
         return leafage
 
 
@@ -868,7 +1061,7 @@ class Siter:
 
         # create nodage of new forking node
         nodage = Nodage(span=Number(num=span),
-                        limb=Diger(num=limb),
+                        limb=Noncer(num=limb, code=self.code),
                         left=left.said,
                         right=right.said)
         saider = self.sayNode(nodage)  # update said of forking node
@@ -876,8 +1069,9 @@ class Siter:
         return self.updateNode(node, saider, side=side)
 
 
-    def leafFromLimber(self, limber):
-        """Create leaf to insert from limber. Computes leaf limb and said.
+    def leafFromLeafer(self, leafer):
+        """Create leaf to insert from leafer (limber) of leaf limb.
+        Creates limb from leafage from limb given by leafer
 
         Returns::
             leaf (Partage): instance (said, part) where:
@@ -885,16 +1079,18 @@ class Siter:
                             part is Leafage instance with Matter instance values
 
         Parameters::
-            limber (Noncer): instance only per leaf unique value used to generate
-                             leafage and then said of leaf
+            leafer (Noncer): instance only per leaf limb unique value used to
+                             generate leafage and then said of leaf
         """
-        leafage = Leafage(span=Number(num=256), limb=limber)
+        if not leafer.nonce: # empty leafer
+            raise ValueError(f"Invalid leafer limb={leafer.qb64} empty")
+        leafage = Leafage(span=Number(num=256), limb=leafer)
         saider = self.sayLeaf(leafage)  # compute leaf said
         return Partage(said=saider, part=leafage)  # matter primitives
 
 
-    def leafFromLeafer(self, leafer):
-        """Create leaf to insert from leafer. Computes leaf limb and said.
+    def leafFromInfoer(self, infoer):
+        """Create leaf to insert from infoer. Computes leaf limb and said.
 
         Returns::
             leaf (Partage): instance (said, part) where:
@@ -902,43 +1098,85 @@ class Siter:
                             part is Leafage instance with Matter instance values
 
         Parameters::
-            leafer (Noncer): instance only per leaf unique value of said of info
-                             used to generate limber which is then used to
-                             generate leafage then used to generate said of leaf
+            infoer (Noncer): instance of unique said of info source for leaf
+                    used to generate leaf's limb as leafer which is then
+                    used to generate leafage then used to generate said of leaf
         """
-        limber = Noncer(ser=leafer.raw, code=self.code)  # limb for leaf
-        if not limber.nonce:  # empty limber
-            raise ValueError("Invalid leafer limb={limber.qb64} empty")
-        return self.leafFromLimber(limber)
+        leafer = Noncer(ser=infoer.raw, code=self.code)  # limb for leaf
+        return self.leafFromLeafer(leafer)
 
 
-    def insert(self, leafer):
-        """Insert leafer idempotently
+    def insert(self, info=None, leaf=None):
+        """Insert idempotently leaf derived from info if any else leaf into tree
 
         Returns::
-            leaf (Partage|None)): of inserted leaf corresponding to leafer
+            leaf (Partage|None)): of inserted leaf corresponding to infoer
                 When insert successful, Partage instance (said, part) where:
                         said is Noncer instance of leaf said
                         part is Leafage instance with Matter instance values
                 Otherwise:  None
 
         Parameters::
-            leafer (Noncer): instance encoding of leaf info said which said is
-                            digest of actual leaf information. leafer may use
-                            a different digest code from .code.
-                            Thus a siter is compatible with all external leaf
-                            info saids while ensuring for security reasons that
-                            all its internal leaf limbs, leaf saids, and node saids
-                            use the same digest algorithm give by .code.
+            info (Noncer|str|None): instance encoding of external source info said for
+                        the derived leaf which external said is digest of actual
+                        leaf information. info instance is polymorphic where:
+                    Noncer then instance is infoer for leafer
+                        The infoer (said) digest code may differ from .code.
+                        Thus a Siter instance is compatible with all external
+                        info saids for its leaves while ensuring partitioning
+                        of a common digest space for all its internal saids
+                        including leaf limbs, leaf saids, and node saids.
+                    str qb64 to generate Noncer for infoer for leafer
+                    None then use leafer
+            leaf (Noncer|None): instance encoding of leaf limb as derived
+                        from leaf info said which said is digest of actual leaf
+                        information.  Only applies when infoer is None
+                        leaf instance is polymorphic where:
+                    Noncer then instance is leafer whose .num is leaf limb
+                    Leafage then instance .part.limb is leafer whose .num is leaf limb
+                    str qb64 to generate Noncer for leafer whose .num is leaf limb
 
-
+            infoer (Noncer|None): instance encoding of external source info said for
+                        the derived leaf which external said is digest of actual
+                        leaf information.
+                        The infoer (said) digest code may differ from .code.
+                        Thus a Siter instance is compatible with all external
+                        info saids for its leaves while ensuring partitioning
+                        of a common digest space for all its internal saids
+                        including leaf limbs, leaf saids, and node saids.
+                    When None use leafer
+            leafer (Noncer|None): instance only per leaf limb unique value used to
+                             generate leafage and then said of leaf
+                             infoer when not None takes precedence
         """
         # setup for ._insert
         # return None if ._insert fails
-        try:
-            leaf = self.leafFromLeafer(leafer)
-        except Exception as ex:  # invalid leafer maybe empty
-            return None  # not insertable
+        if info:
+            try:
+                if isinstance(info, Noncer):  # info is infoer
+                    infoer = info
+                elif isinstance(info, str):  # info is qb64 of infoer
+                    infoer = Noncer(qb64=info)
+                else:
+                    return None  # bad info
+                leaf = self.leafFromInfoer(infoer)  # prevents infoer being empty
+            except Exception as ex:  # invalid infoer maybe empty
+                return None  # not provable include nor exclude
+        elif leaf:
+            try:
+                if isinstance(leaf, Noncer):  # leaf is leafer
+                    leafer = leaf
+                elif isinstance(leaf, Partage):  # leaf.part.limb is leafer
+                    leafer = leaf.part.limb
+                elif isinstance(leaf, str):  # leaf is qb64 of leafer
+                    leafer = Noncer(qb64=leaf)
+                else:
+                    return None  # bad leaf
+                leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+            except Exception as ex:  # invalid leafer maybe empty
+                return None  # not provable include nor exclude
+        else:
+            return None  # missing leaf to prove against
 
         if self.hasLeaf(leaf.said):
             return None  # already inserted
@@ -947,9 +1185,8 @@ class Siter:
         try:
             self.root = self._insert(leaf, self.root)  # new root with inserted leaf
         except ValueError as ex:
-            return None
+            return None  # problem with insertion
         self.pinLeaf(leaf.said, leaf.part)  # add leaf
-        self.infos[leaf.part.limb.qb64] = leafer.qb64  # add ref to leafer to infos
         return leaf
 
 
@@ -1064,7 +1301,7 @@ class Siter:
                 # leaf cannot recurese down child node path
                 return self.forkNode(node, left=leaf, right=child, side=side)
 
-            # can recurse down child so recurse
+            # can walk down child node, so recurse
             child = self._insert(leaf=leaf, node=child)  # recursion updates child
             # remove, replace, and return updated node with new child on side
             return self.updateNode(node, child.said, side=side)
@@ -1073,39 +1310,68 @@ class Siter:
 
 
 
-    def delete(self, leafer, strict=False):
-        """Delete leafer
+    def delete(self, info=None, leaf=None, strict=False):
+        """Delete leaf corresponding to infoer from tree
 
         Returns::
             result (Partage|None): when leaf from leafer was found and deleted
                                    otherwise None means problem deleting
 
         Parameters::
-            leafer (Noncer): instance encoding of leaf info said which said is
-                            digest of actual leaf information. leafer may use
-                            a different digest code from .code.
-                            Thus a siter is compatible with all external leaf
-                            info saids while ensuring for security reasons that
-                            all its internal leaf limbs, leaf saids, and node saids
-                            use the same digest algorithm give by .code.
+            info (Noncer|str|None): instance encoding of external source info said for
+                        the derived leaf which external said is digest of actual
+                        leaf information. info instance is polymorphic where:
+                    Noncer then instance is infoer for leafer
+                        The infoer (said) digest code may differ from .code.
+                        Thus a Siter instance is compatible with all external
+                        info saids for its leaves while ensuring partitioning
+                        of a common digest space for all its internal saids
+                        including leaf limbs, leaf saids, and node saids.
+                    str qb64 to generate Noncer for infoer for leafer
+                    None then use leafer
+            leaf (Noncer|None): instance encoding of leaf limb as derived
+                        from leaf info said which said is digest of actual leaf
+                        information.  Only applies when infoer is None
+                        leaf instance is polymorphic where:
+                    Noncer then instance is leafer whose .num is leaf limb
+                    Leafage then instance .part.limb is leafer whose .num is leaf limb
+                    str qb64 to generate Noncer for leafer whose .num is leaf limb
             strict (bool): False means check for presence of leaf in .leaves
                                If not present in .leaves return False
                                Else traverse tree to find and delete
                            True means ignore presence and always attempt to find
                                leaf in tree to delete.
-
-
         """
         # setup for ._delete
-        try:
-            leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
-        except Exception as ex:  # invalid leafer maybe empty
-            return None  # not deletable
+        if info:
+            try:
+                if isinstance(info, Noncer):  # info is infoer
+                    infoer = info
+                elif isinstance(info, str):  # info is qb64 of infoer
+                    infoer = Noncer(qb64=info)
+                else:
+                    return None  # bad info
+                leaf = self.leafFromInfoer(infoer)  # prevents infoer being empty
+            except Exception as ex:  # invalid infoer maybe empty
+                return None  # not provable include nor exclude
+        elif leaf:
+            try:
+                if isinstance(leaf, Noncer):  # leaf is leafer
+                    leafer = leaf
+                elif isinstance(leaf, Partage):  # leaf.part.limb is leafer
+                    leafer = leaf.part.limb
+                elif isinstance(leaf, str):  # leaf is qb64 of leafer
+                    leafer = Noncer(qb64=leaf)
+                else:
+                    return None  # bad leaf
+                leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+            except Exception as ex:  # invalid leafer maybe empty
+                return None  # not provable include nor exclude
+        else:
+            return None  # missing leaf to prove against
 
         if not self.hasLeaf(leaf.said) and not strict:
             return None  # already deleted
-
-        result = leaf
 
         # start at root (values as matter primitives)
         # return None if ._delete fails due to error
@@ -1114,21 +1380,13 @@ class Siter:
             if not root:  # None returned  so leaf not found
                 return None  # nothing to delete
             self.root = root  # deleted so update root
-
-        except ValueError as ex:  # problem deletong
+        except Exception as ex:  # problem deleting tree may be broken
             return None
 
         if not self.remLeaf(leaf.said) and not strict:  # remove leaf from .leaves
-            result = None  # delete not clean
+            return None  # delete not clean
 
-        try:
-            del self.infos[leaf.part.limb.qb64]  # rem from infos
-        except KeyError as ex:
-            if not strict:  # strict
-                return None  # malformed .infos
-
-        return result
-
+        return leaf # deleted leaf or None
 
 
     def _delete(self, leaf, node, parent=None):
@@ -1215,7 +1473,7 @@ class Siter:
                 # leaf cannot recurese down child node path so leaf not in tree
                 return None  # nothing to delete
 
-            # can recurse down child so recurse
+            # can walk down child node, so recurse
             child = self._delete(leaf=leaf, node=child, parent=node)  # recursion updates child
             if not self.hasNode(node.said):   # was removed as part of removing leaf
                 return child  # child is already updated parent so skip node update
@@ -1225,68 +1483,102 @@ class Siter:
         raise ValueError(f"Should never get here")
 
 
-    def prove(self, leafer):
-        """Return proof of leafer in tree, either inclusion or exclusion
-        proof is branch of saidages (NodeSaidage|LeafSaidage) down from root where:
-            inclusion proof ends with saidage matching leaf from leafer
-            exclusion proof ends with either saidage of node with uncommon prefix to
-                leaf created from leafer or saidage of leaf that does not match
-                leaf from leafer
+    def prove(self, info=None, leaf=None):
+        """Return proof of leaf derived from infoer in tree,
+        either inclusion or exclusion where:
+            proof is branch down from root of saidages (NodeSaidage|LeafSaidage)
+                where:
+                    inclusion proof ends with saidage matching leaf from infoer
+                    exclusion proof ends with either saidage of
+                        node with uncommon prefix to leaf created from infoer or
+                        leaf that does not match leaf from infoer
 
         Returns::
-            proof (tuple):  of form (kind, branch) with values:
-                            kind (bool|None): True means leafer leaf is included
-                                                branch contains proof of inclusion
-                                             False means leafer leaf is excluded
-                                                branch contains proof of exclusion
-                                             None means not provable bad leafer
-                            branch (deque|None): deque parts (nodes and leaves)
-                                    branch from bottom up order.
-                                    When leaf included then bottom of branch is
-                                         leaf of leafer
-                                    When leaf excluded then bottom of branch is
-                                         either some other leaf not leaf of leafer
-                                         or node whose prefix is not common to leaf
+            result (tuple):  of form (proof, kind) with values:
+                    kind (bool|None): True means infoer leaf is included
+                                        branch contains proof of inclusion
+                                     False means infoer leaf is excluded
+                                        branch contains proof of exclusion
+                                     None means not provable bad infoer
+                    proof (list|None): of parts (nodes and leaves) from
+                            root down to bottom of branch.
+                            When inclusion proof then bottom of branch is
+                                 leaf or leaf from infoer or leafer
+                            When exclusion proof then bottom of branch is
+                                 either some other non matching leaf
+                                 or node whose prefix is not common to leaf
 
         Parameters::
-            leafer (Noncer): instance encoding of leaf info said which said is
-                            digest of actual leaf information. leafer may use
-                            a different digest code from .code.
-                            Thus a siter is compatible with all external leaf
-                            info saids while ensuring for security reasons that
-                            all its internal leaf limbs, leaf saids, and node saids
-                            use the same digest algorithm give by .code.
-
+            info (Noncer|str|None): instance encoding of external source info said for
+                        the derived leaf which external said is digest of actual
+                        leaf information. info instance is polymorphic where:
+                    Noncer then instance is infoer for leafer
+                        The infoer (said) digest code may differ from .code.
+                        Thus a Siter instance is compatible with all external
+                        info saids for its leaves while ensuring partitioning
+                        of a common digest space for all its internal saids
+                        including leaf limbs, leaf saids, and node saids.
+                    str qb64 to generate Noncer for infoer for leafer
+                    None then use leafer
+            leaf (Noncer|None): instance encoding of leaf limb as derived
+                        from leaf info said which said is digest of actual leaf
+                        information.  Only applies when infoer is None
+                        leaf instance is polymorphic where:
+                    Noncer then instance is leafer whose .num is leaf limb
+                    Leafage then instance .part.limb is leafer whose .num is leaf limb
+                    str qb64 to generate Noncer for leafer whose .num is leaf limb
         """
         # setup for ._prove
-        try:
-            leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
-        except Exception as ex:  # invalid leafer maybe empty
-            return (None, None)  # not provable include nor exclude
+        if info:
+            try:
+                if isinstance(info, Noncer):  # info is infoer
+                    infoer = info
+                elif isinstance(info, str):  # info is qb64 of infoer
+                    infoer = Noncer(qb64=info)
+                else:
+                    return (None, None)  # bad info
+                leaf = self.leafFromInfoer(infoer)  # prevents infoer being empty
+            except Exception as ex:  # invalid infoer maybe empty
+                return (None, None)  # not provable include nor exclude
+        elif leaf:
+            try:
+                if isinstance(leaf, Noncer):  # leaf is leafer
+                    leafer = leaf
+                elif isinstance(leaf, Partage):  # leaf.part.limb is leafer
+                    leafer = leaf.part.limb
+                elif isinstance(leaf, str):  # leaf is qb64 of leafer
+                    leafer = Noncer(qb64=leaf)
+                else:
+                    return (None, None)  # bad leaf
+                leaf = self.leafFromLeafer(leafer)  # prevents leafer being empty
+            except Exception as ex:  # invalid leafer maybe empty
+                return (None, None)  # not provable include nor exclude
+        else:
+            return (None, None)  # missing leaf to prove against
 
-        branch = list()  # mutable so gets populated by recursive descent
+        proof = list()  # mutable so gets populated by recursive descent
         try:
-            # populate branch return kind of proof
-            kind = self._prove(leaf, self.root, branch)  # proof kind
+            # populate proof and return kind of proof
+            kind = self._prove(leaf, self.root, proof)  # recursive proof
 
         except ValueError as ex:  # problem proofing
             return (None, None)
 
-        return (kind, branch) if kind is not None else (None, None)
+        return (proof, kind) if kind is not None else (None, None)
 
 
-    def _prove(self, leaf, node, branch):
+    def _prove(self, leaf, node, proof):
         """Recursive descent to populate branch from bottom up and to determine
         proof kind (inclusion or exclusion) for leaf starting at node.
 
         Values are Matter instances
 
         Returns::
-            kind (bool|None): True means leafer leaf is included
-                                    branch contains proof of inclusion
-                              False means leafer leaf is excluded
-                                   branch contains proof of exclusion
-                              None means not provable bad leafer
+            kind (bool|None): True means infoer leaf is included
+                                proof of inclusion
+                              False means infoer leaf is excluded
+                                proof of exclusion
+                              None means not provable bad infoer
 
         Parameters::
             leaf (Partage): instance (said, part) of leaf to be proven where:
@@ -1296,19 +1588,19 @@ class Siter:
                             begin/resume recursive descent where:
                             said is node said Noncer instance
                             part is Nodage of node with Matter instance values
-            branch (list):  of parts in branch in top down order including node.
-                            branch is mutable and is populated on the way down.
-                            When leaf included then bottom of branch is
-                                 leaf of leafer
-                            When leaf excluded then bottom of branch is
+            proof (list):  of parts in branch in top down order including node.
+                            proof is mutable and is populated on the way down.
+                            When leaf included then bottom of proof is
+                                 leaf of infoer
+                            When leaf excluded then bottom of proof is
                                  either a node whose prefix is uncommon with leaf
-                                 or some other leaf that is not leaf of leafer
+                                 or some other leaf that is not leaf of infoer
         """
         # Walk leaf down appropriate node child branch.
         # assumes node limb is prefix of leaf limb. leaf fits below node.
         # Root limb is empty so always prefix of any leaf limb. leaf fits below root.
         # figure out which side of node, leaf must go
-        branch.append(self.saidagize(node))  # add node as saidage to branch
+        proof.append(self.saidagize(node))  # add node as saidage to proof
 
         if self.rightAtSpanInt(leaf.part.limb.num, node.part.span.num + 1):  # go right
             # get child on right other on left
@@ -1318,6 +1610,9 @@ class Siter:
             childer = node.part.left  # empty or leaf saider or node saider
 
         if not childer.nonce:  # child is empty (should only happen at root node)
+            if node.part.span.num != 0:  # not root
+                return None  # bad tree can't generate proof
+            proof.append(self.saidagize(leaf))  # valid proof includes leaf target
             return False  # empty on leaf side so leaf not in tree exclusion proof
 
         if (leafage := self.getLeaf(childer)) is not None:  # child is leaf
@@ -1326,7 +1621,9 @@ class Siter:
             else:
                 kind = True  # bottom leaf matches leaf so inclusion proof
             child = Partage(said=childer, part=leafage)  # bottom leaf
-            branch.append(self.saidagize(child))
+            proof.append(self.saidagize(child))  # if True then child is leaf target
+            if not kind:
+                proof.append(self.saidagize(leaf))  # valid proof includes leaf target
             return kind  # of proof
 
         if (nodage := self.getNode(childer)) is not None:  # child is node
@@ -1341,11 +1638,12 @@ class Siter:
                                     noder=child.part.limb,
                                     spanner=child.part.span):  # cannot walk down
                 # leaf cannot recurse down child node path so leaf not in tree
-                branch.append(self.saidagize(child))  # child is unwalkable node
+                proof.append(self.saidagize(child))  # child is unwalkable node
+                proof.append(self.saidagize(leaf))  # valid proof includes leaf target
                 return False  # exclusion proof
 
-            # can recurse down child node so recurse
-            return self._prove(leaf=leaf, node=child, branch=branch)  # recursion
+            # can walk down child node, so recurse
+            return self._prove(leaf=leaf, node=child, proof=proof)  # recursion
 
         raise ValueError(f"Should never get here")
 
