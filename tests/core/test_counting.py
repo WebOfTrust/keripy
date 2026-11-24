@@ -198,8 +198,8 @@ def test_codexes_tags():
         'BigBoundStateSextuples': '--b',
         'TypedMediaQuadruples': '-c',
         'BigTypedMediaQuadruples': '--c',
-        'IlkedStructs': '-d',
-        'BigIlkedStructs': '--d',
+        'TypedStructs': '-d',
+        'BigTypedStructs': '--d',
         'KERIACDCGenusVersion': '-_AAA'
     }
 
@@ -324,8 +324,8 @@ def test_codexes_tags():
         'BigBoundStateSextuples',
         'TypedMediaQuadruples',
         'BigTypedMediaQuadruples',
-        'IlkedStructs',
-        'BigIlkedStructs',
+        'TypedStructs',
+        'BigTypedStructs',
         'KERIACDCGenusVersion',
     )
 
@@ -386,8 +386,8 @@ def test_codexes_tags():
         BigESSRPayloadGroup='BigESSRPayloadGroup',
         BlindedStateQuadruples='BlindedStateQuadruples',
         BigBlindedStateQuadruples='BigBlindedStateQuadruples',
-        IlkedStructs='IlkedStructs',
-        BigIlkedStructs='BigIlkedStructs',
+        TypedStructs='TypedStructs',
+        BigTypedStructs='BigTypedStructs',
         KERIACDCGenusVersion='KERIACDCGenusVersion'
     )
 
@@ -559,8 +559,8 @@ def test_counter_class():
                     '--b': 'BigBoundStateSextuples',
                     '-c': 'TypedMediaQuadruples',
                     '--c': 'BigTypedMediaQuadruples',
-                    '-d': 'IlkedStructs',
-                    '--d': 'BigIlkedStructs',
+                    '-d': 'TypedStructs',
+                    '--d': 'BigTypedStructs',
                     '-_AAA': 'KERIACDCGenusVersion'
                 }
             }
