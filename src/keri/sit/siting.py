@@ -6,7 +6,7 @@ Siter functionality
 
 """
 
-
+import math
 from collections import namedtuple, deque
 
 from .. import Versionage, InvalidCodeError
@@ -1733,7 +1733,7 @@ class Siter:
                     #size = min(leafage.span.num, 16)
                     leaves.append(f"{side}#{depth}={(leafage.limb.num>>248):08b}@{shows}")
                 else:
-                    leaves.append(f"{side}#{depth}={leafage.limb.numh}@{shows}")
+                    leaves.append(f"{side}#{depth}={leafage.limb.num:032x}@{shows}")
             metrics['depthsum'] += depth
             if depth > metrics['depthmax']:
                 metrics['depthmax'] = depth
@@ -1750,7 +1750,7 @@ class Siter:
 
 
         righter = node.part.right
-        side = "right"
+        side = "rght"
         if leafive and not righter.nonce:  # right leaf empty
             leaves.append(f"{side}#{depth}=empty@{self._showtwig(node, terse=terse)}")
 
@@ -1761,7 +1761,7 @@ class Siter:
                     #size = min(leafage.span.num, 16)
                     leaves.append(f"{side}#{depth}={(leafage.limb.num>>248):08b}@{shows}")
                 else:
-                    leaves.append(f"{side}#{depth}={leafage.limb.numh}@{shows}")
+                    leaves.append(f"{side}#{depth}={leafage.limb.num:032x}@{shows}")
             metrics['depthsum'] += depth
             if depth > metrics['depthmax']:
                 metrics['depthmax'] = depth
@@ -1796,10 +1796,17 @@ class Siter:
                 if size < node.part.span.num:
                     show += "..."
             else:
-                show = node.part.limb.numh
+                size = node.part.span.num
+                if size <= 8:
+                    show = f"s{node.part.span.num}:b.{twig:0{size}b}"
+                else:
+                    size = math.ceil(size / 4)  # 4 bits per hex digit
+                    show = f"s{node.part.span.num}:x.{twig:0{size}x}"
+                #show = node.part.limb.numh
 
         else:
             show = f"root"
+
 
         return show
 
