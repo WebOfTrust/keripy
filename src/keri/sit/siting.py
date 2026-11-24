@@ -1506,7 +1506,13 @@ class Siter:
                                  leaf or leaf from infoer or leafer
                             When exclusion proof then bottom of branch is
                                  either some other non matching leaf
-                                 or node whose prefix is not common to leaf
+                                 or node whose prefix is not common to leaf and
+                                 the target leaf is attached at the end
+                            In either case the last item in the proof is the
+                            target leaf of the proof. This makes the proof self
+                            contained. A verifier can confirm what the proof was
+                            proving given the root at the top and the target leaf
+                            at the end.
 
         Parameters::
             info (Noncer|str|None): instance encoding of external source info said for
