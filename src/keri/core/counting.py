@@ -257,6 +257,9 @@ class CounterCodex_2_0(IceMapDom):
     BigBoundStateSextuples: str = '--b'  # Big Bound Blinded transaction event state sextuples blid+uuid+said+state+bsnu+bsaid.
     TypedMediaQuadruples: str = '-c'  # Typed and Blinded IANA media type quadruples blid+uuid+type+media
     BigTypedMediaQuadruples: str = '--c'  # Big Type and Blinded IANA media type  quadruples blid+uuid+type+media
+    IlkedStructs: str = '-d'  # Ilked structs with variable fields based on ilk, ilk+fields
+    BigIlkedStructs: str = '--d'  # Ilked structs with variable fields based on ilk, ilk+fields
+
     KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
@@ -698,6 +701,8 @@ class Counter:
                 '--b': Cizage(hs=3, ss=5, fs=8),
                 '-c': Cizage(hs=2, ss=2, fs=4),
                 '--c': Cizage(hs=3, ss=5, fs=8),
+                '-d': Cizage(hs=2, ss=2, fs=4),
+                '--d': Cizage(hs=3, ss=5, fs=8),
                 '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
