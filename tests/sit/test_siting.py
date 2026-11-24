@@ -1481,15 +1481,15 @@ def test_delete():
     leaf = siter.insert(leaf=leaf5.part.limb)
     rootC = siter.root
 
-    leaves, metrics = siter.trace()
-    assert leaves == \
+    trace, metrics = siter.trace()
+    assert trace == \
     [
         'left#2=00100000@0@root',
         'left#3=01000000@01@0@root',
-        'right#3=01100000@01@0@root',
+        'rght#3=01100000@01@0@root',
         'left#3=10000000@10@1@root',
-        'right#3=10100000@10@1@root',
-        'right#2=11000000@1@root'
+        'rght#3=10100000@10@1@root',
+        'rght#2=11000000@1@root'
     ]
 
     leaf = siter.delete(leaf=leaf5.part.limb)
