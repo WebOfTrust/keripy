@@ -381,70 +381,191 @@ class Siter:
             proof (iterable[NodeSaidage|LeafSaidage]): of parts of branch from
                     root down to bottom.
             kind (bool): of proof True means inclusion False meams exclusion
-            root (Partage|Noncer|Diger|str|None): said polymorphic where:
-                    Partage with Matter instance values with root said
+            root (Partage|Noncer|Diger|str|None): said polymorphic used to get
+                        root saider where:
+                    None means assume top node of proof is valid root so root
+                         saider is top.said
+                    Noncer then root said is instance.qb64
+                    Partage  instance with Matter instance values with root said
                         instance.said.qb64
-                    Noncer or Diger then root said is instance.qb64
                     str then root said is in qb64 form
-                    None means assume top node of proof is valid root
-            leaf (Partage|Noncer): used to get leaf limb to compare for proof
-                    when Partage instance with Matter instance values
-                        uses instance.part.limb.num
-                    when Noncer instance uses instance.num
+
+            leaf (Partage|Noncer|str|None): used to get leaf limb to compare
+                        for proof instance is polymorphic where:
+                    None means use last part of proof as target since all proofs
+                        inclusion and exclusion end in target leaf of proof
+                        use target.limb as leafer
+                    Noncer instance uses instance as leafer
+                    Partage instance with Matter instance values whose
+                        instance.part.limb as leafer
+                    str qb64 use to create leafer from Noncer(qb64=leaf)
 
         NodeSaidage = (kith, tuid, said, span, limb, left, right)
         LeafSaidage = (kith, tuid, said, span, limb)
 
         """
-        try:  # get leafer (limber of leaf limb)
-            if isinstance(leaf, Partage):
-                leafer = leaf.part.limb
-            elif isinstance(leaf, Noncer):  # Noncer is subclass of Diger
-                leafer = leaf
+        proof = deque(proof)  # make copy as deque since destructive
+
+        try:
+            if root is None:  # use top of proof
+                rooter = proof[0].said  # use said from top of proof as rooter
+            elif isinstance(root, Noncer):  # rooter is root as Noncer
+                rooter = root
+            elif isinstance(root, Partage):  # root.part.said is rooter
+                rooter = root.said
+            elif isinstance(root, str):  # rooter is Noncer using root as qb64
+                rooter = Noncer(qb64=root)
             else:
                 return None  # bad leaf
+            if not rooter.nonce:  # empty rooter so bad verify request
+                return None  # bad empty target root
+        except Exception as ex:  # invalid rooter maybe empty
+            return None  # not provable include nor exclude
 
-            if not leafer.nonce:  # empty leafer so bad verify request
+        try:
+            if leaf is None:  # use bottom of proof
+                leafer = proof[-1].limb  # last always target of proof
+            elif isinstance(leaf, Noncer):  # leaf is leafer
+                leafer = leaf
+            elif isinstance(leaf, Partage):  # leaf.part.limb is leafer
+                leafer = leaf.part.limb
+            elif isinstance(leaf, str):  # leaf is qb64 of leafer
+                leafer = Noncer(qb64=leaf)
+            else:
                 return None  # bad leaf
-        except Exception as ex:
-            return None  # bad leaf
+            if not leafer.nonce:  # empty leafer so bad verify request
+                return None  # bad empty target leaf
+        except Exception as ex:  # invalid leafer maybe empty
+            return None  # not provable include nor exclude
+
+        # rooter provides Noncer instance of proof target root said
+        # leafer provides Noncer instance of proof target leaf limb
 
         # start verification
-        proof = deque(proof)  # make deque so can popleft
+        top = proof.popleft()  # saidage of top which should the root
+        if top.span.num != 0:
+            return None  # invalid top as root node in proof
 
-        root = deque.popleft(proof)  # saidage of root
-        if root.span != 0:
-            return None  # invalid root node in proof
+        saidage = Siter.saidify(saidage=top)  # verify top node said
+        if saidage.said.qb64 != top.said.qb64:
+            return None  # invalid top node in proof said does not verify
 
-        saidage = Siter.saidify(saidage=root)  # verify root node said
-        if saidage.said.qb64 != root.said.qb64:
-            return None  # invalid root node in proof said does not verify
+        if top.said.qb64 != rooter.qb64:
+            return None  # mismatch between target and proof roots
 
-        # get child on side of root for limb of leaf
-        if Siter.rightAtSpanInt(leafer.num, root.span.num + 1):  # go right
-            side = True # get child on right side
-            childer = root.right   # empty or leaf saider or node saider
+        return Siter._verify(proof, kind, top, leafer)
+
+    @staticmethod
+    def _verify(proof, kind, node, leafer):
+        """Recursive descent of proof or kind with target leafer
+
+        Returns::
+            result (bool|None):  True if proof verifies of kind for leaf
+                                 False if proof does not verify as kind for leaf
+                                 None if problem with proof verification
+
+
+        Parameters::
+            proof (deque[NodeSaidage|LeafSaidage]): of parts of branch after
+                        node down to bottom with last part leaf target
+            kind (bool): of proof True means inclusion False meams exclusion
+            node (NodeSaidage): current node
+            leafer(Noncer): instance of target leaf said
+
+        NodeSaidage = (kith, tuid, said, span, limb, left, right)
+        LeafSaidage = (kith, tuid, said, span, limb)
+        """
+        # get childer on side of node that matches limb of leafer
+        if Siter.rightAtSpanInt(leafer.num, node.span.num + 1):  # go right
+            # get child on right side
+            childer = node.right   # empty or leaf saider or node saider
         else:  # go left
-            side = False # get child on left side
-            childer = root.left  # empty or leaf saider or node saider
+            # get child on left side
+            childer = node.left  # empty or leaf saider or node saider
 
-        if not kind:  # exclusion proof
-            if not proof:  # no child remaining
-                # valid exclusion when root child is empty
-                if childer.nonce:  # not empty so bad proof
+        if not proof:  # no target or child remaining so bad proof
+            return None
+
+        if not childer.nonce:  # empty child of node can only happen at root
+            if node.span.num != 0:  # empty child but not root so bad proof
+                return None  # bad proof
+            if not proof:  # missing last so bad proof
+                return None
+            last = proof.popleft()
+            saidage = Siter.saidify(saidage=last)  # verify last said
+            if saidage.said.qb64 != last.said.qb64:  # last said  does not verify
+                return None  # bad last so bad proof
+            if last.limb.qb64 != leafer.qb64:  # last not match target
+                return None  # bad proof
+
+            if kind:  # inclusion
+                return False   # invalid inclusion when empty child of root
+            else:  # exclusion
+                return True  # valid exclusion when empty child of root
+
+        child = proof.popleft()
+        saidage = Siter.saidify(saidage=child)  # verify child said
+        if saidage.said.qb64 != child.said.qb64:
+            return None  # invalid child in proof, said does not verify
+
+        if child.said.qb64 != childer.qb64:  # bad link down tree
+            # node's child said given by childer does not match said of child
+            # saidage provided as next proof part so branch broken
+            return None  # bad proof
+
+        if child.kith.ilk == Kiths.leaf:  # child is leaf not node
+            if not kind:  # exclusion get last as target leaf
+                if not proof:  # missing last so bad proof
+                    return None
+                last = proof.popleft()
+                saidage = Siter.saidify(saidage=last)  # verify last said
+                if saidage.said.qb64 != last.said.qb64:  # last said invalid
+                    return None  # bad last in proof, so bad proof
+
+                if last.limb.qb64 != leafer.qb64:  # last not match target
                     return None  # bad proof
-                return True  # valid exclusion child is empty
-            child = proof.popleft()  # saidage of child
-        else:  # inclusion proof
-            if not proof:  # no included child so bad proof
-                return None  # bad proof format
-            child = proof.popleft()  # saidage of child
 
+                if (child.limb.qb64 != leafer.qb64 and
+                        child.said.qb64 != last.said.qb64):  # child not match target
+                    return True  # valid exclusion
+                return False  # invalid exclusion
 
-        while proof:
-            proof.popleft()
+            else:  # inclusion child is target
+                if child.limb.qb64 == leafer.qb64:  # child matches target
+                    return True
+                return False
 
+        # else child is node so attempt to walkdown node based on its prefix
+        #  walkdown means span of limb of node is longer than common span
+        #  between node and leaf
+        # if cannot  walk down child node on side:
+        #      then target is excluded
+        # else: can  walk down past child node
+        #       recurse with with child node on side
+        if not Siter.fitLeafNode(leafer=leafer,
+                                 noder=child.limb,
+                                 spanner=child.span):  # cannot walk down
+            # leaf cannot walk down child node path so leaf not in tree
+            if not kind:  # exclusion get last as target leaf
+                if not proof:  # missing last so invalid proof
+                    return None
+                last = proof.popleft()
+                saidage = Siter.saidify(saidage=last)  # verify last said
+                if saidage.said.qb64 != last.said.qb64:
+                    return None  # invalid last in proof, said does not verify
 
+                if last.limb.qb64 != leafer.qb64:  # last not match target
+                    return None  # invalid proof attempt
+
+                if (child.said.qb64 == last.said.qb64):  # child node match last
+                    return None  # bad proof node must never match last leaf said
+                return True  # valid exclusion
+
+            else:  # inclusion child is node so can't match target leaf
+                return None  # bad inclusion proof
+
+        # can walk down child node, so recurse
+        return Siter._verify(proof=proof, kind=kind, node=child, leafer=leafer)
 
 
     def __init__(self, tuid=None, code=MtrDex.Blake3_256, **kwa):
@@ -1180,7 +1301,7 @@ class Siter:
                 # leaf cannot recurese down child node path
                 return self.forkNode(node, left=leaf, right=child, side=side)
 
-            # can recurse down child so recurse
+            # can walk down child node, so recurse
             child = self._insert(leaf=leaf, node=child)  # recursion updates child
             # remove, replace, and return updated node with new child on side
             return self.updateNode(node, child.said, side=side)
@@ -1352,7 +1473,7 @@ class Siter:
                 # leaf cannot recurese down child node path so leaf not in tree
                 return None  # nothing to delete
 
-            # can recurse down child so recurse
+            # can walk down child node, so recurse
             child = self._delete(leaf=leaf, node=child, parent=node)  # recursion updates child
             if not self.hasNode(node.said):   # was removed as part of removing leaf
                 return child  # child is already updated parent so skip node update
@@ -1489,6 +1610,8 @@ class Siter:
             childer = node.part.left  # empty or leaf saider or node saider
 
         if not childer.nonce:  # child is empty (should only happen at root node)
+            if node.part.span.num != 0:  # not root
+                return None  # bad tree can't generate proof
             proof.append(self.saidagize(leaf))  # valid proof includes leaf target
             return False  # empty on leaf side so leaf not in tree exclusion proof
 
@@ -1519,7 +1642,7 @@ class Siter:
                 proof.append(self.saidagize(leaf))  # valid proof includes leaf target
                 return False  # exclusion proof
 
-            # can recurse down child node so recurse
+            # can walk down child node, so recurse
             return self._prove(leaf=leaf, node=child, proof=proof)  # recursion
 
         raise ValueError(f"Should never get here")

@@ -1538,8 +1538,8 @@ def test_delete():
 
     """Done Test"""
 
-def test_prove():
-    """Test Siter.proof method"""
+def test_prove_verify():
+    """Test Siter.proof and Siter.verify methods"""
     code = DigDex.Blake3_256
     tuid = '0ACiicCYoKAqao8qDdnlFVrY'
     siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
@@ -1602,12 +1602,18 @@ def test_prove():
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
     assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from infoer
 
+    assert Siter.verify(proof, kind)  # root and leaf default extract from proof
+    assert Siter.verify(proof, kind, root=siter.root, leaf=leaves[key])
+
     key = 'info_0007'
     proof, kind = siter.prove(infoers[key])
     assert kind
     assert len(proof) == 4
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
     assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from infoer
+
+    assert Siter.verify(proof, kind)  # root and leaf default extract from proof
+    assert Siter.verify(proof, kind, root=siter.root.said, leaf=leaves[key].part.limb)
 
     key = 'info_000d'
     proof, kind = siter.prove(infoers[key])
@@ -1616,10 +1622,14 @@ def test_prove():
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
     assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from infoer
 
+    assert Siter.verify(proof, kind)  # root and leaf default extract from proof
+    assert Siter.verify(proof, kind, root=siter.root.said.qb64, leaf=leaves[key].part.limb.qb64)
+
     # test all leaves
     for key in leaves.keys():
         proof, kind = siter.prove(infoers[key])
         assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf from infoer
+        assert Siter.verify(proof, kind)
 
     # make exclusion proof
     key = 'info_0000'  # key not in leaves
@@ -1632,6 +1642,8 @@ def test_prove():
     assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
     assert proof[-2].said.qb64 != leaf.said.qb64  # different said bottom
 
+    assert Siter.verify(proof, kind)
+
     # test exclusion with empty siter
     siter = Siter(tuid=tuid, code=code)  # create Siter with known tuid and code
     proof, kind = siter.prove(infoer)
@@ -1641,24 +1653,64 @@ def test_prove():
     assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
     assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
 
-    # add left leaf to root
+    assert Siter.verify(proof, kind)
+
+    # add leaf to root
     siter.insert(infoers['info_0003'])  # limb starts with 0
+    infoer = infoers['info_000f' ]  # key not in leaves
+    leaf = siter.leafFromInfoer(infoer)
+    proof, kind = siter.prove(infoer)
+    assert not kind
+    assert proof[0].said.qb64 == siter.root.said.qb64
+    assert len(proof) == 3  # so root plus target  when exclusion
+    assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
+    assert len(siter.leaves) == 1
+    assert len(siter.nodes) == 1
+
+    assert Siter.verify(proof, kind)
+
+    infoer = infoers['info_0000' ]  # key not in leaves
+    leaf = siter.leafFromInfoer(infoer)
     proof, kind = siter.prove(infoer)
     assert not kind
     assert proof[0].said.qb64 == siter.root.said.qb64
     assert len(proof) == 2  # so root plus target  when exclusion
     assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
     assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
+    assert len(siter.leaves) == 1
+    assert len(siter.nodes) == 1
 
-    # add right leaf to root
-    siter.insert(infoers['info_0004'])  # limb starts with 1
+    assert Siter.verify(proof, kind)
+
+    # add another leaf to root
+    siter.insert(infoers['info_000b'])
+
+    infoer = infoers['info_000f' ]  # key not in leaves
+    leaf = siter.leafFromInfoer(infoer)
     proof, kind = siter.prove(infoer)
     assert not kind
     assert proof[0].said.qb64 == siter.root.said.qb64
-    assert len(proof) == 2  # so root when exclusion
+    assert len(proof) == 3  # so root when exclusion
     assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
     assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
+    assert len(siter.leaves) == 2
+    assert len(siter.nodes) == 1
 
+    assert Siter.verify(proof, kind)
+
+    infoer = infoers['info_0000' ]  # key not in leaves
+    proof, kind = siter.prove(infoer)
+    leaf = siter.leafFromInfoer(infoer)
+    assert not kind
+    assert proof[0].said.qb64 == siter.root.said.qb64
+    assert len(proof) == 3  # so root when exclusion
+    assert proof[-1].said.qb64 == leaf.said.qb64  # exclusion so last is target
+    assert proof[-2].said.qb64 != leaf.said.qb64  # different said root at bottom
+    assert len(siter.leaves) == 2
+    assert len(siter.nodes) == 1
+
+    assert Siter.verify(proof, kind)
 
     # build tree from leaves from leafers (leaf limbers) directly using .insert
     leafers = setup_leafer_vectors(code=code)
@@ -1707,6 +1759,8 @@ def test_prove():
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
     assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf
 
+    assert Siter.verify(proof, kind)
+
 
     key = '10000000'
     proof, kind = siter.prove(leaf=leafers[key])
@@ -1714,6 +1768,8 @@ def test_prove():
     assert len(proof) == 5
     assert proof[0].said.qb64 == siter.root.said.qb64  # top is root
     assert proof[-1].said.qb64 == leaves[key].said.qb64  # bottom is leaf
+
+    assert Siter.verify(proof, kind)
 
     # now create exclusion proof
     key = '00010000'
@@ -1724,12 +1780,15 @@ def test_prove():
     assert proof[-1].said.qb64 == leaves[key].said.qb64  # exclusion last is leaf
     assert proof[-2].said.qb64 != leaf.said.qb64  # different said of bottom
 
+    assert Siter.verify(proof, kind)
+
     # now test all inserted leaves
     for i in range(2, 14):
         leaf = items[i][1]
         proof, kind = siter.prove(leaf=leaf)
         assert kind
         assert proof[-1].said.qb64 == leaf.said.qb64  # bottom is leaf
+        assert Siter.verify(proof, kind)
 
     # now test all inserted leaves again but with qb64 for leaf
     for i in range(2, 14):
@@ -1737,6 +1796,7 @@ def test_prove():
         proof, kind = siter.prove(leaf=leaf.part.limb.qb64)
         assert kind
         assert proof[-1].said.qb64 == leaf.said.qb64  # bottom is leaf
+        assert Siter.verify(proof, kind)
 
 
     """Done Test"""
