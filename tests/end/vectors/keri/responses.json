@@ -1,0 +1,304 @@
+{
+  "about": "Signed responses a canonical client must ACCEPT, each with the signed request it answers.",
+  "keri_vectors_format": 8,
+  "generated_by": "vectors/keri/generate.py",
+  "profile": {
+    "title": "KERI profile of RFC 9421 HTTP Message Signatures",
+    "version": "1.2",
+    "date": "2026-11-12",
+    "where": "https://github.com/bakobo/fiki/blob/keri-profile-v1.2/docs/keri-profile.md",
+    "rules": "Canonical mode only. Refusals are named by the profile's section 9 codes. A verifier runs its checks in section 9's order and reports the first that fails, so every case has exactly one correct code. A refusal case carries one defect unless its note names two, and then it pins which of them section 9's order reports."
+  },
+  "encoding": {
+    "body": "The content as a UTF-8 string, after any transfer coding is removed; null means no body is handed to the verifier, which is how a case tests what the headers alone announce.",
+    "headers": "Field names as a sender would write them; a verifier matches them case-insensitively. Each value is one field line.",
+    "covered": "Component identifiers in their RFC 8941 serialized form, as they appear in Signature-Input: \"@method\", \"@path\";req.",
+    "effective_key": "The raw 32-byte Ed25519 public key, base64url without padding.",
+    "signature": "The raw 64-byte Ed25519 signature, standard base64, as inside the Signature header's colons.",
+    "seed_hex": "The 32-byte Ed25519 seed, hex, so a signer can reproduce every signature; Ed25519 is deterministic."
+  },
+  "policy": {
+    "max_age": 300,
+    "skew": 60,
+    "request_minimum": [
+      "\"@method\"",
+      "\"@path\"",
+      "\"@query\""
+    ],
+    "response_minimum": [
+      "\"@status\"",
+      "\"@method\";req",
+      "\"@path\";req",
+      "\"@query\";req"
+    ],
+    "body_rule": "Profile sections 3 and 9. A REQUEST's headers announce a body when it carries any Transfer-Encoding or a Content-Length other than a plain zero (one or more ASCII digits once SP and HTAB are trimmed, of value zero); a body so announced without a covered content-digest is insufficient-coverage at the covered list. A non-empty request body no header announced is insufficient-coverage at the body stage, after the signature and freshness checks. A RESPONSE has a body when it has content, judged at the covered list; its Content-Length is not evidence, since a HEAD or 304 response announces a length it does not send. A response to a request whose content was non-empty must also cover \"content-digest\";req; the request's headers do not count there, since both sides hold the whole request by the time a response is signed or verified.",
+    "freshness": "Profile section 6: refuse created < now - max_age - skew or created > now + skew as signature-stale, then expires < now - skew as signature-expired. Each case gives the now it assumes, in seconds since the epoch; where it has a fractional part, the verifier rounds it down first.",
+    "case_policy": "A case may carry a policy object whose fields extend this one: expected_keyid, the AID a client expects a response from (profile R1); authorities, the @authority values a verifier serves (profile section 3), whose presence also makes @authority required: a request that does not cover it is insufficient-coverage."
+  },
+  "keys_rule": "Profile R1. A keyid is a well-formed AID when it is the canonical qb64 spelling of one of keripy's PreDex prefix codes: B, D, E, F, G, H and I over 32 bytes; 0D, 0E, 0F and 0G over 64; 1AAA, 1AAB, 1AAI and 1AAJ over 33; 1AAC and 1AAD over 57; 1AAE over 114. The bytes are padded in front with zero bytes to a multiple of three, base64url-encoded, and the code written over the characters the padding became, so re-encoding gives back the keyid exactly. Any other keyid is malformed-key. A B keyid yields its key from the prefix, and the verifier asks no key store about it, so a B keyid this table does not list still verifies; that key must be a valid point of the prime-order subgroup or the keyid is malformed-key. A non-transferable code other than B is unsupported-algorithm. Every other keyid resolves through the key state the verifier holds, which this table stands in for: absent from the table is unknown-key, an entry whose effective_key is null is unsupported-signer, and an entry marked weak_key holds a key that is not a valid prime-order point, which is malformed-key as it is resolved. key_state is the state an implementation with a KERI stack reduces itself (profile R4): the current signing keys as qb64 verfers, and the signing threshold in keripy's form. The effective key is the one key that satisfies the threshold alone, when exactly one does.",
+  "keys": [
+    {
+      "keyid": "BAOhB7_zzhC-HXDdGOdLwJln5NYwm6UNXx3chmQSVTG4",
+      "kind": "non-transferable",
+      "effective_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+      "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "note": "Ed25519N. The verifier derives the key from the prefix itself and holds no KEL."
+    },
+    {
+      "keyid": "ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx",
+      "kind": "transferable",
+      "effective_key": "Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "key_state": {
+        "keys": [
+          "DEPNwCPSLV-eEH0aBpNFfTXR0Q630hxyEZL1b13kBmXT"
+        ],
+        "threshold": "1"
+      },
+      "note": "A controller with one current signing key. The AID is synthetic: a well-formed E code, not the digest of a real inception event."
+    },
+    {
+      "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+      "kind": "transferable",
+      "effective_key": "SB7edy2hV4XJ5ZoIYgG4w_nDBxKeP8bX80qk3-1YFOU",
+      "seed_hex": "030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122",
+      "key_state": {
+        "keys": [
+          "DEge3nctoVeFyeWaCGIBuMP5wwcSnj_G1_NKpN_tWBTl"
+        ],
+        "threshold": "1"
+      },
+      "note": "An agent with one current signing key; it signs the responses. Synthetic like the controller's."
+    },
+    {
+      "keyid": "DFGZjM_f_9g9lyRJCBjKIql6Aw0YuyqddGaPcrgcP6WI",
+      "kind": "transferable",
+      "effective_key": "yZ4rN96TAC32gyanhUk81KpIfRpF-iEXqhBQSJI794E",
+      "seed_hex": "05060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324",
+      "key_state": {
+        "keys": [
+          "DMmeKzfekwAt9oMmp4VJPNSqSH0aRfohF6oQUEiSO_eB"
+        ],
+        "threshold": "1"
+      },
+      "embedded_key": "UZmMz9__2D2XJEkIGMoiqXoDDRi7Kp10Zo9yuBw_pYg",
+      "embedded_seed_hex": "0405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20212223",
+      "note": "A basic transferable prefix after one rotation. Decoding the prefix yields embedded_key, the INCEPTION key; the current key comes only from the KEL (profile R1). A verifier that decodes a D keyid as a key accepts a rotated-away key."
+    },
+    {
+      "keyid": "EPt12fG7BNmu9VhOAXyl82r59wQ3troXZzH4zsRGyLCh",
+      "kind": "transferable",
+      "effective_key": "qqP-1LDxS6J0-qWDfHiuwO6fmrXKZrl7QgG4dfaolso",
+      "seed_hex": "060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425",
+      "key_state": {
+        "keys": [
+          "DKqj_tSw8UuidPqlg3x4rsDun5q1yma5e0IBuHX2qJbK",
+          "DADQWh0eolE5bVV6-9RYizxtmdvrly_tEKMlYuom3Nz6"
+        ],
+        "threshold": [
+          "1",
+          "0"
+        ]
+      },
+      "note": "A Signify controller after its passcode is rotated: keys [new, prior-next] and threshold ['1','0'], so only the first key satisfies it alone, and that key signs (profile R4)."
+    },
+    {
+      "keyid": "EId9a0qAumQjSrz4ozs6UjAj_MnDTNh7IUBqD1wQRRyg",
+      "kind": "transferable",
+      "effective_key": null,
+      "seed_hex": "08090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324252627",
+      "key_state": {
+        "keys": [
+          "DEvd7lUO9zTK4E7uQq5jo3nTEStrpzr1NWiNcsmagoRg",
+          "DGd-3Zx6b7ql1gnccAXOgBHVTgMUrPicoXIFe8FA7eYq"
+        ],
+        "threshold": "1"
+      },
+      "note": "Threshold 1 over two keys: either alone suffices, so there is no single effective signer and the signature names no key index (profile R4). The vectors' messages for this keyid are signed by the first key."
+    },
+    {
+      "keyid": "EPOiz_RjA1se4yfJptWCAwxqLhuQ33UfDSdJGiC2B8ZU",
+      "kind": "transferable",
+      "effective_key": null,
+      "seed_hex": "08090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324252627",
+      "key_state": {
+        "keys": [
+          "DEvd7lUO9zTK4E7uQq5jo3nTEStrpzr1NWiNcsmagoRg",
+          "DGd-3Zx6b7ql1gnccAXOgBHVTgMUrPicoXIFe8FA7eYq",
+          "DFCynp-mOIj4ErG7yajGhMV4ANhfPlBLLhNGhSWlDZUe"
+        ],
+        "threshold": "2"
+      },
+      "note": "A 2-of-3 group: no one key suffices (profile R4). The vectors' messages for this keyid are signed by the first key."
+    },
+    {
+      "keyid": "ECAzpmVbTvNg3tbPLFSf9OMv7hPwcKrTQ_QjsnBxtiit",
+      "kind": "transferable",
+      "effective_key": "T9Sgnms50EVyIuNNf3po0LnS8toHzey1l1ix6U6_0cM",
+      "seed_hex": "02030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+      "key_state": {
+        "keys": [
+          "DE_UoJ5rOdBFciLjTX96aNC50vLaB83stZdYselOv9HD"
+        ],
+        "threshold": "1"
+      },
+      "weak_key": true,
+      "note": "A KEL whose current key is of mixed order: the controller's key plus a point of order 8 (profile R1). No seed yields it, so seed_hex is the key the messages for this keyid were signed with, which the verifier never reaches."
+    }
+  ],
+  "cases": [
+    {
+      "id": "response-to-post",
+      "note": "A response binds @status, its own body, and the request's method, path, query and content-digest, each marked req.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"RyT5t_EMa7q6j_SaKRbqcg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:HqcYDOsvdJNcl0hApDigf3euUa6j8kPFffh8UNEdAHKdr0DTI/Er9n+cmQnhfbHBVhJ4YI6Jn7Xrt8BosGfNDw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"pwM_IyBpER4rUrfVpqIHIQ\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:ywkpZ9BzJ06ZltuSG6MsKzjxOCdLCnNF8uzjIZFV2gid6DHAgpfRwQAsEx9rVWaVbJIe2Ec0PhMDzdAnFD+LDA==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+        "covered": [
+          "\"@status\"",
+          "\"@method\";req",
+          "\"@path\";req",
+          "\"@query\";req",
+          "\"content-digest\"",
+          "\"content-digest\";req"
+        ],
+        "base": "\"@status\": 200\n\"@method\";req: POST\n\"@path\";req: /identifiers/alice/events\n\"@query\";req: ?\n\"content-digest\": sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:\n\"content-digest\";req: sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\" \"content-digest\";req);created=1700000000;nonce=\"pwM_IyBpER4rUrfVpqIHIQ\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+        "signature": "ywkpZ9BzJ06ZltuSG6MsKzjxOCdLCnNF8uzjIZFV2gid6DHAgpfRwQAsEx9rVWaVbJIe2Ec0PhMDzdAnFD+LDA=="
+      }
+    },
+    {
+      "id": "response-to-get",
+      "note": "The request had no body, so no \"content-digest\";req.",
+      "request": {
+        "method": "GET",
+        "url": "https://keria.example.com/identifiers/alice?include=state",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"fpJPJ_gcdSwOAfz76dHfnQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:ifqxCMeYSxPtuYAcntbRA7mPHzJfYItLGBmqoJ/ZA5bhppd8YIxxAzdfL+scbXO/loveVrWFmH45I4yS6B0cDg==:"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\");created=1700000000;nonce=\"IsRY_qJx7RuKOSknuDt6rw\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:wHujlThRhyP8TpXQnVBhKJ9b4HkxGIV53TQoDZZTZo6uUzE0qCVaeYDLSrxh08adIdV+ZkAzQfMrJ1k3+IJ8BQ==:",
+          "Content-Digest": "sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:"
+        },
+        "body": "{\"done\": true}"
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+        "covered": [
+          "\"@status\"",
+          "\"@method\";req",
+          "\"@path\";req",
+          "\"@query\";req",
+          "\"content-digest\""
+        ],
+        "base": "\"@status\": 200\n\"@method\";req: GET\n\"@path\";req: /identifiers/alice\n\"@query\";req: ?include=state\n\"content-digest\": sha-256=:7t4SNaEB27F0UdeTfYsVSyxmmWS759lx1HSAx9DKHtk=:\n\"@signature-params\": (\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\");created=1700000000;nonce=\"IsRY_qJx7RuKOSknuDt6rw\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+        "signature": "wHujlThRhyP8TpXQnVBhKJ9b4HkxGIV53TQoDZZTZo6uUzE0qCVaeYDLSrxh08adIdV+ZkAzQfMrJ1k3+IJ8BQ=="
+      }
+    },
+    {
+      "id": "response-without-a-body",
+      "note": "A bodiless response covers no content-digest of its own.",
+      "request": {
+        "method": "POST",
+        "url": "https://keria.example.com/identifiers/alice/events",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\" \"content-digest\");created=1700000000;nonce=\"RyT5t_EMa7q6j_SaKRbqcg\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:HqcYDOsvdJNcl0hApDigf3euUa6j8kPFffh8UNEdAHKdr0DTI/Er9n+cmQnhfbHBVhJ4YI6Jn7Xrt8BosGfNDw==:",
+          "Content-Digest": "sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:"
+        },
+        "body": "{\"name\": \"alice\", \"salt\": \"0ACDEyMzQ1Njc4OWFiY2RlZg\"}"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\";req);created=1700000000;nonce=\"ig0j-4A__qKe97u2kPI7pg\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:VrCIeb6gOervsWdcCiNsMgU7bqcVWMRFlmsnhdMy2uoxLozlC87yVLK8gR04VV9G7I/SYcFQ5Hmd81AYccJZAQ==:"
+        },
+        "body": null
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+        "covered": [
+          "\"@status\"",
+          "\"@method\";req",
+          "\"@path\";req",
+          "\"@query\";req",
+          "\"content-digest\";req"
+        ],
+        "base": "\"@status\": 204\n\"@method\";req: POST\n\"@path\";req: /identifiers/alice/events\n\"@query\";req: ?\n\"content-digest\";req: sha-256=:3VcGxkKDopHfemF5ycL6Dulrq/cfyzj8j7Cmpinje2E=:\n\"@signature-params\": (\"@status\" \"@method\";req \"@path\";req \"@query\";req \"content-digest\";req);created=1700000000;nonce=\"ig0j-4A__qKe97u2kPI7pg\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+        "signature": "VrCIeb6gOervsWdcCiNsMgU7bqcVWMRFlmsnhdMy2uoxLozlC87yVLK8gR04VV9G7I/SYcFQ5Hmd81AYccJZAQ=="
+      }
+    },
+    {
+      "id": "head-response-with-a-content-length",
+      "note": "A response's body is its content: a HEAD response announces the length of a representation it does not send, and needs no content-digest.",
+      "request": {
+        "method": "HEAD",
+        "url": "https://keria.example.com/identifiers/alice",
+        "headers": {
+          "Signature-Input": "signify=(\"@method\" \"@authority\" \"@path\" \"@query\");created=1700000000;nonce=\"g_tLMQWN8ZPpBRlj0zCzDQ\";alg=\"ed25519\";keyid=\"ELLKuZrOw7_eNOyM2TXu5j2YHnEyHnpM1iTUKf4Dxgtx\"",
+          "Signature": "signify=:h0RBAp6Dz4PyxRQfWrtGB7l03jYWCl4e1tr9Fior7fdnuqpP/J/H6AXpv0vMHv/8cL2+Uvyg/3T1XbqaZ4M6Cg==:"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Length": "898",
+          "Signature-Input": "signify=(\"@status\" \"@method\";req \"@path\";req \"@query\";req);created=1700000000;nonce=\"fc5kMcWV0Vr14OS7_FtSkQ\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+          "Signature": "signify=:Cu4SsUm4SQVI8ysO8IPLo0ydpQdbsBcuZqrNDEwDp72uXIXNfEZciXaW2H7k4r41rTniwYWMfb6KCFG7J8kVBw==:"
+        },
+        "body": null
+      },
+      "policy": {
+        "expected_keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6"
+      },
+      "now": 1700000030,
+      "expected": {
+        "keyid": "EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6",
+        "covered": [
+          "\"@status\"",
+          "\"@method\";req",
+          "\"@path\";req",
+          "\"@query\";req"
+        ],
+        "base": "\"@status\": 200\n\"@method\";req: HEAD\n\"@path\";req: /identifiers/alice\n\"@query\";req: ?\n\"@signature-params\": (\"@status\" \"@method\";req \"@path\";req \"@query\";req);created=1700000000;nonce=\"fc5kMcWV0Vr14OS7_FtSkQ\";alg=\"ed25519\";keyid=\"EIhwv8kMnCY92GevqHtBlMT8cQD96m3XkNav--Ti-4Q6\"",
+        "signature": "Cu4SsUm4SQVI8ysO8IPLo0ydpQdbsBcuZqrNDEwDp72uXIXNfEZciXaW2H7k4r41rTniwYWMfb6KCFG7J8kVBw=="
+      }
+    }
+  ]
+}
