@@ -34,6 +34,7 @@ Reference Documentation
 
     ref/getting_started
     ref/naming
+    ref/ErrorHandling
     ref/PythonStyleGuide
     ref/CypherSuites
     ref/MultiHab

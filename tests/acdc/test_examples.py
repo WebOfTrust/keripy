@@ -25,7 +25,7 @@ from jsonschema.exceptions import SchemaError, ValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (Noncer, Blinder, GenDex, Aggor, Compactor, Diger,
-                       DigDex, Parser, messagize)
+                       DigDex, Parser, Schemer, messagize)
 from keri.acdc import (Regery, Registrar, regcept, blindate, acdcmap, acdcagg, loadHandlers,
                        grant as ipexGrant, admit as ipexAdmit)
 from keri.app import openHby
@@ -106,8 +106,8 @@ def _anchor(hab, registry, serder, *, framed=False):
     return anc
 
 
-def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
-            origin, artifacts=None):
+def ipexExchange(*, hby, exc, sender, receiver, message, admitMessage,
+                 origin, artifacts=None):
     """Round-trip one IPEX grant and its admit, returning the parsed grant."""
     originSerder = _serder(origin)
     grant, grantAtc = ipexGrant(hab=sender, recp=receiver.pre, message=message,
@@ -120,8 +120,10 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert len(grantResults) == 1
     grantResult = grantResults[0]
     assert grantResult.serder.said == grant.said
+    assert grantResult.serder.ilk == Ilks.xip
     assert grantResult.serder.ked['r'] == "/ipex/grant"
-    assert grantResult.serder.ked['p'] == ""
+    assert 'x' not in grantResult.serder.ked
+    assert 'p' not in grantResult.serder.ked
     assert grantResult.serder.ked['i'] == sender.pre
     assert grantResult.serder.ked['ri'] == receiver.pre
     assert grantResult.serder.ked['a']['o'] == [originSerder.said]
@@ -148,6 +150,8 @@ def ipexExn(*, hby, exc, sender, receiver, message, admitMessage,
     assert admitIms == bytearray()
     storedAdmit = hby.db.exns.get(keys=(admit.said,))
     assert storedAdmit is not None
+    assert storedAdmit.ilk == Ilks.exn
+    assert storedAdmit.ked['x'] == grant.said
     assert storedAdmit.ked['p'] == grant.said
 
     return grantResult, wire
@@ -323,7 +327,7 @@ def test_registry_issuance_lifecycle_JSON():
 def test_registry_issuance_lifecycle_IPEX_JSON():
     """Same lifecycle as the worked example, but transported through IPEX.
 
-    This stays distinct from test_clc_disclosure.py's gated exchange. The point
+    This stays distinct from test_cp_disclosure.py's gated exchange. The point
     here is not pre-disclosure negotiation; it is to carry the foundational
     registry-backed ACDC through the real IPEX handlers we have today. In the
     single-DAG wire shape for this ticket, the grant carries one nested ACDC
@@ -370,7 +374,7 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             # proof group on the ACDC's own nest. Because this example uses one
             # shared Regery, the disclosee-side TEL chain is already present
             # locally instead of being fetched separately from observers.
-            issuedGrantResult, issuedGrantWire = ipexExn(
+            issuedGrantResult, issuedGrantWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=amy,
@@ -394,7 +398,7 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
 
             assert revokedBlinder.uuid.encode() not in issuedGrantWire
 
-            revokedGrantResult, revokedGrantWire = ipexExn(
+            revokedGrantResult, revokedGrantWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=amy,
@@ -409,9 +413,9 @@ def test_registry_issuance_lifecycle_IPEX_JSON():
             assert revokedBlinder.uuid.encode() in revokedGrantWire
 
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/grant", "Issued registry snapshot"),
+                ("/xip/ipex/grant", "Issued registry snapshot"),
                 ("/exn/ipex/admit", "Received issued snapshot"),
-                ("/exn/ipex/grant", "Revoked registry snapshot"),
+                ("/xip/ipex/grant", "Revoked registry snapshot"),
                 ("/exn/ipex/admit", "Received revoked snapshot"),
             ]
         finally:
@@ -576,15 +580,17 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         loadHandlers(hby=hby, exc=exc, notifier=recorder)
 
         # The holder (Bob) presents Amy's credential to the verifier (Vic). The
-        # outer IPEX sender is Bob, while the nested ACDC issuer remains Amy.
-        grantResult, grantWire = ipexExn(
+        # outer IPEX sender is Bob, while Amy signs the registry-less ACDC.
+        grantResult, grantWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
             receiver=vic,
             message="Selective aggregate disclosure",
             admitMessage="Received selective aggregate disclosure",
-            origin=selective,
+            origin=amy.endorse(serder=selective,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
         )
 
         carried = grantResult.nests[0].serder
@@ -615,7 +621,7 @@ def test_selective_disclosure_aggregate_IPEX_JSON():
         assert not Aggor.verifyDisclosure(tampered, kind=kind)
 
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/grant", "Selective aggregate disclosure"),
+            ("/xip/ipex/grant", "Selective aggregate disclosure"),
             ("/exn/ipex/admit", "Received selective aggregate disclosure"),
         ]
 
@@ -682,8 +688,10 @@ def test_partial_disclosure_compaction_JSON():
     # the private attribute section withheld. This is the direction the spec's
     # Chain-Link Confidentiality flow uses: the terms are shown first so the
     # verifier (Disclosee) can agree to them, and the private attributes stay
-    # hidden until, and unless, that agreement is made (spec-body.md lines 256,
-    # 741). Hiding the terms while exposing the attributes would invert that.
+    # hidden until, and unless, that agreement is made (ACDC, Schema Section >
+    # Composable JSON Schema, and Aggregate Section > Inclusion proof via
+    # aggregated list digest (AGID)). Hiding the terms while exposing the
+    # attributes would invert that.
     disclosedRule = expanded.sad['r']                # the full rule block
     # Verifier recomputes the disclosed block's SAID and confirms it is the very
     # section the compact ACDC commits to under 'r'.
@@ -725,7 +733,8 @@ def test_partial_disclosure_compaction_JSON():
     # both a 'grades' block and an 'address' block, so the holder can reveal one
     # and withhold the other. The disclosable unit is the block, not the field:
     # street/number/zip inside 'address' are disclosed together; to hide just the
-    # zip it would have to be its own nested block (spec-body.md line 692).
+    # zip it would have to be its own nested block (ACDC, Aggregate Section >
+    # Selectively disclosable Aggregate of attribute blocks).
     multi = dict(d='', u=NONCES[7], i=BOB, name="Bob Student",
                  grades=dict(d='', u=NONCES[8], math=4, english=3),
                  address=dict(d='', u=NONCES[9], street="Main", number=5, zip="90210"))
@@ -802,7 +811,11 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert expanded.said == compact.said             # same commitment either way
         schema = assert_acdc_schema_valid(expanded)
         assert_acdc_schema_valid(compact, schema=schema)
-        
+
+        # Cache the schema that compact disclosures identify only by SAID.
+        schemer = Schemer(sed=dict(schema))
+        hby.db.schema.pin(schemer.said, schemer)
+
         assert b"Bob Student" not in compact.raw
         assert b"MUST NOT" not in compact.raw
 
@@ -815,12 +828,14 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert isinstance(ruleOnly.sad['a'], str)
         assert isinstance(ruleOnly.sad['r'], dict)
 
-        ruleGrantResult, ruleWire = ipexExn(
+        ruleGrantResult, ruleWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=ruleOnly,
+            origin=amy.endorse(serder=ruleOnly,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Rule section disclosure",
             admitMessage="Received rule section disclosure",
         )
@@ -866,12 +881,14 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert_acdc_schema_valid(gradesWithheld, schema=gradesSchema)
         assert_acdc_schema_valid(gradesRevealed, schema=gradesSchema)
 
-        withheldGrantResult, withheldWire = ipexExn(
+        withheldGrantResult, withheldWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=gradesWithheld,
+            origin=amy.endorse(serder=gradesWithheld,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Grades withheld partial disclosure",
             admitMessage="Received grades-withheld partial disclosure",
         )
@@ -889,12 +906,14 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert b"math" not in withheldWire
         assert NONCES[8].encode() not in withheldWire
 
-        revealedGrantResult, revealedWire = ipexExn(
+        revealedGrantResult, revealedWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=gradesRevealed,
+            origin=amy.endorse(serder=gradesRevealed,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Grades revealed partial disclosure",
             admitMessage="Received grades-revealed partial disclosure",
         )
@@ -933,12 +952,14 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert mixedAcdc.said == mixedBase.said
         assert_acdc_schema_valid(mixedAcdc, schema=mixedSchema)
 
-        mixedGrantResult, mixedWire = ipexExn(
+        mixedGrantResult, mixedWire = ipexExchange(
             hby=hby,
             exc=exc,
             sender=bob,
             receiver=vic,
-            origin=mixedAcdc,
+            origin=amy.endorse(serder=mixedAcdc,
+                               framed=False,
+                               gvrsn=Vrsn_2_0),
             message="Mixed nested partial disclosure",
             admitMessage="Received mixed nested partial disclosure",
         )
@@ -962,13 +983,13 @@ def test_partial_disclosure_compaction_IPEX_JSON():
         assert NONCES[9].encode() not in mixedWire
 
         assert [(item["r"], item["m"]) for item in recorder.items] == [
-            ("/exn/ipex/grant", "Rule section disclosure"),
+            ("/xip/ipex/grant", "Rule section disclosure"),
             ("/exn/ipex/admit", "Received rule section disclosure"),
-            ("/exn/ipex/grant", "Grades withheld partial disclosure"),
+            ("/xip/ipex/grant", "Grades withheld partial disclosure"),
             ("/exn/ipex/admit", "Received grades-withheld partial disclosure"),
-            ("/exn/ipex/grant", "Grades revealed partial disclosure"),
+            ("/xip/ipex/grant", "Grades revealed partial disclosure"),
             ("/exn/ipex/admit", "Received grades-revealed partial disclosure"),
-            ("/exn/ipex/grant", "Mixed nested partial disclosure"),
+            ("/xip/ipex/grant", "Mixed nested partial disclosure"),
             ("/exn/ipex/admit", "Received mixed nested partial disclosure"),
         ]
 
@@ -982,7 +1003,9 @@ def test_blindable_registry_correlation_minimizing_JSON():
     and that the updates belong to it (the 'rd', sequence number, and prior link
     are all in the clear) -- but what each update commits to (the state, and which
     ACDC it concerns) is blinded. The spec calls the resulting disclosure
-    "correlation-minimizing" (spec-body.md line 91).
+    "correlation-minimizing" (ACDC Structure, the `u`-field section -- titled
+    "Universally Unique Identifier (UUID) Fields" in 1.0 and "Unique Entropy (UE)
+    Fields" on the v1.1 branch).
 
     Each update's blinded state is protected by its own "blind": a nonce derived
     by a deterministic key-derivation over the secret salt and that event's
@@ -1006,7 +1029,8 @@ def test_blindable_registry_correlation_minimizing_JSON():
     sequence number => new blind) even without a state change, so a previously
     disclosed blind no longer matches the head and cannot be reused as a standing
     proof of current state. Re-blinding is issuer-provided and issuer-timed
-    (spec-body.md lines 2131, 2135): a holder cannot compel it, and it costs one
+    (ACDC, Registry Message Types and Fields > Blinded State Disclosure): a
+    holder cannot compel it, and it costs one
     registry event per presentation, so it MAY or MAY NOT be used. This test does
     not rely on it -- the guarantees above follow from per-event blind
     independence alone.
@@ -1134,7 +1158,7 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             # carries the ACDC and only sn=1's disclosed blind proof. TEL
             # lookup still succeeds here because this example's shared Regery
             # already contains the issuer's registry history.
-            issuedGrantResult, issuedWire = ipexExn(
+            issuedGrantResult, issuedWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=bob,
@@ -1170,7 +1194,7 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
 
             # Later Bob can disclose the later revoked snapshot, but that new
             # presentation still reveals only one event-specific blind.
-            revokedGrantResult, revokedWire = ipexExn(
+            revokedGrantResult, revokedWire = ipexExchange(
                 hby=hby,
                 exc=exc,
                 sender=bob,
@@ -1212,9 +1236,9 @@ def test_blindable_registry_correlation_minimizing_IPEX_JSON():
             assert earlierPeek is None
 
             assert [(item["r"], item["m"]) for item in recorder.items] == [
-                ("/exn/ipex/grant", "Current registry snapshot"),
+                ("/xip/ipex/grant", "Current registry snapshot"),
                 ("/exn/ipex/admit", "Received current registry snapshot"),
-                ("/exn/ipex/grant", "Later registry snapshot"),
+                ("/xip/ipex/grant", "Later registry snapshot"),
                 ("/exn/ipex/admit", "Received later registry snapshot"),
             ]
         finally:

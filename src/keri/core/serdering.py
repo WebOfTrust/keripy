@@ -1268,28 +1268,28 @@ class Serder:
                 sad = self._loads(raw=raw, size=size)
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CESR: "
-                                      f"{raw[:size].decode()}") from ex
+                                      f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         elif kind == Kinds.json:
             try:
                 sad = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing JSON: "
-                    f"{raw[:size].decode()}") from ex
+                    f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         elif kind == Kinds.mgpk:
             try:
                 sad = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing MGPK: "
-                    f"{raw[:size].decode()}") from ex
+                    f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         elif kind == Kinds.cbor:
             try:
                 sad = cbor.loads(raw[:size])
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CBOR: "
-                    f"{raw[:size].decode()}") from ex
+                    f"{raw[:size].decode('utf-8', 'replace')}") from ex
 
         else:
             raise DeserializeError(f"Invalid deserialization kind: {kind}")
@@ -1763,7 +1763,7 @@ class Serder:
                             gcode = None  # code for counter for consecutive same type seals
                             gframe = bytearray()  # consecutive same type seals
                             for e in v:  # list of seals as crew, oneof  NamedTuple|dict|Iterable
-                                try:  # groups consequetive seals of same type with same counter
+                                try:  # groups consecutive seals of same type with same counter
                                     sealer = Sealer(crew=e)
                                     code = self.ClanCodes[sealer.name]  # code by sealer type name
                                     if gcode and gcode == code:  # same counter code

@@ -4,18 +4,20 @@ keri.peer.exchanging module
 """
 import datetime
 import logging
+from base64 import urlsafe_b64encode as encodeB64
 from datetime import timedelta
 
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
+from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks, Colds, sniff,
                       Kinds, Version, versify,
-                      ValidationError, MissingChainError,
+                      ValidationError, MissingChainError, MissingSchemaError,
                       MissingSignatureError)
-from ..core import (Counter, Pather, Dater, Diger,
+from ..core import (Counter, Pather, Dater, Diger, Number,
                     Prefixer, Seqner, Saider,
-                    Noncer, Sadder, Serder, SerderKERI, Texter,
-                    Saids, Codens, BlindState, BoundState, FirstSeen, Parser,
+                    Serder, SerderKERI, Texter,
+                    Saids, Codens, BlindState, BoundState, FirstSeen,
+                    SealSource, SealEvent, SealKind, TypeMedia, Parser,
                     messagize,
                     verifySigs)
 from ..db import fetchTsgs
@@ -31,6 +33,7 @@ class Exchanger:
      Peer to Peer KERI message Exchanger."""
 
     TimeoutPSE = 10  # seconds to timeout partially signed or delegated escrows
+    TimeoutMSE = 20  # missing-schema escrow timeout in seconds
 
     def __init__(self, hby, handlers, cues=None, delta=ExchangeMessageTimeWindow):
         """ Initialize instance
@@ -61,6 +64,40 @@ class Exchanger:
 
         self.routes[handler.resource] = handler
 
+    def _cueMissingKeyState(self, missing):
+        """Request each missing KEL coordinate once."""
+        # Deduplicate repeated references in this processing attempt.
+        seen = set()
+        # Convert each missing coordinate into one logs query.
+        for prefixer, number in missing:
+            # Omit SN when even the latest establishment state is unknown.
+            sn = number.snh if number is not None else None
+            # Identify one request by signer and optional sequence number.
+            key = (prefixer.qb64, sn)
+            # Skip a coordinate already requested by another attachment.
+            if key in seen:
+                continue
+            # Mark this coordinate before emitting its query.
+            seen.add(key)
+
+            # Build the base KEL-log query for this signer.
+            query = dict(r="logs", pre=prefixer.qb64)
+            # Request one event when its sequence number is known.
+            if sn is not None:
+                query["sn"] = sn
+            # Queue retrieval for the application layer.
+            self.cues.append(dict(kin="query", q=query))
+
+    def _raiseMissingKeyState(self, serder, missing):
+        """Request missing KEL events and reject the current exchange."""
+        # Request the evidence before preserving strict rejection behavior.
+        self._cueMissingKeyState(missing)
+
+        msg = f"Missing key state for attached evidence on evt={serder.said}"
+        logger.info(msg)
+        logger.debug("Exchange message body=\n%s\n", serder.pretty())
+        raise MissingSignatureError(msg)
+
     def processEvent(self, serder, tsgs=None, cigars=None, ptds=None, essrs=None, **kwa):
         """ Process one serder event with attached indexed signatures representing a Peer to Peer exchange message.
 
@@ -75,7 +112,12 @@ class Exchanger:
             cigars (list): of Cigar instances of attached non-trans sigs
             ptds (list[bytes]): pathed Cesr Streams
             essrs (list[Texter]): ESSR streams as Texters
-            kwa: optional parsed V2 nested substreams under ``nests``
+            kwa (dict): optional parsed attachment groups:
+                nests contains parsed V2 nested substreams
+                lsgs contains last-establishment signature groups
+                ulgs contains unresolved foreign signer prefixes
+                sscs contains sender-implied source seal couples
+                ssts contains explicit source seal triples
 
         Returns:
             bool | None: ``True`` when the exchange verified and was persisted,
@@ -89,20 +131,98 @@ class Exchanger:
         route = serder.ked["r"]
         sender = serder.ked["i"]
         nests = kwa.get("nests")
+        lsgs = list(kwa.get("lsgs", []))
+        unresolvedLsgs = list(kwa.get("ulgs", []))
+        sscs = kwa.get("sscs", [])
+        ssts = kwa.get("ssts", [])
 
-
+        # Resolve route policy before classifying supplemental evidence.
         behavior = self.routes[route] if route in self.routes else None
-        if tsgs:
-            for prefixer, snumber, sdiger, sigers in tsgs:  # iterate over each tsg
-                if sender != prefixer.qb64:  # sig not by aid
-                    msg = (f"Skipped signature not from aid = "
-                           f"{sender}, from {prefixer.qb64} on exn msg = {serder.said}")
-                    logger.info(msg)
-                    logger.debug("Exchange message body=\n%s\n", serder.pretty())
-                    raise MissingSignatureError(msg)
+        # Read the route's optional evidence-selection hook.
+        evidenceVerifier = getattr(behavior, "verifyEvidence", None)
+        acceptsEvidence = getattr(behavior, "acceptsEvidence", False)
+        # Read whether unresolved extras may be dropped after querying.
+        acceptsMissingEvidence = getattr(behavior, "acceptsMissingEvidence", False)
+        tsgs = list(tsgs or [])
+        cigars = list(cigars or [])
 
+        # Freeze foreign last-establishment references before sender escrow
+        # can return, so replay retains the evidence and its original keys.
+        missing = [(prefixer, None) for prefixer in unresolvedLsgs]
+        for prefixer, sigers in lsgs:
+            if prefixer.qb64 == sender:
+                continue
+            kever = self.kevers.get(prefixer.qb64)
+            if kever is None:
+                missing.append((prefixer, None))
+                continue
+            tsgs.append((prefixer,
+                         Number(sn=kever.lastEst.s),
+                         Diger(qb64=kever.lastEst.d),
+                         sigers))
+        # Preserve unresolved parsed groups for route-level policy.
+        missingEvidence = list(missing)
+        # Apply strict or optional handling before sender escrow can return.
+        if missingEvidence:
+            # Non-opted routes reject unresolved attached evidence.
+            if not acceptsMissingEvidence:
+                self._raiseMissingKeyState(serder, missingEvidence)
+            # Opted routes request the KEL and continue with known factors.
+            self._cueMissingKeyState(missingEvidence)
+
+        # A seal couple implies the sender AID. Store both attachment forms as
+        # an explicit sealing AID and historical event reference.
+        sourceSeals = [(Prefixer(qb64=sender), number, diger)
+                       for number, diger in sscs]
+        sourceSeals.extend(ssts)
+
+        senderTsgs = [tsg for tsg in tsgs if tsg[0].qb64 == sender]
+        extraTsgs = [tsg for tsg in tsgs if tsg[0].qb64 != sender]
+        senderSourceSeals = [seal for seal in sourceSeals
+                             if seal[0].qb64 == sender]
+        extraSourceSeals = [seal for seal in sourceSeals
+                            if seal[0].qb64 != sender]
+
+        if senderTsgs and evidenceVerifier is None:
+            # Routes without an evidence policy preserve the existing
+            # TSG-over-cigar precedence. A sender TSG causes all cigars to be
+            # ignored.
+            senderCigars = []
+            extraCigars = []
+        else:
+            senderCigars = [cigar for cigar in cigars
+                            if cigar.verfer.qb64 == sender]
+            extraCigars = [cigar for cigar in cigars
+                           if cigar.verfer.qb64 != sender]
+        if evidenceVerifier is None:
+            extraSourceSeals = []
+
+        (_, _, validSenderSourceSeals, _,
+         missingSenderSourceSeals) = verifyAttachments(
+            hby=self.hby, serder=serder, sourceSeals=senderSourceSeals)
+        if missingSenderSourceSeals:
+            # IPEX uses sender seals as required workflow evidence, so retain
+            # the complete message until the referenced sender KEL arrives.
+            if getattr(behavior, "acceptsSscs", False):
+                self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
+                                   cigars=cigars, sourceSeals=sourceSeals,
+                                   nests=nests)
+            self._raiseMissingKeyState(serder, missingSenderSourceSeals)
+
+        validSenderTsgs = []
+        validSenderCigars = []
+        if validSenderSourceSeals:
+            # A valid sender seal authenticates the exchange. Retain only valid
+            # optional sender TSGs and do not fail on invalid ones.
+            validSenderTsgs, _, _, _, _ = verifyAttachments(
+                hby=self.hby, serder=serder, tsgs=senderTsgs)
+
+        elif senderTsgs:
+            for tsg in senderTsgs:
+                prefixer, snumber, sdiger, sigers = tsg
                 if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < snumber.sn:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
+                                          cigars=cigars, sourceSeals=sourceSeals,
                                           nests=nests):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
@@ -110,12 +230,12 @@ class Exchanger:
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
-                # Verify the signatures are valid and that the signature threshold as of the signing event is met
-                tholder, verfers = self.hby.db.resolveVerifiers(pre=prefixer.qb64, sn=snumber.sn, dig=sdiger.qb64)
-                _, indices = verifySigs(serder.raw, sigers, verfers)
-
-                if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
+                tholder, verfers = self.hby.db.resolveVerifiers(
+                    pre=prefixer.qb64, sn=snumber.sn, dig=sdiger.qb64)
+                vsigers, indices = verifySigs(serder.raw, sigers, verfers)
+                if not tholder.satisfy(indices):
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
+                                          cigars=cigars, sourceSeals=sourceSeals,
                                           nests=nests):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = (f"Not enough signatures in idx={indices} route={route} "
@@ -124,30 +244,72 @@ class Exchanger:
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
-        elif cigars:
-            for cigar in cigars:
-                if sender != cigar.verfer.qb64:  # cig not by aid
-                    msg = (f"Skipped cig not from aid={sender} route={route} "
-                           f"for exn evt = {serder.said} receiver={serder.ked.get('rp', '')}")
-                    logger.info(msg)
-                    logger.debug("Exchange message body=\n%s\n", serder.pretty())
-                    raise MissingSignatureError(msg)
+                validSenderTsgs.append(
+                    (prefixer, snumber, sdiger, vsigers))
 
-                if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
+        elif senderCigars:
+            for cigar in senderCigars:
+                if (cigar.verfer.transferable or
+                        not cigar.verfer.verify(cigar.raw, serder.raw)):
                     msg = (f"Failure satisfying exn on cigs for {cigar} route={route} "
                            f"for evt = {serder.said} receiver={serder.ked.get('rp', '')}")
                     logger.info(msg)
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
-        else:
-            self.escrowPSEvent(serder=serder, tsgs=[], pathed=ptds,
+
+                validSenderCigars.append(cigar)
+
+        elif not validSenderSourceSeals:
+            # Do not escrow unsupported foreign-only evidence as missing sender
+            # authentication on routes without an evidence policy.
+            if (evidenceVerifier is None and
+                    (extraTsgs or extraCigars)):
+                msg = (f"Skipped evidence not from aid={sender} route={route} "
+                       f"for exn evt={serder.said}")
+                logger.info(msg)
+                logger.debug("Exchange message body=\n%s\n", serder.pretty())
+                raise MissingSignatureError(msg)
+
+            self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
+                               cigars=cigars, sourceSeals=sourceSeals,
                                nests=nests)
             msg = (
-                f"Failure satisfying exn, no cigs or sigs for evt = {serder.said} "
+                f"Failure satisfying exn, no sender authentication for evt = {serder.said} "
                 f"on route {route} receiver = {serder.ked.get('rp', '')}")
             logger.info(msg)
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             raise MissingSignatureError(msg)
+
+        # A sender authenticated above may still carry unsupported foreign
+        # evidence, which routes without an evidence policy must reject before
+        # persistence.
+        if (evidenceVerifier is None and
+                (extraTsgs or extraCigars)):
+            msg = (f"Skipped evidence not from aid={sender} route={route} "
+                   f"for exn evt={serder.said}")
+            logger.info(msg)
+            logger.debug("Exchange message body=\n%s\n", serder.pretty())
+            raise MissingSignatureError(msg)
+
+        (validExtraTsgs,
+         validExtraCigars,
+         validExtraSourceSeals,
+         invalidExtra,
+         missingExtra) = verifyAttachments(
+             hby=self.hby,
+             serder=serder,
+             tsgs=extraTsgs,
+             cigars=extraCigars,
+             sourceSeals=extraSourceSeals,
+         )
+        if missingExtra:
+            # Non-opted routes retain fail-closed behavior.
+            if not acceptsMissingEvidence:
+                self._raiseMissingKeyState(serder, missingExtra)
+            # Request every explicitly referenced missing KEL event.
+            self._cueMissingKeyState(missingExtra)
+            # Combine parser-level and verifier-level missing coordinates.
+            missingEvidence.extend(missingExtra)
 
         e = Pather(parts=["e"])
 
@@ -161,7 +323,8 @@ class Exchanger:
                 attachments.append((np, pattach))
 
         kwa["attachments"] = attachments
-        if nests and (route.startswith("/multisig") or route.startswith("/ipex")):
+        if nests and (route.startswith("/multisig") or route.startswith("/ipex")
+                      or route == "/fwd"):
             kwa["nests"] = nests
         if essrs:
             kwa["essr"] = b''.join([texter.raw for texter in essrs])
@@ -176,17 +339,65 @@ class Exchanger:
             if not diger.verify(ser=essr):
                 raise ValidationError(f"essr diger={diger.qb64} is invalid against content")
 
+        if evidenceVerifier is None:
+            # Routes without a policy accept no non-sender evidence.
+            acceptedExtras = ([], [], [])
+        else:
+            # Pass verified extras and invalid status into route policy.
+            evidenceKwa = dict(tsgs=validExtraTsgs,
+                               cigars=validExtraCigars,
+                               sourceSeals=validExtraSourceSeals,
+                               invalid=invalidExtra)
+            # Preserve older hook signatures unless the route opts in.
+            if acceptsMissingEvidence:
+                evidenceKwa["missing"] = missingEvidence
+            # Let the route select the supplemental factors to retain.
+            acceptedExtras = evidenceVerifier(serder=serder, **evidenceKwa)
+            # None signals permanent route-level evidence rejection.
+            if acceptedExtras is None:
+                logger.error("exn evidence for route %s failed behavior verification. said=%s",
+                             route, serder.said)
+                logger.debug("Exn Event Body=\n%s\n", serder.pretty())
+                return False
+
+        # Unpack only the supplemental factors approved by route policy.
+        acceptedTsgs, acceptedCigars, acceptedSourceSeals = acceptedExtras
+        # Recombine approved extras with authenticated sender signatures.
+        tsgs = validSenderTsgs + acceptedTsgs
+        cigars = validSenderCigars + acceptedCigars
+        sourceSeals = validSenderSourceSeals + acceptedSourceSeals
+        # Index each approved transferable endorser.
+        endorsers = {prefixer.qb64 for prefixer, _, _, _ in acceptedTsgs}
+        # Include each approved non-transferable endorser.
+        endorsers.update(cigar.verfer.qb64 for cigar in acceptedCigars)
+        # Include each approved source-seal anchorer.
+        endorsers.update(prefixer.qb64 for prefixer, _, _ in acceptedSourceSeals)
+
+        # Only opted-in V2 handlers receive the validated sender seal couples;
+        # legacy handlers keep their existing verify and handle signatures.
+        if validSenderSourceSeals and getattr(behavior, "acceptsSscs", False):
+            kwa["sscs"] = [(number, diger)
+                           for _, number, diger in validSenderSourceSeals]
+
         # Perform behavior specific verification, think IPEX chaining requirements
+        verifier = getattr(behavior, "verify", None)
+        # Isolate verification-only arguments from handler arguments.
+        verifyKwa = dict(kwa)
+        # Pass selected evidence only to handlers that advertise support.
+        if acceptsEvidence:
+            # Keep signatures available through route-level authentication.
+            verifyKwa["evidence"] = (tsgs, cigars, sourceSeals)
         try:
-            if not behavior.verify(serder=serder, **kwa):
+            if verifier is not None and not verifier(serder=serder, **verifyKwa):
                 logger.error("exn event for route %s failed behavior verification. said=%s", route, serder.said)
-                logger.debug(f"Event=\n%s\n", serder.pretty())
+                logger.debug("Event=\n%s\n", serder.pretty())
                 return False
         except MissingChainError as ex:
             # Registry-backed IPEX grants may arrive before the disclosee has
             # fetched the issuer's TEL history from observers. Keep those
             # messages in exchange escrow and cue the app to fetch proof data.
-            if self.escrowPSEvent(serder=serder, tsgs=tsgs or [], pathed=ptds,
+            if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds,
+                                  cigars=cigars, sourceSeals=sourceSeals,
                                   nests=nests):
                 self.cues.append(dict(kin="proof", said=serder.said))
             logger.info("Escrowed exchange awaiting proof evidence: said=%s reason=%s",
@@ -194,12 +405,32 @@ class Exchanger:
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             return None
 
-        except AttributeError:
-            logger.debug("Behavior for %s missing or does not have verify for said %s", route, serder.said)
-            logger.debug("Exn Event Body=\n%s\n", serder.pretty())
+        # Escrow the exchange when a schema is missing
+        except MissingSchemaError as ex:
+            # Get the missing schema SAID
+            schema = ex.args[0]
+
+            # Store the exchange and its evidence
+            stored = self.escrowMSEvent(
+                serder=serder, schema=schema, tsgs=tsgs, pathed=ptds,
+                cigars=cigars, sourceSeals=sourceSeals, nests=nests)
+
+            # Request each new schema once
+            if stored:
+                self.cues.append(dict(
+                    kin="query",
+                    q=dict(r="schema", said=schema),
+                ))
+            logger.info("Escrowed exchange %s awaiting schema %s",
+                        serder.said, schema)
+            logger.debug("Exchange message body=\n%s\n", serder.pretty())
+            return None
 
         # Always persist events
-        self.logEvent(serder, ptds, tsgs, cigars, essrs, nests=nests)
+        # Persist only sender authentication and policy-approved extras.
+        self.logEvent(serder, ptds, tsgs, cigars, essrs,
+                      sourceSeals=sourceSeals, nests=nests,
+                      endorsers=endorsers)
         self.cues.append(dict(kin="saved", said=serder.said))
 
         # Execute any behavior specific handling, not sure if this should be different than verify
@@ -214,33 +445,139 @@ class Exchanger:
     def processEscrow(self):
         """ Process all escrows for `exn` messages"""
         self.processEscrowPartialSigned()
+        self.processEscrowMissingSchema()
 
-    def escrowPSEvent(self, serder, tsgs, pathed, nests=None):
+    def _storeEscrowEvidence(self, serder, tsgs, cigars, sourceSeals):
+        """Persist exchange authentication evidence for later replay."""
+        dig = serder.said
+        for prefixer, seqner, ssaider, sigers in tsgs:
+            quadkeys = (dig, prefixer.qb64,
+                        f"{seqner.sn:032x}", ssaider.qb64)
+            for siger in sigers:
+                self.hby.db.esigs.add(keys=quadkeys, val=siger)
+        for cigar in cigars:
+            self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
+        for prefixer, number, diger in sourceSeals:
+            self.hby.db.ests.add(keys=(dig, prefixer.qb64),
+                                 val=(number, diger))
+
+    def _escrowEvent(self, serder, keys, escrow, dater, tsgs, pathed,
+                     cigars=None, sourceSeals=None, nests=None):
+        """Persist one retryable exchange and all evidence needed to replay it."""
+        dig = serder.said
+
+        # Skip an accepted exchange
+        if self.hby.db.exns.get(keys=(dig,)) is not None:
+            return False
+
+        cigars = cigars or []
+        sourceSeals = sourceSeals or []
+
+        # Store the authentication evidence
+        self._storeEscrowEvidence(serder=serder, tsgs=tsgs,
+                                  cigars=cigars,
+                                  sourceSeals=sourceSeals)
+
+        # Store the entry time when required
+        if dater is not None:
+            dater.put(keys=keys, val=Dater())
+        self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
+        if nests:
+            self.hby.db.enst.pin(
+                keys=(dig,),
+                vals=[bytes(serializeParsedSubstream(nest)) for nest in nests],
+            )
+        return escrow.put(keys=keys, val=serder)
+
+    def escrowPSEvent(self, serder, tsgs, pathed, cigars=None,
+                      sourceSeals=None, nests=None):
         """ Escrow event that does not have enough signatures.
 
         Parameters:
             serder (Serder): instance of event
             tsgs (list): quadlet of prefixer seqner, saider, sigers
             pathed (list): list of bytes of attached paths
+            cigars (list | None): nontransferable signatures to preserve
+            sourceSeals (list | None): source seal triples to preserve
             nests (list | None): parsed V2 nested substreams to preserve
 
         """
         dig = serder.said
-        for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
-            quadkeys = (serder.said, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
-            for siger in sigers:
-                self.hby.db.esigs.add(keys=quadkeys, val=siger)
+        return self._escrowEvent(
+            serder=serder,
+            keys=(dig,),
+            escrow=self.hby.db.epse,
+            dater=self.hby.db.epsd,
+            tsgs=tsgs,
+            pathed=pathed,
+            cigars=cigars,
+            sourceSeals=sourceSeals,
+            nests=nests,
+        )
 
-        self.hby.db.epsd.put(keys=(dig,), val=Dater())
-        self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
-        if nests:
-            self.hby.db.enst.pin(keys=(dig,),
-                                 vals=[bytes(serializeParsedSubstream(nest)) for nest in nests])
-        return self.hby.db.epse.put(keys=(dig,), val=serder)
+    def escrowMSEvent(self, serder, schema, tsgs, pathed, cigars=None,
+                      sourceSeals=None, nests=None):
+        """Escrow an exchange until its declared ACDC schema is available."""
+        Saider(qb64=schema)
+        dig = serder.said
+        stored = self._escrowEvent(
+            serder=serder,
+            keys=(dig, schema),
+            escrow=self.hby.db.emse,
+            dater=None,
+            tsgs=tsgs,
+            pathed=pathed,
+            cigars=cigars,
+            sourceSeals=sourceSeals,
+            nests=nests,
+        )
+
+        # Keep one deadline for all missing schemas in this exchange
+        if stored and self.hby.db.emsd.get(keys=(dig,)) is None:
+            expiry = helping.nowUTC() + datetime.timedelta(seconds=self.TimeoutMSE)
+            xid = serder.said if serder.ilk == Ilks.xip else serder.ked.get("x")
+            if xid:
+                cache = self.hby.db.kramTMSC.get(
+                    keys=(serder.pre, xid, dig))
+                if cache is not None:
+                    expiry = (helping.fromIso8601(cache.xdt)
+                              + datetime.timedelta(milliseconds=cache.pxl))
+            self.hby.db.emsd.put(
+                keys=(dig,), val=Dater(dts=helping.toIso8601(expiry)))
+
+        return stored
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages"""
-        for (dig,), serder in self.hby.db.epse.getTopItemIter():
+        self._replayEscrowType(
+            escrow=self.hby.db.epse,
+            dater=self.hby.db.epsd,
+            timeout=self.TimeoutPSE,
+            label="partially signed",
+        )
+
+    def processEscrowMissingSchema(self):
+        """Process exchanges waiting for an ACDC schema."""
+        self._replayEscrowType(
+            escrow=self.hby.db.emse,
+            dater=self.hby.db.emsd,
+            label="missing schema",
+            absolute=True,
+        )
+
+    def _replayEscrowType(self, escrow, dater, label, timeout=None,
+                          absolute=False):
+        """Replay every exchange in one specified escrow category."""
+        for escrowKeys, serder in escrow.getTopItemIter():
+            dig = escrowKeys[0]
+            dateKeys = (dig,) if absolute else escrowKeys
+            if self.hby.db.exns.get(keys=(dig,)) is not None:
+                escrow.rem(keys=escrowKeys)
+                if not absolute or not any(
+                        self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                    dater.rem(keys=dateKeys)
+                continue
+
             try:
                 tsgs = []
                 klases = (Prefixer, Seqner, Saider)
@@ -248,20 +585,22 @@ class Exchanger:
                 sigers = []
 
                 dtnow = helping.nowUTC()
-                dater = self.hby.db.epsd.get(keys=(dig,))
-                if dater is None:
+                escrowedAt = dater.get(keys=dateKeys)
+                if escrowedAt is None:
                     raise ValidationError("Missing exn escrowed event datetime "
                                           f"at dig = {dig}.")
 
-                dte = dater.datetime
-                if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
+                dte = escrowedAt.datetime
+                stale = dtnow > dte if absolute else (
+                    dtnow - dte) > datetime.timedelta(seconds=timeout)
+                if stale:
                     # escrow stale so raise ValidationError which unescrows below
                     raise ValidationError("Stale exn event escrow "
                                           f"at dig = {dig}.")
 
                 old = None  # empty keys
-                for keys, siger in self.hby.db.esigs.getTopItemIter(keys=(dig, "")):
-                    quad = keys[1:]
+                for sigKeys, siger in self.hby.db.esigs.getTopItemIter(keys=(dig, "")):
+                    quad = sigKeys[1:]
                     if quad != old:  # new tsg
                         if sigers:  # append tsg made for old and sigers
                             prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
@@ -276,71 +615,152 @@ class Exchanger:
 
                 pathed = [bytearray(p.encode("utf-8")) for p in self.hby.db.epath.get(keys=(dig,))]
                 essrs = [texter for texter in self.hby.db.essrs.get(keys=(dig,))]
+                cigars = []
+                for verfer, cigar in self.hby.db.ecigs.get(keys=(dig,)):
+                    cigar.verfer = verfer
+                    cigars.append(cigar)
+                sourceSeals = []
+                for sealKeys, (number, diger) in self.hby.db.ests.getTopItemIter(
+                        keys=(dig, "")):
+                    sourceSeals.append((Prefixer(qb64=sealKeys[1]), number, diger))
                 nests = loadParsedNestedSubstreams(self.hby, dig)
 
-                result = self.processEvent(serder=serder, tsgs=tsgs, ptds=pathed,
-                                           essrs=essrs, nests=nests)
+                # The same stores hold escrowed and accepted evidence. Remove
+                # the temporary branches so processEvent writes back only the
+                # evidence that passes current verification and policy.
+                self.hby.db.esigs.trim(keys=(dig, ""))
+                self.hby.db.ecigs.rem(keys=(dig,))
+                self.hby.db.ests.trim(keys=(dig, ""))
+                result = self.processEvent(serder=serder, tsgs=tsgs, cigars=cigars,
+                                           ptds=pathed,
+                                           essrs=essrs, ssts=sourceSeals, nests=nests)
 
             except MissingSignatureError as ex:
+                self._storeEscrowEvidence(serder=serder, tsgs=tsgs,
+                                          cigars=cigars,
+                                          sourceSeals=sourceSeals)
+                if (escrow is self.hby.db.emse and
+                        self.hby.db.epse.get(keys=(dig,)) is not None):
+                    escrow.rem(keys=escrowKeys)
+                    if not any(self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                        dater.rem(keys=dateKeys)
                 if logger.isEnabledFor(logging.TRACE):
-                    logger.trace("Exchange partially signed unescrow failed: %s\n", ex.args[0])
-                    logger.debug(f"Event body=\n%s\n", serder.pretty())
+                    logger.trace("Exchange %s unescrow failed: %s\n",
+                                 label, ex.args[0])
+                    logger.debug("Event body=\n%s\n", serder.pretty())
             except Exception as ex:
                 saved = self.hby.db.exns.get(keys=(dig,)) is not None
-                self.hby.db.epse.rem(dig)
-                self.hby.db.epsd.rem(dig)
-                self.hby.db.esigs.rem(dig)
-                if not saved:
+                escrow.rem(keys=escrowKeys)
+                if not absolute or not any(
+                        self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                    dater.rem(keys=dateKeys)
+                pending = (self.hby.db.epse.get(keys=(dig,)) is not None
+                           or any(self.hby.db.emse.getTopItemIter(keys=(dig,))))
+                if not saved and not pending:
+                    self.hby.db.esigs.trim(keys=(dig, ""))
+                    self.hby.db.ecigs.rem(keys=(dig,))
+                    self.hby.db.ests.trim(keys=(dig, ""))
                     self.hby.db.epath.rem(keys=(dig,))
                     self.hby.db.enst.rem(keys=(dig,))
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Exchange partially signed unescrowed: %s", ex.args[0])
+                    logger.exception("Exchange %s unescrowed: %s",
+                                     label, ex.args[0])
                 else:
-                    logger.error("Exchange partially signed unescrowed: %s", ex.args[0])
+                    logger.error("Exchange %s unescrowed: %s",
+                                 label, ex.args[0])
             else:
                 if result is None:
+                    moved = False
+                    if escrow is self.hby.db.epse:
+                        moved = any(self.hby.db.emse.getTopItemIter(keys=(dig,)))
+                    else:
+                        moved = self.hby.db.epse.get(keys=(dig,)) is not None
+                        moved = moved or any(
+                            other != escrowKeys
+                            for other, _ in self.hby.db.emse.getTopItemIter(
+                                keys=(dig,))
+                        )
+                    if moved:
+                        escrow.rem(keys=escrowKeys)
+                        if not absolute or not any(
+                                self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                            dater.rem(keys=dateKeys)
                     if logger.isEnabledFor(logging.TRACE):
-                        logger.trace("Exchange proof unescrow still pending: said=%s", serder.said)
+                        logger.trace("Exchange %s unescrow still pending: said=%s",
+                                     label, serder.said)
                     continue
 
                 saved = self.hby.db.exns.get(keys=(dig,)) is not None
-                self.hby.db.epse.rem(dig)
-                self.hby.db.epsd.rem(dig)
-                self.hby.db.esigs.rem(dig)
-                if not saved:
+                escrow.rem(keys=escrowKeys)
+                if not absolute or not any(
+                        self.hby.db.emse.getTopItemIter(keys=(dig,))):
+                    dater.rem(keys=dateKeys)
+                pending = (self.hby.db.epse.get(keys=(dig,)) is not None
+                           or any(self.hby.db.emse.getTopItemIter(keys=(dig,))))
+                if not saved and not pending:
+                    self.hby.db.esigs.trim(keys=(dig, ""))
+                    self.hby.db.ecigs.rem(keys=(dig,))
+                    self.hby.db.ests.trim(keys=(dig, ""))
                     self.hby.db.epath.rem(keys=(dig,))
                     self.hby.db.enst.rem(keys=(dig,))
                     logger.info("Exchanger unescrow rejected exchange: said=%s", serder.said)
                     continue
-                logger.info("Exchanger unescrow succeeded in valid exchange: creder=%s", serder.said)
+                logger.info("Exchanger %s unescrow succeeded: said=%s",
+                            label, serder.said)
                 logger.debug("Event=\n%s\n", serder.pretty())
 
-    def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None, nests=None):
+    def logEvent(self, serder, pathed=None, tsgs=None, cigars=None, essrs=None,
+                 sourceSeals=None, nests=None, endorsers=None):
         dig = serder.said
-        pdig = serder.ked['p']
+        pdig = serder.ked.get('p', '')
         pathed = pathed or []
         tsgs = tsgs or []
         cigars = cigars or []
         essrs = essrs or []
+        sourceSeals = sourceSeals or []
+        # Normalize the optional reverse-index input.
+        endorsers = endorsers or []
 
-        for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
-            quadkeys = (serder.said, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
+        escrowed = (self.hby.db.exns.get(keys=(dig,)) is None and
+                    self.hby.db.epse.get(keys=(dig,)) is not None)
+        if escrowed:
+            self.hby.db.esigs.trim(keys=(dig, ""))
+            self.hby.db.ecigs.rem(keys=(dig,))
+            self.hby.db.ests.trim(keys=(dig, ""))
+            self.hby.db.epath.rem(keys=(dig,))
+            self.hby.db.enst.rem(keys=(dig,))
+
+        for prefixer, seqner, ssaider, sigers in tsgs:
+            quadkeys = (serder.said, prefixer.qb64,
+                        f"{seqner.sn:032x}", ssaider.qb64)
             for siger in sigers:
                 self.hby.db.esigs.add(keys=quadkeys, val=siger)
         for cigar in cigars:
             self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
 
-        diger = Diger(qb64=serder.said)
+        exnDiger = Diger(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         if nests:
             self.hby.db.enst.pin(keys=(dig,),
                                  vals=[bytes(serializeParsedSubstream(nest)) for nest in nests])
         for texter in essrs:
             self.hby.db.essrs.add(keys=(dig,), val=texter)
+        for prefixer, number, diger in sourceSeals:
+            self.hby.db.ests.add(keys=(serder.said, prefixer.qb64),
+                                 val=(number, diger))
+
+        # Only behavior-approved non-sender endorsements enter this durable
+        # reverse index; sender authentication and escrow evidence do not.
+        # Add one Grant SAID entry under each accepted endorser AID.
+        for endorser in endorsers:
+            self.hby.db.eidx.add(keys=(endorser,), val=exnDiger)
         if pdig:
-            self.hby.db.erpy.pin(keys=(pdig,), val=diger)
+            self.hby.db.erpy.pin(keys=(pdig,), val=exnDiger)
 
         self.hby.db.exns.put(keys=(dig,), val=serder)
+        if escrowed:
+            self.hby.db.epse.rem(dig)
+            self.hby.db.epsd.rem(dig)
 
     def lead(self, hab, said):
         """ Determines is current member represented by hab is the lead of an exn message
@@ -682,21 +1102,27 @@ def serializeMessage(hby, said, framed=False):
     tsgs, cigars = verify(hby=hby, serder=exn)
     pathed = hby.db.epath.get(keys=(exn.said,))
     nests = hby.db.enst.get(keys=(exn.said,))
+    sourceSeals = []
+    for keys, (number, diger) in hby.db.ests.getTopItemIter(keys=(exn.said, "")):
+        _, pre = keys
+        sourceSeals.append(SealEvent(i=Prefixer(qb64=pre), s=number, d=diger))
 
     if exn.pvrsn.major >= Vrsn_2_0.major and not pathed:
         return messagize(serder=exn,
                          tsgs=tsgs or None,
                          cigars=cigars or None,
+                         bonds=sourceSeals or None,
                          nests=[bytearray(nest.encode("utf-8") if hasattr(nest, "encode") else nest)
                                 for nest in nests] or None,
                          framed=framed,
                          gvrsn=exn.gvrsn if exn.gvrsn else exn.pvrsn)
 
     aims = bytearray()
-    if tsgs or cigars:
+    if tsgs or cigars or sourceSeals:
         # Authenticator attachments via messagize; framed=True so we can append
         # pathed embeds after (pathed material is outside messagize support).
         full = messagize(exn, tsgs=tsgs or None, cigars=cigars or None,
+                         bonds=sourceSeals or None,
                          framed=True, gvrsn=Vrsn_1_0)
         aims.extend(full[exn.size:])
 
@@ -734,15 +1160,115 @@ def nesting(paths, acc, val):
         return acc
 
 
+def verifyAttachments(hby, serder, *, tsgs=None, cigars=None,
+                      sourceSeals=None):
+    """Cryptographically verify exchange authentication attachments.
+
+    Parameters:
+        hby (Habery): database environment with signer key state
+        serder (Serder): exchange message signed or sealed by the attachments
+        tsgs (list): transferable signature groups with establishment references
+        cigars (list): non-transferable signatures
+        sourceSeals (list): source seal triples
+
+    Returns:
+        tuple: Valid transferable signature groups, non-transferable signatures,
+            source seal triples, an invalid attachment flag, and missing KEL
+            coordinates.
+    """
+    tsgs = list(tsgs or [])
+    cigars = cigars or []
+    sourceSeals = sourceSeals or []
+    invalid = False
+    missing = []
+
+    validTsgs = []
+    for prefixer, number, diger, sigers in tsgs:
+        if not prefixer.transferable:
+            invalid = True
+            continue
+
+        sdig = hby.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
+        if sdig is None:
+            missing.append((prefixer, number))
+            continue
+
+        aserder = hby.db.evts.get(
+            keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
+        if aserder is None:
+            missing.append((prefixer, number))
+            continue
+
+        if sdig != diger.qb64 or not aserder.estive:
+            invalid = True
+            continue
+
+        try:
+            tholder, verfers = hby.db.resolveVerifiers(
+                pre=prefixer.qb64, sn=number.sn, dig=diger.qb64)
+        except ValidationError:
+            invalid = True
+            continue
+
+        vsigers, indices = verifySigs(serder.raw, sigers, verfers)
+        if not tholder.satisfy(indices):
+            invalid = True
+            continue
+
+        validTsgs.append((prefixer, number, diger, vsigers))
+
+    validCigars = []
+    for cigar in cigars:
+        if (cigar.verfer.transferable or
+                not cigar.verfer.verify(cigar.raw, serder.raw)):
+            invalid = True
+            continue
+
+        validCigars.append(cigar)
+
+    validSourceSeals = []
+    for prefixer, number, diger in sourceSeals:
+        if not prefixer.transferable:
+            invalid = True
+            continue
+
+        sdig = hby.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
+        if sdig is None:
+            missing.append((prefixer, number))
+            continue
+
+        aserder = hby.db.evts.get(
+            keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
+        if aserder is None:
+            missing.append((prefixer, number))
+            continue
+
+        if (sdig != diger.qb64 or
+                not any(isinstance(seal, dict) and
+                        seal.get("d") == serder.said
+                        for seal in aserder.seals or [])):
+            invalid = True
+            continue
+
+        validSourceSeals.append((prefixer, number, diger))
+
+    return validTsgs, validCigars, validSourceSeals, invalid, missing
+
+
 def verify(hby, serder):
-    """  Verify that the signatures in the database are valid for the provided exn
+    """Verify all stored authentication and evidence for an exchange message.
+
+    Any invalid stored attachment fails verification. Source seals are
+    verified but omitted from the legacy two-item return tuple;
+    ``serializeMessage`` reloads them for wire reconstruction.
 
     Parameters:
         hby (Habery): database environment from which to verify message
         serder (Serder): exn serder to load and verify signatures for
 
     Returns:
-        bool: True means threshold satisfyig signatures were loaded and verified successfully"""
+        tuple: Transferable signature groups and non-transferable signatures.
+    """
     tsgs = []
     klases = (Prefixer, Seqner, Saider)
     args = ("qb64", "snh", "qb64")
@@ -762,36 +1288,39 @@ def verify(hby, serder):
         prefixer, seqner, saider = helping.klasify(sers=old, klases=klases, args=args)
         tsgs.append((prefixer, seqner, saider, sigers))
 
-    accepted = False
-    for prefixer, seqner, ssaider, sigers in tsgs:
-        if prefixer.qb64 not in hby.kevers or hby.kevers[prefixer.qb64].sn < seqner.sn:
-            msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
-            logger.info(msg)
-            logger.debug("Exn Body=\n%s\n", serder.pretty())
-            raise MissingSignatureError(msg)
+    sourceSeals = []
+    for keys, (number, diger) in hby.db.ests.getTopItemIter(
+            keys=(serder.said, "")):
+        _, pre = keys
+        sourceSeals.append((Prefixer(qb64=pre), number, diger))
 
-        # Verify the signatures are valid and that the signature threshold as of the signing event is met
-        tholder, verfers = hby.db.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=ssaider.qb64)
-        _, indices = verifySigs(serder.raw, sigers, verfers)
+    cigars = []
+    for verfer, cigar in hby.db.ecigs.get(keys=(serder.said,)):
+        cigar.verfer = verfer
+        cigars.append(cigar)
 
-        if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
-            msg = f"Not enough signatures in idx={indices} for evt = {serder.said}"
-            logger.info(msg)
-            logger.debug("Exn Body=\n%s\n", serder.pretty())
-            raise MissingSignatureError(msg)
-        accepted = True
+    tsgs, cigars, sourceSeals, invalid, missing = verifyAttachments(
+        hby=hby,
+        serder=serder,
+        tsgs=tsgs,
+        cigars=cigars,
+        sourceSeals=sourceSeals,
+    )
+    if invalid or missing:
+        msg = f"Invalid stored authentication or evidence for evt = {serder.said}"
+        logger.info(msg)
+        logger.debug("Exn Body=\n%s\n", serder.pretty())
+        raise MissingSignatureError(msg)
 
-    cigars = hby.db.ecigs.get(keys=(serder.said,))
-    for cigar in cigars:
-        if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
-            msg = f"Failure satisfying exn on cigs for {cigar} for evt = {serder.said}"
-            logger.info(msg)
-            logger.debug("Exn Body=\n%s\n", serder.pretty())
-            raise MissingSignatureError(msg)
-        accepted = True
+    authenticated = any(prefixer.qb64 == serder.pre
+                        for prefixer, _, _, _ in tsgs)
+    authenticated |= any(cigar.verfer.qb64 == serder.pre
+                         for cigar in cigars)
+    authenticated |= any(prefixer.qb64 == serder.pre
+                         for prefixer, _, _ in sourceSeals)
 
-    if not accepted:
-        msg = f"No valid signatures stored for evt = {serder.said}"
+    if not authenticated:
+        msg = f"No valid sender authentication stored for evt = {serder.said}"
         logger.info(msg)
         logger.debug("Exn Body=\n%s\n", serder.pretty())
         raise MissingSignatureError(msg)
@@ -803,57 +1332,55 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
     """Serialize a parsed message subtree as a nested CESR substream."""
     parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
 
-    if any(parsed.get(name) for name in ("rsgs", "ptds", "essrs")):
-        raise ValueError("Unsupported attachments for nested substream serialization")
-
     serder = parsed["serder"]
     sigers = parsed.get("sigers") or None
     tsgs = parsed.get("tsgs") or None
     lsgs = parsed.get("lsgs") or None
-    if sigers and (tsgs or lsgs):
-        raise ValueError("Unsupported mixed signature groups for nested substream serialization")
-
     bonds = []
-    for name in ("sscs", "ssts", "tdcs"):
-        bonds.extend(parsed.get(name) or [])
-    # Parsed blind-state proof groups come back as plain tuples of primitive
-    # instances, but messagize() expects namedtuple bond records when it
-    # reserializes the nested node into storage.
-    bonds.extend(item if isinstance(item, BlindState) else BlindState(*item)
-                 for item in (parsed.get("bsqs") or []))
-    bonds.extend(item if isinstance(item, BoundState) else BoundState(*item)
-                 for item in (parsed.get("bsss") or []))
-    bonds.extend(parsed.get("tmqs") or [])
-    for item in parsed.get("frcs") or []:
-        bonds.append(item if isinstance(item, FirstSeen) else FirstSeen(*item))
+    # The parser returns tuples; messagize requires the corresponding bond clan.
+    for name, clan in (("sscs", SealSource), ("ssts", SealEvent),
+                       ("tdcs", SealKind), ("bsqs", BlindState),
+                       ("bsss", BoundState), ("tmqs", TypeMedia),
+                       ("frcs", FirstSeen)):
+        bonds.extend(item if isinstance(item, clan) else clan(*item)
+                     for item in (parsed.get(name) or []))
 
     wigers = parsed.get("wigers") or None
     cigars = parsed.get("cigars") or None
     nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
              for nest in (parsed.get("nests") or [])]
 
-    # Support bare nested artifacts, such as ACDCs carried inside IPEX messages.
-    # These have no signatures or attachment groups of their own, so rebuild the
-    # nested body-with-attachments wrapper directly from the parsed serder body.
-    if not (sigers or tsgs or lsgs or bonds or wigers or cigars or nests):
+    extra = bytearray()
+    for pathed in parsed.get("ptds") or []:
+        if sniff(pathed) == Colds.bny:
+            pathed = encodeB64(pathed)
+        extra.extend(Counter.enclose(qb64=pathed, code=Codens.PathedMaterialCouples,
+                                     version=gvrsn))
+    if parsed.get("essrs"):
+        extra.extend(Counter.enclose(qb64=b"".join(texter.qb64b for texter in parsed["essrs"]),
+                                     code=Codens.ESSRPayloadGroup, version=gvrsn))
+
+    # Build the wrapper directly when there is no authenticator for messagize.
+    if not (sigers or tsgs or lsgs or bonds or wigers or cigars):
         body = bytearray(serder.raw)
         if serder.kind != Kinds.cesr:
             body = Counter.enclose(qb64=Texter(raw=body).qb64b,
                                    code=Codens.NonNativeBodyGroup,
                                    version=gvrsn)
 
-        empty = Counter.enclose(qb64=b'',
-                                code=Codens.ControllerIdxSigs,
-                                version=gvrsn)
+        attachments = b"".join(nests) + extra
+        if not attachments:
+            attachments = Counter.enclose(qb64=b'', code=Codens.ControllerIdxSigs,
+                                          version=gvrsn)
         nested = bytearray(body)
-        nested.extend(Counter.enclose(qb64=empty,
+        nested.extend(Counter.enclose(qb64=attachments,
                                       code=Codens.AttachmentGroup,
                                       version=gvrsn))
         return Counter.enclose(qb64=nested,
                                code=Codens.BodyWithAttachmentGroup,
                                version=gvrsn)
 
-    return messagize(serder=serder,
+    msg = messagize(serder=serder,
                      sigers=sigers,
                      tsgs=tsgs,
                      lsgs=lsgs,
@@ -863,6 +1390,13 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
                      nests=nests or None,
                      nested=True,
                      gvrsn=gvrsn)
+    if extra:
+        # messagize omits pathed/ESSR groups; include them in the outer group's size.
+        Counter(qb64b=msg, strip=True, version=gvrsn)
+        msg.extend(extra)
+        msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup,
+                              version=gvrsn)
+    return msg
 
 
 def loadParsedNestedSubstreams(hby, said):

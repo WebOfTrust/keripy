@@ -2,12 +2,60 @@ name: WASM Tests
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'webbaser']
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  PYODIDE_VERSION: '314.0.5'
+
 jobs:
+  build-wheels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        id: python
+        with:
+          python-version: '3.14'
+      - name: Cache WASM dependency wheels
+        id: deps
+        uses: actions/cache@v6
+        with:
+          path: wheels/dependencies
+          key: wasm-deps-${{ runner.os }}-${{ runner.arch }}-${{ steps.python.outputs.python-version }}-${{
+            hashFiles('.github/workflows/wasm-ci.yml', 'tests/wasm/*.sh', 'tests/wasm/*.txt', 'tests/wasm/*.patch') }}
+      - name: Build WASM dependencies
+        if: steps.deps.outputs.cache-hit != 'true'
+        env:
+          PYODIDE_XBUILDENV_PATH: ${{ runner.temp }}/pyodide-xbuildenv
+          RUSTUP_TOOLCHAIN: 1.97.1
+        run: |
+          python -m pip install -r tests/wasm/build-requirements.txt
+          rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal --target wasm32-unknown-emscripten
+          pyodide xbuildenv install "$PYODIDE_VERSION"
+          pyodide xbuildenv install-emscripten --version 5.0.3
+          source "$PYODIDE_XBUILDENV_PATH/$PYODIDE_VERSION/emsdk/emsdk_env.sh"
+          export RUST_TOOLCHAIN="$RUSTUP_TOOLCHAIN"
+          bash tests/wasm/build-dependencies.sh
+      - name: Build Keripy from this checkout
+        run: |
+          python -m pip install -c tests/wasm/build-requirements.txt build setuptools wheel
+          python -m build --wheel --no-isolation --outdir wheels/current
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wasm-wheels
+          path: wheels/
+          if-no-files-found: error
+
   wasm-test:
+    needs: build-wheels
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -24,31 +72,26 @@ jobs:
             runner: selenium
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
+      - uses: actions/setup-node@v6
+        if: matrix.runtime == 'node'
+        with:
+          node-version: '26.12.0'
       - uses: pyodide/pyodide-actions/download-pyodide@v2
         with:
-          version: 314.0.5
+          version: ${{ env.PYODIDE_VERSION }}
           to: dist
       - name: Install test dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install \
-            playwright==1.61.0 \
-            pytest-pyodide==0.59.2 \
-            build==1.6.1 setuptools==83.0.0 wheel==0.47.0
-      - name: Prepare browser dependencies and current Keripy wheel
-        run: |
-          curl --fail --location --retry 3 \
-            https://github.com/keri-foundation/fortweb/releases/download/runtime-source-pyodide-314-hio-0.7.20-20260910/runtime-source.tar.gz \
-            --output runtime-source.tar.gz
-          echo '394db70ecbed6e5718e6ec0afbcb43eaf6384e2ab78218e55067ec9e5d83fb34  runtime-source.tar.gz' | sha256sum --check
-          mkdir -p wheels/dependencies
-          # Reuse dependency artifacts only. Test Keripy built from this checkout.
-          tar -xzf runtime-source.tar.gz -C wheels/dependencies \
-            --wildcards --exclude='wheelhouse/keri-*' 'wheelhouse/*.whl'
-          python -m build --wheel --no-isolation --outdir wheels/current
+          python -m pip install playwright==1.61.0 pytest==9.1.1 pytest-pyodide==0.60.0
+      - uses: actions/download-artifact@v8
+        with:
+          name: wasm-wheels
+          path: wheels/
       - name: Install Playwright browser
         if: matrix.runner == 'playwright'
         run: |
@@ -57,7 +100,7 @@ jobs:
           else
             python -m playwright install ${{ matrix.playwright_browser }}
           fi
-      - name: Run browser storage and Habery tests in Pyodide 314
+      - name: Run Keripy tests in Pyodide 314
         env:
           RUN_WASM_TESTS: "true"
         run: |

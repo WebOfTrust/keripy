@@ -406,52 +406,51 @@ def test_messagize_v1():
                     b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
                     b'QQkQkxI862_XjyZLHyClVTLoD')
 
-        # Test trans receipts rsgs and bonds FirstSeen serialized
+        # Test trans endorsements tsgs and bonds FirstSeen serialized
         bond = FirstSeen(f='0',
                          dt='2026-07-12T16:48:52.431388+00:00')
 
-        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+        tsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  Number(sn=0),
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, tsgs=tsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
-                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-'
-                    b'01T00:00:00.000000+00:00","r":"log","rr":"","q":{"i":"DAvCLRr5lu'
-                    b'Wmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-'
-                    b'DAzDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
-                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
-                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
-                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-'
-                    b'EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2026-07-12T16c48c52d431388p00c00')
+                b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
+                b'1QvrjI"}}-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAA'
+                b'AAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AA'
+                b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
+                b'QQkQkxI862_XjyZLHyClVTLoD-EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2026-07'
+                b'-12T16c48c52d431388p00c00')
 
-        # Test trans receipts rsgs and bonds FirstSeen matter primitives
+        # Test trans endorsements tsgs and bonds FirstSeen matter primitives
         bond = FirstSeen(f=Number(numh='0'),
                          dt=Dater(dts='2026-07-12T16:48:52.431388+00:00'))
 
-        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+        tsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  Number(sn=0),
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, tsgs=tsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
-                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-'
-                    b'01T00:00:00.000000+00:00","r":"log","rr":"","q":{"i":"DAvCLRr5lu'
-                    b'Wmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-'
-                    b'DAzDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
-                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
-                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
-                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-'
-                    b'EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2026-07-12T16c48c52d431388p00c00')
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
+                    b'1QvrjI"}}-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAA'
+                    b'AAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AA'
+                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
+                    b'QQkQkxI862_XjyZLHyClVTLoD-EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2026-07'
+                    b'-12T16c48c52d431388p00c00')
+
 
         """ Done Test """
 
 
 def _v1parse(msg):
     """Drive Parser.msgParsator over a single framed v1 message plus attachments
-    and return the extracted MsgParseDom (with .tsgs, .rsgs, .ssts, .sscs,
+    and return the extracted MsgParseDom (with .tsgs, .ssts, .sscs,
     .frcs, ...). Uses the v1 code table so it mimics a genuine keri 1.x parser.
     """
     parser = Parser(version=Vrsn_1_0)
@@ -500,15 +499,15 @@ def test_messagize_v1_seqner_ordinals():
         rpre, rnum, rdig, rsigers = exts.tsgs[0]
         assert (rpre.qb64, rnum.num, rdig.qb64) == (pre, 5, said)
 
-        # --- rsgs: TransReceiptIdxSigGroups ---
-        rsgs = [(Prefixer(qb64=pre), Number(sn=5), Diger(qb64=said), sigers)]
-        msg = messagize(serder, rsgs=rsgs, framed=False, gvrsn=Vrsn_1_0)
+        # --- tsgs: TransIdxSigGroups ---
+        tsgs = [(Prefixer(qb64=pre), Number(sn=5), Diger(qb64=said), sigers)]
+        msg = messagize(serder, tsgs=tsgs, framed=False, gvrsn=Vrsn_1_0)
         att = msg[serder.size:]
         assert seqner5 in att
         assert number5 not in att
         exts = _v1parse(msg)
-        assert len(exts.rsgs) == 1
-        assert (exts.rsgs[0][0].qb64, exts.rsgs[0][1].num, exts.rsgs[0][2].qb64) == (pre, 5, said)
+        assert len(exts.tsgs) == 1
+        assert (exts.tsgs[0][0].qb64, exts.tsgs[0][1].num, exts.tsgs[0][2].qb64) == (pre, 5, said)
 
         # --- bonds SealEvent (SealSourceTriples), serialization form ---
         seal = SealEvent(i=pre, s='5', d=said)
@@ -534,7 +533,7 @@ def test_messagize_v1_seqner_ordinals():
 
         # --- bonds FirstSeen (FirstSeenReplayCouples), serialization form ---
         bond = FirstSeen(f='5', dt='2026-07-12T16:48:52.431388+00:00')
-        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=False, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, tsgs=tsgs, bonds=[bond], framed=False, gvrsn=Vrsn_1_0)
         att = msg[serder.size:]
         assert seqner5 in att
         assert number5 not in att
@@ -1360,44 +1359,44 @@ def test_messagize_v2():
                     b'cIl0O7FeUnHN2P_aK-9U_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMA'
                     b'PDisFFvBcb6qEC')
 
-        # Test trans receipts rsgs and bonds FirstSeen serialized
+        # Test trans endorsements and bonds FirstSeen serialized
         bond = FirstSeen(f='0',
                          dt='2026-07-12T16:48:52.431388+00:00')
 
-        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+        tsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  Number(sn=0),
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_2_0)
-        assert msg == (b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
+        msg = messagize(serder, tsgs=tsgs, bonds=[bond], framed=True, gvrsn=Vrsn_2_0)
+        assert msg ==(b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
                     b'7nDN7Bv0ZExzez63lHZu3y","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","dt":"2021-01-01T00:00:00.000000+00:00","r":"log","rr'
-                    b'":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-N'
+                    b'":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-X'
                     b'AuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4'
                     b'cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-9U'
                     b'_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC-OAKMA'
                     b'AA1AAG2026-07-12T16c48c52d431388p00c00')
 
-        # Test trans receipts rsgs and bonds FirstSeen matter primitives
+
+        # Test trans idx and bonds FirstSeen matter primitives
         bond = FirstSeen(f=Number(numh='0'),
                          dt=Dater(dts='2026-07-12T16:48:52.431388+00:00'))
 
-        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+        tsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  Number(sn=0),
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, tsgs=tsgs, bonds=[bond], framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
                     b'7nDN7Bv0ZExzez63lHZu3y","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","dt":"2021-01-01T00:00:00.000000+00:00","r":"log","rr'
-                    b'":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-N'
+                    b'":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-X'
                     b'AuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4'
                     b'cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-9U'
                     b'_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC-OAKMA'
                     b'AA1AAG2026-07-12T16c48c52d431388p00c00')
-
 
 
         """ Done Test """

@@ -4,7 +4,9 @@ tests.wasm.test_webdbing_wasm module
 
 Browser storage tests run against the current Keripy wheel in Pyodide 314.
 """
+import json
 import os
+from itertools import batched
 from pathlib import Path
 
 import pytest
@@ -56,13 +58,26 @@ def selenium_keri(selenium):
     root = Path(__file__).resolve().parents[2]
     current = list((root / "wheels/current").glob("keri-*.whl"))
     assert len(current) == 1, "Build exactly one Keripy wheel from this checkout"
-    dependencies = sorted((root / "wheels/dependencies/wheelhouse").glob("*.whl"))
+    dependencies = sorted((root / "wheels/dependencies").glob("*.whl"))
     assert dependencies, "Prepare the pinned browser dependency wheels"
     assert not any(path.name.startswith("keri-") for path in dependencies)
     files = [(path, f"/wheels/{path.name}") for path in [*dependencies, *current]]
     files.append((root / "tests/db/test_webbasing.py", "/home/pyodide/webbasing_fixtures.py"))
-    copy_files_to_emscripten_fs(files, selenium, install_wheels=False)
+    # Keep parallel wheel downloads within the test server's listen backlog.
+    for batch in batched(files, 4):
+        copy_files_to_emscripten_fs(batch, selenium, install_wheels=False)
+    packages = json.loads((selenium.dist_dir / "pyodide-lock.json").read_bytes())["packages"]
+
+    def load_package(name):
+        for dependency in packages[name]["depends"]:
+            selenium.load_package(dependency)
+        selenium.load_package(name)
+
+    for package in ("micropip", "packaging", "jsonschema", "pyyaml", "sortedcontainers",
+                    "wcwidth", "cffi"):
+        load_package(package)
     install_keri(selenium)
+    load_package("pytest")
     return selenium
 
 
@@ -334,3 +349,36 @@ async def test_habery_reopen_signing_and_auth_cleanup(selenium_keri):
             await keeper.aclose(clear=True)
         finally:
             await baser.aclose(clear=True)
+
+
+@run_in_pyodide
+async def test_signed_ipex_apply(selenium_keri):
+    from unittest.mock import Mock
+
+    from keri import Vrsn_2_0, acdc
+    from keri.acdc import ipexing
+    from webbasing_fixtures import FakeStorageBackend, close_habery, open_habery
+
+    assert hasattr(acdc, "WebRegBaser")
+    hby = await open_habery(FakeStorageBackend(), "ipex-apply")
+    try:
+        sender = hby.makeHab(name="sender")
+        recipient = hby.makeHab(name="recipient")
+        notifier = Mock()
+        ipexing.loadHandlers(hby=hby, exc=hby.exc, notifier=notifier)
+
+        schema, _ = acdc.actSchemaDefault()
+        plan = [[[schema, "/", ["a/d"]]]]
+        xip, atc = ipexing.apply(hab=sender, recp=recipient.pre, message="Apply",
+                                 modifiers=dict(dp=plan))
+        hby.psr.parse(ims=bytearray(xip.raw) + atc, framed=False)
+
+        stored = hby.db.exns.get(keys=(xip.said,))
+        assert stored is not None
+        assert stored.pvrsn == Vrsn_2_0
+        assert stored.ked["ri"] == recipient.pre
+        assert stored.ked["q"]["dp"] == plan
+        notifier.add.assert_called_once_with(
+            attrs=dict(r="/xip/ipex/apply", d=xip.said, m="Apply"))
+    finally:
+        await close_habery(hby, clear=True)

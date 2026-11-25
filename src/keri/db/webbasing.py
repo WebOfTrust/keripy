@@ -20,7 +20,7 @@ from ..recording import (KeyStateRecord, EventSourceRecord,
                          LocationRecord, ObservedRecord,
                          CacheTypeRecord, TxnMsgCacheRecord,
                          MsgCacheRecord, WellKnownAuthN,
-                         TopicsRecord)
+                         TopicsRecord, ExchangeRegistryStateRecord)
 
 from ..kering import Version
 
@@ -54,16 +54,16 @@ class WebBaser(WebDBer, BaserBase):
             raise RuntimeError("WebBaser uses async open; use await reopen().")
 
         SubDbNames = ["aess.", "bsss.", "bsqs.", "ccigs.", "cdel.", "cfld.", "chas.",
-            "cgms.", "coobi.", "cons.", "ctyp.", "dees.", "dels.", "dpwe.", "dpub.",
-            "dtss.", "dune.", "eans.", "ecigs.", "ends.", "eoobi.", "epath.", "epse.",
-            "epsd.", "erpy.", "esigs.", "esrs.", "essrs.", "exns.", "enst.", "evts.", "fels.", "fons.",
+            "cgms.", "cigs.", "coobi.", "cons.", "ctyp.", "dees.", "dels.", "dpwe.", "dpub.",
+            "dtss.", "dune.", "eans.", "ecigs.", "eidx.", "emsd.", "emse.", "ends.", "eoobi.", "epath.", "epse.",
+            "epsd.", "erpy.", "esigs.", "esrs.", "essrs.", "ests.", "exns.", "exrs.", "enst.", "evts.", "fels.", "fons.",
             "frcs.", "gdee.", "gdwe.", "gpse.", "habs.", "hbys.", "iimgs.", "icigs.",
             "ifld.", "imgs.", "kels.", "kdts.", "knas.", "ksns.", "lans.", "ldes.",
             "locs.", "maids.", "meids.", "mfes.", "mfa.", "migs.", "moobi.", "msgc.",
             "names.", "obvs.", "oobis.", "ooes.", "pdes.", "pmkm.", "pmks.", "pmsk.",
             "pses.", "ptds.", "pwes.", "qnfs.", "rcts.", "reps.", "rpes.", "rmfa.",
             "roobi.", "rpys.", "scgs.", "schema.", "sdts.", "sids.", "sigs.", "sscs.",
-            "ssts.", "stts.", "tdcs.", "tmsc.", "tmqs.", "trqs.", "tsgs.", "udes.",
+            "ssts.", "stts.", "tdcs.", "tmsc.", "tmqs.", "trqs.", "tsgs.", "udes.", "ulgs.",
             "ures.", "uwes.", "vrcs.", "vres.", "vers.", "wigs.", "wits.", "wkas.",
             "witm.", "woobi.", "wwas.", "xdt."
         ]
@@ -273,6 +273,13 @@ class WebBaser(WebDBer, BaserBase):
         self.epsd = subing.CesrSuber(db=self, subkey="epsd.",
                                      klas=coring.Dater)
 
+        # exchange messages awaiting an ACDC schema
+        self.emse = subing.SerderSuber(db=self, subkey="emse.")
+
+        # exchange message missing-schema escrow deadline
+        self.emsd = subing.CesrSuber(db=self, subkey="emsd.",
+                                     klas=coring.Dater)
+
         # exchange messages
         self.exns = subing.SerderSuber(db=self, subkey="exns.")
 
@@ -293,6 +300,18 @@ class WebBaser(WebDBer, BaserBase):
         self.enst = subing.IoSetSuber(db=self, subkey="enst.")
 
         self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
+
+        # registry state authenticated for each node an accepted grant disclosed,
+        # keyed by (exchange SAID, node SAID); recorded for the application to judge
+        self.exrs = koming.Komer(db=self, subkey="exrs.",
+                                 klas=ExchangeRegistryStateRecord)
+
+        # resolved exchange source seals indexed by message and sealing AID
+        self.ests = subing.CatCesrIoSetSuber(db=self, subkey="ests.",
+                                             klas=(coring.Number, coring.Diger))
+
+        # reverse lookup from authenticated AIDs to accepted exchange messages
+        self.eidx = subing.CesrIoSetSuber(db=self, subkey="eidx.", klas=coring.Diger)
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
@@ -466,6 +485,14 @@ class WebBaser(WebDBer, BaserBase):
         self.kramTSGS = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
                                                   klas=(coring.Prefixer, coring.Number,
                                                         coring.Diger, indexing.Siger))
+
+        # ulgs: foreign last signature groups unresolved at receipt
+        self.kramULGS = subing.CesrIoSetSuber(db=self, subkey='ulgs.',
+                                             klas=coring.Prefixer)
+
+        # cigs: foreign nontransferable signatures (verfer, cigar)
+        self.kramCIGS = subing.CatCesrIoSetSuber(
+            db=self, subkey='cigs.', klas=(coring.Verfer, coring.Cigar))
 
         # sscs: first seen seal couples (number, diger) issuing or delegating
         self.kramSSCS = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
@@ -655,8 +682,8 @@ class WebBaser(WebDBer, BaserBase):
     async def clean(self, gvrsn=Version, *, version=None):
         """Clean database by replaying events into a fresh clone and swapping data.
 
-        As with native Baser.clean, KRAM replay caches and pending messages are
-        not preserved. Cleaning KRAM state requires a separate repair policy.
+        Preserve accepted exchange evidence and KRAM replay markers.
+        Discard cache types and partial messages as in Baser.clean.
         """
         if version is not None:
             gvrsn = version
@@ -683,6 +710,7 @@ class WebBaser(WebDBer, BaserBase):
                     "exns", "erpy", "kdts", "ksns", "knas", "oobis", "roobi",
                     "woobi", "moobi", "mfa", "rmfa", "cfld", "cons", "ccigs",
                     "cdel", "migs", "ifld", "sids", "icigs",
+                    "kramMSGC", "kramTMSC", "kramXDT",
                 ]
                 for name in unsecured:
                     srcdb = getattr(self, name, None)
@@ -692,16 +720,17 @@ class WebBaser(WebDBer, BaserBase):
                     for keys, val in srcdb.getTopItemIter():
                         cpydb.put(keys=keys, val=val)
 
-                sets = [
-                    "esigs", "ecigs", "epath", "enst", "chas", "reps", "wkas",
-                    "meids", "maids",
-                ]
+                evidence = ["esigs", "ecigs", "epath", "enst", "essrs", "ests"]
+                accepted = {said for (said,), _ in self.exns.getTopItemIter()}
+                sets = evidence + ["eidx", "chas", "reps", "wkas", "meids", "maids"]
                 for name in sets:
-                    srcdb = getattr(self, name, None)
-                    cpydb = getattr(copy, name, None)
-                    if srcdb is None or cpydb is None:
-                        continue
+                    srcdb = getattr(self, name)
+                    cpydb = getattr(copy, name)
                     for keys, val in srcdb.getTopItemIter():
+                        if name in evidence and keys[0] not in accepted:
+                            continue
+                        if name == "eidx" and val.qb64 not in accepted:
+                            continue
                         cpydb.add(keys=keys, val=val)
 
                 for keys, val in self.imgs.getTopItemIter():
