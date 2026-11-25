@@ -24,6 +24,8 @@ from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       setupWitness, createHttpServer, openHab, openHby,
                       ReceiptEnd, CESR_CONTENT_TYPE, CESR_DESTINATION_HEADER)
 from keri.app.httping import CESR_ATTACHMENT_HEADER
+from keri.app.indirecting import Poller, makeMailboxQuery
+from keri.recording import TopicsRecord
 
 
 
@@ -487,6 +489,45 @@ def test_query_end_reuses_injected_reger():
 
     qe = QueryEnd(hab=mock_hab, reger=mock_reger)
     assert qe.reger is mock_reger
+
+
+def test_poller_mailbox_query_builds_at_the_default_version():
+    """A mailbox qry's topics map is keyed by routes such as '/receipt', which are not valid
+    strict native-CESR labels. At the default version, with no kind given, the Poller must
+    still build the query (as JSON) rather than fail to serialize it, which stopped kli
+    rotate and interact before they reached any witness. A non-native kind is honoured; a
+    native CESR kind, which cannot carry the map, falls back to JSON too."""
+    with openHby(name="poller-default") as hby:
+        hab = hby.makeHab(name="ctl")
+        poller = Poller(hab=hab, witness=hab.pre, topics=["/receipt", "/replay", "/reply"])
+
+        msg = poller.makeQuery(TopicsRecord(topics={"/receipt": 3}))
+
+        serder = SerderKERI(raw=bytearray(msg))
+        assert serder.ilk == Ilks.qry
+        assert serder.kind == Kinds.json
+        assert serder.ked["q"]["topics"] == {"/receipt": 4, "/replay": 0, "/reply": 0}
+
+        poller = Poller(hab=hab, witness=hab.pre, topics=["/receipt"], kind=Kinds.mgpk)
+        assert SerderKERI(raw=bytearray(poller.makeQuery(TopicsRecord(topics={})))).kind \
+               == Kinds.mgpk
+
+        poller = Poller(hab=hab, witness=hab.pre, topics=["/receipt"], kind=Kinds.cesr)
+        assert SerderKERI(raw=bytearray(poller.makeQuery(TopicsRecord(topics={})))).kind \
+               == Kinds.json
+
+
+def test_make_mailbox_query_is_shared_by_kli_mailbox_debug():
+    """kli mailbox debug builds the same query as the Poller, through the same function."""
+    with openHby(name="mbx-debug") as hby:
+        hab = hby.makeHab(name="ctl")
+
+        msg = makeMailboxQuery(hab=hab, witness=hab.pre, topics={"/receipt": 0})
+
+        serder = SerderKERI(raw=bytearray(msg))
+        assert serder.kind == Kinds.json
+        assert serder.ked["q"]["pre"] == hab.pre
+        assert serder.ked["q"]["topics"] == {"/receipt": 0}
 
 
 if __name__ == "__main__":
