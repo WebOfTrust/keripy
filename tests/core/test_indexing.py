@@ -40,6 +40,12 @@ def test_indexer_class():
         'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Sig': '3A',
         'Ed448_Big_Crt_Sig': '3B',
+        'ML_DSA_65_Big_Sig': '3C',
+        'ML_DSA_65_Big_Crt_Sig': '3D',
+        'ML_DSA_44_Big_Sig': '8A',
+        'ML_DSA_44_Big_Crt_Sig': '8B',
+        'ML_DSA_87_Big_Sig': '9A',
+        'ML_DSA_87_Big_Crt_Sig': '9B',
         'TBD0': '0z',
         'TBD1': '1z',
         'TBD4': '4z',
@@ -63,6 +69,12 @@ def test_indexer_class():
         '2F': 'ECDSA_256r1_Big_Crt_Sig',
         '3A': 'Ed448_Big_Sig',
         '3B': 'Ed448_Big_Crt_Sig',
+        '3C': 'ML_DSA_65_Big_Sig',
+        '3D': 'ML_DSA_65_Big_Crt_Sig',
+        '8A': 'ML_DSA_44_Big_Sig',
+        '8B': 'ML_DSA_44_Big_Crt_Sig',
+        '9A': 'ML_DSA_87_Big_Sig',
+        '9B': 'ML_DSA_87_Big_Crt_Sig',
         '0z': 'TBD0',
         '1z': 'TBD1',
         '4z': 'TBD4'
@@ -106,6 +118,12 @@ def test_indexer_class():
         'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Sig': '3A',
         'Ed448_Big_Crt_Sig': '3B',
+        'ML_DSA_65_Big_Sig': '3C',
+        'ML_DSA_65_Big_Crt_Sig': '3D',
+        'ML_DSA_44_Big_Sig': '8A',
+        'ML_DSA_44_Big_Crt_Sig': '8B',
+        'ML_DSA_87_Big_Sig': '9A',
+        'ML_DSA_87_Big_Crt_Sig': '9B',
     }
 
     assert IdxSigDex.Ed25519_Sig == 'A'
@@ -135,6 +153,9 @@ def test_indexer_class():
         'ECDSA_256k1_Big_Crt_Sig': '2D',
         'ECDSA_256r1_Big_Crt_Sig': '2F',
         'Ed448_Big_Crt_Sig': '3B',
+        'ML_DSA_65_Big_Crt_Sig': '3D',
+        'ML_DSA_44_Big_Crt_Sig': '8B',
+        'ML_DSA_87_Big_Crt_Sig': '9B',
     }
 
     assert IdxCrtSigDex.Ed25519_Crt_Sig == 'B'
@@ -156,6 +177,9 @@ def test_indexer_class():
         'ECDSA_256k1_Big_Sig': '2C',
         'ECDSA_256r1_Big_Sig': '2E',
         'Ed448_Big_Sig': '3A',
+        'ML_DSA_65_Big_Sig': '3C',
+        'ML_DSA_44_Big_Sig': '8A',
+        'ML_DSA_87_Big_Sig': '9A',
     }
 
     assert IdxBthSigDex.Ed25519_Sig == 'A'
@@ -176,7 +200,7 @@ def test_indexer_class():
         'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
         'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
         's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
-        '0': 2, '1': 2, '2': 2, '3': 2, '4': 2,
+        '0': 2, '1': 2, '2': 2, '3': 2, '4': 2, '8': 2, '9': 2,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
@@ -197,6 +221,12 @@ def test_indexer_class():
         '2F': Xizage(hs=2, ss=4, os=2, fs=92, ls=0),
         '3A': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
         '3B': Xizage(hs=2, ss=6, os=3, fs=160, ls=0),
+        '3C': Xizage(hs=2, ss=6, os=3, fs=4420, ls=0),
+        '3D': Xizage(hs=2, ss=6, os=3, fs=4420, ls=0),
+        '8A': Xizage(hs=2, ss=6, os=3, fs=3236, ls=1),
+        '8B': Xizage(hs=2, ss=6, os=3, fs=3236, ls=1),
+        '9A': Xizage(hs=2, ss=6, os=3, fs=6180, ls=2),
+        '9B': Xizage(hs=2, ss=6, os=3, fs=6180, ls=2),
         '0z': Xizage(hs=2, ss=2, os=0, fs=None, ls=0),
         '1z': Xizage(hs=2, ss=2, os=1, fs=76, ls=1),
         '4z': Xizage(hs=2, ss=6, os=3, fs=80, ls=1),
@@ -800,3 +830,19 @@ if __name__ == "__main__":
     test_indexer_class()
     test_indexer()
     test_siger()
+
+
+def test_indexer_lead_bytes_are_not_raw():
+    """A code with lead bytes carries them between code and raw. They are padding, so the
+    raw size excludes them and a round trip returns exactly the raw that went in."""
+    import os
+    for code, ondex in ((IdrDex.TBD1, 3), (IdrDex.TBD4, 9)):
+        hs, ss, os_, fs, ls = Indexer.Sizes[code]
+        assert ls == 1
+        rawsize = Indexer._rawSize(code)
+        assert (rawsize + ls) * 4 // 3 == fs - (hs + ss)
+        raw = os.urandom(rawsize)
+        idx = Indexer(raw=raw, code=code, index=5, ondex=ondex)
+        assert len(idx.qb64) == fs
+        assert Indexer(qb64=idx.qb64).raw == raw
+        assert Indexer(qb2=idx.qb2).raw == raw
