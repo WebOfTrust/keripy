@@ -614,9 +614,9 @@ class WitnessPublisher(doing.DoDoer):
             msgs (Deck): incoming messages to publish to witnesses
             cues (Deck): outgoing cues of successful messages"""
         self.hby = hby
-        self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.witers = []
         super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
     def sendDo(self, tymth=None, tock=0.0, **opts):
@@ -630,7 +630,6 @@ class WitnessPublisher(doing.DoDoer):
         while True:
             while self.msgs:
                 evt = self.msgs.popleft()
-                self.posted += 1
                 pre = evt["pre"]
                 msg = evt["msg"]
 
@@ -640,21 +639,21 @@ class WitnessPublisher(doing.DoDoer):
                 hab = self.hby.habs[pre]
                 wits = hab.kever.wits
 
-                witers = []
                 for wit in wits:
                     witer = messenger(hab, wit)
-                    witers.append(witer)
+                    self.witers.append(witer)
                     witer.msgs.append(bytearray(msg))  # make a copy so everyone munges their own
                     self.extend([witer])
 
                     _ = (yield self.tock)
 
-                while witers:
-                    witer = witers.pop()
-                    while not witer.idle:
-                        _ = (yield self.tock)
-
-                self.remove(witers)
+                while self.witers:
+                    for witer in self.witers.copy():
+                        if witer.idle:
+                            self.remove([witer])
+                            self.witers.remove(witer)
+                    if self.witers:
+                        yield self.tock
                 self.cues.push(evt)
 
                 yield self.tock
@@ -678,7 +677,7 @@ class WitnessPublisher(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.msgs) == 0 and self.posted == len(self.cues)
+        return not self.msgs and not self.witers
 
 
 class TCPMessenger(doing.DoDoer):
@@ -697,7 +696,7 @@ class TCPMessenger(doing.DoDoer):
         self.wit = wit
         self.url = url
         self.version = self.hab.psr.version
-        self.posted = 0
+        self.messageInProgress = False
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -733,7 +732,7 @@ class TCPMessenger(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.posted += 1
+            self.messageInProgress = True
 
             client.tx(msg)  # send to connected remote
 
@@ -741,6 +740,7 @@ class TCPMessenger(doing.DoDoer):
                 yield self.tock
 
             self.sent.append(msg)
+            self.messageInProgress = False
             yield self.tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -749,7 +749,8 @@ class TCPMessenger(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.sent) == self.posted
+        """Whether all queued messages have finished sending."""
+        return not self.msgs and not self.messageInProgress
 
 
 class TCPStreamMessenger(doing.DoDoer):
@@ -768,7 +769,7 @@ class TCPStreamMessenger(doing.DoDoer):
         self.wit = wit
         self.url = url
         self.version = self.hab.psr.version
-        self.posted = 0
+        self.messageInProgress = False
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -806,7 +807,7 @@ class TCPStreamMessenger(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-            self.posted += 1
+            self.messageInProgress = True
 
             client.tx(msg)  # send to connected remote
 
@@ -814,6 +815,7 @@ class TCPStreamMessenger(doing.DoDoer):
                 yield self.tock
 
             self.sent.append(msg)
+            self.messageInProgress = False
             yield self.tock
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -822,7 +824,8 @@ class TCPStreamMessenger(doing.DoDoer):
 
     @property
     def idle(self):
-        return len(self.sent) == self.posted
+        """Whether all queued messages have finished sending."""
+        return not self.msgs and not self.messageInProgress
 
 
 class HTTPMessenger(doing.DoDoer):
@@ -840,7 +843,7 @@ class HTTPMessenger(doing.DoDoer):
             auth (str | None): optional 2FA auth codes for witnesses."""
         self.hab = hab
         self.wit = wit
-        self.posted = 0
+        self.pending = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
@@ -879,9 +882,9 @@ class HTTPMessenger(doing.DoDoer):
                                 "Content-Length": len(msg),
                                 CESR_DESTINATION_HEADER: self.wit})
                 self.client.request(method="PUT", path="/", headers=headers, body=bytes(msg))
-                self.posted += 1
+                self.pending += 1
             else:
-                self.posted += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
+                self.pending += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
                 yield self.tock
 
@@ -897,12 +900,14 @@ class HTTPMessenger(doing.DoDoer):
             while self.client.responses:
                 rep = self.client.respond()
                 self.sent.append(rep)
+                self.pending -= 1
                 yield
             yield
 
     @property
     def idle(self):
-        return len(self.msgs) == 0 and self.posted == len(self.sent)
+        """Whether all queued requests have received responses."""
+        return not self.msgs and self.pending == 0
 
 
 class HTTPStreamMessenger(doing.DoDoer):

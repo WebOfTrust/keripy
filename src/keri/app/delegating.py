@@ -237,7 +237,7 @@ class Anchorer(doing.DoDoer):
 
             publisher = self.publishers[pre]
 
-            if not publisher.idle:
+            if not publisher.idle or not publisher.cues:
                 continue
 
             self.remove([publisher])
