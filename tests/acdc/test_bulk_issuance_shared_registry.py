@@ -117,6 +117,7 @@ from keri.core import Salter, Noncer, Aggor, Mapper, Diger, Verfer, exchange
 from keri.core.coring import MtrDex, NonceDex
 from keri.core.eventing import incept
 from keri.acdc import regcept, blindate, acdcmap, acdcagg
+from keri.acdc.bulking import BulkDeriver, makeCommitment, verifyMembership
 from keri.core.structing import Blinder
 
 
@@ -161,131 +162,6 @@ BULK_SALT = b'bulkworkexamsalt'
 BULK_SIZE = 5
 
 
-def _hx(index):
-    """Render a derivation-path index as LOWERCASE HEX with no leading zeros.
-
-    Every index that becomes part of an HD derivation path goes through here. ACDC spec
-    15.4 currently says a bulk-issuance path index is "the decimal or hexadecimal textual
-    representation" of the index, which is an either/or that no implementation can honor:
-    the two renderings agree only for indices 0-9 and diverge from 10 onward ("10" vs
-    "a"), so two conformant implementations derive different nonces, different SAIDs and
-    different registries for every copy from the tenth. Hex is what KERI's HD paths
-    actually use everywhere -- Salter.signers (src/keri/core/signing.py:484), SaltyCreator
-    (src/keri/app/keeping.py:542,544) and Blinder.makeUUID via Number.snh
-    (src/keri/core/structing.py:1479) all render "{:x}", as does signify-ts
-    (src/keri/core/manager.ts:296) -- and it is what both specs already say for this same
-    object in prose (KERI spec L1914 / ACDC spec L3328: "the hex representation of the
-    count offset"). Sam's keripy discussion #929, the rationale for the separator-free
-    salty path, states the premise as "hex strings with no zero pre-padding" and builds
-    its whole proof on it.
-
-    This example previously rendered indices in decimal. That was not merely a latent
-    disagreement: the age credential's edge blocks sit at nested slots 20 and 21, which
-    decimal renders "20"/"21" and hex renders "14"/"15", so the divergence was already
-    live and every SAID below moved when it was corrected. Pinning the rendering in the
-    spec is proposed in trustoverip/kswg-acdc-specification#204.
-    """
-    return f"{index:x}" if isinstance(index, int) else index
-
-
-class _BulkNonces:
-    """Deterministic per-copy nonce derivation for a bulk-issued set (ACDC,
-    Bulk-issued Private ACDCs > Basic Bulk Issuance Procedure).
-
-    Every nonce for every copy is derived from ONE shared secret salt by argon2id
-    (Salter.stretch) at a hierarchical path keyed on the copy index k, then wrapped as a
-    256-bit salty nonce (Noncer). Every index in a path is lowercase hex, no leading
-    zeros (see _hx):
-
-        path "k"    -> copy k's top-level ACDC uuid  u_k
-        path "k/j"  -> copy k's nested block j uuid   (attribute section j=0, blocks j>=1)
-        path "k."   -> copy k's BLINDING factor       v_k  (distinct from every u)
-
-    The Issuer ships only (salt, template with empty u/d); the Issuee regenerates any
-    copy on demand and stores neither the copies nor the nonces. temp=True selects the
-    fast (test-only) argon2 parameters, matching how the sibling examples derive nonces.
-    """
-
-    def __init__(self, salt_raw):
-        self._salter = Salter(raw=salt_raw)
-
-    def _nonce(self, path):
-        return Noncer(raw=self._salter.stretch(size=32, path=path, temp=True),
-                      code=NonceDex.Salt_256).qb64
-
-    def u(self, k, j=None):
-        """Copy k's uuid: the top-level ACDC uuid (j is None) or nested block j's uuid."""
-        return self._nonce(_hx(k) if j is None else f"{_hx(k)}/{_hx(j)}")
-
-    def v(self, k):
-        """Copy k's blinding factor v_k, derived at the path "k.".
-
-        The specification pins this path. ACDC (Bulk-issued Private ACDCs > Basic
-        Bulk Issuance Procedure) requires v_k to be derived at a path distinct from
-        the top-level u_k's path "k", and names it: "The derivation path for v_k
-        from the shared secret salt is therefore `k.`". That section is still in the
-        Annex, so it is not yet normative; kswg-acdc-specification#207 proposes
-        moving it out.
-
-        HISTORY (ACDC review panel SPC-F1, 2026-07-23). The specification used to
-        give both u_k and v_k the path "k" while also requiring v_k to be "an
-        entirely different UUID". Since Salter.stretch is a pure function of
-        (salt, path), a literal reading yielded v_k == u_k and contradicted that
-        requirement. This example derived v_k at the distinct path "k." to resolve
-        it, and flagged the ambiguity as a cross-verification hazard; the spec was
-        then corrected to pin that same path, so what was a keripy-local convention
-        is now what the specification says.
-        """
-        return self._nonce(f"{_hx(k)}.")
-
-
-def _blind_said(v, d):
-    """b_k = H(v_k + d_k): the blinded commitment to copy k's SAID (ACDC,
-    Bulk-issued Private ACDCs > Basic Bulk Issuance Procedure).
-
-    Concatenation (not XOR) because CESR crypto-agility means SAIDs and nonces are
-    variable length. A commitment to b_k discloses nothing about d_k until v_k is
-    revealed, so the list of b_k can be published while the SAIDs stay hidden.
-
-    SPEC-FIDELITY / INTEROP NOTE (panel SPC-F2). ACDC (Bulk-issued Private ACDCs >
-    Basic Bulk Issuance Procedure), where b_k and B are defined, pins
-    concatenation-over-XOR and the ordered structure but does NOT pin (a) which digest
-    code H uses nor (b) whether the concatenation "+" / C is over qb64 TEXT or raw
-    bytes -- both change b_k and B. This example pins the concrete choice: concatenate
-    the qb64 TEXT of v_k and d_k and digest with Blake3-256 (the Diger default). A
-    signify-ts impl that concatenated raw bytes or used another digest code would not
-    cross-verify. kswg-acdc-specification#204 proposes pinning both and is still open,
-    so this remains a keripy-local choice.
-    """
-    return Diger(ser=(v + d).encode()).qb64
-
-
-def _bulk_aggregate(vs, ds):
-    """Return (blist, B): the ordered blinded-SAID list and the aggregate B = H(C(b_k)).
-
-    B is the blinded issuance-proof digest: a single value committing to every member of
-    the set. The Issuer anchors ONE commitment to B (a KEL seal, or the td of a shared
-    blindable TEL -- Phase 2) to cover the whole set.
-    """
-    blist = [_blind_said(v, d) for v, d in zip(vs, ds)]
-    B = Diger(ser="".join(blist).encode()).qb64
-    return blist, B
-
-
-def _verify_membership(d, v, blist, B):
-    """The verifier's per-copy membership check (ACDC, Bulk-issued Private ACDCs >
-    Basic Bulk Issuance Procedure).
-
-    Given the disclosed copy SAID d_k, its blinding factor v_k, the published blinded
-    list [b_k], and the committed aggregate B, confirm (1) the list commits to B
-    (recompute B over the list) and (2) copy k is a member (b_k = H(v_k + d_k) is in the
-    list). Learns nothing about any other member. Returns True only if both hold.
-    """
-    if Diger(ser="".join(blist).encode()).qb64 != B:   # the list must commit to B
-        return False
-    return _blind_said(v, d) in blist                  # this copy is a member
-
-
 def test_bulk_derivation_primitive_JSON():
     """Phase 1: derive a bulk set's per-copy nonces and its blinded aggregate 'B'.
 
@@ -304,7 +180,7 @@ def test_bulk_derivation_primitive_JSON():
     verifies as a member; and a wrong blinding factor, a non-member SAID, a tampered
     list, or a wrong B all fail.
     """
-    nonces = _BulkNonces(BULK_SALT)
+    nonces = BulkDeriver(BULK_SALT, temp=True)
     M = BULK_SIZE
 
     # Per-copy top-level uuids and blinding factors, all from one salt.
@@ -313,8 +189,8 @@ def test_bulk_derivation_primitive_JSON():
 
     # Determinism: same salt + index regenerates the identical nonce (Issuer and Issuee
     # each regenerate the set independently -- neither stores it).
-    assert [_BulkNonces(BULK_SALT).u(k) for k in range(M)] == us
-    assert [_BulkNonces(BULK_SALT).v(k) for k in range(M)] == vs
+    assert [BulkDeriver(BULK_SALT, temp=True).u(k) for k in range(M)] == us
+    assert [BulkDeriver(BULK_SALT, temp=True).v(k) for k in range(M)] == vs
 
     # The path index rendering is LOWERCASE HEX, no leading zeros -- pinned by assertion
     # rather than left to the coincidence that indices 0-9 render identically in both
@@ -331,7 +207,6 @@ def test_bulk_derivation_primitive_JSON():
     assert nonces.u(10) != _at("10")
     assert nonces.u(1, 20) == _at("1/14")            # the age edge slots, already >9
     assert nonces.v(255) == _at("ff.")
-    assert _hx(0) == "0" and _hx(15) == "f" and _hx(16) == "10"   # no padding, lowercase
     # Uniqueness: every u_k distinct, every v_k distinct, and the blinding path "k."
     # never collides with the uuid path "k" -- the u and v spaces are disjoint.
     assert len(set(us)) == M and len(set(vs)) == M
@@ -341,24 +216,24 @@ def test_bulk_derivation_primitive_JSON():
     # is identical whatever produced d_k.
     ds = [Diger(ser=(us[k] + f"copy{k}").encode()).qb64 for k in range(M)]
 
-    blist, B = _bulk_aggregate(vs, ds)
+    blist, B = makeCommitment(vs, ds)
     # B is a stable, order-dependent commitment to every member.
-    assert _bulk_aggregate(vs, ds) == (blist, B)
+    assert makeCommitment(vs, ds) == (blist, B)
     # Publishing the blinded list leaks NO SAID: no d_k appears anywhere in it.
     joined = "".join(blist)
     assert all(d not in joined for d in ds)
 
     # Membership: each real copy verifies against the committed set...
     for k in range(M):
-        assert _verify_membership(ds[k], vs[k], blist, B)
+        assert verifyMembership(ds[k], vs[k], blist, B)
     # ...a wrong blinding factor (v of another copy) fails...
-    assert not _verify_membership(ds[0], vs[1], blist, B)
+    assert not verifyMembership(ds[0], vs[1], blist, B)
     # ...a non-member SAID fails...
-    assert not _verify_membership(Diger(ser=b'not-a-member').qb64, vs[0], blist, B)
+    assert not verifyMembership(Diger(ser=b'not-a-member').qb64, vs[0], blist, B)
     # ...a tampered published list fails (recomputed B no longer matches)...
-    assert not _verify_membership(ds[0], vs[0], [Diger(ser=b'x').qb64] + blist[1:], B)
+    assert not verifyMembership(ds[0], vs[0], [Diger(ser=b'x').qb64] + list(blist[1:]), B)
     # ...and a wrong committed B fails.
-    assert not _verify_membership(ds[0], vs[0], blist, Diger(ser=b'wrong-B').qb64)
+    assert not verifyMembership(ds[0], vs[0], blist, Diger(ser=b'wrong-B').qb64)
 
 
 # ===========================================================================
@@ -510,7 +385,7 @@ def _sedi_id_set(kind, nonces=None):
     dependency: copies bind rd, B is computed over the copy SAIDs, then the bup commits B.
     """
     if nonces is None:
-        nonces = _BulkNonces(BULK_SALT)
+        nonces = BulkDeriver(BULK_SALT, temp=True)
     reg = regcept(israid=STATE, uuid=REG_ID_UUID, stamp=REG_ID_STAMP, kind=kind)
     _, schema = _saidify_schema(dict(SEDI_SCHEMA_MAD), kind=kind)
     copies = [acdcmap(israid=STATE, uuid=nonces.u(k), regid=reg.said, schema=schema,
@@ -518,7 +393,7 @@ def _sedi_id_set(kind, nonces=None):
               for k in range(BULK_SIZE)]
     vs = [nonces.v(k) for k in range(BULK_SIZE)]
     ds = [c.said for c in copies]
-    blist, B = _bulk_aggregate(vs, ds)
+    blist, B = makeCommitment(vs, ds)
     # The single issuance-proof commitment to B (ACDC, Bulk-issued Private ACDCs >
     # Basic Bulk Issuance Procedure): a blindable update whose
     # blinded state binds "this set (identified by B) is issued". Reuses the existing
@@ -548,7 +423,7 @@ def test_bulk_sedi_id_set_JSON():
     salt-holder can unblind it to 'issued'.
     """
     kind = Kinds.json
-    nonces = _BulkNonces(BULK_SALT)
+    nonces = BulkDeriver(BULK_SALT, temp=True)
     reg, copies, blist, B, issued = _sedi_id_set(kind, nonces)
 
     assert len(copies) == BULK_SIZE
@@ -574,8 +449,8 @@ def test_bulk_sedi_id_set_JSON():
 
     # Membership: each copy verifies against the committed B_id; an outsider fails.
     for k, copy in enumerate(copies):
-        assert _verify_membership(copy.said, nonces.v(k), blist, B)
-    assert not _verify_membership(Diger(ser=b'outsider').qb64, nonces.v(0), blist, B)
+        assert verifyMembership(copy.said, nonces.v(k), blist, B)
+    assert not verifyMembership(Diger(ser=b'outsider').qb64, nonces.v(0), blist, B)
 
     # The shared registry commits the whole set as 'issued' via a blindable update; the
     # state word and the aggregate B never appear on the wire, yet the salt-holder unblinds.
@@ -722,7 +597,7 @@ def _sedi_age_set(kind, idCopies, nonces=None):
     blindable registry commits the set (B_age) as issued.
     """
     if nonces is None:
-        nonces = _BulkNonces(BULK_AGE_SALT)
+        nonces = BulkDeriver(BULK_AGE_SALT, temp=True)
     reg = regcept(israid=STATE, uuid=REG_AGE_UUID, stamp=REG_AGE_STAMP, kind=kind)
     _, schema = _saidify_schema(dict(AGE_SCHEMA_MAD), kind=kind)
     copies, aggors = [], []
@@ -738,7 +613,7 @@ def _sedi_age_set(kind, idCopies, nonces=None):
         aggors.append(aggor)
     vs = [nonces.v(k) for k in range(BULK_SIZE)]
     ds = [c.said for c in copies]
-    blist, B = _bulk_aggregate(vs, ds)
+    blist, B = makeCommitment(vs, ds)
     blinder = Blinder.blind(acdc=B, state='issued', salt=BULK_AGE_REG_SALT, sn=1)
     issued = blindate(regid=reg.said, prior=reg.said, blid=blinder.said, sn=1,
                       stamp=ISSUE_AGE_STAMP, kind=kind)
@@ -763,9 +638,9 @@ def test_bulk_sedi_age_set_JSON():
     two sets share the holder AID per index but nothing else (different SAIDs, registries).
     """
     kind = Kinds.json
-    idNonces = _BulkNonces(BULK_SALT)
+    idNonces = BulkDeriver(BULK_SALT, temp=True)
     idReg, idCopies, _, _, _ = _sedi_id_set(kind, idNonces)
-    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageNonces = BulkDeriver(BULK_AGE_SALT, temp=True)
     ageReg, ageCopies, ageAggors, blistAge, Bage, issuedAge = _sedi_age_set(
         kind, idCopies, ageNonces)
 
@@ -800,7 +675,7 @@ def test_bulk_sedi_age_set_JSON():
     # Distinct across copies; each verifies as a member of the committed B_age.
     assert len({a.said for a in ageCopies}) == BULK_SIZE
     for k, age in enumerate(ageCopies):
-        assert _verify_membership(age.said, ageNonces.v(k), blistAge, Bage)
+        assert verifyMembership(age.said, ageNonces.v(k), blistAge, Bage)
 
     # Pinned reproducible values (derived, not pasted).
     assert ageReg.said == "EEoc-CPP2nh8RoNYLL1fLKDYogKM9N2aKhuOwvk_qTiv"   # shared age registry
@@ -901,7 +776,7 @@ def _presentation(kind, verifier, idCopies, ageCopies, nonces=None, compactify=F
     is the issuee of both sources. Fresh per presentation, not registry-bound.
     """
     if nonces is None:
-        nonces = _BulkNonces(PRESENT_SALT)
+        nonces = BulkDeriver(PRESENT_SALT, temp=True)
     k = _copy_index_for(verifier)
     _, schema = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
     attribute = dict(d='', u=nonces.u(k, _P_ATTR), i=verifier,
@@ -960,11 +835,11 @@ def test_partition_across_verifiers_JSON():
     out no one.
     """
     kind = Kinds.json
-    idNonces = _BulkNonces(BULK_SALT)
+    idNonces = BulkDeriver(BULK_SALT, temp=True)
     idReg, idCopies, _, Bid, _ = _sedi_id_set(kind, idNonces)
-    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageNonces = BulkDeriver(BULK_AGE_SALT, temp=True)
     ageReg, ageCopies, ageAggors, _, Bage, _ = _sedi_age_set(kind, idCopies, ageNonces)
-    presNonces = _BulkNonces(PRESENT_SALT)
+    presNonces = BulkDeriver(PRESENT_SALT, temp=True)
 
     # Two disparate verifiers; the wallet maps them to distinct copy indices.
     v1, v2 = ALCOVE, DISPENSARY
@@ -1071,12 +946,12 @@ def test_disclosure_gating_and_revocation_JSON():
     credential graph still binds.
     """
     kind = Kinds.json
-    idNonces = _BulkNonces(BULK_SALT)
+    idNonces = BulkDeriver(BULK_SALT, temp=True)
     idReg, idCopies, idBlist, Bid, idIssued = _sedi_id_set(kind, idNonces)
-    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageNonces = BulkDeriver(BULK_AGE_SALT, temp=True)
     ageReg, ageCopies, ageAggors, ageBlist, Bage, ageIssued = _sedi_age_set(
         kind, idCopies, ageNonces)
-    presNonces = _BulkNonces(PRESENT_SALT)
+    presNonces = BulkDeriver(PRESENT_SALT, temp=True)
 
     verifier = ALCOVE
     k = _copy_index_for(verifier)
@@ -1203,7 +1078,7 @@ def test_disclosure_gating_and_revocation_JSON():
     granted = grant.sad['a']['acdc']
     assert granted['e']['age']['n'] == ageCopies[k].said        # edge -> the disclosed source
     assert granted['e']['identity']['n'] == idCopies[k].said
-    assert _verify_membership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
+    assert verifyMembership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
     assert grant.sad['a']['ageDisclosure'][AGE_OVER21]['over21'] is True
 
     # --- Revocation: the State records a 'revoked' update on the shared set registry. ---
@@ -1238,9 +1113,9 @@ def test_bulk_serialization_kinds(kind):
     pinning per-kind SAIDs. (The no-correlator-on-the-wire substring checks are
     JSON-specific: the CESR wire form base64-encodes the payload.)
     """
-    idNonces = _BulkNonces(BULK_SALT)
+    idNonces = BulkDeriver(BULK_SALT, temp=True)
     idReg, idCopies, idBlist, Bid, idIssued = _sedi_id_set(kind, idNonces)
-    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageNonces = BulkDeriver(BULK_AGE_SALT, temp=True)
     ageReg, ageCopies, ageAggors, ageBlist, Bage, ageIssued = _sedi_age_set(
         kind, idCopies, ageNonces)
 
@@ -1253,11 +1128,11 @@ def test_bulk_serialization_kinds(kind):
         assert_acdc_schema_valid(idCopies[k])
         assert_acdc_schema_valid(ageCopies[k])
         assert _verify_identity_edge(ageCopies[k], idCopies[k])       # E1E on every kind
-        assert _verify_membership(idCopies[k].said, idNonces.v(k), idBlist, Bid)
-        assert _verify_membership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
+        assert verifyMembership(idCopies[k].said, idNonces.v(k), idBlist, Bid)
+        assert verifyMembership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
 
     # Partition across two contexts holds on every kind (holder AID included).
-    presNonces = _BulkNonces(PRESENT_SALT)
+    presNonces = BulkDeriver(PRESENT_SALT, temp=True)
     k1, k2 = _copy_index_for(ALCOVE), _copy_index_for(DISPENSARY)
     pres1 = _presentation(kind, ALCOVE, idCopies, ageCopies, presNonces)
     pres2 = _presentation(kind, DISPENSARY, idCopies, ageCopies, presNonces)
