@@ -9,7 +9,9 @@ Registrar service support for managing Registries of ACDC state
 
 from hio.help import ogler
 
-from ..kering import ClosedError, ConfigurationError, ValidationError
+from ..core import Diger, MtrDex
+from ..kering import (ClosedError, ConfigurationError, KeriError,
+                      ValidationError)
 from . import messaging, regeventing
 from .registering import RegistryStore, openRegistry
 
@@ -332,6 +334,24 @@ class Registry:
         # frontier walk and TEL event creation now live in regeventing.py.
         return self._eventer.blind(acdc=acdc, state=state, **kwa)
 
+    def blindAggregate(self, aggregate, state, **kwa):
+        """Create a shared-list bulk update targeting ``aggregate``.
+
+        This path accepts only the Blake3-256 aggregate produced
+        by ``keri.acdc.bulking.makeCommitment``.  It bypasses the
+        individual-ACDC checks in :meth:`blind` while reusing the same staged
+        TEL update, escrow, and persistence workflow.
+        """
+        if not isinstance(aggregate, str):
+            raise ConfigurationError("bulk aggregate must be qb64 digest text")
+        try:
+            diger = Diger(qb64=aggregate)
+        except (KeriError, TypeError, ValueError) as ex:
+            raise ConfigurationError("bulk aggregate must be a valid qb64 digest") from ex
+        if diger.qb64 != aggregate or diger.code != MtrDex.Blake3_256:
+            raise ConfigurationError("bulk aggregate must use Blake3-256")
+        return self._eventer._blind(target=aggregate, state=state, **kwa)
+
     def present(self, grant, state="presented", **kwa):
         """Create a blinded registry update binding a grant message SAID."""
         # Delegate event construction to this registry's TEL engine.
@@ -414,6 +434,11 @@ class Registrar:
         """
         reg = self._registry(registry)
         return reg.blind(acdc=acdc, state=state, **kwa)
+
+    def issueBulk(self, registry, aggregate, state="issued", **kwa):
+        """Create a shared-list bulk registry update."""
+        reg = self._registry(registry)
+        return reg.blindAggregate(aggregate=aggregate, state=state, **kwa)
 
     def present(self, registry, grant, state="presented", **kwa):
         """Bind a grant message SAID in an issuee-controlled registry."""

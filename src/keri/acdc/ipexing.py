@@ -13,7 +13,7 @@ from copy import deepcopy
 from hio.help import ogler
 
 from .. import Kinds, Protocols
-from . import chaining
+from . import bulking, chaining
 from .evaluating import (EdgeEvaluator, MissingEdgeNodeError, SchemaEvaluator,
                          verifyExpandedSection)
 from ..kering import (Colds, DuplicitousRegistryError, Ilks, KeriError,
@@ -679,7 +679,7 @@ class IpexHandler:
             # If dp is empty
             if not plan:
                 # With nothing to disclose, both the origin and body are empty.
-                if origins != [] or nests:
+                if origins != [] or nests or "bulkMembershipProof" in attrs:
                     return False
 
                 # With no credential AID, only the sender can satisfy Grant ax.
@@ -703,6 +703,21 @@ class IpexHandler:
                 if walked is None:
                     return False
                 grantNodes, grantOrder = walked
+
+                # A shared-list proof applies only to this single-DAG origin.
+                # Keep it beside that node's parsed TEL disclosure while the
+                # existing graph evaluator authenticates the Grant.
+                if "bulkMembershipProof" in attrs:
+                    try:
+                        proof = bulking.parseProof(attrs["bulkMembershipProof"])
+                        originNest = grantNodes[origins[0]]
+                        originNest = dict(originNest) if isinstance(
+                            originNest, Mapping) else dict(originNest.__dict__)
+                    except (AttributeError, KeriError, TypeError, ValueError):
+                        return False
+                    originNest["bulkMembershipProof"] = proof
+                    grantNodes = dict(grantNodes)
+                    grantNodes[origins[0]] = originNest
 
                 # A Grant may not replay field-map metadata as the credential.
                 for grantNode in grantNodes.values():
@@ -1318,6 +1333,10 @@ class IpexHandler:
                 that the verifier has not loaded locally yet.
         """
 
+        # The IPEX Grant may attach shared-list membership to its origin node.
+        bulkMembershipProof = (nest.get("bulkMembershipProof")
+                               if isinstance(nest, Mapping) else None)
+
         # Authentication Factor 1: Registry
         # First check if a registry was declared, if so verify it
         regk = serder.sad.get("rd")
@@ -1325,8 +1344,13 @@ class IpexHandler:
             record = self._vetRegistry(regk=regk,
                                        proofs=self._blindProofs(nest),
                                        target=serder.said,
-                                       acdc=serder)
+                                       acdc=serder,
+                                       bulkMembershipProof=bulkMembershipProof)
             return record is not None, record
+
+        # A bulk proof cannot authenticate a registry-less ACDC.
+        if bulkMembershipProof is not None:
+            return False, None
 
         # An inner rd without a top-level rd selects the unsupported hidden
         # issuer-registry form; it must not fall through to another factor.
@@ -1494,7 +1518,8 @@ class IpexHandler:
         return rip, updates
 
     def _vetRegistry(self, regk, proofs, target, controller=None, acdc=None,
-                     cutoff=None, sourceSeals=None, requireSource=False):
+                     cutoff=None, sourceSeals=None, requireSource=False,
+                     bulkMembershipProof=None):
         """Vet one issuer or presentation registry using matching BLIDs."""
 
         # Require disclosed proofs and a locally available TEL chain.
@@ -1570,17 +1595,29 @@ class IpexHandler:
                     raise MissingChainError(
                         f"missing presentation anchor source for registry {regk}")
 
-            # Verify the TEL and its latest disclosed target binding.
-            record = regeventing.vetBinds(rip=evidence[0],
-                                          updates=evidence[1],
-                                          db=self.hby.db,
-                                          blinders=proofs,
-                                          target=target,
-                                          controller=controller,
-                                          acdc=acdc,
-                                          cutoff=cutoff,
-                                          sources=sources,
-                                          requireSource=requireSource)
+            # Verify either the ordinary ACDC target or the shared aggregate.
+            if bulkMembershipProof is None:
+                record = regeventing.vetBinds(rip=evidence[0],
+                                              updates=evidence[1],
+                                              db=self.hby.db,
+                                              blinders=proofs,
+                                              target=target,
+                                              controller=controller,
+                                              acdc=acdc,
+                                              cutoff=cutoff,
+                                              sources=sources,
+                                              requireSource=requireSource)
+            else:
+                blinding, members = bulkMembershipProof
+                record = bulking.vetSharedList(
+                    rip=evidence[0],
+                    updates=evidence[1],
+                    db=self.hby.db,
+                    blinders=proofs,
+                    acdc=acdc,
+                    blinding=blinding,
+                    members=members,
+                    sources=sources)
 
             # Require the vetted chain to be the registry named by the ACDC.
             if record.regid != regk:

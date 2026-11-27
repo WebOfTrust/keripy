@@ -58,7 +58,8 @@ Fields:
     binding (str|None): how the presented ACDC binds to the registry:
         'mutual' when td == acdc.d and acdc.rd == rip.d both hold, 'oneway'
         when the ACDC carries no rd, 'presentation' when the target is a grant
-        SAID, and None when no target binding was requested
+        SAID, 'bulk' when a shared-list membership proof binds the ACDC through
+        an aggregate target, and None when no target binding was requested
     anchors (tuple): one (sn, said) couple per verified chain event, the
         issuer KEL event in which that TEL event's anchoring seal was found
 """
